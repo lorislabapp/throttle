@@ -28,8 +28,9 @@ final class ColdStartScannerTests: XCTestCase {
         }
         XCTAssertEqual(count, 2)
 
+        // Match the scanner's normalization (handles macOS /private/var symlink).
         let state = try db.read { db in
-            try FileState.fetchOne(db, key: target.path)
+            try FileState.fetchOne(db, key: target.standardizedFileURL.path)
         }
         XCTAssertNotNil(state)
         XCTAssertGreaterThan(state!.lastOffset, 0)
