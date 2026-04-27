@@ -2,7 +2,13 @@
 
 > An open-source Claude Code usage meter for macOS. Watch your 5-hour and weekly limits live in your menu bar so you never get cut off mid-session without warning.
 
-This repo is the **free, open-source meter** — the same code that ships inside the commercial [Throttle](https://lorislab.fr/throttle) app, minus the Pro features (optimizer wizard, license management, paid-tier UI).
+> ⚠️ **Status: v1.0-alpha** — buildable from source, no installable DMG yet. The commercial Throttle (Free + Pro) is in active development; landing page coming soon.
+
+This repo is the **free, open-source meter** — the same code that will ship inside the commercial **Throttle** app, minus the Pro features (optimizer wizard, license management, paid-tier UI). The commercial version's landing page at `lorislab.fr/throttle` is *coming soon*; for now, contact [support@lorislab.fr](mailto:support@lorislab.fr) for beta access.
+
+## Screenshots
+
+_Coming soon — a 5-second GIF of the menu bar dropdown will land here before public promotion._
 
 ## What it does
 
@@ -18,7 +24,7 @@ This repo is the **free, open-source meter** — the same code that ships inside
 - Connect to Anthropic, LorisLabs, or anyone else
 - Track or log session content (only token counts and timestamps)
 
-If you want optimization, hook installation, license-tier features, and Sparkle auto-update, get the commercial [Throttle](https://lorislab.fr/throttle) (€19, one-time).
+If you want optimization, hook installation, license-tier features, and Sparkle auto-update, the commercial **Throttle** (€19, one-time) is in development — landing page coming soon at lorislab.fr/throttle. Email [support@lorislab.fr](mailto:support@lorislab.fr) for beta access.
 
 ## Privacy
 
@@ -26,7 +32,7 @@ Everything stays on your Mac. The privacy claim is **auditable in this repo** �
 
 ## Free vs Commercial
 
-| | Throttle Meter (this repo) | [Throttle](https://lorislab.fr/throttle) |
+| | Throttle Meter (this repo) | Throttle (commercial, coming soon) |
 |---|:---:|:---:|
 | Live menu-bar meter | ✅ | ✅ |
 | 5-hour + weekly windows | ✅ | ✅ |
