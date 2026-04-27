@@ -25,5 +25,10 @@ struct ThrottleApp: App {
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
+
+        Window("Throttle Logs", id: "logs") {
+            LogViewerWindow()
+        }
+        .windowResizability(.contentSize)
     }
 }
