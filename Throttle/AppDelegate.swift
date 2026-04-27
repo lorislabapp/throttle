@@ -40,17 +40,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             appState.refresh()
         }
 
-        if !appState.firstRunDone {
-            // SwiftUI can open the Window scene by ID via openWindow environment;
-            // for AppDelegate-driven launch we use a tiny delay so the scene is ready.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                NSApp.activate(ignoringOtherApps: true)
-                if let url = URL(string: "throttle://first-run") {
-                    NSWorkspace.shared.open(url)
-                }
-                // Fallback: openWindow handled inside FirstRunWindow scene.
-            }
-        }
+        // First-run UX: the dropdown surfaces a "Finish setup" CTA when
+        // firstRunDone is false. Cleaner than auto-popping a window at launch
+        // (which also required a custom URL scheme that we don't ship).
     }
 
     func applicationWillTerminate(_ notification: Notification) {
