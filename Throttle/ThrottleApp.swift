@@ -2,14 +2,28 @@ import SwiftUI
 
 @main
 struct ThrottleApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     var body: some Scene {
-        MenuBarExtra("Throttle", systemImage: "gauge.with.dots.needle.bottom.50percent") {
-            Text("Throttle is starting…")
-            Divider()
-            Button("Quit") {
-                NSApp.terminate(nil)
-            }
-            .keyboardShortcut("q")
+        MenuBarExtra {
+            DropdownView()
+                .environment(appDelegate.appState)
+        } label: {
+            MenuBarLabel()
+                .environment(appDelegate.appState)
         }
+        .menuBarExtraStyle(.window)
+
+        Settings {
+            SettingsScene()
+                .environment(appDelegate.appState)
+        }
+
+        Window("Welcome to Throttle", id: "first-run") {
+            FirstRunWindow()
+                .environment(appDelegate.appState)
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
     }
 }
