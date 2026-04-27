@@ -1,0 +1,4 @@
+{"type":"user","sessionId":"abc-123","message":{"role":"user","content":"hello"}}
+{"type":"assistant","sessionId":"abc-123","timestamp":"2026-04-27T10:00:00Z","message":{"role":"assistant","model":"claude-opus-4-7","content":"hi","usage":{"input_tokens":100,"output_tokens":50,"cache_creation_input_tokens":2000,"cache_read_input_tokens":1000,"service_tier":"standard"}}}
+{"type":"user","sessionId":"abc-123","message":{"role":"user","content":"more"}}
+{"type":"assistant","sessionId":"abc-123","timestamp":"2026-04-27T10:00:30Z","message":{"role":"assistant","model":"claude-sonnet-4-6","content":"reply","usage":{"input_tokens":75,"output_tokens":25,"cache_creation_input_tokens":0,"cache_read_input_tokens":3000,"service_tier":"standard"}}}

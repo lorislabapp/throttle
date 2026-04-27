@@ -51,6 +51,8 @@ targets:
     platform: macOS
     sources:
       - path: ThrottleTests
+    resources:
+      - path: ThrottleTests/Fixtures
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.lorislab.throttle.tests
