@@ -34,14 +34,14 @@ if [ -f "$INFO" ]; then
 fi
 
 # Code signing
-if codesign -dv "$APP_PATH" 2>&1 | grep -q "Authority=Developer ID Application"; then
+if codesign -dvv "$APP_PATH" 2>&1 | grep -q "Authority=Developer ID Application"; then
     ok "Signed with Developer ID Application"
 else
     ko "Not signed with Developer ID Application (check signing config)"
 fi
 
 # Team ID
-if codesign -dv "$APP_PATH" 2>&1 | grep -q "TDV6D5L785"; then
+if codesign -dvv "$APP_PATH" 2>&1 | grep -q "TDV6D5L785"; then
     ok "Team ID = TDV6D5L785"
 else
     ko "Team ID is not TDV6D5L785"
