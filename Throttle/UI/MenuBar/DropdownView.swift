@@ -1,15 +1,52 @@
 import AppKit
+import GRDB
 import SwiftUI
 
 struct DropdownView: View {
     @Environment(AppState.self) private var appState
-    @Environment(\.openSettings) private var openSettings
-    @Environment(\.openWindow) private var openWindow
+
+    enum Mode {
+        case meter
+        case settings(SettingsTab)
+        case stats
+        case about
+    }
+
+    enum SettingsTab: String, CaseIterable {
+        case general = "General"
+        case calibration = "Calibration"
+        case hooks = "Hooks"
+        case privacy = "Privacy"
+    }
+
+    @State private var mode: Mode = .meter
 
     var body: some View {
+        Group {
+            if !appState.firstRunDone {
+                FirstRunInline()
+            } else {
+                switch mode {
+                case .meter:
+                    meterContent
+                case .settings(let tab):
+                    settingsContent(tab: tab)
+                case .stats:
+                    StatsInline(onBack: { mode = .meter })
+                case .about:
+                    AboutInline(onBack: { mode = .settings(.general) })
+                }
+            }
+        }
+        .padding(12)
+        .frame(width: 340)
+    }
+
+    // MARK: - Meter mode
+
+    private var meterContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-            firstRunBanner
             if !appState.claudeCodeDetected {
                 emptyState(message: "Claude Code not detected. Install it to start measuring.")
             } else if !appState.snapshot.hasAnyData {
@@ -22,16 +59,32 @@ struct DropdownView: View {
             Divider().padding(.vertical, 4)
             footer
         }
-        .padding(12)
-        .frame(width: 320)
     }
 
     private var header: some View {
         HStack {
             Text("Throttle")
                 .font(.headline)
+            if appState.isPro {
+                Text("PRO")
+                    .font(.caption2.bold())
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.accentColor.opacity(0.15))
+                    .foregroundStyle(Color.accentColor)
+                    .clipShape(Capsule())
+            }
+            if appState.exactSnapshot?.isFresh() == true {
+                Text("EXACT")
+                    .font(.caption2.bold())
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.green.opacity(0.15))
+                    .foregroundStyle(Color.green)
+                    .clipShape(Capsule())
+            }
             Spacer()
-            if let pct = appState.snapshot.session5h.percentUsed {
+            if let pct = displayedSession5hPercent() {
                 Text("\(Int(pct * 100))%")
                     .font(.headline)
                     .foregroundStyle(headerColor(for: pct))
@@ -40,18 +93,11 @@ struct DropdownView: View {
         .padding(.bottom, 6)
     }
 
-    @ViewBuilder
-    private var firstRunBanner: some View {
-        if !appState.firstRunDone {
-            Button {
-                openWindow(id: "first-run")
-            } label: {
-                Label("Finish setup", systemImage: "sparkles")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(.bottom, 8)
+    private func displayedSession5hPercent() -> Double? {
+        if let ex = appState.exactSnapshot, ex.isFresh() {
+            return Double(ex.fiveHour.utilization) / 100.0
         }
+        return appState.snapshot.session5h.percentUsed
     }
 
     private func headerColor(for pct: Double) -> Color {
@@ -80,18 +126,58 @@ struct DropdownView: View {
 
     private var windowsList: some View {
         VStack(alignment: .leading, spacing: 12) {
-            windowRow(window: appState.snapshot.session5h, title: "Session (5h)")
-            windowRow(window: appState.snapshot.weeklyAll, title: "Weekly all models")
-            windowRow(window: appState.snapshot.weeklySonnet, title: "Weekly Sonnet only")
+            metricRow(displayMetric(for: .session5h, title: "Session (5h)"))
+            metricRow(displayMetric(for: .weeklyAll, title: "Weekly all models"))
+            metricRow(displayMetric(for: .weeklySonnet, title: "Weekly Sonnet only"))
         }
     }
 
-    private func windowRow(window: UsageSnapshot.Window, title: String) -> some View {
+    private struct DisplayMetric {
+        let title: String
+        let percent: Double?
+        let resetInSeconds: Int64
+        let isExact: Bool
+    }
+
+    private func displayMetric(for kind: WindowKind, title: String) -> DisplayMetric {
+        let local: UsageSnapshot.Window
+        switch kind {
+        case .session5h:    local = appState.snapshot.session5h
+        case .weeklyAll:    local = appState.snapshot.weeklyAll
+        case .weeklySonnet: local = appState.snapshot.weeklySonnet
+        }
+        if let exact = appState.exactSnapshot, exact.isFresh() {
+            let ew: ExactSnapshot.Window
+            switch kind {
+            case .session5h:    ew = exact.fiveHour
+            case .weeklyAll:    ew = exact.sevenDay
+            case .weeklySonnet: ew = exact.sevenDaySonnet
+            }
+            let resetSec: Int64 = ew.resetsAt.map {
+                max(0, Int64($0.timeIntervalSinceNow))
+            } ?? local.resetInSeconds
+            return DisplayMetric(
+                title: title,
+                percent: Double(ew.utilization) / 100.0,
+                resetInSeconds: resetSec,
+                isExact: true
+            )
+        }
+        return DisplayMetric(
+            title: title,
+            percent: local.percentUsed,
+            resetInSeconds: local.resetInSeconds,
+            isExact: false
+        )
+    }
+
+    @ViewBuilder
+    private func metricRow(_ metric: DisplayMetric) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Text(title).font(.subheadline)
+                Text(metric.title).font(.subheadline)
                 Spacer()
-                if let pct = window.percentUsed {
+                if let pct = metric.percent {
                     Text("\(Int(pct * 100))% used")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -101,14 +187,16 @@ struct DropdownView: View {
                         .foregroundStyle(.tertiary)
                 }
             }
-            if let pct = window.percentUsed {
+            if let pct = metric.percent {
                 ProgressView(value: pct)
                     .progressViewStyle(.linear)
                     .tint(progressTint(for: pct))
             }
-            Text("resets in \(formatDuration(window.resetInSeconds))")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if metric.resetInSeconds > 0 {
+                Text("resets in \(formatDuration(metric.resetInSeconds))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -132,23 +220,28 @@ struct DropdownView: View {
     private var proSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Image(systemName: "lock.fill")
+                Image(systemName: appState.isPro ? "checkmark.seal.fill" : "lock.fill")
                 Text("Run Optimizer")
                 Spacer()
-                Text("Pro").font(.caption).foregroundStyle(.secondary)
+                Text(appState.isPro ? "Pro ✓" : "Pro")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(appState.isPro ? .primary : .secondary)
             .contentShape(Rectangle())
             .onTapGesture {
-                // Plan 2 wires the paywall here. For Plan 1 we just no-op.
+                // Plan 2 wires the optimizer wizard here. For Plan 1 it's a no-op
+                // even when Pro is unlocked — the wizard view doesn't exist yet.
             }
             HStack {
-                Image(systemName: "lock.fill")
+                Image(systemName: appState.isPro ? "checkmark.seal.fill" : "lock.fill")
                 Text("Manage Hooks")
                 Spacer()
-                Text("Pro").font(.caption).foregroundStyle(.secondary)
+                Text(appState.isPro ? "Pro ✓" : "Pro")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(appState.isPro ? .primary : .secondary)
         }
     }
 
@@ -164,9 +257,23 @@ struct DropdownView: View {
             .buttonStyle(.plain)
 
             Button {
-                openSettings()
+                mode = .stats
+            } label: {
+                Label("Stats…", systemImage: "chart.line.uptrend.xyaxis")
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                mode = .settings(.general)
             } label: {
                 Label("Settings…", systemImage: "gear")
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                mode = .about
+            } label: {
+                Label("About Throttle", systemImage: "info.circle")
             }
             .buttonStyle(.plain)
 
@@ -177,6 +284,824 @@ struct DropdownView: View {
             }
             .buttonStyle(.plain)
             .keyboardShortcut("q")
+        }
+    }
+
+    // MARK: - Settings mode
+
+    private func settingsContent(tab: SettingsTab) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Button {
+                    mode = .meter
+                } label: {
+                    Label("Back", systemImage: "chevron.left")
+                }
+                .buttonStyle(.borderless)
+                Spacer()
+                Text("Settings").font(.headline)
+                Spacer()
+                Spacer().frame(width: 56) // balance the Back button width
+            }
+
+            Picker("", selection: Binding(
+                get: { tab },
+                set: { mode = .settings($0) }
+            )) {
+                ForEach(SettingsTab.allCases, id: \.self) { t in
+                    Text(t.rawValue).tag(t)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+
+            Divider()
+
+            ScrollView {
+                Group {
+                    switch tab {
+                    case .general:     InlineGeneralPane()
+                    case .calibration: InlineCalibrationPane()
+                    case .hooks:       InlineHooksPane()
+                    case .privacy:     InlinePrivacyPane()
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .frame(minHeight: 180, maxHeight: 320)
+        }
+    }
+}
+
+// MARK: - First-run inline view
+
+private struct FirstRunInline: View {
+    @Environment(AppState.self) private var appState
+
+    enum PlanChoice: String, CaseIterable, Identifiable {
+        case pro = "Pro"
+        case max5x = "Max 5×"
+        case max20x = "Max 20×"
+        case skip = "Skip — auto-calibrate"
+
+        var id: String { rawValue }
+    }
+
+    @State private var planChoice: PlanChoice = .skip
+    @State private var enableLoginItems: Bool = false
+
+    @State private var signedIn: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Welcome to Throttle").font(.headline)
+            Text("Throttle reads your Claude Code sessions at `~/.claude/projects/` to compute usage. Nothing leaves your Mac.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Divider().padding(.vertical, 2)
+            Text("Your plan").font(.subheadline)
+            Picker("Plan", selection: $planChoice) {
+                ForEach(PlanChoice.allCases) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.radioGroup).labelsHidden()
+            Divider().padding(.vertical, 2)
+
+            // Sign-in step. Optional — user can skip and add later via Settings.
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Match claude.ai exactly").font(.subheadline)
+                    Spacer()
+                    if signedIn {
+                        Text("Signed in ✓").font(.caption).foregroundStyle(.green)
+                    }
+                }
+                Text("Skip for now — set this up after first run via Settings → General → Exact mode.")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Divider().padding(.vertical, 2)
+            Toggle("Launch Throttle at login", isOn: $enableLoginItems).font(.subheadline)
+            HStack {
+                Spacer()
+                Button("Get Started") { apply() }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+            }
+            Text("You can change all of this later in Settings.")
+                .font(.caption2).foregroundStyle(.tertiary)
+        }
+        .task { await refreshSignedIn() }
+    }
+
+    private func refreshSignedIn() async {
+        // Safari Bridge mode: "signed in" = last successful poll exists.
+        signedIn = ExactModeService.shared.hasFreshSnapshot
+    }
+
+    private func apply() {
+        if enableLoginItems { try? LoginItemService.setEnabled(true) }
+        let preset: [(WindowKind, Int)]? = {
+            switch planChoice {
+            case .pro:    return [(.session5h, 4_000_000), (.weeklyAll, 60_000_000), (.weeklySonnet, 60_000_000)]
+            case .max5x:  return [(.session5h, 8_000_000), (.weeklyAll, 200_000_000), (.weeklySonnet, 200_000_000)]
+            case .max20x: return [(.session5h, 20_000_000), (.weeklyAll, 800_000_000), (.weeklySonnet, 800_000_000)]
+            case .skip:   return nil
+            }
+        }()
+        if let preset,
+           let url = try? DatabaseManager.databaseURL(),
+           let pool = try? DatabasePool(path: url.path) {
+            try? pool.write { db in
+                for (kind, cap) in preset {
+                    try CalibrationEngine.setManual(in: db, kind: kind, capTokens: cap)
+                }
+            }
+        }
+        appState.markFirstRunDone()
+        appState.refresh()
+        // If user signed in during first-run, kick off polling immediately.
+        if signedIn {
+            appState.setExactModeEnabled(true)
+            ExactModeService.shared.start()
+        }
+    }
+}
+
+// MARK: - Inline Settings panes
+
+private struct InlineGeneralPane: View {
+    @Environment(AppState.self) private var appState
+    @State private var loginItemsEnabled: Bool = LoginItemService.isEnabled
+    @State private var signedIn: Bool = false
+    @State private var notificationsOn: Bool = ThresholdNotifier.shared.isEnabled
+    @State private var calendarStatus: String = ""
+    @State private var licenseKeyInput: String = ""
+    @State private var licenseStatus: String = ""
+    @State private var activating: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Startup").font(.subheadline.bold())
+            Toggle("Launch Throttle at login", isOn: $loginItemsEnabled)
+                .onChange(of: loginItemsEnabled) { _, new in
+                    try? LoginItemService.setEnabled(new)
+                }
+
+            Divider()
+
+            Text("Notifications").font(.subheadline.bold())
+            Toggle("Notify when usage crosses 80% / 95%", isOn: $notificationsOn)
+                .onChange(of: notificationsOn) { _, new in
+                    ThresholdNotifier.shared.setEnabled(new)
+                }
+            Text("Triggers a banner on each window the first time it crosses each threshold (debounced 6h).")
+                .font(.caption2).foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Add weekly reset reminder to Calendar") {
+                Task {
+                    let result = await CalendarReminderService.addNextWeeklyReset(
+                        in: appState.snapshot,
+                        exact: appState.exactSnapshot
+                    )
+                    await MainActor.run { handleCalendarResult(result) }
+                }
+            }
+            .buttonStyle(.borderless).controlSize(.small)
+            if !calendarStatus.isEmpty {
+                Text(calendarStatus).font(.caption2).foregroundStyle(.tertiary)
+            }
+
+            Divider()
+
+            licenseSection
+
+            Divider()
+
+            exactModeSection
+
+            Divider()
+            Text("Updates").font(.subheadline.bold())
+            HStack {
+                Button("Check for updates…") {
+                    UpdaterService.shared.checkForUpdates()
+                }
+                .buttonStyle(.bordered).controlSize(.small)
+                Spacer()
+                if let last = UpdaterService.shared.lastCheckDate {
+                    Text("Last checked \(formatRelative(last))")
+                        .font(.caption2).foregroundStyle(.tertiary)
+                }
+            }
+            Text("Throttle auto-checks daily. Updates are signed and verified before install.")
+                .font(.caption2).foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .task { await refreshSignedIn() }
+    }
+
+    @State private var connectionStatus: String = ""
+    @State private var testing: Bool = false
+
+    private var licenseSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Throttle Pro").font(.subheadline.bold())
+                Spacer()
+                if let key = LicenseService.shared.currentKey {
+                    Text("Activated").font(.caption2.bold()).foregroundStyle(.green)
+                    Text(verbatim: "•").font(.caption2).foregroundStyle(.tertiary)
+                    Text(key.prefix(13) + "…").font(.caption2.monospaced()).foregroundStyle(.tertiary)
+                } else if appState.isPro {
+                    Text("Dev unlock").font(.caption2.bold()).foregroundStyle(.orange)
+                } else {
+                    Text("Free").font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            if LicenseService.shared.currentKey == nil && !appState.isPro {
+                Text("Buy Throttle Pro for €19 (launch) — unlocks Stats Pro cards, exact mode, share badge, and more.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 6) {
+                    Button("Buy Throttle Pro") {
+                        if let url = URL(string: "https://lorislab.fr/throttle/buy") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent).controlSize(.small)
+                    Button("Paste license key") {
+                        activateFromClipboard()
+                    }
+                    .buttonStyle(.bordered).controlSize(.small)
+                    .disabled(activating)
+                }
+            } else if LicenseService.shared.currentKey != nil {
+                HStack(spacing: 6) {
+                    if let exp = LicenseService.shared.expiresAt {
+                        Text("Renews automatically. Expires \(exp.formatted(date: .abbreviated, time: .omitted)).")
+                            .font(.caption2).foregroundStyle(.tertiary)
+                    }
+                    Spacer()
+                    Button("Deactivate this Mac", role: .destructive) {
+                        Task {
+                            await LicenseService.shared.deactivate()
+                            appState.refreshProStatus()
+                            licenseStatus = "Deactivated."
+                        }
+                    }
+                    .buttonStyle(.borderless).controlSize(.small)
+                }
+            }
+            if !licenseStatus.isEmpty {
+                Text(licenseStatus)
+                    .font(.caption2)
+                    .foregroundStyle(licenseStatus.hasPrefix("✓") ? .green : .red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func activateFromClipboard() {
+        guard let raw = NSPasteboard.general.string(forType: .string)?
+                .trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            licenseStatus = "Clipboard is empty. Copy the key from your purchase email first."
+            return
+        }
+        guard raw.uppercased().hasPrefix("THROTTLE-") else {
+            licenseStatus = "That doesn't look like a Throttle license key (should start with THROTTLE-)."
+            return
+        }
+        activating = true
+        licenseStatus = "Activating…"
+        Task {
+            let result = await LicenseService.shared.activate(key: raw.uppercased())
+            await MainActor.run {
+                activating = false
+                switch result {
+                case .success:
+                    licenseStatus = "✓ Pro activated on this Mac."
+                    appState.refreshProStatus()
+                case .failure(let err):
+                    licenseStatus = describeLicenseError(err)
+                }
+            }
+        }
+    }
+
+    private func describeLicenseError(_ err: LicenseService.ActivationError) -> String {
+        switch err {
+        case .invalidKey:           return "Invalid license key."
+        case .machineLimitReached:  return "Already activated on 3 Macs. Deactivate one first."
+        case .revoked:              return "License revoked. Contact support@lorislab.fr."
+        case .verificationFailed:   return "Server response failed signature check. Don't trust this network."
+        case .network(let m):       return "Network error: \(m)"
+        case .server(let code):     return "Server error \(code). Try again later."
+        case .decode(let m):        return "Couldn't decode response: \(m)"
+        }
+    }
+
+    private var exactModeSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Exact mode").font(.subheadline.bold())
+                Spacer()
+                if appState.isPro {
+                    Text("PRO ✓").font(.caption2.bold()).foregroundStyle(.green)
+                } else {
+                    Text("PRO").font(.caption2.bold()).foregroundStyle(.secondary)
+                }
+            }
+            Text("Reads the same numbers claude.ai shows you by asking your already-signed-in Safari to fetch them. Throttle never touches your cookies — Safari does the request and hands back the JSON.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Toggle("Enable exact mode", isOn: Binding(
+                get: { appState.exactModeEnabled },
+                set: { newValue in
+                    appState.setExactModeEnabled(newValue)
+                    if newValue {
+                        ExactModeService.shared.start()
+                    } else {
+                        ExactModeService.shared.stop()
+                        appState.exactSnapshot = nil
+                    }
+                }
+            ))
+            .disabled(!appState.isPro)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Setup (one-time):").font(.caption2.bold()).foregroundStyle(.secondary)
+                Text("1. Click **Open claude.ai in Safari** below.\n2. Sign in if needed (skip if already signed in).\n3. Click **Test connection**. macOS will ask permission for Throttle to control Safari — Allow.\n4. Done — Throttle polls Safari every 5 minutes.")
+                    .font(.caption2).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(6)
+            .background(Color.secondary.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+
+            HStack(spacing: 6) {
+                Button("Open claude.ai in Safari") {
+                    ExactModeService.shared.openSignInPage()
+                }
+                .buttonStyle(.bordered).controlSize(.small)
+                .disabled(!appState.isPro)
+
+                Button(testing ? "Testing…" : "Test connection") {
+                    testConnection()
+                }
+                .buttonStyle(.bordered).controlSize(.small)
+                .disabled(!appState.isPro || testing)
+            }
+
+            if !connectionStatus.isEmpty {
+                Text(connectionStatus)
+                    .font(.caption2)
+                    .foregroundStyle(connectionStatus.hasPrefix("✓") ? .green : .red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let snap = appState.exactSnapshot {
+                Text("Last poll: \(formatRelative(snap.fetchedAt))")
+                    .font(.caption2).foregroundStyle(.tertiary)
+            } else if appState.exactModeEnabled {
+                Text("Polling…")
+                    .font(.caption2).foregroundStyle(.tertiary)
+            }
+            if let err = appState.exactModeError {
+                Text("Error: \(describe(err))")
+                    .font(.caption2).foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func testConnection() {
+        testing = true
+        connectionStatus = ""
+        Task {
+            let result = await ExactModeService.shared.refresh()
+            await MainActor.run {
+                testing = false
+                switch result {
+                case .success:
+                    connectionStatus = "✓ Working. Exact numbers now showing above."
+                    signedIn = true
+                    if appState.exactModeEnabled {
+                        ExactModeService.shared.start()
+                    }
+                case .failure(let err):
+                    signedIn = false
+                    connectionStatus = describe(err)
+                }
+            }
+        }
+    }
+
+    private func refreshSignedIn() {
+        // Safari Bridge mode: "signed in" = last successful poll exists.
+        signedIn = ExactModeService.shared.hasFreshSnapshot
+    }
+
+    private func handleCalendarResult(_ result: CalendarReminderService.Result) {
+        switch result {
+        case .added:        calendarStatus = "✓ Event added to your default calendar."
+        case .denied:       calendarStatus = "Calendar access denied — enable in System Settings."
+        case .noResetTime:  calendarStatus = "No reset time available yet — keep using Claude Code."
+        case .error(let m): calendarStatus = "Error: \(m)"
+        }
+    }
+
+    private func formatRelative(_ date: Date) -> String {
+        let secs = -Int(date.timeIntervalSinceNow)
+        if secs < 60 { return "\(secs)s ago" }
+        let m = secs / 60
+        if m < 60 { return "\(m)m ago" }
+        return "\(m / 60)h \(m % 60)m ago"
+    }
+
+    private func describe(_ err: ExactModeError) -> String {
+        switch err {
+        case .notSignedIn:        return "Not signed in to claude.ai in Safari. Sign in and re-test."
+        case .noClaudeTab:        return "Couldn't open a claude.ai tab in Safari. Open one manually and re-test."
+        case .safariNotRunning:   return "Safari isn't running. Open it (or click 'Open claude.ai in Safari') and re-test."
+        case .automationDenied:   return "macOS denied automation. Open System Settings → Privacy & Security → Automation → Throttle → enable Safari, then re-test."
+        case .httpError(let code): return "HTTP \(code)"
+        case .invalidResponse:    return "Bad response from claude.ai."
+        case .appleScript(let s): return "AppleScript: \(s)"
+        case .timeout:            return "Timed out."
+        }
+    }
+}
+
+private struct InlineCalibrationPane: View {
+    @Environment(AppState.self) private var appState
+    @State private var caps: [WindowKind: Int] = [:]
+    @State private var recalPct: [WindowKind: Int] = [
+        .session5h: 50, .weeklyAll: 50, .weeklySonnet: 50
+    ]
+
+    /// Preset buttons — chosen to cover Pro / Max 5× / Max 20× ballparks for each window.
+    /// Avoids TextField, which on macOS 26.5 triggers a RealityBridge/Metal preload
+    /// crash inside the menu-bar popover. Power-user manual entry returns in v1.1
+    /// once Apple ships a fix or we move calibration into a dedicated NSWindow.
+    private static let presets: [WindowKind: [(label: String, tokens: Int)]] = [
+        .session5h: [
+            ("4M (Pro)",   4_000_000),
+            ("8M (Max 5×)", 8_000_000),
+            ("20M (Max 20×)", 20_000_000)
+        ],
+        .weeklyAll: [
+            ("60M (Pro)",   60_000_000),
+            ("200M (Max 5×)", 200_000_000),
+            ("800M (Max 20×)", 800_000_000)
+        ],
+        .weeklySonnet: [
+            ("60M (Pro)",   60_000_000),
+            ("200M (Max 5×)", 200_000_000),
+            ("800M (Max 20×)", 800_000_000)
+        ]
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Caps (tokens)").font(.subheadline.bold())
+            row(.session5h,    "Session (5h)")
+            row(.weeklyAll,    "Weekly all models")
+            row(.weeklySonnet, "Weekly Sonnet only")
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Recalibrate from claude.ai")
+                    .font(.subheadline.bold())
+                Text("Open claude.ai, read the % shown for each limit, enter it here, then Apply. Throttle adjusts each cap so the meter matches.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            recalRow(.session5h,    "Session (5h)")
+            recalRow(.weeklyAll,    "Weekly all models")
+            recalRow(.weeklySonnet, "Weekly Sonnet only")
+
+            Divider()
+            Button("Reset all calibrations", role: .destructive) {
+                resetAll()
+            }
+            .buttonStyle(.borderless)
+            Text("Manual numeric entry returns in v1.1 — see release notes.")
+                .font(.caption2).foregroundStyle(.tertiary)
+        }
+        .task { await loadCurrent() }
+    }
+
+    @ViewBuilder
+    private func recalRow(_ kind: WindowKind, _ label: String) -> some View {
+        let used = window(for: kind)?.usedTokens ?? 0
+        let pct = recalPct[kind] ?? 50
+        let canApply = used > 0 && pct > 0 && pct <= 100
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label).font(.caption.bold())
+            HStack(spacing: 8) {
+                Button { adjustPct(kind, by: -5) } label: {
+                    Image(systemName: "minus.circle")
+                }
+                .buttonStyle(.borderless)
+                .keyboardShortcut(.none)
+
+                Button { adjustPct(kind, by: -1) } label: {
+                    Image(systemName: "minus")
+                }
+                .buttonStyle(.borderless)
+
+                Text("\(pct)%")
+                    .font(.caption.monospaced())
+                    .frame(minWidth: 36, alignment: .center)
+
+                Button { adjustPct(kind, by: 1) } label: {
+                    Image(systemName: "plus")
+                }
+                .buttonStyle(.borderless)
+
+                Button { adjustPct(kind, by: 5) } label: {
+                    Image(systemName: "plus.circle")
+                }
+                .buttonStyle(.borderless)
+
+                Spacer()
+
+                Button("Apply") {
+                    applyRecalibration(kind: kind)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(!canApply)
+            }
+        }
+    }
+
+    private func adjustPct(_ kind: WindowKind, by delta: Int) {
+        let current = recalPct[kind] ?? 50
+        recalPct[kind] = min(100, max(1, current + delta))
+    }
+
+    private func window(for kind: WindowKind) -> UsageSnapshot.Window? {
+        switch kind {
+        case .session5h:    return appState.snapshot.session5h
+        case .weeklyAll:    return appState.snapshot.weeklyAll
+        case .weeklySonnet: return appState.snapshot.weeklySonnet
+        }
+    }
+
+    private func applyRecalibration(kind: WindowKind) {
+        guard let used = window(for: kind)?.usedTokens, used > 0,
+              let pct = recalPct[kind], pct > 0 else { return }
+        // newCap = used / (pct / 100) using integer math, rounded to nearest 1k.
+        let newCap = max(1, (used * 100) / pct)
+        let rounded = ((newCap + 500) / 1000) * 1000
+        save(kind: kind, capTokens: rounded)
+    }
+
+    @ViewBuilder
+    private func row(_ kind: WindowKind, _ label: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(label).font(.caption.bold())
+                Spacer()
+                Text(formatTokens(caps[kind] ?? 0))
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+            }
+            HStack(spacing: 6) {
+                ForEach(Self.presets[kind] ?? [], id: \.tokens) { preset in
+                    Button(preset.label) {
+                        save(kind: kind, capTokens: preset.tokens)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+        }
+    }
+
+    private func formatTokens(_ n: Int) -> String {
+        if n == 0 { return "—" }
+        if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
+        if n >= 1_000     { return String(format: "%.0fK", Double(n) / 1_000) }
+        return "\(n)"
+    }
+
+    private func loadCurrent() async {
+        guard let url = try? DatabaseManager.databaseURL(),
+              let pool = try? DatabasePool(path: url.path) else { return }
+        let loaded: [WindowKind: Int] = (try? await Task.detached {
+            try pool.read { db in
+                var result: [WindowKind: Int] = [:]
+                for kind in WindowKind.allCases {
+                    result[kind] = try DatabaseQueries.calibration(in: db, kind: kind)?.capTokens ?? 0
+                }
+                return result
+            }
+        }.value) ?? [:]
+        await MainActor.run { caps = loaded }
+    }
+
+    private func save(kind: WindowKind, capTokens: Int) {
+        guard let url = try? DatabaseManager.databaseURL(),
+              let pool = try? DatabasePool(path: url.path) else { return }
+        try? pool.write { db in
+            try CalibrationEngine.setManual(in: db, kind: kind, capTokens: capTokens)
+        }
+        caps[kind] = capTokens
+        appState.refresh()
+    }
+
+    private func resetAll() {
+        guard let url = try? DatabaseManager.databaseURL(),
+              let pool = try? DatabasePool(path: url.path) else { return }
+        try? pool.write { db in
+            for kind in WindowKind.allCases {
+                try CalibrationEngine.reset(in: db, kind: kind)
+            }
+        }
+        for kind in WindowKind.allCases { caps[kind] = 0 }
+        appState.refresh()
+    }
+}
+
+private struct InlineHooksPane: View {
+    @State private var status = HookStatusService.currentStatus()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            row("SessionStart router", ok: status.sessionStartRouterInstalled)
+            row("PreCompact extractor", ok: status.preCompactExtractorInstalled)
+            if status.killSwitchSet {
+                Text("⚠ Kill switch active — CLAUDE_DISABLE_TOKOPT_HOOKS=1 set in your shell")
+                    .font(.caption).foregroundStyle(.orange)
+            }
+            Divider()
+            Text("Hooks management UI ships in v1.1. To install, use the Optimizer wizard (Pro). To disable, run:")
+                .font(.caption).foregroundStyle(.secondary)
+            Text("export CLAUDE_DISABLE_TOKOPT_HOOKS=1")
+                .font(.caption.monospaced())
+                .textSelection(.enabled)
+        }
+        .task {
+            while !Task.isCancelled {
+                status = HookStatusService.currentStatus()
+                try? await Task.sleep(for: .seconds(30))
+            }
+        }
+    }
+
+    private func row(_ label: String, ok: Bool) -> some View {
+        HStack {
+            Image(systemName: ok ? "checkmark.circle.fill" : "circle.dashed")
+                .foregroundStyle(ok ? .green : .secondary)
+            Text(label).font(.subheadline)
+            Spacer()
+            Text(ok ? "Active" : "Not installed")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct InlinePrivacyPane: View {
+    @State private var exportStatus: String = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Local logs").font(.subheadline.bold())
+            Button("Reveal log file in Finder") {
+                NSWorkspace.shared.activateFileViewerSelecting([AppLogger.logFileURL])
+            }
+            .buttonStyle(.borderless)
+            Text("Logs include app behaviour only — no session content.")
+                .font(.caption).foregroundStyle(.secondary)
+
+            Divider()
+
+            Text("Diagnostics").font(.subheadline.bold())
+            Text("Bundle anonymized stats (event counts, hook status, last error) into a .zip on your Desktop. No usage content, no model details — token totals only. For support requests.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Export diagnostics to Desktop") {
+                exportStatus = "Building…"
+                Task { @MainActor in
+                    if let url = await runDiagnosticsExport() {
+                        exportStatus = "Saved: \(url.lastPathComponent)"
+                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                    } else {
+                        exportStatus = "Failed — see log."
+                    }
+                }
+            }
+            .buttonStyle(.bordered).controlSize(.small)
+            if !exportStatus.isEmpty {
+                Text(exportStatus).font(.caption2).foregroundStyle(.tertiary)
+            }
+
+            Divider()
+            Text("Telemetry").font(.subheadline.bold())
+            Text("Throttle does not collect telemetry. Future opt-ins will appear here.")
+                .font(.caption).foregroundStyle(.secondary)
+            Divider()
+            Link("Privacy policy at lorislab.fr/throttle/privacy",
+                 destination: URL(string: "https://lorislab.fr/throttle/privacy")!)
+                .font(.caption)
+        }
+    }
+
+    @MainActor
+    private func runDiagnosticsExport() async -> URL? {
+        guard let url = try? DatabaseManager.databaseURL(),
+              let pool = try? DatabasePool(path: url.path) else { return nil }
+        return DiagnosticsExporter.exportToDesktop(database: pool)
+    }
+}
+
+// MARK: - About inline (with dev-unlock 10-tap)
+
+private struct AboutInline: View {
+    @Environment(AppState.self) private var appState
+    let onBack: () -> Void
+    @State private var tapCount: Int = 0
+    @State private var tapResetTask: Task<Void, Never>?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Button { onBack() } label: { Label("Back", systemImage: "chevron.left") }
+                    .buttonStyle(.borderless)
+                Spacer()
+                Text("About").font(.headline)
+                Spacer()
+                Spacer().frame(width: 56)
+            }
+            Divider()
+
+            VStack(spacing: 6) {
+                Image(systemName: "gauge.with.dots.needle.bottom.50percent")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.tint)
+                Text("Throttle").font(.title2)
+
+                // Tappable version label — 10 taps within 5 seconds toggles dev-unlock.
+                Text("Version \(version)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        registerTap()
+                    }
+
+                if appState.isPro {
+                    Text("PRO unlocked (dev mode)")
+                        .font(.caption.bold())
+                        .foregroundStyle(.green)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Built by LorisLabs.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Link("github.com/lorislabapp/throttle-meter (open-source meter)",
+                     destination: URL(string: "https://github.com/lorislabapp/throttle-meter")!)
+                    .font(.caption)
+                Link("EULA",
+                     destination: URL(string: "https://lorislab.fr/throttle/eula")!)
+                    .font(.caption)
+                Link("Privacy",
+                     destination: URL(string: "https://lorislab.fr/throttle/privacy")!)
+                    .font(.caption)
+            }
+        }
+    }
+
+    private var version: String {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
+        return "\(v) (\(b))"
+    }
+
+    private func registerTap() {
+        tapCount += 1
+        tapResetTask?.cancel()
+        if tapCount >= 10 {
+            tapCount = 0
+            appState.toggleDevUnlock()
+            // Tiny haptic-style flash via NSSound (subtle)
+            NSSound.beep()
+        } else {
+            // Reset counter after 5s of inactivity
+            tapResetTask = Task {
+                try? await Task.sleep(for: .seconds(5))
+                if !Task.isCancelled { tapCount = 0 }
+            }
         }
     }
 }

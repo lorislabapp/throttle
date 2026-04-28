@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        Throttle privacy manifest.
+
+        We do not collect, transmit, or share user data with anyone.
+        All processing is local. Two outbound network paths exist and
+        are user-initiated:
+          - Exact mode polls claude.ai via the user's running Safari.
+            Throttle never sees the cookies; Safari does the request.
+          - Sparkle update channel fetches an appcast from lorislab.fr
+            (no user data sent — just an HTTP GET).
+
+        Required-reason API uses are limited to standard timestamp APIs
+        for usage-event ingestion (FileTimestamp).
+    -->
+
+    <key>NSPrivacyTracking</key>
+    <false/>
+
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array/>
+
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <!-- File timestamps: we read mtime on Claude Code's session
+             JSONL files to know when to re-ingest. Standard usage-tracking
+             reason: "Display to the person using the device" (we surface
+             timestamps in the dropdown). -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>C617.1</string>
+            </array>
+        </dict>
+        <!-- UserDefaults: storing local preferences (firstRunDone,
+             exactModeEnabled, proUnlockedDev). On-device only. -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>CA92.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

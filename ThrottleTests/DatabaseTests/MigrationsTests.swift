@@ -15,7 +15,14 @@ final class MigrationsTests: XCTestCase {
                 ORDER BY name
                 """)
         }
-        XCTAssertEqual(tables, ["calibration", "file_state", "settings", "usage_events"])
+        XCTAssertEqual(tables, [
+            "calibration",
+            "file_state",
+            "settings",
+            "tokopt_savings",
+            "usage_events",
+            "usage_snapshots"
+        ])
     }
 
     func test_migrationsAreIdempotent() throws {

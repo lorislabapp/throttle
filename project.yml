@@ -15,14 +15,23 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
-    MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "1"
-    ENABLE_HARDENED_RUNTIME: YES
+    MARKETING_VERSION: "1.1.4"
+    CURRENT_PROJECT_VERSION: "8"
+  configs:
+    # Hardened runtime is required for notarized Release distribution but
+    # interferes with Debug-build behaviours (debuggers, dynamic library
+    # loading paths, RealityBridge shader preloading on macOS 26+). Keep it
+    # off in Debug, on in Release.
+    Release:
+      ENABLE_HARDENED_RUNTIME: YES
 
 packages:
   GRDB:
     url: https://github.com/groue/GRDB.swift
     from: "6.29.0"
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.6.0"
 
 targets:
   Throttle:
@@ -40,12 +49,22 @@ targets:
         NSHumanReadableCopyright: "Copyright © 2026 LorisLabs. All rights reserved."
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSAppleEventsUsageDescription: "Throttle uses Safari to fetch your claude.ai usage page so it can show the same numbers Anthropic shows you. It only reads /api/organizations/.../usage — never your messages."
+        NSCalendarsFullAccessUsageDescription: "Throttle adds a one-time reminder to your default calendar when your weekly Claude limit is about to reset. Optional — only when you tap the Calendar button."
+        NSCalendarsUsageDescription: "Throttle adds a one-time reminder to your default calendar when your weekly Claude limit is about to reset. Optional — only when you tap the Calendar button."
+        NSUserNotificationsUsageDescription: "Throttle banners you when your Claude usage crosses 80% or 95%."
+        SUFeedURL: "https://lorislab.fr/throttle/appcast.xml"
+        SUPublicEDKey: "Xlig8/F7qhCaZlsYiI8MIeHpz1lVpZaZIgeGK45J7O4="
+        SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 86400
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.lorislab.throttle
         PRODUCT_NAME: Throttle
+        CODE_SIGN_ENTITLEMENTS: Throttle/Throttle.entitlements
     dependencies:
       - package: GRDB
+      - package: Sparkle
 
   ThrottleTests:
     type: bundle.unit-test

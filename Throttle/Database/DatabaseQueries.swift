@@ -2,9 +2,17 @@ import Foundation
 import GRDB
 
 enum DatabaseQueries {
+    /// Cache reads are weighted at 1/10 of regular input tokens — matches Anthropic's
+    /// billing weight for prompt-caching reads, which is empirically what the consumer
+    /// Pro/Max weekly limit appears to track. Without this weighting, Throttle
+    /// systematically over-counts vs claude.ai's displayed % for cache-heavy sessions.
+    /// The constant lives in SQL because GRDB's SUM() needs a single expression.
+    private static let weightedTokenSumExpr =
+        "input_tokens + output_tokens + cache_create + (cache_read / 10)"
+
     static func totalTokens(in db: Database, sinceTimestamp: Int64) throws -> Int {
         let row = try Row.fetchOne(db, sql: """
-            SELECT COALESCE(SUM(input_tokens + output_tokens + cache_create + cache_read), 0) AS total
+            SELECT COALESCE(SUM(\(weightedTokenSumExpr)), 0) AS total
             FROM usage_events
             WHERE timestamp > ?
             """, arguments: [sinceTimestamp])
@@ -17,7 +25,7 @@ enum DatabaseQueries {
         modelTier: ModelTier
     ) throws -> Int {
         var sql = """
-            SELECT COALESCE(SUM(input_tokens + output_tokens + cache_create + cache_read), 0) AS total
+            SELECT COALESCE(SUM(\(weightedTokenSumExpr)), 0) AS total
             FROM usage_events
             WHERE timestamp > ?
             """

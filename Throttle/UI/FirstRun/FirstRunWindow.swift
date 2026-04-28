@@ -72,23 +72,32 @@ struct FirstRunWindow: View {
 
     private var footer: some View {
         HStack {
+            // Cancel is always available since the window has no title-bar close button
+            // (hidden-titlebar style — see ThrottleApp.swift).
+            Button("Cancel") { dismiss() }
+                .keyboardShortcut(.cancelAction)
+
             if let prev = step.previous {
                 Button("Back") { step = prev }
-            } else {
-                Spacer().frame(width: 64)
             }
+
             Spacer()
+
             Text("Step \(step.rawValue + 1) of \(FirstRunStep.allCases.count)")
                 .foregroundStyle(.secondary)
                 .font(.caption)
+
             Spacer()
+
             Button(step.next == nil ? "Get Started" : "Continue") {
                 advance()
             }
             .keyboardShortcut(.defaultAction)
         }
         .padding(20)
-        .background(.bar)
+        // Removed `.background(.bar)` — Material backgrounds inside hidden-titlebar
+        // windows on macOS 26 can re-trigger the same NSTitlebarBackgroundView
+        // pocket-view path that was crashing. Plain background keeps it stable.
     }
 
     private func advance() {

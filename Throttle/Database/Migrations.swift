@@ -39,6 +39,43 @@ enum Migrations {
             }
         }
 
+        // v2: usage_snapshots table — persisted history for the Stats tab.
+        // Bucketed: each row is keyed by (timestamp_bucket, window_kind) so a
+        // burst of refresh() calls collapses into one row per 5-minute slot.
+        migrator.registerMigration("v2_usage_snapshots") { db in
+            try db.create(table: "usage_snapshots") { t in
+                t.column("timestamp_bucket", .integer).notNull()
+                t.column("window_kind", .text).notNull()
+                t.column("used_tokens", .integer).notNull()
+                t.column("cap_tokens", .integer)
+                t.primaryKey(["timestamp_bucket", "window_kind"])
+            }
+            try db.create(
+                index: "idx_snap_timestamp",
+                on: "usage_snapshots",
+                columns: ["timestamp_bucket"]
+            )
+        }
+
+        // v3: tokopt_savings — per-hook-fire records of bytes saved.
+        // Hooks (session-start-router.sh, pre-compact.sh) append JSONL to
+        // ~/Library/Application Support/Throttle/savings.jsonl, which a
+        // Throttle ingester sweeps into this table.
+        migrator.registerMigration("v3_tokopt_savings") { db in
+            try db.create(table: "tokopt_savings") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("timestamp", .integer).notNull()
+                t.column("hook", .text).notNull()
+                t.column("baseline_bytes", .integer).notNull()
+                t.column("actual_bytes", .integer).notNull()
+            }
+            try db.create(
+                index: "idx_savings_timestamp",
+                on: "tokopt_savings",
+                columns: ["timestamp"]
+            )
+        }
+
         try migrator.migrate(writer)
     }
 }

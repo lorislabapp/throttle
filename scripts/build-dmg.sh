@@ -53,7 +53,8 @@ echo "→ Smoke-testing the build"
 "$PROJECT_DIR/scripts/smoke-test.sh" "$APP_PATH"
 
 echo "→ Building DMG"
-DMG_PATH="$PROJECT_DIR/build/Throttle-1.0-alpha.dmg"
+VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist")
+DMG_PATH="$PROJECT_DIR/build/Throttle-${VERSION}.dmg"
 rm -f "$DMG_PATH"
 create-dmg \
     --volname "Throttle" \
@@ -72,5 +73,37 @@ xcrun notarytool submit "$DMG_PATH" \
 
 echo "→ Stapling"
 xcrun stapler staple "$DMG_PATH"
+
+echo "→ Generating Sparkle appcast entry"
+SIGN_TOOL=$(find ~/Library/Developer/Xcode/DerivedData -name "sign_update" -type f -path "*/Sparkle/*" 2>/dev/null | head -1)
+if [ -z "$SIGN_TOOL" ]; then
+    SIGN_TOOL=$(find ~/Library/Developer/Xcode/DerivedData -name "sign_update" -type f 2>/dev/null | head -1)
+fi
+
+if [ -n "$SIGN_TOOL" ] && [ -x "$SIGN_TOOL" ]; then
+    SIGN_OUTPUT=$("$SIGN_TOOL" "$DMG_PATH")
+    DMG_SIZE=$(stat -f%z "$DMG_PATH")
+    BUILD_NUMBER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$APP_PATH/Contents/Info.plist")
+    PUBDATE=$(LC_TIME=en_US date +"%a, %d %b %Y %H:%M:%S %z")
+
+    APPCAST_ENTRY="$PROJECT_DIR/build/appcast-entry-${VERSION}.xml"
+    cat > "$APPCAST_ENTRY" <<XML
+<item>
+    <title>Version ${VERSION}</title>
+    <pubDate>${PUBDATE}</pubDate>
+    <sparkle:version>${BUILD_NUMBER}</sparkle:version>
+    <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
+    <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+    <enclosure url="https://lorislab.fr/throttle/Throttle-${VERSION}.dmg"
+               length="${DMG_SIZE}"
+               type="application/octet-stream"
+               ${SIGN_OUTPUT} />
+</item>
+XML
+    echo "→ Appcast entry: $APPCAST_ENTRY"
+    echo "→   Append the <item>...</item> contents to lorislab-website's appcast.xml"
+else
+    echo "⚠ sign_update tool not found — skipping appcast generation"
+fi
 
 echo "→ Done: $DMG_PATH"

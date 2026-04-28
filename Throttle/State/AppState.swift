@@ -8,11 +8,28 @@ final class AppState {
     /// True when ~/.claude/ is not present.
     var claudeCodeDetected: Bool = false
 
-    /// Current snapshot. Updated every time usage data or calibration changes.
+    /// Current snapshot from local JSONL math. Updated whenever usage data or calibration changes.
     var snapshot: UsageSnapshot = .empty
+
+    /// Latest snapshot from claude.ai's /api/.../usage endpoint, if exact mode is on
+    /// AND the user is signed in AND the last poll succeeded. nil = falling back to
+    /// local JSONL math.
+    var exactSnapshot: ExactSnapshot?
+
+    /// True if exact mode is enabled in user settings (separate from "is it currently working").
+    var exactModeEnabled: Bool = UserDefaults.standard.bool(forKey: "exactModeEnabled")
+
+    /// Last poll error, surfaced to Settings UI.
+    var exactModeError: ExactModeError?
 
     /// True when first run has been completed.
     var firstRunDone: Bool = UserDefaults.standard.bool(forKey: "firstRunDone")
+
+    /// True when the Pro tier is unlocked, via either:
+    ///   - the dev-unlock gesture (10 taps on version), or
+    ///   - a valid Throttle Pro license JWT in Keychain.
+    /// The computed flag is refreshed via `refreshProStatus()`.
+    var isPro: Bool = UserDefaults.standard.bool(forKey: "proUnlockedDev") || LicenseService.shared.isPro
 
     private let database: any DatabaseWriter
 
@@ -39,9 +56,31 @@ final class AppState {
                     )
                 }
             }.value) ?? .empty
+            // Persist this snapshot's three windows into history. Keyed by
+            // 5-minute bucket so rapid refresh()s don't explode the table.
+            try? await Task.detached {
+                try database.write { db in
+                    try Self.persistSnapshotRows(in: db, snapshot: computed)
+                }
+            }.value
             await MainActor.run {
                 self.snapshot = computed
+                ThresholdNotifier.shared.evaluate(snapshot: computed, exact: self.exactSnapshot)
             }
+        }
+    }
+
+    nonisolated private static func persistSnapshotRows(in db: Database, snapshot: UsageSnapshot) throws {
+        let bucket = (Int64(snapshot.computedAt.timeIntervalSince1970) / UsageSnapshotRow.bucketSizeSeconds) * UsageSnapshotRow.bucketSizeSeconds
+        for window in [snapshot.session5h, snapshot.weeklyAll, snapshot.weeklySonnet] {
+            let row = UsageSnapshotRow(
+                timestampBucket: bucket,
+                windowKind: window.kind.rawValue,
+                usedTokens: window.usedTokens,
+                capTokens: window.capTokens
+            )
+            // INSERT OR REPLACE — overwrite same bucket with latest values.
+            try row.save(db)
         }
     }
 
@@ -57,5 +96,22 @@ final class AppState {
     func markFirstRunDone() {
         UserDefaults.standard.set(true, forKey: "firstRunDone")
         firstRunDone = true
+    }
+
+    /// Toggle the dev-unlock Pro flag. Called when the user taps version 10×.
+    func toggleDevUnlock() {
+        let next = !isPro
+        UserDefaults.standard.set(next, forKey: "proUnlockedDev")
+        isPro = next
+    }
+
+    func setExactModeEnabled(_ enabled: Bool) {
+        UserDefaults.standard.set(enabled, forKey: "exactModeEnabled")
+        exactModeEnabled = enabled
+    }
+
+    /// Recompute isPro after license activation/deactivation or dev-unlock toggle.
+    func refreshProStatus() {
+        isPro = UserDefaults.standard.bool(forKey: "proUnlockedDev") || LicenseService.shared.isPro
     }
 }

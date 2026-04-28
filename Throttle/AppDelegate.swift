@@ -8,6 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let appState: AppState
     private let database: DatabasePool
     private let coordinator: DataLayerCoordinator
+    private let savingsIngester: SavingsIngester
+    private let updater = UpdaterService.shared
     private let logger = AppLogger.app
 
     override init() {
@@ -15,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.database = try Self.openDatabaseSync()
             self.appState = AppState(database: database)
             self.coordinator = DataLayerCoordinator(database: database)
+            self.savingsIngester = SavingsIngester(database: database)
             super.init()
             self.coordinator.onUsageChanged = { [weak self] in
                 self?.appState.refresh()
@@ -26,27 +29,56 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        guard Self.acquireSingletonLock() else {
-            logger.notice("Another Throttle instance is already running. Quitting.")
-            NSApp.terminate(nil)
-            return
+        // Skip the singleton check under XCTest — the test host bundle launches a
+        // second Throttle.app process to load the test bundle, and the singleton
+        // lock would terminate it before tests can run.
+        let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+        if !isRunningTests {
+            guard Self.acquireSingletonLock() else {
+                logger.notice("Another Throttle instance is already running. Quitting.")
+                NSApp.terminate(nil)
+                return
+            }
         }
 
         logger.notice("Throttle launched (\(Bundle.main.shortVersion, privacy: .public))")
         AppLogger.appendToFile("Throttle launched (\(Bundle.main.shortVersion))")
 
+        // Wire ExactModeService → AppState. The service runs whenever the user
+        // has enabled exact mode AND is signed in to claude.ai. When polling
+        // returns a fresh snapshot, the dropdown promotes its values over the
+        // local JSONL math.
+        let exact = ExactModeService.shared
+        exact.onSnapshot = { [weak self] snap in
+            self?.appState.exactSnapshot = snap
+            self?.appState.exactModeError = nil
+        }
+        exact.onError = { [weak self] err in
+            // Non-recoverable errors (notSignedIn) — drop the snapshot so the UI
+            // falls back to local math instead of showing stale data.
+            if err == .notSignedIn {
+                self?.appState.exactSnapshot = nil
+            }
+            self?.appState.exactModeError = err
+        }
+
+        savingsIngester.start()
+
         Task { @MainActor in
             await coordinator.start()
             appState.refresh()
+            if appState.exactModeEnabled {
+                // Safari Bridge handles missing-Safari / not-signed-in via
+                // .failure on each poll — start unconditionally; the UI
+                // surfaces errors when polling fails.
+                exact.start()
+            }
         }
-
-        // First-run UX: the dropdown surfaces a "Finish setup" CTA when
-        // firstRunDone is false. Cleaner than auto-popping a window at launch
-        // (which also required a custom URL scheme that we don't ship).
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         coordinator.stop()
+        savingsIngester.stop()
         logger.notice("Throttle quitting")
     }
 

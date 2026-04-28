@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        Hardened-runtime entitlements needed for WKWebView (claude.ai sign-in
+        + exact-mode poller) to function. Without these, WebKit's child
+        process crashes during font enumeration on macOS 26.5+.
+
+        - allow-jit: JS engine execution
+        - allow-unsigned-executable-memory: paired with allow-jit for JS
+        - disable-library-validation: lets WebKit load its plugin frameworks
+          (Safari ships with its own plugin chain)
+    -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+    <!--
+        Allow Throttle to send Apple Events (drive Safari via AppleScript).
+        Required by SafariBridge to fetch /api/organizations/{org}/usage
+        through the user's already-signed-in Safari, which sidesteps the
+        macOS 26.5 WKWebView font-cache crash.
+    -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
+</dict>
+</plist>

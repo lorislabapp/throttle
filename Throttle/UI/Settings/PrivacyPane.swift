@@ -1,13 +1,12 @@
+import AppKit
 import SwiftUI
 
 struct PrivacyPane: View {
-    @Environment(\.openWindow) private var openWindow
-
     var body: some View {
         Form {
             Section("Local logs") {
-                Button("Show Logs…") {
-                    openWindow(id: "logs")
+                Button("Reveal log file in Finder") {
+                    NSWorkspace.shared.activateFileViewerSelecting([AppLogger.logFileURL])
                 }
                 Text("Logs include app behaviour only — no session content.")
                     .font(.caption)
