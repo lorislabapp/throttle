@@ -13,10 +13,10 @@ enum StatsDataService {
         var id: Int { rawValue }
         var label: String {
             switch self {
-            case .last24h: return "24h"
-            case .last7d:  return "7d"
-            case .last30d: return "30d"
-            case .all:     return "All"
+            case .last24h: return String(localized: "24h")
+            case .last7d:  return String(localized: "7d")
+            case .last30d: return String(localized: "30d")
+            case .all:     return String(localized: "All")
             }
         }
         /// Cutoff seconds-since-epoch. Returns 0 for .all.

@@ -67,6 +67,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         savingsIngester.start()
 
+        CrashReporter.shared.start()
+
         Task { @MainActor in
             await coordinator.start()
             appState.refresh()

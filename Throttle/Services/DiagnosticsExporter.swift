@@ -40,7 +40,19 @@ enum DiagnosticsExporter {
             try? lines.write(to: dst, atomically: true, encoding: .utf8)
         }
 
-        // 4. Zip the folder onto the Desktop.
+        // 4. MetricKit crash + hang payloads (if any).
+        let crashDir = CrashReporter.payloadsDirectory
+        if let entries = try? fm.contentsOfDirectory(at: crashDir,
+                                                    includingPropertiesForKeys: nil),
+           !entries.isEmpty {
+            let crashDst = folder.appendingPathComponent("crash-payloads", isDirectory: true)
+            try? fm.createDirectory(at: crashDst, withIntermediateDirectories: true)
+            for src in entries {
+                try? fm.copyItem(at: src, to: crashDst.appendingPathComponent(src.lastPathComponent))
+            }
+        }
+
+        // 5. Zip the folder onto the Desktop.
         let desktop = fm.urls(for: .desktopDirectory, in: .userDomainMask).first
             ?? fm.homeDirectoryForCurrentUser.appendingPathComponent("Desktop")
         let zipURL = desktop.appendingPathComponent("throttle-diagnostics-\(timestamp).zip")

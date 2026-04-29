@@ -240,7 +240,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Étalonnage"
+            "value": "Calibration"
           }
         }
       }
@@ -1496,6 +1496,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pour préremplir des limites réalistes. Vous pourrez recalibrer exactement plus tard."
+          }
+        }
+      }
+    },
+    "24h": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "24 h"
+          }
+        }
+      }
+    },
+    "7d": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 j"
+          }
+        }
+      }
+    },
+    "30d": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 j"
+          }
+        }
+      }
+    },
+    "All": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout"
           }
         }
       }

@@ -17,6 +17,15 @@ struct DropdownView: View {
         case calibration = "Calibration"
         case hooks = "Hooks"
         case privacy = "Privacy"
+
+        var localizedTitle: String {
+            switch self {
+            case .general:     return String(localized: "General")
+            case .calibration: return String(localized: "Calibration")
+            case .hooks:       return String(localized: "Hooks")
+            case .privacy:     return String(localized: "Privacy")
+            }
+        }
     }
 
     @State private var mode: Mode = .meter
@@ -388,7 +397,7 @@ struct DropdownView: View {
                 set: { mode = .settings($0) }
             )) {
                 ForEach(SettingsTab.allCases, id: \.self) { t in
-                    Text(t.rawValue).tag(t)
+                    Text(t.localizedTitle).tag(t)
                 }
             }
             .pickerStyle(.segmented)

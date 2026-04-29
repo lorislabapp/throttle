@@ -4,7 +4,8 @@
 # under profile name "throttle-notary" (configured once via:
 #   xcrun notarytool store-credentials throttle-notary --apple-id you@example --team-id TDV6D5L785)
 
-set -euo pipefail
+set -Eeuo pipefail
+trap 'rc=$?; echo "✘ build-dmg.sh failed at line $LINENO (exit $rc)" >&2; exit $rc' ERR
 
 PROJECT_DIR="${PROJECT_DIR:-$HOME/GitHub/Throttle}"
 cd "$PROJECT_DIR"
@@ -66,6 +67,11 @@ create-dmg \
     "$DMG_PATH" \
     "$APP_PATH"
 
+echo "→ Signing DMG itself (Gatekeeper trusts the container too)"
+codesign --force --sign "Developer ID Application: Christine Martin (TDV6D5L785)" \
+    --options runtime --timestamp "$DMG_PATH"
+codesign --verify --verbose=2 "$DMG_PATH"
+
 echo "→ Submitting for notarization"
 xcrun notarytool submit "$DMG_PATH" \
     --keychain-profile throttle-notary \
@@ -75,12 +81,22 @@ echo "→ Stapling"
 xcrun stapler staple "$DMG_PATH"
 
 echo "→ Generating Sparkle appcast entry"
-SIGN_TOOL=$(find ~/Library/Developer/Xcode/DerivedData -name "sign_update" -type f -path "*/Sparkle/*" 2>/dev/null | head -1)
+# Prefer the EdDSA tool from Sparkle's compiled artifacts; the old DSA script
+# in old_dsa_scripts/ can't sign modern updates, so explicitly exclude it.
+SIGN_TOOL=$(find ~/Library/Developer/Xcode/DerivedData -name "sign_update" -type f \
+    -path "*/artifacts/*" -not -path "*old_dsa*" 2>/dev/null | head -1)
 if [ -z "$SIGN_TOOL" ]; then
-    SIGN_TOOL=$(find ~/Library/Developer/Xcode/DerivedData -name "sign_update" -type f 2>/dev/null | head -1)
+    SIGN_TOOL=$(find ~/Library/Developer/Xcode/DerivedData -name "sign_update" -type f \
+        -not -path "*old_dsa*" 2>/dev/null | head -1)
 fi
 
-if [ -n "$SIGN_TOOL" ] && [ -x "$SIGN_TOOL" ]; then
+if [ -z "$SIGN_TOOL" ] || [ ! -x "$SIGN_TOOL" ]; then
+    echo "✘ Sparkle sign_update tool not found — appcast cannot be signed." >&2
+    echo "  Run a build via Xcode at least once to populate DerivedData with Sparkle artifacts." >&2
+    exit 1
+fi
+
+if true; then
     SIGN_OUTPUT=$("$SIGN_TOOL" "$DMG_PATH")
     DMG_SIZE=$(stat -f%z "$DMG_PATH")
     BUILD_NUMBER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$APP_PATH/Contents/Info.plist")
@@ -102,8 +118,6 @@ if [ -n "$SIGN_TOOL" ] && [ -x "$SIGN_TOOL" ]; then
 XML
     echo "→ Appcast entry: $APPCAST_ENTRY"
     echo "→   Append the <item>...</item> contents to lorislab-website's appcast.xml"
-else
-    echo "⚠ sign_update tool not found — skipping appcast generation"
 fi
 
 echo "→ Done: $DMG_PATH"
