@@ -5,6 +5,10 @@ options:
     macOS: "14.0"
   developmentLanguage: en
   createIntermediateGroups: true
+  knownRegions:
+    - en
+    - fr
+    - Base
 
 settings:
   base:
@@ -15,8 +19,9 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
-    MARKETING_VERSION: "1.1.4"
-    CURRENT_PROJECT_VERSION: "8"
+    MARKETING_VERSION: "1.1.16"
+    CURRENT_PROJECT_VERSION: "20"
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
   configs:
     # Hardened runtime is required for notarized Release distribution but
     # interferes with Debug-build behaviours (debuggers, dynamic library
@@ -49,6 +54,10 @@ targets:
         NSHumanReadableCopyright: "Copyright © 2026 LorisLabs. All rights reserved."
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleURLTypes:
+          - CFBundleURLName: com.lorislab.throttle.activate
+            CFBundleURLSchemes:
+              - throttle
         NSAppleEventsUsageDescription: "Throttle uses Safari to fetch your claude.ai usage page so it can show the same numbers Anthropic shows you. It only reads /api/organizations/.../usage — never your messages."
         NSCalendarsFullAccessUsageDescription: "Throttle adds a one-time reminder to your default calendar when your weekly Claude limit is about to reset. Optional — only when you tap the Calendar button."
         NSCalendarsUsageDescription: "Throttle adds a one-time reminder to your default calendar when your weekly Claude limit is about to reset. Optional — only when you tap the Calendar button."

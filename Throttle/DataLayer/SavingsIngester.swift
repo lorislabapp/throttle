@@ -25,6 +25,12 @@ final class SavingsIngester {
         return appSupport.appendingPathComponent("Throttle").appendingPathComponent("savings.jsonl")
     }()
 
+    /// Fired on the main actor whenever the ingester appends one or more
+    /// new rows to `tokopt_savings`. Wired by AppDelegate to trigger
+    /// `AppState.refresh()` so the savings hero card updates immediately
+    /// instead of waiting for a Claude Code session-file change.
+    var onIngest: (() -> Void)?
+
     init(database: any DatabaseWriter) {
         self.database = database
     }
@@ -55,12 +61,13 @@ final class SavingsIngester {
               let size = attrs[.size] as? Int64 else { return }
         let path = url.path
 
+        var inserted = 0
         do {
-            try await Task.detached { [database] in
+            inserted = (try await Task.detached { [database] in
                 try database.write { db in
                     let last = try DatabaseQueries.fileState(in: db, path: path)
                     let lastOffset = last?.lastOffset ?? 0
-                    if size <= lastOffset { return } // nothing new
+                    if size <= lastOffset { return 0 }
 
                     let handle = try FileHandle(forReadingFrom: url)
                     defer { try? handle.close() }
@@ -68,7 +75,7 @@ final class SavingsIngester {
                     let chunk = handle.readDataToEndOfFile()
                     let text = String(decoding: chunk, as: UTF8.self)
                     let decoder = JSONDecoder()
-                    var inserted = 0
+                    var count = 0
                     for line in text.split(separator: "\n", omittingEmptySubsequences: true) {
                         guard let data = line.data(using: .utf8),
                               let json = try? decoder.decode(WireRow.self, from: data) else { continue }
@@ -80,19 +87,20 @@ final class SavingsIngester {
                             actualBytes: json.actual_bytes
                         )
                         try row.insert(db)
-                        inserted += 1
+                        count += 1
                     }
                     let mtime: Int64 = (try? FileManager.default.attributesOfItem(atPath: path)[.modificationDate] as? Date)
                         .map { Int64($0.timeIntervalSince1970) } ?? Int64(Date().timeIntervalSince1970)
                     try DatabaseQueries.upsertFileState(in: db, path: path, offset: size, mtime: mtime)
-                    if inserted > 0 {
-                        // Logger isn't Sendable across the detached boundary; print is fine here.
-                        // Real metrics are in the table itself.
-                    }
+                    return count
                 }
-            }.value
+            }.value)
         } catch {
             logger.error("savings.jsonl ingest failed: \(error.localizedDescription)")
+        }
+        if inserted > 0 {
+            logger.info("Ingested \(inserted, privacy: .public) savings record(s) — notifying UI")
+            onIngest?()
         }
     }
 

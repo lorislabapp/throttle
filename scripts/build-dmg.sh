@@ -86,6 +86,7 @@ if [ -n "$SIGN_TOOL" ] && [ -x "$SIGN_TOOL" ]; then
     BUILD_NUMBER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$APP_PATH/Contents/Info.plist")
     PUBDATE=$(LC_TIME=en_US date +"%a, %d %b %Y %H:%M:%S %z")
 
+    # sign_update emits its own length="..." attribute; drop ours to avoid duplicates.
     APPCAST_ENTRY="$PROJECT_DIR/build/appcast-entry-${VERSION}.xml"
     cat > "$APPCAST_ENTRY" <<XML
 <item>
@@ -95,7 +96,6 @@ if [ -n "$SIGN_TOOL" ] && [ -x "$SIGN_TOOL" ]; then
     <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
     <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
     <enclosure url="https://lorislab.fr/throttle/Throttle-${VERSION}.dmg"
-               length="${DMG_SIZE}"
                type="application/octet-stream"
                ${SIGN_OUTPUT} />
 </item>

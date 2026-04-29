@@ -1,7 +1,11 @@
 import AppKit
-import Charts
 import GRDB
 import SwiftUI
+
+// SwiftUI Charts intentionally NOT imported — its first-render Metal
+// preload crashes (RB::Device::preload_resources → precondition_failure)
+// in MenuBarExtra popovers on macOS 26.5 (FB16xxxxx). Hand-drawn Path /
+// Rectangle visuals below render in CoreGraphics only and are safe.
 
 /// Stats panel shown when the user picks "Stats…" in the dropdown.
 /// Five cards stacked vertically; the popover scrolls.
@@ -31,11 +35,11 @@ struct StatsInline: View {
                 VStack(alignment: .leading, spacing: 14) {
                     trendCard
                     modelSplitCard
+                    shareBadgeCard
                     if appState.isPro {
                         heatmapCard
                         topProjectsCard
                         savingsCard
-                        shareBadgeCard
                     } else {
                         proTeaserCard
                     }
@@ -44,7 +48,14 @@ struct StatsInline: View {
             }
             .frame(minHeight: 240, maxHeight: 420)
         }
-        .task(id: range) { await reload() }
+        .onAppear {
+            AppLogger.app.notice("StatsInline.onAppear range=\(self.range.label, privacy: .public)")
+            Task { await reload() }
+        }
+        .onChange(of: range) { _, newRange in
+            AppLogger.app.notice("StatsInline.onChange range=\(newRange.label, privacy: .public)")
+            Task { await reload() }
+        }
     }
 
     private var header: some View {
@@ -78,25 +89,33 @@ struct StatsInline: View {
                     .font(.caption).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, minHeight: 80)
             } else {
-                Chart(linePoints, id: \.self) { point in
-                    LineMark(
-                        x: .value("Time", point.timestamp),
-                        y: .value("Used %", point.percent * 100)
-                    )
-                    .foregroundStyle(by: .value("Window", windowLabel(point.kind)))
-                }
-                .chartYScale(domain: 0...100)
-                .chartYAxis {
-                    AxisMarks(values: [0, 50, 100]) { _ in
-                        AxisGridLine()
-                        AxisValueLabel(format: Decimal.FormatStyle().precision(.fractionLength(0)))
-                    }
-                }
-                .chartLegend(position: .bottom, spacing: 4)
-                .frame(height: 140)
+                LineChart(points: linePoints)
+                    .frame(height: 120)
+                trendLegend
             }
         }
     }
+
+    private var trendLegend: some View {
+        HStack(spacing: 12) {
+            ForEach([WindowKind.session5h, .weeklyAll, .weeklySonnet], id: \.self) { kind in
+                HStack(spacing: 4) {
+                    Circle().fill(color(for: kind)).frame(width: 8, height: 8)
+                    Text(windowLabel(kind)).font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+        }
+    }
+
+    static func color(for kind: WindowKind) -> Color {
+        switch kind {
+        case .session5h:    return .blue
+        case .weeklyAll:    return .orange
+        case .weeklySonnet: return .purple
+        }
+    }
+    private func color(for kind: WindowKind) -> Color { Self.color(for: kind) }
 
     private var modelSplitCard: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -105,23 +124,50 @@ struct StatsInline: View {
                 Text("No model usage yet.")
                     .font(.caption).foregroundStyle(.secondary)
             } else {
-                Chart(modelSlices) { slice in
-                    SectorMark(
-                        angle: .value("Tokens", slice.weightedTokens),
-                        innerRadius: .ratio(0.55),
-                        angularInset: 1
-                    )
-                    .foregroundStyle(by: .value("Model", tierLabel(slice.tier)))
-                    .cornerRadius(2)
+                let total = max(1, modelSlices.reduce(0) { $0 + $1.weightedTokens })
+                VStack(spacing: 6) {
+                    ForEach(modelSlices) { slice in
+                        modelRow(slice, totalTokens: total)
+                    }
                 }
-                .frame(height: 140)
-                .chartLegend(position: .bottom, spacing: 4)
                 Text("Estimated API cost: \(formatEUR(costEUR))")
                     .font(.caption).foregroundStyle(.secondary)
+                    .padding(.top, 4)
                 Text("(What this would have cost on the developer API at Anthropic's published rates.)")
                     .font(.caption2).foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+    }
+
+    private func modelRow(_ slice: StatsDataService.ModelSlice, totalTokens: Int) -> some View {
+        let pct = Double(slice.weightedTokens) / Double(totalTokens)
+        return VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text(tierLabel(slice.tier)).font(.caption.bold())
+                Spacer()
+                Text("\(formatTokens(slice.weightedTokens)) · \(Int(pct * 100))%")
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.secondary.opacity(0.15))
+                    Capsule()
+                        .fill(modelColor(slice.tier))
+                        .frame(width: max(2, geo.size.width * pct))
+                }
+            }
+            .frame(height: 6)
+        }
+    }
+
+    private func modelColor(_ tier: ModelTier) -> Color {
+        switch tier {
+        case .opus:   return .purple
+        case .sonnet: return .blue
+        case .haiku:  return .orange
+        case .other:  return .gray
         }
     }
 
@@ -159,11 +205,12 @@ struct StatsInline: View {
     }
 
     private var savingsCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        let saved = max(savedTokens, appState.savedTokensThisWeek)
+        return VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text("Hooks saved you").font(.subheadline.bold())
                 Spacer()
-                Text(formatTokens(savedTokens))
+                Text(formatTokens(saved))
                     .font(.title3.monospacedDigit().bold())
                     .foregroundStyle(.green)
             }
@@ -214,13 +261,16 @@ struct StatsInline: View {
     // MARK: - Share badge
 
     private var shareBadgeTopStat: String {
+        // Use AppState's already-populated savings value rather than the
+        // separately-queried `savedTokens`, which can lag if reload() hasn't
+        // fired yet. AppState updates whenever the savings ingester runs.
+        let saved = max(savedTokens, appState.savedTokensThisWeek)
+        if saved > 0 {
+            return "\(formatTokens(saved)) tokens saved"
+        }
         let pct: Int = {
             if let ex = appState.exactSnapshot, ex.isFresh() {
-                return [
-                    ex.fiveHour.utilization,
-                    ex.sevenDay.utilization,
-                    ex.sevenDaySonnet.utilization
-                ].max() ?? 0
+                return [ex.fiveHour.utilization, ex.sevenDay.utilization, ex.sevenDaySonnet.utilization].max() ?? 0
             }
             let local = [
                 appState.snapshot.session5h.percentUsed,
@@ -229,14 +279,15 @@ struct StatsInline: View {
             ].compactMap { $0 }.max() ?? 0
             return Int(local * 100)
         }()
-        return "\(pct)% used"
+        return "\(pct)% of my Claude cap"
     }
 
     private var shareBadgeSubline: String {
-        if savedTokens > 0 {
-            return "Saved \(formatTokens(savedTokens)) tokens this week with Throttle"
+        let saved = max(savedTokens, appState.savedTokensThisWeek)
+        if saved > 0 {
+            return "this week with Throttle's open-source token-opt hooks"
         }
-        return "Tracking my Claude Code usage with Throttle"
+        return "Tracking with Throttle — live menu-bar Claude Code meter"
     }
 
     @MainActor
@@ -264,34 +315,54 @@ struct StatsInline: View {
     // MARK: - Data load
 
     private func reload() async {
-        guard let url = try? DatabaseManager.databaseURL(),
-              let pool = try? DatabasePool(path: url.path) else { return }
+        let database = appState.database
         let r = range
-        let line: [StatsDataService.LinePoint] = (try? await Task.detached {
-            try pool.read { try StatsDataService.linePoints(in: $0, range: r) }
-        }.value) ?? []
-        let heat: [StatsDataService.HeatCell] = (try? await Task.detached {
-            try pool.read { try StatsDataService.heatmap(in: $0, range: r) }
-        }.value) ?? []
-        let model: [StatsDataService.ModelSlice] = (try? await Task.detached {
-            try pool.read { try StatsDataService.modelSplit(in: $0, range: r) }
-        }.value) ?? []
-        let cost: Double = (try? await Task.detached {
-            try pool.read { try StatsDataService.extrapolatedCostEUR(in: $0, range: r) }
-        }.value) ?? 0
-        let saved: Int = (try? await Task.detached {
-            try pool.read { try StatsDataService.savedTokensThisWeek(in: $0) }
-        }.value) ?? 0
-        let projects: [StatsDataService.ProjectSlice] = (try? await Task.detached {
-            try pool.read { try StatsDataService.topProjects(in: $0, range: r) }
-        }.value) ?? []
+        AppLogger.app.notice("Stats.reload start range=\(r.label, privacy: .public)")
+
+        struct Bundle: Sendable {
+            var line: [StatsDataService.LinePoint] = []
+            var heat: [StatsDataService.HeatCell] = []
+            var model: [StatsDataService.ModelSlice] = []
+            var cost: Double = 0
+            var saved: Int = 0
+            var projects: [StatsDataService.ProjectSlice] = []
+            var firstError: String?
+        }
+
+        let bundle: Bundle = await Task.detached {
+            var b = Bundle()
+            do { b.line = try database.read { try StatsDataService.linePoints(in: $0, range: r) } }
+            catch { b.firstError = "linePoints: \(error)" }
+
+            do { b.heat = try database.read { try StatsDataService.heatmap(in: $0, range: r) } }
+            catch { if b.firstError == nil { b.firstError = "heatmap: \(error)" } }
+
+            do { b.model = try database.read { try StatsDataService.modelSplit(in: $0, range: r) } }
+            catch { if b.firstError == nil { b.firstError = "modelSplit: \(error)" } }
+
+            do { b.cost = try database.read { try StatsDataService.extrapolatedCostEUR(in: $0, range: r) } }
+            catch { if b.firstError == nil { b.firstError = "cost: \(error)" } }
+
+            do { b.saved = try database.read { try StatsDataService.savedTokensThisWeek(in: $0) } }
+            catch { if b.firstError == nil { b.firstError = "saved: \(error)" } }
+
+            do { b.projects = try database.read { try StatsDataService.topProjects(in: $0, range: r) } }
+            catch { if b.firstError == nil { b.firstError = "projects: \(error)" } }
+            return b
+        }.value
+
+        if let err = bundle.firstError {
+            AppLogger.app.error("Stats.reload error: \(err, privacy: .public)")
+        }
+        AppLogger.app.notice("Stats.reload done — line=\(bundle.line.count) heat=\(bundle.heat.count) model=\(bundle.model.count) projects=\(bundle.projects.count) saved=\(bundle.saved)")
+
         await MainActor.run {
-            self.linePoints = line
-            self.heatCells = heat
-            self.modelSlices = model
-            self.costEUR = cost
-            self.savedTokens = saved
-            self.topProjects = projects
+            self.linePoints = bundle.line
+            self.heatCells = bundle.heat
+            self.modelSlices = bundle.model
+            self.costEUR = bundle.cost
+            self.savedTokens = bundle.saved
+            self.topProjects = bundle.projects
         }
     }
 
@@ -326,6 +397,92 @@ struct StatsInline: View {
         f.currencyCode = "EUR"
         f.maximumFractionDigits = 2
         return f.string(from: NSNumber(value: amount)) ?? "€0"
+    }
+}
+
+// MARK: - Line chart (CoreGraphics, no Metal)
+
+private struct LineChart: View {
+    let points: [StatsDataService.LinePoint]
+
+    var body: some View {
+        Canvas { context, size in
+            guard !points.isEmpty else { return }
+            let bounds = computeBounds()
+            let yMax = computeYMax()
+            let plotLeft: CGFloat = 28
+            let plotWidth = size.width - plotLeft
+            let plotHeight = size.height - 4
+
+            // Gridlines at 0, mid, max
+            let yMarks = [0.0, yMax / 2.0, yMax]
+            for yVal in yMarks {
+                let yPos = plotHeight * (1 - CGFloat(yVal / yMax)) + 2
+                var path = Path()
+                path.move(to: CGPoint(x: plotLeft, y: yPos))
+                path.addLine(to: CGPoint(x: size.width, y: yPos))
+                context.stroke(path, with: .color(.secondary.opacity(0.20)), lineWidth: 0.5)
+
+                let label = Text("\(Int(yVal))%")
+                    .font(.system(size: 9, weight: .medium).monospacedDigit())
+                    .foregroundStyle(.secondary)
+                context.draw(label, at: CGPoint(x: 4, y: yPos), anchor: .leading)
+            }
+
+            // One series per window kind
+            for kind in [WindowKind.session5h, .weeklyAll, .weeklySonnet] {
+                drawSeries(in: &context, kind: kind, size: size, bounds: bounds, yMax: yMax,
+                           plotLeft: plotLeft, plotWidth: plotWidth, plotHeight: plotHeight)
+            }
+        }
+    }
+
+    private func drawSeries(in context: inout GraphicsContext,
+                            kind: WindowKind,
+                            size: CGSize,
+                            bounds: (Date, Date),
+                            yMax: Double,
+                            plotLeft: CGFloat,
+                            plotWidth: CGFloat,
+                            plotHeight: CGFloat) {
+        let kindPoints = points.filter { $0.kind == kind }
+        guard !kindPoints.isEmpty else { return }
+        let span = max(1, bounds.1.timeIntervalSince(bounds.0))
+        let color = StatsInline.color(for: kind)
+
+        let coords: [CGPoint] = kindPoints.map { p in
+            let x = plotLeft + CGFloat(p.timestamp.timeIntervalSince(bounds.0) / span) * plotWidth
+            let y = plotHeight * (1 - CGFloat((p.percent * 100) / yMax)) + 2
+            return CGPoint(x: x, y: y)
+        }
+
+        var path = Path()
+        path.move(to: coords[0])
+        for c in coords.dropFirst() { path.addLine(to: c) }
+        context.stroke(path, with: .color(color), style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+
+        for c in coords {
+            let dot = CGRect(x: c.x - 2.5, y: c.y - 2.5, width: 5, height: 5)
+            context.fill(Path(ellipseIn: dot), with: .color(color))
+        }
+    }
+
+    private func computeBounds() -> (Date, Date) {
+        guard let earliest = points.map(\.timestamp).min(),
+              let latest = points.map(\.timestamp).max() else {
+            let now = Date()
+            return (now, now.addingTimeInterval(60))
+        }
+        if earliest == latest { return (earliest, earliest.addingTimeInterval(60)) }
+        return (earliest, latest)
+    }
+
+    private func computeYMax() -> Double {
+        let maxPct = points.map { $0.percent * 100 }.max() ?? 0
+        if maxPct >= 50  { return 100 }
+        if maxPct >= 25  { return 50 }
+        if maxPct >= 10  { return 25 }
+        return 10
     }
 }
 
@@ -368,14 +525,44 @@ private struct HeatmapGrid: View {
 
 // MARK: - Share badge image
 
+/// In-popover preview. Doesn't use the full-size ShareBadgeImage — that
+/// view's intrinsic size is 1200×630 and scaleEffect doesn't shrink the
+/// layout claim, only the visual scale, so it overlaps siblings.
+/// This is a hand-rolled compact mirror of the same look.
 private struct ShareBadgePreview: View {
     let topStat: String
     let subline: String
     var body: some View {
-        ShareBadgeImage(topStat: topStat, subline: subline)
-            .scaleEffect(0.18)
-            .frame(width: 1200 * 0.18, height: 630 * 0.18)
-            .frame(maxWidth: .infinity, alignment: .center)
+        ZStack(alignment: .leading) {
+            LinearGradient(
+                colors: [Color(red: 0.10, green: 0.12, blue: 0.18),
+                         Color(red: 0.18, green: 0.22, blue: 0.32)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: "gauge.with.dots.needle.67percent")
+                        .font(.system(size: 14)).foregroundStyle(.white)
+                    Text("Throttle")
+                        .font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
+                    Spacer(minLength: 0)
+                    Text("lorislab.fr/throttle")
+                        .font(.system(size: 8)).foregroundStyle(.white.opacity(0.6))
+                }
+                Text(topStat)
+                    .font(.system(size: 22, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .lineLimit(1).minimumScaleFactor(0.6)
+                Text(subline)
+                    .font(.system(size: 9))
+                    .foregroundStyle(.white.opacity(0.85))
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(8)
+        }
+        .frame(maxWidth: .infinity, minHeight: 70, maxHeight: 80)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 }
 
@@ -407,9 +594,18 @@ private struct ShareBadgeImage: View {
                     .font(.system(size: 44, weight: .medium))
                     .foregroundStyle(.white.opacity(0.85))
                 Spacer()
-                Text("lorislab.fr/throttle")
-                    .font(.system(size: 36, weight: .regular))
-                    .foregroundStyle(.white.opacity(0.7))
+                HStack(spacing: 10) {
+                    Image(systemName: "gauge.with.dots.needle.bottom.50percent")
+                        .font(.system(size: 32))
+                        .foregroundStyle(.white.opacity(0.85))
+                    Text("Made with Throttle")
+                        .font(.system(size: 32, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.85))
+                    Spacer()
+                    Text("lorislab.fr/throttle")
+                        .font(.system(size: 32, weight: .regular))
+                        .foregroundStyle(.white.opacity(0.65))
+                }
             }
             .padding(60)
         }

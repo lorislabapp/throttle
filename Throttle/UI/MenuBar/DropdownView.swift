@@ -54,11 +54,62 @@ struct DropdownView: View {
             } else {
                 windowsList
             }
+            if appState.savedTokensThisWeek > 0 {
+                savingsBanner
+            }
             Divider().padding(.vertical, 4)
             proSection
             Divider().padding(.vertical, 4)
             footer
         }
+    }
+
+    /// Hero card showing tokens saved by the token-opt hooks this week.
+    /// Token-opt is the headline value-add of Throttle, so this gets prime
+    /// real estate instead of a tiny footer line. White text on a deep
+    /// green background — high contrast against the dropdown's frosted
+    /// background, so the number is unmissable.
+    private var savingsBanner: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "leaf.fill")
+                .font(.system(size: 26, weight: .semibold))
+                .foregroundStyle(.white)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                    Text(formatTokens(appState.savedTokensThisWeek))
+                        .font(.system(size: 28, weight: .heavy, design: .rounded).monospacedDigit())
+                        .foregroundStyle(.white)
+                    Text("tokens saved")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.92))
+                }
+                Text("This week — Throttle's hooks pruning irrelevant context")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.75))
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.05, green: 0.45, blue: 0.27),
+                            Color(red: 0.10, green: 0.62, blue: 0.39)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .padding(.top, 10)
+    }
+
+    private func formatTokens(_ n: Int) -> String {
+        if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
+        if n >= 1_000     { return String(format: "%.0fk", Double(n) / 1_000) }
+        return "\(n)"
     }
 
     private var header: some View {
@@ -126,9 +177,9 @@ struct DropdownView: View {
 
     private var windowsList: some View {
         VStack(alignment: .leading, spacing: 12) {
-            metricRow(displayMetric(for: .session5h, title: "Session (5h)"))
-            metricRow(displayMetric(for: .weeklyAll, title: "Weekly all models"))
-            metricRow(displayMetric(for: .weeklySonnet, title: "Weekly Sonnet only"))
+            metricRow(displayMetric(for: .session5h, title: String(localized: "Session (5h)")))
+            metricRow(displayMetric(for: .weeklyAll, title: String(localized: "Weekly all models")))
+            metricRow(displayMetric(for: .weeklySonnet, title: String(localized: "Weekly Sonnet only")))
         }
     }
 
@@ -193,11 +244,39 @@ struct DropdownView: View {
                     .tint(progressTint(for: pct))
             }
             if metric.resetInSeconds > 0 {
-                Text("resets in \(formatDuration(metric.resetInSeconds))")
+                Text("resets in \(formatDuration(metric.resetInSeconds)) (\(formatWallClock(metric.resetInSeconds)))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    /// Wall-clock time this many seconds from now (e.g. "9pm", "Mon 4pm").
+    /// Matches claude.ai's "resets 9pm (Europe/Paris)" framing so users
+    /// don't have to mentally add countdown to current time.
+    private func formatWallClock(_ secondsFromNow: Int64) -> String {
+        let target = Date().addingTimeInterval(TimeInterval(secondsFromNow))
+        let cal = Calendar.current
+        let now = Date()
+        let f = DateFormatter()
+        f.locale = .current
+        let isToday = cal.isDateInToday(target)
+        let isTomorrow = cal.isDateInTomorrow(target)
+        let withinThreeDays = (target.timeIntervalSince(now)) < 3 * 24 * 3600
+        if isToday {
+            f.setLocalizedDateFormatFromTemplate("ha")
+            return f.string(from: target).lowercased()
+        }
+        if isTomorrow {
+            f.setLocalizedDateFormatFromTemplate("ha")
+            return "tmrw \(f.string(from: target).lowercased())"
+        }
+        if withinThreeDays {
+            f.setLocalizedDateFormatFromTemplate("EEEha")
+            return f.string(from: target).lowercased()
+        }
+        f.setLocalizedDateFormatFromTemplate("EEEMMMdha")
+        return f.string(from: target).lowercased()
     }
 
     private func progressTint(for pct: Double) -> Color {
@@ -349,50 +428,103 @@ private struct FirstRunInline: View {
 
     @State private var planChoice: PlanChoice = .skip
     @State private var enableLoginItems: Bool = false
-
     @State private var signedIn: Bool = false
+    @State private var step: Int = 0
+
+    private let totalSteps = 3
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Welcome to Throttle").font(.headline)
-            Text("Throttle reads your Claude Code sessions at `~/.claude/projects/` to compute usage. Nothing leaves your Mac.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            stepIndicator
+            Group {
+                switch step {
+                case 0: stepWelcome
+                case 1: stepPlan
+                default: stepFinish
+                }
+            }
+            .frame(minHeight: 180, alignment: .top)
+            stepNav
+        }
+        .task { await refreshSignedIn() }
+    }
+
+    private var stepIndicator: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<totalSteps, id: \.self) { i in
+                Capsule()
+                    .fill(i == step ? Color.accentColor : Color.secondary.opacity(0.25))
+                    .frame(width: i == step ? 18 : 6, height: 6)
+                    .animation(.easeInOut(duration: 0.2), value: step)
+            }
+            Spacer()
+            Text("Step \(step + 1) of \(totalSteps)")
+                .font(.caption2.monospacedDigit()).foregroundStyle(.tertiary)
+        }
+    }
+
+    private var stepWelcome: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Image(systemName: "gauge.with.dots.needle.67percent")
+                    .font(.system(size: 36)).foregroundStyle(.tint)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Welcome to Throttle").font(.headline)
+                    Text("The accurate Claude Code meter for your menu bar.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            Text("Throttle reads `~/.claude/projects/` locally to compute your session-5h, weekly-all, and weekly-Sonnet usage. Nothing leaves your Mac unless you turn on Exact Mode (Pro) — and even then only Safari touches claude.ai, not Throttle directly.")
+                .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Divider().padding(.vertical, 2)
-            Text("Your plan").font(.subheadline)
+        }
+    }
+
+    private var stepPlan: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Pick your plan").font(.headline)
+            Text("So we can pre-fill realistic caps. You can recalibrate exactly later.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             Picker("Plan", selection: $planChoice) {
                 ForEach(PlanChoice.allCases) { Text($0.rawValue).tag($0) }
             }
             .pickerStyle(.radioGroup).labelsHidden()
-            Divider().padding(.vertical, 2)
+        }
+    }
 
-            // Sign-in step. Optional — user can skip and add later via Settings.
+    private var stepFinish: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Almost done").font(.headline)
+            Toggle("Launch Throttle at login", isOn: $enableLoginItems).font(.subheadline)
             VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Match claude.ai exactly").font(.subheadline)
-                    Spacer()
-                    if signedIn {
-                        Text("Signed in ✓").font(.caption).foregroundStyle(.green)
-                    }
-                }
-                Text("Skip for now — set this up after first run via Settings → General → Exact mode.")
+                Text("Match claude.ai exactly (optional)").font(.subheadline.bold())
+                Text("After first run: Settings → General → Exact mode → Test connection. Throttle drives your already-signed-in Safari to read claude.ai's true numbers.")
                     .font(.caption2).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            Text("Everything is configurable later in Settings.")
+                .font(.caption2).foregroundStyle(.tertiary)
+        }
+    }
 
-            Divider().padding(.vertical, 2)
-            Toggle("Launch Throttle at login", isOn: $enableLoginItems).font(.subheadline)
-            HStack {
-                Spacer()
+    private var stepNav: some View {
+        HStack {
+            if step > 0 {
+                Button("Back") { step -= 1 }
+                    .buttonStyle(.borderless)
+            }
+            Spacer()
+            if step < totalSteps - 1 {
+                Button("Next") { step += 1 }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+            } else {
                 Button("Get Started") { apply() }
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
             }
-            Text("You can change all of this later in Settings.")
-                .font(.caption2).foregroundStyle(.tertiary)
         }
-        .task { await refreshSignedIn() }
     }
 
     private func refreshSignedIn() async {
@@ -482,7 +614,12 @@ private struct InlineGeneralPane: View {
             exactModeSection
 
             Divider()
-            Text("Updates").font(.subheadline.bold())
+            HStack {
+                Text("Updates").font(.subheadline.bold())
+                Spacer()
+                Text("Throttle \(currentVersionLabel)")
+                    .font(.caption2.monospaced()).foregroundStyle(.tertiary)
+            }
             HStack {
                 Button("Check for updates…") {
                     UpdaterService.shared.checkForUpdates()
@@ -505,7 +642,10 @@ private struct InlineGeneralPane: View {
     @State private var testing: Bool = false
 
     private var licenseSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        let trial = TrialService.shared
+        let trialActive = trial.isActive && LicenseService.shared.currentKey == nil
+        let trialExpired = trial.hasExpired && LicenseService.shared.currentKey == nil
+        return VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("Throttle Pro").font(.subheadline.bold())
                 Spacer()
@@ -513,30 +653,44 @@ private struct InlineGeneralPane: View {
                     Text("Activated").font(.caption2.bold()).foregroundStyle(.green)
                     Text(verbatim: "•").font(.caption2).foregroundStyle(.tertiary)
                     Text(key.prefix(13) + "…").font(.caption2.monospaced()).foregroundStyle(.tertiary)
-                } else if appState.isPro {
-                    Text("Dev unlock").font(.caption2.bold()).foregroundStyle(.orange)
+                } else if trialActive {
+                    Text("Trial · \(trial.daysLeft)d left")
+                        .font(.caption2.bold()).foregroundStyle(.blue)
                 } else {
                     Text("Free").font(.caption2).foregroundStyle(.secondary)
                 }
             }
-            if LicenseService.shared.currentKey == nil && !appState.isPro {
-                Text("Buy Throttle Pro for €19 (launch) — unlocks Stats Pro cards, exact mode, share badge, and more.")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            if trialActive {
+                trialBanner(daysLeft: trial.daysLeft, expired: false)
+            } else if trialExpired {
+                trialBanner(daysLeft: 0, expired: true)
+            }
+            if LicenseService.shared.currentKey == nil {
+                // No license stored. Always show Paste so the user can activate a key
+                // they received by email — even mid-trial, where appState.isPro is true
+                // because of the trial flag (otherwise the Paste button gets hidden and
+                // the email becomes unactionable).
+                if !appState.isPro {
+                    Text("Buy Throttle Pro for €19 (launch) — unlocks Stats Pro cards, exact mode, share badge, and more.")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 HStack(spacing: 6) {
-                    Button("Buy Throttle Pro") {
-                        if let url = URL(string: "https://lorislab.fr/throttle/buy") {
-                            NSWorkspace.shared.open(url)
+                    if !appState.isPro {
+                        Button("Buy Throttle Pro") {
+                            if let url = URL(string: "https://lorislab.fr/throttle/buy") {
+                                NSWorkspace.shared.open(url)
+                            }
                         }
+                        .buttonStyle(.borderedProminent).controlSize(.small)
                     }
-                    .buttonStyle(.borderedProminent).controlSize(.small)
                     Button("Paste license key") {
                         activateFromClipboard()
                     }
                     .buttonStyle(.bordered).controlSize(.small)
                     .disabled(activating)
                 }
-            } else if LicenseService.shared.currentKey != nil {
+            } else {
                 HStack(spacing: 6) {
                     if let exp = LicenseService.shared.expiresAt {
                         Text("Renews automatically. Expires \(exp.formatted(date: .abbreviated, time: .omitted)).")
@@ -560,6 +714,36 @@ private struct InlineGeneralPane: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    @ViewBuilder
+    private func trialBanner(daysLeft: Int, expired: Bool) -> some View {
+        let bg = expired ? Color.orange.opacity(0.10) : Color.blue.opacity(0.10)
+        let border = expired ? Color.orange.opacity(0.30) : Color.blue.opacity(0.30)
+        let title = expired
+            ? "Trial ended — Pro features locked"
+            : (daysLeft == 1 ? "Last day of Pro trial" : "Pro trial — \(daysLeft) days left")
+        let subtitle = expired
+            ? "Buy at €29 to keep Exact mode + Pro Stats."
+            : "Buy at €19 launch price (ends with the trial)."
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: expired ? "lock.fill" : "hourglass")
+                    .foregroundStyle(expired ? Color.orange : Color.blue)
+                Text(title).font(.caption.bold())
+                Spacer()
+                Button("Buy now") {
+                    if let url = URL(string: "https://buy.stripe.com/fZu14o7Hr0s0ant2nZds400") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+                .buttonStyle(.borderedProminent).controlSize(.small)
+            }
+            Text(subtitle).font(.caption2).foregroundStyle(.secondary)
+        }
+        .padding(8)
+        .background(RoundedRectangle(cornerRadius: 6).fill(bg))
+        .overlay(RoundedRectangle(cornerRadius: 6).stroke(border, lineWidth: 1))
     }
 
     private func activateFromClipboard() {
@@ -612,7 +796,7 @@ private struct InlineGeneralPane: View {
                     Text("PRO").font(.caption2.bold()).foregroundStyle(.secondary)
                 }
             }
-            Text("Reads the same numbers claude.ai shows you by asking your already-signed-in Safari to fetch them. Throttle never touches your cookies — Safari does the request and hands back the JSON.")
+            Text("Throttle asks your signed-in Safari to fetch your usage data. Safari handles the cookies and signing — we just read the result. Nothing leaves your Mac.")
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -720,6 +904,12 @@ private struct InlineGeneralPane: View {
         return "\(m / 60)h \(m % 60)m ago"
     }
 
+    private var currentVersionLabel: String {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
+        return "v\(v) (\(b))"
+    }
+
     private func describe(_ err: ExactModeError) -> String {
         switch err {
         case .notSignedIn:        return "Not signed in to claude.ai in Safari. Sign in and re-test."
@@ -766,9 +956,9 @@ private struct InlineCalibrationPane: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Caps (tokens)").font(.subheadline.bold())
-            row(.session5h,    "Session (5h)")
-            row(.weeklyAll,    "Weekly all models")
-            row(.weeklySonnet, "Weekly Sonnet only")
+            row(.session5h,    String(localized: "Session (5h)"))
+            row(.weeklyAll,    String(localized: "Weekly all models"))
+            row(.weeklySonnet, String(localized: "Weekly Sonnet only"))
 
             Divider()
 
@@ -779,9 +969,9 @@ private struct InlineCalibrationPane: View {
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            recalRow(.session5h,    "Session (5h)")
-            recalRow(.weeklyAll,    "Weekly all models")
-            recalRow(.weeklySonnet, "Weekly Sonnet only")
+            recalRow(.session5h,    String(localized: "Session (5h)"))
+            recalRow(.weeklyAll,    String(localized: "Weekly all models"))
+            recalRow(.weeklySonnet, String(localized: "Weekly Sonnet only"))
 
             Divider()
             Button("Reset all calibrations", role: .destructive) {
@@ -933,8 +1123,8 @@ private struct InlineHooksPane: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            row("SessionStart router", ok: status.sessionStartRouterInstalled)
-            row("PreCompact extractor", ok: status.preCompactExtractorInstalled)
+            row(String(localized: "SessionStart router"), ok: status.sessionStartRouterInstalled)
+            row(String(localized: "PreCompact extractor"), ok: status.preCompactExtractorInstalled)
             if status.killSwitchSet {
                 Text("⚠ Kill switch active — CLAUDE_DISABLE_TOKOPT_HOOKS=1 set in your shell")
                     .font(.caption).foregroundStyle(.orange)
@@ -1020,13 +1210,10 @@ private struct InlinePrivacyPane: View {
     }
 }
 
-// MARK: - About inline (with dev-unlock 10-tap)
+// MARK: - About inline
 
 private struct AboutInline: View {
-    @Environment(AppState.self) private var appState
     let onBack: () -> Void
-    @State private var tapCount: Int = 0
-    @State private var tapResetTask: Task<Void, Never>?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1045,21 +1232,9 @@ private struct AboutInline: View {
                     .font(.system(size: 48))
                     .foregroundStyle(.tint)
                 Text("Throttle").font(.title2)
-
-                // Tappable version label — 10 taps within 5 seconds toggles dev-unlock.
                 Text("Version \(version)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        registerTap()
-                    }
-
-                if appState.isPro {
-                    Text("PRO unlocked (dev mode)")
-                        .font(.caption.bold())
-                        .foregroundStyle(.green)
-                }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
@@ -1086,22 +1261,5 @@ private struct AboutInline: View {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
         let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
         return "\(v) (\(b))"
-    }
-
-    private func registerTap() {
-        tapCount += 1
-        tapResetTask?.cancel()
-        if tapCount >= 10 {
-            tapCount = 0
-            appState.toggleDevUnlock()
-            // Tiny haptic-style flash via NSSound (subtle)
-            NSSound.beep()
-        } else {
-            // Reset counter after 5s of inactivity
-            tapResetTask = Task {
-                try? await Task.sleep(for: .seconds(5))
-                if !Task.isCancelled { tapCount = 0 }
-            }
-        }
     }
 }

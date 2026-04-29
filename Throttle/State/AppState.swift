@@ -22,16 +22,21 @@ final class AppState {
     /// Last poll error, surfaced to Settings UI.
     var exactModeError: ExactModeError?
 
+    /// Tokens saved by token-optimization hooks in the last 7 days.
+    /// Displayed prominently in the meter view — concrete proof of the
+    /// hooks' value, not buried in Stats. Updated on every refresh().
+    var savedTokensThisWeek: Int = 0
+
     /// True when first run has been completed.
     var firstRunDone: Bool = UserDefaults.standard.bool(forKey: "firstRunDone")
 
-    /// True when the Pro tier is unlocked, via either:
-    ///   - the dev-unlock gesture (10 taps on version), or
-    ///   - a valid Throttle Pro license JWT in Keychain.
+    /// True when the Pro tier is unlocked, via any of:
+    ///   - a valid Throttle Pro license JWT in Keychain
+    ///   - the 7-day Pro trial (auto-started on first launch)
     /// The computed flag is refreshed via `refreshProStatus()`.
-    var isPro: Bool = UserDefaults.standard.bool(forKey: "proUnlockedDev") || LicenseService.shared.isPro
+    var isPro: Bool = LicenseService.shared.isPro || TrialService.shared.isActive
 
-    private let database: any DatabaseWriter
+    let database: any DatabaseWriter
 
     init(database: any DatabaseWriter) {
         self.database = database
@@ -56,6 +61,11 @@ final class AppState {
                     )
                 }
             }.value) ?? .empty
+            let savedTokens: Int = (try? await Task.detached {
+                try database.read { db in
+                    try StatsDataService.savedTokensThisWeek(in: db)
+                }
+            }.value) ?? 0
             // Persist this snapshot's three windows into history. Keyed by
             // 5-minute bucket so rapid refresh()s don't explode the table.
             try? await Task.detached {
@@ -65,6 +75,7 @@ final class AppState {
             }.value
             await MainActor.run {
                 self.snapshot = computed
+                self.savedTokensThisWeek = savedTokens
                 ThresholdNotifier.shared.evaluate(snapshot: computed, exact: self.exactSnapshot)
             }
         }
@@ -98,20 +109,13 @@ final class AppState {
         firstRunDone = true
     }
 
-    /// Toggle the dev-unlock Pro flag. Called when the user taps version 10×.
-    func toggleDevUnlock() {
-        let next = !isPro
-        UserDefaults.standard.set(next, forKey: "proUnlockedDev")
-        isPro = next
-    }
-
     func setExactModeEnabled(_ enabled: Bool) {
         UserDefaults.standard.set(enabled, forKey: "exactModeEnabled")
         exactModeEnabled = enabled
     }
 
-    /// Recompute isPro after license activation/deactivation or dev-unlock toggle.
+    /// Recompute isPro after license activation/deactivation.
     func refreshProStatus() {
-        isPro = UserDefaults.standard.bool(forKey: "proUnlockedDev") || LicenseService.shared.isPro
+        isPro = LicenseService.shared.isPro || TrialService.shared.isActive
     }
 }

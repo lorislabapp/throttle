@@ -62,6 +62,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.appState.exactModeError = err
         }
 
+        savingsIngester.onIngest = { [weak self] in
+            self?.appState.refresh()
+        }
         savingsIngester.start()
 
         Task { @MainActor in
@@ -80,6 +83,69 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         coordinator.stop()
         savingsIngester.stop()
         logger.notice("Throttle quitting")
+    }
+
+    /// Handle deep links: `throttle://activate?key=THROTTLE-XXXX-XXXX-XXXX-XXXX`.
+    /// Lets the purchase email link auto-activate Pro instead of asking the user
+    /// to copy the key, find the menu bar pill, and click Paste license key.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            handleDeepLink(url)
+        }
+    }
+
+    private func handleDeepLink(_ url: URL) {
+        guard url.scheme?.lowercased() == "throttle" else {
+            logger.notice("Ignoring URL with unknown scheme: \(url.scheme ?? "nil", privacy: .public)")
+            return
+        }
+        let host = url.host?.lowercased()
+        switch host {
+        case "activate":
+            // ?key=THROTTLE-… in either query or path component.
+            let comps = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            let key = comps?.queryItems?.first(where: { $0.name == "key" })?.value?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .uppercased()
+            guard let key, key.hasPrefix("THROTTLE-") else {
+                logger.notice("activate URL missing or malformed key")
+                return
+            }
+            Task { @MainActor in
+                let result = await LicenseService.shared.activate(key: key)
+                switch result {
+                case .success:
+                    self.appState.refreshProStatus()
+                    self.notifyActivation(success: true, message: "Throttle Pro activated.")
+                case .failure(let err):
+                    self.notifyActivation(success: false, message: self.describeActivationError(err))
+                }
+            }
+        default:
+            logger.notice("Ignoring throttle:// URL with unknown host: \(host ?? "nil", privacy: .public)")
+        }
+    }
+
+    private func notifyActivation(success: Bool, message: String) {
+        let alert = NSAlert()
+        alert.messageText = success ? "Throttle Pro" : "Activation failed"
+        alert.informativeText = message
+        alert.alertStyle = success ? .informational : .warning
+        alert.addButton(withTitle: "OK")
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
+    }
+
+    private func describeActivationError(_ err: LicenseService.ActivationError) -> String {
+        switch err {
+        case .invalidKey:           return "Invalid license key."
+        case .machineLimitReached:  return "Already activated on 3 Macs. Deactivate one first."
+        case .revoked:              return "License revoked. Contact support@lorislab.fr."
+        case .verificationFailed:   return "Server response failed signature check. Don't trust this network."
+        case .network(let m):       return "Network error: \(m)"
+        case .server(let code):     return "Server error \(code). Try again later."
+        case .decode(let m):        return "Couldn't decode response: \(m)"
+        }
     }
 
     private static func openDatabaseSync() throws -> DatabasePool {

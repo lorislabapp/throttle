@@ -55,15 +55,34 @@ final class ExactModeService {
     // MARK: - Polling lifecycle
 
     /// Begin periodic polling. Idempotent.
+    ///
+    /// Adaptive cadence: 5 min by default, drops to 60 s once any window
+    /// crosses 80% utilization. This makes the meter live near the cap
+    /// (where accuracy actually matters) without spamming Safari/AppleScript
+    /// during normal sub-80% usage where weekly numbers barely move.
     func start() {
         guard pollTask == nil else { return }
         logger.info("ExactMode polling started (Safari bridge)")
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.pollOnce()
-                try? await Task.sleep(for: .seconds(5 * 60))
+                let interval = self?.nextPollInterval() ?? .seconds(5 * 60)
+                try? await Task.sleep(for: interval)
             }
         }
+    }
+
+    /// 60 s when any window is hot (>=80%), 5 min otherwise.
+    private func nextPollInterval() -> Duration {
+        guard let snap = lastSnapshot, snap.isFresh() else {
+            return .seconds(5 * 60)
+        }
+        let highest = max(
+            snap.fiveHour.utilization,
+            snap.sevenDay.utilization,
+            snap.sevenDaySonnet.utilization
+        )
+        return highest >= 80 ? .seconds(60) : .seconds(5 * 60)
     }
 
     func stop() {

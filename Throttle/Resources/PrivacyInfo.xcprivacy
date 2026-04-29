@@ -41,7 +41,7 @@
             </array>
         </dict>
         <!-- UserDefaults: storing local preferences (firstRunDone,
-             exactModeEnabled, proUnlockedDev). On-device only. -->
+             exactModeEnabled). On-device only. -->
         <dict>
             <key>NSPrivacyAccessedAPIType</key>
             <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
