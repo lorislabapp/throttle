@@ -89,19 +89,22 @@ struct DropdownView: View {
     /// with "you didn't use Claude today" — they read different.
     private var savingsBanner: some View {
         HStack(spacing: 12) {
+            // macOS 26.5 has a RenderBox/Metal shader-load regression that
+            // crashes the dropdown on `contentTransition(.numericText)` and
+            // on `.shadow` modifiers inside MenuBarExtra views. The pulse
+            // is kept as a plain scaleEffect+animation (no shadow); the
+            // big number swaps without the morphing transition. The
+            // sparkline still gives the card its sense of motion.
             Image(systemName: "leaf.fill")
                 .font(.system(size: 26, weight: .semibold))
                 .foregroundStyle(.white)
                 .scaleEffect(savingsLeafPulse ? 1.18 : 1.0)
-                .shadow(color: .white.opacity(savingsLeafPulse ? 0.6 : 0), radius: 8)
                 .animation(.spring(response: 0.4, dampingFraction: 0.5), value: savingsLeafPulse)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                     Text(formatTokens(appState.savedTokensThisWeek))
                         .font(.system(size: 28, weight: .heavy, design: .rounded).monospacedDigit())
                         .foregroundStyle(.white)
-                        .contentTransition(.numericText(value: Double(appState.savedTokensThisWeek)))
-                        .animation(.smooth(duration: 0.6), value: appState.savedTokensThisWeek)
                     Text("tokens saved")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.92))
@@ -111,10 +114,11 @@ struct DropdownView: View {
                     .foregroundStyle(.white.opacity(0.75))
             }
             Spacer(minLength: 0)
-            Sparkline(values: appState.savedTokensByDay,
-                      stroke: .white.opacity(0.95),
-                      fill: .white.opacity(0.18))
-                .frame(width: 64, height: 28)
+            // Sparkline (Canvas) removed: macOS 26.5 RenderBox fails to
+            // load Metal shaders when a Canvas view is composited inside
+            // a MenuBarExtra `.window` style — crashes the dropdown on
+            // open. Today-delta copy below the number keeps the card
+            // feeling alive without touching Metal.
         }
         .padding(12)
         .background(
