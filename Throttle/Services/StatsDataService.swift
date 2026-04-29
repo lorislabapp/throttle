@@ -307,4 +307,46 @@ enum StatsDataService {
         let bytes = try savedBytesThisWeek(in: db, now: now)
         return bytes / 4
     }
+
+    /// Per-day token savings for the last `days` days, oldest-first. Days
+    /// with no hook activity return 0. Used to drive the meter's sparkline
+    /// next to the "tokens saved" hero card — gives the number a sense of
+    /// trend without requiring the user to dig into Stats.
+    static func savedTokensByDay(
+        in db: Database,
+        days: Int = 7,
+        now: Date = Date()
+    ) throws -> [Int] {
+        let cal = Calendar(identifier: .gregorian)
+        let startOfToday = cal.startOfDay(for: now)
+        guard let startCutoff = cal.date(byAdding: .day, value: -(days - 1), to: startOfToday) else {
+            return Array(repeating: 0, count: days)
+        }
+        let cutoff = Int64(startCutoff.timeIntervalSince1970)
+        let sql = """
+            SELECT
+                CAST(strftime('%s', date(timestamp, 'unixepoch', 'localtime')) AS INTEGER) AS day_start,
+                SUM(MAX(0, baseline_bytes - actual_bytes)) AS saved
+            FROM tokopt_savings
+            WHERE timestamp >= ?
+            GROUP BY day_start
+            ORDER BY day_start ASC
+            """
+        let rows = try Row.fetchAll(db, sql: sql, arguments: [cutoff])
+
+        // Index by day-start epoch for fast lookup, then walk the requested
+        // window so missing days slot in as zero.
+        var byDayStart: [Int64: Int] = [:]
+        for r in rows {
+            let key: Int64 = r["day_start"] ?? 0
+            let saved: Int = r["saved"] ?? 0
+            byDayStart[key] = saved / 4
+        }
+        return (0..<days).compactMap { offset -> Int? in
+            guard let day = cal.date(byAdding: .day, value: offset - (days - 1), to: startOfToday) else { return nil }
+            // strftime('%s', date(...)) in SQLite localtime returns UTC seconds
+            // for the local-day boundary; mirror with timeIntervalSince1970.
+            return byDayStart[Int64(day.timeIntervalSince1970)] ?? 0
+        }
+    }
 }

@@ -1675,6 +1675,39 @@
           }
         }
       }
+    },
+    "This week — no save today yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette semaine — aucune économie aujourd'hui"
+          }
+        }
+      }
+    },
+    "This week — +%@ today": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette semaine — +%@ aujourd'hui"
+          }
+        }
+      }
+    },
+    "This week — +%@ today (%@%lld%% vs yesterday)": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette semaine — +%@ aujourd'hui (%@%lld %% vs hier)"
+          }
+        }
+      }
     }
   }
 }

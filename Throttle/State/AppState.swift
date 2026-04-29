@@ -27,6 +27,19 @@ final class AppState {
     /// hooks' value, not buried in Stats. Updated on every refresh().
     var savedTokensThisWeek: Int = 0
 
+    /// Per-day savings for the last 7 days, oldest first. Drives the
+    /// sparkline next to the hero counter so users see a trend, not just
+    /// a static number — last index is today.
+    var savedTokensByDay: [Int] = Array(repeating: 0, count: 7)
+
+    /// Convenience: today's savings (last entry of `savedTokensByDay`).
+    var savedTokensToday: Int { savedTokensByDay.last ?? 0 }
+
+    /// Convenience: yesterday's savings (second-to-last).
+    var savedTokensYesterday: Int {
+        savedTokensByDay.count >= 2 ? savedTokensByDay[savedTokensByDay.count - 2] : 0
+    }
+
     /// True when first run has been completed.
     var firstRunDone: Bool = UserDefaults.standard.bool(forKey: "firstRunDone")
 
@@ -66,6 +79,11 @@ final class AppState {
                     try StatsDataService.savedTokensThisWeek(in: db)
                 }
             }.value) ?? 0
+            let savedByDay: [Int] = (try? await Task.detached {
+                try database.read { db in
+                    try StatsDataService.savedTokensByDay(in: db, days: 7)
+                }
+            }.value) ?? Array(repeating: 0, count: 7)
             // Persist this snapshot's three windows into history. Keyed by
             // 5-minute bucket so rapid refresh()s don't explode the table.
             try? await Task.detached {
@@ -76,6 +94,7 @@ final class AppState {
             await MainActor.run {
                 self.snapshot = computed
                 self.savedTokensThisWeek = savedTokens
+                self.savedTokensByDay = savedByDay
                 ThresholdNotifier.shared.evaluate(snapshot: computed, exact: self.exactSnapshot)
             }
         }

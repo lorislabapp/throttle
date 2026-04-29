@@ -29,6 +29,7 @@ struct DropdownView: View {
     }
 
     @State private var mode: Mode = .meter
+    @State private var savingsLeafPulse: Bool = false
 
     var body: some View {
         Group {
@@ -79,25 +80,41 @@ struct DropdownView: View {
     /// real estate instead of a tiny footer line. White text on a deep
     /// green background — high contrast against the dropdown's frosted
     /// background, so the number is unmissable.
+    ///
+    /// "Dynamic" combo: the leaf pulses for 1.5s when the weekly counter
+    /// ticks up (concrete feedback that a hook just fired), a sparkline
+    /// of the last 7 days lives next to the number so the figure feels
+    /// alive even when nothing fired in the last hour, and a today-delta
+    /// strip below makes "the counter is stale" impossible to confuse
+    /// with "you didn't use Claude today" — they read different.
     private var savingsBanner: some View {
         HStack(spacing: 12) {
             Image(systemName: "leaf.fill")
                 .font(.system(size: 26, weight: .semibold))
                 .foregroundStyle(.white)
+                .scaleEffect(savingsLeafPulse ? 1.18 : 1.0)
+                .shadow(color: .white.opacity(savingsLeafPulse ? 0.6 : 0), radius: 8)
+                .animation(.spring(response: 0.4, dampingFraction: 0.5), value: savingsLeafPulse)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                     Text(formatTokens(appState.savedTokensThisWeek))
                         .font(.system(size: 28, weight: .heavy, design: .rounded).monospacedDigit())
                         .foregroundStyle(.white)
+                        .contentTransition(.numericText(value: Double(appState.savedTokensThisWeek)))
+                        .animation(.smooth(duration: 0.6), value: appState.savedTokensThisWeek)
                     Text("tokens saved")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.92))
                 }
-                Text("This week — Throttle's hooks pruning irrelevant context")
+                Text(todayDeltaCopy)
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.75))
             }
             Spacer(minLength: 0)
+            Sparkline(values: appState.savedTokensByDay,
+                      stroke: .white.opacity(0.95),
+                      fill: .white.opacity(0.18))
+                .frame(width: 64, height: 28)
         }
         .padding(12)
         .background(
@@ -114,6 +131,31 @@ struct DropdownView: View {
                 )
         )
         .padding(.top, 10)
+        .onChange(of: appState.savedTokensThisWeek) { old, new in
+            guard new > old else { return }
+            savingsLeafPulse = true
+            Task {
+                try? await Task.sleep(for: .milliseconds(900))
+                await MainActor.run { savingsLeafPulse = false }
+            }
+        }
+    }
+
+    /// Copy below the big number — distinguishes "no save today (yet)"
+    /// from "+5.2k today". Yesterday comparison only shown when both days
+    /// are non-zero, otherwise the delta is meaningless noise.
+    private var todayDeltaCopy: String {
+        let today = appState.savedTokensToday
+        let yesterday = appState.savedTokensYesterday
+        if today == 0 {
+            return String(localized: "This week — no save today yet")
+        }
+        if yesterday > 0 {
+            let pct = Int((Double(today - yesterday) / Double(yesterday) * 100).rounded())
+            let deltaSign = pct >= 0 ? "+" : ""
+            return String(localized: "This week — +\(formatTokens(today)) today (\(deltaSign)\(pct)% vs yesterday)")
+        }
+        return String(localized: "This week — +\(formatTokens(today)) today")
     }
 
     private func formatTokens(_ n: Int) -> String {
@@ -1374,5 +1416,44 @@ private struct AboutInline: View {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
         let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
         return "\(v) (\(b))"
+    }
+}
+
+// MARK: - Sparkline
+
+/// Tiny line+area chart for arrays of non-negative values. Skips Charts to
+/// keep the dropdown light and to render correctly on macOS 26.5 (Charts
+/// went invisible there in early 2026). Shapes the line as a smooth path
+/// so 7 daily points don't look jagged. All-zero arrays render an empty
+/// flat baseline rather than a divide-by-zero crash.
+struct Sparkline: View {
+    let values: [Int]
+    let stroke: Color
+    let fill: Color
+
+    var body: some View {
+        Canvas { ctx, size in
+            guard values.count >= 2 else { return }
+            let maxV = max(values.max() ?? 0, 1)
+            let stepX = size.width / CGFloat(values.count - 1)
+            let pathPoints = values.enumerated().map { i, v -> CGPoint in
+                let x = CGFloat(i) * stepX
+                let y = size.height - (CGFloat(v) / CGFloat(maxV)) * size.height
+                return CGPoint(x: x, y: y)
+            }
+
+            var area = Path()
+            area.move(to: CGPoint(x: 0, y: size.height))
+            for p in pathPoints { area.addLine(to: p) }
+            area.addLine(to: CGPoint(x: size.width, y: size.height))
+            area.closeSubpath()
+            ctx.fill(area, with: .color(fill))
+
+            var line = Path()
+            line.move(to: pathPoints[0])
+            for p in pathPoints.dropFirst() { line.addLine(to: p) }
+            ctx.stroke(line, with: .color(stroke), style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+        }
+        .accessibilityHidden(true)
     }
 }
