@@ -1994,6 +1994,248 @@
           }
         }
       }
+    },
+    "AI assistant": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistant IA"
+          }
+        }
+      }
+    },
+    "Powers the Project window's Assistant tab. Pick which backend Throttle calls when you chat with the assistant about a project.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alimente l'onglet Assistant de la fenêtre projet. Choisissez le backend que Throttle appelle quand vous discutez avec l'assistant sur un projet."
+          }
+        }
+      }
+    },
+    "Apple Intelligence": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Intelligence"
+          }
+        }
+      }
+    },
+    "Claude (subscription)": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude (abonnement)"
+          }
+        }
+      }
+    },
+    "API key": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clé API"
+          }
+        }
+      }
+    },
+    "(unavailable)": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(indisponible)"
+          }
+        }
+      }
+    },
+    "Stored in macOS Keychain. Cost is billed directly by Anthropic on this key.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stocké dans le trousseau macOS. La facturation se fait directement par Anthropic sur cette clé."
+          }
+        }
+      }
+    },
+    "Key saved.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clé enregistrée."
+          }
+        }
+      }
+    },
+    "Save failed — keychain access denied?": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Échec — accès au trousseau refusé ?"
+          }
+        }
+      }
+    },
+    "Key removed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clé supprimée."
+          }
+        }
+      }
+    },
+    "Save": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer"
+          }
+        }
+      }
+    },
+    "Remove": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer"
+          }
+        }
+      }
+    },
+    "Resolving AI provider…": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Résolution du fournisseur IA…"
+          }
+        }
+      }
+    },
+    "No AI provider configured": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun fournisseur IA configuré"
+          }
+        }
+      }
+    },
+    "Configure": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configurer"
+          }
+        }
+      }
+    },
+    "Clear conversation": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effacer la conversation"
+          }
+        }
+      }
+    },
+    "Ask about this project": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posez une question sur ce projet"
+          }
+        }
+      }
+    },
+    "Examples: \"Is my CLAUDE.md doing too much?\", \"Suggest a slimmer settings.json.\", \"Why am I burning so many Sonnet tokens this week?\"": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exemples : « Mon CLAUDE.md en fait-il trop ? », « Propose un settings.json plus léger. », « Pourquoi je consomme autant de tokens Sonnet cette semaine ? »"
+          }
+        }
+      }
+    },
+    "You": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous"
+          }
+        }
+      }
+    },
+    "No Anthropic API key configured. Add one in Settings → AI provider.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune clé API Anthropic configurée. Ajoutez-en une dans Réglages → Fournisseur IA."
+          }
+        }
+      }
+    },
+    "Request timed out.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Délai de requête dépassé."
+          }
+        }
+      }
+    },
+    "Claude web session is coming in 2.1.x. For now use Apple Intelligence (if your Mac supports it) or paste an Anthropic API key in Settings → AI provider.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La session Claude web arrive en 2.1.x. Pour l'instant, utilisez Apple Intelligence (si votre Mac le supporte) ou collez une clé API Anthropic dans Réglages → Fournisseur IA."
+          }
+        }
+      }
     }
   }
 }

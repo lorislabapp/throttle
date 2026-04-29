@@ -79,11 +79,19 @@ struct ProjectWindowRoot: View {
                 case .files:
                     ProjectFilesTab(project: project)
                 case .optimizer:
-                    proLockPlaceholder(title: String(localized: "Optimizer"),
-                                        message: String(localized: "Edit CLAUDE.md, settings.json, and hooks with backup, diff preview, and one-click rollback. Pro feature."))
+                    if appState.isPro {
+                        ProjectOptimizerTab(project: project)
+                    } else {
+                        proLockPlaceholder(title: String(localized: "Optimizer"),
+                                            message: String(localized: "Edit CLAUDE.md, settings.json, and hooks with backup, diff preview, and one-click rollback. Pro feature."))
+                    }
                 case .assistant:
-                    proLockPlaceholder(title: String(localized: "Assistant"),
-                                        message: String(localized: "AI assistant trained on your project's config — Apple Intelligence (local), Claude via your subscription, or BYO API key. Pro feature."))
+                    if appState.isPro {
+                        ProjectAssistantTab(project: project)
+                    } else {
+                        proLockPlaceholder(title: String(localized: "Assistant"),
+                                            message: String(localized: "AI assistant trained on your project's config — Apple Intelligence (local), Claude via your subscription, or BYO API key. Pro feature."))
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

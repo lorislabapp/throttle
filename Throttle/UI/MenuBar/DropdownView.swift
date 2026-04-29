@@ -753,6 +753,10 @@ private struct InlineGeneralPane: View {
             exactModeSection
 
             Divider()
+
+            aiProviderSection
+
+            Divider()
             HStack {
                 Text("Updates").font(.subheadline.bold())
                 Spacer()
@@ -1047,6 +1051,105 @@ private struct InlineGeneralPane: View {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
         let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
         return "v\(v) (\(b))"
+    }
+
+    // MARK: - AI provider
+
+    @State private var aiAvailability: [AIProviderKind: Bool] = [:]
+    @State private var aiKeyDraft: String = ""
+    @State private var aiKeyStatus: String = ""
+    @State private var aiSelection: AIProviderKind? = AIProviderRegistry.shared.preferredKind
+
+    private var aiProviderSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("AI assistant").font(.subheadline.bold())
+            Text("Powers the Project window's Assistant tab. Pick which backend Throttle calls when you chat with the assistant about a project.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Picker("", selection: Binding(
+                get: { aiSelection ?? defaultProviderKind() },
+                set: { newValue in
+                    aiSelection = newValue
+                    AIProviderRegistry.shared.preferredKind = newValue
+                }
+            )) {
+                ForEach(AIProviderKind.allCases, id: \.self) { kind in
+                    HStack(spacing: 4) {
+                        Text(kindLabel(kind))
+                        if aiAvailability[kind] == false {
+                            Text("(unavailable)")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .tag(kind as AIProviderKind?)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+
+            if (aiSelection ?? defaultProviderKind()) == .claudeAPIKey {
+                aiKeyField
+            }
+        }
+        .onAppear { Task { await reloadAIAvailability() } }
+    }
+
+    private func kindLabel(_ kind: AIProviderKind) -> String {
+        switch kind {
+        case .appleIntelligence: return String(localized: "Apple Intelligence")
+        case .claudeWebSession:  return String(localized: "Claude (subscription)")
+        case .claudeAPIKey:      return String(localized: "API key")
+        }
+    }
+
+    /// Default selection when the user hasn't picked one yet — favours
+    /// Apple Intel if available, falls back to API key (the only other
+    /// provider that's actually wired in v2.1).
+    private func defaultProviderKind() -> AIProviderKind {
+        if aiAvailability[.appleIntelligence] == true { return .appleIntelligence }
+        if aiAvailability[.claudeAPIKey]      == true { return .claudeAPIKey }
+        return .appleIntelligence
+    }
+
+    private var aiKeyField: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                SecureField("sk-ant-…", text: $aiKeyDraft)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.caption.monospaced())
+                Button("Save") {
+                    if ClaudeAPIKeyStore.write(aiKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)) {
+                        aiKeyStatus = String(localized: "Key saved.")
+                        aiKeyDraft = ""
+                        Task { await reloadAIAvailability() }
+                    } else {
+                        aiKeyStatus = String(localized: "Save failed — keychain access denied?")
+                    }
+                }
+                .buttonStyle(.bordered).controlSize(.small)
+                .disabled(aiKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                if ClaudeAPIKeyStore.read() != nil {
+                    Button("Remove") {
+                        _ = ClaudeAPIKeyStore.delete()
+                        aiKeyStatus = String(localized: "Key removed.")
+                        Task { await reloadAIAvailability() }
+                    }
+                    .buttonStyle(.bordered).controlSize(.small)
+                }
+            }
+            Text("Stored in macOS Keychain. Cost is billed directly by Anthropic on this key.")
+                .font(.caption2).foregroundStyle(.tertiary)
+            if !aiKeyStatus.isEmpty {
+                Text(aiKeyStatus).font(.caption2).foregroundStyle(.tertiary)
+            }
+        }
+    }
+
+    private func reloadAIAvailability() async {
+        let map = await AIProviderRegistry.shared.availabilityMap()
+        await MainActor.run { self.aiAvailability = map }
     }
 
 }
