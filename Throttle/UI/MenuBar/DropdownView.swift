@@ -63,6 +63,7 @@ struct DropdownView: View {
             } else {
                 windowsList
             }
+            exactModeWarningBanner
             if appState.savedTokensThisWeek > 0 {
                 savingsBanner
             }
@@ -119,6 +120,92 @@ struct DropdownView: View {
         if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
         if n >= 1_000     { return String(format: "%.0fk", Double(n) / 1_000) }
         return "\(n)"
+    }
+
+    /// Banner shown when the user has enabled exact mode but the latest poll
+    /// failed — so the meter is silently falling back to local-JSONL estimates.
+    /// Without this, the user sees plausible-looking numbers that can be wildly
+    /// off from claude.ai's actual session % (the bug that prompted this banner).
+    /// Auto-clears on the next successful poll because `onSnapshot` resets
+    /// `exactModeError` to nil in AppDelegate.
+    @ViewBuilder
+    private var exactModeWarningBanner: some View {
+        if appState.exactModeEnabled, let err = appState.exactModeError {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.orange)
+                    .padding(.top, 1)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Exact mode unavailable — showing local estimates")
+                        .font(.caption.weight(.semibold))
+                    Text(describe(err))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                if let action = exactModeWarningAction(err) {
+                    Button(action.title, action: action.handler)
+                        .buttonStyle(.bordered)
+                        .controlSize(.mini)
+                        .tint(.orange)
+                }
+            }
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.orange.opacity(0.10))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(Color.orange.opacity(0.25), lineWidth: 1)
+                    )
+            )
+            .padding(.top, 8)
+        }
+    }
+
+    private struct ExactModeAction {
+        let title: String
+        let handler: () -> Void
+    }
+
+    /// Contextual one-tap remediation per error kind. Returns nil for cases
+    /// where there's no obvious user action (none currently — every error has
+    /// a remediation, but kept optional for forward-compat).
+    private func exactModeWarningAction(_ err: ExactModeError) -> ExactModeAction? {
+        switch err {
+        case .notSignedIn, .noClaudeTab, .safariNotRunning:
+            return ExactModeAction(title: String(localized: "Open Safari")) {
+                ExactModeService.shared.openSignInPage()
+            }
+        case .automationDenied:
+            return ExactModeAction(title: String(localized: "Settings")) {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+        case .httpError, .invalidResponse, .appleScript, .timeout:
+            return ExactModeAction(title: String(localized: "Retry")) {
+                Task { await ExactModeService.shared.refresh() }
+            }
+        }
+    }
+
+    /// User-facing copy for an Exact-mode error. Mirrors the helper in
+    /// InlineGeneralPane (kept duplicated rather than shared because the two
+    /// surfaces — banner vs settings — may diverge in tone over time).
+    private func describe(_ err: ExactModeError) -> String {
+        switch err {
+        case .notSignedIn:        return String(localized: "Not signed in to claude.ai in Safari. Sign in and re-test.")
+        case .noClaudeTab:        return String(localized: "Couldn't open a claude.ai tab in Safari. Open one manually and re-test.")
+        case .safariNotRunning:   return String(localized: "Safari isn't running. Open it (or click 'Open claude.ai in Safari') and re-test.")
+        case .automationDenied:   return String(localized: "macOS denied automation. Open System Settings → Privacy & Security → Automation → Throttle → enable Safari, then re-test.")
+        case .httpError(let code): return "HTTP \(code)"
+        case .invalidResponse:    return String(localized: "Bad response from claude.ai.")
+        case .appleScript(let s): return "AppleScript: \(s)"
+        case .timeout:            return String(localized: "Timed out.")
+        }
     }
 
     private var header: some View {
@@ -919,17 +1006,20 @@ private struct InlineGeneralPane: View {
         return "v\(v) (\(b))"
     }
 
-    private func describe(_ err: ExactModeError) -> String {
-        switch err {
-        case .notSignedIn:        return "Not signed in to claude.ai in Safari. Sign in and re-test."
-        case .noClaudeTab:        return "Couldn't open a claude.ai tab in Safari. Open one manually and re-test."
-        case .safariNotRunning:   return "Safari isn't running. Open it (or click 'Open claude.ai in Safari') and re-test."
-        case .automationDenied:   return "macOS denied automation. Open System Settings → Privacy & Security → Automation → Throttle → enable Safari, then re-test."
-        case .httpError(let code): return "HTTP \(code)"
-        case .invalidResponse:    return "Bad response from claude.ai."
-        case .appleScript(let s): return "AppleScript: \(s)"
-        case .timeout:            return "Timed out."
-        }
+}
+
+/// Shared file-private formatter for ExactModeError messages, used by both
+/// InlineGeneralPane (Settings) and DropdownView (the meter banner).
+fileprivate func describe(_ err: ExactModeError) -> String {
+    switch err {
+    case .notSignedIn:        return "Not signed in to claude.ai in Safari. Sign in and re-test."
+    case .noClaudeTab:        return "Couldn't open a claude.ai tab in Safari. Open one manually and re-test."
+    case .safariNotRunning:   return "Safari isn't running. Open it (or click 'Open claude.ai in Safari') and re-test."
+    case .automationDenied:   return "macOS denied automation. Open System Settings → Privacy & Security → Automation → Throttle → enable Safari, then re-test."
+    case .httpError(let code): return "HTTP \(code)"
+    case .invalidResponse:    return "Bad response from claude.ai."
+    case .appleScript(let s): return "AppleScript: \(s)"
+    case .timeout:            return "Timed out."
     }
 }
 
@@ -1167,6 +1257,7 @@ private struct InlineHooksPane: View {
 
 private struct InlinePrivacyPane: View {
     @State private var exportStatus: String = ""
+    @State private var csvStatus: String = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1201,6 +1292,28 @@ private struct InlinePrivacyPane: View {
             }
 
             Divider()
+
+            Text("Export usage history").font(.subheadline.bold())
+            Text("Save the full event history as a CSV file on your Desktop — for pivot tables, custom dashboards, or moving data to another tool. Same privacy posture as diagnostics: token counts and project paths only, no message content.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Export CSV to Desktop") {
+                csvStatus = String(localized: "Building…")
+                Task { @MainActor in
+                    if let url = await runCSVExport() {
+                        csvStatus = String(localized: "Saved: \(url.lastPathComponent)")
+                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                    } else {
+                        csvStatus = String(localized: "Failed — see log.")
+                    }
+                }
+            }
+            .buttonStyle(.bordered).controlSize(.small)
+            if !csvStatus.isEmpty {
+                Text(csvStatus).font(.caption2).foregroundStyle(.tertiary)
+            }
+
+            Divider()
             Text("Telemetry").font(.subheadline.bold())
             Text("Throttle does not collect telemetry. Future opt-ins will appear here.")
                 .font(.caption).foregroundStyle(.secondary)
@@ -1216,6 +1329,13 @@ private struct InlinePrivacyPane: View {
         guard let url = try? DatabaseManager.databaseURL(),
               let pool = try? DatabasePool(path: url.path) else { return nil }
         return DiagnosticsExporter.exportToDesktop(database: pool)
+    }
+
+    @MainActor
+    private func runCSVExport() async -> URL? {
+        guard let url = try? DatabaseManager.databaseURL(),
+              let pool = try? DatabasePool(path: url.path) else { return nil }
+        return CSVExporter.exportToDesktop(database: pool)
     }
 }
 
