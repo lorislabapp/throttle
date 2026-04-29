@@ -465,6 +465,23 @@ struct DropdownView: View {
             .buttonStyle(.plain)
 
             Button {
+                ProjectWindowController.shared.show(appState: appState)
+            } label: {
+                HStack {
+                    Label("Project window", systemImage: "rectangle.split.3x1")
+                    Spacer()
+                    if !appState.isPro {
+                        Text("PRO")
+                            .font(.system(size: 9, weight: .heavy))
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .background(Color.accentColor.opacity(0.2), in: Capsule())
+                            .foregroundStyle(Color.accentColor)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+
+            Button {
                 mode = .settings(.general)
             } label: {
                 Label("Settings…", systemImage: "gear")

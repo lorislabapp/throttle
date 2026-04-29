@@ -171,6 +171,151 @@ enum StatsDataService {
         return row?["w"] ?? 0
     }
 
+    // MARK: - Per-project queries (project window)
+
+    /// Sum of weighted tokens for a single project, between two
+    /// hour-ago offsets. Per-project filtering uses the same JOIN trick
+    /// as `topProjects`: `usage_events.session_id` matches a
+    /// `file_state.path` whose directory ends with the project's encoded
+    /// name (e.g. `-Users-foo-GitHub-Throttle`). Schema has no `cwd_path`
+    /// column so this join is the only way to scope to a project.
+    static func tokensForProject(
+        in db: Database,
+        encodedName: String,
+        fromHoursAgo: Int,
+        toHoursAgo: Int,
+        now: Date = Date()
+    ) throws -> Int {
+        let nowEpoch = Int64(now.timeIntervalSince1970)
+        let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
+        let startTs = nowEpoch - Int64(toHoursAgo) * 3600
+        let pattern = "%/\(encodedName)/%.jsonl"
+        let sql = """
+            SELECT COALESCE(SUM(e.input_tokens + e.output_tokens + e.cache_create + (e.cache_read / 10)), 0) AS w
+            FROM usage_events e
+            JOIN file_state fs ON fs.path LIKE '%/' || e.session_id || '.jsonl'
+            WHERE e.timestamp >= ? AND e.timestamp < ? AND fs.path LIKE ?
+            """
+        let row = try Row.fetchOne(db, sql: sql, arguments: [startTs, endTs, pattern])
+        return row?["w"] ?? 0
+    }
+
+    /// (sessionCount, avgTokensPerSession) for a project.
+    static func sessionsForProject(
+        in db: Database,
+        encodedName: String,
+        fromHoursAgo: Int,
+        toHoursAgo: Int,
+        now: Date = Date()
+    ) throws -> (Int, Int) {
+        let nowEpoch = Int64(now.timeIntervalSince1970)
+        let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
+        let startTs = nowEpoch - Int64(toHoursAgo) * 3600
+        let pattern = "%/\(encodedName)/%.jsonl"
+        let sql = """
+            SELECT
+                COUNT(DISTINCT e.session_id) AS sessions,
+                COALESCE(SUM(e.input_tokens + e.output_tokens + e.cache_create + (e.cache_read / 10)), 0) AS total
+            FROM usage_events e
+            JOIN file_state fs ON fs.path LIKE '%/' || e.session_id || '.jsonl'
+            WHERE e.timestamp >= ? AND e.timestamp < ? AND fs.path LIKE ?
+            """
+        let row = try Row.fetchOne(db, sql: sql, arguments: [startTs, endTs, pattern])
+        let sessions: Int = row?["sessions"] ?? 0
+        let total: Int = row?["total"] ?? 0
+        let avg = sessions > 0 ? total / sessions : 0
+        return (sessions, avg)
+    }
+
+    /// Model split for a project: array of (label, share 0...1).
+    static func modelSplitForProject(
+        in db: Database,
+        encodedName: String,
+        fromHoursAgo: Int,
+        toHoursAgo: Int,
+        now: Date = Date()
+    ) throws -> [(String, Double)] {
+        let nowEpoch = Int64(now.timeIntervalSince1970)
+        let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
+        let startTs = nowEpoch - Int64(toHoursAgo) * 3600
+        let pattern = "%/\(encodedName)/%.jsonl"
+        let sql = """
+            SELECT
+                CASE
+                    WHEN lower(e.model) LIKE '%opus%'   THEN 'Opus'
+                    WHEN lower(e.model) LIKE '%sonnet%' THEN 'Sonnet'
+                    WHEN lower(e.model) LIKE '%haiku%'  THEN 'Haiku'
+                    ELSE 'Other'
+                END AS bucket,
+                SUM(e.input_tokens + e.output_tokens + e.cache_create + (e.cache_read / 10)) AS w
+            FROM usage_events e
+            JOIN file_state fs ON fs.path LIKE '%/' || e.session_id || '.jsonl'
+            WHERE e.timestamp >= ? AND e.timestamp < ? AND fs.path LIKE ?
+            GROUP BY bucket
+            """
+        let rows = try Row.fetchAll(db, sql: sql, arguments: [startTs, endTs, pattern])
+        let total: Int = rows.reduce(0) { $0 + ($1["w"] ?? 0) }
+        guard total > 0 else { return [] }
+        return rows.compactMap { r in
+            guard let label: String = r["bucket"], let w: Int = r["w"] else { return nil }
+            return (label, Double(w) / Double(total))
+        }.sorted { $0.1 > $1.1 }
+    }
+
+    /// Cost in EUR for a single project.
+    static func costForProject(
+        in db: Database,
+        encodedName: String,
+        fromHoursAgo: Int,
+        toHoursAgo: Int,
+        now: Date = Date()
+    ) throws -> Double {
+        let nowEpoch = Int64(now.timeIntervalSince1970)
+        let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
+        let startTs = nowEpoch - Int64(toHoursAgo) * 3600
+        let pattern = "%/\(encodedName)/%.jsonl"
+        let sql = """
+            SELECT
+                CASE
+                    WHEN lower(e.model) LIKE '%opus%'   THEN 'opus'
+                    WHEN lower(e.model) LIKE '%sonnet%' THEN 'sonnet'
+                    WHEN lower(e.model) LIKE '%haiku%'  THEN 'haiku'
+                    ELSE 'other'
+                END AS bucket,
+                SUM(e.input_tokens) AS i,
+                SUM(e.output_tokens) AS o,
+                SUM(e.cache_create) AS cc,
+                SUM(e.cache_read) AS cr
+            FROM usage_events e
+            JOIN file_state fs ON fs.path LIKE '%/' || e.session_id || '.jsonl'
+            WHERE e.timestamp >= ? AND e.timestamp < ? AND fs.path LIKE ?
+            GROUP BY bucket
+            """
+        let rows = try Row.fetchAll(db, sql: sql, arguments: [startTs, endTs, pattern])
+        let usdToEur: Double = 0.93
+        var totalUsd: Double = 0
+        for row in rows {
+            let bucket: String = row["bucket"] ?? ""
+            let i: Int = row["i"] ?? 0
+            let o: Int = row["o"] ?? 0
+            let cc: Int = row["cc"] ?? 0
+            let cr: Int = row["cr"] ?? 0
+            let (inRate, outRate): (Double, Double)
+            switch bucket {
+            case "opus":   (inRate, outRate) = (15, 75)
+            case "sonnet": (inRate, outRate) = (3, 15)
+            case "haiku":  (inRate, outRate) = (0.80, 4)
+            default:       (inRate, outRate) = (3, 15)
+            }
+            let perMillion = 1_000_000.0
+            totalUsd += Double(i) / perMillion * inRate
+            totalUsd += Double(o) / perMillion * outRate
+            totalUsd += Double(cc) / perMillion * inRate * 1.25
+            totalUsd += Double(cr) / perMillion * inRate * 0.10
+        }
+        return totalUsd * usdToEur
+    }
+
     // MARK: - Cost extrapolation
 
     /// Approximate API cost for the given range, in EUR.

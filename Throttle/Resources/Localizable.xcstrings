@@ -1708,6 +1708,292 @@
           }
         }
       }
+    },
+    "Project window": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fenêtre projet"
+          }
+        }
+      }
+    },
+    "No project selected": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun projet sélectionné"
+          }
+        }
+      }
+    },
+    "Pick a project from the sidebar to see its stats, files, and optimizer suggestions.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez un projet dans la barre latérale pour voir ses statistiques, fichiers et suggestions de l'optimiseur."
+          }
+        }
+      }
+    },
+    "Optimizer": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimiseur"
+          }
+        }
+      }
+    },
+    "Assistant": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistant"
+          }
+        }
+      }
+    },
+    "Files": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fichiers"
+          }
+        }
+      }
+    },
+    "Edit CLAUDE.md, settings.json, and hooks with backup, diff preview, and one-click rollback. Pro feature.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifiez CLAUDE.md, settings.json et les hooks avec sauvegarde, prévisualisation des diff et rollback en un clic. Fonction Pro."
+          }
+        }
+      }
+    },
+    "AI assistant trained on your project's config — Apple Intelligence (local), Claude via your subscription, or BYO API key. Pro feature.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistant IA entraîné sur la config de votre projet — Apple Intelligence (local), Claude via votre abonnement, ou clé API personnelle. Fonction Pro."
+          }
+        }
+      }
+    },
+    "Pro feature — coming in a follow-up release.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fonction Pro — disponible dans une prochaine version."
+          }
+        }
+      }
+    },
+    "Buy Throttle Pro · €19": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acheter Throttle Pro · 19 €"
+          }
+        }
+      }
+    },
+    "Search projects": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher un projet"
+          }
+        }
+      }
+    },
+    "%lld projects": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld projets"
+          }
+        }
+      }
+    },
+    "This month": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce mois"
+          }
+        }
+      }
+    },
+    "Sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions"
+          }
+        }
+      }
+    },
+    "weighted tokens": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tokens pondérés"
+          }
+        }
+      }
+    },
+    "avg %@ / session": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "moy. %@ / session"
+          }
+        }
+      }
+    },
+    "No model usage yet for this project.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune utilisation de modèle pour ce projet pour l'instant."
+          }
+        }
+      }
+    },
+    "Estimated API cost": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coût API estimé"
+          }
+        }
+      }
+    },
+    "What this project would have cost on the developer API at Anthropic's published rates.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coût équivalent sur l'API développeur d'Anthropic au tarif public."
+          }
+        }
+      }
+    },
+    "Project memory loaded into every session.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mémoire du projet chargée à chaque session."
+          }
+        }
+      }
+    },
+    "Committed Claude Code config — hooks, model preferences, MCP servers.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Config Claude Code committée — hooks, préférences de modèle, serveurs MCP."
+          }
+        }
+      }
+    },
+    "Per-machine override — gitignored, not shared with the team.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Override par machine — gitignoré, non partagé avec l'équipe."
+          }
+        }
+      }
+    },
+    "Not present": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Absent"
+          }
+        }
+      }
+    },
+    "Reveal": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher"
+          }
+        }
+      }
+    },
+    "Open": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir"
+          }
+        }
+      }
+    },
+    "Project root": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Racine du projet"
+          }
+        }
+      }
     }
   }
 }
