@@ -192,22 +192,6 @@ struct DropdownView: View {
         }
     }
 
-    /// User-facing copy for an Exact-mode error. Mirrors the helper in
-    /// InlineGeneralPane (kept duplicated rather than shared because the two
-    /// surfaces — banner vs settings — may diverge in tone over time).
-    private func describe(_ err: ExactModeError) -> String {
-        switch err {
-        case .notSignedIn:        return String(localized: "Not signed in to claude.ai in Safari. Sign in and re-test.")
-        case .noClaudeTab:        return String(localized: "Couldn't open a claude.ai tab in Safari. Open one manually and re-test.")
-        case .safariNotRunning:   return String(localized: "Safari isn't running. Open it (or click 'Open claude.ai in Safari') and re-test.")
-        case .automationDenied:   return String(localized: "macOS denied automation. Open System Settings → Privacy & Security → Automation → Throttle → enable Safari, then re-test.")
-        case .httpError(let code): return "HTTP \(code)"
-        case .invalidResponse:    return String(localized: "Bad response from claude.ai.")
-        case .appleScript(let s): return "AppleScript: \(s)"
-        case .timeout:            return String(localized: "Timed out.")
-        }
-    }
-
     private var header: some View {
         HStack {
             Text("Throttle")

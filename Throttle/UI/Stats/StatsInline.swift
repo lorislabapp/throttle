@@ -26,6 +26,9 @@ struct StatsInline: View {
     @State private var topProjects: [StatsDataService.ProjectSlice] = []
 
     @State private var showShareSheet = false
+    @State private var todayTokens: Int = 0
+    @State private var yesterdayTokens: Int = 0
+    @State private var thisWeekTokens: Int = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -33,6 +36,7 @@ struct StatsInline: View {
             rangePicker
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
+                    comparisonCards
                     trendCard
                     modelSplitCard
                     shareBadgeCard
@@ -81,6 +85,52 @@ struct StatsInline: View {
 
     // MARK: - Cards
 
+    /// Three at-a-glance cards: today, yesterday, this week.
+    /// Today vs yesterday gets a delta arrow so you instantly see if you're
+    /// burning faster than usual. This week is just an absolute number — the
+    /// week-over-week comparison would need a 4th card to fit and gets noisy.
+    private var comparisonCards: some View {
+        HStack(spacing: 8) {
+            comparisonCard(title: String(localized: "Today"),
+                           tokens: todayTokens,
+                           previousTokens: yesterdayTokens,
+                           showDelta: true)
+            comparisonCard(title: String(localized: "Yesterday"),
+                           tokens: yesterdayTokens,
+                           previousTokens: 0,
+                           showDelta: false)
+            comparisonCard(title: String(localized: "This week"),
+                           tokens: thisWeekTokens,
+                           previousTokens: 0,
+                           showDelta: false)
+        }
+    }
+
+    private func comparisonCard(title: String,
+                                 tokens: Int,
+                                 previousTokens: Int,
+                                 showDelta: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(.caption2).foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(formatTokens(tokens))
+                    .font(.title3.bold().monospacedDigit())
+                if showDelta, previousTokens > 0 {
+                    let pct = Double(tokens - previousTokens) / Double(previousTokens) * 100
+                    Image(systemName: pct >= 0 ? "arrow.up.right" : "arrow.down.right")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(pct >= 0 ? .red : .green)
+                    Text("\(pct >= 0 ? "+" : "")\(Int(pct.rounded()))%")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(pct >= 0 ? .red : .green)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
     private var trendCard: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Usage trend").font(.subheadline.bold())
@@ -117,6 +167,21 @@ struct StatsInline: View {
     }
     private func color(for kind: WindowKind) -> Color { Self.color(for: kind) }
 
+    /// Linearly extrapolate the current range's cost to a 30-day month.
+    /// Returns nil for ranges where extrapolation would be misleading
+    /// (less than 6 hours of data, or "All time" which is already past).
+    private var monthlyProjection: Double? {
+        let hours: Double
+        switch range {
+        case .last24h: hours = 24
+        case .last7d:  hours = 168
+        case .last30d: hours = 720
+        case .all:     return nil
+        }
+        guard hours >= 6, costEUR > 0 else { return nil }
+        return costEUR * (720.0 / hours)
+    }
+
     private var modelSplitCard: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Model split").font(.subheadline.bold())
@@ -133,6 +198,12 @@ struct StatsInline: View {
                 Text("Estimated API cost: \(formatEUR(costEUR))")
                     .font(.caption).foregroundStyle(.secondary)
                     .padding(.top, 4)
+                if let projection = monthlyProjection {
+                    Text("Projected this month at this rate: \(formatEUR(projection))")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .padding(.top, 2)
+                }
                 Text("(What this would have cost on the developer API at Anthropic's published rates.)")
                     .font(.caption2).foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -326,6 +397,9 @@ struct StatsInline: View {
             var cost: Double = 0
             var saved: Int = 0
             var projects: [StatsDataService.ProjectSlice] = []
+            var today: Int = 0
+            var yesterday: Int = 0
+            var thisWeek: Int = 0
             var firstError: String?
         }
 
@@ -348,6 +422,19 @@ struct StatsInline: View {
 
             do { b.projects = try database.read { try StatsDataService.topProjects(in: $0, range: r) } }
             catch { if b.firstError == nil { b.firstError = "projects: \(error)" } }
+
+            do { b.today = try database.read {
+                try StatsDataService.tokensBetween(in: $0, from: 0, to: 24)
+            } } catch { if b.firstError == nil { b.firstError = "today: \(error)" } }
+
+            do { b.yesterday = try database.read {
+                try StatsDataService.tokensBetween(in: $0, from: 24, to: 48)
+            } } catch { if b.firstError == nil { b.firstError = "yesterday: \(error)" } }
+
+            do { b.thisWeek = try database.read {
+                try StatsDataService.tokensBetween(in: $0, from: 0, to: 168)
+            } } catch { if b.firstError == nil { b.firstError = "thisWeek: \(error)" } }
+
             return b
         }.value
 
@@ -363,6 +450,9 @@ struct StatsInline: View {
             self.costEUR = bundle.cost
             self.savedTokens = bundle.saved
             self.topProjects = bundle.projects
+            self.todayTokens = bundle.today
+            self.yesterdayTokens = bundle.yesterday
+            self.thisWeekTokens = bundle.thisWeek
         }
     }
 

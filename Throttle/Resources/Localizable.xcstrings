@@ -1543,6 +1543,138 @@
           }
         }
       }
+    },
+    "Today": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aujourd'hui"
+          }
+        }
+      }
+    },
+    "Yesterday": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hier"
+          }
+        }
+      }
+    },
+    "This week": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette semaine"
+          }
+        }
+      }
+    },
+    "Projected this month at this rate: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Projection ce mois à ce rythme : %@"
+          }
+        }
+      }
+    },
+    "Your 5-hour session just reset": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre session de 5 h vient de redémarrer"
+          }
+        }
+      }
+    },
+    "Fresh budget — good moment for a break, or attack a hard problem with full headroom.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget remis à zéro — bon moment pour une pause, ou attaquer un problème dur avec toute la marge disponible."
+          }
+        }
+      }
+    },
+    "Export usage history": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporter l'historique d'utilisation"
+          }
+        }
+      }
+    },
+    "Save the full event history as a CSV file on your Desktop — for pivot tables, custom dashboards, or moving data to another tool. Same privacy posture as diagnostics: token counts and project paths only, no message content.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistre l'historique complet des événements dans un fichier CSV sur le bureau — pour des tableaux croisés, des tableaux de bord personnalisés ou un export vers un autre outil. Même posture de confidentialité que les diagnostics : compteurs de tokens et chemins de projet uniquement, aucun contenu de messages."
+          }
+        }
+      }
+    },
+    "Export CSV to Desktop": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporter le CSV sur le bureau"
+          }
+        }
+      }
+    },
+    "Exact mode unavailable — showing local estimates": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode exact indisponible — estimations locales affichées"
+          }
+        }
+      }
+    },
+    "Open Safari": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir Safari"
+          }
+        }
+      }
+    },
+    "Retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réessayer"
+          }
+        }
+      }
     }
   }
 }

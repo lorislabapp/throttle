@@ -146,6 +146,31 @@ enum StatsDataService {
         }
     }
 
+    // MARK: - Range comparison (Today / Yesterday / This week / Last week)
+
+    /// Sum of weighted tokens between two hour offsets (inclusive of `from`,
+    /// exclusive of `to`). `from` and `to` are positive hours-ago values, so
+    /// `tokensBetween(from: 0, to: 24)` = last 24 hours, and
+    /// `tokensBetween(from: 24, to: 48)` = the 24 hours before that.
+    static func tokensBetween(
+        in db: Database,
+        from hoursAgoStart: Int,
+        to hoursAgoEnd: Int,
+        now: Date = Date()
+    ) throws -> Int {
+        precondition(hoursAgoEnd > hoursAgoStart, "end must be older than start")
+        let nowEpoch = Int64(now.timeIntervalSince1970)
+        let endTs = nowEpoch - Int64(hoursAgoStart) * 3600
+        let startTs = nowEpoch - Int64(hoursAgoEnd) * 3600
+        let sql = """
+            SELECT COALESCE(SUM(input_tokens + output_tokens + cache_create + (cache_read / 10)), 0) AS w
+            FROM usage_events
+            WHERE timestamp >= ? AND timestamp < ?
+            """
+        let row = try Row.fetchOne(db, sql: sql, arguments: [startTs, endTs])
+        return row?["w"] ?? 0
+    }
+
     // MARK: - Cost extrapolation
 
     /// Approximate API cost for the given range, in EUR.
