@@ -262,15 +262,35 @@ struct ClaudeWebSessionProvider: AIProvider {
                     // the conversation IDs for follow-ups.
                     return JSON.stringify({_throttle_ok: true, conv: convId, org: orgId, text: out});
                 }
-                // Diagnostic: the completion call returned 2xx but our SSE
-                // walker found nothing usable. Include status, contentType,
-                // and a first-bytes peek so we can tell rate-limits / content
-                // filters / shape changes apart from "endpoint silently 200'd".
+                // Diagnostic: completion returned 2xx but body empty. Probe
+                // /usage so Swift knows WHICH window is actually constraining
+                // the user — hardcoding "5h" was wrong when the real squeeze
+                // came from the 7-day window.
                 var ct = '';
                 try { ct = compX.getResponseHeader('content-type') || ''; } catch (e2) {}
+                var usage = '';
+                try {
+                    var uX = new XMLHttpRequest();
+                    uX.open('GET', '/api/organizations/' + orgId + '/usage', false);
+                    uX.setRequestHeader('Accept', 'application/json');
+                    uX.send();
+                    if (uX.status < 400) {
+                        var u = JSON.parse(uX.responseText);
+                        var fields = ['five_hour','seven_day','seven_day_sonnet','seven_day_opus','seven_day_oauth_apps'];
+                        for (var fi = 0; fi < fields.length; fi++) {
+                            var f = fields[fi];
+                            var w = u && u[f];
+                            if (w && typeof w.utilization === 'number') {
+                                usage += f + '=' + Math.round(w.utilization*100);
+                                if (w.resets_at) usage += '@' + w.resets_at;
+                                usage += ' ';
+                            }
+                        }
+                    }
+                } catch(e3) {}
                 return JSON.stringify({
                     _throttle_status: -2,
-                    _err: 'empty stream status=' + compX.status + ' ct=' + ct + ' rawLen=' + raw.length + ' dataLines=' + dataLines + ' reused=' + (reuseConv ? '1' : '0') + ' plen=' + promptStr.length + ' bodyLen=' + compBody.length + ' first300=' + raw.substring(0, 300)
+                    _err: 'empty stream status=' + compX.status + ' ct=' + ct + ' rawLen=' + raw.length + ' reused=' + (reuseConv ? '1' : '0') + ' usage=[' + usage.trim() + ']'
                 });
             } catch (e) {
                 return JSON.stringify({_throttle_status: -1, _err: String(e)});
@@ -316,13 +336,67 @@ struct ClaudeWebSessionProvider: AIProvider {
                 return String(localized: "Your Claude \(window) limit is exhausted. Resets \(when). Switch to Apple Intelligence or paste an API key in Settings to keep going.")
             }
             // status=200 + rawLen=0 = claude.ai aborted the stream before
-            // writing any events. Soft drop — usually long predicted output
-            // when near the limit.
+            // writing any events. The JS probed /usage so we know which
+            // window is actually constraining; pick the highest-util one.
             if s.contains("status=200"), s.contains("rawLen=0") {
-                return String(localized: "claude.ai dropped the response — likely because the predicted answer is long and you're near your 5-hour Pro/Max limit, or your conversation has too many turns. Try a shorter follow-up, switch to Apple Intelligence, or paste a Claude API key in Settings.")
+                if let (windowKey, util, resets) = Self.worstWindow(in: s),
+                   util >= 70 {
+                    let windowLabel: String
+                    switch windowKey {
+                    case "five_hour":         windowLabel = String(localized: "5-hour")
+                    case "seven_day":         windowLabel = String(localized: "weekly")
+                    case "seven_day_sonnet":  windowLabel = String(localized: "weekly Sonnet")
+                    case "seven_day_opus":    windowLabel = String(localized: "weekly Opus")
+                    default:                  windowLabel = String(localized: "Pro/Max")
+                    }
+                    let when: String
+                    if let resets, let date = Self.parseISO8601(resets) {
+                        let fmt = RelativeDateTimeFormatter()
+                        fmt.unitsStyle = .full
+                        when = fmt.localizedString(for: date, relativeTo: Date())
+                    } else {
+                        when = String(localized: "soon")
+                    }
+                    return String(localized: "claude.ai dropped the response. Your \(windowLabel) limit is at \(util)% — the server is conserving capacity for short replies. Resets \(when). Switch to Apple Intelligence (free, on-device) or paste an API key in Settings to keep going now.")
+                }
+                // Probe failed or no window above threshold — fall back to
+                // a generic "long answer near limit" hint.
+                return String(localized: "claude.ai dropped the response — the predicted answer was long enough that the server declined to write it. Try a shorter follow-up, switch to Apple Intelligence, or paste a Claude API key in Settings.")
             }
             return "claude.ai: \(s)"
         }
+    }
+
+    /// Parse the `usage=[five_hour=12@... seven_day=85@... ...]` blob the
+    /// JS bridge appends to the empty-stream diagnostic. Returns the window
+    /// with the highest utilization (the one most likely to be the cause
+    /// of the soft drop).
+    private static func worstWindow(in s: String) -> (key: String, util: Int, resets: String?)? {
+        guard let start = s.range(of: "usage=["),
+              let end = s.range(of: "]", range: start.upperBound..<s.endIndex) else { return nil }
+        let blob = s[start.upperBound..<end.lowerBound]
+        var best: (String, Int, String?)?
+        for token in blob.split(separator: " ") {
+            // token like "seven_day=85@2026-05-05T14:00:01.174353+00:00"
+            let parts = token.split(separator: "=", maxSplits: 1)
+            guard parts.count == 2 else { continue }
+            let key = String(parts[0])
+            let valueAndResets = parts[1].split(separator: "@", maxSplits: 1)
+            guard let util = Int(valueAndResets[0]) else { continue }
+            let resets = valueAndResets.count > 1 ? String(valueAndResets[1]) : nil
+            if best == nil || util > best!.1 {
+                best = (key, util, resets)
+            }
+        }
+        return best
+    }
+
+    private static func parseISO8601(_ s: String) -> Date? {
+        let fmt = ISO8601DateFormatter()
+        fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = fmt.date(from: s) { return d }
+        fmt.formatOptions = [.withInternetDateTime]
+        return fmt.date(from: s)
     }
 
     /// Pull the `resetsAt=<epoch>` value out of the structured rate-limit
