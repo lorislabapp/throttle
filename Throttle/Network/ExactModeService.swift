@@ -145,6 +145,7 @@ final class ExactModeService {
         case .httpError(let c):    return .httpError(c)
         case .invalidResponse:     return .invalidResponse
         case .appleScript(let s):  return .appleScript(s)
+        case .scriptError(let s):  return .appleScript(s)  // map to existing variant
         }
     }
 }

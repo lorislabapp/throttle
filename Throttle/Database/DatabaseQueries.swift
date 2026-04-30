@@ -81,6 +81,12 @@ enum DatabaseQueries {
         offset: Int64,
         mtime: Int64
     ) throws {
-        try FileState(path: path, lastOffset: offset, lastMtime: mtime).save(db)
+        try FileState(
+            path: path,
+            lastOffset: offset,
+            lastMtime: mtime,
+            encodedProject: FileState.encodedProject(from: path),
+            sessionId: FileState.sessionId(from: path)
+        ).save(db)
     }
 }

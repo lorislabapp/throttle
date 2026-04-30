@@ -10,6 +10,7 @@ struct DropdownView: View {
         case settings(SettingsTab)
         case stats
         case about
+        case projects
     }
 
     enum SettingsTab: String, CaseIterable {
@@ -45,11 +46,25 @@ struct DropdownView: View {
                     StatsInline(onBack: { mode = .meter })
                 case .about:
                     AboutInline(onBack: { mode = .settings(.general) })
+                case .projects:
+                    ProjectWindowRoot(onBack: { mode = .meter })
                 }
             }
         }
         .padding(12)
-        .frame(width: 340)
+        .frame(width: dropdownWidth, height: dropdownHeight)
+    }
+
+    /// Dropdown grows to a "real window" footprint in projects mode.
+    /// MenuBarExtra `.window` style lets the popover size be driven by
+    /// the SwiftUI content's frame, so we adjust width + height per mode.
+    private var dropdownWidth: CGFloat {
+        if case .projects = mode { return 860 }
+        return 340
+    }
+    private var dropdownHeight: CGFloat? {
+        if case .projects = mode { return 540 }
+        return nil
     }
 
     // MARK: - Meter mode
@@ -114,11 +129,10 @@ struct DropdownView: View {
                     .foregroundStyle(.white.opacity(0.75))
             }
             Spacer(minLength: 0)
-            // Sparkline (Canvas) removed: macOS 26.5 RenderBox fails to
-            // load Metal shaders when a Canvas view is composited inside
-            // a MenuBarExtra `.window` style — crashes the dropdown on
-            // open. Today-delta copy below the number keeps the card
-            // feeling alive without touching Metal.
+            Sparkline(values: appState.savedTokensByDay,
+                      stroke: .white.opacity(0.95),
+                      fill: .white.opacity(0.18))
+                .frame(width: 64, height: 28)
         }
         .padding(12)
         .background(
@@ -149,17 +163,21 @@ struct DropdownView: View {
     /// from "+5.2k today". Yesterday comparison only shown when both days
     /// are non-zero, otherwise the delta is meaningless noise.
     private var todayDeltaCopy: String {
+        // Trimmed of the "This week — " prefix: the big number above is
+        // already the weekly total, so the subtitle line only needs to
+        // describe today's contribution. Keeps the copy in one line at
+        // the dropdown's 340pt width even with FR translations.
         let today = appState.savedTokensToday
         let yesterday = appState.savedTokensYesterday
         if today == 0 {
-            return String(localized: "This week — no save today yet")
+            return String(localized: "No save today yet")
         }
         if yesterday > 0 {
             let pct = Int((Double(today - yesterday) / Double(yesterday) * 100).rounded())
             let deltaSign = pct >= 0 ? "+" : ""
-            return String(localized: "This week — +\(formatTokens(today)) today (\(deltaSign)\(pct)% vs yesterday)")
+            return String(localized: "+\(formatTokens(today)) today · \(deltaSign)\(pct)% vs yesterday")
         }
-        return String(localized: "This week — +\(formatTokens(today)) today")
+        return String(localized: "+\(formatTokens(today)) today")
     }
 
     private func formatTokens(_ n: Int) -> String {
@@ -1545,39 +1563,62 @@ private struct AboutInline: View {
 
 // MARK: - Sparkline
 
-/// Tiny line+area chart for arrays of non-negative values. Skips Charts to
-/// keep the dropdown light and to render correctly on macOS 26.5 (Charts
-/// went invisible there in early 2026). Shapes the line as a smooth path
-/// so 7 daily points don't look jagged. All-zero arrays render an empty
-/// flat baseline rather than a divide-by-zero crash.
+/// Tiny line+area chart for arrays of non-negative values. Implemented
+/// with `Shape` (Core Animation) instead of `Canvas` (Metal/RenderBox),
+/// because Canvas inside MenuBarExtra `.window` style crashes the
+/// dropdown on macOS 26.5 — the regression that took down 2.0/2.1.
+/// Path-based shapes go through CGContext, not the Metal pipeline,
+/// and survive the regression. All-zero arrays render an empty flat
+/// baseline rather than a divide-by-zero crash.
 struct Sparkline: View {
     let values: [Int]
     let stroke: Color
     let fill: Color
 
     var body: some View {
-        Canvas { ctx, size in
-            guard values.count >= 2 else { return }
-            let maxV = max(values.max() ?? 0, 1)
-            let stepX = size.width / CGFloat(values.count - 1)
-            let pathPoints = values.enumerated().map { i, v -> CGPoint in
-                let x = CGFloat(i) * stepX
-                let y = size.height - (CGFloat(v) / CGFloat(maxV)) * size.height
-                return CGPoint(x: x, y: y)
-            }
-
-            var area = Path()
-            area.move(to: CGPoint(x: 0, y: size.height))
-            for p in pathPoints { area.addLine(to: p) }
-            area.addLine(to: CGPoint(x: size.width, y: size.height))
-            area.closeSubpath()
-            ctx.fill(area, with: .color(fill))
-
-            var line = Path()
-            line.move(to: pathPoints[0])
-            for p in pathPoints.dropFirst() { line.addLine(to: p) }
-            ctx.stroke(line, with: .color(stroke), style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+        ZStack {
+            SparklineArea(values: values).fill(fill)
+            SparklineLine(values: values).stroke(
+                stroke,
+                style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
+            )
         }
         .accessibilityHidden(true)
+    }
+}
+
+private struct SparklineArea: Shape {
+    let values: [Int]
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        guard values.count >= 2 else { return p }
+        let pts = sparklinePoints(values: values, in: rect)
+        p.move(to: CGPoint(x: 0, y: rect.height))
+        for c in pts { p.addLine(to: c) }
+        p.addLine(to: CGPoint(x: rect.width, y: rect.height))
+        p.closeSubpath()
+        return p
+    }
+}
+
+private struct SparklineLine: Shape {
+    let values: [Int]
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        guard values.count >= 2 else { return p }
+        let pts = sparklinePoints(values: values, in: rect)
+        p.move(to: pts[0])
+        for c in pts.dropFirst() { p.addLine(to: c) }
+        return p
+    }
+}
+
+private func sparklinePoints(values: [Int], in rect: CGRect) -> [CGPoint] {
+    let maxV = max(values.max() ?? 0, 1)
+    let stepX = rect.width / CGFloat(values.count - 1)
+    return values.enumerated().map { i, v in
+        let x = CGFloat(i) * stepX
+        let y = rect.height - (CGFloat(v) / CGFloat(maxV)) * rect.height
+        return CGPoint(x: x, y: y)
     }
 }

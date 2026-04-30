@@ -7,6 +7,7 @@ import SwiftUI
 struct ProjectsSidebar: View {
     let projects: [ProjectInfo]
     @Binding var selection: String?
+    @Binding var includeArchived: Bool
     @State private var search: String = ""
 
     private var filtered: [ProjectInfo] {
@@ -60,11 +61,17 @@ struct ProjectsSidebar: View {
     }
 
     private var footer: some View {
-        HStack {
+        HStack(spacing: 8) {
             Text("\(filtered.count) projects")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
             Spacer()
+            Toggle(isOn: $includeArchived) {
+                Text("Archived").font(.caption2)
+            }
+            .toggleStyle(.switch)
+            .controlSize(.mini)
+            .help("Show projects with no activity in the last 30 days")
         }
         .padding(.horizontal, 10).padding(.vertical, 6)
         .background(.regularMaterial)

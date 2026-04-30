@@ -29,6 +29,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Raise the per-process FD limit. macOS defaults to ~256 soft;
+        // LiveFileWatcher used to open one descriptor per session JSONL,
+        // and on heavy users with thousands of subagent files (now
+        // filtered out, but defensively cap higher anyway) we'd hit
+        // EMFILE which masquerades as "directory not readable".
+        var rlim = rlimit()
+        if getrlimit(RLIMIT_NOFILE, &rlim) == 0 {
+            let target = min(rlim.rlim_max, rlim_t(10_240))
+            if target > rlim.rlim_cur {
+                rlim.rlim_cur = target
+                setrlimit(RLIMIT_NOFILE, &rlim)
+            }
+        }
+
         // Skip the singleton check under XCTest — the test host bundle launches a
         // second Throttle.app process to load the test bundle, and the singleton
         // lock would terminate it before tests can run.

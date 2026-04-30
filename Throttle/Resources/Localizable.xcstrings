@@ -802,7 +802,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "tokens économisés"
+            "value": "économisés"
           }
         }
       }
@@ -2233,6 +2233,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "La session Claude web arrive en 2.1.x. Pour l'instant, utilisez Apple Intelligence (si votre Mac le supporte) ou collez une clé API Anthropic dans Réglages → Fournisseur IA."
+          }
+        }
+      }
+    },
+    "No save today yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune économie aujourd'hui"
+          }
+        }
+      }
+    },
+    "+%@ today": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%@ aujourd'hui"
+          }
+        }
+      }
+    },
+    "+%@ today · %@%lld%% vs yesterday": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%@ aujourd'hui · %@%lld %% vs hier"
           }
         }
       }

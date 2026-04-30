@@ -125,10 +125,13 @@ struct StatsInline: View {
                         .foregroundStyle(pct >= 0 ? .red : .green)
                 }
             }
+            Text("weighted")
+                .font(.system(size: 9))
+                .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10).padding(.vertical, 8)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(.quaternary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     private var trendCard: some View {
@@ -195,16 +198,16 @@ struct StatsInline: View {
                         modelRow(slice, totalTokens: total)
                     }
                 }
-                Text("Estimated API cost: \(formatEUR(costEUR))")
+                Text("If you were paying API rates: \(formatEUR(costEUR))")
                     .font(.caption).foregroundStyle(.secondary)
                     .padding(.top, 4)
                 if let projection = monthlyProjection {
-                    Text("Projected this month at this rate: \(formatEUR(projection))")
+                    Text("Extrapolated to a full month: \(formatEUR(projection))")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.primary)
                         .padding(.top, 2)
                 }
-                Text("(What this would have cost on the developer API at Anthropic's published rates.)")
+                Text("Reference number — Anthropic's per-token developer-API rates. Your Claude subscription cost is unrelated and stays at $20–$200/mo.")
                     .font(.caption2).foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -492,68 +495,61 @@ struct StatsInline: View {
 
 // MARK: - Line chart (CoreGraphics, no Metal)
 
+/// Line chart that doesn't use SwiftUI's Canvas. macOS 26.5's RenderBox
+/// fails to load Metal shaders for Canvas views inside a MenuBarExtra
+/// .window — the same regression that crashed the dropdown via Sparkline.
+/// We get the same visual with a plain ZStack of `Shape` views (each
+/// returns a Path). Path rendering uses CALayer's CGContext, not Metal,
+/// so it survives the regression.
 private struct LineChart: View {
     let points: [StatsDataService.LinePoint]
+    private let plotLeft: CGFloat = 28
 
     var body: some View {
-        Canvas { context, size in
-            guard !points.isEmpty else { return }
-            let bounds = computeBounds()
-            let yMax = computeYMax()
-            let plotLeft: CGFloat = 28
-            let plotWidth = size.width - plotLeft
-            let plotHeight = size.height - 4
-
-            // Gridlines at 0, mid, max
-            let yMarks = [0.0, yMax / 2.0, yMax]
-            for yVal in yMarks {
-                let yPos = plotHeight * (1 - CGFloat(yVal / yMax)) + 2
-                var path = Path()
-                path.move(to: CGPoint(x: plotLeft, y: yPos))
-                path.addLine(to: CGPoint(x: size.width, y: yPos))
-                context.stroke(path, with: .color(.secondary.opacity(0.20)), lineWidth: 0.5)
-
-                let label = Text("\(Int(yVal))%")
-                    .font(.system(size: 9, weight: .medium).monospacedDigit())
-                    .foregroundStyle(.secondary)
-                context.draw(label, at: CGPoint(x: 4, y: yPos), anchor: .leading)
-            }
-
-            // One series per window kind
-            for kind in [WindowKind.session5h, .weeklyAll, .weeklySonnet] {
-                drawSeries(in: &context, kind: kind, size: size, bounds: bounds, yMax: yMax,
-                           plotLeft: plotLeft, plotWidth: plotWidth, plotHeight: plotHeight)
+        GeometryReader { geo in
+            ZStack(alignment: .topLeading) {
+                gridlines(size: geo.size)
+                ForEach([WindowKind.session5h, .weeklyAll, .weeklySonnet], id: \.self) { kind in
+                    LineSeries(
+                        coords: coords(for: kind, size: geo.size),
+                        color: StatsInline.color(for: kind)
+                    )
+                }
             }
         }
     }
 
-    private func drawSeries(in context: inout GraphicsContext,
-                            kind: WindowKind,
-                            size: CGSize,
-                            bounds: (Date, Date),
-                            yMax: Double,
-                            plotLeft: CGFloat,
-                            plotWidth: CGFloat,
-                            plotHeight: CGFloat) {
-        let kindPoints = points.filter { $0.kind == kind }
-        guard !kindPoints.isEmpty else { return }
-        let span = max(1, bounds.1.timeIntervalSince(bounds.0))
-        let color = StatsInline.color(for: kind)
+    @ViewBuilder
+    private func gridlines(size: CGSize) -> some View {
+        let yMax = computeYMax()
+        let plotHeight = size.height - 4
+        ForEach([0.0, yMax / 2.0, yMax], id: \.self) { yVal in
+            let yPos = plotHeight * (1 - CGFloat(yVal / yMax)) + 2
+            ZStack(alignment: .leading) {
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.20))
+                    .frame(width: max(0, size.width - plotLeft), height: 0.5)
+                    .position(x: plotLeft + max(0, size.width - plotLeft) / 2, y: yPos)
+                Text("\(Int(yVal))%")
+                    .font(.system(size: 9, weight: .medium).monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .position(x: 14, y: yPos)
+            }
+        }
+    }
 
-        let coords: [CGPoint] = kindPoints.map { p in
+    private func coords(for kind: WindowKind, size: CGSize) -> [CGPoint] {
+        let kindPoints = points.filter { $0.kind == kind }
+        guard !kindPoints.isEmpty else { return [] }
+        let bounds = computeBounds()
+        let yMax = computeYMax()
+        let plotWidth = size.width - plotLeft
+        let plotHeight = size.height - 4
+        let span = max(1, bounds.1.timeIntervalSince(bounds.0))
+        return kindPoints.map { p in
             let x = plotLeft + CGFloat(p.timestamp.timeIntervalSince(bounds.0) / span) * plotWidth
             let y = plotHeight * (1 - CGFloat((p.percent * 100) / yMax)) + 2
             return CGPoint(x: x, y: y)
-        }
-
-        var path = Path()
-        path.move(to: coords[0])
-        for c in coords.dropFirst() { path.addLine(to: c) }
-        context.stroke(path, with: .color(color), style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-
-        for c in coords {
-            let dot = CGRect(x: c.x - 2.5, y: c.y - 2.5, width: 5, height: 5)
-            context.fill(Path(ellipseIn: dot), with: .color(color))
         }
     }
 
@@ -573,6 +569,40 @@ private struct LineChart: View {
         if maxPct >= 25  { return 50 }
         if maxPct >= 10  { return 25 }
         return 10
+    }
+}
+
+/// One series in the LineChart: stroked path + small dot at each sample.
+/// `Shape` impls go through Core Animation, not Metal — the macOS 26.5
+/// RenderBox regression that kills Canvas doesn't affect them.
+private struct LineSeries: View {
+    let coords: [CGPoint]
+    let color: Color
+
+    var body: some View {
+        if coords.count >= 2 {
+            ZStack {
+                LinePath(points: coords)
+                    .stroke(color, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                ForEach(coords.indices, id: \.self) { i in
+                    Circle()
+                        .fill(color)
+                        .frame(width: 5, height: 5)
+                        .position(x: coords[i].x, y: coords[i].y)
+                }
+            }
+        }
+    }
+}
+
+private struct LinePath: Shape {
+    let points: [CGPoint]
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        guard let first = points.first else { return p }
+        p.move(to: first)
+        for c in points.dropFirst() { p.addLine(to: c) }
+        return p
     }
 }
 

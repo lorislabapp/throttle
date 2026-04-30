@@ -55,7 +55,7 @@ struct ProjectOptimizerTab: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(maxWidth: 360)
+            .frame(maxWidth: 420)
             Spacer()
             if hasChanges {
                 Text("Unsaved")
@@ -63,7 +63,7 @@ struct ProjectOptimizerTab: View {
                     .foregroundStyle(.orange)
             }
         }
-        .padding(.horizontal, 12).padding(.vertical, 8)
+        .padding(.horizontal, 16).padding(.vertical, 10)
     }
 
     private var editorPanes: some View {

@@ -9,12 +9,30 @@ final class AIProviderRegistry {
     static let shared = AIProviderRegistry()
 
     private let defaultsKey = "aiProviderKind"
+    private let qualityKey  = "aiQualityPreference"
 
     private let appleIntel = AppleIntelligenceProvider()
     private let claudeKey  = ClaudeAPIKeyProvider()
     private let claudeWeb  = ClaudeWebSessionProvider()
 
     private init() {}
+
+    /// User's accuracy/speed preference. Default = .maxAccuracy: the
+    /// assistant is an audit tool, wrong recommendations are worse than
+    /// slow ones. Users can opt down to .balanced or .speed if they care
+    /// about latency or per-call cost more than accuracy.
+    var qualityPreference: AIQualityPreference {
+        get {
+            guard let raw = UserDefaults.standard.string(forKey: qualityKey),
+                  let q = AIQualityPreference(rawValue: raw) else {
+                return .maxAccuracy
+            }
+            return q
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: qualityKey)
+        }
+    }
 
     /// User's persisted preference, or nil if untouched.
     var preferredKind: AIProviderKind? {

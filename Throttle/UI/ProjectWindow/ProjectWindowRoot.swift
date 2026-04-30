@@ -7,9 +7,11 @@ import SwiftUI
 /// Trial-active users get the same experience as Pro.
 struct ProjectWindowRoot: View {
     @Environment(AppState.self) private var appState
+    let onBack: () -> Void
     @State private var projects: [ProjectInfo] = []
     @State private var selectedProjectID: String?
     @State private var selectedTab: Tab = .stats
+    @State private var includeArchived: Bool = false
 
     enum Tab: String, CaseIterable, Identifiable {
         case stats     = "Stats"
@@ -39,19 +41,40 @@ struct ProjectWindowRoot: View {
     }
 
     var body: some View {
-        NavigationSplitView {
-            ProjectsSidebar(projects: projects, selection: $selectedProjectID)
-                .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 320)
-        } detail: {
-            if let project = selectedProject {
-                detailContent(for: project)
-            } else {
-                emptyState
+        VStack(spacing: 0) {
+            header
+            Divider()
+            HStack(spacing: 0) {
+                ProjectsSidebar(
+                    projects: projects,
+                    selection: $selectedProjectID,
+                    includeArchived: $includeArchived
+                )
+                .frame(width: 220)
+                Divider()
+                if let project = selectedProject {
+                    detailContent(for: project)
+                } else {
+                    emptyState
+                }
             }
         }
-        .frame(minWidth: 720, minHeight: 420)
         .onAppear { reloadProjects() }
-        .onChange(of: appState.snapshot) { _, _ in reloadProjects() }
+        .onChange(of: includeArchived) { _, _ in reloadProjects() }
+    }
+
+    private var header: some View {
+        HStack {
+            Button { onBack() } label: {
+                Label("Back", systemImage: "chevron.left")
+            }
+            .buttonStyle(.borderless)
+            Spacer()
+            Text("Project window").font(.headline)
+            Spacer()
+            Spacer().frame(width: 56)
+        }
+        .padding(.horizontal, 4).padding(.vertical, 4)
     }
 
     private var selectedProject: ProjectInfo? {
@@ -60,9 +83,11 @@ struct ProjectWindowRoot: View {
     }
 
     private func reloadProjects() {
-        let list = ProjectsService.listProjects(includeArchived: false)
+        let list = ProjectsService.listProjects(includeArchived: includeArchived)
         self.projects = list
-        if selectedProjectID == nil {
+        if let id = selectedProjectID, !list.contains(where: { $0.id == id }) {
+            self.selectedProjectID = list.first?.id
+        } else if selectedProjectID == nil {
             self.selectedProjectID = list.first?.id
         }
     }

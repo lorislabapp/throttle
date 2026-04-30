@@ -189,14 +189,14 @@ enum StatsDataService {
         let nowEpoch = Int64(now.timeIntervalSince1970)
         let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
         let startTs = nowEpoch - Int64(toHoursAgo) * 3600
-        let pattern = "%/\(encodedName)/%.jsonl"
+        let _ = encodedName  // see fs.encoded_project filter below
         let sql = """
             SELECT COALESCE(SUM(e.input_tokens + e.output_tokens + e.cache_create + (e.cache_read / 10)), 0) AS w
             FROM usage_events e
-            JOIN file_state fs ON fs.path LIKE '%/' || e.session_id || '.jsonl'
-            WHERE e.timestamp >= ? AND e.timestamp < ? AND fs.path LIKE ?
+            JOIN file_state fs ON fs.session_id = e.session_id
+            WHERE e.timestamp >= ? AND e.timestamp < ? AND fs.encoded_project = ?
             """
-        let row = try Row.fetchOne(db, sql: sql, arguments: [startTs, endTs, pattern])
+        let row = try Row.fetchOne(db, sql: sql, arguments: [startTs, endTs, encodedName])
         return row?["w"] ?? 0
     }
 
@@ -211,16 +211,16 @@ enum StatsDataService {
         let nowEpoch = Int64(now.timeIntervalSince1970)
         let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
         let startTs = nowEpoch - Int64(toHoursAgo) * 3600
-        let pattern = "%/\(encodedName)/%.jsonl"
+        let _ = encodedName  // see fs.encoded_project filter below
         let sql = """
             SELECT
                 COUNT(DISTINCT e.session_id) AS sessions,
                 COALESCE(SUM(e.input_tokens + e.output_tokens + e.cache_create + (e.cache_read / 10)), 0) AS total
             FROM usage_events e
-            JOIN file_state fs ON fs.path LIKE '%/' || e.session_id || '.jsonl'
-            WHERE e.timestamp >= ? AND e.timestamp < ? AND fs.path LIKE ?
+            JOIN file_state fs ON fs.session_id = e.session_id
+            WHERE e.timestamp >= ? AND e.timestamp < ? AND fs.encoded_project = ?
             """
-        let row = try Row.fetchOne(db, sql: sql, arguments: [startTs, endTs, pattern])
+        let row = try Row.fetchOne(db, sql: sql, arguments: [startTs, endTs, encodedName])
         let sessions: Int = row?["sessions"] ?? 0
         let total: Int = row?["total"] ?? 0
         let avg = sessions > 0 ? total / sessions : 0
@@ -238,7 +238,7 @@ enum StatsDataService {
         let nowEpoch = Int64(now.timeIntervalSince1970)
         let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
         let startTs = nowEpoch - Int64(toHoursAgo) * 3600
-        let pattern = "%/\(encodedName)/%.jsonl"
+        let _ = encodedName  // see fs.encoded_project filter below
         let sql = """
             SELECT
                 CASE
@@ -249,11 +249,11 @@ enum StatsDataService {
                 END AS bucket,
                 SUM(e.input_tokens + e.output_tokens + e.cache_create + (e.cache_read / 10)) AS w
             FROM usage_events e
-            JOIN file_state fs ON fs.path LIKE '%/' || e.session_id || '.jsonl'
-            WHERE e.timestamp >= ? AND e.timestamp < ? AND fs.path LIKE ?
+            JOIN file_state fs ON fs.session_id = e.session_id
+            WHERE e.timestamp >= ? AND e.timestamp < ? AND fs.encoded_project = ?
             GROUP BY bucket
             """
-        let rows = try Row.fetchAll(db, sql: sql, arguments: [startTs, endTs, pattern])
+        let rows = try Row.fetchAll(db, sql: sql, arguments: [startTs, endTs, encodedName])
         let total: Int = rows.reduce(0) { $0 + ($1["w"] ?? 0) }
         guard total > 0 else { return [] }
         return rows.compactMap { r in
@@ -273,7 +273,7 @@ enum StatsDataService {
         let nowEpoch = Int64(now.timeIntervalSince1970)
         let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
         let startTs = nowEpoch - Int64(toHoursAgo) * 3600
-        let pattern = "%/\(encodedName)/%.jsonl"
+        let _ = encodedName  // see fs.encoded_project filter below
         let sql = """
             SELECT
                 CASE
@@ -287,11 +287,11 @@ enum StatsDataService {
                 SUM(e.cache_create) AS cc,
                 SUM(e.cache_read) AS cr
             FROM usage_events e
-            JOIN file_state fs ON fs.path LIKE '%/' || e.session_id || '.jsonl'
-            WHERE e.timestamp >= ? AND e.timestamp < ? AND fs.path LIKE ?
+            JOIN file_state fs ON fs.session_id = e.session_id
+            WHERE e.timestamp >= ? AND e.timestamp < ? AND fs.encoded_project = ?
             GROUP BY bucket
             """
-        let rows = try Row.fetchAll(db, sql: sql, arguments: [startTs, endTs, pattern])
+        let rows = try Row.fetchAll(db, sql: sql, arguments: [startTs, endTs, encodedName])
         let usdToEur: Double = 0.93
         var totalUsd: Double = 0
         for row in rows {
@@ -382,8 +382,11 @@ enum StatsDataService {
     }
 
     /// Top N projects by token spend in the given range. Joins
-    /// `usage_events` by `session_id` to `file_state` via JSONL path.
-    /// Returns at most `limit` rows.
+    /// `usage_events` by `session_id` to `file_state` via JSONL path,
+    /// filters out subagent transcripts (they live under
+    /// `<project>/<session>/subagents/agent-*.jsonl` and would otherwise
+    /// pollute the grouping), then aggregates by the encoded project dir
+    /// — the segment matching `~/.claude/projects/-X-Y-Z/`.
     static func topProjects(in db: Database, range: Range, limit: Int = 5, now: Date = Date()) throws -> [ProjectSlice] {
         let cutoff = range.cutoff(now: now)
         let where_ = cutoff > 0 ? "WHERE e.timestamp >= ?" : ""
@@ -391,15 +394,20 @@ enum StatsDataService {
             SELECT fs.path AS path,
                    SUM(e.input_tokens + e.output_tokens + e.cache_create + (e.cache_read / 10)) AS weighted
             FROM usage_events e
-            JOIN file_state fs ON fs.path LIKE '%/' || e.session_id || '.jsonl'
+            JOIN file_state fs ON fs.session_id = e.session_id
             \(where_)
+            AND fs.path NOT LIKE '%/subagents/%'
             GROUP BY fs.path
             """
         let rows = cutoff > 0
             ? try Row.fetchAll(db, sql: sql, arguments: [cutoff])
             : try Row.fetchAll(db, sql: sql)
 
-        // Aggregate by directory (multiple sessions per project).
+        // Aggregate by encoded project directory. The path layout is
+        //   ~/.claude/projects/-Users-foo-GitHub-Bar/<session>.jsonl
+        // so the project dir = parent of the .jsonl. We extract that
+        // and key the aggregate on it, decoded to the real filesystem
+        // path for display.
         var byProject: [String: Int] = [:]
         for row in rows {
             guard let path: String = row["path"] else { continue }
@@ -408,16 +416,16 @@ enum StatsDataService {
             byProject[dir, default: 0] += weighted
         }
 
-        return byProject
-            .map { (encoded, tokens) -> ProjectSlice in
-                let decoded = decodeClaudeProjectPath(encoded)
-                let name = (decoded as NSString).lastPathComponent
-                return ProjectSlice(
-                    projectName: name.isEmpty ? "(unknown)" : name,
-                    projectPath: decoded,
-                    weightedTokens: tokens
-                )
-            }
+        let slices = byProject.map { (encoded, tokens) -> ProjectSlice in
+            let decoded = decodeClaudeProjectPath(encoded)
+            let name = (decoded as NSString).lastPathComponent
+            return ProjectSlice(
+                projectName: name.isEmpty ? "(unknown)" : name,
+                projectPath: decoded,
+                weightedTokens: tokens
+            )
+        }
+        return slices
             .sorted { $0.weightedTokens > $1.weightedTokens }
             .prefix(limit)
             .map { $0 }
@@ -427,12 +435,13 @@ enum StatsDataService {
     /// real filesystem path. Format:
     ///   /Users/kevin/.claude/projects/-Users-kevin-GitHub-Throttle
     /// → /Users/kevin/GitHub/Throttle
+    /// Defers to ProjectsService.decodePath, which tries multiple
+    /// candidate path partitions and prefers the one that exists on
+    /// disk — disambiguates real-world cases like `Lumen-for-Frigate`
+    /// where the naive replace would produce `/Lumen/for/Frigate`.
     private static func decodeClaudeProjectPath(_ projectsSubdir: String) -> String {
         let encoded = (projectsSubdir as NSString).lastPathComponent
-        // Encoded form: leading "-" then path with "/" replaced by "-".
-        guard encoded.hasPrefix("-") else { return projectsSubdir }
-        let withoutLead = String(encoded.dropFirst())
-        return "/" + withoutLead.replacingOccurrences(of: "-", with: "/")
+        return ProjectsService.decodePath(encoded) ?? projectsSubdir
     }
 
     // MARK: - Hook savings

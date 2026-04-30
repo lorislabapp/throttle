@@ -76,6 +76,65 @@ enum Migrations {
             )
         }
 
+        // v4: indexed encoded_project column on file_state.
+        // Per-project queries used to JOIN via `LIKE '%/<encoded>/%.jsonl'`,
+        // which SQLite cannot index — full table scan over ~6700 rows for
+        // each query, multiplied by 5 queries per project click → a 10-20s
+        // freeze when opening the project window's Stats tab. With this
+        // column populated and indexed, the same query becomes a B-tree
+        // lookup.
+        migrator.registerMigration("v4_file_state_encoded_project") { db in
+            try db.alter(table: "file_state") { t in
+                t.add(column: "encoded_project", .text)
+            }
+            try db.execute(sql: """
+                UPDATE file_state
+                SET encoded_project = CASE
+                    WHEN path LIKE '%/projects/%' THEN
+                        substr(
+                            substr(path, instr(path, '/projects/') + 10),
+                            1,
+                            instr(substr(path, instr(path, '/projects/') + 10), '/') - 1
+                        )
+                    ELSE NULL
+                END
+            """)
+            try db.create(
+                index: "idx_fs_encoded_project",
+                on: "file_state",
+                columns: ["encoded_project"]
+            )
+        }
+
+        // v5: indexed session_id column on file_state. The per-project
+        // JOIN was still slow under v4 because it used a LIKE pattern,
+        // which SQLite can't index. With session_id stored as a column
+        // and indexed, the JOIN becomes an equality lookup → instant.
+        migrator.registerMigration("v5_file_state_session_id") { db in
+            try db.alter(table: "file_state") { t in
+                t.add(column: "session_id", .text)
+            }
+            // Backfill via Swift — SQLite lacks `reverse()`/`rinstr()` so
+            // extracting the basename in pure SQL would be ugly. The
+            // session_id is the path's last component minus `.jsonl`.
+            let rows = try Row.fetchAll(db, sql: "SELECT path FROM file_state")
+            for row in rows {
+                guard let path: String = row["path"] else { continue }
+                let last = (path as NSString).lastPathComponent
+                guard last.hasSuffix(".jsonl") else { continue }
+                let sid = String(last.dropLast(".jsonl".count))
+                try db.execute(
+                    sql: "UPDATE file_state SET session_id = ? WHERE path = ?",
+                    arguments: [sid, path]
+                )
+            }
+            try db.create(
+                index: "idx_fs_session_id",
+                on: "file_state",
+                columns: ["session_id"]
+            )
+        }
+
         try migrator.migrate(writer)
     }
 }

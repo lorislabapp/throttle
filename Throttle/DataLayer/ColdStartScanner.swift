@@ -62,6 +62,13 @@ struct ColdStartScanner {
 
         var results: [URL] = []
         for case let url as URL in enumerator {
+            // Skip subagent transcripts. They live under
+            //   .../<session>/subagents/agent-XXX.jsonl
+            // and can multiply into thousands per project, exhausting
+            // the per-process FD limit when the file watcher attaches
+            // a dispatch source to each one. The meter only needs the
+            // top-level session JSONLs to compute usage.
+            if url.path.contains("/subagents/") { continue }
             if url.pathExtension == "jsonl" {
                 results.append(url)
             }

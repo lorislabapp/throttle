@@ -10,9 +10,20 @@ import Foundation
 struct ClaudeAPIKeyProvider: AIProvider {
     let displayName = "Claude API (your key)"
 
-    private let model: String = "claude-sonnet-4-6"
     private let endpoint = URL(string: "https://api.anthropic.com/v1/messages")!
     private let anthropicVersion = "2023-06-01"
+
+    /// The model used per chat is decided by the user's quality
+    /// preference. Default is Opus to maximize audit accuracy; users
+    /// who care more about latency or per-call cost can opt down.
+    @MainActor
+    private var modelForCurrentPreference: String {
+        switch AIProviderRegistry.shared.qualityPreference {
+        case .maxAccuracy: return "claude-opus-4-7"
+        case .balanced:    return "claude-sonnet-4-6"
+        case .speed:       return "claude-haiku-4-5"
+        }
+    }
 
     var isAvailable: Bool {
         get async { ClaudeAPIKeyStore.read() != nil }
@@ -25,6 +36,7 @@ struct ClaudeAPIKeyProvider: AIProvider {
         guard let key = ClaudeAPIKeyStore.read() else {
             throw AIProviderError.noAPIKey
         }
+        let model = await modelForCurrentPreference
 
         var req = URLRequest(url: endpoint)
         req.httpMethod = "POST"
@@ -35,7 +47,7 @@ struct ClaudeAPIKeyProvider: AIProvider {
 
         let body: [String: Any] = [
             "model": model,
-            "max_tokens": 1024,
+            "max_tokens": 4096,
             "stream": true,
             "system": context.asSystemPrompt(),
             "messages": messages
