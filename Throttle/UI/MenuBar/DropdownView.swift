@@ -149,14 +149,76 @@ struct DropdownView: View {
                 )
         )
         .padding(.top, 10)
+        .overlay(alignment: .bottom) { milestoneCelebration }
         .onChange(of: appState.savedTokensThisWeek) { old, new in
-            guard new > old else { return }
-            savingsLeafPulse = true
-            Task {
-                try? await Task.sleep(for: .milliseconds(900))
-                await MainActor.run { savingsLeafPulse = false }
+            // Pulse the leaf when the counter ticks up, and check whether
+            // we crossed a "1 month of Pro" / "1 month of Max" threshold
+            // for the first time. The MilestoneTracker maintains a
+            // lifetime counter and persists which milestones already
+            // fired, so the celebration only happens once per threshold.
+            if new > old {
+                savingsLeafPulse = true
+                Task {
+                    try? await Task.sleep(for: .milliseconds(900))
+                    await MainActor.run { savingsLeafPulse = false }
+                }
+            }
+            _ = MilestoneTracker.shared.observeWeeklySnapshot(new)
+        }
+        .onAppear {
+            _ = MilestoneTracker.shared.observeWeeklySnapshot(appState.savedTokensThisWeek)
+        }
+    }
+
+    /// Bottom-aligned celebration banner that appears when the lifetime
+    /// savings cross a milestone (1 day / 1 week / 1 month of Pro, Max
+    /// 5×, Max 20×). Auto-dismisses after 8 s; tap to dismiss earlier.
+    @ViewBuilder
+    private var milestoneCelebration: some View {
+        if let m = MilestoneTracker.shared.pendingCelebration {
+            HStack(spacing: 8) {
+                Text(m.emoji).font(.system(size: 20))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(m.label)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text("Throttle paid for itself \(timesPaidBack(m))").font(.caption2)
+                        .foregroundStyle(.white.opacity(0.85))
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(.white.opacity(0.55))
+                    .onTapGesture { MilestoneTracker.shared.dismissCelebration() }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(LinearGradient(
+                        colors: [Color(red: 0.32, green: 0.16, blue: 0.55),
+                                 Color(red: 0.55, green: 0.27, blue: 0.85)],
+                        startPoint: .leading, endPoint: .trailing
+                    ))
+            )
+            .padding(.horizontal, 8)
+            .padding(.bottom, 6)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .onAppear {
+                Task {
+                    try? await Task.sleep(for: .seconds(8))
+                    await MainActor.run { MilestoneTracker.shared.dismissCelebration() }
+                }
             }
         }
+    }
+
+    private func timesPaidBack(_ m: MilestoneTracker.Milestone) -> String {
+        let lifetime = MilestoneTracker.shared.lifetimeEUR + Double(appState.savedTokensThisWeek) / 1_000_000 * 2.76
+        let multiple = lifetime / m.thresholdEUR
+        if multiple >= 2 {
+            return String(format: String(localized: "%.1f×"), multiple)
+        }
+        return String(localized: "1×")
     }
 
     /// Copy below the big number — distinguishes "no save today (yet)"

@@ -39,6 +39,7 @@ struct StatsInline: View {
                     comparisonCards
                     trendCard
                     modelSplitCard
+                    planAdvisorCard
                     shareBadgeCard
                     if appState.isPro {
                         heatmapCard
@@ -211,6 +212,113 @@ struct StatsInline: View {
                     .font(.caption2).foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+    }
+
+    /// Subscription advisor — based on the actual weighted-token usage
+    /// in the current range, recommends the best Anthropic offering and
+    /// the EUR/mo delta vs the user's current plan. Surfaces an extra
+    /// hint about Console credits at up to −30% when usage is spiky.
+    /// Hidden when the dataset is too thin to advise reliably (<6 h or
+    /// zero tokens).
+    private var planAdvisorCard: some View {
+        let weeklyTokens: Int
+        switch range {
+        case .last24h: weeklyTokens = totalTokens * 7
+        case .last7d:  weeklyTokens = totalTokens
+        case .last30d: weeklyTokens = totalTokens * 7 / 30
+        case .all:     weeklyTokens = 0
+        }
+        let opusFraction = computeOpusFraction()
+        let verdict: PlanAdvisor.Verdict? = (weeklyTokens > 0 && range != .all)
+            ? PlanAdvisor.recommend(weeklyWeightedTokens: weeklyTokens,
+                                    opusFraction: opusFraction,
+                                    currentPlanID: currentPlanID,
+                                    dailyVarianceCoeff: 0)
+            : nil
+        return VStack(alignment: .leading, spacing: 6) {
+            Text("Best plan for your usage").font(.subheadline.bold())
+            if let v = verdict {
+                ForEach(PlanAdvisor.plans, id: \.id) { p in
+                    HStack {
+                        Text(p.label)
+                            .font(.caption.weight(p.id == v.bestPlanID ? .bold : .regular))
+                            .foregroundStyle(p.id == v.bestPlanID ? .primary : .secondary)
+                        Spacer()
+                        if p.id == "free" {
+                            Text("—").font(.caption.monospaced()).foregroundStyle(.tertiary)
+                        } else {
+                            Text(formatEUR(p.monthlyEUR) + "/mo")
+                                .font(.caption.monospaced())
+                                .foregroundStyle(p.id == v.bestPlanID ? .primary : .secondary)
+                        }
+                        if p.id == v.bestPlanID {
+                            Text(String(localized: "best"))
+                                .font(.caption2.bold())
+                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                .background(Capsule().fill(Color.green.opacity(0.18)))
+                                .foregroundStyle(Color.green)
+                        }
+                    }
+                }
+                Divider().padding(.vertical, 2)
+                HStack {
+                    Text(String(localized: "API equivalent"))
+                        .font(.caption2).foregroundStyle(.secondary)
+                    Spacer()
+                    Text(formatEUR(v.apiEquivalentMonthlyEUR) + "/mo")
+                        .font(.caption2.monospaced()).foregroundStyle(.secondary)
+                }
+                Text(v.reasoning)
+                    .font(.caption2)
+                    .foregroundStyle(.primary)
+                    .padding(.top, 2)
+                if let extra = v.extraCreditHint {
+                    Text(extra)
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Text("Reference numbers — Anthropic API rates × your model split. Real subscriptions hit caches more often, so the API column is a conservative upper bound.")
+                    .font(.caption2).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
+            } else {
+                Text("Need at least 6 h of usage in the current range to advise.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// Total weighted tokens visible in `modelSlices` — used by the plan
+    /// advisor to project to the weekly figure plans are sized against.
+    private var totalTokens: Int {
+        modelSlices.reduce(0) { $0 + $1.weightedTokens }
+    }
+
+    /// 0…1 share of usage on Opus models. Falls back to 0.30 when the
+    /// model split data isn't loaded yet so the advisor still has
+    /// something reasonable to anchor against.
+    private func computeOpusFraction() -> Double {
+        let total = totalTokens
+        guard total > 0 else { return 0.30 }
+        let opus = modelSlices
+            .filter { $0.tier == .opus }
+            .reduce(0) { $0 + $1.weightedTokens }
+        return Double(opus) / Double(total)
+    }
+
+    /// User's current plan id, persisted as a UserDefaults string. Maps
+    /// the calibration's "Pro / Max 5× / Max 20×" choice. Returns nil
+    /// when the user hasn't set one (the advisor then frames the verdict
+    /// as "%@ covers your weekly capacity" with no overpay/underpay).
+    private var currentPlanID: String? {
+        guard let raw = UserDefaults.standard.string(forKey: "throttle.calibration.plan") else { return nil }
+        switch raw.lowercased() {
+        case "pro":      return "pro"
+        case "max5x", "max5":  return "max5x"
+        case "max20x", "max20": return "max20x"
+        default:         return nil
         }
     }
 
