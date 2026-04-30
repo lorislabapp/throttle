@@ -557,7 +557,7 @@ struct DropdownView: View {
 
             Divider()
 
-            ScrollView {
+            ScrollView(.vertical) {
                 Group {
                     switch tab {
                     case .general:     InlineGeneralPane()
@@ -567,6 +567,7 @@ struct DropdownView: View {
                     }
                 }
                 .padding(.vertical, 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(minHeight: 180, maxHeight: 320)
         }
@@ -1089,7 +1090,10 @@ private struct InlineGeneralPane: View {
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Picker("", selection: Binding(
+            // Menu (dropdown) picker — segmented didn't fit at 340 pt with FR
+            // labels + "(unavailable)" suffix and silently widened the popover
+            // beyond the screen edge.
+            Picker("Provider", selection: Binding(
                 get: { aiSelection ?? defaultProviderKind() },
                 set: { newValue in
                     aiSelection = newValue
@@ -1097,21 +1101,22 @@ private struct InlineGeneralPane: View {
                 }
             )) {
                 ForEach(AIProviderKind.allCases, id: \.self) { kind in
-                    HStack(spacing: 4) {
-                        Text(kindLabel(kind))
-                        if aiAvailability[kind] == false {
-                            Text("(unavailable)")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
-                    .tag(kind as AIProviderKind?)
+                    let unavailable = aiAvailability[kind] == false
+                    Text(unavailable ? "\(kindLabel(kind)) — \(String(localized: "unavailable"))" : kindLabel(kind))
+                        .tag(kind as AIProviderKind?)
                 }
             }
-            .pickerStyle(.segmented)
+            .pickerStyle(.menu)
             .labelsHidden()
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            if (aiSelection ?? defaultProviderKind()) == .claudeAPIKey {
+            let active = aiSelection ?? defaultProviderKind()
+            if aiAvailability[active] == false {
+                Text("This provider isn't available right now. Pick another or fix the setup below.")
+                    .font(.caption2).foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if active == .claudeAPIKey {
                 aiKeyField
             }
         }

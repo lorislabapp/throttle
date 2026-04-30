@@ -219,6 +219,21 @@ struct ClaudeWebSessionProvider: AIProvider {
                     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
                 });
                 compX.send(compBody);
+                if (compX.status === 429) {
+                    // Hard rate-limit. Parse the structured body for resetsAt
+                    // + which window (five_hour / seven_day) so Swift can
+                    // surface a human-readable "Resets in 47 min" message.
+                    var rep = '', resetsAt = 0;
+                    try {
+                        var body = JSON.parse(compX.responseText);
+                        var em = body && body.error && body.error.message;
+                        if (em && typeof em === 'object') {
+                            rep = em.representativeClaim || '';
+                            resetsAt = em.resetsAt || 0;
+                        }
+                    } catch(e) {}
+                    return JSON.stringify({_throttle_status: 429, _err: 'rate_limit window=' + rep + ' resetsAt=' + resetsAt});
+                }
                 if (compX.status >= 400) return JSON.stringify({_throttle_status: compX.status, _err: 'complete:' + compX.responseText.substring(0,200)});
 
                 // Concatenate every text delta from the SSE stream.
@@ -281,15 +296,42 @@ struct ClaudeWebSessionProvider: AIProvider {
         case .appleScript(let s):
             return "AppleScript: \(s)"
         case .scriptError(let s):
+            // Hard 429 from claude.ai. Format the resetsAt as a localized
+            // relative date so the user knows when their budget comes back.
+            if s.contains("rate_limit"),
+               let resetsAt = Self.extractResetsAt(s),
+               resetsAt > 0 {
+                let date = Date(timeIntervalSince1970: TimeInterval(resetsAt))
+                let fmt = RelativeDateTimeFormatter()
+                fmt.unitsStyle = .full
+                let when = fmt.localizedString(for: date, relativeTo: Date())
+                let window: String
+                if s.contains("five_hour") {
+                    window = String(localized: "5-hour")
+                } else if s.contains("seven_day") {
+                    window = String(localized: "weekly")
+                } else {
+                    window = String(localized: "Pro/Max")
+                }
+                return String(localized: "Your Claude \(window) limit is exhausted. Resets \(when). Switch to Apple Intelligence or paste an API key in Settings to keep going.")
+            }
             // status=200 + rawLen=0 = claude.ai aborted the stream before
-            // writing any events. The most common cause is the user being
-            // near their 5 h Pro/Max limit OR the predicted output being
-            // long enough that the budget heuristic refuses. Surface a
-            // friendlier message instead of the raw diagnostic.
+            // writing any events. Soft drop — usually long predicted output
+            // when near the limit.
             if s.contains("status=200"), s.contains("rawLen=0") {
                 return String(localized: "claude.ai dropped the response — likely because the predicted answer is long and you're near your 5-hour Pro/Max limit, or your conversation has too many turns. Try a shorter follow-up, switch to Apple Intelligence, or paste a Claude API key in Settings.")
             }
             return "claude.ai: \(s)"
         }
+    }
+
+    /// Pull the `resetsAt=<epoch>` value out of the structured rate-limit
+    /// diagnostic emitted by the JS bridge. Returns nil if the key is
+    /// missing or unparseable.
+    private static func extractResetsAt(_ s: String) -> Int? {
+        guard let range = s.range(of: "resetsAt=") else { return nil }
+        let tail = s[range.upperBound...]
+        let digits = tail.prefix { $0.isNumber }
+        return Int(digits)
     }
 }
