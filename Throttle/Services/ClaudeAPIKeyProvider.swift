@@ -1,10 +1,38 @@
 import Foundation
 
+/// Per-session store of the assistant's most recent batch of tool_use
+/// blocks. Keyed by the same `ClaudeWebSessionScope.sessionId` TaskLocal
+/// the Web Session provider uses, so the Assistant tab's `send()` →
+/// `runAssistantTurn(...)` chain naturally scopes the cache to one
+/// user-typed turn. Cleared after recursion ends.
+actor APIKeyToolStateStore {
+    static let shared = APIKeyToolStateStore()
+    private var cache: [UUID: [ClaudeAPIKeyProtocol.ToolUseBlock]] = [:]
+    func uses(for id: UUID) -> [ClaudeAPIKeyProtocol.ToolUseBlock] {
+        cache[id] ?? []
+    }
+    func set(_ uses: [ClaudeAPIKeyProtocol.ToolUseBlock], for id: UUID) {
+        cache[id] = uses
+    }
+    func clear(_ id: UUID) {
+        cache.removeValue(forKey: id)
+    }
+}
+
 /// AI provider that talks to Anthropic's official `/v1/messages` API
 /// with a user-supplied key. The key is stored in the macOS Keychain
 /// (service `com.lorislab.throttle.anthropic`, account `key`).
 ///
-/// Streams via SSE; emits text deltas as the server produces them.
+/// Uses Anthropic's native `tool_use` / `tool_result` content blocks
+/// (defined in `ClaudeAPIKeyProtocol`) for the read_file / list_files
+/// tool flow — gives free retry-on-malformed and proper multi-turn
+/// linkage. Internally translates the native tool_use blocks back to
+/// fenced ```tool blocks in the streamed text so the recursion layer
+/// in `ProjectAssistantTab` continues to drive the loop with one
+/// parser. Apple Intelligence and the Safari Bridge can't emit native
+/// tool_use, so the fenced format is still the lowest-common-denominator
+/// for them.
+///
 /// All cost lands on the user's Anthropic account, not LorisLabs —
 /// the provider is BYO key.
 struct ClaudeAPIKeyProvider: AIProvider {
@@ -38,22 +66,31 @@ struct ClaudeAPIKeyProvider: AIProvider {
         }
         let model = await modelForCurrentPreference
 
+        // Pull the prior batch of tool_use blocks from the per-session
+        // cache so we can rebuild the assistant→user pair as native
+        // tool_use + tool_result content blocks. Empty on the first
+        // turn (which is the no-tool path).
+        let sessionId = ClaudeWebSessionScope.sessionId
+        let priorToolUses: [ClaudeAPIKeyProtocol.ToolUseBlock]
+        if let id = sessionId {
+            priorToolUses = await APIKeyToolStateStore.shared.uses(for: id)
+        } else {
+            priorToolUses = []
+        }
+
+        let body = ClaudeAPIKeyProtocol.buildRequestBody(
+            messages: messages,
+            system: context.asSystemPrompt(),
+            model: model,
+            priorToolUses: priorToolUses
+        )
+
         var req = URLRequest(url: endpoint)
         req.httpMethod = "POST"
         req.timeoutInterval = 60
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue(anthropicVersion, forHTTPHeaderField: "anthropic-version")
         req.setValue(key, forHTTPHeaderField: "x-api-key")
-
-        let body: [String: Any] = [
-            "model": model,
-            "max_tokens": 4096,
-            "stream": true,
-            "system": context.asSystemPrompt(),
-            "messages": messages
-                .filter { $0.role != .system }
-                .map { ["role": $0.role.rawValue, "content": $0.content] }
-        ]
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let request = req
@@ -73,25 +110,50 @@ struct ClaudeAPIKeyProvider: AIProvider {
                         throw AIProviderError.http(status: http.statusCode, body: collected)
                     }
 
+                    // Stream text deltas LIVE so the chat bubble feels
+                    // responsive. Buffer the full event stream too,
+                    // then parse it once at the end to extract any
+                    // tool_use blocks (which we render as fenced text
+                    // and yield AFTER the live text deltas — the
+                    // recursion layer parses the full accumulated
+                    // bubble, so timing within a single turn is fine).
+                    var collectedEvents: [String] = []
                     for try await line in bytes.lines {
-                        // SSE frames: "data: {json}". The Anthropic
-                        // streaming protocol emits content_block_delta
-                        // events with a {"delta":{"type":"text_delta","text":"…"}}
-                        // payload — yield only those deltas.
                         guard line.hasPrefix("data:") else { continue }
                         let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
                         if payload == "[DONE]" || payload.isEmpty { continue }
-                        guard let data = payload.data(using: .utf8),
-                              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-                        else { continue }
-                        if let type = obj["type"] as? String,
-                           type == "content_block_delta",
+                        collectedEvents.append(payload)
+                        // Live text-delta yield for snappy streaming.
+                        if let data = payload.data(using: .utf8),
+                           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                           obj["type"] as? String == "content_block_delta",
                            let delta = obj["delta"] as? [String: Any],
                            delta["type"] as? String == "text_delta",
                            let text = delta["text"] as? String {
                             continuation.yield(text)
                         }
                     }
+
+                    // After the stream completes, extract tool_use
+                    // blocks and re-emit them as fenced ```tool blocks
+                    // so the existing ProjectAssistantTab recursion
+                    // picks them up. Persist for the next turn so we
+                    // can rebuild a proper tool_use ↔ tool_result chain.
+                    let parsed = ClaudeAPIKeyProtocol.parseSSEEvents(collectedEvents)
+                    if !parsed.toolUses.isEmpty {
+                        for use in parsed.toolUses {
+                            continuation.yield(ClaudeAPIKeyProtocol.renderAsFencedBlock(use))
+                        }
+                        if let id = sessionId {
+                            await APIKeyToolStateStore.shared.set(parsed.toolUses, for: id)
+                        }
+                    } else if let id = sessionId {
+                        // No tool_use this turn: clear the cache so a
+                        // future turn doesn't accidentally rebuild a
+                        // stale tool_use chain.
+                        await APIKeyToolStateStore.shared.clear(id)
+                    }
+
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)

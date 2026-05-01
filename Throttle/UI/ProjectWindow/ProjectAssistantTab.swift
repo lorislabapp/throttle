@@ -532,6 +532,7 @@ struct ProjectAssistantTab: View {
             await runAssistantTurn(provider: provider, depth: 0)
         }
         await ClaudeWebSessionStore.shared.clear(sid)
+        await APIKeyToolStateStore.shared.clear(sid)
     }
 
     /// One assistant turn — possibly followed by recursive tool-result
