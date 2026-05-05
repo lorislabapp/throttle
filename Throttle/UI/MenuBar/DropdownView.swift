@@ -315,6 +315,12 @@ struct DropdownView: View {
             return ExactModeAction(title: String(localized: "Retry")) {
                 Task { await ExactModeService.shared.refresh() }
             }
+        case .tabZombieRateLimited:
+            // Force-navigate is throttled — pointing the user at Safari is
+            // the right one-tap remediation (clicking the tab wakes it).
+            return ExactModeAction(title: String(localized: "Open Safari")) {
+                ExactModeService.shared.openSignInPage()
+            }
         }
     }
 
@@ -1255,6 +1261,8 @@ fileprivate func describe(_ err: ExactModeError) -> String {
     case .invalidResponse:    return "Bad response from claude.ai."
     case .appleScript(let s): return "AppleScript: \(s)"
     case .timeout:            return "Timed out."
+    case .tabZombieRateLimited:
+        return "Safari discarded the claude.ai tab. Open the tab once to wake it; Throttle will resume polling automatically."
     }
 }
 

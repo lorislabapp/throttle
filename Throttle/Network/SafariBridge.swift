@@ -27,6 +27,27 @@ import OSLog
 enum SafariBridge {
     private static let logger = Logger(subsystem: "com.lorislab.throttle", category: "SafariBridge")
 
+    /// When the Safari claude.ai tab goes zombie (URL bar shows
+    /// claude.ai but `document.location.href` is `about:blank`,
+    /// typically because Safari discarded the background tab under
+    /// memory pressure), the v2.5.2 fix force-navigates it back. But
+    /// Exact Mode polls every 5 minutes and the user noticed the tab
+    /// visibly refreshing on that cadence. Throttle the force-navigate
+    /// to at most once every 30 minutes — between attempts, surface a
+    /// friendly "Safari has the tab discarded, reload manually" error
+    /// instead of churning the user's tab.
+    private static var lastForceNavigateAt: Date?
+    private static let forceNavigateMinInterval: TimeInterval = 30 * 60
+
+    private static func canForceNavigateNow() -> Bool {
+        guard let last = lastForceNavigateAt else { return true }
+        return Date().timeIntervalSince(last) >= forceNavigateMinInterval
+    }
+
+    private static func recordForceNavigateAttempt() {
+        lastForceNavigateAt = Date()
+    }
+
     enum BridgeError: Error, Sendable, Equatable {
         case safariNotRunning
         case noClaudeTab
@@ -40,6 +61,12 @@ enum SafariBridge {
         /// claude.ai response shape back to the user when our SSE parser
         /// finds nothing usable.
         case scriptError(String)
+        /// Safari discarded the background claude.ai tab so its document
+        /// is on `about:blank`. The force-navigate guard would normally
+        /// revive it, but we already navigated within the last 30 min —
+        /// don't churn the user's tab again. Surface a friendly retry
+        /// hint instead.
+        case tabZombieRateLimited
     }
 
     /// Open https://claude.ai/settings/usage in the user's default Safari
@@ -69,6 +96,9 @@ enum SafariBridge {
     static func runClaudeAIScript(_ js: String) async -> Result<Data, BridgeError> {
         guard isSafariRunning else { return .failure(.safariNotRunning) }
         let jsAsAppleScriptLiteral = appleScriptStringLiteral(js)
+        let mayForceNavigate = canForceNavigateNow()
+        let canNavigateLiteral = mayForceNavigate ? "true" : "false"
+        if mayForceNavigate { recordForceNavigateAttempt() }
         // The probe script verifies the tab's *document* (not just the URL
         // bar) is on claude.ai before running the real JS. Safari can leave
         // a tab in a zombie state where the URL bar reads "claude.ai" but
@@ -76,9 +106,12 @@ enum SafariBridge {
         // relative XHR resolves against about:blank and throws "SyntaxError:
         // The string did not match the expected pattern." If we detect it
         // we force a navigation and wait for `document.readyState === complete`
-        // before continuing — otherwise the JS runs against a dead document.
+        // — but only when the throttle window allows it (every ≤30 min).
+        // Otherwise we return a sentinel so the user gets a friendly retry
+        // hint instead of having their tab churn every 5 min.
         let script = """
         tell application "Safari"
+            set canNavigate to \(canNavigateLiteral)
             set targetTab to missing value
             try
                 repeat with w in windows
@@ -100,24 +133,28 @@ enum SafariBridge {
                 end try
             end if
             -- Probe document state. If the tab is zombie (about:blank), force
-            -- a real navigation and wait up to 6s for the load to complete.
+            -- a real navigation only when canNavigate is true.
             try
                 set probeJS to "(function(){ try { return document.location.href + '|' + document.readyState; } catch(e) { return 'about:blank|complete'; } })()"
                 set probeResult to do JavaScript probeJS in targetTab
                 if (probeResult as string) does not contain "claude.ai" then
-                    set URL of targetTab to "https://claude.ai/settings/usage"
-                    set tries to 0
-                    repeat
-                        delay 0.5
-                        try
-                            set probeResult to do JavaScript probeJS in targetTab
-                            if (probeResult as string) contains "claude.ai" and (probeResult as string) contains "complete" then
-                                exit repeat
-                            end if
-                        end try
-                        set tries to tries + 1
-                        if tries > 12 then exit repeat
-                    end repeat
+                    if canNavigate then
+                        set URL of targetTab to "https://claude.ai/settings/usage"
+                        set tries to 0
+                        repeat
+                            delay 0.5
+                            try
+                                set probeResult to do JavaScript probeJS in targetTab
+                                if (probeResult as string) contains "claude.ai" and (probeResult as string) contains "complete" then
+                                    exit repeat
+                                end if
+                            end try
+                            set tries to tries + 1
+                            if tries > 12 then exit repeat
+                        end repeat
+                    else
+                        return "__THROTTLE_TAB_ZOMBIE__"
+                    end if
                 end if
             end try
             try
@@ -181,9 +218,13 @@ enum SafariBridge {
         // AppleScript literal. AppleScript multi-line strings are tricky;
         // we use chained `&` concatenation for safety.
         let jsAsAppleScriptLiteral = appleScriptStringLiteral(js)
+        let mayForceNavigate = canForceNavigateNow()
+        let canNavigateLiteral = mayForceNavigate ? "true" : "false"
+        if mayForceNavigate { recordForceNavigateAttempt() }
 
         let script = """
         tell application "Safari"
+            set canNavigate to \(canNavigateLiteral)
             set targetTab to missing value
             try
                 repeat with w in windows
@@ -207,24 +248,29 @@ enum SafariBridge {
             -- Probe document state. The tab can read "claude.ai" in the URL
             -- bar while `document.location.href` is still about:blank, in which
             -- case any relative XHR throws "SyntaxError: The string did not
-            -- match the expected pattern." Force-navigate and wait for load.
+            -- match the expected pattern." Force-navigate and wait for load —
+            -- but only when canNavigate is true (throttled to ≤1× per 30 min).
             try
                 set probeJS to "(function(){ try { return document.location.href + '|' + document.readyState; } catch(e) { return 'about:blank|complete'; } })()"
                 set probeResult to do JavaScript probeJS in targetTab
                 if (probeResult as string) does not contain "claude.ai" then
-                    set URL of targetTab to "https://claude.ai/settings/usage"
-                    set tries to 0
-                    repeat
-                        delay 0.5
-                        try
-                            set probeResult to do JavaScript probeJS in targetTab
-                            if (probeResult as string) contains "claude.ai" and (probeResult as string) contains "complete" then
-                                exit repeat
-                            end if
-                        end try
-                        set tries to tries + 1
-                        if tries > 12 then exit repeat
-                    end repeat
+                    if canNavigate then
+                        set URL of targetTab to "https://claude.ai/settings/usage"
+                        set tries to 0
+                        repeat
+                            delay 0.5
+                            try
+                                set probeResult to do JavaScript probeJS in targetTab
+                                if (probeResult as string) contains "claude.ai" and (probeResult as string) contains "complete" then
+                                    exit repeat
+                                end if
+                            end try
+                            set tries to tries + 1
+                            if tries > 12 then exit repeat
+                        end repeat
+                    else
+                        return "__THROTTLE_TAB_ZOMBIE__"
+                    end if
                 end if
             end try
             try
@@ -256,6 +302,7 @@ enum SafariBridge {
             return .failure(.appleScript(err))
         case .success(let str):
             if str == "__THROTTLE_NO_TAB__" { return .failure(.noClaudeTab) }
+            if str == "__THROTTLE_TAB_ZOMBIE__" { return .failure(.tabZombieRateLimited) }
             if str.hasPrefix("__THROTTLE_AS_ERR__:") {
                 if str.contains("-1743") { return .failure(.automationDenied) }
                 return .failure(.appleScript(str))

@@ -10,6 +10,10 @@ enum ExactModeError: Error, Sendable, Equatable {
     case invalidResponse
     case appleScript(String)
     case timeout
+    /// Safari discarded the claude.ai tab and the force-navigate
+    /// guard was throttled (already navigated within the last 30 min).
+    /// User-visible: "Safari has the tab discarded — reload manually".
+    case tabZombieRateLimited
 }
 
 /// Polls claude.ai's `/api/organizations/{org}/usage` endpoint by driving
@@ -146,6 +150,7 @@ final class ExactModeService {
         case .invalidResponse:     return .invalidResponse
         case .appleScript(let s):  return .appleScript(s)
         case .scriptError(let s):  return .appleScript(s)  // map to existing variant
+        case .tabZombieRateLimited: return .tabZombieRateLimited
         }
     }
 }

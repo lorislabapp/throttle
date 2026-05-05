@@ -315,6 +315,8 @@ struct ClaudeWebSessionProvider: AIProvider {
             return String(localized: "Bad response from claude.ai.")
         case .appleScript(let s):
             return "AppleScript: \(s)"
+        case .tabZombieRateLimited:
+            return String(localized: "Safari discarded the claude.ai tab. Click the tab once to wake it, or paste a Claude API key in Settings to bypass the bridge entirely.")
         case .scriptError(let s):
             // Hard 429 from claude.ai. Format the resetsAt as a localized
             // relative date so the user knows when their budget comes back.
