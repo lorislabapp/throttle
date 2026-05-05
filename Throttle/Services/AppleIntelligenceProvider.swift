@@ -13,6 +13,7 @@ import FoundationModels
 /// hasn't downloaded the model assets yet.
 struct AppleIntelligenceProvider: AIProvider {
     let displayName = "Apple Intelligence (local)"
+    let kind: AIProviderKind = .appleIntelligence
 
     var isAvailable: Bool {
         get async {
@@ -100,7 +101,12 @@ struct AppleIntelligenceProvider: AIProvider {
 }
 
 enum AIProviderError: LocalizedError {
-    case unavailable(reason: String)
+    /// `recoverable: true` means a different provider (Apple Intelligence,
+    /// API key) might succeed where this one didn't — used by the
+    /// Assistant tab to auto-fallback transparently. `false` means the
+    /// failure is a hard one (auth, parse, network) where retrying with
+    /// another provider would just hit the same wall.
+    case unavailable(reason: String, recoverable: Bool = false)
     case noAPIKey
     case http(status: Int, body: String)
     case decode(String)
@@ -108,11 +114,17 @@ enum AIProviderError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unavailable(let reason): return reason
+        case .unavailable(let reason, _): return reason
         case .noAPIKey: return String(localized: "No Anthropic API key configured. Add one in Settings → AI provider.")
         case .http(let status, let body): return "HTTP \(status): \(body.prefix(200))"
         case .decode(let what): return "Decoding failed: \(what)"
         case .timeout: return String(localized: "Request timed out.")
         }
+    }
+
+    /// True when retrying with a different provider may succeed.
+    var isRecoverable: Bool {
+        if case .unavailable(_, let r) = self { return r }
+        return false
     }
 }

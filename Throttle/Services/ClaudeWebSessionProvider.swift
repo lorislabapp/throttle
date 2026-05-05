@@ -49,6 +49,7 @@ actor ClaudeWebSessionStore {
 /// Apple Intelligence or BYO API key.
 struct ClaudeWebSessionProvider: AIProvider {
     let displayName = "Claude (your subscription)"
+    let kind: AIProviderKind = .claudeWebSession
 
     var isAvailable: Bool {
         get async {
@@ -95,7 +96,11 @@ struct ClaudeWebSessionProvider: AIProvider {
 
         switch scriptResult {
         case .failure(let err):
-            throw AIProviderError.unavailable(reason: describe(err))
+            // Every Safari-bridge failure mode (safari not running, tab
+            // zombie, auth, drop, etc.) is recoverable by trying another
+            // provider — Apple Intelligence runs on-device, the API key
+            // path doesn't touch Safari at all.
+            throw AIProviderError.unavailable(reason: describe(err), recoverable: true)
         case .success(let data):
             // Sentinel-error envelope, matching SafariBridge's pattern.
             if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -107,9 +112,9 @@ struct ClaudeWebSessionProvider: AIProvider {
                 // exhausted: short replies still come through, longer ones
                 // get silently dropped. Surface a friendlier message.
                 if status == -2, detail.contains("status=200"), detail.contains("rawLen=0") {
-                    throw AIProviderError.unavailable(reason: String(localized: "claude.ai dropped the response — you're likely near your 5-hour Pro/Max limit. Wait until the next reset or switch to Apple Intelligence / a Claude API key in Settings."))
+                    throw AIProviderError.unavailable(reason: String(localized: "claude.ai dropped the response — you're likely near your 5-hour Pro/Max limit. Wait until the next reset or switch to Apple Intelligence / a Claude API key in Settings."), recoverable: true)
                 }
-                throw AIProviderError.unavailable(reason: detail)
+                throw AIProviderError.unavailable(reason: detail, recoverable: true)
             }
             // The JS may return either:
             // - the assistant text directly (legacy path / reuse path), or

@@ -77,6 +77,23 @@ final class AIProviderRegistry {
         return nil
     }
 
+    /// Walk the default order (Apple Intelligence → ClaudeWebSession →
+    /// ClaudeAPIKey) and return the first provider that is currently
+    /// available AND whose kind is not in `excluding`. Used by the
+    /// Assistant tab to transparently fall back when the active provider
+    /// returns a recoverable error (claude.ai dropped the response,
+    /// Safari tab zombie, etc.) so the user gets a working answer
+    /// instead of having to manually switch providers.
+    func firstAvailable(excluding: Set<AIProviderKind>) async -> (any AIProvider)? {
+        for kind in [AIProviderKind.appleIntelligence,
+                     .claudeWebSession,
+                     .claudeAPIKey] where !excluding.contains(kind) {
+            let p = provider(for: kind)
+            if await p.isAvailable { return p }
+        }
+        return nil
+    }
+
     func availabilityMap() async -> [AIProviderKind: Bool] {
         var map: [AIProviderKind: Bool] = [:]
         map[.appleIntelligence] = await appleIntel.isAvailable

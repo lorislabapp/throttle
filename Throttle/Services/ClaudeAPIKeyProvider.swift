@@ -37,6 +37,7 @@ actor APIKeyToolStateStore {
 /// the provider is BYO key.
 struct ClaudeAPIKeyProvider: AIProvider {
     let displayName = "Claude API (your key)"
+    let kind: AIProviderKind = .claudeAPIKey
 
     private let endpoint = URL(string: "https://api.anthropic.com/v1/messages")!
     private let anthropicVersion = "2023-06-01"

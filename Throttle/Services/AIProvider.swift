@@ -12,6 +12,11 @@ protocol AIProvider: Sendable {
     /// User-facing label, e.g. "Apple Intelligence (local)".
     var displayName: String { get }
 
+    /// Discriminator for the auto-fallback chain in `runAssistantTurn`.
+    /// When a recoverable error occurs we mark this kind as already-tried
+    /// and ask the registry for the next available provider.
+    var kind: AIProviderKind { get }
+
     /// True when this provider can respond to a chat call right now.
     /// AppleIntelligence: depends on macOS version + device support.
     /// ClaudeAPIKey: depends on whether the user pasted a key.
