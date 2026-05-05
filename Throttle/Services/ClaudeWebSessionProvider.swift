@@ -281,7 +281,11 @@ struct ClaudeWebSessionProvider: AIProvider {
                             var f = fields[fi];
                             var w = u && u[f];
                             if (w && typeof w.utilization === 'number') {
-                                usage += f + '=' + Math.round(w.utilization*100);
+                                // claude.ai already returns utilization in
+                                // percent (e.g. 21 = 21%), NOT as a 0-1
+                                // ratio. Don't re-multiply or you get the
+                                // famous "2100%" bug from v2.6.1.
+                                usage += f + '=' + Math.round(w.utilization);
                                 if (w.resets_at) usage += '@' + w.resets_at;
                                 usage += ' ';
                             }
@@ -326,6 +330,11 @@ struct ClaudeWebSessionProvider: AIProvider {
                 let date = Date(timeIntervalSince1970: TimeInterval(resetsAt))
                 let fmt = RelativeDateTimeFormatter()
                 fmt.unitsStyle = .full
+                // Pin formatter locale to the bundle's resolved locale so
+                // we don't get "Resets dans 3 heures" — system locale was
+                // FR but the surrounding String(localized:) fell back to
+                // English (no FR translation), producing a mix.
+                fmt.locale = Self.uiLocale
                 let when = fmt.localizedString(for: date, relativeTo: Date())
                 let window: String
                 if s.contains("five_hour") {
@@ -355,6 +364,7 @@ struct ClaudeWebSessionProvider: AIProvider {
                     if let resets, let date = Self.parseISO8601(resets) {
                         let fmt = RelativeDateTimeFormatter()
                         fmt.unitsStyle = .full
+                        fmt.locale = Self.uiLocale
                         when = fmt.localizedString(for: date, relativeTo: Date())
                     } else {
                         when = String(localized: "soon")
@@ -399,6 +409,19 @@ struct ClaudeWebSessionProvider: AIProvider {
         if let d = fmt.date(from: s) { return d }
         fmt.formatOptions = [.withInternetDateTime]
         return fmt.date(from: s)
+    }
+
+    /// Locale that matches the locale `String(localized:)` resolves to.
+    /// `Bundle.main.preferredLocalizations` reflects the actual UI locale
+    /// after intersection with the user's preferences. Without this,
+    /// the date formatter follows system locale (FR) while the
+    /// surrounding strings fall back to dev (EN) when a translation is
+    /// missing — producing the "Resets dans 3 heures" mix from v2.6.1.
+    private static var uiLocale: Locale {
+        if let lang = Bundle.main.preferredLocalizations.first {
+            return Locale(identifier: lang)
+        }
+        return Locale.current
     }
 
     /// Pull the `resetsAt=<epoch>` value out of the structured rate-limit
