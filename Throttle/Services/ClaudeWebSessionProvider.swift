@@ -92,53 +92,98 @@ struct ClaudeWebSessionProvider: AIProvider {
             reuse = nil
         }
 
-        let scriptResult = await SafariBridge.runClaudeAIScript(buildJS(prompt: promptPayload, reuse: reuse))
+        // Kickoff: sync-XHR org+conv setup, then fires off an async fetch
+        // streaming the SSE response into `window.__throttle_buf`. Returns
+        // immediately with `{_throttle_streaming: true, conv, org}` so we
+        // can cache the conv ID before the model has finished generating.
+        let kickoff = await SafariBridge.runClaudeAIScript(buildStreamingJS(prompt: promptPayload, reuse: reuse))
 
-        switch scriptResult {
+        switch kickoff {
         case .failure(let err):
-            // Every Safari-bridge failure mode (safari not running, tab
-            // zombie, auth, drop, etc.) is recoverable by trying another
-            // provider — Apple Intelligence runs on-device, the API key
-            // path doesn't touch Safari at all.
             throw AIProviderError.unavailable(reason: describe(err), recoverable: true)
         case .success(let data):
-            // Sentinel-error envelope, matching SafariBridge's pattern.
+            // Setup-phase errors come back as the same `_throttle_status`
+            // envelope the legacy code returned — handle them before
+            // entering the polling loop.
             if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let status = obj["_throttle_status"] as? Int {
                 let detail = (obj["_err"] as? String) ?? "HTTP \(status)"
-                // status == -2 + status=200 + rawLen=0 in detail = claude.ai
-                // aborted the stream before writing any events. The most
-                // common cause is the user's 5h Pro/Max limit being near
-                // exhausted: short replies still come through, longer ones
-                // get silently dropped. Surface a friendlier message.
-                if status == -2, detail.contains("status=200"), detail.contains("rawLen=0") {
-                    throw AIProviderError.unavailable(reason: String(localized: "claude.ai dropped the response — you're likely near your 5-hour Pro/Max limit. Wait until the next reset or switch to Apple Intelligence / a Claude API key in Settings."), recoverable: true)
-                }
                 throw AIProviderError.unavailable(reason: detail, recoverable: true)
             }
-            // The JS may return either:
-            // - the assistant text directly (legacy path / reuse path), or
-            // - a JSON envelope `{_throttle_ok: true, conv: "...", org: "...", text: "..."}`
-            //   on first-turn success so we can cache the IDs for follow-ups.
-            if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let ok = obj["_throttle_ok"] as? Bool, ok,
-               let text = obj["text"] as? String {
-                if let id = sessionId,
-                   let conv = obj["conv"] as? String,
-                   let org = obj["org"] as? String {
-                    await ClaudeWebSessionStore.shared.set(conv: conv, org: org, for: id)
-                }
-                return AsyncThrowingStream { continuation in
-                    continuation.yield(text)
+
+            // Parse kickoff envelope: `{_throttle_streaming: true, conv, org}`
+            guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let streaming = obj["_throttle_streaming"] as? Bool, streaming,
+                  let conv = obj["conv"] as? String,
+                  let org  = obj["org"]  as? String else {
+                let raw = String(data: data, encoding: .utf8) ?? "<binary>"
+                throw AIProviderError.decode("unexpected kickoff response: \(raw.prefix(200))")
+            }
+
+            // Cache conv/org early so a tool-recursion follow-up can reuse
+            // it even if the streaming half fails midway.
+            if let id = sessionId {
+                await ClaudeWebSessionStore.shared.set(conv: conv, org: org, for: id)
+            }
+
+            // Streaming loop: poll the page's accumulator every 150 ms,
+            // diff against last-emitted, yield each new chunk. Bail with
+            // a recoverable error if the page reports `err`, or if we
+            // never see any text and `done` flips before any deltas.
+            let pollJS = buildPollJS()
+            let logSnapshot = "session=\(sessionId?.uuidString.prefix(8) ?? "—") conv=\(conv.prefix(8))"
+            return AsyncThrowingStream { continuation in
+                Task {
+                    var emittedLength = 0
+                    var pollsBeforeAnyText = 0
+                    let maxPollsBeforeAnyText = 200  // 30 s of nothing → bail
+                    var totalPolls = 0
+                    let maxTotalPolls = 1200          // 3 min absolute cap
+                    while !Task.isCancelled {
+                        totalPolls += 1
+                        if totalPolls > maxTotalPolls {
+                            continuation.finish(throwing: AIProviderError.unavailable(
+                                reason: "claude.ai stream still running after 3 min — giving up.", recoverable: true))
+                            return
+                        }
+                        try? await Task.sleep(nanoseconds: 150_000_000)
+                        let pollResult = await SafariBridge.runClaudeAIScript(pollJS)
+                        switch pollResult {
+                        case .failure(let bridgeErr):
+                            continuation.finish(throwing: AIProviderError.unavailable(
+                                reason: self.describe(bridgeErr), recoverable: true))
+                            return
+                        case .success(let pollData):
+                            guard let pobj = try? JSONSerialization.jsonObject(with: pollData) as? [String: Any] else {
+                                continue
+                            }
+                            if let errMsg = pobj["err"] as? String, !errMsg.isEmpty {
+                                continuation.finish(throwing: AIProviderError.unavailable(
+                                    reason: "claude.ai stream error (\(logSnapshot)): \(errMsg)", recoverable: true))
+                                return
+                            }
+                            let buf = (pobj["buf"] as? String) ?? ""
+                            if buf.count > emittedLength {
+                                let delta = String(buf.dropFirst(emittedLength))
+                                emittedLength = buf.count
+                                continuation.yield(delta)
+                            } else if buf.isEmpty {
+                                pollsBeforeAnyText += 1
+                                if pollsBeforeAnyText >= maxPollsBeforeAnyText {
+                                    continuation.finish(throwing: AIProviderError.unavailable(
+                                        reason: String(localized: "claude.ai dropped the response — you're likely near your 5-hour Pro/Max limit. Wait until the next reset or switch to Apple Intelligence / a Claude API key in Settings."),
+                                        recoverable: true))
+                                    return
+                                }
+                            }
+                            if let isDone = pobj["done"] as? Bool, isDone {
+                                continuation.finish()
+                                return
+                            }
+                        }
+                    }
                     continuation.finish()
                 }
-            }
-            guard let fullText = String(data: data, encoding: .utf8) else {
-                throw AIProviderError.decode("non-UTF8 response from claude.ai")
-            }
-            return AsyncThrowingStream { continuation in
-                continuation.yield(fullText)
-                continuation.finish()
             }
         }
     }
@@ -161,6 +206,173 @@ struct ClaudeWebSessionProvider: AIProvider {
             }
         }
         return lines.joined(separator: "\n")
+    }
+
+    /// Returns a tiny JS that reads the page's streaming accumulator.
+    /// Polled by `streamChat` every 150 ms while a turn is in flight.
+    /// The 4 keys (`buf`, `done`, `err`, `conv`/`org` are unused here —
+    /// they're set by the kickoff JS) come back as a JSON object.
+    private func buildPollJS() -> String {
+        return """
+        JSON.stringify({
+            buf: window.__throttle_buf || '',
+            done: window.__throttle_done === true,
+            err: window.__throttle_err || ''
+        })
+        """
+    }
+
+    /// Streaming kickoff. Synchronously runs org-lookup + conv-creation
+    /// (those are cheap and we want the IDs back to Swift right away so
+    /// a tool-recursion follow-up can re-enter with `reuse=`), then
+    /// fires off an async `fetch()` for the SSE completion endpoint
+    /// whose ReadableStream reader appends each text delta into
+    /// `window.__throttle_buf`. Returns synchronously with
+    /// `{_throttle_streaming: true, conv, org}` once the async pump is
+    /// running. Swift then polls `__throttle_buf` via `buildPollJS()`
+    /// and yields deltas as they arrive.
+    ///
+    /// Streaming changes the UX from "wait 8 s, see whole answer" to
+    /// "first token in ~600 ms, watch it write". The protocol shape is
+    /// unchanged from the legacy `buildJS()` flow — same endpoints,
+    /// same SSE event shapes, same field-name fallback (`completion`,
+    /// `delta.text`, `delta.content`, `message.content`, `text`).
+    private func buildStreamingJS(prompt: String, reuse: (org: String, conv: String)?) -> String {
+        let escapedPrompt = prompt
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "")
+        let reuseOrgJS  = reuse.map { "\"\($0.org)\"" }  ?? "null"
+        let reuseConvJS = reuse.map { "\"\($0.conv)\"" } ?? "null"
+        return """
+        (function() {
+            try {
+                // Reset accumulator state for this turn. Earlier turns'
+                // values must be wiped or the poll loop emits stale text
+                // as the new turn's first delta.
+                window.__throttle_buf  = '';
+                window.__throttle_done = false;
+                window.__throttle_err  = '';
+
+                var reuseOrg  = \(reuseOrgJS);
+                var reuseConv = \(reuseConvJS);
+                var orgId  = reuseOrg;
+                var convId = reuseConv;
+
+                if (!orgId || !convId) {
+                    var orgsX = new XMLHttpRequest();
+                    orgsX.open('GET', '/api/organizations', false);
+                    orgsX.setRequestHeader('Accept', 'application/json');
+                    orgsX.send();
+                    if (orgsX.status >= 400) return JSON.stringify({_throttle_status: orgsX.status});
+                    var orgs = JSON.parse(orgsX.responseText);
+                    if (!orgs || !orgs.length) return JSON.stringify({_throttle_status: 401});
+                    orgId = orgs[0].uuid || orgs[0].id;
+
+                    function uuid4() {
+                        return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
+                            return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
+                        });
+                    }
+                    convId = uuid4();
+                    var createX = new XMLHttpRequest();
+                    createX.open('POST', '/api/organizations/' + orgId + '/chat_conversations', false);
+                    createX.setRequestHeader('Content-Type', 'application/json');
+                    createX.setRequestHeader('Accept', 'application/json');
+                    createX.setRequestHeader('anthropic-client-platform', 'web_claude_ai');
+                    createX.send(JSON.stringify({uuid: convId, name: 'Throttle assistant'}));
+                    if (createX.status >= 400) return JSON.stringify({_throttle_status: createX.status, _err: 'create:' + createX.responseText.substring(0,200)});
+                }
+
+                // Async streaming pump. Started before this function
+                // returns; runs concurrently while Swift polls the
+                // window globals via `buildPollJS()`.
+                (async function() {
+                    try {
+                        var compResp = await fetch('/api/organizations/' + orgId + '/chat_conversations/' + convId + '/completion', {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'text/event-stream',
+                                'anthropic-client-platform': 'web_claude_ai'
+                            },
+                            body: JSON.stringify({
+                                prompt: "\(escapedPrompt)",
+                                attachments: [],
+                                files: [],
+                                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+                            })
+                        });
+                        if (compResp.status === 429) {
+                            var rep = '', resetsAt = 0;
+                            try {
+                                var bodyText = await compResp.text();
+                                var bodyJson = JSON.parse(bodyText);
+                                var em = bodyJson && bodyJson.error && bodyJson.error.message;
+                                if (em && typeof em === 'object') {
+                                    rep = em.representativeClaim || '';
+                                    resetsAt = em.resetsAt || 0;
+                                }
+                            } catch(e) {}
+                            window.__throttle_err = 'rate_limit window=' + rep + ' resetsAt=' + resetsAt;
+                            window.__throttle_done = true;
+                            return;
+                        }
+                        if (!compResp.ok) {
+                            var bt = '';
+                            try { bt = (await compResp.text()).substring(0,200); } catch(e) {}
+                            window.__throttle_err = 'complete:' + compResp.status + ' ' + bt;
+                            window.__throttle_done = true;
+                            return;
+                        }
+
+                        var reader = compResp.body.getReader();
+                        var decoder = new TextDecoder();
+                        var pending = '';
+                        while (true) {
+                            var step = await reader.read();
+                            if (step.done) break;
+                            pending += decoder.decode(step.value, {stream: true});
+                            // Process all complete lines we have so far.
+                            var nl;
+                            while ((nl = pending.indexOf('\\n')) !== -1) {
+                                var line = pending.substring(0, nl);
+                                pending = pending.substring(nl + 1);
+                                if (!line || line.indexOf('data:') !== 0) continue;
+                                var payload = line.substring(5).trim();
+                                if (!payload || payload === '[DONE]') continue;
+                                try {
+                                    var ev = JSON.parse(payload);
+                                    if (typeof ev.completion === 'string') window.__throttle_buf += ev.completion;
+                                    if (ev.delta && typeof ev.delta.text === 'string') window.__throttle_buf += ev.delta.text;
+                                    if (ev.delta && typeof ev.delta.content === 'string') window.__throttle_buf += ev.delta.content;
+                                    if (ev.message && typeof ev.message.content === 'string') window.__throttle_buf += ev.message.content;
+                                    if (typeof ev.text === 'string') window.__throttle_buf += ev.text;
+                                } catch (e) { /* malformed line, ignore */ }
+                            }
+                        }
+                        window.__throttle_done = true;
+                    } catch (e) {
+                        window.__throttle_err = String((e && e.message) ? e.message : e);
+                        window.__throttle_done = true;
+                    }
+                })();
+
+                // Synchronous return — hand conv/org back to Swift so it
+                // can cache before the stream finishes (a follow-up turn
+                // arrives with the conv pre-warmed).
+                return JSON.stringify({
+                    _throttle_streaming: true,
+                    conv: convId,
+                    org: orgId
+                });
+            } catch (e) {
+                return JSON.stringify({_throttle_status: -1, _err: String(e)});
+            }
+        })()
+        """
     }
 
     private func buildJS(prompt: String, reuse: (org: String, conv: String)?) -> String {
