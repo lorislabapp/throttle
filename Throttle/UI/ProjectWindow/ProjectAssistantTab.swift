@@ -331,7 +331,7 @@ struct ProjectAssistantTab: View {
                                     in: RoundedRectangle(cornerRadius: 6))
                     } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: e.tool == "read_file" ? "doc.text" : "folder")
+                            Image(systemName: toolIcon(e.tool))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Text(e.tool)
@@ -354,6 +354,15 @@ struct ProjectAssistantTab: View {
         let tool: String
         let path: String
         let body: String
+    }
+
+    private func toolIcon(_ tool: String) -> String {
+        switch tool {
+        case "read_file":  return "doc.text"
+        case "list_files": return "folder"
+        case "bash":       return "terminal"
+        default:           return "wrench.and.screwdriver"
+        }
     }
 
     /// Parse a synthetic `[tool_result for read_file (/path/to/file)]\n…`
@@ -711,7 +720,7 @@ struct ProjectAssistantTab: View {
             var resultBlocks: [String] = []
             for call in calls {
                 let result = AssistantToolExecutor.execute(call)
-                resultBlocks.append("[tool_result for \(call.tool.rawValue) (\(call.path))]\n\(result)")
+                resultBlocks.append("[tool_result for \(call.tool.rawValue) (\(call.displayLabel))]\n\(result)")
             }
             let toolMsg = ChatMessage(
                 role: .user,

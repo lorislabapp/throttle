@@ -58,7 +58,7 @@ struct AppleIntelligenceProvider: AIProvider {
         // Safari Bridge (claude.ai web strips tool_use content blocks
         // server-side) keeps working through the same code path.
         let session = LanguageModelSession(
-            tools: [ReadFileTool(), ListFilesTool()],
+            tools: [ReadFileTool(), ListFilesTool(), BashTool()],
             instructions: context.asSystemPrompt()
         )
         let userPrompt = composeUserPrompt(from: messages)

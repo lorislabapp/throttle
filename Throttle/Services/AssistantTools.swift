@@ -28,6 +28,7 @@ import OSLog
 enum AssistantTool: String, Sendable, CaseIterable {
     case readFile  = "read_file"
     case listFiles = "list_files"
+    case bash      = "bash"
 
     var description: String {
         switch self {
@@ -35,13 +36,33 @@ enum AssistantTool: String, Sendable, CaseIterable {
             return "Read the full contents of a file by absolute path. Returns the bytes (max 64 KB), or an error if the file is missing/binary/over the size cap."
         case .listFiles:
             return "List the immediate children of a directory. Returns names + sizes + last-modified."
+        case .bash:
+            return "Run an allowlisted command (one of: git, swift, xcodebuild, ls, cat, find, grep, head, tail, wc) with arguments. Refuses pipes/redirections/shell metacharacters. 30s timeout. 64 KB output cap. Use to inspect git status, run a single test, list build settings, etc. Path arguments must stay under the user's home directory."
         }
     }
 }
 
 struct AssistantToolCall: Sendable, Hashable {
     let tool: AssistantTool
+    /// Filesystem path for `read_file` / `list_files`. Empty for `bash`.
     let path: String
+    /// Shell command string for `bash` (binary + space-joined args, no
+    /// pipes/redirections/metacharacters). Empty for path-based tools.
+    let command: String
+
+    init(tool: AssistantTool, path: String = "", command: String = "") {
+        self.tool = tool
+        self.path = path
+        self.command = command
+    }
+
+    /// User-facing label for the tool-result card row.
+    var displayLabel: String {
+        switch tool {
+        case .bash: return command
+        default:    return path
+        }
+    }
 }
 
 enum AssistantToolCallParser {
@@ -69,17 +90,26 @@ enum AssistantToolCallParser {
     private static func parseBody(_ body: String) -> AssistantToolCall? {
         var toolName: String?
         var path: String?
+        var command: String?
         for line in body.split(separator: "\n", omittingEmptySubsequences: false) {
             let s = String(line).trimmingCharacters(in: .whitespaces)
             if s.hasPrefix("TOOL:") {
                 toolName = String(s.dropFirst("TOOL:".count)).trimmingCharacters(in: .whitespaces)
             } else if s.hasPrefix("PATH:") {
                 path = String(s.dropFirst("PATH:".count)).trimmingCharacters(in: .whitespaces)
+            } else if s.hasPrefix("CMD:") {
+                command = String(s.dropFirst("CMD:".count)).trimmingCharacters(in: .whitespaces)
             }
         }
-        guard let toolName, let tool = AssistantTool(rawValue: toolName),
-              let path, !path.isEmpty else { return nil }
-        return AssistantToolCall(tool: tool, path: path)
+        guard let toolName, let tool = AssistantTool(rawValue: toolName) else { return nil }
+        switch tool {
+        case .readFile, .listFiles:
+            guard let path, !path.isEmpty else { return nil }
+            return AssistantToolCall(tool: tool, path: path)
+        case .bash:
+            guard let command, !command.isEmpty else { return nil }
+            return AssistantToolCall(tool: tool, command: command)
+        }
     }
 }
 
@@ -93,6 +123,15 @@ enum AssistantToolExecutor {
     private static let maxListEntries = 200
 
     static func execute(_ call: AssistantToolCall) -> String {
+        switch call.tool {
+        case .readFile, .listFiles:
+            return executePath(call)
+        case .bash:
+            return BashSandbox.run(command: call.command)
+        }
+    }
+
+    private static func executePath(_ call: AssistantToolCall) -> String {
         let expanded = (call.path as NSString).expandingTildeInPath
         let url = URL(fileURLWithPath: expanded)
 
@@ -103,10 +142,9 @@ enum AssistantToolExecutor {
         }
 
         switch call.tool {
-        case .readFile:
-            return readFile(url: url)
-        case .listFiles:
-            return listFiles(url: url)
+        case .readFile:  return readFile(url: url)
+        case .listFiles: return listFiles(url: url)
+        case .bash:      return "Error: bash routed through executePath."
         }
     }
 

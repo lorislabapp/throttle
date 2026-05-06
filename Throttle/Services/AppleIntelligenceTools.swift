@@ -55,4 +55,22 @@ struct ListFilesTool: Tool {
         return AssistantToolExecutor.execute(call)
     }
 }
+
+@available(macOS 26.0, *)
+@Generable
+struct BashToolArguments: Sendable {
+    @Guide(description: "Single shell command — binary + space-separated args. NO pipes, redirections, env-var expansion, command substitution, or backslashes. Allowlisted binaries: git, swift, xcodebuild, ls, cat, find, grep, head, tail, wc. Read-only commands only; the sandbox blocks paths under ~/.ssh, ~/.aws, keychains, etc. 30s timeout, 64 KB output cap.")
+    let command: String
+}
+
+@available(macOS 26.0, *)
+struct BashTool: Tool {
+    let name = AssistantTool.bash.rawValue
+    let description = AssistantTool.bash.description
+
+    func call(arguments: BashToolArguments) async throws -> String {
+        let call = AssistantToolCall(tool: .bash, command: arguments.command)
+        return AssistantToolExecutor.execute(call)
+    }
+}
 #endif
