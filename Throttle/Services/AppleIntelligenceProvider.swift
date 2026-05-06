@@ -101,21 +101,58 @@ struct AppleIntelligenceProvider: AIProvider {
     }
 
     private func composeUserPrompt(from messages: [ChatMessage]) -> String {
-        // FoundationModels' single-prompt API takes one user string —
-        // collapse the chat history into a single transcript so the
-        // model has the conversation arc.
+        // FoundationModels' on-device model has a ~4 K-token context
+        // window total. The system instructions already eat ~1 K, leaving
+        // ~3 K for the user prompt and the model's response combined.
+        // Cap the prompt at 10 KB chars (~2.5 K tokens, conservatively).
+        // This matters most on tool-result follow-up turns where the
+        // synthetic user message contains 3+ file bodies. Apple Intel is
+        // the no-API-key user's only fallback when claude.ai drops, so
+        // we'd rather truncate aggressively and produce a usable answer
+        // than overflow and surface "Exceeded model context window size".
         guard !messages.isEmpty else { return "" }
-        if messages.count == 1, let only = messages.first { return only.content }
-        var lines: [String] = []
-        for msg in messages {
-            switch msg.role {
-            case .user:      lines.append("User: \(msg.content)")
-            case .assistant: lines.append("Assistant: \(msg.content)")
-            case .system:    continue
-            }
+        let maxPromptChars = 10_000
+
+        // Always include the last user message in full (or as-truncated).
+        guard let lastUserIdx = messages.lastIndex(where: { $0.role == .user }) else {
+            return ""
+        }
+        let lastUser = messages[lastUserIdx]
+
+        if lastUser.content.count > maxPromptChars {
+            // Single huge message — likely a tool_result with large file
+            // bodies. Truncate from the end of each `[tool_result …]`
+            // section so we keep the headers (which tell the model WHICH
+            // files were read) and lose only the deepest body content.
+            return truncateForLocalModel(lastUser.content, cap: maxPromptChars)
+        }
+
+        // Build backwards from the latest message, including history
+        // until we run out of budget. The most recent assistant turn is
+        // valuable context, older ones less so.
+        var lines: [String] = ["User: \(lastUser.content)"]
+        var charsUsed = lastUser.content.count + "User: ".count
+
+        for msg in messages[..<lastUserIdx].reversed() where msg.role != .system {
+            let prefix = msg.role == .user ? "User: " : "Assistant: "
+            let line = prefix + msg.content
+            if charsUsed + line.count + 1 > maxPromptChars { break }
+            lines.insert(line, at: 0)
+            charsUsed += line.count + 1
         }
         lines.append("Assistant:")
         return lines.joined(separator: "\n")
+    }
+
+    /// Truncate a single oversized user message (typically a synthetic
+    /// `[tool_result for read_file (path)]\n…bytes…` block) so it fits
+    /// the on-device context window. We keep `cap - 200` chars from the
+    /// start (preserves headers + early file content) and append a clear
+    /// "truncated for the on-device model" tag so the response can call
+    /// out the limitation in its answer.
+    private func truncateForLocalModel(_ content: String, cap: Int) -> String {
+        let head = String(content.prefix(cap - 200))
+        return head + "\n\n[…content truncated to fit Apple Intelligence's on-device context window. For full file content, configure a Claude API key in Settings → AI provider.]"
     }
     #endif
 }

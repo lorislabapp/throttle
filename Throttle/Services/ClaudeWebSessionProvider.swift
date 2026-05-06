@@ -145,12 +145,14 @@ struct ClaudeWebSessionProvider: AIProvider {
                     let maxPollsBeforeAnyText = 400  // 60 s of nothing → bail
                     var totalPolls = 0
                     let maxTotalPolls = 1200          // 3 min absolute cap
-                    while !Task.isCancelled {
+                    var streamingDropped = false
+                    var streamingError: String?
+                    pollLoop: while !Task.isCancelled {
                         totalPolls += 1
                         if totalPolls > maxTotalPolls {
-                            continuation.finish(throwing: AIProviderError.unavailable(
-                                reason: "claude.ai stream still running after 3 min — giving up.", recoverable: true))
-                            return
+                            streamingDropped = true
+                            streamingError = "stream still running after 3 min"
+                            break pollLoop
                         }
                         try? await Task.sleep(nanoseconds: 150_000_000)
                         let pollResult = await SafariBridge.runClaudeAIScript(pollJS)
@@ -164,9 +166,9 @@ struct ClaudeWebSessionProvider: AIProvider {
                                 continue
                             }
                             if let errMsg = pobj["err"] as? String, !errMsg.isEmpty {
-                                continuation.finish(throwing: AIProviderError.unavailable(
-                                    reason: "claude.ai stream error (\(logSnapshot)): \(errMsg)", recoverable: true))
-                                return
+                                streamingDropped = true
+                                streamingError = errMsg
+                                break pollLoop
                             }
                             let buf = (pobj["buf"] as? String) ?? ""
                             if buf.count > emittedLength {
@@ -176,10 +178,9 @@ struct ClaudeWebSessionProvider: AIProvider {
                             } else if buf.isEmpty {
                                 pollsBeforeAnyText += 1
                                 if pollsBeforeAnyText >= maxPollsBeforeAnyText {
-                                    continuation.finish(throwing: AIProviderError.unavailable(
-                                        reason: String(localized: "claude.ai dropped the response — you're likely near your 5-hour Pro/Max limit. Wait until the next reset or switch to Apple Intelligence / a Claude API key in Settings."),
-                                        recoverable: true))
-                                    return
+                                    streamingDropped = true
+                                    streamingError = "no text in 60 s"
+                                    break pollLoop
                                 }
                             }
                             if let isDone = pobj["done"] as? Bool, isDone {
@@ -187,6 +188,63 @@ struct ClaudeWebSessionProvider: AIProvider {
                                 return
                             }
                         }
+                    }
+
+                    // Streaming dropped before completing. If we already
+                    // emitted some text, partial answer is better than
+                    // nothing — finish what we have. Otherwise retry the
+                    // same turn via the legacy sync-XHR path: it has a
+                    // different timing profile and historically succeeds
+                    // where streaming fails (no async fetch, no progress
+                    // events, no page-global state). The retry yields
+                    // one final chunk with the full response.
+                    if streamingDropped, emittedLength == 0 {
+                        let legacyJS = self.buildJS(prompt: promptPayload, reuse: reuse)
+                        let legacyResult = await SafariBridge.runClaudeAIScript(legacyJS)
+                        switch legacyResult {
+                        case .failure(let bridgeErr):
+                            continuation.finish(throwing: AIProviderError.unavailable(
+                                reason: self.describe(bridgeErr), recoverable: true))
+                            return
+                        case .success(let data):
+                            if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                               let status = obj["_throttle_status"] as? Int {
+                                let detail = (obj["_err"] as? String) ?? "HTTP \(status)"
+                                if status == -2, detail.contains("status=200"), detail.contains("rawLen=0") {
+                                    continuation.finish(throwing: AIProviderError.unavailable(
+                                        reason: String(localized: "claude.ai dropped the response — you're likely near your 5-hour Pro/Max limit. Wait until the next reset or switch to Apple Intelligence / a Claude API key in Settings."),
+                                        recoverable: true))
+                                    return
+                                }
+                                continuation.finish(throwing: AIProviderError.unavailable(
+                                    reason: detail, recoverable: true))
+                                return
+                            }
+                            if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                               let ok = obj["_throttle_ok"] as? Bool, ok,
+                               let text = obj["text"] as? String {
+                                continuation.yield(text)
+                                continuation.finish()
+                                return
+                            }
+                            // Plain string body
+                            if let str = String(data: data, encoding: .utf8), !str.isEmpty {
+                                continuation.yield(str)
+                                continuation.finish()
+                                return
+                            }
+                            continuation.finish(throwing: AIProviderError.unavailable(
+                                reason: "claude.ai legacy retry returned empty (\(streamingError ?? "?"))",
+                                recoverable: true))
+                            return
+                        }
+                    } else if streamingDropped {
+                        // Got partial text before drop — keep what we have,
+                        // surface a soft note via finish (no throw) so the
+                        // chat bubble is preserved.
+                        continuation.yield("\n\n_(claude.ai stream cut short: \(streamingError ?? "unknown"). Partial answer above.)_")
+                        continuation.finish()
+                        return
                     }
                     continuation.finish()
                 }
