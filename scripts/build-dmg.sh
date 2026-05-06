@@ -20,6 +20,7 @@ xcodebuild -project Throttle.xcodeproj -scheme Throttle \
     -configuration Release \
     -archivePath "$ARCHIVE_PATH" \
     -destination 'generic/platform=macOS' \
+    -allowProvisioningUpdates \
     archive
 
 EXPORT_DIR="$PROJECT_DIR/build/export"
@@ -46,7 +47,8 @@ echo "→ Exporting signed app"
 xcodebuild -exportArchive \
     -archivePath "$ARCHIVE_PATH" \
     -exportPath "$EXPORT_DIR" \
-    -exportOptionsPlist "$EXPORT_PLIST"
+    -exportOptionsPlist "$EXPORT_PLIST" \
+    -allowProvisioningUpdates
 
 APP_PATH="$EXPORT_DIR/Throttle.app"
 

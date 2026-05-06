@@ -28,16 +28,30 @@ struct ThrottleIntentSnapshot: Codable, Sendable {
     )
 }
 
+/// Shared App Group identifier used by the host app and the widget
+/// extension. Both targets must declare this in their entitlements'
+/// `com.apple.security.application-groups` key.
+public let ThrottleAppGroupID = "group.com.lorislab.throttle"
+
 enum ThrottleIntentSnapshotStore {
     private static let key = "ThrottleIntentSnapshotV1"
 
+    /// Prefer the App Group container (so the widget extension can read
+    /// it), fall back to standard defaults if the entitlement isn't
+    /// present (e.g. dev builds without the entitlement). The intents
+    /// run in-process so either store works for them; only the widget
+    /// strictly requires the suite.
+    private static var defaults: UserDefaults {
+        UserDefaults(suiteName: ThrottleAppGroupID) ?? .standard
+    }
+
     static func write(_ snap: ThrottleIntentSnapshot) {
         guard let data = try? JSONEncoder().encode(snap) else { return }
-        UserDefaults.standard.set(data, forKey: key)
+        defaults.set(data, forKey: key)
     }
 
     static func read() -> ThrottleIntentSnapshot {
-        guard let data = UserDefaults.standard.data(forKey: key),
+        guard let data = defaults.data(forKey: key),
               let snap = try? JSONDecoder().decode(ThrottleIntentSnapshot.self, from: data)
         else { return .empty }
         return snap

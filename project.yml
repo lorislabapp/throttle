@@ -19,8 +19,8 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
-    MARKETING_VERSION: "2.7.2"
-    CURRENT_PROJECT_VERSION: "72"
+    MARKETING_VERSION: "2.8.0"
+    CURRENT_PROJECT_VERSION: "73"
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
   configs:
     # Hardened runtime is required for notarized Release distribution but
@@ -74,6 +74,27 @@ targets:
     dependencies:
       - package: GRDB
       - package: Sparkle
+      - target: ThrottleWidget
+
+  ThrottleWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: ThrottleWidget
+    info:
+      path: ThrottleWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Throttle
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lorislab.throttle.widget
+        PRODUCT_NAME: ThrottleWidget
+        CODE_SIGN_ENTITLEMENTS: ThrottleWidget/ThrottleWidget.entitlements
+        SKIP_INSTALL: YES
 
   ThrottleTests:
     type: bundle.unit-test

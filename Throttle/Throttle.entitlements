@@ -26,5 +26,15 @@
     -->
     <key>com.apple.security.automation.apple-events</key>
     <true/>
+    <!--
+        Shared container for the ThrottleWidget extension. The widget runs
+        in its own process and cannot read UserDefaults.standard from the
+        host app, so we route the App-Intent snapshot through this group.
+        ID must match ThrottleAppGroupID in code.
+    -->
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>group.com.lorislab.throttle</string>
+    </array>
 </dict>
 </plist>
