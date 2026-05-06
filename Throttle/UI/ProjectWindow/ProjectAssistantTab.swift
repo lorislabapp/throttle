@@ -240,6 +240,21 @@ struct ProjectAssistantTab: View {
             }
             Spacer()
             Button {
+                Task { await runLocalAudit() }
+            } label: {
+                Image(systemName: "checklist").font(.caption)
+            }
+            .buttonStyle(.borderless)
+            .disabled(isStreaming)
+            .help(String(localized: "Run local audit (no AI, no tokens)"))
+            Button {
+                exportDiagnosticsToDesktop()
+            } label: {
+                Image(systemName: "ladybug").font(.caption)
+            }
+            .buttonStyle(.borderless)
+            .help(String(localized: "Export diagnostics to Desktop"))
+            Button {
                 forceShowOnboarding = true
             } label: {
                 Image(systemName: "switch.2").font(.caption)
@@ -843,6 +858,62 @@ struct ProjectAssistantTab: View {
         ctx.hookScriptPaths = hookScriptPaths
         loadedContext = ctx
         return ctx
+    }
+
+    /// Run the deterministic 7-rule audit (LocalAuditEngine) and post the
+    /// findings as a synthetic assistant message. No AI tokens consumed.
+    /// The output uses the same Markdown shape the AI uses, so the user
+    /// can't tell from the chat UI which engine produced the answer —
+    /// the only difference is the toolbar button they pressed.
+    private func runLocalAudit() async {
+        // Show a "user" bubble so the chat looks like a real turn —
+        // makes the result feel like an answer to a question.
+        let userMsg = ChatMessage(role: .user, content: String(localized: "Run local audit (deterministic, no AI)."))
+        transcript.append(userMsg)
+
+        let claudeMdText = project.claudeMdURL.flatMap { try? String(contentsOf: $0, encoding: .utf8) }
+        let claudeMdBytes: Int = project.claudeMdURL
+            .flatMap { try? FileManager.default.attributesOfItem(atPath: $0.path)[.size] as? Int } ?? 0
+        let settingsJSONText = project.settingsJSONURL.flatMap { try? String(contentsOf: $0, encoding: .utf8) }
+
+        let hooksDir = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/hooks", isDirectory: true)
+        let hooksPresent: [String]
+        if let entries = try? FileManager.default.contentsOfDirectory(atPath: hooksDir.path) {
+            hooksPresent = entries.filter { $0.hasSuffix(".sh") }
+        } else {
+            hooksPresent = []
+        }
+
+        let claudeMdPair: (text: String, bytes: Int)? = {
+            guard let text = claudeMdText else { return nil }
+            return (text: text, bytes: claudeMdBytes > 0 ? claudeMdBytes : text.utf8.count)
+        }()
+
+        let findings = LocalAuditEngine.audit(
+            claudeMd: claudeMdPair,
+            settingsJSON: settingsJSONText,
+            hooksPresent: hooksPresent
+        )
+        let markdown = LocalAuditEngine.renderMarkdown(findings: findings)
+        transcript.append(ChatMessage(role: .assistant, content: markdown))
+    }
+
+    /// Export the diagnostics bundle to ~/Desktop/ via the existing
+    /// `DiagnosticsExporter` and post a one-line confirmation in the
+    /// chat. The bundle contains DB snapshot, recent crash logs, and
+    /// app state — no AI involvement, suitable for emailing support.
+    private func exportDiagnosticsToDesktop() {
+        let database = appState.database
+        let confirmation: String
+        if let url = DiagnosticsExporter.exportToDesktop(database: database) {
+            confirmation = String(localized: "Diagnostics exported to ") + url.path
+            // Reveal in Finder so the user can find it without hunting.
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        } else {
+            confirmation = String(localized: "Diagnostics export failed — check the app log.")
+        }
+        transcript.append(ChatMessage(role: .assistant, content: "_\(confirmation)_"))
     }
 }
 
