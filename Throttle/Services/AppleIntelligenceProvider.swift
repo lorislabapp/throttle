@@ -84,7 +84,17 @@ struct AppleIntelligenceProvider: AIProvider {
                     }
                     continuation.finish()
                 } catch {
-                    continuation.finish(throwing: error)
+                    // FoundationModels throws framework-typed errors (e.g.
+                    // `LanguageModelSession.GenerationError.exceededContextWindowSize`)
+                    // which the runAssistantTurn fallback chain can't see as
+                    // recoverable. Wrap them so when the on-device 4K-token
+                    // window can't fit a tool-result follow-up, the chain
+                    // continues to the BYO API key (which has 200K).
+                    let raw = (error as? LocalizedError)?.errorDescription ?? "\(error)"
+                    continuation.finish(throwing: AIProviderError.unavailable(
+                        reason: "Apple Intelligence: \(raw)",
+                        recoverable: true
+                    ))
                 }
             }
         }

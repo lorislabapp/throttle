@@ -136,7 +136,13 @@ struct ClaudeWebSessionProvider: AIProvider {
                 Task {
                     var emittedLength = 0
                     var pollsBeforeAnyText = 0
-                    let maxPollsBeforeAnyText = 200  // 30 s of nothing → bail
+                    // Recursive tool-result turns can take 30–50 s before
+                    // first token (claude.ai server-side digests the
+                    // tool_results, runs prompt-cache checks, then plans).
+                    // 60 s of total silence is a fairer "the stream really
+                    // dropped" signal — anything sooner caused false
+                    // positives where the model was just thinking hard.
+                    let maxPollsBeforeAnyText = 400  // 60 s of nothing → bail
                     var totalPolls = 0
                     let maxTotalPolls = 1200          // 3 min absolute cap
                     while !Task.isCancelled {
