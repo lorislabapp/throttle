@@ -84,6 +84,11 @@ final class AppState {
                     try StatsDataService.savedTokensByDay(in: db, days: 7)
                 }
             }.value) ?? Array(repeating: 0, count: 7)
+            let weeklyCost: Double = (try? await Task.detached {
+                try database.read { db in
+                    try StatsDataService.extrapolatedCostEUR(in: db, range: .last7d)
+                }
+            }.value) ?? 0
             // Persist this snapshot's three windows into history. Keyed by
             // 5-minute bucket so rapid refresh()s don't explode the table.
             try? await Task.detached {
@@ -96,6 +101,17 @@ final class AppState {
                 self.savedTokensThisWeek = savedTokens
                 self.savedTokensByDay = savedByDay
                 ThresholdNotifier.shared.evaluate(snapshot: computed, exact: self.exactSnapshot)
+                // Persist a compact snapshot for App Intents (Shortcuts).
+                // The intent reads UserDefaults so it can answer in <50 ms
+                // and stay consistent with what the menu bar is showing.
+                ThrottleIntentSnapshotStore.write(ThrottleIntentSnapshot(
+                    session5hPercent: (computed.session5h.percentUsed ?? 0) * 100,
+                    weeklyAllPercent: (computed.weeklyAll.percentUsed ?? 0) * 100,
+                    weeklyTokens: computed.weeklyAll.usedTokens,
+                    weeklyCostEUR: weeklyCost,
+                    savedTokensThisWeek: savedTokens,
+                    computedAt: computed.computedAt
+                ))
             }
         }
     }
