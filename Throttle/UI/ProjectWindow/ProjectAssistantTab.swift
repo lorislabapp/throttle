@@ -26,6 +26,11 @@ struct ProjectAssistantTab: View {
     /// message of their own.
     @State private var followUpSuggestions: [String] = []
 
+    /// Per-entry expansion state for the inline tool-result cards. Keyed
+    /// by `<msg.id>-<entryIdx>` so each row in a batch tool_result can
+    /// expand independently.
+    @State private var expandedToolResults: Set<String> = []
+
     /// `.sheet(item:)` pattern — bundling the patches with an Identifiable
     /// wrapper guarantees the sheet's content closure receives a fresh
     /// snapshot, sidestepping the SwiftUI timing issue where setting two
@@ -263,10 +268,12 @@ struct ProjectAssistantTab: View {
                     }
                     ForEach(transcript) { msg in
                         if isSyntheticToolResult(msg) {
-                            // Suppress noise: tool_result lines are
-                            // synthetic input we feed back to the AI,
-                            // not something the user typed.
-                            EmptyView()
+                            // Show a compact, collapsible card listing
+                            // which files the AI fetched. Hides the raw
+                            // bytes by default (they're noise) but lets
+                            // the user expand to inspect.
+                            toolResultCard(msg)
+                                .id(msg.id)
                         } else {
                             bubble(msg)
                                 .id(msg.id)
@@ -287,6 +294,93 @@ struct ProjectAssistantTab: View {
 
     private func isSyntheticToolResult(_ msg: ChatMessage) -> Bool {
         msg.role == .user && msg.content.hasPrefix("[tool_result for ")
+    }
+
+    /// Compact card shown in place of the synthetic `[tool_result for …]`
+    /// user message. The raw text is noise (the AI is the consumer), but
+    /// users want to see *what was fetched* — both for trust ("did it
+    /// read my settings?") and debugging ("why did it answer wrong?
+    /// maybe it read the wrong file"). One row per tool call, with a
+    /// disclosure arrow to peek at the bytes.
+    @ViewBuilder
+    private func toolResultCard(_ msg: ChatMessage) -> some View {
+        let entries = parseToolResultEntries(from: msg.content)
+        if entries.isEmpty {
+            EmptyView()
+        } else {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(entries.indices, id: \.self) { idx in
+                    let e = entries[idx]
+                    let key = "\(msg.id.uuidString)-\(idx)"
+                    DisclosureGroup(isExpanded: Binding(
+                        get: { expandedToolResults.contains(key) },
+                        set: { isOpen in
+                            if isOpen { expandedToolResults.insert(key) }
+                            else { expandedToolResults.remove(key) }
+                        }
+                    )) {
+                        ScrollView(.vertical) {
+                            Text(e.body)
+                                .font(.system(.caption, design: .monospaced))
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(8)
+                        }
+                        .frame(maxHeight: 240)
+                        .background(.quaternary.opacity(0.4),
+                                    in: RoundedRectangle(cornerRadius: 6))
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: e.tool == "read_file" ? "doc.text" : "folder")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(e.tool)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            Text(e.path)
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+    }
+
+    private struct ToolResultEntry {
+        let tool: String
+        let path: String
+        let body: String
+    }
+
+    /// Parse a synthetic `[tool_result for read_file (/path/to/file)]\n…`
+    /// message back into structured entries. The format is produced by
+    /// `runAssistantTurn` when batching tool results — each entry is
+    /// separated by `\n\n---\n\n` and starts with the header line above.
+    private func parseToolResultEntries(from content: String) -> [ToolResultEntry] {
+        let chunks = content.components(separatedBy: "\n\n---\n\n")
+        var out: [ToolResultEntry] = []
+        for chunk in chunks {
+            guard let nl = chunk.firstIndex(of: "\n") else { continue }
+            let header = String(chunk[..<nl])
+            let body = String(chunk[chunk.index(after: nl)...])
+            // Header looks like: [tool_result for read_file (/path/to/file)]
+            guard header.hasPrefix("[tool_result for ") else { continue }
+            let inner = header
+                .replacingOccurrences(of: "[tool_result for ", with: "")
+                .replacingOccurrences(of: "]", with: "")
+            // inner = "read_file (/path/to/file)"
+            guard let openParen = inner.firstIndex(of: "("),
+                  let closeParen = inner.lastIndex(of: ")") else { continue }
+            let tool = String(inner[..<openParen]).trimmingCharacters(in: .whitespaces)
+            let pathStart = inner.index(after: openParen)
+            let path = String(inner[pathStart..<closeParen])
+            out.append(ToolResultEntry(tool: tool, path: path, body: body))
+        }
+        return out
     }
 
     /// Click-able follow-up chips after an Apply summary. Tap one and

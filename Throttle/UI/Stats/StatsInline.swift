@@ -126,9 +126,10 @@ struct StatsInline: View {
                         .foregroundStyle(pct >= 0 ? .red : .green)
                 }
             }
-            Text("weighted")
+            Text("tokens · cache-adjusted")
                 .font(.system(size: 9))
                 .foregroundStyle(.tertiary)
+                .help("Cache reads bill at ~10% of input rate; cache writes at ~125%. Throttle weights them to a single comparable number.")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10).padding(.vertical, 8)

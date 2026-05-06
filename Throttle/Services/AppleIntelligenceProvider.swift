@@ -50,7 +50,17 @@ struct AppleIntelligenceProvider: AIProvider {
         messages: [ChatMessage],
         context: ProjectChatContext
     ) async throws -> AsyncThrowingStream<String, Error> {
-        let session = LanguageModelSession(instructions: context.asSystemPrompt())
+        // Native tool calling: pass `read_file` + `list_files` directly to
+        // the on-device model. FoundationModels handles the tool_use →
+        // tool_result loop internally — the model gets bytes back without
+        // Throttle having to parse fenced ```tool blocks. We still emit
+        // the fenced-format instructions in the system prompt so the
+        // Safari Bridge (claude.ai web strips tool_use content blocks
+        // server-side) keeps working through the same code path.
+        let session = LanguageModelSession(
+            tools: [ReadFileTool(), ListFilesTool()],
+            instructions: context.asSystemPrompt()
+        )
         let userPrompt = composeUserPrompt(from: messages)
 
         return AsyncThrowingStream { continuation in
