@@ -19,8 +19,8 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
-    MARKETING_VERSION: "2.9.0"
-    CURRENT_PROJECT_VERSION: "78"
+    MARKETING_VERSION: "2.9.1"
+    CURRENT_PROJECT_VERSION: "79"
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
   configs:
     # Hardened runtime is required for notarized Release distribution but
