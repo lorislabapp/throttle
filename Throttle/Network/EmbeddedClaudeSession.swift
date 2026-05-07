@@ -72,34 +72,86 @@ final class EmbeddedClaudeSession: NSObject {
 
     // MARK: - Public API
 
-    /// Returns true iff the persisted cookie store has a valid claude.ai
-    /// `sessionKey` (the auth cookie Anthropic sets on login). Cheap —
-    /// no network round-trip, just reads the local cookie store.
+    /// Returns true iff the persisted cookie store has a usable claude.ai
+    /// auth cookie. Cheap — no network round-trip, just reads the local
+    /// cookie store.
+    ///
+    /// Anthropic has shipped at least two cookie names for claude.ai
+    /// auth (`sessionKey` and `__Secure-next-auth.session-token`) plus
+    /// the next-auth CSRF token. We accept any of those, scoped to the
+    /// claude.ai or anthropic.com domains. The strict cookie-name
+    /// approach used in 2.9.0–2.9.3 missed valid sign-ins when claude.ai
+    /// rotated cookies during a sign-in flow.
     func isSignedIn() async -> Bool {
         let store = ensureWebView().configuration.websiteDataStore.httpCookieStore
         let cookies = await store.allCookies()
+        let authNames: Set<String> = [
+            "sessionKey",
+            "__Secure-next-auth.session-token",
+            "next-auth.session-token",
+            "__Secure-next-auth.csrf-token"
+        ]
         return cookies.contains { c in
-            c.name == "sessionKey" &&
-            (c.domain.contains("claude.ai") || c.domain.contains(".anthropic.com"))
+            authNames.contains(c.name) &&
+            (c.domain.contains("claude.ai") || c.domain.contains("anthropic.com"))
         }
     }
 
     /// Run an arbitrary JS expression in the webview's claude.ai context
     /// and return the result coerced to String. Equivalent to
     /// `SafariBridge.runClaudeAIScript` but without AppleScript.
+    ///
+    /// Uses the `(_:in:in:)` overload (macOS 11+) instead of the older
+    /// `evaluateJavaScript(_:)`. The older API serializes the JS return
+    /// value with WKErrorCode 5 ("result type not supported") when the
+    /// expression resolves to a Promise — which our IIFE async functions
+    /// always do. The newer overload awaits the Promise on the WebKit
+    /// side and hands Swift the resolved value, which is what we want.
     func runJS(_ js: String) async throws -> String {
         try await ensureLoaded()
         let webView = ensureWebView()
         do {
-            let result = try await webView.evaluateJavaScript(js)
-            if let s = result as? String { return s }
-            if let n = result as? NSNumber { return n.stringValue }
-            if let dict = result as? [String: Any] {
-                let data = try JSONSerialization.data(withJSONObject: dict)
-                return String(data: data, encoding: .utf8) ?? ""
+            // `callAsyncJavaScript` is the only WKWebView API that
+            // properly awaits a Promise on the WebKit side and hands
+            // Swift the resolved value. The legacy
+            // `evaluateJavaScript` returns the Promise object itself,
+            // which marshals back as WKErrorCode 5 ("result type not
+            // supported"). The function body passes through verbatim;
+            // the runtime wraps it in `async function () { ... }`.
+            // Our `js` payload includes a top-level IIFE — strip the
+            // wrapping when it's there so the body is just statements
+            // for `callAsyncJavaScript`.
+            let body = Self.unwrapIIFE(js)
+            // `callAsyncJavaScript` returns `Any?` which Swift 6 strict
+            // concurrency flags as non-Sendable across the
+            // continuation. Convert to a String inside the callback so
+            // only Sendable values cross the boundary.
+            let resultStr: String = try await withCheckedThrowingContinuation { continuation in
+                webView.callAsyncJavaScript(
+                    body,
+                    arguments: [:],
+                    in: nil,
+                    in: .page
+                ) { result in
+                    switch result {
+                    case .success(let value):
+                        if let s = value as? String {
+                            continuation.resume(returning: s)
+                        } else if let n = value as? NSNumber {
+                            continuation.resume(returning: n.stringValue)
+                        } else if let dict = value as? [String: Any],
+                                  let data = try? JSONSerialization.data(withJSONObject: dict),
+                                  let s = String(data: data, encoding: .utf8) {
+                            continuation.resume(returning: s)
+                        } else {
+                            continuation.resume(returning: "")
+                        }
+                    case .failure(let error):
+                        continuation.resume(throwing: error)
+                    }
+                }
             }
-            if result == nil { return "" }
-            return String(describing: result)
+            return resultStr
         } catch {
             logger.error("evaluateJavaScript failed: \(error.localizedDescription, privacy: .public)")
             throw error
@@ -142,9 +194,31 @@ final class EmbeddedClaudeSession: NSObject {
         """
 
         // Block until any other navigation/evaluate finishes.
-        let resultStr = try await runJS(js)
+        let resultStr: String
+        do {
+            resultStr = try await runJS(js)
+        } catch {
+            // Always dump a diagnostic so we know WHY runJS failed —
+            // navigation hung, evaluateJavaScript threw, etc. Without
+            // this, there's literally no file on disk to inspect when
+            // the user reports "embedded session never worked".
+            let info = "runJS failed: \(error.localizedDescription)\n\n\(error)"
+            Self.writeDiagnosticDump(data: Data(info.utf8), label: "last-runjs-error")
+            logger.error("fetchUsageJSON runJS failed: \(error.localizedDescription, privacy: .public)")
+            throw error
+        }
         guard let data = resultStr.data(using: .utf8) else {
+            Self.writeDiagnosticDump(data: Data(resultStr.utf8), label: "last-non-utf8-response")
             throw EmbeddedSessionError.decode("non-UTF8 response")
+        }
+
+        // Write a copy of the raw JSON to ~/Library/Application Support/
+        // Throttle/diagnostics/last-usage-response.json so postmortems
+        // on field-shape drift have something concrete to inspect.
+        Self.writeDiagnosticDump(data: data, label: "last-usage-response")
+        if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            let keys = obj.keys.sorted().joined(separator: ", ")
+            logger.info("/usage top-level keys: \(keys, privacy: .public)")
         }
         // Sentinel-error envelope.
         if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -249,6 +323,14 @@ final class EmbeddedClaudeSession: NSObject {
     }
 
     private func makeHiddenHostWindow() -> NSWindow {
+        // CRITICAL: WKWebView only runs its rendering pipeline (and
+        // therefore navigation, JS execution, fetch) when it lives in a
+        // window that's PRESENT on screen. `orderOut(nil)` removes the
+        // window entirely — WKWebView freezes in a half-loaded state
+        // and `evaluateJavaScript` hangs forever. The fix is to keep
+        // the window on-screen but invisible: tiny (1×1), positioned
+        // off-screen, alpha 0, no shadow, no titlebar. Mission Control
+        // / Stage Manager / Cmd-Tab ignore it via collectionBehavior.
         let w = NSWindow(
             contentRect: NSRect(x: -10000, y: -10000, width: 1024, height: 768),
             styleMask: [.borderless],
@@ -256,11 +338,14 @@ final class EmbeddedClaudeSession: NSObject {
             defer: false
         )
         w.alphaValue = 0
+        w.hasShadow = false
         w.isReleasedWhenClosed = false
-        w.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
-        // Order out — we never want this window in Mission Control or
-        // the Dock's Window menu.
-        w.orderOut(nil)
+        w.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
+        w.level = .floating  // ordered above normal windows but invisible due to alpha 0
+        // orderBack so WKWebView's rendering pipeline activates (window
+        // is on-screen) but the window doesn't steal focus or appear
+        // visible to the user.
+        w.orderBack(nil)
         return w
     }
 
@@ -269,6 +354,49 @@ final class EmbeddedClaudeSession: NSObject {
     /// site starts UA-sniffing for a newer Safari.
     static let safariUserAgent =
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
+
+    /// Strip `(async function() { ... })()` or `(function() { ... })()`
+    /// wrapping from `js` so the inner body becomes statements suitable
+    /// for `WKWebView.callAsyncJavaScript` (which wraps in an async
+    /// function on its side). When the input is just an expression
+    /// without any IIFE, return it unchanged with a `return` prefix so
+    /// it becomes a valid statement.
+    static func unwrapIIFE(_ js: String) -> String {
+        let trimmed = js.trimmingCharacters(in: .whitespacesAndNewlines)
+        let asyncPrefix = "(async function() {"
+        let funcPrefix  = "(function() {"
+        let suffix      = "})()"
+        if trimmed.hasPrefix(asyncPrefix), trimmed.hasSuffix(suffix) {
+            let start = trimmed.index(trimmed.startIndex, offsetBy: asyncPrefix.count)
+            let end   = trimmed.index(trimmed.endIndex, offsetBy: -suffix.count)
+            return String(trimmed[start..<end])
+        }
+        if trimmed.hasPrefix(funcPrefix), trimmed.hasSuffix(suffix) {
+            let start = trimmed.index(trimmed.startIndex, offsetBy: funcPrefix.count)
+            let end   = trimmed.index(trimmed.endIndex, offsetBy: -suffix.count)
+            return String(trimmed[start..<end])
+        }
+        // Plain expression — wrap in `return` so it's a valid stmt.
+        return "return (\(trimmed));"
+    }
+
+    /// Append the bytes from one fetchUsageJSON call to a file under
+    /// `~/Library/Application Support/Throttle/diagnostics/<label>.json`.
+    /// The file overwrites every call so it's always the *latest*
+    /// response — useful when "the call worked yesterday and broke
+    /// today" needs a side-by-side diff. Best-effort: any failure
+    /// (sandboxed launchd, no app-support dir, permission denied) is
+    /// silently swallowed so a write error never breaks the chat path.
+    private static func writeDiagnosticDump(data: Data, label: String) {
+        let fm = FileManager.default
+        guard let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
+        let dir = appSupport
+            .appendingPathComponent("Throttle", isDirectory: true)
+            .appendingPathComponent("diagnostics", isDirectory: true)
+        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        let url = dir.appendingPathComponent("\(label).json")
+        try? data.write(to: url, options: [.atomic])
+    }
 
     /// Make sure the webview has navigated to claude.ai at least once
     /// in this app session. Without an initial navigation,

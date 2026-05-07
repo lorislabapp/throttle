@@ -126,21 +126,33 @@ final class ExactModeService {
     }
 
     private func pollOnceImpl() async -> Result<ExactSnapshot, ExactModeError> {
-        // Prefer the embedded WKWebView-backed session. Falls back to
-        // the Safari Bridge if the embedded session isn't signed in
-        // yet, so users on the legacy 2.8.x flow keep working until
-        // they sign into Throttle's own session.
-        let signedIn = await EmbeddedClaudeSession.shared.isSignedIn()
-        if signedIn {
-            do {
-                let data = try await EmbeddedClaudeSession.shared.fetchUsageJSON()
-                let snap = try ExactSnapshot.decode(from: data)
-                return .success(snap)
-            } catch let err as EmbeddedSessionError {
-                return .failure(mapEmbedded(err))
-            } catch {
-                return .failure(.invalidResponse)
-            }
+        // Always try the embedded session first. The embedded path's
+        // own JS reports `_throttle_status: 401` when the cookie store
+        // doesn't have a usable session, which we map to .notSignedIn —
+        // strictly more accurate than the cookie-name-based isSignedIn
+        // heuristic, which could miss a freshly-rotated cookie before
+        // the store has fully loaded from disk.
+        do {
+            let data = try await EmbeddedClaudeSession.shared.fetchUsageJSON()
+            let snap = try ExactSnapshot.decode(from: data)
+            return .success(snap)
+        } catch let err as EmbeddedSessionError {
+            logger.error("embedded session error: \(err.localizedDescription, privacy: .public)")
+            // Fall through to Safari Bridge only for `notSignedIn` /
+            // `httpError(401)` — those mean the embedded path has no
+            // usable cookie. For other errors (decode, scriptError,
+            // invalidResponse) the embedded path failed in a way the
+            // Safari Bridge wouldn't fix; surface the embedded error.
+            if case .notSignedIn = err { /* fall through */ }
+            else if case .httpError(let c) = err, c == 401 || c == 403 { /* fall through */ }
+            else { return .failure(mapEmbedded(err)) }
+        } catch let decodeErr as DecodingError {
+            logger.error("ExactSnapshot decode failed: \(String(describing: decodeErr), privacy: .public)")
+            return .failure(.invalidResponse)
+        } catch {
+            logger.error("exact mode embedded unknown error: \(error.localizedDescription, privacy: .public)")
+            // Fall through to Safari Bridge for unknown errors —
+            // could be transient (page not loaded, navigation hung).
         }
 
         // Legacy: Safari Bridge fallback
