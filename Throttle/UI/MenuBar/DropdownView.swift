@@ -301,25 +301,29 @@ struct DropdownView: View {
     /// a remediation, but kept optional for forward-compat).
     private func exactModeWarningAction(_ err: ExactModeError) -> ExactModeAction? {
         switch err {
-        case .notSignedIn, .noClaudeTab, .safariNotRunning:
-            return ExactModeAction(title: String(localized: "Open Safari")) {
-                ExactModeService.shared.openSignInPage()
+        case .notSignedIn, .noClaudeTab, .safariNotRunning, .tabZombieRateLimited:
+            // 2.9.0: prefer Throttle's own embedded session — no Safari,
+            // no Automation prompt, signed in once per Mac. Opens a
+            // sign-in window directly.
+            return ExactModeAction(title: String(localized: "Sign in to claude.ai")) {
+                Task { @MainActor in
+                    let signed = await EmbeddedClaudeSession.shared.presentSignIn()
+                    if signed { await ExactModeService.shared.refresh() }
+                }
             }
         case .automationDenied:
-            return ExactModeAction(title: String(localized: "Settings")) {
-                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") {
-                    NSWorkspace.shared.open(url)
+            // Automation was the Safari Bridge path. With the embedded
+            // session the prompt isn't even needed — guide the user to
+            // sign into Throttle's own session instead.
+            return ExactModeAction(title: String(localized: "Sign in to claude.ai")) {
+                Task { @MainActor in
+                    let signed = await EmbeddedClaudeSession.shared.presentSignIn()
+                    if signed { await ExactModeService.shared.refresh() }
                 }
             }
         case .httpError, .invalidResponse, .appleScript, .timeout:
             return ExactModeAction(title: String(localized: "Retry")) {
                 Task { await ExactModeService.shared.refresh() }
-            }
-        case .tabZombieRateLimited:
-            // Force-navigate is throttled — pointing the user at Safari is
-            // the right one-tap remediation (clicking the tab wakes it).
-            return ExactModeAction(title: String(localized: "Open Safari")) {
-                ExactModeService.shared.openSignInPage()
             }
         }
     }

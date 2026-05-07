@@ -119,7 +119,7 @@ struct ProjectAssistantTab: View {
                     kind: .claudeWebSession,
                     title: String(localized: "Claude (your subscription)"),
                     badge: String(localized: "Free for you · uses your Claude Pro/Max plan"),
-                    description: String(localized: "Reuses your logged-in claude.ai Safari session — no API key, no extra cost. Each chat counts against your existing Claude subscription quota. Requires Safari signed in to claude.ai."),
+                    description: String(localized: "Sign in to claude.ai inside Throttle (one-time, per Mac). No Safari needed — Throttle has its own session. Each chat counts against your existing Claude subscription quota. Auto-detects your plan tier (Pro / Max 5x / Max 20x) so the meter calibration is right out of the box."),
                     requiresExtra: false
                 )
 

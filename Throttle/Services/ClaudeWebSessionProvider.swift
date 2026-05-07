@@ -53,10 +53,53 @@ struct ClaudeWebSessionProvider: AIProvider {
 
     var isAvailable: Bool {
         get async {
-            // We can't verify the full chat path without making a real
-            // request — the cheap proxy is "is the usage endpoint
-            // reachable through Safari?". Same prerequisites apply.
-            await MainActor.run { SafariBridge.isSafariRunning }
+            // Prefer the embedded session (no Safari needed). Fall back
+            // to the Safari Bridge if Throttle's own session isn't
+            // signed in yet.
+            if await EmbeddedClaudeSession.shared.isSignedIn() { return true }
+            return await MainActor.run { SafariBridge.isSafariRunning }
+        }
+    }
+
+    /// Two execution media — Throttle's own embedded WKWebView (no
+    /// Safari needed, signed in once per Mac) or the legacy Safari
+    /// Bridge fallback. Picked once per chat turn so the kickoff +
+    /// poll + retry stays on one medium.
+    private enum ExecMedium {
+        case embedded
+        case safariBridge
+    }
+
+    private func currentMedium() async -> ExecMedium {
+        if await EmbeddedClaudeSession.shared.isSignedIn() { return .embedded }
+        return .safariBridge
+    }
+
+    /// Unified JS executor. Runs `js` against whichever medium is
+    /// active and returns the JSON-decodable result as Data. Maps
+    /// medium-specific errors into a single shape so the streaming
+    /// loop doesn't branch on every poll.
+    private func runScript(_ js: String, medium: ExecMedium) async -> Result<Data, AIProviderError> {
+        switch medium {
+        case .embedded:
+            do {
+                let str = try await EmbeddedClaudeSession.shared.runJS(js)
+                guard let data = str.data(using: .utf8) else {
+                    return .failure(.decode("non-UTF8 from embedded session"))
+                }
+                return .success(data)
+            } catch let err as EmbeddedSessionError {
+                return .failure(.unavailable(reason: err.localizedDescription, recoverable: true))
+            } catch {
+                return .failure(.unavailable(reason: error.localizedDescription, recoverable: true))
+            }
+        case .safariBridge:
+            let r = await SafariBridge.runClaudeAIScript(js)
+            switch r {
+            case .success(let data): return .success(data)
+            case .failure(let err):
+                return .failure(.unavailable(reason: describe(err), recoverable: true))
+            }
         }
     }
 
@@ -92,15 +135,21 @@ struct ClaudeWebSessionProvider: AIProvider {
             reuse = nil
         }
 
+        // Pick execution medium once per turn — Throttle's embedded
+        // WKWebView session if signed in, Safari Bridge legacy
+        // otherwise. The kickoff + poll + retry stay on the same
+        // medium so we don't fight inconsistent state.
+        let medium = await currentMedium()
+
         // Kickoff: sync-XHR org+conv setup, then fires off an async fetch
         // streaming the SSE response into `window.__throttle_buf`. Returns
         // immediately with `{_throttle_streaming: true, conv, org}` so we
         // can cache the conv ID before the model has finished generating.
-        let kickoff = await SafariBridge.runClaudeAIScript(buildStreamingJS(prompt: promptPayload, reuse: reuse))
+        let kickoff = await runScript(buildStreamingJS(prompt: promptPayload, reuse: reuse), medium: medium)
 
         switch kickoff {
         case .failure(let err):
-            throw AIProviderError.unavailable(reason: describe(err), recoverable: true)
+            throw err
         case .success(let data):
             // Setup-phase errors come back as the same `_throttle_status`
             // envelope the legacy code returned — handle them before
@@ -155,11 +204,10 @@ struct ClaudeWebSessionProvider: AIProvider {
                             break pollLoop
                         }
                         try? await Task.sleep(nanoseconds: 150_000_000)
-                        let pollResult = await SafariBridge.runClaudeAIScript(pollJS)
+                        let pollResult = await self.runScript(pollJS, medium: medium)
                         switch pollResult {
-                        case .failure(let bridgeErr):
-                            continuation.finish(throwing: AIProviderError.unavailable(
-                                reason: self.describe(bridgeErr), recoverable: true))
+                        case .failure(let providerErr):
+                            continuation.finish(throwing: providerErr)
                             return
                         case .success(let pollData):
                             guard let pobj = try? JSONSerialization.jsonObject(with: pollData) as? [String: Any] else {
@@ -200,11 +248,10 @@ struct ClaudeWebSessionProvider: AIProvider {
                     // one final chunk with the full response.
                     if streamingDropped, emittedLength == 0 {
                         let legacyJS = self.buildJS(prompt: promptPayload, reuse: reuse)
-                        let legacyResult = await SafariBridge.runClaudeAIScript(legacyJS)
+                        let legacyResult = await self.runScript(legacyJS, medium: medium)
                         switch legacyResult {
-                        case .failure(let bridgeErr):
-                            continuation.finish(throwing: AIProviderError.unavailable(
-                                reason: self.describe(bridgeErr), recoverable: true))
+                        case .failure(let providerErr):
+                            continuation.finish(throwing: providerErr)
                             return
                         case .success(let data):
                             if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

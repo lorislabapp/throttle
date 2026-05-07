@@ -126,6 +126,24 @@ final class ExactModeService {
     }
 
     private func pollOnceImpl() async -> Result<ExactSnapshot, ExactModeError> {
+        // Prefer the embedded WKWebView-backed session. Falls back to
+        // the Safari Bridge if the embedded session isn't signed in
+        // yet, so users on the legacy 2.8.x flow keep working until
+        // they sign into Throttle's own session.
+        let signedIn = await EmbeddedClaudeSession.shared.isSignedIn()
+        if signedIn {
+            do {
+                let data = try await EmbeddedClaudeSession.shared.fetchUsageJSON()
+                let snap = try ExactSnapshot.decode(from: data)
+                return .success(snap)
+            } catch let err as EmbeddedSessionError {
+                return .failure(mapEmbedded(err))
+            } catch {
+                return .failure(.invalidResponse)
+            }
+        }
+
+        // Legacy: Safari Bridge fallback
         let bridgeResult = await SafariBridge.fetchUsageJSON()
         switch bridgeResult {
         case .success(let data):
@@ -137,6 +155,16 @@ final class ExactModeService {
             }
         case .failure(let err):
             return .failure(map(err))
+        }
+    }
+
+    private func mapEmbedded(_ err: EmbeddedSessionError) -> ExactModeError {
+        switch err {
+        case .notSignedIn:        return .notSignedIn
+        case .httpError(let c):   return .httpError(c)
+        case .invalidResponse:    return .invalidResponse
+        case .scriptError(let s): return .appleScript(s)  // reuse existing variant
+        case .decode(let s):      return .appleScript(s)
         }
     }
 
