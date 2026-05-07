@@ -316,10 +316,14 @@ final class EmbeddedClaudeSession: NSObject {
     /// the window is closed. The same WKWebView instance is reused so
     /// any state the user accumulates during sign-in (cookies, local
     /// storage) sticks.
+    ///
+    /// All the lifecycle bookkeeping lives in the `SignInCoordinator`
+    /// class so the resume-once invariant is enforced by a single
+    /// MainActor-isolated mutable flag (vs. the earlier inline `var
+    /// resumed` which was captured across closures and could race
+    /// across the close-notification + cookie-poll paths).
     func presentSignIn() async -> Bool {
         let view = ensureWebView()
-        // Snapshot the host window — we'll restore the view there after
-        // sign-in regardless of outcome.
         let originalHost = self.hostWindow
 
         let signInWindow = NSWindow(
@@ -330,59 +334,88 @@ final class EmbeddedClaudeSession: NSObject {
         )
         signInWindow.title = String(localized: "Sign in to claude.ai")
         signInWindow.center()
+        // Keep ownership ourselves so the window's contentView (our
+        // webView) doesn't get released out from under us if the user
+        // ⌘W's the window during a navigation.
+        signInWindow.isReleasedWhenClosed = false
         signInWindow.contentView = view
-        // Make sure we navigate the view to the login page when the
-        // window opens so the user sees the sign-in form, not whatever
-        // the background view was showing.
         view.load(URLRequest(url: URL(string: "https://claude.ai/login")!))
         signInWindow.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
 
-        // Poll the cookie store every 500 ms; close the sheet when the
-        // sessionKey appears (= sign-in success) or the window closes.
         let success: Bool = await withCheckedContinuation { continuation in
-            var resumed = false
-            // Closed-window observer
-            let closeToken = NotificationCenter.default.addObserver(
+            let coordinator = SignInCoordinator(
+                continuation: continuation,
+                signInWindow: signInWindow
+            )
+            // Window-close → resume(false). Continuation is resume-once
+            // guarded inside the coordinator.
+            coordinator.observerToken = NotificationCenter.default.addObserver(
                 forName: NSWindow.willCloseNotification,
                 object: signInWindow,
                 queue: .main
-            ) { _ in
-                if !resumed {
-                    resumed = true
-                    continuation.resume(returning: false)
+            ) { [weak coordinator] _ in
+                Task { @MainActor [weak coordinator] in
+                    coordinator?.resume(with: false)
                 }
             }
-            // Cookie watcher
-            let pollTask = Task { @MainActor in
-                while !Task.isCancelled {
+            // Cookie watcher → resume(true) when sessionKey lands.
+            coordinator.pollTask = Task { @MainActor [weak self, weak coordinator] in
+                while let coord = coordinator, !coord.didResume, !Task.isCancelled {
                     try? await Task.sleep(nanoseconds: 500_000_000)
+                    guard let self else { return }
                     let signed = await self.isSignedIn()
                     if signed {
-                        if !resumed {
-                            resumed = true
-                            continuation.resume(returning: true)
-                            signInWindow.close()
-                        }
+                        coordinator?.resume(with: true)
                         return
                     }
                 }
             }
-            // Cleanup
-            Task { @MainActor in
-                while !resumed { try? await Task.sleep(nanoseconds: 200_000_000) }
-                pollTask.cancel()
-                NotificationCenter.default.removeObserver(closeToken)
-            }
         }
 
-        // Restore the view to the hidden host so background API calls
-        // keep working.
         if let originalHost {
             originalHost.contentView = view
             originalHost.orderOut(nil)
         }
         return success
+    }
+}
+
+/// MainActor-isolated bookkeeper for one `presentSignIn` call. Owns the
+/// resume-once flag, the cookie-poll Task, the close-notification
+/// observer token, and the sign-in window. `resume(with:)` is idempotent
+/// — second + nth calls are no-ops, so the close-handler and
+/// cookie-poll paths can both fire without double-resuming the
+/// continuation.
+@MainActor
+private final class SignInCoordinator {
+    private let continuation: CheckedContinuation<Bool, Never>
+    private let signInWindow: NSWindow
+    private(set) var didResume = false
+    var pollTask: Task<Void, Never>?
+    var observerToken: NSObjectProtocol?
+
+    init(continuation: CheckedContinuation<Bool, Never>, signInWindow: NSWindow) {
+        self.continuation = continuation
+        self.signInWindow = signInWindow
+    }
+
+    func resume(with result: Bool) {
+        guard !didResume else { return }
+        didResume = true
+        if let token = observerToken {
+            NotificationCenter.default.removeObserver(token)
+            observerToken = nil
+        }
+        pollTask?.cancel()
+        pollTask = nil
+        continuation.resume(returning: result)
+        if result {
+            // Cookie landed — close the window so we get back to the
+            // hidden host. Don't close on cancel: the user already
+            // closed it themselves.
+            signInWindow.close()
+        }
     }
 }
 
@@ -399,6 +432,23 @@ extension EmbeddedClaudeSession: WKNavigationDelegate {
 
     nonisolated func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         Task { @MainActor in self.notifyNavigationFinished(error: error) }
+    }
+
+    /// Recover when the WebKit content process dies (sad-mac in the
+    /// view, every subsequent `evaluateJavaScript` would silently fail).
+    /// macOS 26.5 has a known RenderBox/Metal-shader path that can
+    /// trigger this; the entitlements in `Throttle.entitlements`
+    /// (allow-jit, allow-unsigned-executable-memory,
+    /// disable-library-validation) mitigate but don't eliminate it.
+    /// Re-load claude.ai/ to bring the view back to a usable state.
+    nonisolated func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        Task { @MainActor in
+            self.logger.warning("WKWebView content process terminated — reloading claude.ai")
+            // Drop any pending navigation continuations with a clear
+            // error so callers don't wait forever.
+            self.notifyNavigationFinished(error: EmbeddedSessionError.scriptError("WebKit content process died — recovering"))
+            webView.load(URLRequest(url: URL(string: "https://claude.ai/")!))
+        }
     }
 }
 
