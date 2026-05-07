@@ -31,6 +31,7 @@ struct DropdownView: View {
 
     @State private var mode: Mode = .meter
     @State private var savingsLeafPulse: Bool = false
+    @State private var embeddedSignedIn: Bool = false
 
     var body: some View {
         Group {
@@ -167,6 +168,9 @@ struct DropdownView: View {
         }
         .onAppear {
             _ = MilestoneTracker.shared.observeWeeklySnapshot(appState.savedTokensThisWeek)
+            Task { @MainActor in
+                embeddedSignedIn = await EmbeddedClaudeSession.shared.isSignedIn()
+            }
         }
     }
 
@@ -300,28 +304,29 @@ struct DropdownView: View {
     /// where there's no obvious user action (none currently — every error has
     /// a remediation, but kept optional for forward-compat).
     private func exactModeWarningAction(_ err: ExactModeError) -> ExactModeAction? {
+        // With the embedded WKWebView session, almost every failure boils
+        // down to "you're not actually authenticated" — stale cookie,
+        // expired session, never signed in, claude.ai forced re-auth.
+        // The right CTA is almost always "Sign in to claude.ai" which
+        // opens our embedded sign-in window. Only pure transient HTTP
+        // 5xx / timeout / parse errors get a Retry button.
         switch err {
-        case .notSignedIn, .noClaudeTab, .safariNotRunning, .tabZombieRateLimited:
-            // 2.9.0: prefer Throttle's own embedded session — no Safari,
-            // no Automation prompt, signed in once per Mac. Opens a
-            // sign-in window directly.
+        case .notSignedIn, .noClaudeTab, .safariNotRunning,
+             .tabZombieRateLimited, .automationDenied, .invalidResponse:
             return ExactModeAction(title: String(localized: "Sign in to claude.ai")) {
                 Task { @MainActor in
                     let signed = await EmbeddedClaudeSession.shared.presentSignIn()
                     if signed { await ExactModeService.shared.refresh() }
                 }
             }
-        case .automationDenied:
-            // Automation was the Safari Bridge path. With the embedded
-            // session the prompt isn't even needed — guide the user to
-            // sign into Throttle's own session instead.
+        case .httpError(let code) where code == 401 || code == 403:
             return ExactModeAction(title: String(localized: "Sign in to claude.ai")) {
                 Task { @MainActor in
                     let signed = await EmbeddedClaudeSession.shared.presentSignIn()
                     if signed { await ExactModeService.shared.refresh() }
                 }
             }
-        case .httpError, .invalidResponse, .appleScript, .timeout:
+        case .httpError, .appleScript, .timeout:
             return ExactModeAction(title: String(localized: "Retry")) {
                 Task { await ExactModeService.shared.refresh() }
             }
@@ -542,6 +547,23 @@ struct DropdownView: View {
 
     private var footer: some View {
         VStack(alignment: .leading, spacing: 6) {
+            // Always-available sign-in entry. The user shouldn't have to
+            // wait for an exact-mode poll to fail before they can hit
+            // the sign-in window. State (signed in vs not) is reflected
+            // in the label itself, so a glance is enough.
+            Button {
+                Task { @MainActor in
+                    let signed = await EmbeddedClaudeSession.shared.presentSignIn()
+                    if signed { await ExactModeService.shared.refresh() }
+                }
+            } label: {
+                Label(
+                    embeddedSignedIn ? "claude.ai signed in ✓" : "Sign in to claude.ai…",
+                    systemImage: embeddedSignedIn ? "checkmark.shield" : "person.badge.key"
+                )
+            }
+            .buttonStyle(.plain)
+
             Button {
                 if let url = URL(string: "https://claude.ai/settings/usage") {
                     NSWorkspace.shared.open(url)
@@ -1611,6 +1633,14 @@ private struct AboutInline: View {
                 Text("Version \(version)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                Button {
+                    UpdaterService.shared.checkForUpdates()
+                } label: {
+                    Label("Check for Updates…", systemImage: "arrow.clockwise.circle")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .padding(.top, 2)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
