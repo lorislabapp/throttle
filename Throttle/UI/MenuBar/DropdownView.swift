@@ -80,6 +80,10 @@ struct DropdownView: View {
             } else {
                 windowsList
             }
+            if !appState.isPro && appState.snapshot.hasAnyData {
+                ProUpsellBanner(configSize: 95, savings: 40)
+                    .padding(.horizontal, 4)
+            }
             exactModeWarningBanner
             if appState.savedTokensThisWeek > 0 {
                 savingsBanner
@@ -104,53 +108,63 @@ struct DropdownView: View {
     /// strip below makes "the counter is stale" impossible to confuse
     /// with "you didn't use Claude today" — they read different.
     private var savingsBanner: some View {
-        HStack(spacing: 12) {
-            // macOS 26.5 has a RenderBox/Metal shader-load regression that
-            // crashes the dropdown on `contentTransition(.numericText)` and
-            // on `.shadow` modifiers inside MenuBarExtra views. The pulse
-            // is kept as a plain scaleEffect+animation (no shadow); the
-            // big number swaps without the morphing transition. The
-            // sparkline still gives the card its sense of motion.
-            Image(systemName: "leaf.fill")
-                .font(.system(size: 26, weight: .semibold))
-                .foregroundStyle(.white)
-                .scaleEffect(savingsLeafPulse ? 1.18 : 1.0)
-                .animation(.spring(response: 0.4, dampingFraction: 0.5), value: savingsLeafPulse)
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    Text(formatTokens(appState.savedTokensThisWeek))
-                        .font(.system(size: 28, weight: .heavy, design: .rounded).monospacedDigit())
-                        .foregroundStyle(.white)
-                    Text("tokens saved")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.92))
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                // macOS 26.5 has a RenderBox/Metal shader-load regression that
+                // crashes the dropdown on `contentTransition(.numericText)` and
+                // on `.shadow` modifiers inside MenuBarExtra views. The pulse
+                // is kept as a plain scaleEffect+animation (no shadow); the
+                // big number swaps without the morphing transition. The
+                // sparkline still gives the card its sense of motion.
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .scaleEffect(savingsLeafPulse ? 1.18 : 1.0)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.5), value: savingsLeafPulse)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        Text(formatTokens(appState.savedTokensThisWeek))
+                            .font(.system(size: 28, weight: .heavy, design: .rounded).monospacedDigit())
+                            .foregroundStyle(.white)
+                            .fixedSize()
+                        Text("tokens saved")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.92))
+                            .fixedSize()
+                    }
+                    Text(todayDeltaCopy)
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.75))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                Text(todayDeltaCopy)
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.75))
+                Spacer(minLength: 0)
+                Sparkline(values: appState.savedTokensByDay,
+                          stroke: .white.opacity(0.95),
+                          fill: .white.opacity(0.18))
+                    .frame(width: 64, height: 28)
             }
-            Spacer(minLength: 0)
-            Sparkline(values: appState.savedTokensByDay,
-                      stroke: .white.opacity(0.95),
-                      fill: .white.opacity(0.18))
-                .frame(width: 64, height: 28)
-        }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.05, green: 0.45, blue: 0.27),
-                            Color(red: 0.10, green: 0.62, blue: 0.39)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.05, green: 0.45, blue: 0.27),
+                                Color(red: 0.10, green: 0.62, blue: 0.39)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
-        )
+            )
+            .overlay(alignment: .bottom) { milestoneCelebration }
+
+            // Persistent achievement badges showing all unlocked milestones.
+            // Always visible (not just on first unlock) to reinforce the
+            // value prop: "Throttle saved you X months of Pro/Max".
+            milestoneBadges
+        }
         .padding(.top, 10)
-        .overlay(alignment: .bottom) { milestoneCelebration }
         .onChange(of: appState.savedTokensThisWeek) { old, new in
             // Pulse the leaf when the counter ticks up, and check whether
             // we crossed a "1 month of Pro" / "1 month of Max" threshold
@@ -213,6 +227,77 @@ struct DropdownView: View {
                     await MainActor.run { MilestoneTracker.shared.dismissCelebration() }
                 }
             }
+        }
+    }
+
+    /// Persistent badges showing all milestones that have been unlocked.
+    /// Always visible (not just on first unlock) — reinforces the value
+    /// prop continuously: "you've saved 3 months of Pro" stays on screen.
+    /// Unlocked badges show the emoji + short label in white-on-green;
+    /// locked badges appear greyed out with a lock icon.
+    @ViewBuilder
+    private var milestoneBadges: some View {
+        let liveEUR = MilestoneTracker.shared.lifetimeEUR +
+                      Double(appState.savedTokensThisWeek) / 1_000_000 * 2.76
+        let unlocked = MilestoneTracker.ladder.filter { $0.thresholdEUR <= liveEUR }
+
+        if !unlocked.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(MilestoneTracker.ladder, id: \.id) { milestone in
+                        let isUnlocked = unlocked.contains(milestone)
+                        milestoneBadge(milestone: milestone, unlocked: isUnlocked)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
+            .background(Color.white.opacity(0.08))
+        }
+    }
+
+    @ViewBuilder
+    private func milestoneBadge(milestone: MilestoneTracker.Milestone, unlocked: Bool) -> some View {
+        HStack(spacing: 4) {
+            if unlocked {
+                Text(milestone.emoji).font(.system(size: 12))
+                Text(compactLabel(for: milestone))
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.white)
+            } else {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.white.opacity(0.35))
+                Text(compactLabel(for: milestone))
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.35))
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+            Capsule()
+                .fill(unlocked ? Color.white.opacity(0.18) : Color.white.opacity(0.06))
+                .overlay(
+                    Capsule()
+                        .strokeBorder(
+                            unlocked ? Color.white.opacity(0.30) : Color.white.opacity(0.12),
+                            lineWidth: 1
+                        )
+                )
+        )
+    }
+
+    /// Short labels for badges — "1d Pro", "1w Pro", "1m Pro", "Max 5×", "Max 20×".
+    /// Keeps badges compact so they all fit on one line at 340pt width.
+    private func compactLabel(for milestone: MilestoneTracker.Milestone) -> String {
+        switch milestone.id {
+        case "day_pro":     return String(localized: "1d Pro")
+        case "week_pro":    return String(localized: "1w Pro")
+        case "month_pro":   return String(localized: "1m Pro")
+        case "month_max5":  return String(localized: "Max 5×")
+        case "month_max20": return String(localized: "Max 20×")
+        default:            return milestone.label
         }
     }
 
@@ -1612,6 +1697,13 @@ private struct InlinePrivacyPane: View {
 
 private struct AboutInline: View {
     let onBack: () -> Void
+    /// Hidden 10-tap counter on the version label. Reset if no tap for
+    /// 3s. On the 10th tap, opens the dev-unlock sheet — the only place
+    /// in the UI that exposes the developer backdoor. Production users
+    /// who never tap the version 10 times in 3s never see the sheet.
+    @State private var versionTapCount: Int = 0
+    @State private var lastTapAt: Date = .distantPast
+    @State private var showDevUnlockSheet = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1633,6 +1725,8 @@ private struct AboutInline: View {
                 Text("Version \(version)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .contentShape(Rectangle())
+                    .onTapGesture { handleVersionTap() }
                 Button {
                     UpdaterService.shared.checkForUpdates()
                 } label: {
@@ -1661,6 +1755,7 @@ private struct AboutInline: View {
                     .font(.caption)
             }
         }
+        .sheet(isPresented: $showDevUnlockSheet) { devUnlockSheetView }
     }
 
     private var version: String {
@@ -1668,6 +1763,96 @@ private struct AboutInline: View {
         let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
         return "\(v) (\(b))"
     }
+
+    private func handleVersionTap() {
+        let now = Date()
+        // Reset the counter if it's been more than 3 s since the last
+        // tap — keeps the 10-tap gesture intentional and not "I forgot
+        // I clicked it earlier".
+        if now.timeIntervalSince(lastTapAt) > 3 {
+            versionTapCount = 0
+        }
+        lastTapAt = now
+        versionTapCount += 1
+        if versionTapCount >= 10 {
+            versionTapCount = 0
+            showDevUnlockSheet = true
+        }
+    }
+
+    @ViewBuilder
+    private var devUnlockSheetView: some View { DevUnlockSheet() }
+}
+
+/// Minimal sheet for entering the developer-unlock key. Shown only after
+/// 10 consecutive taps (within 3 s of each other) on the version label
+/// in About. Submits the key to `DevUnlockService.attemptUnlock(key:)`,
+/// which compares against a salted SHA-256 stored as a constant in the
+/// binary. On success, Pro is unlocked permanently on this Mac and the
+/// sheet dismisses.
+private struct DevUnlockSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var key: String = ""
+    @State private var status: String = ""
+    @State private var isError: Bool = false
+    @FocusState private var keyFocused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "key.horizontal.fill")
+                    .foregroundStyle(.tint)
+                Text("Developer unlock")
+                    .font(.headline)
+            }
+            Text("Paste the dev key to unlock Pro permanently on this Mac.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            SecureField("Unlock key", text: $key)
+                .textFieldStyle(.roundedBorder)
+                .focused($keyFocused)
+                .onSubmit { tryUnlock() }
+            if !status.isEmpty {
+                Text(status)
+                    .font(.caption)
+                    .foregroundStyle(isError ? .red : .green)
+            }
+            HStack {
+                Spacer()
+                Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Unlock") { tryUnlock() }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(key.isEmpty)
+            }
+        }
+        .padding(20)
+        .frame(width: 360)
+        .onAppear { keyFocused = true }
+    }
+
+    private func tryUnlock() {
+        let ok = DevUnlockService.shared.attemptUnlock(key: key)
+        if ok {
+            status = String(localized: "Pro unlocked on this Mac. Closing…")
+            isError = false
+            // Give the success message a beat to land, then dismiss
+            // and refresh AppState so the menu-bar UI re-renders with
+            // the new Pro state.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                dismiss()
+                NotificationCenter.default.post(name: .devUnlockChanged, object: nil)
+            }
+        } else {
+            status = String(localized: "Wrong key.")
+            isError = true
+            key = ""
+        }
+    }
+}
+
+extension Notification.Name {
+    static let devUnlockChanged = Notification.Name("com.lorislab.throttle.dev-unlock-changed")
 }
 
 // MARK: - Sparkline

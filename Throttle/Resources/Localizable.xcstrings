@@ -2269,6 +2269,61 @@
           }
         }
       }
+    },
+    "1d Pro": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1j Pro"
+          }
+        }
+      }
+    },
+    "1w Pro": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1s Pro"
+          }
+        }
+      }
+    },
+    "1m Pro": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1m Pro"
+          }
+        }
+      }
+    },
+    "Max 5×": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Max 5×"
+          }
+        }
+      }
+    },
+    "Max 20×": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Max 20×"
+          }
+        }
+      }
     }
   }
 }

@@ -93,6 +93,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 exact.start()
             }
         }
+
+        // Re-evaluate Pro status whenever the dev-unlock sheet succeeds
+        // so the UI immediately reflects the change without needing a
+        // restart. Posted by `DevUnlockSheet.tryUnlock` after a valid
+        // key + Keychain write.
+        NotificationCenter.default.addObserver(
+            forName: .devUnlockChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.appState.refreshProStatus() }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {

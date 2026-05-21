@@ -47,7 +47,9 @@ final class AppState {
     ///   - a valid Throttle Pro license JWT in Keychain
     ///   - the 7-day Pro trial (auto-started on first launch)
     /// The computed flag is refreshed via `refreshProStatus()`.
-    var isPro: Bool = LicenseService.shared.isPro || TrialService.shared.isActive
+    var isPro: Bool = LicenseService.shared.isPro
+        || TrialService.shared.isActive
+        || DevUnlockService.shared.isUnlocked
 
     let database: any DatabaseWriter
 
@@ -151,6 +153,8 @@ final class AppState {
 
     /// Recompute isPro after license activation/deactivation.
     func refreshProStatus() {
-        isPro = LicenseService.shared.isPro || TrialService.shared.isActive
+        isPro = LicenseService.shared.isPro
+            || TrialService.shared.isActive
+            || DevUnlockService.shared.isUnlocked
     }
 }
