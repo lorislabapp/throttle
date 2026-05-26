@@ -132,6 +132,14 @@ struct DropdownView: View {
                             .foregroundStyle(.white.opacity(0.92))
                             .fixedSize()
                     }
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text("≈€\(String(format: "%.2f", lifetimeAndWeeklyEUR))")
+                            .font(.system(size: 16, weight: .bold, design: .rounded).monospacedDigit())
+                            .foregroundStyle(.white.opacity(0.95))
+                        Text("saved total")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.75))
+                    }
                     Text(todayDeltaCopy)
                         .font(.caption2)
                         .foregroundStyle(.white.opacity(0.75))
@@ -335,6 +343,12 @@ struct DropdownView: View {
         if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
         if n >= 1_000     { return String(format: "%.0fk", Double(n) / 1_000) }
         return "\(n)"
+    }
+
+    /// Total EUR saved (lifetime + this week) using MilestoneTracker's conversion rate.
+    private var lifetimeAndWeeklyEUR: Double {
+        let liveTokens = MilestoneTracker.shared.lifetimeTokens + appState.savedTokensThisWeek
+        return Double(liveTokens) / 1_000_000 * 2.76
     }
 
     /// Banner shown when the user has enabled exact mode but the latest poll
@@ -569,19 +583,25 @@ struct DropdownView: View {
         let isToday = cal.isDateInToday(target)
         let isTomorrow = cal.isDateInTomorrow(target)
         let withinThreeDays = (target.timeIntervalSince(now)) < 3 * 24 * 3600
+        // Include minutes only when the reset isn't on the hour. Anthropic's
+        // weekly windows usually reset on the hour ("4pm"), but the session
+        // window and API-supplied resets_at can land mid-hour (15:59) — the
+        // old hour-only "ha" template floored that to "3pm", which reads as
+        // an hour in the past when the countdown says "in 3m".
+        let hourTok = cal.component(.minute, from: target) != 0 ? "hmm" : "h"
         if isToday {
-            f.setLocalizedDateFormatFromTemplate("ha")
+            f.setLocalizedDateFormatFromTemplate("\(hourTok)a")
             return f.string(from: target).lowercased()
         }
         if isTomorrow {
-            f.setLocalizedDateFormatFromTemplate("ha")
+            f.setLocalizedDateFormatFromTemplate("\(hourTok)a")
             return "tmrw \(f.string(from: target).lowercased())"
         }
         if withinThreeDays {
-            f.setLocalizedDateFormatFromTemplate("EEEha")
+            f.setLocalizedDateFormatFromTemplate("EEE\(hourTok)a")
             return f.string(from: target).lowercased()
         }
-        f.setLocalizedDateFormatFromTemplate("EEEMMMdha")
+        f.setLocalizedDateFormatFromTemplate("EEEMMMd\(hourTok)a")
         return f.string(from: target).lowercased()
     }
 
