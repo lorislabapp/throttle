@@ -20,21 +20,25 @@ struct MenuBarLabel: View {
     }
 
     private func highestPressurePercent() -> Double? {
+        // Only count caps that gate *all* usage: the 5h session and the
+        // all-models weekly cap. The Sonnet-only weekly cap is deliberately
+        // excluded — hitting it doesn't lock you out, it just forces a
+        // fallback to Opus, so surfacing it as a 100% headline made users
+        // think they were throttled when they still had headroom.
+        //
         // Prefer exact-mode data when fresh — those are the numbers Anthropic
         // is actually rate-limiting against. Fall back to local rolling-window
         // math otherwise.
         if let ex = appState.exactSnapshot, ex.isFresh() {
             let exactPcts = [
                 Double(ex.fiveHour.utilization),
-                Double(ex.sevenDay.utilization),
-                Double(ex.sevenDaySonnet.utilization)
+                Double(ex.sevenDay.utilization)
             ].max() ?? 0
             return exactPcts / 100.0
         }
         let pcts = [
             appState.snapshot.session5h.percentUsed,
-            appState.snapshot.weeklyAll.percentUsed,
-            appState.snapshot.weeklySonnet.percentUsed
+            appState.snapshot.weeklyAll.percentUsed
         ].compactMap { $0 }
         return pcts.max()
     }

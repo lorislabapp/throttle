@@ -111,7 +111,14 @@ final class ThresholdNotifier {
         let pctInt = Int(percent * 100)
         let thrInt = Int(threshold * 100)
         content.title = "Claude usage at \(pctInt)%"
-        content.body = "\(label) crossed \(thrInt)% — slow down or batch your work."
+        // The Sonnet-only weekly cap isn't a hard stop — when it's exhausted
+        // you can still work on Opus. Frame it as a fallback prompt, not a
+        // "slow down" warning, so users don't sit out thinking they're locked.
+        if label == "Weekly Sonnet" {
+            content.body = "Sonnet weekly cap at \(pctInt)% — switch to Opus to keep working."
+        } else {
+            content.body = "\(label) crossed \(thrInt)% — slow down or batch your work."
+        }
         content.sound = .default
         let request = UNNotificationRequest(
             identifier: "throttle.threshold.\(label).\(thrInt)",
