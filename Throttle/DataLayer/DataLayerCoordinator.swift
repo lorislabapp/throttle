@@ -21,6 +21,10 @@ final class DataLayerCoordinator {
     /// Tracks paths currently being processed to prevent reentrancy
     private var inFlightPaths: Set<String> = []
 
+    /// Debouncer for onUsageChanged to prevent UI refresh storms
+    private var usageChangedDebouncer: DispatchWorkItem?
+    private let usageChangedQueue = DispatchQueue(label: "com.lorislab.throttle.debounce", qos: .userInitiated)
+
     init(database: any DatabaseWriter) {
         self.database = database
     }
@@ -74,9 +78,11 @@ final class DataLayerCoordinator {
         watcher?.stop()
         sweeper?.stop()
         claudeCodeDetectionTask?.cancel()
+        usageChangedDebouncer?.cancel()
         watcher = nil
         sweeper = nil
         claudeCodeDetectionTask = nil
+        usageChangedDebouncer = nil
     }
 
     private func handleFileChange(url: URL) async {
@@ -108,10 +114,22 @@ final class DataLayerCoordinator {
                         mtime: Int64(Date().timeIntervalSince1970))
                 }
             }.value
-            onUsageChanged?()
+            notifyUsageChanged()
         } catch {
             logger.error("Live update failed: \(error.localizedDescription, privacy: .public)")
         }
+    }
+
+    /// Debounced notification: coalesces rapid file changes to one UI refresh per 500ms
+    private func notifyUsageChanged() {
+        usageChangedDebouncer?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            Task { @MainActor in
+                self?.onUsageChanged?()
+            }
+        }
+        usageChangedDebouncer = work
+        usageChangedQueue.asyncAfter(deadline: .now() + 0.5, execute: work)
     }
 
     private func runSweep() async {
