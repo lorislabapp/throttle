@@ -93,16 +93,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // local JSONL math.
         let exact = ExactModeService.shared
         exact.onSnapshot = { [weak self] snap in
-            self?.appState.exactSnapshot = snap
-            self?.appState.exactModeError = nil
+            Task { @MainActor in
+                self?.appState.exactSnapshot = snap
+                self?.appState.exactModeError = nil
+            }
         }
         exact.onError = { [weak self] err in
-            // Non-recoverable errors (notSignedIn) — drop the snapshot so the UI
-            // falls back to local math instead of showing stale data.
-            if err == .notSignedIn {
-                self?.appState.exactSnapshot = nil
+            Task { @MainActor in
+                // Non-recoverable errors (notSignedIn) — drop the snapshot so the UI
+                // falls back to local math instead of showing stale data.
+                if err == .notSignedIn {
+                    self?.appState.exactSnapshot = nil
+                }
+                self?.appState.exactModeError = err
             }
-            self?.appState.exactModeError = err
         }
 
         savingsIngester.onIngest = { [weak self] in

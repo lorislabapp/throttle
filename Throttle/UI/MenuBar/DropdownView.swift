@@ -553,9 +553,14 @@ struct DropdownView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 } else {
-                    Text("not calibrated")
-                        .font(.subheadline)
-                        .foregroundStyle(.tertiary)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("not calibrated")
+                            .font(.subheadline)
+                            .foregroundStyle(.tertiary)
+                        Text("Tap to set your cap")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary.opacity(0.7))
+                    }
                 }
             }
             if let pct = metric.percent {

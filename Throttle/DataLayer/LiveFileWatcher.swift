@@ -84,7 +84,7 @@ final class LiveFileWatcher: @unchecked Sendable {
         }
         let src = DispatchSource.makeFileSystemObjectSource(
             fileDescriptor: fd,
-            eventMask: [.write, .extend],
+            eventMask: [.write, .extend, .delete, .rename],
             queue: queue
         )
         src.setEventHandler { [weak self] in
@@ -97,6 +97,14 @@ final class LiveFileWatcher: @unchecked Sendable {
     }
 
     private func directoryChanged() {
+        // Check if root directory still exists (might have been deleted)
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: rootURL.path, isDirectory: &isDir), isDir.boolValue else {
+            logger.warning("Root directory \(self.rootURL.path, privacy: .public) no longer exists, stopping watcher")
+            stop()
+            return
+        }
+
         // New session files may have appeared. Re-discover and attach any new ones.
         let files = ColdStartScanner.discoverJsonlFiles(under: rootURL)
         for file in files where sources[file] == nil {

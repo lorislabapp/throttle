@@ -60,7 +60,8 @@ struct ProUpsellBanner: View {
                         .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
-                
+                .accessibilityLabel(String(localized: "Fix config bloat with Pro Optimizer"))
+
                 // Dismiss button
                 Button {
                     withAnimation {
@@ -72,6 +73,8 @@ struct ProUpsellBanner: View {
                         .foregroundStyle(.secondary.opacity(0.5))
                 }
                 .buttonStyle(.plain)
+                .keyboardShortcut(.cancelAction)
+                .accessibilityLabel(String(localized: "Dismiss banner"))
             }
             .padding(12)
             .background(
