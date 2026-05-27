@@ -15,6 +15,7 @@ struct DropdownView: View {
 
     enum SettingsTab: String, CaseIterable {
         case general = "General"
+        case assistant = "Assistant"
         case calibration = "Calibration"
         case hooks = "Hooks"
         case privacy = "Privacy"
@@ -22,6 +23,7 @@ struct DropdownView: View {
         var localizedTitle: String {
             switch self {
             case .general:     return String(localized: "General")
+            case .assistant:   return String(localized: "Assistant")
             case .calibration: return String(localized: "Calibration")
             case .hooks:       return String(localized: "Hooks")
             case .privacy:     return String(localized: "Privacy")
@@ -61,7 +63,7 @@ struct DropdownView: View {
     /// the SwiftUI content's frame, so we adjust width + height per mode.
     private var dropdownWidth: CGFloat {
         if case .projects = mode { return 860 }
-        return 340
+        return 440
     }
     private var dropdownHeight: CGFloat? {
         if case .projects = mode { return 540 }
@@ -765,12 +767,13 @@ struct DropdownView: View {
                 Group {
                     switch tab {
                     case .general:     InlineGeneralPane()
+                    case .assistant:   InlineAssistantPane()
                     case .calibration: InlineCalibrationPane()
                     case .hooks:       InlineHooksPane()
                     case .privacy:     InlinePrivacyPane()
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(minHeight: 180, maxHeight: 320)
@@ -1944,5 +1947,56 @@ private func sparklinePoints(values: [Int], in rect: CGRect) -> [CGPoint] {
         let x = CGFloat(i) * stepX
         let y = rect.height - (CGFloat(v) / CGFloat(maxV)) * rect.height
         return CGPoint(x: x, y: y)
+    }
+}
+
+// MARK: - InlineAssistantPane
+
+private struct InlineAssistantPane: View {
+    @Environment(AppState.self) private var appState
+    @AppStorage("cavemanModeEnabled") private var cavemanModeEnabled = false
+    @State private var importStatus: String = ""
+    @State private var importing: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Caveman Mode").font(.subheadline.bold())
+            Toggle("Enable Caveman Mode", isOn: $cavemanModeEnabled)
+            Text("Strip all token-optimization hooks — raw Claude Code CLI output with no filters.")
+                .font(.caption2).foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Divider()
+
+            Text("Import ccusage Data").font(.subheadline.bold())
+            Button("Import from ccusage") {
+                Task {
+                    importing = true
+                    importStatus = ""
+                    do {
+                        let importer = CcusageImporter(database: appState.database)
+                        let days = try await importer.importFromCcusage()
+                        await MainActor.run {
+                            appState.refresh()
+                            importStatus = "✓ Imported \(days) days of usage data"
+                            importing = false
+                        }
+                    } catch {
+                        await MainActor.run {
+                            importStatus = "⚠️ Import failed: \(error.localizedDescription)"
+                            importing = false
+                        }
+                    }
+                }
+            }
+            .buttonStyle(.bordered).controlSize(.small)
+            .disabled(importing)
+            if !importStatus.isEmpty {
+                Text(importStatus).font(.caption2).foregroundStyle(.tertiary)
+            }
+            Text("Imports usage history from the `ccusage` CLI tool into Throttle's database.")
+                .font(.caption2).foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }

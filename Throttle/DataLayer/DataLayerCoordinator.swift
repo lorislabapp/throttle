@@ -22,8 +22,7 @@ final class DataLayerCoordinator {
     private var inFlightPaths: Set<String> = []
 
     /// Debouncer for onUsageChanged to prevent UI refresh storms
-    private var usageChangedDebouncer: DispatchWorkItem?
-    private let usageChangedQueue = DispatchQueue(label: "com.lorislab.throttle.debounce", qos: .userInitiated)
+    private var usageChangedDebouncer: Task<Void, Never>?
 
     init(database: any DatabaseWriter) {
         self.database = database
@@ -123,13 +122,11 @@ final class DataLayerCoordinator {
     /// Debounced notification: coalesces rapid file changes to one UI refresh per 500ms
     private func notifyUsageChanged() {
         usageChangedDebouncer?.cancel()
-        let work = DispatchWorkItem { [weak self] in
-            Task { @MainActor in
-                self?.onUsageChanged?()
-            }
+        usageChangedDebouncer = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            self?.onUsageChanged?()
         }
-        usageChangedDebouncer = work
-        usageChangedQueue.asyncAfter(deadline: .now() + 0.5, execute: work)
     }
 
     private func runSweep() async {
@@ -137,7 +134,9 @@ final class DataLayerCoordinator {
         do {
             let scanner = ColdStartScanner(database: database)
             try scanner.scan(rootDirectory: root)
-            onUsageChanged?()
+            await MainActor.run {
+                onUsageChanged?()
+            }
         } catch {
             logger.error("Hourly sweep failed: \(error.localizedDescription, privacy: .public)")
         }
