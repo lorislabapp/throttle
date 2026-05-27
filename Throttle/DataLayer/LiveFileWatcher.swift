@@ -3,6 +3,10 @@ import OSLog
 
 /// Watches a directory tree for `.jsonl` writes. On any event, calls the handler
 /// with the URL that changed. Coalesces bursts via a 250ms debounce per path.
+///
+/// @unchecked Sendable: All mutable state (`sources`, `fds`, `debouncers`)
+/// is confined to the serial `queue`. Every mutation runs via `queue.async`,
+/// so concurrent access is structurally impossible.
 final class LiveFileWatcher: @unchecked Sendable {
     private let rootURL: URL
     private let handler: @Sendable (URL) -> Void

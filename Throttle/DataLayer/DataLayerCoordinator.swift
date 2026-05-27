@@ -9,10 +9,14 @@ final class DataLayerCoordinator {
     private let database: any DatabaseWriter
     private var watcher: LiveFileWatcher?
     private var sweeper: HourlySweeper?
+    private var claudeCodeDetectionTask: Task<Void, Never>?
     private let logger = Logger(subsystem: "com.lorislab.throttle", category: "DataLayer")
 
     /// Notifies UI when usage data changes. UI subscribes via SwiftUI @Observable patterns.
     var onUsageChanged: (@MainActor () -> Void)?
+
+    /// Reference to AppState for updating claudeCodeDetected flag
+    weak var appState: AppState?
 
     init(database: any DatabaseWriter) {
         self.database = database
@@ -49,13 +53,27 @@ final class DataLayerCoordinator {
             }
         }
         sweeper?.start()
+
+        // Periodic Claude Code detection refresh (every 5 seconds)
+        // Fixes first-run UI stuck on "not detected" even after ~/.claude/projects/ appears
+        claudeCodeDetectionTask = Task { [weak self, weak appState] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(5))
+                let detected = ClaudeCodePathProvider.projectsDirectory() != nil
+                await MainActor.run {
+                    appState?.claudeCodeDetected = detected
+                }
+            }
+        }
     }
 
     func stop() {
         watcher?.stop()
         sweeper?.stop()
+        claudeCodeDetectionTask?.cancel()
         watcher = nil
         sweeper = nil
+        claudeCodeDetectionTask = nil
     }
 
     private func handleFileChange(url: URL) async {

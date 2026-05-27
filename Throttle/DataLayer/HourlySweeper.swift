@@ -2,6 +2,10 @@ import Foundation
 import OSLog
 
 /// Once an hour, run a full re-scan to catch anything FSEvents missed.
+///
+/// @unchecked Sendable: The `timer` DispatchSourceTimer is confined to the
+/// serial `queue`. All start/stop operations dispatch to `queue`, ensuring
+/// no concurrent access.
 final class HourlySweeper: @unchecked Sendable {
     private let action: @Sendable () -> Void
     private let logger = Logger(subsystem: "com.lorislab.throttle", category: "HourlySweeper")

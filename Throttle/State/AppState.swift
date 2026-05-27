@@ -53,6 +53,8 @@ final class AppState {
 
     let database: any DatabaseWriter
 
+    private var refreshTask: Task<Void, Never>?
+
     init(database: any DatabaseWriter) {
         self.database = database
         self.claudeCodeDetected = ClaudeCodePathProvider.projectsDirectory() != nil
@@ -116,7 +118,10 @@ final class AppState {
 
     /// Recompute the snapshot from the database. Call from UI thread or from Coordinator hooks.
     func refresh() {
-        Task { [database] in
+        // Cancel any in-flight refresh
+        refreshTask?.cancel()
+
+        refreshTask = Task { [database] in
             let computed: UsageSnapshot = (try? await Task.detached {
                 try database.read { db in
                     let session = try Self.computeWindow(in: db, kind: .session5h)
@@ -147,6 +152,10 @@ final class AppState {
                     try StatsDataService.extrapolatedCostEUR(in: db, range: .last7d)
                 }
             }.value) ?? 0
+
+            // Check cancellation before writing back to MainActor
+            guard !Task.isCancelled else { return }
+
             // Persist this snapshot's three windows into history. Keyed by
             // 5-minute bucket so rapid refresh()s don't explode the table.
             try? await Task.detached {
@@ -154,6 +163,10 @@ final class AppState {
                     try Self.persistSnapshotRows(in: db, snapshot: computed)
                 }
             }.value
+
+            // Final cancellation check before MainActor write
+            guard !Task.isCancelled else { return }
+
             await MainActor.run {
                 self.snapshot = computed
                 self.savedTokensThisWeek = savedTokens
@@ -172,6 +185,10 @@ final class AppState {
                 ))
             }
         }
+    }
+
+    deinit {
+        refreshTask?.cancel()
     }
 
     nonisolated private static func persistSnapshotRows(in db: Database, snapshot: UsageSnapshot) throws {

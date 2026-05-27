@@ -38,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.coordinator = DataLayerCoordinator(database: database)
                 self.savingsIngester = SavingsIngester(database: database)
                 super.init()
+                self.coordinator.appState = appState
                 self.coordinator.onUsageChanged = { [weak self] in
                     self?.appState.refresh()
                 }

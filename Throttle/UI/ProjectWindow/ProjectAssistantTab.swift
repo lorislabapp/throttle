@@ -247,6 +247,7 @@ struct ProjectAssistantTab: View {
             .buttonStyle(.borderless)
             .disabled(isStreaming)
             .help(String(localized: "Run local audit (no AI, no tokens)"))
+            .accessibilityLabel(String(localized: "Run local audit"))
             Button {
                 exportDiagnosticsToDesktop()
             } label: {
@@ -254,6 +255,7 @@ struct ProjectAssistantTab: View {
             }
             .buttonStyle(.borderless)
             .help(String(localized: "Export diagnostics to Desktop"))
+            .accessibilityLabel(String(localized: "Export diagnostics to Desktop"))
             Button {
                 forceShowOnboarding = true
             } label: {
@@ -261,6 +263,7 @@ struct ProjectAssistantTab: View {
             }
             .buttonStyle(.borderless)
             .help(String(localized: "Switch AI provider"))
+            .accessibilityLabel(String(localized: "Switch AI provider"))
             Button {
                 transcript.removeAll()
             } label: {
@@ -269,6 +272,7 @@ struct ProjectAssistantTab: View {
             .buttonStyle(.borderless)
             .disabled(transcript.isEmpty || isStreaming)
             .help(String(localized: "Clear conversation"))
+            .accessibilityLabel(String(localized: "Clear conversation"))
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
     }

@@ -3,6 +3,8 @@ import SwiftUI
 /// Settings pane for the AI Assistant (Project window → Assistant tab).
 /// Controls Caveman mode, quality preference, provider selection, and ccusage import.
 struct AssistantPane: View {
+    @Environment(AppState.self) private var appState
+
     @AppStorage("cavemanModeEnabled") private var cavemanModeEnabled = false
     @AppStorage("aiQualityPreference") private var qualityPreference: String = "maxAccuracy"
 
@@ -90,10 +92,14 @@ struct AssistantPane: View {
         importStatus = nil
 
         do {
-            let importer = CcusageImporter()
+            let importer = CcusageImporter(database: appState.database)
             let daysImported = try await importer.importFromCcusage()
             importStatus = "✓ Imported \(daysImported) days of usage data"
             showImportAlert = true
+            // Refresh AppState to show new data
+            await MainActor.run {
+                appState.refresh()
+            }
         } catch {
             importStatus = "❌ \(error.localizedDescription)"
             showImportAlert = true

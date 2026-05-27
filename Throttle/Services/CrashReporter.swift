@@ -11,6 +11,10 @@ import OSLog
 /// crash/hang occurred. We log a one-liner per payload so the user (and
 /// support@lorislab.fr) can see *that* something happened and the file path,
 /// without us having to ship a full crash UI in v1.x.
+///
+/// @unchecked Sendable: MetricKit's `receiveReports` callback is documented
+/// as main-actor-isolated (per Apple's MetricKit docs). All state mutations
+/// happen on MainActor via the callback, no cross-actor access.
 final class CrashReporter: NSObject, MXMetricManagerSubscriber, @unchecked Sendable {
     static let shared = CrashReporter()
 

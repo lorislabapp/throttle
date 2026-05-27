@@ -874,6 +874,7 @@ private struct FirstRunInline: View {
             if step > 0 {
                 Button("Back") { step -= 1 }
                     .buttonStyle(.borderless)
+                    .keyboardShortcut(.cancelAction)
             }
             Spacer()
             if step < totalSteps - 1 {
@@ -1470,11 +1471,13 @@ private struct InlineCalibrationPane: View {
                 }
                 .buttonStyle(.borderless)
                 .keyboardShortcut(.none)
+                .accessibilityLabel(String(localized: "Decrease by 5 percent"))
 
                 Button { adjustPct(kind, by: -1) } label: {
                     Image(systemName: "minus")
                 }
                 .buttonStyle(.borderless)
+                .accessibilityLabel(String(localized: "Decrease by 1 percent"))
 
                 Text("\(pct)%")
                     .font(.caption.monospaced())
@@ -1484,11 +1487,13 @@ private struct InlineCalibrationPane: View {
                     Image(systemName: "plus")
                 }
                 .buttonStyle(.borderless)
+                .accessibilityLabel(String(localized: "Increase by 1 percent"))
 
                 Button { adjustPct(kind, by: 5) } label: {
                     Image(systemName: "plus.circle")
                 }
                 .buttonStyle(.borderless)
+                .accessibilityLabel(String(localized: "Increase by 5 percent"))
 
                 Spacer()
 

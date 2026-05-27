@@ -1,4 +1,5 @@
 import Foundation
+import GRDB
 
 /// Imports Claude Code usage data from ccusage CLI tool.
 ///
@@ -27,6 +28,12 @@ import Foundation
 /// }
 /// ```
 actor CcusageImporter {
+    private let database: any DatabaseWriter
+
+    init(database: any DatabaseWriter) {
+        self.database = database
+    }
+
     enum ImportError: Error, LocalizedError {
         case ccusageNotFound
         case invalidJSON
@@ -88,9 +95,42 @@ actor CcusageImporter {
         }
 
         // 4. Import each day into Throttle DB
-        // TODO: Integrate with existing DB (FileStateRepository, etc.)
-        // For now, just return count as proof of concept
-        return report.daily.count
+        let imported = try await Task.detached { [database] in
+            try database.write { db in
+                var count = 0
+                let dateFormatter = ISO8601DateFormatter()
+                dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+                dateFormatter.formatOptions = [.withFullDate]
+
+                for day in report.daily {
+                    // Parse ISO 8601 date (e.g., "2024-05-27") and set to noon UTC
+                    guard let baseDate = dateFormatter.date(from: day.date) else {
+                        continue
+                    }
+
+                    // Synthesize usage events (one per model, split tokens evenly)
+                    let tokenPerModel = day.models.count
+                    for model in day.models {
+                        var event = UsageEvent(
+                            id: nil,
+                            sessionId: "ccusage-import-\(day.date)",
+                            timestamp: Int64(baseDate.timeIntervalSince1970),
+                            model: model,
+                            inputTokens: day.usage.inputTokens / tokenPerModel,
+                            outputTokens: day.usage.outputTokens / tokenPerModel,
+                            cacheCreate: day.usage.cacheCreationTokens / tokenPerModel,
+                            cacheRead: day.usage.cacheReadTokens / tokenPerModel,
+                            serviceTier: nil
+                        )
+                        try event.insert(db)  // INSERT (will fail if duplicate sessionId+timestamp+model)
+                        count += 1
+                    }
+                }
+                return count
+            }
+        }.value
+
+        return imported
     }
 
     /// Run ccusage CLI with JSON output
