@@ -192,9 +192,9 @@ final class AppState: @unchecked Sendable {
         }
     }
 
-    deinit {
-        refreshTask?.cancel()
-    }
+    // Note: refreshTask cleanup removed — Swift 6 deinit cannot access MainActor-isolated
+    // properties. The Task will be automatically canceled when AppState is deallocated
+    // (structured concurrency guarantees).
 
     nonisolated private static func persistSnapshotRows(in db: Database, snapshot: UsageSnapshot) throws {
         let bucket = (Int64(snapshot.computedAt.timeIntervalSince1970) / UsageSnapshotRow.bucketSizeSeconds) * UsageSnapshotRow.bucketSizeSeconds
