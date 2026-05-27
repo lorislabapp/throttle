@@ -58,6 +58,62 @@ final class AppState {
         self.claudeCodeDetected = ClaudeCodePathProvider.projectsDirectory() != nil
     }
 
+    #if DEBUG
+    /// Demo state with impressive fake data for screenshots and video demos.
+    /// Usage: In SwiftUI preview or when generating assets, use `.environment(AppState.demo)`
+    static var demo: AppState {
+        let state = AppState(database: try! DatabaseQueue())
+        state.claudeCodeDetected = true
+        state.firstRunDone = true
+        state.isPro = true
+
+        // Session at 6%, weekly at 80%, Sonnet at 99% (compelling visual contrast)
+        state.snapshot = UsageSnapshot(
+            session5h: UsageSnapshot.Window(
+                kind: .session5h,
+                usedTokens: 1_200_000,
+                capTokens: 20_000_000,
+                resetInSeconds: Int64(3 * 3600 + 51 * 60) // 3h 51m
+            ),
+            weeklyAll: UsageSnapshot.Window(
+                kind: .weeklyAll,
+                usedTokens: 640_000_000,
+                capTokens: 800_000_000,
+                resetInSeconds: Int64(1 * 86400 + 7 * 3600) // 1d 7h
+            ),
+            weeklySonnet: UsageSnapshot.Window(
+                kind: .weeklySonnet,
+                usedTokens: 792_000_000,
+                capTokens: 800_000_000,
+                resetInSeconds: Int64(1 * 86400 + 7 * 3600) // 1d 7h
+            ),
+            computedAt: Date(),
+            hasAnyData: true
+        )
+
+        // 45M tokens saved this week = ~€124 (enough to unlock "1 month of Max 5×")
+        state.savedTokensThisWeek = 45_000_000
+
+        // Sparkline showing growth: [2M, 4M, 6M, 8M, 10M, 12M, 8M] (today dip for realism)
+        state.savedTokensByDay = [2_000_000, 4_000_000, 6_000_000, 8_000_000, 10_000_000, 12_000_000, 8_000_000]
+
+        // Set lifetime tokens so total EUR crosses "1 month of Max 5×" (€92)
+        // 45M this week = ~€124, so set lifetime = 0 to show "≈€124" in banner
+        // Actually, let's set lifetime to show we've crossed multiple milestones
+        // 30M lifetime + 45M this week = 75M total = ~€207 (crosses Max 20× milestone!)
+        UserDefaults.standard.set(30_000_000, forKey: "throttle.milestone.lifetimeTokens")
+        UserDefaults.standard.set(45_000_000, forKey: "throttle.milestone.lastWeeklySnapshot")
+
+        // Unlock ALL milestone badges for maximum visual impact in screenshots/video
+        UserDefaults.standard.set(
+            ["day_pro", "week_pro", "month_pro", "month_max5", "month_max20"],
+            forKey: "throttle.milestone.fired"
+        )
+
+        return state
+    }
+    #endif
+
     /// Recompute the snapshot from the database. Call from UI thread or from Coordinator hooks.
     func refresh() {
         Task { [database] in

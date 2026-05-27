@@ -5,6 +5,8 @@ struct SettingsScene: View {
         TabView {
             GeneralPane()
                 .tabItem { Label("General", systemImage: "gearshape") }
+            AssistantPane()
+                .tabItem { Label("Assistant", systemImage: "brain") }
             CalibrationPane()
                 .tabItem { Label("Calibration", systemImage: "speedometer") }
             HooksPane()
@@ -14,6 +16,6 @@ struct SettingsScene: View {
             AboutPane()
                 .tabItem { Label("About", systemImage: "info.circle") }
         }
-        .frame(width: 520, height: 380)
+        .frame(width: 520, height: 420)
     }
 }

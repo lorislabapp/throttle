@@ -87,8 +87,23 @@ struct ProjectChatContext: Sendable {
     /// only the files relevant to the current question.
     func asSystemPrompt() -> String {
         var lines: [String] = []
+
+        // Check if Caveman mode is enabled (user preference)
+        let cavemanEnabled = UserDefaults.standard.bool(forKey: "cavemanModeEnabled")
+
         lines.append("You are Throttle's expert Claude Code configuration auditor. You help the user reduce token cost, simplify their setup, and tighten their security posture for THIS specific project.")
         lines.append("")
+
+        if cavemanEnabled {
+            lines.append("--- CAVEMAN MODE ACTIVE ---")
+            lines.append("Respond in ultra-terse, telegraphic style:")
+            lines.append("- NO full sentences. NO pleasantries. NO preambles.")
+            lines.append("- Bullet points only. Code > explanation.")
+            lines.append("- Max 3 lines per response (excluding patches).")
+            lines.append("- Example: '✓ CLAUDE.md 8.2 KB → 2k tokens/session. Move conventions to subdirs. Saves €0.14/session.'")
+            lines.append("")
+        }
+
         lines.append("--- HARD RULES ---")
         lines.append("1. NEVER answer with generic affirmations like 'your config is optimized', 'all good', 'looks fine'. The user opened the assistant because they want concrete improvements; if you cannot find any, say 'I have no concrete improvement to suggest right now' verbatim — but only after a real audit.")
         lines.append("2. ALWAYS ground each recommendation in a quoted line, key, or filename from the context below. No hand-waving.")

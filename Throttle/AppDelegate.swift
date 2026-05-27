@@ -6,21 +6,41 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let appState: AppState
-    private let database: DatabasePool
+    private let database: any DatabaseWriter  // Accept both DatabasePool and DatabaseQueue
     private let coordinator: DataLayerCoordinator
     private let savingsIngester: SavingsIngester
     private let updater = UpdaterService.shared
     private let logger = AppLogger.app
 
     override init() {
+        // Check for -demo launch argument for screen recordings & screenshots
+        let isDemoMode = CommandLine.arguments.contains("-demo")
+
         do {
-            self.database = try Self.openDatabaseSync()
-            self.appState = AppState(database: database)
-            self.coordinator = DataLayerCoordinator(database: database)
-            self.savingsIngester = SavingsIngester(database: database)
-            super.init()
-            self.coordinator.onUsageChanged = { [weak self] in
-                self?.appState.refresh()
+            if isDemoMode {
+                #if DEBUG
+                // Demo mode: in-memory database with fake data
+                self.database = try DatabaseQueue()
+                self.coordinator = DataLayerCoordinator(database: database)
+                self.savingsIngester = SavingsIngester(database: database)
+                self.appState = AppState.demo  // Must come after super.init()
+                super.init()
+                // No-op: demo data is static, no need to refresh
+                self.coordinator.onUsageChanged = {}
+                print("🎬 DEMO MODE: Throttle running with fake data for screen recording")
+                #else
+                fatalError("-demo flag only works in Debug builds")
+                #endif
+            } else {
+                // Normal mode: real database
+                self.database = try Self.openDatabaseSync()
+                self.appState = AppState(database: database)
+                self.coordinator = DataLayerCoordinator(database: database)
+                self.savingsIngester = SavingsIngester(database: database)
+                super.init()
+                self.coordinator.onUsageChanged = { [weak self] in
+                    self?.appState.refresh()
+                }
             }
         } catch {
             // Fail-fast: if we can't open the DB, the app is non-functional.
@@ -29,6 +49,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let isDemoMode = CommandLine.arguments.contains("-demo")
+
+        // In demo mode, skip all background services and just show the UI with fake data
+        guard !isDemoMode else {
+            logger.notice("🎬 DEMO MODE: Skipping all background services")
+            return
+        }
+
         // Raise the per-process FD limit. macOS defaults to ~256 soft;
         // LiveFileWatcher used to open one descriptor per session JSONL,
         // and on heavy users with thousands of subagent files (now

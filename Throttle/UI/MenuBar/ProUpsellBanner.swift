@@ -65,8 +65,8 @@ struct ProUpsellBanner: View {
                 Button {
                     withAnimation {
                         dismissed = true
-                        dismissedUntil = Date().addingTimeInterval(3 * 86400) // 3 days
                     }
+                    saveDismissalDate()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary.opacity(0.5))
@@ -91,6 +91,11 @@ struct ProUpsellBanner: View {
         if let url = URL(string: "https://lorislab.fr/throttle") {
             NSWorkspace.shared.open(url)
         }
+    }
+
+    private func saveDismissalDate() {
+        let date = Date().addingTimeInterval(3 * 86400)
+        UserDefaults.standard.set(date.timeIntervalSince1970, forKey: "throttle.upsell.dismissedUntil")
     }
     
     // Persistence: don't nag more than once every 3 days
