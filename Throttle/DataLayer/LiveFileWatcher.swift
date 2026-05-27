@@ -16,6 +16,7 @@ final class LiveFileWatcher: @unchecked Sendable {
     private var sources: [URL: DispatchSourceFileSystemObject] = [:]
     private var fds: [URL: Int32] = [:]
     private var debouncers: [URL: DispatchWorkItem] = [:]
+    private var isRunning = false
 
     init(rootURL: URL, handler: @escaping @Sendable (URL) -> Void) {
         self.rootURL = rootURL
@@ -24,14 +25,17 @@ final class LiveFileWatcher: @unchecked Sendable {
 
     func start() {
         queue.async { [weak self] in
-            self?.attachAllJsonlFiles()
-            self?.attachDirectoryWatcher()
+            guard let self = self else { return }
+            self.isRunning = true
+            self.attachAllJsonlFiles()
+            self.attachDirectoryWatcher()
         }
     }
 
     func stop() {
         queue.async { [weak self] in
             guard let self = self else { return }
+            self.isRunning = false
             for src in self.sources.values { src.cancel() }
             for fd in self.fds.values { close(fd) }
             self.sources.removeAll()
@@ -49,7 +53,7 @@ final class LiveFileWatcher: @unchecked Sendable {
     }
 
     private func attachFile(_ url: URL) {
-        guard sources[url] == nil else { return }
+        guard isRunning, sources[url] == nil else { return }
         let fd = open(url.path, O_EVTONLY)
         guard fd >= 0 else {
             logger.warning("Failed to open \(url.path, privacy: .public) for watching")
@@ -72,6 +76,7 @@ final class LiveFileWatcher: @unchecked Sendable {
     }
 
     private func attachDirectoryWatcher() {
+        guard isRunning else { return }
         let fd = open(rootURL.path, O_EVTONLY)
         guard fd >= 0 else {
             logger.warning("Failed to open root \(self.rootURL.path, privacy: .public) for watching")

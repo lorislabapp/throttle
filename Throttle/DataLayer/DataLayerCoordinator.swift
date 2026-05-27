@@ -18,6 +18,9 @@ final class DataLayerCoordinator {
     /// Reference to AppState for updating claudeCodeDetected flag
     weak var appState: AppState?
 
+    /// Tracks paths currently being processed to prevent reentrancy
+    private var inFlightPaths: Set<String> = []
+
     init(database: any DatabaseWriter) {
         self.database = database
     }
@@ -80,6 +83,14 @@ final class DataLayerCoordinator {
         // Use standardizedFileURL.path consistently with ColdStartScanner — handles
         // the macOS /private/var/ symlink so file_state keys remain stable.
         let canonicalPath = url.standardizedFileURL.path
+
+        // Prevent reentrancy: if this path is already being processed, skip
+        guard !inFlightPaths.contains(canonicalPath) else {
+            return
+        }
+        inFlightPaths.insert(canonicalPath)
+        defer { inFlightPaths.remove(canonicalPath) }
+
         do {
             let priorOffset: Int64 = try await Task.detached { [database] in
                 try database.read { db in
