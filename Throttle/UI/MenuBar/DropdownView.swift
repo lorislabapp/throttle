@@ -248,7 +248,7 @@ struct DropdownView: View {
     @ViewBuilder
     private var milestoneBadges: some View {
         let liveEUR = MilestoneTracker.shared.lifetimeEUR +
-                      Double(appState.savedTokensThisWeek) / 1_000_000 * 2.76
+                      Double(appState.savedTokensThisWeek) / 1_000_000 * 6.00
         let unlocked = MilestoneTracker.ladder.filter { $0.thresholdEUR <= liveEUR }
 
         if !unlocked.isEmpty {
@@ -312,7 +312,7 @@ struct DropdownView: View {
     }
 
     private func timesPaidBack(_ m: MilestoneTracker.Milestone) -> String {
-        let lifetime = MilestoneTracker.shared.lifetimeEUR + Double(appState.savedTokensThisWeek) / 1_000_000 * 2.76
+        let lifetime = MilestoneTracker.shared.lifetimeEUR + Double(appState.savedTokensThisWeek) / 1_000_000 * 6.00
         let multiple = lifetime / m.thresholdEUR
         if multiple >= 2 {
             return String(format: String(localized: "%.1f×"), multiple)
@@ -350,7 +350,7 @@ struct DropdownView: View {
     /// Total EUR saved (lifetime + this week) using MilestoneTracker's conversion rate.
     private var lifetimeAndWeeklyEUR: Double {
         let liveTokens = MilestoneTracker.shared.lifetimeTokens + appState.savedTokensThisWeek
-        return Double(liveTokens) / 1_000_000 * 2.76
+        return Double(liveTokens) / 1_000_000 * 6.00
     }
 
     /// Banner shown when the user has enabled exact mode but the latest poll

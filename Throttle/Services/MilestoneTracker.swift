@@ -35,11 +35,11 @@ final class MilestoneTracker {
         Milestone(id: "month_max20", thresholdEUR: 184.00, label: String(localized: "1 month of Max 20× paid back"), emoji: "🏆")
     ]
 
-    /// Conservative blended €/M weighted-tokens rate. We use Sonnet's
-    /// input rate because most token-opt savings come from input/cache
-    /// reductions, not output. Underestimating the EUR keeps milestones
-    /// honest (users won't feel cheated).
-    private let blendedRatePerM: Double = 2.76
+    /// Realistic blended €/M weighted-tokens rate. Based on typical Claude
+    /// Code usage patterns (70-80% input, 20-30% output), using Sonnet 4.6
+    /// pricing: €2.76/M input + €13.80/M output → ~€6/M blended average.
+    /// This represents actual API costs rather than input-only rate.
+    private let blendedRatePerM: Double = 6.00
 
     /// Lifetime weighted tokens saved across all weeks since install.
     /// Persisted across launches.
