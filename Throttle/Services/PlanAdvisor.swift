@@ -21,15 +21,17 @@ enum PlanAdvisor {
     struct ModelRate {
         let inputPerM: Double      // EUR / 1M tokens
         let outputPerM: Double     // EUR / 1M tokens
-        /// Weighted-token-equivalent rate. We use input rate as the
-        /// dominant component since SavingsIngester's "weighted tokens"
-        /// already reflects cache discounts.
-        var weightedPerM: Double { inputPerM }
+        /// Weighted-token-equivalent rate. Since "weighted tokens" =
+        /// input + output + cache_create + (cache_read/10), we need a
+        /// blended rate. Typical usage is ~70% input / 30% output.
+        var weightedPerM: Double {
+            0.70 * inputPerM + 0.30 * outputPerM
+        }
     }
 
-    static let opus47   = ModelRate(inputPerM: 13.80, outputPerM: 69.00)   // $15 / $75
-    static let sonnet46 = ModelRate(inputPerM:  2.76, outputPerM: 13.80)   // $3  / $15
-    static let haiku45  = ModelRate(inputPerM:  0.74, outputPerM:  3.68)   // $0.80 / $4
+    static let opus47   = ModelRate(inputPerM: 13.80, outputPerM: 69.00)   // $15 / $75 → ~€34.62/M blended
+    static let sonnet46 = ModelRate(inputPerM:  2.76, outputPerM: 13.80)   // $3  / $15  → ~€6.07/M blended
+    static let haiku45  = ModelRate(inputPerM:  0.74, outputPerM:  3.68)   // $0.80 / $4 → ~€1.62/M blended
 
     /// Subscription tiers, monthly EUR (USD × 0.92). Anthropic's published
     /// caps are per 5-hour window with a weekly ceiling. We translate to
