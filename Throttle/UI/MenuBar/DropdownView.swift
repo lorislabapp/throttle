@@ -32,7 +32,6 @@ struct DropdownView: View {
     }
 
     @State private var mode: Mode = .meter
-    @State private var savingsLeafPulse: Bool = false
     @State private var embeddedSignedIn: Bool = false
 
     var body: some View {
@@ -87,110 +86,17 @@ struct DropdownView: View {
                     .padding(.horizontal, 4)
             }
             exactModeWarningBanner
-            if appState.savedTokensThisWeek > 0 {
-                savingsBanner
-            }
             Divider().padding(.vertical, 4)
             proSection
             Divider().padding(.vertical, 4)
             footer
-        }
-    }
-
-    /// Hero card showing tokens saved by the token-opt hooks this week.
-    /// Token-opt is the headline value-add of Throttle, so this gets prime
-    /// real estate instead of a tiny footer line. White text on a deep
-    /// green background — high contrast against the dropdown's frosted
-    /// background, so the number is unmissable.
-    ///
-    /// "Dynamic" combo: the leaf pulses for 1.5s when the weekly counter
-    /// ticks up (concrete feedback that a hook just fired), a sparkline
-    /// of the last 7 days lives next to the number so the figure feels
-    /// alive even when nothing fired in the last hour, and a today-delta
-    /// strip below makes "the counter is stale" impossible to confuse
-    /// with "you didn't use Claude today" — they read different.
-    private var savingsBanner: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                // macOS 26.5 has a RenderBox/Metal shader-load regression that
-                // crashes the dropdown on `contentTransition(.numericText)` and
-                // on `.shadow` modifiers inside MenuBarExtra views. The pulse
-                // is kept as a plain scaleEffect+animation (no shadow); the
-                // big number swaps without the morphing transition. The
-                // sparkline still gives the card its sense of motion.
-                Image(systemName: "leaf.fill")
-                    .font(.system(size: 26, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .scaleEffect(savingsLeafPulse ? 1.18 : 1.0)
-                    .animation(.spring(response: 0.4, dampingFraction: 0.5), value: savingsLeafPulse)
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(alignment: .firstTextBaseline, spacing: 5) {
-                        Text(formatTokens(appState.savedTokensThisWeek))
-                            .font(.system(size: 28, weight: .heavy, design: .rounded).monospacedDigit())
-                            .foregroundStyle(.white)
-                            .fixedSize()
-                        Text("tokens saved")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.92))
-                            .fixedSize()
-                    }
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text("≈€\(String(format: "%.2f", lifetimeAndWeeklyEUR))")
-                            .font(.system(size: 16, weight: .bold, design: .rounded).monospacedDigit())
-                            .foregroundStyle(.white.opacity(0.95))
-                        Text("saved total")
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.75))
-                    }
-                    Text(todayDeltaCopy)
-                        .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.75))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 0)
-                Sparkline(values: appState.savedTokensByDay,
-                          stroke: .white.opacity(0.95),
-                          fill: .white.opacity(0.18))
-                    .frame(width: 64, height: 28)
+            if appState.savedTokensThisWeek > 0 {
+                savingsFootnote
             }
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.05, green: 0.45, blue: 0.27),
-                                Color(red: 0.10, green: 0.62, blue: 0.39)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            )
-            .overlay(alignment: .bottom) { milestoneCelebration }
-
-            // Persistent achievement badges showing all unlocked milestones.
-            // Always visible (not just on first unlock) to reinforce the
-            // value prop: "Throttle saved you X months of Pro/Max".
-            milestoneBadges
-        }
-        .padding(.top, 10)
-        .onChange(of: appState.savedTokensThisWeek) { old, new in
-            // Pulse the leaf when the counter ticks up, and check whether
-            // we crossed a "1 month of Pro" / "1 month of Max" threshold
-            // for the first time. The MilestoneTracker maintains a
-            // lifetime counter and persists which milestones already
-            // fired, so the celebration only happens once per threshold.
-            if new > old {
-                savingsLeafPulse = true
-                Task {
-                    try? await Task.sleep(for: .milliseconds(900))
-                    await MainActor.run { savingsLeafPulse = false }
-                }
-            }
-            _ = MilestoneTracker.shared.observeWeeklySnapshot(new)
         }
         .onAppear {
+            // Relocated from the old savings hero (now demoted to a footnote):
+            // keep milestone accrual + the footer's signed-in label working.
             _ = MilestoneTracker.shared.observeWeeklySnapshot(appState.savedTokensThisWeek)
             Task { @MainActor in
                 embeddedSignedIn = await EmbeddedClaudeSession.shared.isSignedIn()
@@ -198,147 +104,28 @@ struct DropdownView: View {
         }
     }
 
-    /// Bottom-aligned celebration banner that appears when the lifetime
-    /// savings cross a milestone (1 day / 1 week / 1 month of Pro, Max
-    /// 5×, Max 20×). Auto-dismisses after 8 s; tap to dismiss earlier.
-    @ViewBuilder
-    private var milestoneCelebration: some View {
-        if let m = MilestoneTracker.shared.pendingCelebration {
-            HStack(spacing: 8) {
-                Text(m.emoji).font(.system(size: 20))
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(m.label)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text("Throttle paid for itself \(timesPaidBack(m))").font(.caption2)
-                        .foregroundStyle(.white.opacity(0.85))
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "xmark.circle.fill")
-                    .foregroundStyle(.white.opacity(0.55))
-                    .onTapGesture { MilestoneTracker.shared.dismissCelebration() }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(LinearGradient(
-                        colors: [Color(red: 0.32, green: 0.16, blue: 0.55),
-                                 Color(red: 0.55, green: 0.27, blue: 0.85)],
-                        startPoint: .leading, endPoint: .trailing
-                    ))
-            )
-            .padding(.horizontal, 8)
-            .padding(.bottom, 6)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-            .onAppear {
-                Task {
-                    try? await Task.sleep(for: .seconds(8))
-                    await MainActor.run { MilestoneTracker.shared.dismissCelebration() }
-                }
-            }
+    /// Quiet one-line savings summary. Demoted from the old green hero card:
+    /// savings answers "did this pay for itself", not "should I stop now" —
+    /// so it sits as a footnote under the actions, never competing with the
+    /// usage meter, which is the reason you open Throttle. The milestone
+    /// celebration + badges are retired from the dropdown; the lifetime
+    /// counter keeps accruing via meterContent's onAppear and can resurface
+    /// in Stats.
+    private var savingsFootnote: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "leaf.fill")
+                .font(.caption2)
+                .foregroundStyle(.green.opacity(0.8))
+            Text("≈€\(String(format: "%.2f", lifetimeAndWeeklyEUR)) saved · \(formatTokens(appState.savedTokensThisWeek)) tokens this week")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+            Button("Stats…") { mode = .stats }
+                .buttonStyle(.plain)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.tint)
         }
-    }
-
-    /// Persistent badges showing all milestones that have been unlocked.
-    /// Always visible (not just on first unlock) — reinforces the value
-    /// prop continuously: "you've saved 3 months of Pro" stays on screen.
-    /// Unlocked badges show the emoji + short label in white-on-green;
-    /// locked badges appear greyed out with a lock icon.
-    @ViewBuilder
-    private var milestoneBadges: some View {
-        let liveEUR = MilestoneTracker.shared.lifetimeEUR +
-                      Double(appState.savedTokensThisWeek) / 1_000_000 * 6.00
-        let unlocked = MilestoneTracker.ladder.filter { $0.thresholdEUR <= liveEUR }
-
-        if !unlocked.isEmpty {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(MilestoneTracker.ladder, id: \.id) { milestone in
-                        let isUnlocked = unlocked.contains(milestone)
-                        milestoneBadge(milestone: milestone, unlocked: isUnlocked)
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-            }
-            .background(Color.white.opacity(0.08))
-        }
-    }
-
-    @ViewBuilder
-    private func milestoneBadge(milestone: MilestoneTracker.Milestone, unlocked: Bool) -> some View {
-        HStack(spacing: 4) {
-            if unlocked {
-                Text(milestone.emoji).font(.system(size: 12))
-                Text(compactLabel(for: milestone))
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.white)
-            } else {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.white.opacity(0.35))
-                Text(compactLabel(for: milestone))
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.35))
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(
-            Capsule()
-                .fill(unlocked ? Color.white.opacity(0.18) : Color.white.opacity(0.06))
-                .overlay(
-                    Capsule()
-                        .strokeBorder(
-                            unlocked ? Color.white.opacity(0.30) : Color.white.opacity(0.12),
-                            lineWidth: 1
-                        )
-                )
-        )
-    }
-
-    /// Short labels for badges — "1d Pro", "1w Pro", "1m Pro", "Max 5×", "Max 20×".
-    /// Keeps badges compact so they all fit on one line at 340pt width.
-    private func compactLabel(for milestone: MilestoneTracker.Milestone) -> String {
-        switch milestone.id {
-        case "day_pro":     return String(localized: "1d Pro")
-        case "week_pro":    return String(localized: "1w Pro")
-        case "month_pro":   return String(localized: "1m Pro")
-        case "month_max5":  return String(localized: "Max 5×")
-        case "month_max20": return String(localized: "Max 20×")
-        default:            return milestone.label
-        }
-    }
-
-    private func timesPaidBack(_ m: MilestoneTracker.Milestone) -> String {
-        let lifetime = MilestoneTracker.shared.lifetimeEUR + Double(appState.savedTokensThisWeek) / 1_000_000 * 6.00
-        let multiple = lifetime / m.thresholdEUR
-        if multiple >= 2 {
-            return String(format: String(localized: "%.1f×"), multiple)
-        }
-        return String(localized: "1×")
-    }
-
-    /// Copy below the big number — distinguishes "no save today (yet)"
-    /// from "+5.2k today". Yesterday comparison only shown when both days
-    /// are non-zero, otherwise the delta is meaningless noise.
-    private var todayDeltaCopy: String {
-        // Trimmed of the "This week — " prefix: the big number above is
-        // already the weekly total, so the subtitle line only needs to
-        // describe today's contribution. Keeps the copy in one line at
-        // the dropdown's 340pt width even with FR translations.
-        let today = appState.savedTokensToday
-        let yesterday = appState.savedTokensYesterday
-        if today == 0 {
-            return String(localized: "No save today yet")
-        }
-        if yesterday > 0 {
-            let pct = Int((Double(today - yesterday) / Double(yesterday) * 100).rounded())
-            let deltaSign = pct >= 0 ? "+" : ""
-            return String(localized: "+\(formatTokens(today)) today · \(deltaSign)\(pct)% vs yesterday")
-        }
-        return String(localized: "+\(formatTokens(today)) today")
+        .padding(.top, 6)
     }
 
     private func formatTokens(_ n: Int) -> String {
@@ -551,9 +338,18 @@ struct DropdownView: View {
                 Text(metric.title).font(.subheadline)
                 Spacer()
                 if let pct = metric.percent {
-                    Text("\(Int(pct * 100))% used")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 4) {
+                        Text("\(degraded(metric) ? "≈" : "")\(Int(pct * 100))% used")
+                            .font(.subheadline)
+                            .foregroundStyle(degraded(metric) ? .tertiary : .secondary)
+                        if degraded(metric) {
+                            Text("estimate")
+                                .font(.system(size: 9, weight: .semibold))
+                                .padding(.horizontal, 4).padding(.vertical, 1)
+                                .background(Color.secondary.opacity(0.12), in: Capsule())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 } else {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text("not calibrated")
@@ -568,7 +364,7 @@ struct DropdownView: View {
             if let pct = metric.percent {
                 ProgressView(value: pct)
                     .progressViewStyle(.linear)
-                    .tint(progressTint(for: pct))
+                    .tint(progressTint(for: pct).opacity(degraded(metric) ? 0.5 : 1.0))
             }
             if metric.resetInSeconds > 0 {
                 Text("resets in \(formatDuration(metric.resetInSeconds)) (\(formatWallClock(metric.resetInSeconds)))")
@@ -610,6 +406,16 @@ struct DropdownView: View {
         }
         f.setLocalizedDateFormatFromTemplate("EEEMMMd\(hourTok)a")
         return f.string(from: target).lowercased()
+    }
+
+    /// A row is "degraded" — shown muted with an ≈/estimate tag — when the
+    /// user enabled exact mode but this window is falling back to local
+    /// JSONL math. That's the case the meter must not dress up as confident:
+    /// a local 90% that won't track the server cap. Pure-local users (exact
+    /// never enabled) keep the clean display — local-by-design isn't a
+    /// degradation, and tagging all three rows would just be noise.
+    private func degraded(_ metric: DisplayMetric) -> Bool {
+        appState.exactModeEnabled && !metric.isExact
     }
 
     private func progressTint(for pct: Double) -> Color {
