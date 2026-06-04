@@ -53,8 +53,16 @@ struct DropdownView: View {
                 }
             }
         }
-        .padding(12)
+        .padding(meterEdgeToEdge ? 0 : 12)
         .frame(width: dropdownWidth, height: dropdownHeight)
+    }
+
+    /// The meter is a native sectioned list — full-bleed hairline separators
+    /// with 16pt internal section padding. Every other mode keeps the 12pt inset.
+    private var meterEdgeToEdge: Bool {
+        guard appState.firstRunDone else { return false }
+        if case .meter = mode { return true }
+        return false
     }
 
     /// Dropdown grows to a "real window" footprint in projects mode.
@@ -73,30 +81,32 @@ struct DropdownView: View {
 
     private var meterContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            header
+            titleRow
+            hairline
+            exactModeWarningBanner.padding(.horizontal, 16)
             if !appState.claudeCodeDetected {
                 emptyState(message: "Claude Code not detected. Install it to start measuring.")
             } else if !appState.snapshot.hasAnyData {
                 emptyState(message: "No sessions yet — start one in Claude Code.")
             } else {
-                windowsList
+                meterReadout
             }
             if !appState.isPro && appState.snapshot.hasAnyData {
                 ProUpsellBanner(configSize: 95, savings: 40)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
             }
-            exactModeWarningBanner
-            Divider().padding(.vertical, 4)
-            proSection
-            Divider().padding(.vertical, 4)
-            footer
             if appState.savedTokensThisWeek > 0 {
+                hairline
                 savingsFootnote
             }
+            hairline
+            proSection.padding(.horizontal, 16).padding(.vertical, 8)
+            hairline
+            footer.padding(.horizontal, 12).padding(.vertical, 6)
         }
         .onAppear {
-            // Relocated from the old savings hero (now demoted to a footnote):
-            // keep milestone accrual + the footer's signed-in label working.
+            // Keep milestone accrual + the footer's signed-in label working.
             _ = MilestoneTracker.shared.observeWeeklySnapshot(appState.savedTokensThisWeek)
             Task { @MainActor in
                 embeddedSignedIn = await EmbeddedClaudeSession.shared.isSignedIn()
@@ -112,20 +122,22 @@ struct DropdownView: View {
     /// counter keeps accruing via meterContent's onAppear and can resurface
     /// in Stats.
     private var savingsFootnote: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "leaf.fill")
-                .font(.caption2)
-                .foregroundStyle(.green.opacity(0.8))
-            Text("≈€\(String(format: "%.2f", lifetimeAndWeeklyEUR)) saved · \(formatTokens(appState.savedTokensThisWeek)) tokens this week")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+        HStack(spacing: 7) {
+            (Text(verbatim: "≈€\(String(format: "%.2f", lifetimeAndWeeklyEUR))").foregroundStyle(.secondary)
+             + Text(" saved").foregroundStyle(.tertiary)
+             + Text(verbatim: "   ·   ").foregroundStyle(.tertiary)
+             + Text("\(formatTokens(appState.savedTokensThisWeek))").foregroundStyle(.secondary)
+             + Text(" tokens this week").foregroundStyle(.tertiary))
+                .font(.system(size: 11.5))
             Spacer(minLength: 0)
-            Button("Stats…") { mode = .stats }
-                .buttonStyle(.plain)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.tint)
+            Button { mode = .stats } label: {
+                Text("Stats›")
+                    .font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(.tint)
+            }
+            .buttonStyle(.plain)
         }
-        .padding(.top, 6)
+        .padding(.horizontal, 16).padding(.vertical, 9)
     }
 
     private func formatTokens(_ n: Int) -> String {
@@ -221,52 +233,45 @@ struct DropdownView: View {
         }
     }
 
-    private var header: some View {
-        HStack {
-            Text("Throttle")
-                .font(.headline)
-            if appState.isPro {
-                Text("PRO")
-                    .font(.caption2.bold())
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.accentColor.opacity(0.15))
-                    .foregroundStyle(Color.accentColor)
-                    .clipShape(Capsule())
-            }
+    /// Identity + status. The binding hero owns the number, so no top-right %.
+    /// EXACT is an inverted solid pill with a dot; PRO a soft pill; FREE outlined.
+    private var titleRow: some View {
+        HStack(spacing: 9) {
+            Image(systemName: "gauge.with.dots.needle.50percent")
+                .font(.system(size: 15))
+                .foregroundStyle(.primary.opacity(0.9))
+            Text("Throttle").font(.system(size: 14.5, weight: .semibold))
+            Spacer(minLength: 0)
+            if appState.isPro { pillSoft("PRO") } else { pillFree("FREE") }
             if appState.exactSnapshot?.isFresh() == true {
-                Text("EXACT")
-                    .font(.caption2.bold())
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.green.opacity(0.15))
-                    .foregroundStyle(Color.green)
-                    .clipShape(Capsule())
-            }
-            Spacer()
-            if let pct = displayedSession5hPercent() {
-                Text("\(Int(pct * 100))%")
-                    .font(.headline)
-                    .foregroundStyle(headerColor(for: pct))
+                HStack(spacing: 4) {
+                    Circle().fill(Color(nsColor: .windowBackgroundColor)).frame(width: 4, height: 4)
+                    Text("EXACT")
+                }
+                .font(.system(size: 9.5, weight: .heavy))
+                .padding(.horizontal, 6).padding(.vertical, 3)
+                .background(Color.primary, in: RoundedRectangle(cornerRadius: 5))
+                .foregroundStyle(Color(nsColor: .windowBackgroundColor))
             }
         }
-        .padding(.bottom, 6)
+        .padding(.horizontal, 16)
+        .padding(.top, 13).padding(.bottom, 12)
     }
 
-    private func displayedSession5hPercent() -> Double? {
-        if let ex = appState.exactSnapshot, ex.isFresh() {
-            return Double(ex.fiveHour.utilization) / 100.0
-        }
-        return appState.snapshot.session5h.percentUsed
+    private func pillSoft(_ t: String) -> some View {
+        Text(t)
+            .font(.system(size: 9.5, weight: .heavy))
+            .padding(.horizontal, 6).padding(.vertical, 3)
+            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 5))
+            .foregroundStyle(.secondary)
     }
 
-    private func headerColor(for pct: Double) -> Color {
-        switch pct {
-        case ..<0.5:  return .secondary
-        case ..<0.8:  return .primary
-        case ..<0.95: return .orange
-        default:      return .red
-        }
+    private func pillFree(_ t: String) -> some View {
+        Text(t)
+            .font(.system(size: 9.5, weight: .heavy))
+            .padding(.horizontal, 6).padding(.vertical, 3)
+            .foregroundStyle(.tertiary)
+            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.primary.opacity(0.12), lineWidth: 1))
     }
 
     private func emptyState(message: String) -> some View {
@@ -284,22 +289,82 @@ struct DropdownView: View {
         .padding(.vertical, 16)
     }
 
-    private var windowsList: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            metricRow(displayMetric(for: .session5h, title: String(localized: "Session (5h)")))
-            metricRow(displayMetric(for: .weeklyAll, title: String(localized: "Weekly all models")))
-            metricRow(displayMetric(for: .weeklySonnet, title: String(localized: "Weekly Sonnet only")))
+    private var hairColor: Color { Color.primary.opacity(0.09) }
+    private var hairline: some View {
+        Rectangle().fill(hairColor).frame(height: 1).padding(.horizontal, 16)
+    }
+    private var secKick: some View {
+        Text("OTHER WINDOWS")
+            .font(.system(size: 10, weight: .semibold))
+            .tracking(0.8)
+            .foregroundStyle(.tertiary)
+            .padding(.horizontal, 16)
+            .padding(.top, 11).padding(.bottom, 3)
+    }
+
+    /// Binding hero + "Other windows" rows. The binding window — closest to its
+    /// cap — owns the big readout; the rest recede. Emphasis follows risk: the
+    /// hero swaps to whichever window is highest. Confidence still outranks size.
+    @ViewBuilder
+    private var meterReadout: some View {
+        let metrics = [
+            displayMetric(for: .session5h),
+            displayMetric(for: .weeklyAll),
+            displayMetric(for: .weeklySonnet)
+        ]
+        let binding = metrics
+            .filter { $0.percent != nil }
+            .max { ($0.percent ?? 0) < ($1.percent ?? 0) }
+        if let binding {
+            bindingHero(binding)
+            hairline
+            secKick
+            rows(metrics.filter { $0.kind != binding.kind })
+        } else {
+            // Nothing calibrated yet — all windows as calibrate rows, no hero.
+            rows(metrics).padding(.top, 4)
         }
     }
 
-    private struct DisplayMetric {
-        let title: String
+    @ViewBuilder
+    private func rows(_ metrics: [DisplayMetric]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(metrics.enumerated()), id: \.element.id) { idx, m in
+                if idx > 0 { Rectangle().fill(hairColor).frame(height: 1) }
+                secondaryRow(m)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 6)
+    }
+
+    private struct DisplayMetric: Identifiable {
+        let kind: WindowKind
+        let title: String         // "Session", "Weekly"
+        let subtitle: String      // "5-hour", "all models", "Sonnet only"
+        let bindingLabel: String  // "Session (5h)", "Weekly · Sonnet only"
         let percent: Double?
         let resetInSeconds: Int64
         let isExact: Bool
+        var id: WindowKind { kind }
     }
 
-    private func displayMetric(for kind: WindowKind, title: String) -> DisplayMetric {
+    private func displayMetric(for kind: WindowKind) -> DisplayMetric {
+        let title: String, subtitle: String, bindingLabel: String
+        switch kind {
+        case .session5h:
+            title = String(localized: "Session")
+            subtitle = String(localized: "5-hour")
+            bindingLabel = String(localized: "Session (5h)")
+        case .weeklyAll:
+            title = String(localized: "Weekly")
+            subtitle = String(localized: "all models")
+            bindingLabel = String(localized: "Weekly · all models")
+        case .weeklySonnet:
+            title = String(localized: "Weekly")
+            subtitle = String(localized: "Sonnet only")
+            bindingLabel = String(localized: "Weekly · Sonnet only")
+        }
         let local: UsageSnapshot.Window
         switch kind {
         case .session5h:    local = appState.snapshot.session5h
@@ -317,60 +382,203 @@ struct DropdownView: View {
                 max(0, Int64($0.timeIntervalSinceNow))
             } ?? local.resetInSeconds
             return DisplayMetric(
-                title: title,
+                kind: kind, title: title, subtitle: subtitle, bindingLabel: bindingLabel,
                 percent: Double(ew.utilization) / 100.0,
-                resetInSeconds: resetSec,
-                isExact: true
+                resetInSeconds: resetSec, isExact: true
             )
         }
         return DisplayMetric(
-            title: title,
+            kind: kind, title: title, subtitle: subtitle, bindingLabel: bindingLabel,
             percent: local.percentUsed,
-            resetInSeconds: local.resetInSeconds,
-            isExact: false
+            resetInSeconds: local.resetInSeconds, isExact: false
         )
     }
 
+    /// The binding window as the hero: 56pt number, headroom, a bar with labelled
+    /// 80/95 danger ticks, reset + "closest to cap". When degraded (exact on but
+    /// falling back to local math), the hero ITSELF wears the ≈/estimate treatment
+    /// — confidence outranks size, so a local 90% never reads as server-true.
     @ViewBuilder
-    private func metricRow(_ metric: DisplayMetric) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+    private func bindingHero(_ m: DisplayMetric) -> some View {
+        let pct = m.percent ?? 0
+        let deg = degraded(m)
+        let tint = progressTint(for: pct)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 7) {
+                Text("Binding now")
+                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+                Text(verbatim: "·").foregroundStyle(.tertiary)
+                Text(m.bindingLabel)
+                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(.primary)
+                if deg { estimateTag }
+                Spacer(minLength: 0)
+            }
+            .padding(.bottom, 7)
+
+            HStack(alignment: .bottom, spacing: 13) {
+                HStack(alignment: .lastTextBaseline, spacing: 0) {
+                    if deg {
+                        Text(verbatim: "≈")
+                            .font(.system(size: 34, weight: .medium)).foregroundStyle(.secondary)
+                    }
+                    Text("\(Int(pct * 100))")
+                        .font(.system(size: 56, weight: .semibold).monospacedDigit())
+                        .tracking(-1.5)
+                        .foregroundStyle(numberColor(pct: pct, degraded: deg))
+                    Text(verbatim: "%")
+                        .font(.system(size: 22, weight: .medium)).foregroundStyle(.secondary)
+                }
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("used").font(.system(size: 11)).foregroundStyle(.secondary)
+                    (Text("\(deg ? "≈" : "")\(max(0, 100 - Int(pct * 100)))%").foregroundStyle(.primary)
+                     + Text(" headroom left").foregroundStyle(.secondary))
+                        .font(.system(size: 11))
+                }
+                .padding(.bottom, 8)
+                Spacer(minLength: 0)
+            }
+            .padding(.bottom, 14)
+
+            UsageBar(pct: pct, tint: tint, degraded: deg, height: 9, strongTicks: true)
+            GeometryReader { geo in
+                let w = geo.size.width
+                ZStack(alignment: .topLeading) {
+                    Text(verbatim: "80")
+                        .font(.system(size: 9, design: .monospaced)).foregroundStyle(.tertiary)
+                        .offset(x: w * 0.80 - 6)
+                    Text(verbatim: "95")
+                        .font(.system(size: 9, design: .monospaced)).foregroundStyle(.tertiary)
+                        .offset(x: w * 0.95 - 6)
+                }
+            }
+            .frame(height: 12)
+            .padding(.top, 4)
+
             HStack {
-                Text(metric.title).font(.subheadline)
-                Spacer()
-                if let pct = metric.percent {
-                    HStack(spacing: 4) {
-                        Text("\(degraded(metric) ? "≈" : "")\(Int(pct * 100))% used")
-                            .font(.subheadline)
-                            .foregroundStyle(degraded(metric) ? .tertiary : .secondary)
-                        if degraded(metric) {
-                            Text("estimate")
-                                .font(.system(size: 9, weight: .semibold))
-                                .padding(.horizontal, 4).padding(.vertical, 1)
-                                .background(Color.secondary.opacity(0.12), in: Capsule())
+                if m.resetInSeconds > 0 {
+                    (Text("resets ").foregroundStyle(.tertiary)
+                     + Text(formatWallClock(m.resetInSeconds)).foregroundStyle(.secondary))
+                        .font(.system(size: 11))
+                }
+                Spacer(minLength: 0)
+                Text("closest to cap").font(.system(size: 11)).foregroundStyle(.tertiary)
+            }
+            .padding(.top, 1)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 15).padding(.bottom, 16)
+    }
+
+    /// A non-binding window: full row — label + bar + reset underneath. Same
+    /// confidence treatment as the hero. Not-calibrated → "—%" + a tappable
+    /// "tap to set your cap›" status line.
+    @ViewBuilder
+    private func secondaryRow(_ m: DisplayMetric) -> some View {
+        let deg = degraded(m)
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Text(m.title).font(.system(size: 12.5, weight: .semibold))
+                Text(m.subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                if let pct = m.percent {
+                    HStack(alignment: .firstTextBaseline, spacing: 0) {
+                        if deg {
+                            Text(verbatim: "≈").font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(.secondary)
                         }
+                        Text("\(Int(pct * 100))")
+                            .font(.system(size: 18, weight: .medium).monospacedDigit())
+                            .foregroundStyle(numberColor(pct: pct, degraded: deg))
+                        Text(verbatim: "%").font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary)
                     }
                 } else {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("not calibrated")
-                            .font(.subheadline)
-                            .foregroundStyle(.tertiary)
-                        Text("Tap to set your cap")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary.opacity(0.7))
+                    Text(verbatim: "—%").font(.system(size: 16)).foregroundStyle(.tertiary)
+                }
+            }
+            if let pct = m.percent {
+                UsageBar(pct: pct, tint: progressTint(for: pct), degraded: deg, height: 6)
+                HStack {
+                    if m.resetInSeconds > 0 {
+                        (Text("resets ") + Text(formatWallClock(m.resetInSeconds)))
+                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                    if deg { estimateTag }
+                }
+            } else {
+                UsageBar(pct: nil, tint: progressTint(for: 0), height: 6)
+                (Text("Not calibrated yet — ").foregroundStyle(.secondary)
+                 + Text("tap to set your cap›").foregroundStyle(.tint))
+                    .font(.system(size: 11))
+                    .onTapGesture { mode = .settings(.calibration) }
+            }
+        }
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
+    }
+
+    private var estimateTag: some View {
+        Text("estimate")
+            .font(.system(size: 9.5, weight: .semibold))
+            .foregroundStyle(.tertiary)
+            .padding(.horizontal, 5).padding(.vertical, 1)
+            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.primary.opacity(0.12), lineWidth: 1))
+    }
+
+    /// Track + leading-anchored fill. Pressure earns colour via `tint` (neutral
+    /// graphite until 80% → orange → red). Faint threshold ticks at 80/95 mark
+    /// where it starts (stronger under the hero). Degraded (estimate) fill is a
+    /// diagonal hatch in the tint colour — no Canvas (macOS 26.5 Metal
+    /// regression), the stripes are a stroked Path.
+    private struct UsageBar: View {
+        let pct: Double?
+        let tint: Color
+        var degraded: Bool = false
+        var height: CGFloat = 6
+        var strongTicks: Bool = false
+
+        var body: some View {
+            GeometryReader { geo in
+                let w = geo.size.width
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.primary.opacity(0.09))
+                    ForEach([0.80, 0.95], id: \.self) { mark in
+                        Rectangle()
+                            .fill(Color.primary.opacity(strongTicks ? 0.22 : 0.15))
+                            .frame(width: strongTicks ? 1.5 : 1, height: height)
+                            .offset(x: w * mark)
+                    }
+                    if let p = pct {
+                        let fillW = max(height, min(w, w * p))
+                        Group {
+                            if degraded {
+                                Stripes().stroke(tint.opacity(0.85), lineWidth: 1.5)
+                            } else {
+                                Capsule().fill(tint)
+                            }
+                        }
+                        .frame(width: fillW)
+                        .clipShape(Capsule())
                     }
                 }
             }
-            if let pct = metric.percent {
-                ProgressView(value: pct)
-                    .progressViewStyle(.linear)
-                    .tint(progressTint(for: pct).opacity(degraded(metric) ? 0.5 : 1.0))
+            .frame(height: height)
+        }
+    }
+
+    /// Diagonal hatch for the estimate (degraded) fill.
+    private struct Stripes: Shape {
+        var spacing: CGFloat = 4
+        func path(in rect: CGRect) -> Path {
+            var p = Path()
+            var x = -rect.height
+            while x < rect.width + rect.height {
+                p.move(to: CGPoint(x: x, y: rect.height))
+                p.addLine(to: CGPoint(x: x + rect.height, y: 0))
+                x += spacing
             }
-            if metric.resetInSeconds > 0 {
-                Text("resets in \(formatDuration(metric.resetInSeconds)) (\(formatWallClock(metric.resetInSeconds)))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            return p
         }
     }
 
@@ -418,22 +626,26 @@ struct DropdownView: View {
         appState.exactModeEnabled && !metric.isExact
     }
 
+    /// The BAR fill colour — neutral graphite until pressure is real. Colour is
+    /// earned, not default: accent blue never touches the bars.
     private func progressTint(for pct: Double) -> Color {
         switch pct {
-        case ..<0.8:  return .accentColor
+        case ..<0.8:  return Color.primary.opacity(0.45)
         case ..<0.95: return .orange
         default:      return .red
         }
     }
 
-    private func formatDuration(_ seconds: Int64) -> String {
-        let s = Int(seconds)
-        let h = s / 3600
-        let m = (s % 3600) / 60
-        if h >= 24 { return "\(h / 24)d \(h % 24)h" }
-        if h > 0 { return "\(h)h \(m)m" }
-        return "\(m)m"
+    /// The NUMBER colour — primary ink until pressure, muted when degraded.
+    private func numberColor(pct: Double, degraded deg: Bool) -> Color {
+        if deg { return .secondary }
+        switch pct {
+        case ..<0.8:  return .primary
+        case ..<0.95: return .orange
+        default:      return .red
+        }
     }
+
 
     private var proSection: some View {
         VStack(alignment: .leading, spacing: 6) {
