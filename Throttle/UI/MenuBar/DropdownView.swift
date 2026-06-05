@@ -730,6 +730,21 @@ struct DropdownView: View {
             .buttonStyle(.plain)
 
             Button {
+                CockpitWindowController.shared.show(appState: appState)
+            } label: {
+                HStack {
+                    Label("Cockpit", systemImage: "terminal")
+                    Spacer()
+                    Text("BETA")
+                        .font(.system(size: 9, weight: .heavy))
+                        .padding(.horizontal, 5).padding(.vertical, 1)
+                        .background(Color.primary.opacity(0.12), in: Capsule())
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .buttonStyle(.plain)
+
+            Button {
                 mode = .settings(.general)
             } label: {
                 Label("Settings…", systemImage: "gear")

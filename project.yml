@@ -37,6 +37,9 @@ packages:
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
     from: "2.6.0"
+  SwiftTerm:
+    url: https://github.com/migueldeicaza/SwiftTerm
+    from: "1.2.0"
 
 targets:
   Throttle:
@@ -74,6 +77,7 @@ targets:
     dependencies:
       - package: GRDB
       - package: Sparkle
+      - package: SwiftTerm
       - target: ThrottleWidget
 
   ThrottleWidget:
