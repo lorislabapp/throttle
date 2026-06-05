@@ -2137,7 +2137,7 @@ private struct InlineAssistantPane: View {
                 apiKeyRow
             }
             SettingsHair()
-            SettingsRow(title: "Caveman mode", sub: "Strip all token-opt hooks — raw CLI output. Ug.") {
+            SettingsRow(title: "Caveman mode", sub: "Terse, telegraphic replies from the project Assistant. Ug.") {
                 Toggle("", isOn: $cavemanModeEnabled).labelsHidden().toggleStyle(.switch).tint(.accentColor)
             }
             SettingsHair()

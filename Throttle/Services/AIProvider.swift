@@ -108,8 +108,16 @@ struct ProjectChatContext: Sendable {
         lines.append("1. NEVER answer with generic affirmations like 'your config is optimized', 'all good', 'looks fine'. The user opened the assistant because they want concrete improvements; if you cannot find any, say 'I have no concrete improvement to suggest right now' verbatim — but only after a real audit.")
         lines.append("2. ALWAYS ground each recommendation in a quoted line, key, or filename from the context below. No hand-waving.")
         lines.append("3. ALWAYS pair a recommendation with a measurable effect. Use the unit appropriate to the change (\"removes N bytes per session prelude\", \"shifts X% of usage off Opus to Sonnet\", \"closes Y exfiltration vectors\").")
-        lines.append("4. Use Markdown: numbered lists, **bold** for filenames, `code spans` for keys/values.")
-        lines.append("5. Length: 4-10 short sentences. Skip preambles like 'Of course!'.")
+        if cavemanEnabled {
+            // Caveman overrides the default verbose format/length rules above —
+            // otherwise these contradict the terse style and win, and the toggle
+            // appears to do nothing.
+            lines.append("4. Output: terse bullets only, code over prose. No numbered lists, no bold headers, no preambles.")
+            lines.append("5. Length: MAX 3 lines, excluding patches. This OVERRIDES any longer-length guidance — terseness wins.")
+        } else {
+            lines.append("4. Use Markdown: numbered lists, **bold** for filenames, `code spans` for keys/values.")
+            lines.append("5. Length: 4-10 short sentences. Skip preambles like 'Of course!'.")
+        }
         lines.append("")
         lines.append("--- APPLY-ABLE PATCHES ---")
         lines.append("When you propose a CONCRETE file edit, append a fenced ```patch block at the END of your message. Two formats are supported:")
