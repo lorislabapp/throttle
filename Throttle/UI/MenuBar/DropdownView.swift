@@ -57,12 +57,14 @@ struct DropdownView: View {
         .frame(width: dropdownWidth, height: dropdownHeight)
     }
 
-    /// The meter is a native sectioned list — full-bleed hairline separators
-    /// with 16pt internal section padding. Every other mode keeps the 12pt inset.
+    /// The meter and Stats are native sectioned lists — full-bleed hairline
+    /// separators with 16pt internal section padding. Other modes keep the 12pt inset.
     private var meterEdgeToEdge: Bool {
         guard appState.firstRunDone else { return false }
-        if case .meter = mode { return true }
-        return false
+        switch mode {
+        case .meter, .stats: return true
+        default:             return false
+        }
     }
 
     /// Dropdown grows to a "real window" footprint in projects mode.

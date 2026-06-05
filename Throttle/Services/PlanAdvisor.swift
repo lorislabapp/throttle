@@ -157,4 +157,59 @@ enum PlanAdvisor {
             extraCreditHint: extra
         )
     }
+
+    // MARK: - Per-plan fit (Stats "statement" table)
+
+    /// A plan's consequence given the user's weekly burn. Honest by design:
+    /// no specific throttle-day forecast — the caps are empirical, so a
+    /// confident "throttles Thursday" would be exactly the over-claim
+    /// Throttle refuses. Words only.
+    enum Fit: Sendable {
+        case throttled, tight, comfortable, overProvisioned
+
+        var label: String {
+            switch self {
+            case .throttled:       return String(localized: "throttled")
+            case .tight:           return String(localized: "tight")
+            case .comfortable:     return String(localized: "comfortable")
+            case .overProvisioned: return String(localized: "over-provisioned")
+            }
+        }
+    }
+
+    struct LadderRow: Sendable, Identifiable {
+        let id: String
+        let label: String
+        let monthlyEUR: Double
+        let fit: Fit
+        let isCurrent: Bool
+        let isBest: Bool
+    }
+
+    /// Map weekly weighted-token burn against a plan's capacity to a fit word.
+    static func fit(weeklyTokens: Int, planCapacity: Int) -> Fit {
+        guard planCapacity > 0 else { return .throttled }
+        let ratio = Double(max(0, weeklyTokens)) / Double(planCapacity)
+        switch ratio {
+        case ..<0.25: return .overProvisioned
+        case ..<0.85: return .comfortable
+        case ..<1.0:  return .tight
+        default:      return .throttled
+        }
+    }
+
+    /// The full ladder with a per-plan fit, the current plan flagged, and the
+    /// best plan flagged — the data the Stats statement table renders.
+    static func ladder(weeklyTokens: Int, currentPlanID: String?, bestPlanID: String) -> [LadderRow] {
+        plans.map { p in
+            LadderRow(
+                id: p.id,
+                label: p.label,
+                monthlyEUR: p.monthlyEUR,
+                fit: fit(weeklyTokens: weeklyTokens, planCapacity: p.weeklyTokenCapacity),
+                isCurrent: p.id == currentPlanID,
+                isBest: p.id == bestPlanID
+            )
+        }
+    }
 }

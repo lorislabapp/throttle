@@ -7,12 +7,10 @@ import SwiftUI
 // in MenuBarExtra popovers on macOS 26.5 (FB16xxxxx). Hand-drawn Path /
 // Rectangle visuals below render in CoreGraphics only and are safe.
 
-/// Stats panel shown when the user picks "Stats…" in the dropdown.
-/// Five cards stacked vertically; the popover scrolls.
-///
-/// Free vs Pro split:
-///   Free: trend line, model donut, cost extrapolation
-///   Pro:  hour-of-day heatmap, hook-savings counter, share badge
+/// Stats panel ("The Statement", Direction B-hybrid — see UI-SPEC-stats.md).
+/// Inherits the meter's precise-cockpit language: flat sections, full-bleed
+/// hairlines, graphite bars, mono digits, colour only under genuine pressure.
+/// The Plan Advisor verdict is the hero; the statement table justifies it.
 struct StatsInline: View {
     @Environment(AppState.self) private var appState
     let onBack: () -> Void
@@ -25,33 +23,45 @@ struct StatsInline: View {
     @State private var savedTokens: Int = 0
     @State private var topProjects: [StatsDataService.ProjectSlice] = []
 
-    @State private var showShareSheet = false
     @State private var todayTokens: Int = 0
     @State private var yesterdayTokens: Int = 0
     @State private var thisWeekTokens: Int = 0
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            header
-            rangePicker
+        VStack(alignment: .leading, spacing: 0) {
+            titleRow
+            hairline
+            rangeBar
+            hairline
             ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    comparisonCards
-                    trendCard
-                    modelSplitCard
-                    planAdvisorCard
-                    shareBadgeCard
-                    if appState.isPro {
-                        heatmapCard
-                        topProjectsCard
-                        savingsCard
-                    } else {
-                        proTeaserCard
+                VStack(alignment: .leading, spacing: 0) {
+                    advisorSection
+                    hairline
+                    secLabel("Usage trend · \(range.label)")
+                    trendSection
+                    if hasModelData {
+                        hairline
+                        secLabel("Model split · weighted", link: "API rates")
+                        modelSplitSection
                     }
+                    hairline
+                    periodStrip
+                    if appState.isPro {
+                        hairline
+                        secLabel("Activity · last 7 days")
+                        heatmapSection
+                        hairline
+                        secLabel("Top projects", link: "All›")
+                        topProjectsSection
+                    } else {
+                        hairline
+                        proLock
+                    }
+                    hairline
+                    statsTail
                 }
-                .padding(.vertical, 4)
             }
-            .frame(minHeight: 240, maxHeight: 420)
+            .frame(minHeight: 240, maxHeight: 460)
         }
         .onAppear {
             AppLogger.app.notice("StatsInline.onAppear range=\(self.range.label, privacy: .public)")
@@ -63,394 +73,556 @@ struct StatsInline: View {
         }
     }
 
-    private var header: some View {
-        HStack {
-            Button { onBack() } label: { Label("Back", systemImage: "chevron.left") }
-                .buttonStyle(.borderless)
-            Spacer()
-            Text("Stats").font(.headline)
-            Spacer()
-            Spacer().frame(width: 56)
-        }
+    // MARK: - Cockpit scaffolding (mirrors the meter)
+
+    private var hairColor: Color { Color.primary.opacity(0.09) }
+    private var hairline: some View {
+        Rectangle().fill(hairColor).frame(height: 1).padding(.horizontal, 16)
     }
 
-    private var rangePicker: some View {
-        Picker("", selection: $range) {
-            ForEach(StatsDataService.Range.allCases) { r in
-                Text(r.label).tag(r)
-            }
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-    }
-
-    // MARK: - Cards
-
-    /// Three at-a-glance cards: today, yesterday, this week.
-    /// Today vs yesterday gets a delta arrow so you instantly see if you're
-    /// burning faster than usual. This week is just an absolute number — the
-    /// week-over-week comparison would need a 4th card to fit and gets noisy.
-    private var comparisonCards: some View {
-        HStack(spacing: 8) {
-            comparisonCard(title: String(localized: "Today"),
-                           tokens: todayTokens,
-                           previousTokens: yesterdayTokens,
-                           showDelta: true)
-            comparisonCard(title: String(localized: "Yesterday"),
-                           tokens: yesterdayTokens,
-                           previousTokens: 0,
-                           showDelta: false)
-            comparisonCard(title: String(localized: "This week"),
-                           tokens: thisWeekTokens,
-                           previousTokens: 0,
-                           showDelta: false)
-        }
-    }
-
-    private func comparisonCard(title: String,
-                                 tokens: Int,
-                                 previousTokens: Int,
-                                 showDelta: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.caption2).foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(formatTokens(tokens))
-                    .font(.title3.bold().monospacedDigit())
-                if showDelta, previousTokens > 0 {
-                    let pct = Double(tokens - previousTokens) / Double(previousTokens) * 100
-                    Image(systemName: pct >= 0 ? "arrow.up.right" : "arrow.down.right")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(pct >= 0 ? .red : .green)
-                    Text("\(pct >= 0 ? "+" : "")\(Int(pct.rounded()))%")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(pct >= 0 ? .red : .green)
-                }
-            }
-            Text("tokens · cache-adjusted")
-                .font(.system(size: 9))
+    private func secLabel(_ label: String, link: String? = nil) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(label)
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(0.9)
+                .textCase(.uppercase)
                 .foregroundStyle(.tertiary)
-                .help("Cache reads bill at ~10% of input rate; cache writes at ~125%. Throttle weights them to a single comparable number.")
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10).padding(.vertical, 8)
-        .background(.quaternary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-    }
-
-    private var trendCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Usage trend").font(.subheadline.bold())
-            if linePoints.isEmpty {
-                Text("No history yet — keep using Claude Code, the chart fills as you go.")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 80)
-            } else {
-                LineChart(points: linePoints)
-                    .frame(height: 120)
-                trendLegend
+            Spacer(minLength: 0)
+            if let link {
+                Text(link)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.tint)
             }
         }
+        .padding(.horizontal, 16)
+        .padding(.top, 13).padding(.bottom, 1)
     }
 
-    private var trendLegend: some View {
-        HStack(spacing: 12) {
-            ForEach([WindowKind.session5h, .weeklyAll, .weeklySonnet], id: \.self) { kind in
+    private var estTag: some View {
+        Text("estimate")
+            .font(.system(size: 9.5, weight: .semibold))
+            .foregroundStyle(.tertiary)
+            .padding(.horizontal, 5).padding(.vertical, 1)
+            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.primary.opacity(0.12), lineWidth: 1))
+    }
+
+    // MARK: - Title + range
+
+    private var titleRow: some View {
+        HStack(spacing: 9) {
+            Button { onBack() } label: {
+                Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
+            }
+            .buttonStyle(.plain)
+            Text("Stats").font(.system(size: 14.5, weight: .semibold))
+            Spacer(minLength: 0)
+            if appState.isPro { pillSoft("PRO") } else { pillOutline("FREE") }
+            if appState.exactSnapshot?.isFresh() == true {
                 HStack(spacing: 4) {
-                    Circle().fill(color(for: kind)).frame(width: 8, height: 8)
-                    Text(windowLabel(kind)).font(.caption2).foregroundStyle(.secondary)
+                    Circle().fill(Color(nsColor: .windowBackgroundColor)).frame(width: 4, height: 4)
+                    Text("EXACT")
+                }
+                .font(.system(size: 9.5, weight: .heavy))
+                .padding(.horizontal, 6).padding(.vertical, 3)
+                .background(Color.primary, in: RoundedRectangle(cornerRadius: 5))
+                .foregroundStyle(Color(nsColor: .windowBackgroundColor))
+            }
+        }
+        .padding(.horizontal, 16).padding(.top, 13).padding(.bottom, 12)
+    }
+
+    private func pillSoft(_ t: String) -> some View {
+        Text(t).font(.system(size: 9.5, weight: .heavy))
+            .padding(.horizontal, 6).padding(.vertical, 3)
+            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 5))
+            .foregroundStyle(.secondary)
+    }
+    private func pillOutline(_ t: String) -> some View {
+        Text(t).font(.system(size: 9.5, weight: .heavy))
+            .padding(.horizontal, 6).padding(.vertical, 3)
+            .foregroundStyle(.tertiary)
+            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.primary.opacity(0.12), lineWidth: 1))
+    }
+
+    private var rangeBar: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 1) {
+                ForEach(StatsDataService.Range.allCases, id: \.self) { r in
+                    Button { range = r } label: {
+                        Text(r.label)
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundStyle(range == r ? Color.primary : Color.secondary)
+                            .padding(.horizontal, 13)
+                            .frame(minHeight: 26)
+                            .background(
+                                range == r
+                                ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
+                                : AnyShapeStyle(Color.clear),
+                                in: RoundedRectangle(cornerRadius: 6)
+                            )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
-            Spacer()
+            .padding(2)
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+            Spacer(minLength: 0)
+            Text("local").font(.system(size: 10.5)).foregroundStyle(.tertiary)
         }
+        .padding(.horizontal, 16).padding(.vertical, 11)
     }
 
-    static func color(for kind: WindowKind) -> Color {
-        switch kind {
-        case .session5h:    return .blue
-        case .weeklyAll:    return .orange
-        case .weeklySonnet: return .purple
-        }
-    }
-    private func color(for kind: WindowKind) -> Color { Self.color(for: kind) }
+    // MARK: - Advisor (verdict hero + statement)
 
-    /// Linearly extrapolate the current range's cost to a 30-day month.
-    /// Returns nil for ranges where extrapolation would be misleading
-    /// (less than 6 hours of data, or "All time" which is already past).
-    private var monthlyProjection: Double? {
-        let hours: Double
+    /// Whether figures should read as estimates — same rule as the meter:
+    /// exact mode is on but the latest poll isn't fresh. Pure-local users
+    /// (exact never enabled) are NOT flagged; local token data is real truth.
+    private var est: Bool {
+        appState.exactModeEnabled && !(appState.exactSnapshot?.isFresh() ?? false)
+    }
+
+    private var weeklyTokens: Int {
         switch range {
-        case .last24h: hours = 24
-        case .last7d:  hours = 168
-        case .last30d: hours = 720
-        case .all:     return nil
+        case .last24h: return totalTokens * 7
+        case .last7d:  return totalTokens
+        case .last30d: return totalTokens * 7 / 30
+        case .all:     return 0
         }
-        guard hours >= 6, costEUR > 0 else { return nil }
-        return costEUR * (720.0 / hours)
     }
 
-    private var modelSplitCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Model split").font(.subheadline.bold())
-            if modelSlices.isEmpty || modelSlices.allSatisfy({ $0.weightedTokens == 0 }) {
-                Text("No model usage yet.")
-                    .font(.caption).foregroundStyle(.secondary)
-            } else {
-                let total = max(1, modelSlices.reduce(0) { $0 + $1.weightedTokens })
-                VStack(spacing: 6) {
-                    ForEach(modelSlices) { slice in
-                        modelRow(slice, totalTokens: total)
+    private var verdict: PlanAdvisor.Verdict? {
+        guard weeklyTokens > 0, range != .all else { return nil }
+        return PlanAdvisor.recommend(
+            weeklyWeightedTokens: weeklyTokens,
+            opusFraction: computeOpusFraction(),
+            currentPlanID: currentPlanID,
+            dailyVarianceCoeff: 0
+        )
+    }
+
+    private var ladderRows: [PlanAdvisor.LadderRow] {
+        guard let v = verdict else { return [] }
+        return PlanAdvisor.ladder(weeklyTokens: weeklyTokens, currentPlanID: currentPlanID, bestPlanID: v.bestPlanID)
+    }
+
+    @ViewBuilder
+    private var advisorSection: some View {
+        if let v = verdict {
+            verdictHero(v)
+            secLabel("Plan statement · vs API")
+            statementTable(v)
+            reasoningLine
+                .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 13)
+        } else {
+            advisorEmpty
+        }
+    }
+
+    @ViewBuilder
+    private func verdictHero(_ v: PlanAdvisor.Verdict) -> some View {
+        let savings = max(0, v.apiEquivalentMonthlyEUR - v.bestPlanMonthlyEUR)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Plan advisor · recommendation")
+                .font(.system(size: 10, weight: .semibold)).tracking(0.9)
+                .textCase(.uppercase).foregroundStyle(.tertiary)
+                .padding(.bottom, 9)
+            HStack(alignment: .firstTextBaseline, spacing: 9) {
+                Text(planShortName(v.bestPlanID))
+                    .font(.system(size: 21, weight: .semibold)).tracking(-0.4)
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    if est {
+                        Text(verbatim: "≈").font(.system(size: 13)).foregroundStyle(.secondary)
                     }
+                    Text(eur(v.bestPlanMonthlyEUR))
+                        .font(.system(size: 20, weight: .medium).monospacedDigit())
+                    Text(verbatim: "/mo").font(.system(size: 13)).foregroundStyle(.secondary)
                 }
-                Text("If you were paying API rates: \(formatEUR(costEUR))")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .padding(.top, 4)
-                if let projection = monthlyProjection {
-                    Text("Extrapolated to a full month: \(formatEUR(projection))")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .padding(.top, 2)
+                Spacer(minLength: 0)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                (Text(verbatim: "— ").foregroundStyle(.secondary)
+                 + Text("best for your usage").foregroundStyle(.primary).fontWeight(.semibold))
+                    .font(.system(size: 12.5))
+                if savings > 0 {
+                    Text(verbatim: "·").foregroundStyle(.tertiary)
+                    (Text("saves ").foregroundStyle(.secondary)
+                     + Text("\(est ? "≈" : "")\(eur(savings))").foregroundStyle(.primary)
+                     + Text("/mo vs API").foregroundStyle(.secondary))
+                        .font(.system(size: 12.5))
                 }
-                Text("Reference number — Anthropic's per-token developer-API rates. Your Claude subscription cost is unrelated and stays at $20–$200/mo.")
-                    .font(.caption2).foregroundStyle(.tertiary)
+                if est { estTag }
+            }
+            .padding(.top, 7)
+        }
+        .padding(.horizontal, 16).padding(.top, 15).padding(.bottom, 14)
+    }
+
+    @ViewBuilder
+    private func statementTable(_ v: PlanAdvisor.Verdict) -> some View {
+        VStack(spacing: 0) {
+            // header
+            HStack(spacing: 10) {
+                Text("Plan").frame(maxWidth: .infinity, alignment: .leading)
+                Text("€/mo").frame(width: 54, alignment: .trailing)
+                Text("fit to your burn").frame(width: 104, alignment: .trailing)
+            }
+            .font(.system(size: 9.5, weight: .semibold)).tracking(0.5)
+            .textCase(.uppercase).foregroundStyle(.tertiary)
+            .padding(.horizontal, 16).padding(.top, 6).padding(.bottom, 7)
+
+            ForEach(ladderRows) { row in
+                statementRow(row)
+            }
+            apiRow(v)
+        }
+        .padding(.top, 1)
+    }
+
+    @ViewBuilder
+    private func statementRow(_ row: PlanAdvisor.LadderRow) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Text(planShortName(row.id))
+                    .font(.system(size: 12.5, weight: .medium))
+                if row.isCurrent {
+                    Text("NOW").font(.system(size: 8, weight: .bold)).tracking(0.5)
+                        .foregroundStyle(.tertiary)
+                }
+                if row.isBest {
+                    Text("BEST").font(.system(size: 8, weight: .bold)).tracking(0.5)
+                        .padding(.horizontal, 5).padding(.vertical, 2)
+                        .background(Color.primary, in: RoundedRectangle(cornerRadius: 4))
+                        .foregroundStyle(Color(nsColor: .windowBackgroundColor))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Text(eur(row.monthlyEUR))
+                .font(.system(size: 13).monospacedDigit())
+                .frame(width: 54, alignment: .trailing)
+            Text(row.fit.label)
+                .font(.system(size: 11))
+                .foregroundStyle(row.isBest ? Color.primary : Color.secondary)
+                .fontWeight(row.isBest ? .medium : .regular)
+                .frame(width: 104, alignment: .trailing)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 10)
+        .frame(maxWidth: .infinity)
+        .background(row.isBest ? Color.primary.opacity(0.05) : Color.clear)
+        .overlay(alignment: .leading) {
+            if row.isBest { Rectangle().fill(Color.primary).frame(width: 2) }
+        }
+        .overlay(alignment: .top) {
+            Rectangle().fill(hairColor).frame(height: 1)
+        }
+    }
+
+    @ViewBuilder
+    private func apiRow(_ v: PlanAdvisor.Verdict) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Text("API equivalent").font(.system(size: 12.5, weight: .medium))
+                Text("UPPER BOUND").font(.system(size: 8, weight: .bold)).tracking(0.5)
+                    .foregroundStyle(.tertiary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Text("\(est ? "≈" : "")\(eur(v.apiEquivalentMonthlyEUR))")
+                .font(.system(size: 13).monospacedDigit()).foregroundStyle(.secondary)
+                .frame(width: 54, alignment: .trailing)
+            Text("pay per token").font(.system(size: 11)).foregroundStyle(.secondary)
+                .frame(width: 104, alignment: .trailing)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 10)
+        .overlay(alignment: .top) {
+            Rectangle().fill(Color.primary.opacity(0.14)).frame(height: 1)
+        }
+    }
+
+    private var reasoningLine: some View {
+        let opusPct = Int((computeOpusFraction() * 100).rounded())
+        let heavy = computeOpusFraction() >= 0.5
+            ? "Opus-heavy (\(opusPct)%)"
+            : "Sonnet-heavy (\(100 - opusPct)%)"
+        return Text("You burn \(est ? "≈" : "")\(formatTokens(weeklyTokens)) weighted tokens/wk, \(heavy).")
+            .font(.system(size: 11.5)).foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var advisorEmpty: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "clock")
+                .font(.system(size: 20)).foregroundStyle(.tertiary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Need more usage to advise")
+                    .font(.system(size: 13, weight: .medium))
+                Text("Keep using Claude Code in this range — the advisor needs a bit more history before it can size a plan.")
+                    .font(.system(size: 11.5)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .padding(.horizontal, 16).padding(.vertical, 17)
     }
 
-    /// Subscription advisor — based on the actual weighted-token usage
-    /// in the current range, recommends the best Anthropic offering and
-    /// the EUR/mo delta vs the user's current plan. Surfaces an extra
-    /// hint about Console credits at up to −30% when usage is spiky.
-    /// Hidden when the dataset is too thin to advise reliably (<6 h or
-    /// zero tokens).
-    private var planAdvisorCard: some View {
-        let weeklyTokens: Int
-        switch range {
-        case .last24h: weeklyTokens = totalTokens * 7
-        case .last7d:  weeklyTokens = totalTokens
-        case .last30d: weeklyTokens = totalTokens * 7 / 30
-        case .all:     weeklyTokens = 0
-        }
-        let opusFraction = computeOpusFraction()
-        let verdict: PlanAdvisor.Verdict? = (weeklyTokens > 0 && range != .all)
-            ? PlanAdvisor.recommend(weeklyWeightedTokens: weeklyTokens,
-                                    opusFraction: opusFraction,
-                                    currentPlanID: currentPlanID,
-                                    dailyVarianceCoeff: 0)
-            : nil
-        return VStack(alignment: .leading, spacing: 6) {
-            Text("Best plan for your usage").font(.subheadline.bold())
-            if let v = verdict {
-                ForEach(PlanAdvisor.plans, id: \.id) { p in
-                    HStack {
-                        Text(p.label)
-                            .font(.caption.weight(p.id == v.bestPlanID ? .bold : .regular))
-                            .foregroundStyle(p.id == v.bestPlanID ? .primary : .secondary)
-                        Spacer()
-                        if p.id == "free" {
-                            Text("—").font(.caption.monospaced()).foregroundStyle(.tertiary)
-                        } else {
-                            Text(formatEUR(p.monthlyEUR) + "/mo")
-                                .font(.caption.monospaced())
-                                .foregroundStyle(p.id == v.bestPlanID ? .primary : .secondary)
-                        }
-                        if p.id == v.bestPlanID {
-                            Text(String(localized: "best"))
-                                .font(.caption2.bold())
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(Capsule().fill(Color.green.opacity(0.18)))
-                                .foregroundStyle(Color.green)
-                        }
-                    }
-                }
-                Divider().padding(.vertical, 2)
-                HStack {
-                    Text(String(localized: "API equivalent"))
-                        .font(.caption2).foregroundStyle(.secondary)
-                    Spacer()
-                    Text(formatEUR(v.apiEquivalentMonthlyEUR) + "/mo")
-                        .font(.caption2.monospaced()).foregroundStyle(.secondary)
-                }
-                Text(v.reasoning)
-                    .font(.caption2)
-                    .foregroundStyle(.primary)
-                    .padding(.top, 2)
-                if let extra = v.extraCreditHint {
-                    Text(extra)
-                        .font(.caption2)
-                        .foregroundStyle(.orange)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Text("Reference numbers — Anthropic API rates × your model split. Real subscriptions hit caches more often, so the API column is a conservative upper bound.")
-                    .font(.caption2).foregroundStyle(.tertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 2)
-            } else {
-                Text("Need at least 6 h of usage in the current range to advise.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
+    private func planShortName(_ id: String) -> String {
+        switch id {
+        case "free":   return String(localized: "Free")
+        case "pro":    return String(localized: "Pro")
+        case "max5x":  return "Max 5×"
+        case "max20x": return "Max 20×"
+        default:       return id
         }
     }
 
-    /// Total weighted tokens visible in `modelSlices` — used by the plan
-    /// advisor to project to the weekly figure plans are sized against.
+    /// Compact whole-euro string ("€90") — matches the design and stays
+    /// deterministic across locales (NumberFormatter would yield "90 €" in FR).
+    private func eur(_ amount: Double) -> String { "€\(Int(amount.rounded()))" }
+
+    // MARK: - Advisor inputs
+
     private var totalTokens: Int {
         modelSlices.reduce(0) { $0 + $1.weightedTokens }
     }
 
-    /// 0…1 share of usage on Opus models. Falls back to 0.30 when the
-    /// model split data isn't loaded yet so the advisor still has
-    /// something reasonable to anchor against.
     private func computeOpusFraction() -> Double {
         let total = totalTokens
         guard total > 0 else { return 0.30 }
-        let opus = modelSlices
-            .filter { $0.tier == .opus }
-            .reduce(0) { $0 + $1.weightedTokens }
+        let opus = modelSlices.filter { $0.tier == .opus }.reduce(0) { $0 + $1.weightedTokens }
         return Double(opus) / Double(total)
     }
 
-    /// User's current plan id, persisted as a UserDefaults string. Maps
-    /// the calibration's "Pro / Max 5× / Max 20×" choice. Returns nil
-    /// when the user hasn't set one (the advisor then frames the verdict
-    /// as "%@ covers your weekly capacity" with no overpay/underpay).
     private var currentPlanID: String? {
         guard let raw = UserDefaults.standard.string(forKey: "throttle.calibration.plan") else { return nil }
         switch raw.lowercased() {
-        case "pro":      return "pro"
-        case "max5x", "max5":  return "max5x"
+        case "pro":             return "pro"
+        case "max5x", "max5":   return "max5x"
         case "max20x", "max20": return "max20x"
-        default:         return nil
+        default:                return nil
         }
     }
 
-    private func modelRow(_ slice: StatsDataService.ModelSlice, totalTokens: Int) -> some View {
-        let pct = Double(slice.weightedTokens) / Double(totalTokens)
-        return VStack(alignment: .leading, spacing: 2) {
-            HStack {
-                Text(tierLabel(slice.tier)).font(.caption.bold())
-                Spacer()
-                Text("\(formatTokens(slice.weightedTokens)) · \(Int(pct * 100))%")
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
-            }
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.secondary.opacity(0.15))
-                    Capsule()
-                        .fill(modelColor(slice.tier))
-                        .frame(width: max(2, geo.size.width * pct))
+    // MARK: - Trend
+
+    @ViewBuilder
+    private var trendSection: some View {
+        if linePoints.isEmpty {
+            Text("No history yet — keep using Claude Code; the chart fills as you go.")
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 14)
+        } else {
+            VStack(alignment: .leading, spacing: 10) {
+                LineChart(points: linePoints).frame(height: 64)
+                HStack(spacing: 16) {
+                    legendItem(dash: [], opacity: 0.6, label: "Session 5h")
+                    legendItem(dash: [4, 3], opacity: 0.42, label: "Weekly all")
+                    legendItem(dash: [1.5, 3], opacity: 0.3, label: "Weekly Sonnet")
+                    if est { estTag }
+                    Spacer(minLength: 0)
                 }
             }
-            .frame(height: 6)
+            .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 14)
         }
+    }
+
+    private func legendItem(dash: [CGFloat], opacity: Double, label: String) -> some View {
+        HStack(spacing: 6) {
+            LegendSwatch(dash: dash, opacity: opacity)
+            Text(label).font(.system(size: 10.5)).foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: - Model split
+
+    private var hasModelData: Bool {
+        !(modelSlices.isEmpty || modelSlices.allSatisfy { $0.weightedTokens == 0 })
+    }
+
+    private var modelSplitSection: some View {
+        let total = max(1, totalTokens)
+        return VStack(alignment: .leading, spacing: 11) {
+            GeometryReader { geo in
+                HStack(spacing: 2) {
+                    ForEach(modelSlices) { slice in
+                        let w = geo.size.width * (Double(slice.weightedTokens) / Double(total))
+                        modelColor(slice.tier).frame(width: max(0, w))
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+            .frame(height: 10)
+            .background(Color.primary.opacity(0.09))
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+
+            HStack(alignment: .top, spacing: 8) {
+                ForEach(modelSlices) { slice in
+                    let pct = Int((Double(slice.weightedTokens) / Double(total) * 100).rounded())
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            RoundedRectangle(cornerRadius: 2).fill(modelColor(slice.tier)).frame(width: 8, height: 8)
+                            Text(tierLabel(slice.tier)).font(.system(size: 11, weight: .medium))
+                        }
+                        Text("\(est ? "≈" : "")\(pct)%").font(.system(size: 14).monospacedDigit())
+                        Text("≈\(eur(tierMonthlyEUR(slice)))/mo API")
+                            .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 14)
+    }
+
+    private func tierMonthlyEUR(_ slice: StatsDataService.ModelSlice) -> Double {
+        let rate: Double
+        switch slice.tier {
+        case .opus:   rate = PlanAdvisor.opus47.weightedPerM
+        case .sonnet: rate = PlanAdvisor.sonnet46.weightedPerM
+        case .haiku:  rate = PlanAdvisor.haiku45.weightedPerM
+        case .other:  rate = PlanAdvisor.sonnet46.weightedPerM
+        }
+        let share = Double(slice.weightedTokens) / Double(max(1, totalTokens))
+        let monthlyTokens = Double(weeklyTokens) * share * 4.33
+        return monthlyTokens / 1_000_000 * rate
     }
 
     private func modelColor(_ tier: ModelTier) -> Color {
         switch tier {
-        case .opus:   return .purple
-        case .sonnet: return .blue
-        case .haiku:  return .orange
-        case .other:  return .gray
+        case .opus:   return Color.primary.opacity(0.72)
+        case .sonnet: return Color.primary.opacity(0.42)
+        case .haiku:  return Color.primary.opacity(0.20)
+        case .other:  return Color.primary.opacity(0.12)
         }
     }
 
-    private var heatmapCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("When you burn tokens").font(.subheadline.bold())
-            HeatmapGrid(cells: heatCells)
-                .frame(height: 130)
-            Text("Each cell is one (day, hour) bucket. Brighter = more weighted tokens.")
-                .font(.caption2).foregroundStyle(.tertiary)
+    // MARK: - Period strip
+
+    private var periodStrip: some View {
+        let savedEUR = Double(max(savedTokens, appState.savedTokensThisWeek)) / 1_000_000 * 6.00
+        return HStack(spacing: 0) {
+            periodCell("Today", "\(est ? "≈" : "")\(formatTokens(todayTokens))", muted: false, leading: false)
+            periodCell("This week", "\(est ? "≈" : "")\(formatTokens(thisWeekTokens))", muted: false, leading: true)
+            periodCell("Saved", "≈\(eur(savedEUR))", muted: true, leading: true)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+    }
+
+    private func periodCell(_ key: String, _ value: String, muted: Bool, leading: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(key)
+                .font(.system(size: 9.5, weight: .semibold)).tracking(0.5)
+                .textCase(.uppercase).foregroundStyle(.tertiary)
+            Text(value)
+                .font(.system(size: 16).monospacedDigit())
+                .foregroundStyle(muted ? Color.secondary : Color.primary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, leading ? 14 : 0)
+        .overlay(alignment: .leading) {
+            if leading { Rectangle().fill(hairColor).frame(width: 1) }
         }
     }
 
-    private var topProjectsCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Top projects by tokens").font(.subheadline.bold())
-            if topProjects.isEmpty {
-                Text("No project data yet.").font(.caption).foregroundStyle(.secondary)
-            } else {
-                ForEach(topProjects) { p in
+    // MARK: - Pro extras
+
+    private var heatmapSection: some View {
+        HeatmapGrid(cells: heatCells)
+            .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 14)
+    }
+
+    private var topProjectsSection: some View {
+        let maxTok = max(1, topProjects.map(\.weightedTokens).max() ?? 1)
+        return VStack(spacing: 0) {
+            ForEach(Array(topProjects.enumerated()), id: \.element.id) { idx, p in
+                if idx > 0 { Rectangle().fill(hairColor).frame(height: 1) }
+                VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(p.projectName).font(.caption.bold())
-                            Text(p.projectPath).font(.caption2).foregroundStyle(.tertiary)
-                                .lineLimit(1).truncationMode(.middle)
-                        }
-                        Spacer()
+                        Text(p.projectName).font(.system(size: 12, weight: .medium))
+                        Spacer(minLength: 0)
                         Text(formatTokens(p.weightedTokens))
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 11.5).monospacedDigit()).foregroundStyle(.secondary)
                     }
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Color.primary.opacity(0.09))
+                            Capsule().fill(Color.primary.opacity(0.45))
+                                .frame(width: max(4, geo.size.width * Double(p.weightedTokens) / Double(maxTok)))
+                        }
+                    }
+                    .frame(height: 4)
                 }
+                .padding(.vertical, 7)
+            }
+            if topProjects.isEmpty {
+                Text("No project data yet.")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 8)
             }
         }
+        .padding(.horizontal, 16).padding(.bottom, 12)
     }
 
-    private var savingsCard: some View {
-        let saved = max(savedTokens, appState.savedTokensThisWeek)
-        return VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text("Hooks saved you").font(.subheadline.bold())
-                Spacer()
-                Text(formatTokens(saved))
-                    .font(.title3.monospacedDigit().bold())
-                    .foregroundStyle(.green)
-            }
-            Text("Tokens skipped by session-start-router.sh + structured pre-compact.sh in the last 7 days. Higher = more context preserved for actual work.")
-                .font(.caption2).foregroundStyle(.tertiary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private var shareBadgeCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Share your stats").font(.subheadline.bold())
-            ShareBadgePreview(
-                topStat: shareBadgeTopStat,
-                subline: shareBadgeSubline
-            )
-            .frame(height: 84)
+    private var proLock: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "lock.fill").font(.system(size: 16)).foregroundStyle(.tertiary)
+            Text("Activity heatmap & top projects")
+                .font(.system(size: 13, weight: .medium))
+            Text("See where your tokens go, hour by hour and project by project.")
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
             Button {
-                shareBadge()
+                if let url = URL(string: "https://lorislab.fr/throttle/buy") {
+                    NSWorkspace.shared.open(url)
+                }
             } label: {
-                Label("Share badge", systemImage: "square.and.arrow.up")
+                Text("Upgrade to Pro")
+                    .font(.system(size: 12, weight: .medium)).foregroundStyle(.tint)
             }
-            .buttonStyle(.bordered).controlSize(.small)
+            .buttonStyle(.plain)
         }
+        .frame(maxWidth: .infinity)
+        .padding(16)
+        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 11))
+        .padding(.horizontal, 16).padding(.vertical, 12)
     }
 
-    private var proTeaserCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Image(systemName: "lock.fill")
-                Text("Heatmap, savings counter, share badge").font(.subheadline)
-                Spacer()
-                Text("PRO").font(.caption2.bold())
-                    .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(Color.accentColor.opacity(0.15))
-                    .foregroundStyle(Color.accentColor)
-                    .clipShape(Capsule())
+    // MARK: - Tail
+
+    private var statsTail: some View {
+        VStack(spacing: 0) {
+            Button {
+                if let url = URL(string: "https://claude.ai/settings/usage") {
+                    NSWorkspace.shared.open(url)
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "arrow.up.right.square")
+                    Text("Open claude.ai/usage")
+                    Spacer(minLength: 0)
+                    Image(systemName: "arrow.up.right").font(.system(size: 11)).foregroundStyle(.tertiary)
+                }
+                .font(.system(size: 13)).contentShape(Rectangle())
             }
-            Text("Three more cards — when (and where) you burn tokens, how much the hooks saved you, and a one-tap shareable badge.")
-                .font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            .buttonStyle(.plain)
+            .padding(.horizontal, 16).frame(height: 32)
+
+            Rectangle().fill(hairColor).frame(height: 1).padding(.horizontal, 16)
+
+            HStack(spacing: 14) {
+                Button { shareBadge() } label: { Text("Share badge").foregroundStyle(.secondary) }
+                    .buttonStyle(.plain)
+                Spacer(minLength: 0)
+                Button { onBack() } label: { Text("Back").foregroundStyle(.secondary) }
+                    .buttonStyle(.plain)
+            }
+            .font(.system(size: 12))
+            .padding(.horizontal, 16).padding(.vertical, 9)
         }
-        .padding(8)
-        .background(Color.secondary.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
     // MARK: - Share badge
 
     private var shareBadgeTopStat: String {
-        // Use AppState's already-populated savings value rather than the
-        // separately-queried `savedTokens`, which can lag if reload() hasn't
-        // fired yet. AppState updates whenever the savings ingester runs.
         let saved = max(savedTokens, appState.savedTokensThisWeek)
-        if saved > 0 {
-            return "\(formatTokens(saved)) tokens saved"
-        }
+        if saved > 0 { return "\(formatTokens(saved)) tokens saved" }
         let pct: Int = {
             if let ex = appState.exactSnapshot, ex.isFresh() {
                 return [ex.fiveHour.utilization, ex.sevenDay.utilization, ex.sevenDaySonnet.utilization].max() ?? 0
@@ -467,9 +639,7 @@ struct StatsInline: View {
 
     private var shareBadgeSubline: String {
         let saved = max(savedTokens, appState.savedTokensThisWeek)
-        if saved > 0 {
-            return "this week with Throttle's open-source token-opt hooks"
-        }
+        if saved > 0 { return "this week with Throttle's open-source token-opt hooks" }
         return "Tracking with Throttle — live menu-bar Claude Code meter"
     }
 
@@ -570,14 +740,6 @@ struct StatsInline: View {
 
     // MARK: - Formatting
 
-    private func windowLabel(_ k: WindowKind) -> String {
-        switch k {
-        case .session5h:    return "Session"
-        case .weeklyAll:    return "Weekly all"
-        case .weeklySonnet: return "Weekly Sonnet"
-        }
-    }
-
     private func tierLabel(_ t: ModelTier) -> String {
         switch t {
         case .opus:   return "Opus"
@@ -592,13 +754,20 @@ struct StatsInline: View {
         if n >= 1_000     { return String(format: "%.0fk", Double(n) / 1_000) }
         return "\(n)"
     }
+}
 
-    private func formatEUR(_ amount: Double) -> String {
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.currencyCode = "EUR"
-        f.maximumFractionDigits = 2
-        return f.string(from: NSNumber(value: amount)) ?? "€0"
+// MARK: - Trend legend swatch
+
+private struct LegendSwatch: View {
+    let dash: [CGFloat]
+    let opacity: Double
+    var body: some View {
+        Path { p in
+            p.move(to: CGPoint(x: 0, y: 1))
+            p.addLine(to: CGPoint(x: 14, y: 1))
+        }
+        .stroke(Color.primary.opacity(opacity), style: StrokeStyle(lineWidth: 1.5, dash: dash))
+        .frame(width: 14, height: 2)
     }
 }
 
@@ -606,24 +775,19 @@ struct StatsInline: View {
 
 /// Line chart that doesn't use SwiftUI's Canvas. macOS 26.5's RenderBox
 /// fails to load Metal shaders for Canvas views inside a MenuBarExtra
-/// .window — the same regression that crashed the dropdown via Sparkline.
-/// We get the same visual with a plain ZStack of `Shape` views (each
-/// returns a Path). Path rendering uses CALayer's CGContext, not Metal,
-/// so it survives the regression.
+/// .window. Plain `Shape` views (Path) render via CALayer's CGContext.
+/// Three neutral-graphite series — session solid, weekly dashed, sonnet dotted.
 private struct LineChart: View {
     let points: [StatsDataService.LinePoint]
-    private let plotLeft: CGFloat = 28
+    private let plotLeft: CGFloat = 26
 
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .topLeading) {
                 gridlines(size: geo.size)
-                ForEach([WindowKind.session5h, .weeklyAll, .weeklySonnet], id: \.self) { kind in
-                    LineSeries(
-                        coords: coords(for: kind, size: geo.size),
-                        color: StatsInline.color(for: kind)
-                    )
-                }
+                LineSeries(coords: coords(for: .weeklySonnet, size: geo.size), opacity: 0.30, dash: [1.5, 3])
+                LineSeries(coords: coords(for: .weeklyAll, size: geo.size), opacity: 0.42, dash: [4, 3])
+                LineSeries(coords: coords(for: .session5h, size: geo.size), opacity: 0.60, dash: [])
             }
         }
     }
@@ -636,13 +800,13 @@ private struct LineChart: View {
             let yPos = plotHeight * (1 - CGFloat(yVal / yMax)) + 2
             ZStack(alignment: .leading) {
                 Rectangle()
-                    .fill(Color.secondary.opacity(0.20))
+                    .fill(Color.primary.opacity(0.09))
                     .frame(width: max(0, size.width - plotLeft), height: 0.5)
                     .position(x: plotLeft + max(0, size.width - plotLeft) / 2, y: yPos)
                 Text("\(Int(yVal))%")
-                    .font(.system(size: 9, weight: .medium).monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .position(x: 14, y: yPos)
+                    .font(.system(size: 9, weight: .regular).monospacedDigit())
+                    .foregroundStyle(.tertiary)
+                    .position(x: 13, y: yPos)
             }
         }
     }
@@ -681,25 +845,21 @@ private struct LineChart: View {
     }
 }
 
-/// One series in the LineChart: stroked path + small dot at each sample.
-/// `Shape` impls go through Core Animation, not Metal — the macOS 26.5
-/// RenderBox regression that kills Canvas doesn't affect them.
+/// One series: a stroked Path with a dash pattern. No per-sample dots — the
+/// cockpit trend is thin lines only. `Shape` goes through Core Animation, not
+/// Metal, so the macOS 26.5 RenderBox regression doesn't affect it.
 private struct LineSeries: View {
     let coords: [CGPoint]
-    let color: Color
+    let opacity: Double
+    let dash: [CGFloat]
 
     var body: some View {
         if coords.count >= 2 {
-            ZStack {
-                LinePath(points: coords)
-                    .stroke(color, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                ForEach(coords.indices, id: \.self) { i in
-                    Circle()
-                        .fill(color)
-                        .frame(width: 5, height: 5)
-                        .position(x: coords[i].x, y: coords[i].y)
-                }
-            }
+            LinePath(points: coords)
+                .stroke(
+                    Color.primary.opacity(opacity),
+                    style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round, dash: dash)
+                )
         }
     }
 }
@@ -717,83 +877,48 @@ private struct LinePath: Shape {
 
 // MARK: - Heatmap grid
 
+/// 7 days × 24 hours of weighted-token intensity, graphite (ink-opacity) cells.
+/// RoundedRectangles only — no Metal/Canvas.
 private struct HeatmapGrid: View {
     let cells: [StatsDataService.HeatCell]
+    private let dayLabels = ["M", "T", "W", "T", "F", "S", "S"]
 
-    private var maxValue: Int {
-        cells.map(\.weightedTokens).max() ?? 1
-    }
+    private var maxValue: Int { max(1, cells.map(\.weightedTokens).max() ?? 1) }
 
     private var lookup: [Int: [Int: Int]] {
         var out: [Int: [Int: Int]] = [:]
-        for c in cells {
-            out[c.dayOfWeek, default: [:]][c.hour] = c.weightedTokens
-        }
+        for c in cells { out[c.dayOfWeek, default: [:]][c.hour] = c.weightedTokens }
         return out
     }
 
     var body: some View {
-        GeometryReader { geo in
-            let cellW = geo.size.width / 24
-            let cellH = geo.size.height / 7
-            ZStack(alignment: .topLeading) {
-                ForEach(1...7, id: \.self) { dow in
-                    ForEach(0..<24, id: \.self) { hour in
-                        let value = lookup[dow]?[hour] ?? 0
-                        let intensity = maxValue > 0 ? Double(value) / Double(maxValue) : 0
-                        Rectangle()
-                            .fill(Color.accentColor.opacity(0.10 + 0.85 * intensity))
-                            .frame(width: cellW - 1, height: cellH - 1)
-                            .offset(x: CGFloat(hour) * cellW, y: CGFloat(dow - 1) * cellH)
+        VStack(spacing: 2) {
+            ForEach(1...7, id: \.self) { dow in
+                HStack(spacing: 6) {
+                    Text(dayLabels[dow - 1])
+                        .font(.system(size: 8.5)).foregroundStyle(.tertiary)
+                        .frame(width: 12, alignment: .trailing)
+                    HStack(spacing: 2) {
+                        ForEach(0..<24, id: \.self) { hour in
+                            let value = lookup[dow]?[hour] ?? 0
+                            let intensity = Double(value) / Double(maxValue)
+                            RoundedRectangle(cornerRadius: 1.5)
+                                .fill(Color.primary.opacity(intensity > 0.06 ? 0.05 + 0.62 * intensity : 0.05))
+                                .aspectRatio(1, contentMode: .fit)
+                        }
                     }
                 }
             }
-        }
-    }
-}
-
-// MARK: - Share badge image
-
-/// In-popover preview. Doesn't use the full-size ShareBadgeImage — that
-/// view's intrinsic size is 1200×630 and scaleEffect doesn't shrink the
-/// layout claim, only the visual scale, so it overlaps siblings.
-/// This is a hand-rolled compact mirror of the same look.
-private struct ShareBadgePreview: View {
-    let topStat: String
-    let subline: String
-    var body: some View {
-        ZStack(alignment: .leading) {
-            LinearGradient(
-                colors: [Color(red: 0.10, green: 0.12, blue: 0.18),
-                         Color(red: 0.18, green: 0.22, blue: 0.32)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Image(systemName: "gauge.with.dots.needle.67percent")
-                        .font(.system(size: 14)).foregroundStyle(.white)
-                    Text("Throttle")
-                        .font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
-                    Spacer(minLength: 0)
-                    Text("lorislab.fr/throttle")
-                        .font(.system(size: 8)).foregroundStyle(.white.opacity(0.6))
-                }
-                Text(topStat)
-                    .font(.system(size: 22, weight: .heavy))
-                    .foregroundStyle(.white)
-                    .lineLimit(1).minimumScaleFactor(0.6)
-                Text(subline)
-                    .font(.system(size: 9))
-                    .foregroundStyle(.white.opacity(0.85))
-                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+            HStack {
+                Text("12a"); Spacer(); Text("6a"); Spacer(); Text("12p"); Spacer(); Text("6p"); Spacer(); Text("11p")
             }
-            .padding(8)
+            .font(.system(size: 9)).foregroundStyle(.tertiary)
+            .padding(.leading, 18)
         }
-        .frame(maxWidth: .infinity, minHeight: 70, maxHeight: 80)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 }
+
+// MARK: - Share badge
 
 private struct ShareBadgeImage: View {
     let topStat: String
