@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Throttle — Stats panel</title>
+  <link rel="stylesheet" href="throttle.css" />
+  <link rel="stylesheet" href="stats.css" />
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script src="data.js"></script>
+  <script src="stats-data.js"></script>
+
+  <script type="text/babel">
+/* Throttle — Stats bundle (single Babel script: shared primitives + stats sub-components + 3 directions + app).
+   Bundled to avoid multi-file Babel load-order races. */
+
+
+/* ===================== shared.jsx ===================== */
+/* Throttle — shared React primitives (exported to window) */
+const { tone } = window.Throttle;
+
+/* ---------- tiny inline glyphs (UI icons, kept minimal) ---------- */
+function GaugeMark() {
+  return (
+    <svg className="mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 21a9 9 0 1 1 9-9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+      <path d="M12 12l5.2-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+      <circle cx="12" cy="12" r="1.7" fill="currentColor"/>
+    </svg>
+  );
+}
+function Icon({ name, className }) {
+  const p = {
+    person: <><circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.6"/><path d="M5.5 19a6.5 6.5 0 0 1 13 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></>,
+    ext: <><path d="M14 5h5v5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 5l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/><path d="M18 14v4a1.5 1.5 0 0 1-1.5 1.5H6.5A1.5 1.5 0 0 1 5 18V7.5A1.5 1.5 0 0 1 6.5 6h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></>,
+    warn: <><path d="M12 4.5l8 14H4l8-14Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><path d="M12 10v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/><circle cx="12" cy="16.5" r="0.4" fill="currentColor" stroke="currentColor" strokeWidth="1.1"/></>,
+  }[name];
+  return <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">{p}</svg>;
+}
+
+/* ---------- pills ---------- */
+function Pill({ kind, children }) {
+  return <span className={"pill " + kind}>{children}</span>;
+}
+
+/* ---------- title row ---------- */
+function TitleRow({ data }) {
+  return (
+    <div className="titlebar">
+      <GaugeMark />
+      <span className="wordmark">Throttle</span>
+      <span className="title-spacer" />
+      {data.tier === "pro"
+        ? <Pill kind="pro">Pro</Pill>
+        : <Pill kind="free">Free</Pill>}
+      {data.exact && <Pill kind="exact"><span className="dot" />Exact</Pill>}
+    </div>
+  );
+}
+
+/* ---------- numbers ---------- */
+function Pct({ pct, conf, className }) {
+  // renders e.g.  ≈47%  with mono + tone class
+  const approx = conf === "estimate";
+  return (
+    <span className={"num " + (className || "")}>
+      {approx && <span className="approx">≈</span>}
+      {pct}<span className="pct">%</span>
+    </span>
+  );
+}
+
+/* ---------- fill bar with threshold ticks ---------- */
+function FillBar({ pct, conf, dimEmpty }) {
+  const t = tone(pct);
+  const cls = ["fill", t !== "neutral" ? t : "", conf === "estimate" ? "est" : ""].filter(Boolean).join(" ");
+  return (
+    <div className="bar">
+      <span className="tick" style={{ left: "80%" }} />
+      <span className="tick" style={{ left: "95%" }} />
+      {pct != null && <span className={cls} style={{ width: Math.max(2, Math.min(100, pct)) + "%" }} />}
+    </div>
+  );
+}
+
+function EstTag() { return <span className="esttag">estimate</span>; }
+
+/* ---------- warning strip ---------- */
+function WarningStrip({ text }) {
+  if (!text) return null;
+  const dash = text.indexOf("—");
+  const lead = dash > -1 ? text.slice(0, dash).trim() : null;
+  const rest = dash > -1 ? text.slice(dash) : text;
+  return (
+    <div className="warnstrip">
+      <Icon name="warn" className="wi" />
+      <span>{lead && <b>{lead}</b>}{lead ? " " : ""}{rest}</span>
+    </div>
+  );
+}
+
+/* ---------- savings footnote ---------- */
+function Savings({ data }) {
+  return (
+    <div className="savings">
+      <span className="approx num">≈{data.savings.money}</span>
+      <span>saved</span>
+      <span className="s-sep">·</span>
+      <span className="num">{data.savings.tokens}</span>
+      <span>tokens this week</span>
+      <span className="stats">Stats›</span>
+    </div>
+  );
+}
+
+/* ---------- free-tier upsell ---------- */
+function Upsell() {
+  return (
+    <div className="upsell">
+      Values are local <b>estimates</b>. <span className="link">Upgrade to Pro</span> for server-true exact readings.
+    </div>
+  );
+}
+
+/* ---------- actions cluster ---------- */
+function Actions({ data }) {
+  return (
+    <div className="actions">
+      {!data.signedIn && (
+        <div className="act-row accent">
+          <Icon name="person" className="ic" />
+          <span>Sign in to claude.ai</span>
+        </div>
+      )}
+      <div className="act-row">
+        <Icon name="ext" className="ic" />
+        <span>Open claude.ai/usage</span>
+        <span className="ext">↗</span>
+      </div>
+      <div className="act-footer">
+        <span className="act-mini">Stats</span>
+        <span className="act-mini">Settings</span>
+        <span className="act-mini quit">Quit</span>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, {
+  GaugeMark, Icon, Pill, TitleRow, Pct, FillBar, EstTag,
+  WarningStrip, Savings, Upsell, Actions,
+});
+
+
+/* ===================== stats-shared.jsx ===================== */
+/* Throttle — Stats shared sub-components (exported to window) */
+const SS = window.ThrottleStats;
+
+/* number with confidence */
+function Fig({ est, className, children }) {
+  return (
+    <span className={"mono " + (est ? "est-tone " : "") + (className || "")}>
+      {est && <span className="approx">≈</span>}{children}
+    </span>
+  );
+}
+
+/* range selector */
+function RangeBar({ range, setRange }) {
+  return (
+    <div className="rangebar">
+      <div className="s-seg">
+        {SS.RANGES.map((r) => (
+          <button key={r} data-on={range === r} onClick={() => setRange(r)}>{r}</button>
+        ))}
+      </div>
+      <span className="upd">updated <span className="num mono">2m</span> ago</span>
+    </div>
+  );
+}
+
+function SecHeader({ label, link }) {
+  return (
+    <div className="s-sec-h">
+      <span className="s-label">{label}</span>
+      {link && <span className="s-link">{link}</span>}
+    </div>
+  );
+}
+
+/* plan ladder */
+function PlanLadder({ ladder }) {
+  return (
+    <div className="ladder">
+      {ladder.map((p) => (
+        <div className="rung" key={p.id} data-best={!!p.best} data-current={!!p.current}>
+          <div className="rn">{p.name}</div>
+          <div className="rp mono">{p.price}</div>
+          {p.best && <span className="bestpill">best</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* trend chart — three neutral series */
+function TrendChart({ trend, est }) {
+  const toPath = (arr) => {
+    const n = arr.length;
+    return arr.map((v, i) => {
+      const x = (i / (n - 1)) * 100;
+      const y = 29 - (v / 100) * 27;
+      return (i === 0 ? "M" : "L") + x.toFixed(1) + " " + y.toFixed(1);
+    }).join(" ");
+  };
+  return (
+    <div className="trend">
+      <svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true">
+        <line className="axis" x1="0" y1="29.5" x2="100" y2="29.5" />
+        <path className="ln s3" d={toPath(trend.sonnet)} vectorEffect="non-scaling-stroke" />
+        <path className="ln s2" d={toPath(trend.weekly)} vectorEffect="non-scaling-stroke" />
+        <path className="ln s1" d={toPath(trend.session)} vectorEffect="non-scaling-stroke" />
+      </svg>
+      <div className="trend-legend">
+        <span className="tl"><span className="sw s1" /> Session 5h</span>
+        <span className="tl"><span className="sw s2" /> Weekly all</span>
+        <span className="tl"><span className="sw s3" /> Weekly Sonnet</span>
+        {est && <EstTag />}
+      </div>
+    </div>
+  );
+}
+
+/* model split */
+function ModelSplit({ split, est }) {
+  const cls = ["m1", "m2", "m3"];
+  return (
+    <div className="split">
+      <div className={"split-bar" + (est ? " est" : "")}>
+        {split.map((m, i) => (
+          <div key={m.name} className={"seg " + cls[i]} style={{ width: m.pct + "%" }} />
+        ))}
+      </div>
+      <div className="split-legend">
+        {split.map((m, i) => (
+          <div className="sl" key={m.name}>
+            <div className="sl-top"><span className={"dot " + cls[i]} /><span className="nm">{m.name}</span></div>
+            <div className="pc"><Fig est={est}>{m.pct}%</Fig></div>
+            <div className="eu">{est ? "≈" : ""}{m.eur}/mo API</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* period strip */
+function PeriodStrip({ period, est }) {
+  return (
+    <div className="period">
+      <div className="pcell">
+        <span className="pk">Today</span>
+        <span className="pv"><Fig est={est}>{period.today}</Fig></span>
+      </div>
+      <div className="pcell">
+        <span className="pk">This week</span>
+        <span className="pv"><Fig est={est}>{period.week}</Fig></span>
+      </div>
+      <div className="pcell">
+        <span className="pk">Saved</span>
+        <span className="pv muted"><span className="mono est-tone"><span className="approx">≈</span>{period.saved}</span></span>
+      </div>
+    </div>
+  );
+}
+
+/* heatmap (Pro) */
+function Heatmap() {
+  const days = ["M", "T", "W", "T", "F", "S", "S"];
+  const intensity = (d, h) => {
+    let base = (h >= 9 && h <= 19) ? 0.72 : (h >= 20 && h <= 23) ? 0.34 : 0.07;
+    const wk = d < 5 ? 1 : 0.42;
+    const noise = 0.6 + 0.55 * Math.abs(Math.sin(d * 6.7 + h * 1.27));
+    return SS.clamp(base * wk * noise, 0, 1);
+  };
+  return (
+    <div className="heat">
+      <div className="heat-wrap">
+        {days.map((dl, d) => (
+          <div className="heat-row" key={d}>
+            <span className="dl">{dl}</span>
+            <div className="heat-cells">
+              {Array.from({ length: 24 }, (_, h) => {
+                const v = intensity(d, h);
+                return <div key={h} className="heat-cell"
+                  style={{ background: v > 0.06 ? `color-mix(in srgb, var(--ink) ${Math.round(v * 70)}%, transparent)` : undefined }} />;
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="heat-foot"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>11p</span></div>
+    </div>
+  );
+}
+
+/* top projects (Pro) */
+function TopProjects({ projects }) {
+  return (
+    <div className="proj">
+      {projects.map((p) => (
+        <div className="proj-row" key={p.name}>
+          <div className="proj-top">
+            <span className="proj-name">{p.name}</span>
+            <span className="proj-tok mono">{p.tokens}</span>
+          </div>
+          <div className="proj-bar"><div className="pf" style={{ width: p.pct + "%" }} /></div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* pro lock (free) */
+function ProLock() {
+  return (
+    <div className="pro-lock">
+      <svg className="lk" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="5" y="10.5" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.6"/>
+        <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" stroke="currentColor" strokeWidth="1.6"/>
+      </svg>
+      <div className="lt">Activity heatmap & top projects</div>
+      <div className="ls">See where your tokens go, hour by hour and project by project.</div>
+      <span className="upl">Upgrade to Pro</span>
+    </div>
+  );
+}
+
+/* advisor empty (not-enough-data) */
+function AdvisorEmpty({ collected, needed }) {
+  return (
+    <div className="adv-empty">
+      <svg className="ai" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6"/>
+        <path d="M12 7.5v5l3 2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      <div>
+        <div className="at">Need more usage to advise</div>
+        <div className="as"><span className="mono">{collected}h</span> of <span className="mono">{needed}h</span> collected in this range.</div>
+        <div className="prog"><div className="pf" style={{ width: (collected / needed * 100) + "%" }} /></div>
+      </div>
+    </div>
+  );
+}
+
+function Reasoning({ text }) {
+  return <div className="reasoning">{text}</div>;
+}
+
+Object.assign(window, {
+  Fig, RangeBar, SecHeader, PlanLadder, TrendChart, ModelSplit,
+  PeriodStrip, Heatmap, TopProjects, ProLock, AdvisorEmpty, Reasoning,
+});
+
+
+/* ===================== statsA.jsx ===================== */
+/* Throttle — Stats Direction A: verdict headline-led
+   Also exports shared ProExtras + StatsTail (used by B and C). */
+
+function toneColor(t) {
+  return t === "crit" ? "var(--crit)" : t === "warn" ? "var(--warn)" : "var(--ink)";
+}
+
+function ProExtras({ data }) {
+  if (data.tier === "free") {
+    return (<><div className="sep" /><ProLock /></>);
+  }
+  return (
+    <>
+      <div className="sep" />
+      <SecHeader label="Activity · last 7 days" />
+      <Heatmap />
+      <div className="sep" />
+      <SecHeader label="Top projects" link="All›" />
+      <TopProjects projects={data.projects} />
+    </>
+  );
+}
+
+function StatsTail({ data }) {
+  return (<><div className="sep" /><Actions data={data} /></>);
+}
+
+function StatsHead({ data, range, setRange }) {
+  return (
+    <>
+      <TitleRow data={data} />
+      <div className="sep" />
+      <RangeBar range={range} setRange={setRange} />
+      <div className="sep" />
+      {data.warning && <div style={{ height: 12 }} />}
+      <WarningStrip text={data.warning} />
+    </>
+  );
+}
+
+function StatsA({ data, range, setRange }) {
+  const est = !data.confident;
+  const a = data.advisor;
+  return (
+    <div className="pop S SA">
+      <StatsHead data={data} range={range} setRange={setRange} />
+
+      {!data.enough || !a ? (
+        <AdvisorEmpty collected={data.collected} needed={data.needed} />
+      ) : (
+        <>
+          <div className="verdict">
+            <div className="v-kick">Plan advisor</div>
+            <div className="v-rec">
+              <span className="v-name">{a.recommend.name}</span>
+              <span className="v-price"><Fig est={est}>{a.recommend.price}</Fig><span className="per">{a.recommend.per}</span></span>
+            </div>
+            <div className="v-blurb">recommended — <b>{a.recommend.blurb}</b></div>
+            <div className="v-compare">
+              <span>vs <Fig est={est} className="num">{a.apiEquiv}</Fig>/mo at API rates</span>
+              <span>·</span>
+              <span className="save">save <Fig est={est} className="num">{a.savings}</Fig>/mo</span>
+              {est && <EstTag />}
+            </div>
+          </div>
+          <PlanLadder ladder={data.ladder} />
+          <div className="v-reason">
+            <Reasoning text={a.reasoning} />
+            <div className="reasoning" style={{ marginTop: 5 }}>
+              Currently <b style={{ color: "var(--ink)", fontWeight: 600 }}>{a.current.name} {a.current.price}</b>
+              {" — "}
+              <span style={{ color: toneColor(a.current.tone), fontWeight: 540 }}>{a.current.status}</span>.
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="sep" />
+      <SecHeader label={"Usage trend · " + range} />
+      <TrendChart trend={data.trend} est={est} />
+
+      {data.split && (
+        <>
+          <div className="sep" />
+          <SecHeader label="Model split · weighted" link="API rates" />
+          <ModelSplit split={data.split} est={est} />
+        </>
+      )}
+
+      <div className="sep" />
+      <PeriodStrip period={data.period} est={est} />
+
+      <ProExtras data={data} />
+      <StatsTail data={data} />
+    </div>
+  );
+}
+
+Object.assign(window, { StatsA, ProExtras, StatsTail, StatsHead, toneColor });
+
+
+/* ===================== statsB.jsx ===================== */
+/* Throttle — Stats Direction B: financial statement table */
+
+function StatsB({ data, range, setRange }) {
+  const est = !data.confident;
+  const a = data.advisor;
+  return (
+    <div className="pop S SB">
+      <StatsHead data={data} range={range} setRange={setRange} />
+
+      {!data.enough || !a ? (
+        <AdvisorEmpty collected={data.collected} needed={data.needed} />
+      ) : (
+        <>
+          <div className="s-sec-h"><span className="s-label">Plan statement · vs API</span></div>
+          <div className="stmt">
+            <div className="stmt-h">
+              <span>Plan</span>
+              <span className="r">€/mo</span>
+              <span className="r">fit to your burn</span>
+            </div>
+            {data.ladder.map((p) => (
+              <div className={"stmt-row" + (p.best ? " best" : "")} key={p.id}>
+                <span className="stmt-plan">
+                  {p.name}
+                  {p.current && <span className="tag">now</span>}
+                  {p.best && <span className="bestpill">best</span>}
+                </span>
+                <span className="stmt-eur mono">{p.price}</span>
+                <span className={"stmt-fit " + p.tone}>{p.fit}</span>
+              </div>
+            ))}
+            <div className="stmt-row api">
+              <span className="stmt-plan">API equivalent <span className="tag">upper bound</span></span>
+              <span className="stmt-eur mono muted">{est ? "≈" : ""}{a.apiEquiv}</span>
+              <span className="stmt-fit">pay per token</span>
+            </div>
+          </div>
+          <div className="stmt-summary">
+            <span className="lbl">Verdict</span>
+            <b>{a.recommend.name} · {a.recommend.price}{a.recommend.per}</b>
+            <span>— save <Fig est={est} className="save">{a.savings}</Fig>/mo vs API</span>
+            {est && <EstTag />}
+          </div>
+          <div className="v-reason" style={{ paddingTop: 0 }}>
+            <Reasoning text={a.reasoning} />
+          </div>
+        </>
+      )}
+
+      <div className="sep" />
+      <SecHeader label={"Trend · " + range} />
+      <TrendChart trend={data.trend} est={est} />
+
+      {data.split && (
+        <>
+          <div className="sep" />
+          <SecHeader label="Model split · weighted" link="API rates" />
+          <ModelSplit split={data.split} est={est} />
+        </>
+      )}
+
+      <div className="sep" />
+      <PeriodStrip period={data.period} est={est} />
+
+      <ProExtras data={data} />
+      <StatsTail data={data} />
+    </div>
+  );
+}
+
+window.StatsB = StatsB;
+
+
+/* ===================== statsC.jsx ===================== */
+/* Throttle — Stats Direction C: runway forecast (verdict derived) */
+
+function StatsC({ data, range, setRange }) {
+  const est = !data.confident;
+  const a = data.advisor;
+  const rw = data.runway;
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  return (
+    <div className="pop S SC">
+      <StatsHead data={data} range={range} setRange={setRange} />
+
+      {!data.enough || !a || !rw ? (
+        <AdvisorEmpty collected={data.collected} needed={data.needed} />
+      ) : (
+        <>
+          <div className="runway">
+            <div className="rw-kick">This week's runway</div>
+            <div className="rw-head">
+              <span className={"rw-cap " + rw.tone}>
+                {est ? "Likely throttled" : "Throttled"} <span className="num">{rw.capDay} {rw.capTime}</span>
+              </span>
+              <span className="rw-sub">on {a.current.name}, your plan</span>
+            </div>
+
+            <div className="rw-track-wrap">
+              <div className="rw-days">
+                {days.map((d) => <span key={d}>{d[0]}</span>)}
+              </div>
+              <div className="rw-track">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <span className="rw-grid" key={i} style={{ left: (i / 7 * 100) + "%" }} />
+                ))}
+                <div className={"rw-fill " + rw.tone + (est ? " est" : "")} style={{ width: rw.consumed + "%" }} />
+                <div className="rw-cap-mark" style={{ left: rw.capAt + "%" }} />
+              </div>
+              <div className="rw-legend">
+                <span className="mk"><i /> used so far <span className="mono">{est ? "≈" : ""}{rw.consumed}%</span></span>
+                <span className="mk"><i className="cap" /> {a.current.name} cap</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="rw-verdict">
+            <span className="arr">→</span>
+            <b>{a.recommend.name}</b>
+            <span className="price mono">{a.recommend.price}{a.recommend.per}</span>
+            <span>keeps you running all week — <b>{a.recommend.blurb}</b></span>
+            {est && <EstTag />}
+          </div>
+          <div className="rw-reason">
+            <Reasoning text={a.reasoning} />
+          </div>
+          <PlanLadder ladder={data.ladder} />
+          <div style={{ height: 8 }} />
+        </>
+      )}
+
+      <div className="sep" />
+      <SecHeader label={"Usage trend · " + range} />
+      <TrendChart trend={data.trend} est={est} />
+
+      {data.split && (
+        <>
+          <div className="sep" />
+          <SecHeader label="Model split · weighted" link="API rates" />
+          <ModelSplit split={data.split} est={est} />
+        </>
+      )}
+
+      <div className="sep" />
+      <PeriodStrip period={data.period} est={est} />
+
+      <ProExtras data={data} />
+      <StatsTail data={data} />
+    </div>
+  );
+}
+
+window.StatsC = StatsC;
+
+
+/* ===================== statsApp.jsx ===================== */
+/* Throttle — Stats comparison page */
+const { useState: useStateS } = React;
+const TS = window.ThrottleStats;
+
+const STATS_DIRS = [
+  {
+    id: "A",
+    kicker: "Direction A", name: "The Verdict",
+    idea: "Opens with the recommendation as a plain headline — plan, price, saving — and tucks every piece of evidence beneath it.",
+    spec: [
+      ["Signature", "A declarative plan-and-price you read and act on before you scroll."],
+      ["Optimizes", "The one-second \u201cis my plan right\u201d decision."],
+      ["Trades off", "The comparison math lives below the headline, not beside it."],
+    ],
+  },
+  {
+    id: "B",
+    kicker: "Direction B", name: "The Statement",
+    idea: "Reads like a financial statement: every plan, your API-equivalent, and the ladder in one aligned \u20ac-column you can audit.",
+    spec: [
+      ["Signature", "The right-aligned euro column with the \u201cbest\u201d row ruled like a balance sheet."],
+      ["Optimizes", "Trust and justification \u2014 you see the whole math at once."],
+      ["Trades off", "More to read; less of an immediate \u201cdo this now\u201d punch."],
+    ],
+  },
+  {
+    id: "C",
+    kicker: "Direction C", name: "The Runway",
+    idea: "Forecast-led: a week-long runway shows exactly when your current plan throttles you; the recommendation is the fix.",
+    spec: [
+      ["Signature", "A time runway with a hard cap marker \u2014 \u201cthrottled Thursday\u201d made literal."],
+      ["Optimizes", "Urgency \u2014 the \u201cabout to be throttled\u201d moment, shown not stated."],
+      ["Trades off", "Needs a beat to read; abstracts the precise euros into time."],
+    ],
+  },
+];
+
+function StatsCard({ theme, Comp, data }) {
+  const [range, setRange] = useStateS("7d");
+  return (
+    <div>
+      <div className="theme-tag">{theme === "theme-light" ? "Light" : "Dark"}</div>
+      <div className={"pop-frame " + theme}>
+        <div className="pop-caret" />
+        <Comp data={data} range={range} setRange={setRange} />
+      </div>
+    </div>
+  );
+}
+
+function StatsColumn({ dir, data }) {
+  return (
+    <div className="column">
+      <div className="col-head">
+        <div className="col-kicker">{dir.kicker}</div>
+        <div className="col-name">{dir.name}</div>
+        <div className="col-idea">{dir.idea}</div>
+        <div className="spec">
+          {dir.spec.map(([k, v]) => (
+            <div className="row" key={k}>
+              <span className="k">{k}</span>
+              <span className="v">{v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="theme-stack">
+        <StatsCard theme="theme-light" Comp={window["Stats" + dir.id]} data={data} />
+        <StatsCard theme="theme-dark" Comp={window["Stats" + dir.id]} data={data} />
+      </div>
+    </div>
+  );
+}
+
+function StatsAppRoot() {
+  const [stateKey, setStateKey] = useStateS("full");
+  const data = TS.SCENARIOS[stateKey];
+  return (
+    <div className="page">
+      <div className="masthead">
+        <h1>Throttle — Stats panel</h1>
+        <p>
+          The same instrument as the meter, opened for the calmer weekly question: <em>is my plan right, or am I
+          overpaying / about to be throttled?</em> The Plan Advisor verdict is the hero; trend, model split, period and
+          the Pro extras are there only to justify it. Three structurally different ways to lead with that verdict —
+          every state, both themes. The range selector on each panel is live.
+        </p>
+      </div>
+
+      <div className="controls">
+        <span className="ctl-label">State</span>
+        <div className="segmented">
+          {TS.STATE_LIST.map((s) => (
+            <button key={s.key} data-on={stateKey === s.key} onClick={() => setStateKey(s.key)}>
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid stats-grid">
+        {STATS_DIRS.map((d) => <StatsColumn key={d.id} dir={d} data={data} />)}
+      </div>
+    </div>
+  );
+}
+
+/* deterministic mount: wait until every cross-file dependency is on window,
+   so multi-file Babel load order can never race */
+function mountStats() {
+  const ready = window.Fig && window.TrendChart && window.StatsA && window.StatsB &&
+    window.StatsC && window.PlanLadder && window.Actions;
+  if (!ready) { setTimeout(mountStats, 12); return; }
+  ReactDOM.createRoot(document.getElementById("root")).render(<StatsAppRoot />);
+}
+mountStats();
+
+
+  </script>
+</body>
+</html>
