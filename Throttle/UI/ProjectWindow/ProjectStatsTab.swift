@@ -1,12 +1,9 @@
 import SwiftUI
 
-/// Per-project Stats tab. Shows tokens (this week / month / all-time),
-/// session count, model split, and cost extrapolation — all scoped to
-/// one project's events from `usage_events.cwd_path`.
-///
-/// Free in v2.0: no paywall on this tab. The paywall hits Optimizer +
-/// Assistant; Stats and Files are read-only views over data the user
-/// already has on disk.
+/// Per-project Stats tab — the hero of the project window. Cockpit style:
+/// a bordered usage grid + a graphite weighted model split, scoped to one
+/// project's events. See UI-SPEC-project-window.md. (Per-project daily trend
+/// isn't queried yet, so no trend chart here — follow-up.)
 struct ProjectStatsTab: View {
     @Environment(AppState.self) private var appState
     let project: ProjectInfo
@@ -19,109 +16,110 @@ struct ProjectStatsTab: View {
     @State private var costEUR: Double = 0
     @State private var loading = true
 
+    private let hair = Color.primary.opacity(0.09)
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                header
+            VStack(alignment: .leading, spacing: 0) {
                 if loading {
                     ProgressView().controlSize(.small)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 32)
+                        .frame(maxWidth: .infinity, alignment: .center).padding(.top, 40)
                 } else {
-                    metricsGrid
-                    Divider()
+                    usageSection
+                    Rectangle().fill(hair).frame(height: 1).padding(.horizontal, 22)
                     modelSplitSection
-                    Divider()
-                    costSection
                 }
             }
-            .padding(20)
         }
         .onAppear { reload() }
         .onChange(of: project.id) { _, _ in reload() }
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(project.displayName)
-                .font(.title2.bold())
-            if let path = project.projectPath {
-                Text(path)
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+    private func secHeader(_ t: String) -> some View {
+        Text(t).font(.system(size: 10.5, weight: .semibold)).tracking(0.8)
+            .textCase(.uppercase).foregroundStyle(.tertiary)
+    }
+
+    // MARK: - Usage grid
+
+    private var usageSection: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            secHeader("Usage")
+            HStack(spacing: 1) {
+                statCell("This week", formatTokens(weekTokens), "weighted")
+                statCell("This month", formatTokens(monthTokens), "weighted")
+                statCell("Sessions", "\(sessionCount)", "avg \(formatTokens(avgSessionTokens))")
+                statCell("API cost", formatEUR(costEUR), "this month")
             }
+            .background(hair)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(hair, lineWidth: 1))
         }
+        .padding(.horizontal, 22).padding(.top, 16).padding(.bottom, 16)
     }
 
-    private var metricsGrid: some View {
-        HStack(spacing: 12) {
-            metricCard(title: String(localized: "This week"),
-                       value: formatTokens(weekTokens),
-                       subtitle: String(localized: "weighted tokens"))
-            metricCard(title: String(localized: "This month"),
-                       value: formatTokens(monthTokens),
-                       subtitle: String(localized: "weighted tokens"))
-            metricCard(title: String(localized: "Sessions"),
-                       value: "\(sessionCount)",
-                       subtitle: String(localized: "avg \(formatTokens(avgSessionTokens)) / session"))
+    private func statCell(_ k: String, _ v: String, _ sub: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(k).font(.system(size: 10, weight: .semibold)).tracking(0.5)
+                .textCase(.uppercase).foregroundStyle(.tertiary)
+            Text(v).font(.system(size: 21).monospacedDigit())
+            Text(sub).font(.system(size: 10.5)).foregroundStyle(.tertiary).lineLimit(1)
         }
-    }
-
-    private func metricCard(title: String, value: String, subtitle: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
-            Text(value).font(.title2.bold().monospacedDigit())
-            Text(subtitle).font(.caption2).foregroundStyle(.tertiary)
-        }
-        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+        .padding(13)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
+    // MARK: - Model split
+
+    private func splitOpacity(_ i: Int) -> Double {
+        switch i { case 0: return 0.72; case 1: return 0.42; case 2: return 0.20; default: return 0.12 }
+    }
+
+    @ViewBuilder
     private var modelSplitSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Model split").font(.headline)
+        VStack(alignment: .leading, spacing: 11) {
+            secHeader("Model split · weighted")
             if modelSplit.isEmpty {
                 Text("No model usage yet for this project.")
-                    .font(.callout).foregroundStyle(.secondary)
+                    .font(.system(size: 12)).foregroundStyle(.secondary)
             } else {
-                ForEach(modelSplit, id: \.label) { slice in
-                    HStack {
-                        Text(slice.label).font(.callout.bold())
-                        Spacer()
-                        Text("\(Int(slice.share * 100))%")
-                            .font(.callout.monospacedDigit())
-                            .foregroundStyle(.secondary)
+                GeometryReader { geo in
+                    HStack(spacing: 2) {
+                        ForEach(Array(modelSplit.enumerated()), id: \.element.label) { i, slice in
+                            Color.primary.opacity(splitOpacity(i))
+                                .frame(width: max(0, geo.size.width * slice.share))
+                        }
+                        Spacer(minLength: 0)
                     }
-                    GeometryReader { geo in
-                        Rectangle()
-                            .fill(.tertiary)
-                            .overlay(alignment: .leading) {
-                                Rectangle()
-                                    .fill(Color.accentColor)
-                                    .frame(width: geo.size.width * slice.share)
-                            }
-                            .frame(height: 6)
-                            .clipShape(RoundedRectangle(cornerRadius: 3))
-                    }
-                    .frame(height: 6)
                 }
+                .frame(height: 9)
+                .background(Color.primary.opacity(0.09))
+                .clipShape(RoundedRectangle(cornerRadius: 5))
+
+                VStack(spacing: 7) {
+                    ForEach(Array(modelSplit.enumerated()), id: \.element.label) { i, slice in
+                        HStack(spacing: 8) {
+                            RoundedRectangle(cornerRadius: 2).fill(Color.primary.opacity(splitOpacity(i)))
+                                .frame(width: 8, height: 8)
+                            Text(slice.label).font(.system(size: 11.5))
+                            Spacer(minLength: 0)
+                            Text("\(Int(slice.share * 100))%").font(.system(size: 11.5).monospacedDigit())
+                        }
+                    }
+                }
+                .padding(.top, 2)
+
+                HStack {
+                    Text("API-equivalent / mo").font(.system(size: 11.5)).foregroundStyle(.secondary)
+                    Spacer(minLength: 0)
+                    Text(formatEUR(costEUR)).font(.system(size: 13).monospacedDigit())
+                }
+                .padding(.top, 9)
+                .overlay(alignment: .top) { Rectangle().fill(hair).frame(height: 1) }
             }
         }
-    }
-
-    private var costSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Estimated API cost").font(.headline)
-            Text(formatEUR(costEUR))
-                .font(.title3.bold().monospacedDigit())
-            Text("What this project would have cost on the developer API at Anthropic's published rates.")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+        .padding(.horizontal, 22).padding(.top, 16).padding(.bottom, 18)
     }
 
     // MARK: - Data
@@ -175,7 +173,7 @@ struct ProjectStatsTab: View {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.currencyCode = "EUR"
-        formatter.maximumFractionDigits = 2
-        return formatter.string(from: NSNumber(value: value)) ?? "€0.00"
+        formatter.maximumFractionDigits = value >= 100 ? 0 : 2
+        return formatter.string(from: NSNumber(value: value)) ?? "€0"
     }
 }

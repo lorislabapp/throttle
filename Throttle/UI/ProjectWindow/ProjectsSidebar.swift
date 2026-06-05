@@ -1,9 +1,8 @@
 import SwiftUI
 
-/// Sidebar for the project window: searchable list of Claude Code projects,
-/// sorted by recent activity. We don't virtualize because the dogfood scope
-/// (Kevin's ~14 active projects) doesn't need it; SwiftUI's `List` handles
-/// up to a few hundred rows fine without manual virtualization.
+/// Sidebar for the project window — cockpit style: a searchable list of Claude
+/// Code projects, a RECENT section, flat rows (dot · name · recency), and an
+/// "Include archived" footer toggle. See UI-SPEC-project-window.md.
 struct ProjectsSidebar: View {
     let projects: [ProjectInfo]
     @Binding var selection: String?
@@ -18,63 +17,61 @@ struct ProjectsSidebar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            searchField
-            List(selection: $selection) {
-                ForEach(filtered) { project in
-                    row(for: project)
-                        .tag(project.id)
-                }
+            HStack(spacing: 7) {
+                Image(systemName: "magnifyingglass").font(.system(size: 12)).foregroundStyle(.tertiary)
+                TextField("Search projects", text: $search)
+                    .textFieldStyle(.plain).font(.system(size: 12.5))
             }
-            .listStyle(.sidebar)
-            footer
+            .padding(.horizontal, 9).padding(.vertical, 6)
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 7))
+            .padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 6)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(filtered.isEmpty ? "NO PROJECTS" : "RECENT")
+                        .font(.system(size: 10, weight: .semibold)).tracking(0.7)
+                        .foregroundStyle(.tertiary)
+                        .padding(.horizontal, 14).padding(.top, 8).padding(.bottom, 5)
+                    ForEach(filtered) { project in
+                        row(project)
+                    }
+                }
+                .padding(.horizontal, 8)
+            }
+
+            Rectangle().fill(Color.primary.opacity(0.09)).frame(height: 1)
+            HStack(spacing: 9) {
+                Text("Include archived").font(.system(size: 11.5)).foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                Toggle("", isOn: $includeArchived)
+                    .labelsHidden().toggleStyle(.switch).controlSize(.mini).tint(.accentColor)
+                    .help("Show projects with no activity in the last 30 days")
+            }
+            .padding(.horizontal, 14).padding(.vertical, 9)
         }
+        .background(Color.primary.opacity(0.025))
     }
 
-    private var searchField: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-                .font(.caption)
-            TextField("Search projects", text: $search)
-                .textFieldStyle(.plain)
-                .font(.callout)
-        }
-        .padding(.horizontal, 10).padding(.vertical, 6)
-        .background(.regularMaterial)
-    }
-
-    private func row(for project: ProjectInfo) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: project.pathExists ? "folder" : "folder.badge.questionmark")
-                .foregroundStyle(project.pathExists ? Color.accentColor : .secondary)
+    private func row(_ project: ProjectInfo) -> some View {
+        let sel = selection == project.id
+        return HStack(spacing: 9) {
+            Circle()
+                .fill(sel ? Color.accentColor : Color.primary.opacity(project.pathExists ? 0.35 : 0.18))
+                .frame(width: 6, height: 6)
             VStack(alignment: .leading, spacing: 1) {
-                Text(project.displayName)
-                    .font(.callout.weight(.medium))
-                    .lineLimit(1)
-                Text(relativeDate(project.lastActive))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                Text(project.displayName).font(.system(size: 12.5, weight: .medium)).lineLimit(1)
+                Text(relativeDate(project.lastActive)).font(.system(size: 10.5)).foregroundStyle(.tertiary)
             }
             Spacer(minLength: 0)
         }
+        .padding(.horizontal, 8).padding(.vertical, 7)
+        .background(
+            RoundedRectangle(cornerRadius: 7).fill(sel ? Color.primary.opacity(0.07) : Color.clear)
+                .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(
+                    sel ? Color.primary.opacity(0.11) : Color.clear, lineWidth: 1))
+        )
         .contentShape(Rectangle())
-    }
-
-    private var footer: some View {
-        HStack(spacing: 8) {
-            Text("\(filtered.count) projects")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-            Spacer()
-            Toggle(isOn: $includeArchived) {
-                Text("Archived").font(.caption2)
-            }
-            .toggleStyle(.switch)
-            .controlSize(.mini)
-            .help("Show projects with no activity in the last 30 days")
-        }
-        .padding(.horizontal, 10).padding(.vertical, 6)
-        .background(.regularMaterial)
+        .onTapGesture { selection = project.id }
     }
 
     private func relativeDate(_ date: Date) -> String {
