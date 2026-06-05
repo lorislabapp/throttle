@@ -31,6 +31,10 @@ struct ProjectAssistantTab: View {
     /// expand independently.
     @State private var expandedToolResults: Set<String> = []
 
+    /// Cockpit fills — subtle graphite, matching the rest of the app.
+    private let hair = Color.primary.opacity(0.09)
+    private let chipBG = Color.primary.opacity(0.05)
+
     /// `.sheet(item:)` pattern — bundling the patches with an Identifiable
     /// wrapper guarantees the sheet's content closure receives a fresh
     /// snapshot, sidestepping the SwiftUI timing issue where setting two
@@ -50,12 +54,12 @@ struct ProjectAssistantTab: View {
     var body: some View {
         VStack(spacing: 0) {
             statusBar
-            Divider()
+            Rectangle().fill(hair).frame(height: 1)
             if showOnboarding {
                 onboardingWizard
             } else {
                 transcriptScroll
-                Divider()
+                Rectangle().fill(hair).frame(height: 1)
                 inputBar
             }
         }
@@ -159,7 +163,7 @@ struct ProjectAssistantTab: View {
             .labelsHidden()
         }
         .padding(12)
-        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 8))
+        .background(chipBG, in: RoundedRectangle(cornerRadius: 8))
     }
 
     @ViewBuilder
@@ -179,7 +183,7 @@ struct ProjectAssistantTab: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8).padding(.vertical, 2)
-                    .background(.quaternary, in: Capsule())
+                    .background(chipBG, in: Capsule())
             }
             Text(description)
                 .font(.callout)
@@ -201,7 +205,8 @@ struct ProjectAssistantTab: View {
             }
         }
         .padding(14)
-        .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 10))
+        .background(chipBG, in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(hair, lineWidth: 1))
     }
 
     private func pickProvider(_ kind: AIProviderKind, requiresExtra: Bool) {
@@ -346,8 +351,7 @@ struct ProjectAssistantTab: View {
                                 .padding(8)
                         }
                         .frame(maxHeight: 240)
-                        .background(.quaternary.opacity(0.4),
-                                    in: RoundedRectangle(cornerRadius: 6))
+                        .background(chipBG, in: RoundedRectangle(cornerRadius: 6))
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: toolIcon(e.tool))
@@ -435,8 +439,7 @@ struct ProjectAssistantTab: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding(10)
-                    .background(.quaternary.opacity(0.5),
-                                in: RoundedRectangle(cornerRadius: 8))
+                    .background(chipBG, in: RoundedRectangle(cornerRadius: 8))
                 }
                 .buttonStyle(.plain)
             }
@@ -464,8 +467,8 @@ struct ProjectAssistantTab: View {
                             .font(.callout)
                             .padding(.horizontal, 12).padding(.vertical, 8)
                             .frame(maxWidth: 460, alignment: .leading)
-                            .background(.quaternary.opacity(0.6),
-                                        in: RoundedRectangle(cornerRadius: 8))
+                            .background(chipBG, in: RoundedRectangle(cornerRadius: 8))
+                            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(hair, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
                 }
@@ -590,7 +593,8 @@ struct ProjectAssistantTab: View {
                 .frame(minHeight: 38, maxHeight: 100)
                 .scrollContentBackground(.hidden)
                 .padding(6)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                .background(chipBG, in: RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(hair, lineWidth: 1))
             Button {
                 Task { await send() }
             } label: {
