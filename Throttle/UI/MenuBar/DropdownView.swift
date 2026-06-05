@@ -1243,6 +1243,19 @@ private struct InlineGeneralPane: View {
     @State private var loginItemsEnabled: Bool = LoginItemService.isEnabled
     @State private var notificationsOn: Bool = ThresholdNotifier.shared.isEnabled
     @State private var calendarStatus: String = ""
+    @State private var conciseClaudeCode: Bool =
+        FileManager.default.fileExists(atPath: InlineGeneralPane.conciseFlagPath)
+
+    /// Flag file the SessionStart hook reads to inject a terse-output directive
+    /// into every Claude Code session. App writes it (non-sandboxed); hook reads it.
+    static var conciseFlagPath: String {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/throttle-concise").path
+    }
+    private func setConciseFlag(_ on: Bool) {
+        if on { FileManager.default.createFile(atPath: Self.conciseFlagPath, contents: Data()) }
+        else { try? FileManager.default.removeItem(atPath: Self.conciseFlagPath) }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -1267,6 +1280,12 @@ private struct InlineGeneralPane: View {
                         await MainActor.run { handleCalendarResult(result) }
                     }
                 }
+            }
+            SettingsHair()
+            SettingsRow(title: "Concise Claude Code replies",
+                        sub: "Inject a terse-output directive into every Claude Code session via the hook.") {
+                Toggle("", isOn: $conciseClaudeCode).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                    .onChange(of: conciseClaudeCode) { _, on in setConciseFlag(on) }
             }
             SettingsHair()
             SettingsRow(title: "Software updates", sub: updatesSubtitle) {
