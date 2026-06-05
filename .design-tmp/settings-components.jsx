@@ -158,6 +158,8 @@ function ExactStep({ done, todo, idx, children, action }) {
   );
 }
 function ExactBlock({ state }) {
+  // hook must run unconditionally, before any early return (Rules of Hooks)
+  const [on, setOn] = useStateSet(state.exact !== "off" && state.exact !== "locked");
   if (state.exact === "locked") {
     return (
       <>
@@ -170,7 +172,6 @@ function ExactBlock({ state }) {
       </>
     );
   }
-  const [on, setOn] = useStateSet(state.exact !== "off");
   const working = state.exact === "working";
   const error = state.exact === "error";
   const needsignin = state.exact === "needsignin";
@@ -223,7 +224,7 @@ function ProGroup({ state }) {
     <div>
       <LicenseBlock state={state} />
       <div className="sep" />
-      <ExactBlock state={state} />
+      <ExactBlock key={state.key} state={state} />
     </div>
   );
 }

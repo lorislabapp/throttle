@@ -60,7 +60,7 @@ struct DropdownView: View {
     /// The meter and Stats are native sectioned lists — full-bleed hairline
     /// separators with 16pt internal section padding. Other modes keep the 12pt inset.
     private var meterEdgeToEdge: Bool {
-        guard appState.firstRunDone else { return false }
+        guard appState.firstRunDone else { return true }  // onboarding is edge-to-edge
         switch mode {
         case .meter, .stats, .settings: return true
         default:                        return false
@@ -915,133 +915,307 @@ private struct SettingsButton: View {
 
 // MARK: - First-run inline view
 
+/// First-run onboarding — "The Living Meter" (Direction C). The real meter sits
+/// at the top, empty and ghosted, and fills in as the user answers; each answer
+/// collapses to a confirmed row. Onboarding IS the product. See UI-SPEC-onboarding.md.
 private struct FirstRunInline: View {
     @Environment(AppState.self) private var appState
 
     enum PlanChoice: String, CaseIterable, Identifiable {
-        case pro = "Pro"
-        case max5x = "Max 5×"
-        case max20x = "Max 20×"
-        case skip = "Skip — auto-calibrate"
-
+        case pro, max5x, max20x, skip
         var id: String { rawValue }
+        var name: String {
+            switch self {
+            case .pro:    return "Pro"
+            case .max5x:  return "Max 5×"
+            case .max20x: return "Max 20×"
+            case .skip:   return String(localized: "Skip — auto-calibrate")
+            }
+        }
+        var price: String? {
+            switch self {
+            case .pro: return "€19/mo"; case .max5x: return "€90/mo"
+            case .max20x: return "€180/mo"; case .skip: return nil
+            }
+        }
+        var blurb: String {
+            switch self {
+            case .pro:    return String(localized: "Most solo developers")
+            case .max5x:  return String(localized: "Heavy daily Claude Code")
+            case .max20x: return String(localized: "All-day, multi-agent")
+            case .skip:   return String(localized: "Throttle learns your caps from real usage over a few days.")
+            }
+        }
+        /// Display caps — mirror the real presets written in `apply()`.
+        var session: String? {
+            switch self { case .pro: return "4M"; case .max5x: return "8M"; case .max20x: return "20M"; case .skip: return nil }
+        }
+        var weekly: String? {
+            switch self { case .pro: return "60M"; case .max5x: return "200M"; case .max20x: return "800M"; case .skip: return nil }
+        }
     }
 
-    @State private var planChoice: PlanChoice = .skip
-    @State private var enableLoginItems: Bool = false
+    @State private var pick: PlanChoice? = nil
+    @State private var enableLoginItems: Bool = true
     @State private var signedIn: Bool = false
-    @State private var step: Int = 0
+    /// Conversational step: 0 = ask plan, 1 = ask launch, 2 = done.
+    @State private var qi: Int = 0
 
-    private let totalSteps = 3
+    private let demo = (session: 0.47, weekly: 0.12, sonnet: 0.03)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            stepIndicator
-            Group {
-                switch step {
-                case 0: stepWelcome
-                case 1: stepPlan
-                default: stepFinish
+        VStack(alignment: .leading, spacing: 0) {
+            brandHero
+            livingMeter
+            progressDots
+            thread
+        }
+        .task { signedIn = ExactModeService.shared.hasFreshSnapshot }
+    }
+
+    private var brandHero: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Image(systemName: "gauge.with.dots.needle.50percent")
+                .font(.system(size: 26)).foregroundStyle(.primary.opacity(0.9))
+                .padding(.bottom, 8)
+            Text("Throttle").font(.system(size: 17, weight: .semibold))
+            Text("Accurate Claude Code usage, in your menu bar.")
+                .font(.system(size: 12)).foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 16).padding(.top, 18).padding(.bottom, 4)
+    }
+
+    // MARK: - Living meter preview
+
+    private var livingMeter: some View {
+        let filled = pick != nil
+        let auto = pick == .skip
+        return VStack(alignment: .leading, spacing: 0) {
+            Text("YOUR METER")
+                .font(.system(size: 8.5, weight: .heavy)).tracking(1)
+                .foregroundStyle(.tertiary).padding(.bottom, 9)
+            HStack(spacing: 8) {
+                Image(systemName: "gauge.with.dots.needle.50percent")
+                    .font(.system(size: 14)).foregroundStyle(.primary.opacity(0.9))
+                Text("Throttle").font(.system(size: 13, weight: .semibold))
+                Spacer(minLength: 0)
+                if filled {
+                    Text(auto ? "AUTO" : "PRO").font(.system(size: 9, weight: .heavy))
+                        .padding(.horizontal, 6).padding(.vertical, 3)
+                        .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 5))
+                        .foregroundStyle(.secondary)
                 }
             }
-            .frame(minHeight: 180, alignment: .top)
-            stepNav
+            .padding(.bottom, 10)
+            meterRow("Session", "5-hour", cap: pick?.session, pct: demo.session, auto: auto, filled: filled)
+            meterDivider
+            meterRow("Weekly", "all models", cap: pick?.weekly, pct: demo.weekly, auto: auto, filled: filled)
+            meterDivider
+            meterRow("Weekly", "Sonnet only", cap: pick?.weekly, pct: demo.sonnet, auto: auto, filled: filled)
         }
-        .task { await refreshSignedIn() }
+        .padding(13)
+        .background(RoundedRectangle(cornerRadius: 13).fill(Color(nsColor: .controlBackgroundColor)))
+        .overlay(RoundedRectangle(cornerRadius: 13).strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+        .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 4)
+        .animation(.easeOut(duration: 0.55), value: pick)
     }
 
-    private var stepIndicator: some View {
-        HStack(spacing: 4) {
-            ForEach(0..<totalSteps, id: \.self) { i in
-                Capsule()
-                    .fill(i == step ? Color.accentColor : Color.secondary.opacity(0.25))
-                    .frame(width: i == step ? 18 : 6, height: 6)
-                    .animation(.easeInOut(duration: 0.2), value: step)
-            }
-            Spacer()
-            Text("Step \(step + 1) of \(totalSteps)")
-                .font(.caption2.monospacedDigit()).foregroundStyle(.tertiary)
-        }
+    private var meterDivider: some View {
+        Rectangle().fill(Color.primary.opacity(0.07)).frame(height: 1)
     }
 
-    private var stepWelcome: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                Image(systemName: "gauge.with.dots.needle.67percent")
-                    .font(.system(size: 36)).foregroundStyle(.tint)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Welcome to Throttle").font(.headline)
-                    Text("The accurate Claude Code meter for your menu bar.")
-                        .font(.caption).foregroundStyle(.secondary)
+    @ViewBuilder
+    private func meterRow(_ name: String, _ sub: String, cap: String?, pct: Double, auto: Bool, filled: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(name).font(.system(size: 12, weight: .medium)).opacity(filled ? 1 : 0.5)
+                Text(sub).font(.system(size: 10.5)).foregroundStyle(.secondary).opacity(filled ? 1 : 0.5)
+                Spacer(minLength: 0)
+                if filled {
+                    Text(auto ? "auto" : "cap \(cap ?? "")")
+                        .font(.system(size: 11).monospaced()).foregroundStyle(.secondary)
+                } else {
+                    Text(verbatim: "— —").font(.system(size: 11).monospaced()).foregroundStyle(.tertiary)
                 }
             }
-            Text("Throttle reads `~/.claude/projects/` locally to compute your session-5h, weekly-all, and weekly-Sonnet usage. Nothing leaves your Mac unless you turn on Exact Mode (Pro) — and even then only Safari touches claude.ai, not Throttle directly.")
-                .font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.primary.opacity(0.09))
+                    if filled {
+                        Capsule().fill(Color.primary.opacity(auto ? 0.28 : 0.45))
+                            .frame(width: auto ? geo.size.width : max(4, geo.size.width * pct))
+                    }
+                }
+            }
+            .frame(height: 5)
         }
+        .padding(.vertical, 8)
     }
 
-    private var stepPlan: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Pick your plan").font(.headline)
-            Text("So we can pre-fill realistic caps. You can recalibrate exactly later.")
-                .font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Picker("Plan", selection: $planChoice) {
-                ForEach(PlanChoice.allCases) { Text($0.rawValue).tag($0) }
+    private var progressDots: some View {
+        HStack(spacing: 5) {
+            ForEach(0..<3, id: \.self) { i in
+                Capsule().fill(qi >= i ? Color.accentColor : Color.primary.opacity(0.10)).frame(height: 3)
             }
-            .pickerStyle(.radioGroup).labelsHidden()
         }
+        .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 2)
     }
 
-    private var stepFinish: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Almost done").font(.headline)
-            Toggle("Launch Throttle at login", isOn: $enableLoginItems).font(.subheadline)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Match claude.ai exactly (optional)").font(.subheadline.bold())
-                Text("After first run: Settings → General → Exact mode → Test connection. Throttle drives your already-signed-in Safari to read claude.ai's true numbers.")
-                    .font(.caption2).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Text("Everything is configurable later in Settings.")
-                .font(.caption2).foregroundStyle(.tertiary)
-        }
-    }
+    // MARK: - Conversational thread
 
-    private var stepNav: some View {
-        HStack {
-            if step > 0 {
-                Button("Back") { step -= 1 }
-                    .buttonStyle(.borderless)
-                    .keyboardShortcut(.cancelAction)
+    @ViewBuilder
+    private var thread: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if qi >= 1 {
+                confirmedRow(label: "Plan", value: planSummary) { withAnimation { qi = 0 } }
             }
-            Spacer()
-            if step < totalSteps - 1 {
-                Button("Next") { step += 1 }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.defaultAction)
+            if qi == 0 {
+                qCard("Which Claude plan are you on?",
+                      "Pick one and watch your meter fill in. Reads ~/.claude/projects on this Mac.")
+                planPicker
+            } else if qi == 1 {
+                qCard("Keep Throttle in your menu bar?", "Launch it automatically when you log in.")
+                launchRow
+                actionBar("Looks good") { withAnimation { qi = 2 } }
             } else {
-                Button("Get Started") { apply() }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.defaultAction)
+                confirmedRow(label: "Launch at login", value: enableLoginItems ? "On" : "Off") { withAnimation { qi = 1 } }
+                exactTeaser
+                actionBar("Open my meter") { apply() }
             }
         }
     }
 
-    private func refreshSignedIn() async {
-        // Safari Bridge mode: "signed in" = last successful poll exists.
-        signedIn = ExactModeService.shared.hasFreshSnapshot
+    private var planSummary: String {
+        guard let p = pick else { return String(localized: "Auto-calibrate") }
+        if let s = p.session, let w = p.weekly { return "\(p.name) · \(s)/\(w)" }
+        return p.name
+    }
+
+    private func qCard(_ prompt: String, _ sub: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(prompt).font(.system(size: 14, weight: .semibold))
+            Text(sub).font(.system(size: 11.5)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16).padding(.top, 13).padding(.bottom, 6)
+    }
+
+    private var planPicker: some View {
+        VStack(spacing: 6) {
+            ForEach(PlanChoice.allCases) { planButton($0) }
+        }
+        .padding(.horizontal, 12).padding(.top, 4).padding(.bottom, 4)
+    }
+
+    @ViewBuilder
+    private func planButton(_ p: PlanChoice) -> some View {
+        let on = pick == p
+        Button {
+            withAnimation(.easeOut(duration: 0.5)) { pick = p; qi = 1 }
+        } label: {
+            HStack(spacing: 11) {
+                ZStack {
+                    if on {
+                        Circle().fill(Color.accentColor)
+                        Image(systemName: "checkmark").font(.system(size: 8, weight: .bold)).foregroundStyle(.white)
+                    } else {
+                        Circle().strokeBorder(Color.primary.opacity(0.25), lineWidth: 1.5)
+                    }
+                }
+                .frame(width: 18, height: 18)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(alignment: .firstTextBaseline, spacing: 7) {
+                        Text(p.name).font(.system(size: 13.5, weight: .medium))
+                        if let price = p.price {
+                            Text(price).font(.system(size: 11.5)).foregroundStyle(.secondary)
+                        }
+                    }
+                    Text(p.blurb).font(.system(size: 11)).foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                if let s = p.session, let w = p.weekly {
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text("\(s) · \(w)").font(.system(size: 13).monospaced())
+                        Text("SESSION · WEEKLY").font(.system(size: 8.5, weight: .medium)).tracking(0.4)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+            .padding(11)
+            .background(
+                RoundedRectangle(cornerRadius: 11).fill(on ? Color.accentColor.opacity(0.07) : Color.clear)
+                    .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(
+                        on ? Color.accentColor : Color.primary.opacity(0.12), lineWidth: on ? 2 : 1))
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func confirmedRow(label: String, value: String, onEdit: @escaping () -> Void) -> some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle().fill(Color.accentColor)
+                Image(systemName: "checkmark").font(.system(size: 8, weight: .bold)).foregroundStyle(.white)
+            }
+            .frame(width: 17, height: 17)
+            Text(label).font(.system(size: 12)).foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+            Text(value).font(.system(size: 12, weight: .medium))
+            Button { onEdit() } label: {
+                Text("Edit").font(.system(size: 11)).foregroundStyle(.tint)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 9)
+        .overlay(alignment: .top) { Rectangle().fill(Color.primary.opacity(0.07)).frame(height: 1).padding(.horizontal, 16) }
+    }
+
+    private var launchRow: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Launch at login").font(.system(size: 13))
+                Text("Keep the meter in your menu bar.").font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            Toggle("", isOn: $enableLoginItems).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+    }
+
+    private var exactTeaser: some View {
+        HStack(spacing: 9) {
+            Image(systemName: "sparkles").font(.system(size: 12)).foregroundStyle(.tertiary)
+            (Text("Want server-true numbers? Turn on ").foregroundStyle(.tertiary)
+             + Text("Exact mode").foregroundStyle(.secondary).fontWeight(.semibold)
+             + Text(" later in Settings.").foregroundStyle(.tertiary))
+                .font(.system(size: 11.5))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 9)
+    }
+
+    private func actionBar(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(.system(size: 13.5, weight: .semibold)).foregroundStyle(.white)
+                .frame(maxWidth: .infinity).padding(.vertical, 10)
+                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 9))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 14)
     }
 
     private func apply() {
         if enableLoginItems { try? LoginItemService.setEnabled(true) }
         let preset: [(WindowKind, Int)]? = {
-            switch planChoice {
+            switch pick {
             case .pro:    return [(.session5h, 4_000_000), (.weeklyAll, 60_000_000), (.weeklySonnet, 60_000_000)]
             case .max5x:  return [(.session5h, 8_000_000), (.weeklyAll, 200_000_000), (.weeklySonnet, 200_000_000)]
             case .max20x: return [(.session5h, 20_000_000), (.weeklyAll, 800_000_000), (.weeklySonnet, 800_000_000)]
-            case .skip:   return nil
+            case .skip, .none: return nil
             }
         }()
         if let preset,
@@ -1055,7 +1229,6 @@ private struct FirstRunInline: View {
         }
         appState.markFirstRunDone()
         appState.refresh()
-        // If user signed in during first-run, kick off polling immediately.
         if signedIn {
             appState.setExactModeEnabled(true)
             ExactModeService.shared.start()

@@ -1,0 +1,242 @@
+/* ============================================================
+   Throttle — first-run onboarding
+   Same cockpit language: flat sections, hairlines, 16pt padding,
+   graphite, mono caps, accent on interactive only.
+   Inherits throttle.css tokens + .pop chrome.
+   ============================================================ */
+
+.OB { padding-bottom: 6px; }
+
+/* ---------- brand lockup / welcome hero ---------- */
+.ob-hero { padding: 26px 20px 8px; text-align: center; }
+.ob-hero.compact { padding: 20px 20px 4px; text-align: left; }
+.ob-mark {
+  width: 46px; height: 46px; margin: 0 auto 14px; display: block;
+  color: var(--ink);
+}
+.ob-hero.compact .ob-mark { margin: 0 0 12px; width: 30px; height: 30px; }
+.ob-word {
+  font-size: 22px; font-weight: 640; letter-spacing: -0.02em; color: var(--ink);
+}
+.ob-hero.compact .ob-word { font-size: 17px; }
+.ob-what {
+  font-size: 13.5px; line-height: 1.5; color: var(--ink-2);
+  margin: 8px auto 0; max-width: 300px; text-wrap: balance;
+}
+.ob-hero.compact .ob-what { margin-left: 0; text-wrap: pretty; }
+
+/* ---------- privacy line (emotional core) ---------- */
+.ob-priv {
+  display: flex; gap: 10px; align-items: flex-start;
+  margin: 14px 16px 4px; padding: 11px 13px;
+  border-radius: 10px; background: var(--hover);
+}
+.ob-priv .lk { width: 16px; height: 16px; flex: none; color: var(--ink-2); margin-top: 1px; }
+.ob-priv .pt { font-size: 11.5px; line-height: 1.5; color: var(--ink-2); }
+.ob-priv .pt code {
+  font-family: var(--ff-mono); font-size: 10.5px;
+  color: var(--ink); background: var(--bar-track);
+  padding: 1px 4px; border-radius: 4px;
+}
+.ob-priv .pt b { color: var(--ink); font-weight: 600; }
+.ob-priv.inline { background: transparent; padding: 4px 0; margin: 8px 16px; }
+
+/* ---------- section label ---------- */
+.ob-gl { padding: 14px 16px 3px; }
+.ob-gl .t { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.ob-gl .s { font-size: 11.5px; color: var(--ink-2); margin-top: 3px; line-height: 1.4; }
+
+/* ---------- plan picker ---------- */
+.plans { padding: 6px 12px 4px; display: flex; flex-direction: column; gap: 6px; }
+.plan {
+  display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 11px;
+  padding: 11px 12px; border-radius: 11px; cursor: pointer;
+  background: transparent; box-shadow: inset 0 0 0 1px var(--hair);
+  transition: box-shadow 0.14s, background 0.14s;
+  text-align: left; width: 100%; font-family: var(--ff-text);
+}
+.plan:hover { background: var(--hover); }
+.plan .radio {
+  width: 18px; height: 18px; border-radius: 50%; flex: none;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+  display: flex; align-items: center; justify-content: center;
+  transition: box-shadow 0.14s;
+}
+.plan .radio svg { width: 11px; height: 11px; color: #fff; opacity: 0; transform: scale(0.5); transition: opacity 0.14s, transform 0.14s; }
+.plan .pmain { min-width: 0; }
+.plan .pname { font-size: 13.5px; font-weight: 560; color: var(--ink); display: flex; align-items: baseline; gap: 7px; }
+.plan .pprice { font-size: 11.5px; color: var(--ink-2); font-weight: 450; }
+.plan .pblurb { font-size: 11px; color: var(--ink-3); margin-top: 2px; line-height: 1.35; }
+.plan .pcaps { text-align: right; flex: none; }
+.plan .pcaps .cap { font-family: var(--ff-mono); font-size: 13px; color: var(--ink); letter-spacing: -0.01em; line-height: 1.25; }
+.plan .pcaps .caplab { font-size: 9px; color: var(--ink-3); letter-spacing: 0.05em; text-transform: uppercase; }
+.plan .pcaps .auto { font-size: 11px; color: var(--ink-3); font-style: italic; }
+
+.plan[data-on="true"] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.plan[data-on="true"] .radio { box-shadow: inset 0 0 0 9px var(--accent); }
+.plan[data-on="true"] .radio svg { opacity: 1; transform: scale(1); }
+.plan[data-on="true"] .pname { color: var(--ink); }
+
+.plan.skip { grid-template-columns: 20px 1fr; }
+.plan.skip .pblurb { margin-top: 3px; }
+
+/* ---------- toggle row (launch at login) ---------- */
+.ob-toggle-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; min-height: 48px;
+}
+.ob-toggle-row .rl { flex: 1; }
+.ob-toggle-row .t { font-size: 13px; color: var(--ink); }
+.ob-toggle-row .s { font-size: 11px; color: var(--ink-2); margin-top: 2px; }
+.ob-sw {
+  width: 38px; height: 23px; border-radius: 12px; flex: none;
+  background: var(--bar-track); border: 0; padding: 0; position: relative; cursor: pointer;
+  transition: background 0.18s ease;
+}
+.ob-sw .knob {
+  position: absolute; top: 2px; left: 2px; width: 19px; height: 19px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(0,0,0,0.06);
+  transition: transform 0.18s cubic-bezier(0.3,0.7,0.4,1);
+}
+.ob-sw[data-on="true"] { background: var(--accent); }
+.ob-sw[data-on="true"] .knob { transform: translateX(15px); }
+.theme-dark .ob-sw .knob { background: #f4f4f6; }
+
+/* ---------- exact-mode teaser (breadcrumb, not upsell) ---------- */
+.ob-teaser {
+  display: flex; align-items: center; gap: 9px;
+  margin: 4px 16px; padding: 9px 0;
+  font-size: 11.5px; color: var(--ink-3); line-height: 1.45;
+}
+.ob-teaser .sp { width: 14px; height: 14px; flex: none; color: var(--ink-3); }
+.ob-teaser b { color: var(--ink-2); font-weight: 600; }
+
+/* ---------- primary / secondary buttons ---------- */
+.ob-actions {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px 14px;
+}
+.ob-btn {
+  font-family: var(--ff-text); font-size: 13.5px; font-weight: 600;
+  padding: 10px 16px; border-radius: 9px; cursor: pointer;
+  border: 0; background: var(--accent); color: #fff;
+  transition: filter 0.12s, background 0.12s, box-shadow 0.12s;
+  min-height: 40px;
+}
+.ob-btn:hover { filter: brightness(1.07); }
+.ob-btn.block { flex: 1; width: 100%; }
+.ob-btn.ghost {
+  background: transparent; color: var(--ink); font-weight: 540;
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+.ob-btn.ghost:hover { background: var(--hover); filter: none; }
+.ob-btn.text {
+  background: transparent; color: var(--ink-2); font-weight: 540;
+  box-shadow: none; padding: 10px 10px;
+}
+.ob-btn.text:hover { color: var(--ink); background: var(--hover); }
+.ob-actions .spacer { flex: 1; }
+.ob-skiplink {
+  font-size: 12.5px; color: var(--ink-2); cursor: pointer; font-weight: 500;
+}
+.ob-skiplink:hover { color: var(--ink); }
+
+/* ============================================================
+   DIR A — wizard: step dots + paged panes
+   ============================================================ */
+.wz-dots { display: flex; align-items: center; justify-content: center; gap: 7px; padding: 14px 16px 2px; }
+.wz-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); opacity: 0.4; transition: all 0.2s; }
+.wz-dot[data-on="true"] { opacity: 1; width: 18px; border-radius: 3px; background: var(--accent); }
+.wz-step-name { text-align: center; font-size: 10.5px; font-weight: 640; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding: 8px 16px 0; }
+.wz-pane { min-height: 240px; display: flex; flex-direction: column; }
+.wz-pane .grow { flex: 1; }
+
+/* confirm/summary pane */
+.wz-summary { padding: 8px 16px 4px; }
+.sum-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 11px 0; font-size: 13px; color: var(--ink);
+}
+.sum-row + .sum-row { border-top: 1px solid var(--sep); }
+.sum-row .sk { color: var(--ink-2); }
+.sum-row .sv { font-family: var(--ff-mono); color: var(--ink); font-size: 13px; }
+.sum-row .sv.tag { font-family: var(--ff-text); font-weight: 560; }
+.sum-caps { display: flex; gap: 6px; align-items: baseline; }
+.sum-caps .sub { font-family: var(--ff-text); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ============================================================
+   DIR B — single calm screen (no extra chrome)
+   ============================================================ */
+.SB-ob .sep { margin: 0 16px; }
+
+/* ============================================================
+   DIR C — the Living Meter (preview assembles as you choose)
+   ============================================================ */
+.lm-stage {
+  margin: 14px 16px 4px; padding: 13px 14px 14px;
+  border-radius: 13px; background: var(--bg-elev);
+  box-shadow: 0 0 0 1px var(--sep), 0 6px 18px rgba(0,0,0,0.06);
+  position: relative;
+}
+.theme-dark .lm-stage { box-shadow: 0 0 0 1px var(--hair), 0 6px 18px rgba(0,0,0,0.3); }
+.lm-cap-label {
+  position: absolute; top: -8px; left: 14px;
+  font-size: 8.5px; font-weight: 680; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-3); background: var(--bg);
+  padding: 1px 6px; border-radius: 4px;
+}
+.lm-head { display: flex; align-items: center; gap: 8px; margin-bottom: 11px; }
+.lm-head .m { width: 15px; height: 15px; color: var(--ink); opacity: 0.9; }
+.lm-head .w { font-size: 13px; font-weight: 620; color: var(--ink); }
+.lm-head .pill { margin-left: auto; }
+
+.lm-row { padding: 8px 0; }
+.lm-row + .lm-row { border-top: 1px solid var(--sep); }
+.lm-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
+.lm-name { font-size: 12px; font-weight: 540; color: var(--ink); display: flex; align-items: baseline; gap: 6px; }
+.lm-name .sub { font-size: 10.5px; color: var(--ink-2); font-weight: 400; }
+.lm-cap { font-family: var(--ff-mono); font-size: 11px; color: var(--ink-2); }
+.lm-cap .ghost { color: var(--ink-3); letter-spacing: 0.05em; }
+.lm-pct { font-family: var(--ff-mono); font-size: 12px; color: var(--ink); }
+.lm-pct.empty { color: var(--ink-3); }
+.lm-bar { position: relative; height: 5px; border-radius: 3px; background: var(--bar-track); overflow: hidden; }
+.lm-fill {
+  position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px;
+  background: var(--bar-neutral); width: 0;
+  transition: width 0.7s cubic-bezier(0.22,0.61,0.36,1);
+}
+.lm-fill.auto {
+  background-image: repeating-linear-gradient(-45deg, var(--bar-neutral) 0 3px, transparent 3px 6px);
+  background-color: transparent; opacity: 0.7;
+}
+.lm-stage[data-filled="false"] .lm-name,
+.lm-stage[data-filled="false"] .lm-cap { opacity: 0.55; }
+
+/* conversational thread under the meter */
+.thread { padding: 6px 0 2px; }
+.q-card { padding: 13px 16px 6px; }
+.q-prompt { font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
+.q-sub { font-size: 11.5px; color: var(--ink-2); margin-top: 3px; line-height: 1.4; }
+.confirmed {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px; cursor: pointer;
+}
+.confirmed + .confirmed { border-top: 1px solid var(--sep); }
+.confirmed:hover { background: var(--hover); }
+.confirmed .ck {
+  width: 17px; height: 17px; border-radius: 50%; flex: none;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.confirmed .ck svg { width: 11px; height: 11px; }
+.confirmed .cq { font-size: 12px; color: var(--ink-2); flex: 1; }
+.confirmed .ca { font-size: 12px; color: var(--ink); font-weight: 540; }
+.confirmed .ca .num { font-family: var(--ff-mono); }
+.confirmed .edit { font-size: 11px; color: var(--accent); }
+
+.lm-progress { display: flex; gap: 5px; padding: 10px 16px 2px; }
+.lm-pdot { height: 3px; flex: 1; border-radius: 2px; background: var(--bar-track); overflow: hidden; }
+.lm-pdot[data-on="true"] { background: var(--accent); }
