@@ -67,12 +67,21 @@ enum MCPHealthService {
     static func probeAll() async -> [MCPHealth] {
         let configs = servers()
         guard !configs.isEmpty else { return [] }
-        return await withTaskGroup(of: MCPHealth.self) { group in
-            for c in configs { group.addTask { await probe(c) } }
-            var results: [MCPHealth] = []
-            for await r in group { results.append(r) }
-            return results.sorted { $0.name < $1.name }
+        // Batch (max 4 concurrent) — avoids pipe/IO contention that starved reads.
+        var results: [MCPHealth] = []
+        var i = 0
+        while i < configs.count {
+            let chunk = Array(configs[i ..< min(i + 4, configs.count)])
+            let batch = await withTaskGroup(of: MCPHealth.self) { group in
+                for c in chunk { group.addTask { await probe(c) } }
+                var r: [MCPHealth] = []
+                for await x in group { r.append(x) }
+                return r
+            }
+            results.append(contentsOf: batch)
+            i += 4
         }
+        return results.sorted { $0.name < $1.name }
     }
 
     static func probe(_ config: MCPServerConfig) async -> MCPHealth {
@@ -119,17 +128,27 @@ enum MCPHealthService {
 
     /// Reads newline-delimited JSON-RPC, resolving with the tool count of the
     /// `id:2` response. Returns -1 on an error response, nil on EOF/timeout.
-    /// Races the read against a timeout; the caller terminates the process after.
+    /// Uses a chunked POSIX read on a detached thread (the previous
+    /// `bytes.lines` byte-at-a-time reader serialized under concurrency); races
+    /// it against a timeout, and the caller terminates the process after.
     private static func readToolsList(_ fh: FileHandle, timeout: TimeInterval) async -> Int? {
-        await withTaskGroup(of: Int?.self) { group in
+        let fd = fh.fileDescriptor
+        return await withTaskGroup(of: Int?.self) { group in
             group.addTask {
-                do {
-                    for try await line in fh.bytes.lines {
-                        if Task.isCancelled { return nil }
-                        if let r = toolCount(fromLine: Data(line.utf8)) { return r }
+                await Task.detached(priority: .utility) {
+                    var buf = [UInt8]()
+                    var tmp = [UInt8](repeating: 0, count: 1 << 16)
+                    while true {
+                        let n = tmp.withUnsafeMutableBytes { read(fd, $0.baseAddress, $0.count) }
+                        if n <= 0 { return Int?.none }                 // EOF / error
+                        buf.append(contentsOf: tmp[0 ..< n])
+                        while let nl = buf.firstIndex(of: 0x0A) {
+                            let line = Data(buf[buf.startIndex ..< nl])
+                            buf.removeSubrange(buf.startIndex ... nl)
+                            if let r = toolCount(fromLine: line) { return r }
+                        }
                     }
-                } catch {}
-                return nil
+                }.value
             }
             group.addTask {
                 try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
