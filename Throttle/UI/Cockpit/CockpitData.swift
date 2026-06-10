@@ -1,0 +1,151 @@
+import Foundation
+import GRDB
+import Observation
+
+/// Everything the cockpit shows beyond the live snapshot: the current session's
+/// tokens/cost/model-split, a recent burn sample for the forecast, and the local
+/// config "weight" (CLAUDE.md / MCP / skills). Loaded off the main actor; every
+/// field is optional so the view can hide what isn't real yet.
+struct CockpitData: Sendable {
+    var sessionTokens: Int?
+    var sessionCostEUR: Double?
+    var sessionMsgCount: Int?
+    var allTimeCostEUR: Double?
+    var modelSplit: [StatsDataService.ModelSlice]
+    var burn: StatsDataService.BurnSample?
+    var config: ConfigWeight
+    var sessions: [CockpitSession]
+
+    static let empty = CockpitData(
+        sessionTokens: nil, sessionCostEUR: nil, sessionMsgCount: nil,
+        allTimeCostEUR: nil, modelSplit: [], burn: nil, config: .empty, sessions: []
+    )
+
+    /// Average weighted tokens per assistant turn this session (for msgs-left).
+    var avgTokensPerMessage: Double? {
+        guard let t = sessionTokens, let c = sessionMsgCount, c > 0, t > 0 else { return nil }
+        return Double(t) / Double(c)
+    }
+}
+
+/// One row in the cockpit's Sessions panel — analytics only.
+struct CockpitSession: Sendable, Identifiable {
+    let id: String
+    let lastActivity: Date
+    let weightedTokens: Int
+    let costEUR: Double?
+    let topTier: ModelTier?
+    let isCurrent: Bool
+}
+
+/// Local context cost-sources, read from `~/.claude`. Token figures are
+/// estimates (≈250 tok per KB of always-injected text) and are labelled as such.
+struct ConfigWeight: Sendable {
+    var claudeMdTokens: Int?   // nil when no CLAUDE.md
+    var mcpCount: Int
+    var skillCount: Int
+
+    static let empty = ConfigWeight(claudeMdTokens: nil, mcpCount: 0, skillCount: 0)
+
+    var hasAnything: Bool { claudeMdTokens != nil || mcpCount > 0 || skillCount > 0 }
+}
+
+@MainActor
+@Observable
+final class CockpitViewModel {
+    private(set) var data: CockpitData = .empty
+
+    private weak var appState: AppState?
+    private var loop: Task<Void, Never>?
+
+    func start(appState: AppState) {
+        self.appState = appState
+        loop?.cancel()
+        loop = Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.reload()
+                try? await Task.sleep(for: .seconds(10))
+            }
+        }
+    }
+
+    func stop() { loop?.cancel(); loop = nil }
+
+    func reload() async {
+        guard let appState else { return }
+        let db = appState.database
+        let allTime = data.allTimeCostEUR  // keep last good value if query fails
+        let loaded = await Task.detached(priority: .utility) {
+            CockpitData.load(db: db, previousAllTime: allTime)
+        }.value
+        self.data = loaded
+    }
+}
+
+extension CockpitData {
+    /// Off-main loader. Never throws — a failed query degrades to nil so the
+    /// view hides that cell instead of showing a wrong number.
+    static func load(db: any DatabaseReader, previousAllTime: Double?) -> CockpitData {
+        var out = CockpitData.empty
+        out.allTimeCostEUR = previousAllTime
+        try? db.read { db in
+            let sid = try StatsDataService.cockpitCurrentSessionId(in: db)
+            if let sid {
+                out.sessionTokens = try? StatsDataService.cockpitSessionTokens(in: db, sessionId: sid)
+                out.sessionCostEUR = try? StatsDataService.cockpitSessionCostEUR(in: db, sessionId: sid)
+                out.sessionMsgCount = try? StatsDataService.cockpitSessionMessageCount(in: db, sessionId: sid)
+                out.modelSplit = (try? StatsDataService.cockpitModelSplitForSession(in: db, sessionId: sid)) ?? []
+            }
+            out.burn = try? StatsDataService.cockpitRecentBurn(in: db)
+            out.allTimeCostEUR = (try? StatsDataService.extrapolatedCostEUR(in: db, range: .all)) ?? previousAllTime
+
+            let recents = (try? StatsDataService.cockpitRecentSessions(in: db, limit: 6)) ?? []
+            out.sessions = recents.map { r in
+                let cost = try? StatsDataService.cockpitSessionCostEUR(in: db, sessionId: r.id)
+                let split = (try? StatsDataService.cockpitModelSplitForSession(in: db, sessionId: r.id)) ?? []
+                let top = split.max { $0.weightedTokens < $1.weightedTokens }?.tier
+                return CockpitSession(
+                    id: r.id,
+                    lastActivity: Date(timeIntervalSince1970: Double(r.lastActivity)),
+                    weightedTokens: r.weightedTokens, costEUR: cost,
+                    topTier: top, isCurrent: r.id == sid
+                )
+            }
+        }
+        out.config = ConfigWeight.read()
+        return out
+    }
+}
+
+extension ConfigWeight {
+    /// Read `~/.claude` for CLAUDE.md size, MCP server count, skill count.
+    static func read() -> ConfigWeight {
+        let fm = FileManager.default
+        let claude = fm.homeDirectoryForCurrentUser.appendingPathComponent(".claude", isDirectory: true)
+
+        // CLAUDE.md → ~250 tokens per KB (always-injected prelude).
+        var claudeMdTokens: Int?
+        let mdURL = claude.appendingPathComponent("CLAUDE.md")
+        if let size = try? mdURL.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > 0 {
+            claudeMdTokens = (size * 250) / 1024
+        }
+
+        // MCP servers from settings.json `mcpServers`.
+        var mcpCount = 0
+        let settingsURL = claude.appendingPathComponent("settings.json")
+        if let data = try? Data(contentsOf: settingsURL),
+           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let mcps = obj["mcpServers"] as? [String: Any] {
+            mcpCount = mcps.count
+        }
+
+        // Skills: each subdirectory of ~/.claude/skills.
+        var skillCount = 0
+        let skillsURL = claude.appendingPathComponent("skills", isDirectory: true)
+        if let items = try? fm.contentsOfDirectory(at: skillsURL, includingPropertiesForKeys: [.isDirectoryKey]) {
+            skillCount = items.filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }.count
+        }
+
+        return ConfigWeight(claudeMdTokens: claudeMdTokens, mcpCount: mcpCount, skillCount: skillCount)
+    }
+}
