@@ -34,7 +34,7 @@ struct MCPHealth: Sendable, Identifiable {
 }
 
 enum MCPHealthService {
-    static let probeTimeout: TimeInterval = 8
+    static let probeTimeout: TimeInterval = 25   // MCP cold-start (npx/python) is often slow
 
     // MARK: Config
 

@@ -207,7 +207,9 @@ struct CockpitWindowRoot: View {
     }
 
     private var currentModelName: String {
-        vm.data.currentModelTier.map(tierName) ?? "Model"
+        guard let tier = vm.data.currentModelTier else { return "Model" }
+        if tier == .other, let name = vm.data.currentModelName { return name }
+        return tierName(tier)
     }
 
     private func modelCmd(_ t: ModelTier) -> String {
@@ -374,13 +376,13 @@ struct CockpitWindowRoot: View {
                 Text(s.project ?? "Session").font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(.primary).lineLimit(1)
                 Spacer(minLength: 4)
-                Button { terminalController.run("claude --resume \(s.id)") } label: {
+                Button { terminalController.run(resumeCommand(s)) } label: {
                     Text("Resume").font(.system(size: 10, weight: .medium))
                         .foregroundStyle(Color.accentColor)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Type the resume command into the terminal")
+                .help(s.projectPath.map { "cd \($0) && claude --resume" } ?? "claude --resume (no project path resolved)")
                 .disabled(s.isCurrent)
                 .opacity(s.isCurrent ? 0.35 : 1)
             }
@@ -399,6 +401,15 @@ struct CockpitWindowRoot: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Resume must run from the session's project directory or `claude --resume`
+    /// can't find it — so cd there first when we resolved the path.
+    private func resumeCommand(_ s: CockpitSession) -> String {
+        if let p = s.projectPath {
+            return "cd '\(p.replacingOccurrences(of: "'", with: "'\\''"))' && claude --resume \(s.id)"
+        }
+        return "claude --resume \(s.id)"
     }
 
     private func relativeTime(_ date: Date) -> String {
@@ -456,8 +467,9 @@ struct CockpitWindowRoot: View {
             }
             .frame(height: 6)
             if let top {
+                let label = (top.tier == .other ? (vm.data.currentModelName ?? "Other") : tierName(top.tier))
                 HStack(spacing: 4) {
-                    Text(tierName(top.tier)).font(.system(size: 11, weight: .medium)).foregroundStyle(.primary)
+                    Text(label).font(.system(size: 11, weight: .medium)).foregroundStyle(.primary)
                     Text("\(topPct)%").font(.system(size: 11).monospacedDigit()).foregroundStyle(.secondary)
                     if top.tier == .opus, topPct > 70 {
                         Text("· cost-heavy").font(.system(size: 10)).foregroundStyle(.orange)
@@ -540,7 +552,7 @@ struct CockpitWindowRoot: View {
         switch s {
         case .ok:      return .green
         case .slow:    return .orange
-        case .down:    return .red
+        case .down:    return Color.primary.opacity(0.3)   // "no resp" — may be cold-start/our-spawn limit, not necessarily broken
         case .remote:  return Color.accentColor.opacity(0.6)
         case .unknown: return Color.primary.opacity(0.25)
         }
@@ -552,7 +564,7 @@ struct CockpitWindowRoot: View {
             let tools = m.toolCount.map { "\($0) tools" } ?? ""
             let ms = m.latencyMs.map { " · \($0)ms" } ?? ""
             return tools + ms
-        case .down:    return "down"
+        case .down:    return "no resp"
         case .remote:  return m.latencyMs.map { "remote · \($0)ms" } ?? "remote"
         case .unknown: return "—"
         }

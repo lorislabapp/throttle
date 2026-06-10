@@ -16,11 +16,12 @@ struct CockpitData: Sendable {
     var config: ConfigWeight
     var sessions: [CockpitSession]
     var currentModelTier: ModelTier?
+    var currentModelName: String?   // pretty real name, for models outside opus/sonnet/haiku
 
     static let empty = CockpitData(
         sessionTokens: nil, sessionCostEUR: nil, sessionMsgCount: nil,
         allTimeCostEUR: nil, modelSplit: [], burn: nil, config: .empty,
-        sessions: [], currentModelTier: nil
+        sessions: [], currentModelTier: nil, currentModelName: nil
     )
 
     /// Average weighted tokens per assistant turn this session (for msgs-left).
@@ -34,11 +35,31 @@ struct CockpitData: Sendable {
 struct CockpitSession: Sendable, Identifiable {
     let id: String
     let project: String?
+    let projectPath: String?   // real cwd, so Resume can `cd` there first
     let lastActivity: Date
     let weightedTokens: Int
     let costEUR: Double?
     let topTier: ModelTier?
     let isCurrent: Bool
+}
+
+/// Clean a raw model id into a display name for models outside opus/sonnet/haiku.
+/// `claude-fable-5-20260601` → "Fable 5".
+func prettyModelName(_ raw: String) -> String {
+    var s = raw.lowercased()
+    if s.hasPrefix("claude-") { s.removeFirst("claude-".count) }
+    if let r = s.range(of: "-[0-9]{6,8}$", options: .regularExpression) { s.removeSubrange(r) }
+    let parts = s.split(separator: "-").map { $0.capitalized }
+    return parts.isEmpty ? raw : parts.joined(separator: " ")
+}
+
+/// Real project cwd from a session JSONL path, by decoding the encoded folder.
+/// `…/projects/-Users-kevin-GitHub-Throttle/<id>.jsonl` → `/Users/kevin/GitHub/Throttle`.
+/// Lossy for paths whose components contain a dash; returns nil if it doesn't resolve.
+func cockpitProjectPath(fromJSONLPath path: String) -> String? {
+    let folder = ((path as NSString).deletingLastPathComponent as NSString).lastPathComponent
+    let real = folder.replacingOccurrences(of: "-", with: "/")
+    return FileManager.default.fileExists(atPath: real) ? real : nil
 }
 
 extension ModelTier {
@@ -144,6 +165,7 @@ extension CockpitData {
 
             if let model = try? StatsDataService.cockpitCurrentModel(in: db) {
                 out.currentModelTier = ModelTier.from(model: model)
+                out.currentModelName = prettyModelName(model)
             }
 
             let recents = (try? StatsDataService.cockpitRecentSessions(in: db, limit: 6)) ?? []
@@ -151,10 +173,11 @@ extension CockpitData {
                 let cost = try? StatsDataService.cockpitSessionCostEUR(in: db, sessionId: r.id)
                 let split = (try? StatsDataService.cockpitModelSplitForSession(in: db, sessionId: r.id)) ?? []
                 let top = split.max { $0.weightedTokens < $1.weightedTokens }?.tier
-                let project = (try? StatsDataService.cockpitSessionPath(in: db, sessionId: r.id))
-                    .flatMap { $0 }.flatMap(cockpitProjectName(fromJSONLPath:))
+                let jsonl = (try? StatsDataService.cockpitSessionPath(in: db, sessionId: r.id)).flatMap { $0 }
+                let project = jsonl.flatMap(cockpitProjectName(fromJSONLPath:))
+                let projectPath = jsonl.flatMap(cockpitProjectPath(fromJSONLPath:))
                 return CockpitSession(
-                    id: r.id, project: project,
+                    id: r.id, project: project, projectPath: projectPath,
                     lastActivity: Date(timeIntervalSince1970: Double(r.lastActivity)),
                     weightedTokens: r.weightedTokens, costEUR: cost,
                     topTier: top, isCurrent: r.id == sid
