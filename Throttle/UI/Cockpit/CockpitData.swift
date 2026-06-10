@@ -70,13 +70,15 @@ struct ConfigWeight: Sendable {
 
     static let empty = ConfigWeight(claudeMdTokens: nil, mcpCount: 0, skillCount: 0)
 
-    var hasAnything: Bool { claudeMdTokens != nil || mcpCount > 0 || skillCount > 0 }
+    var hasAnything: Bool { claudeMdTokens != nil || skillCount > 0 }
 }
 
 @MainActor
 @Observable
 final class CockpitViewModel {
     private(set) var data: CockpitData = .empty
+    private(set) var mcp: [MCPHealth] = []
+    private(set) var mcpProbing = false
 
     private weak var appState: AppState?
     private var loop: Task<Void, Never>?
@@ -90,9 +92,19 @@ final class CockpitViewModel {
                 try? await Task.sleep(for: .seconds(10))
             }
         }
+        Task { [weak self] in await self?.probeMCP() }   // one probe on open
     }
 
     func stop() { loop?.cancel(); loop = nil }
+
+    /// On-demand MCP probe (never on the reload timer — spawning servers is heavy).
+    func probeMCP() async {
+        guard !mcpProbing else { return }
+        mcpProbing = true
+        let results = await MCPHealthService.probeAll()
+        mcp = results
+        mcpProbing = false
+    }
 
     func reload() async {
         guard let appState else { return }

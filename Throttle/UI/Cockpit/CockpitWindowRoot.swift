@@ -288,6 +288,7 @@ struct CockpitWindowRoot: View {
                     railSection("CONFIG WEIGHT") { configWeightView }
                     railHairline
                 }
+                mcpSection
                 if !vm.data.sessions.isEmpty {
                     railSection("RECENT SESSIONS") { sessionsView }
                 }
@@ -412,12 +413,73 @@ struct CockpitWindowRoot: View {
             if let md = vm.data.config.claudeMdTokens {
                 configRow("CLAUDE.md", value: "≈\(fmtTokens(md)) tok / session")
             }
-            if vm.data.config.mcpCount > 0 {
-                configRow("MCP servers", value: "\(vm.data.config.mcpCount)")
-            }
             if vm.data.config.skillCount > 0 {
                 configRow("Skills", value: "\(vm.data.config.skillCount)")
             }
+        }
+    }
+
+    @ViewBuilder
+    private var mcpSection: some View {
+        if !vm.mcp.isEmpty || vm.mcpProbing {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 6) {
+                    dlLabel(vm.mcp.isEmpty ? "MCP" : "MCP · \(vm.mcp.count)")
+                    Spacer(minLength: 4)
+                    if vm.mcpProbing {
+                        ProgressView().controlSize(.mini)
+                    } else {
+                        Button { Task { await vm.probeMCP() } } label: {
+                            Image(systemName: "arrow.clockwise").font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(.secondary).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain).help("Probe MCP servers (list_tools)")
+                    }
+                }
+                if vm.mcp.isEmpty && vm.mcpProbing {
+                    Text("probing…").font(.system(size: 10)).foregroundStyle(.tertiary)
+                } else {
+                    mcpRows
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16).padding(.vertical, 14)
+            railHairline
+        }
+    }
+
+    private var mcpRows: some View {
+        VStack(spacing: 6) {
+            ForEach(vm.mcp) { m in
+                HStack(spacing: 8) {
+                    Circle().fill(mcpColor(m.status)).frame(width: 5, height: 5)
+                    Text(m.name).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                    Spacer(minLength: 4)
+                    Text(mcpDetail(m)).font(.system(size: 9.5).monospacedDigit()).foregroundStyle(.tertiary)
+                }
+            }
+        }
+    }
+
+    private func mcpColor(_ s: MCPHealth.Status) -> Color {
+        switch s {
+        case .ok:      return .green
+        case .slow:    return .orange
+        case .down:    return .red
+        case .remote:  return Color.accentColor.opacity(0.6)
+        case .unknown: return Color.primary.opacity(0.25)
+        }
+    }
+
+    private func mcpDetail(_ m: MCPHealth) -> String {
+        switch m.status {
+        case .ok, .slow:
+            let tools = m.toolCount.map { "\($0) tools" } ?? ""
+            let ms = m.latencyMs.map { " · \($0)ms" } ?? ""
+            return tools + ms
+        case .down:    return "down"
+        case .remote:  return m.latencyMs.map { "remote · \($0)ms" } ?? "remote"
+        case .unknown: return "—"
         }
     }
 
