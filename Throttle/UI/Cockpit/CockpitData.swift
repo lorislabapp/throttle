@@ -130,14 +130,19 @@ extension ConfigWeight {
             claudeMdTokens = (size * 250) / 1024
         }
 
-        // MCP servers from settings.json `mcpServers`.
-        var mcpCount = 0
-        let settingsURL = claude.appendingPathComponent("settings.json")
-        if let data = try? Data(contentsOf: settingsURL),
-           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let mcps = obj["mcpServers"] as? [String: Any] {
-            mcpCount = mcps.count
+        // MCP servers: Claude Code stores them in ~/.claude.json (`mcpServers`),
+        // older/other setups use ~/.claude/settings.json. Union the keys.
+        var mcpKeys = Set<String>()
+        let home = fm.homeDirectoryForCurrentUser
+        for url in [home.appendingPathComponent(".claude.json"),
+                    claude.appendingPathComponent("settings.json")] {
+            if let data = try? Data(contentsOf: url),
+               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let mcps = obj["mcpServers"] as? [String: Any] {
+                mcpKeys.formUnion(mcps.keys)
+            }
         }
+        let mcpCount = mcpKeys.count
 
         // Skills: each subdirectory of ~/.claude/skills.
         var skillCount = 0

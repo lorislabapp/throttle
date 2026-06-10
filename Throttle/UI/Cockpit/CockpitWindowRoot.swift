@@ -203,13 +203,15 @@ struct CockpitWindowRoot: View {
                     .font(.system(size: 14, weight: .medium).monospacedDigit()).foregroundStyle(.primary)
                 Text("tok").font(.system(size: 10.5)).foregroundStyle(.tertiary)
                 if let c = vm.data.sessionCostEUR {
-                    Text("· \(fmtEUR(c))").font(.system(size: 14, weight: .medium).monospacedDigit())
-                        .foregroundStyle(.primary)
+                    Text("· ≈\(fmtEUR(c))").font(.system(size: 14, weight: .medium).monospacedDigit())
+                        .foregroundStyle(.secondary)
                 }
             }
             if let all = vm.data.allTimeCostEUR {
-                Text("this session · \(fmtEUR(all)) all-time")
+                Text("API value · ≈\(fmtEUR(all)) all-time")
                     .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+            } else {
+                Text("at API rates").font(.system(size: 10.5)).foregroundStyle(.tertiary)
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 11)
@@ -271,7 +273,7 @@ struct CockpitWindowRoot: View {
                     .foregroundStyle(.secondary)
                 Text("tok").font(.system(size: 9.5)).foregroundStyle(.tertiary)
                 if let c = s.costEUR {
-                    Text("· \(fmtEUR(c))").font(.system(size: 10.5).monospacedDigit())
+                    Text("· ≈\(fmtEUR(c))").font(.system(size: 10.5).monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
                 if let t = s.topTier {
@@ -393,7 +395,7 @@ struct CockpitWindowRoot: View {
                 Text(f.text).font(.system(size: 10).monospacedDigit()).foregroundStyle(.white.opacity(0.85))
             }
             if let tok = vm.data.sessionTokens {
-                Text("\(fmtTokens(tok)) tok\(vm.data.sessionCostEUR.map { " · \(fmtEUR($0))" } ?? "") session")
+                Text("\(fmtTokens(tok)) tok\(vm.data.sessionCostEUR.map { " · ≈\(fmtEUR($0))" } ?? "") session")
                     .font(.system(size: 9.5).monospacedDigit()).foregroundStyle(.white.opacity(0.4))
             }
         }
@@ -516,7 +518,13 @@ struct CockpitWindowRoot: View {
         let remaining = Double(cap) * (1 - b.pct)
         guard remaining > 0 else { return nil }   // at/over cap → the banner speaks instead
         let minutes = remaining / burn.tokensPerMinute
-        let msgs = vm.data.avgTokensPerMessage.map { Int((remaining / $0).rounded()) }
+        // If you'll hit the rolling-window reset before the cap, there's nothing
+        // to warn about — hide it rather than show a useless multi-day countdown.
+        let resetMinutes = Double(b.resetSeconds) / 60.0
+        guard resetMinutes <= 0 || minutes < resetMinutes else { return nil }
+        // Only show a messages-left figure when it's small enough to be useful.
+        let rawMsgs = vm.data.avgTokensPerMessage.map { Int((remaining / $0).rounded()) }
+        let msgs = (rawMsgs ?? .max) <= 500 ? rawMsgs : nil
         let tone: Forecast.Tone = b.pct >= 0.95 ? .crit : (b.pct >= 0.80 ? .warn : .neutral)
         return Forecast(minutes: minutes, msgs: msgs, tone: tone)
     }
@@ -529,6 +537,7 @@ struct CockpitWindowRoot: View {
         let sub: String
         let pct: Double
         let capTokens: Int?
+        let resetSeconds: Int64
         let resetText: String
         let degraded: Bool
     }
@@ -569,6 +578,7 @@ struct CockpitWindowRoot: View {
         }
         guard let pct else { return nil }
         return Reading(kind: kind, name: name, sub: sub, pct: pct, capTokens: local.capTokens,
+                       resetSeconds: resetSeconds,
                        resetText: "resets in \(formatReset(resetSeconds))", degraded: degraded)
     }
 
@@ -585,5 +595,9 @@ struct CockpitWindowRoot: View {
         return "\(n)"
     }
 
-    private func fmtEUR(_ v: Double) -> String { String(format: "€%.2f", v) }
+    private func fmtEUR(_ v: Double) -> String {
+        if v >= 100_000 { return String(format: "€%.0fk", v / 1000) }  // €150k
+        if v >= 1_000   { return String(format: "€%.0f", v) }          // €1081
+        return String(format: "€%.2f", v)                              // €7.87
+    }
 }
