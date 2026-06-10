@@ -21,15 +21,23 @@ in the NotebookLM "Throttle - Documentation" notebook; code architecture in the
 - Global `~/.claude/CLAUDE.md` trimmed (SwiftUI/Swift6/perf detail → skills; backup `.bak-2026-06-10`).
 - NotebookLM notebook synced (25 sources).
 
-## Next (prioritized, all validated on-wedge)
+## Validated this session (autonomous pass)
+- **Dedup detector** works — found 5 real duplicated blocks across 4 projects each (asc-mcp guidance, "file path + line number", audit toolkit). Detect-only v1 shipped.
+- **MCP probe** bug fixed — it was the reader (byte-at-a-time `bytes.lines` starved under 11 concurrent probes), NOT the timeout: audit-mcp/lorislab-web respond <0.5s from a shell. Now chunked POSIX read + concurrency cap 4 + 25s ceiling + "no resp" label.
+- **Model `Fable 5`** is real in the DB (`claude-fable-5`); now shown by real name, not "Other". `<synthetic>` events carry 0 weighted → harmless.
+- **Resume** now `cd`s to the project before `claude --resume`.
+- **Data integrity** sanity-checked vs `com.lorislab.throttle/usage.db` — cockpit numbers are accurate (no faked values).
+- **"LATEST SESSION"** relabel + project name (honest: it's the globally-latest session, not the cockpit terminal's).
 
-1. **Config-weight "Optimize" button** (currently display-only) → wire to Throttle's existing AI assistant/optimizer (diff preview + atomic backup + rollback) for CLAUDE.md/skills trimming.
-2. **Dedup / hoist optimizer** (NotebookLM verdict: GO absolu) — detect duplicated content across project CLAUDE.md files and propose hoisting to a shared global skill. Attaches to the Optimize button. Stays 100% local (never GitHub API). Ties to the 95KB→28KB / "30–40% fewer limit hits" promise.
-3. **Session summary** — beyond the repo name, show the 1st user prompt of the session `.jsonl` as the "what".
-4. **"THIS SESSION" semantics** — tie to the `claude` session actually running in the cockpit terminal (watch for the newest `.jsonl` created after launch), not just the globally-most-recent session.
-5. **Floating HUD (NSPanel)** — lift the compact HUD into a borderless always-on-top panel over ANY terminal — the hedge against the "SwiftTerm prison" risk (power users won't abandon Warp/Ghostty). HUD already built decoupled for this.
-6. **Prompt-gauge D** — opt-in shell PS1 segment (Starship-style) putting headroom in the prompt itself. Phase: shell integration, not SwiftUI.
-7. **MCP health polish** — opt-in note that probing launches local servers; decode project names containing dashes (e.g. `Lumen-Cam` currently → `Cam`); verify GOAT probe results against known-good servers.
+## Next (prioritized)
+
+1. **Dedup apply (phase 2)** — the detector is shipped; the destructive half (create the shared skill + remove the block from each CLAUDE.md, with diff preview + atomic backup + rollback) is the remaining work. Wire to a "Hoist" action in the dedup sheet. Stays 100% local.
+2. **Config-weight "Optimize" button** → route CLAUDE.md/skills trimming through Throttle's existing AI assistant/optimizer (diff+rollback).
+3. **Session summary** — show the 1st user prompt of the session `.jsonl` as the "what" (beyond the repo name).
+4. **"THIS SESSION" → cockpit terminal** — deeper version: watch for the newest `.jsonl` created after the terminal launches and bind the strip to THAT session (currently shows the globally-latest, relabeled honestly).
+5. **Floating HUD (NSPanel)** — lift the compact HUD into a borderless always-on-top panel over ANY terminal (the "SwiftTerm prison" hedge; HUD already built decoupled).
+6. **Prompt-gauge D** — opt-in Starship-style shell PS1 segment.
+7. **MCP polish** — opt-in note that probing launches local servers; decode project/repo names containing dashes (lossy today).
 
 ## Guardrails (don't drift)
 - Wedge = cockpit-around-the-agent, NOT a terminal. Non-goals: tabs/splits/themes/SSH/profiles, GitHub/third-party/cloud/accounts.

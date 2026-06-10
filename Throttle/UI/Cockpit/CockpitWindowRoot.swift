@@ -314,7 +314,7 @@ struct CockpitWindowRoot: View {
 
     private var sessionCell: some View {
         VStack(alignment: .leading, spacing: 7) {
-            dlLabel("THIS SESSION")
+            dlLabel(vm.data.currentSessionProject.map { "LATEST · \($0.uppercased())" } ?? "LATEST SESSION")
             HStack(spacing: 5) {
                 Text(fmtTokens(vm.data.sessionTokens ?? 0))
                     .font(.system(size: 14, weight: .medium).monospacedDigit()).foregroundStyle(.primary)

@@ -17,11 +17,12 @@ struct CockpitData: Sendable {
     var sessions: [CockpitSession]
     var currentModelTier: ModelTier?
     var currentModelName: String?   // pretty real name, for models outside opus/sonnet/haiku
+    var currentSessionProject: String?  // which project the "latest session" belongs to
 
     static let empty = CockpitData(
         sessionTokens: nil, sessionCostEUR: nil, sessionMsgCount: nil,
         allTimeCostEUR: nil, modelSplit: [], burn: nil, config: .empty,
-        sessions: [], currentModelTier: nil, currentModelName: nil
+        sessions: [], currentModelTier: nil, currentModelName: nil, currentSessionProject: nil
     )
 
     /// Average weighted tokens per assistant turn this session (for msgs-left).
@@ -159,6 +160,8 @@ extension CockpitData {
                 out.sessionCostEUR = try? StatsDataService.cockpitSessionCostEUR(in: db, sessionId: sid)
                 out.sessionMsgCount = try? StatsDataService.cockpitSessionMessageCount(in: db, sessionId: sid)
                 out.modelSplit = (try? StatsDataService.cockpitModelSplitForSession(in: db, sessionId: sid)) ?? []
+                out.currentSessionProject = (try? StatsDataService.cockpitSessionPath(in: db, sessionId: sid))
+                    .flatMap { $0 }.flatMap(cockpitProjectName(fromJSONLPath:))
             }
             out.burn = try? StatsDataService.cockpitRecentBurn(in: db)
             out.allTimeCostEUR = (try? StatsDataService.extrapolatedCostEUR(in: db, range: .all)) ?? previousAllTime
