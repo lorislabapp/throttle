@@ -144,4 +144,15 @@ extension StatsDataService {
             return RecentSession(id: id, lastActivity: ts, weightedTokens: row["w"] ?? 0)
         }
     }
+
+    /// The model of the most recent event — the session's current model.
+    static func cockpitCurrentModel(in db: Database) throws -> String? {
+        try String.fetchOne(db, sql: "SELECT model FROM usage_events ORDER BY timestamp DESC LIMIT 1")
+    }
+
+    /// The JSONL path for a session, so we can name it by its project (repo).
+    static func cockpitSessionPath(in db: Database, sessionId: String) throws -> String? {
+        try String.fetchOne(db, sql: "SELECT path FROM file_state WHERE path LIKE ? LIMIT 1",
+                            arguments: ["%/\(sessionId).jsonl"])
+    }
 }

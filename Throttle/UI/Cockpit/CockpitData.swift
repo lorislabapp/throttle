@@ -15,10 +15,12 @@ struct CockpitData: Sendable {
     var burn: StatsDataService.BurnSample?
     var config: ConfigWeight
     var sessions: [CockpitSession]
+    var currentModelTier: ModelTier?
 
     static let empty = CockpitData(
         sessionTokens: nil, sessionCostEUR: nil, sessionMsgCount: nil,
-        allTimeCostEUR: nil, modelSplit: [], burn: nil, config: .empty, sessions: []
+        allTimeCostEUR: nil, modelSplit: [], burn: nil, config: .empty,
+        sessions: [], currentModelTier: nil
     )
 
     /// Average weighted tokens per assistant turn this session (for msgs-left).
@@ -31,11 +33,32 @@ struct CockpitData: Sendable {
 /// One row in the cockpit's Sessions panel — analytics only.
 struct CockpitSession: Sendable, Identifiable {
     let id: String
+    let project: String?
     let lastActivity: Date
     let weightedTokens: Int
     let costEUR: Double?
     let topTier: ModelTier?
     let isCurrent: Bool
+}
+
+extension ModelTier {
+    static func from(model: String) -> ModelTier {
+        let l = model.lowercased()
+        if l.contains("opus") { return .opus }
+        if l.contains("sonnet") { return .sonnet }
+        if l.contains("haiku") { return .haiku }
+        return .other
+    }
+}
+
+/// Derive a human project name from a session's JSONL path.
+/// `~/.claude/projects/-Users-kevin-GitHub-Throttle/<id>.jsonl` → "Throttle".
+/// Repo names containing dashes collapse to their last segment (acceptable v1).
+func cockpitProjectName(fromJSONLPath path: String) -> String? {
+    let encoded = (path as NSString).deletingLastPathComponent
+    let folder = (encoded as NSString).lastPathComponent
+    let parts = folder.split(separator: "-").map(String.init).filter { !$0.isEmpty }
+    return parts.last
 }
 
 /// Local context cost-sources, read from `~/.claude`. Token figures are
@@ -99,13 +122,19 @@ extension CockpitData {
             out.burn = try? StatsDataService.cockpitRecentBurn(in: db)
             out.allTimeCostEUR = (try? StatsDataService.extrapolatedCostEUR(in: db, range: .all)) ?? previousAllTime
 
+            if let model = try? StatsDataService.cockpitCurrentModel(in: db) {
+                out.currentModelTier = ModelTier.from(model: model)
+            }
+
             let recents = (try? StatsDataService.cockpitRecentSessions(in: db, limit: 6)) ?? []
             out.sessions = recents.map { r in
                 let cost = try? StatsDataService.cockpitSessionCostEUR(in: db, sessionId: r.id)
                 let split = (try? StatsDataService.cockpitModelSplitForSession(in: db, sessionId: r.id)) ?? []
                 let top = split.max { $0.weightedTokens < $1.weightedTokens }?.tier
+                let project = (try? StatsDataService.cockpitSessionPath(in: db, sessionId: r.id))
+                    .flatMap { $0 }.flatMap(cockpitProjectName(fromJSONLPath:))
                 return CockpitSession(
-                    id: r.id,
+                    id: r.id, project: project,
                     lastActivity: Date(timeIntervalSince1970: Double(r.lastActivity)),
                     weightedTokens: r.weightedTokens, costEUR: cost,
                     topTier: top, isCurrent: r.id == sid

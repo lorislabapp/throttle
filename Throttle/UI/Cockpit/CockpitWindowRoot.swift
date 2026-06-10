@@ -69,6 +69,7 @@ struct CockpitWindowRoot: View {
                 .font(.system(size: 14)).foregroundStyle(.primary.opacity(0.85))
             Text("Throttle Cockpit").font(.system(size: 12.5, weight: .medium)).foregroundStyle(.secondary)
             Spacer(minLength: 12)
+            modelMenu
             appState.isPro ? pill("PRO") : pill("FREE")
             if isExact { exactPill }
             iconButton("rectangle.righthalf.inset.filled", on: railOpen) { railOpen.toggle() }
@@ -119,6 +120,61 @@ struct CockpitWindowRoot: View {
         .padding(.horizontal, 6).padding(.vertical, 3)
         .background(Color.primary, in: RoundedRectangle(cornerRadius: 5))
         .foregroundStyle(Color(nsColor: .windowBackgroundColor))
+    }
+
+    // MARK: - Model selector (passthrough to `/model`)
+
+    private var modelMenu: some View {
+        Menu {
+            ForEach([ModelTier.opus, .sonnet, .haiku], id: \.self) { t in
+                Button { terminalController.run("/model \(modelCmd(t))") } label: {
+                    Text(modelMenuLabel(t))
+                }
+                .disabled(vm.data.currentModelTier == t)
+            }
+            Divider()
+            Text("Types /model into the terminal").font(.system(size: 10))
+        } label: {
+            HStack(spacing: 3) {
+                Text(currentModelName).font(.system(size: 11, weight: .medium))
+                Image(systemName: "chevron.down").font(.system(size: 7, weight: .bold))
+            }
+            .foregroundStyle(.secondary)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Switch the session model (Claude Code applies it)")
+    }
+
+    private var currentModelName: String {
+        vm.data.currentModelTier.map(tierName) ?? "Model"
+    }
+
+    private func modelCmd(_ t: ModelTier) -> String {
+        switch t {
+        case .opus: return "opus"; case .sonnet: return "sonnet"
+        case .haiku: return "haiku"; case .other: return "default"
+        }
+    }
+
+    private func modelMenuLabel(_ t: ModelTier) -> String {
+        let name = tierName(t)
+        guard let cur = vm.data.currentModelTier, cur != t else { return "\(name) (current)" }
+        let factor = outputRate(cur) / outputRate(t)
+        if factor >= 1.5 { return "\(name) · ~\(Int(factor.rounded()))× cheaper" }
+        if factor <= 0.67 { return "\(name) · ~\(Int((1 / factor).rounded()))× pricier" }
+        return name
+    }
+
+    /// Output €/M rate per tier, from the shared PlanAdvisor table (no hardcoding).
+    private func outputRate(_ t: ModelTier) -> Double {
+        switch t {
+        case .opus:   return PlanAdvisor.opus47.outputPerM
+        case .sonnet: return PlanAdvisor.sonnet46.outputPerM
+        case .haiku:  return PlanAdvisor.haiku45.outputPerM
+        case .other:  return PlanAdvisor.sonnet46.outputPerM
+        }
     }
 
     // MARK: - Strip A (decision)
@@ -255,8 +311,8 @@ struct CockpitWindowRoot: View {
                 if s.isCurrent {
                     Circle().fill(Color.green).frame(width: 5, height: 5)
                 }
-                Text(relativeTime(s.lastActivity))
-                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.primary)
+                Text(s.project ?? "Session").font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(.primary).lineLimit(1)
                 Spacer(minLength: 4)
                 Button { terminalController.run("claude --resume \(s.id)") } label: {
                     Text("Resume").font(.system(size: 10, weight: .medium))
@@ -264,14 +320,15 @@ struct CockpitWindowRoot: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Type `claude --resume` into the terminal")
+                .help("Type the resume command into the terminal")
                 .disabled(s.isCurrent)
                 .opacity(s.isCurrent ? 0.35 : 1)
             }
             HStack(spacing: 5) {
+                Text(relativeTime(s.lastActivity)).font(.system(size: 9.5)).foregroundStyle(.tertiary)
+                Text("·").font(.system(size: 9.5)).foregroundStyle(.tertiary)
                 Text(fmtTokens(s.weightedTokens)).font(.system(size: 10.5).monospacedDigit())
                     .foregroundStyle(.secondary)
-                Text("tok").font(.system(size: 9.5)).foregroundStyle(.tertiary)
                 if let c = s.costEUR {
                     Text("· ≈\(fmtEUR(c))").font(.system(size: 10.5).monospacedDigit())
                         .foregroundStyle(.secondary)
@@ -436,7 +493,15 @@ struct CockpitWindowRoot: View {
         return HStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 13)).foregroundStyle(tint)
             Text(text).font(.system(size: 12.5)).foregroundStyle(.primary)
-            Spacer(minLength: 0)
+            Spacer(minLength: 8)
+            if vm.data.currentModelTier == .opus {
+                Button { terminalController.run("/model sonnet") } label: {
+                    Text("Switch to Sonnet").font(.system(size: 11.5, weight: .medium))
+                        .foregroundStyle(Color.accentColor).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Types /model sonnet into the terminal")
+            }
         }
         .padding(.horizontal, 14).padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
