@@ -79,6 +79,7 @@ final class CockpitViewModel {
     private(set) var data: CockpitData = .empty
     private(set) var mcp: [MCPHealth] = []
     private(set) var mcpProbing = false
+    private(set) var dedup: DedupReport = .empty
 
     private weak var appState: AppState?
     private var loop: Task<Void, Never>?
@@ -92,10 +93,17 @@ final class CockpitViewModel {
                 try? await Task.sleep(for: .seconds(10))
             }
         }
-        Task { [weak self] in await self?.probeMCP() }   // one probe on open
+        Task { [weak self] in await self?.probeMCP() }     // one probe on open
+        Task { [weak self] in await self?.scanDedup() }     // one dedup scan on open
     }
 
     func stop() { loop?.cancel(); loop = nil }
+
+    /// Scan project CLAUDE.md files for duplicated content (off-main, on-demand).
+    func scanDedup() async {
+        let report = await Task.detached(priority: .utility) { ConfigDedupService.scan() }.value
+        dedup = report
+    }
 
     /// On-demand MCP probe (never on the reload timer — spawning servers is heavy).
     func probeMCP() async {

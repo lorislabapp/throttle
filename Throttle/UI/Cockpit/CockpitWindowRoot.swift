@@ -14,6 +14,7 @@ struct CockpitWindowRoot: View {
     @State private var terminalController = CockpitTerminalController()
     @State private var railOpen = true
     @State private var compact = false
+    @State private var showingDedup = false
 
     var body: some View {
         Group {
@@ -21,6 +22,64 @@ struct CockpitWindowRoot: View {
         }
         .onAppear { vm.start(appState: appState) }
         .onDisappear { vm.stop() }
+        .sheet(isPresented: $showingDedup) { dedupSheet }
+    }
+
+    // MARK: - Dedup review sheet
+
+    private var dedupSheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Duplicated context").font(.system(size: 15, weight: .semibold))
+                    Text("Same CLAUDE.md content across \(vm.dedup.projectCount) projects — paid for every session of each. Hoist to a shared skill in ~/.claude/skills/ to load it on-demand instead.")
+                        .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Button("Done") { showingDedup = false }.keyboardShortcut(.defaultAction)
+            }
+            .padding(16)
+            Divider()
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(vm.dedup.blocks) { dedupRow($0) }
+                }
+            }
+            Divider()
+            HStack {
+                Text("≈\(fmtTokens(vm.dedup.totalWasteTokens)) tokens of duplication across your projects")
+                    .font(.system(size: 11)).foregroundStyle(.tertiary)
+                Spacer()
+            }
+            .padding(.horizontal, 16).padding(.vertical, 10)
+        }
+        .frame(width: 580, height: 520)
+    }
+
+    private func dedupRow(_ b: DuplicatedBlock) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Text(b.projects.joined(separator: " · "))
+                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.primary).lineLimit(1)
+                Spacer(minLength: 6)
+                Text("≈\(fmtTokens(b.wasteTokens)) tok").font(.system(size: 11).monospacedDigit()).foregroundStyle(.orange)
+                Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(b.text, forType: .string)
+                } label: {
+                    Image(systemName: "doc.on.clipboard").font(.system(size: 11)).foregroundStyle(Color.accentColor)
+                }
+                .buttonStyle(.plain).help("Copy this block")
+            }
+            Text(b.text)
+                .font(.system(size: 10.5, design: .monospaced)).foregroundStyle(.secondary)
+                .lineLimit(4).truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(8)
+                .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 6))
+        }
+        .padding(.horizontal, 16).padding(.vertical, 10)
+        .overlay(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.06)).frame(height: 1) }
     }
 
     // MARK: - Full layout
@@ -415,6 +474,22 @@ struct CockpitWindowRoot: View {
             }
             if vm.data.config.skillCount > 0 {
                 configRow("Skills", value: "\(vm.data.config.skillCount)")
+            }
+            if !vm.dedup.blocks.isEmpty {
+                Button { showingDedup = true } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc.on.doc").font(.system(size: 10)).foregroundStyle(.orange)
+                        Text("Duplicated × \(vm.dedup.projectCount) projects")
+                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                        Spacer(minLength: 4)
+                        Text("≈\(fmtTokens(vm.dedup.totalWasteTokens)) tok")
+                            .font(.system(size: 11).monospacedDigit()).foregroundStyle(.orange)
+                        Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold)).foregroundStyle(.tertiary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Review duplicated CLAUDE.md content you can hoist to a shared skill")
             }
         }
     }
