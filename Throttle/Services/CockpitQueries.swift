@@ -37,6 +37,7 @@ extension StatsDataService {
         let sql = """
             SELECT
                 CASE
+                    WHEN lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%' THEN 'fable'
                     WHEN lower(model) LIKE '%opus%'   THEN 'opus'
                     WHEN lower(model) LIKE '%sonnet%' THEN 'sonnet'
                     WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
@@ -53,10 +54,11 @@ extension StatsDataService {
             let i: Int = row["i"] ?? 0, o: Int = row["o"] ?? 0
             let cc: Int = row["cc"] ?? 0, cr: Int = row["cr"] ?? 0
             let (inRate, outRate): (Double, Double)
-            switch bucket {
-            case "opus":   (inRate, outRate) = (15, 75)
+            switch bucket {   // official USD/MTok rates, refreshed 2026-06-11
+            case "fable":  (inRate, outRate) = (10, 50)
+            case "opus":   (inRate, outRate) = (5, 25)
             case "sonnet": (inRate, outRate) = (3, 15)
-            case "haiku":  (inRate, outRate) = (0.80, 4)
+            case "haiku":  (inRate, outRate) = (1, 5)
             default:       (inRate, outRate) = (3, 15)
             }
             let m = 1_000_000.0
