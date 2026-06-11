@@ -102,6 +102,7 @@ final class CockpitViewModel {
     private(set) var mcp: [MCPHealth] = []
     private(set) var mcpProbing = false
     private(set) var dedup: DedupReport = .empty
+    private(set) var memory: MemoryReport = .empty
 
     private weak var appState: AppState?
     private var loop: Task<Void, Never>?
@@ -117,6 +118,7 @@ final class CockpitViewModel {
         }
         Task { [weak self] in await self?.probeMCP() }     // one probe on open
         Task { [weak self] in await self?.scanDedup() }     // one dedup scan on open
+        Task { [weak self] in await self?.scanMemory() }    // one memory scan on open
     }
 
     func stop() { loop?.cancel(); loop = nil }
@@ -125,6 +127,12 @@ final class CockpitViewModel {
     func scanDedup() async {
         let report = await Task.detached(priority: .utility) { ConfigDedupService.scan() }.value
         dedup = report
+    }
+
+    /// Scan project memory dirs for stale files (off-main, on-demand).
+    func scanMemory() async {
+        let report = await Task.detached(priority: .utility) { MemoryCleanupService.scan() }.value
+        memory = report
     }
 
     /// On-demand MCP probe (never on the reload timer — spawning servers is heavy).
