@@ -21,6 +21,16 @@ in the NotebookLM "Throttle - Documentation" notebook; code architecture in the
 - Global `~/.claude/CLAUDE.md` trimmed (SwiftUI/Swift6/perf detail → skills; backup `.bak-2026-06-10`).
 - NotebookLM notebook synced (25 sources).
 
+## 2026-06-13 — AIOS audit suite + optimize actions (built)
+Throttle now does the full **detect → optimize 1-click** loop on the local config:
+- **Detectors** (all shipped): config weight, duplicated CLAUDE.md (dedup), stale memory (30+ days), prompt-cache busters (hooks injecting dynamic prefix), dead skills (skill-usage analytics vs transcripts), MCP health, model-complexity nudge.
+- **Optimize actions** (all reversible): archive dead skills (→ skills-archive), archive stale memory per-file + bulk (→ memory-archive), **dedup hoist** (create shared skill + remove from each CLAUDE.md, backed up to throttle-backups).
+- **Pricing** refreshed to official rates + Fable 5 ($10/$50).
+- **Positioning** locked: cost & health cockpit FOR an AIOS (CFO of your Claude Code setup).
+- **Triaged v3.0 techniques** (`v3-token-techniques-2026-06.md`): Prompt Cache Optimizer (audit shipped) + lossless memory trim = phase 1; Read Firewall = recommend mcp-local-rag not build; Code RAG engine / local-LLM = REFUSE.
+
+Remaining: Read Firewall audit (parse tool-calls → recommend mcp-local-rag), lossless memory structural-trim, Phase-3 R&D (semantic dedup / Vision OCR / LongLLMLingua — quality-risk, paused), and refining the auto-generated skill descriptions on hoist.
+
 ## Validated this session (autonomous pass)
 - **Dedup detector** works — found 5 real duplicated blocks across 4 projects each (asc-mcp guidance, "file path + line number", audit toolkit). Detect-only v1 shipped.
 - **MCP probe** bug fixed — it was the reader (byte-at-a-time `bytes.lines` starved under 11 concurrent probes), NOT the timeout: audit-mcp/lorislab-web respond <0.5s from a shell. Now chunked POSIX read + concurrency cap 4 + 25s ceiling + "no resp" label.
