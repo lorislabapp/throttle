@@ -16,6 +16,7 @@ struct CockpitWindowRoot: View {
     @State private var compact = false
     @State private var showingDedup = false
     @State private var showingMemory = false
+    @State private var showingCache = false
 
     var body: some View {
         Group {
@@ -25,6 +26,45 @@ struct CockpitWindowRoot: View {
         .onDisappear { vm.stop() }
         .sheet(isPresented: $showingDedup) { dedupSheet }
         .sheet(isPresented: $showingMemory) { memorySheet }
+        .sheet(isPresented: $showingCache) { cacheSheet }
+    }
+
+    // MARK: - Cache hygiene sheet
+
+    private var cacheSheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Prompt-cache hygiene").font(.system(size: 15, weight: .semibold))
+                    Text("Cached input tokens bill at ~10% of normal. A hook that injects changing content into the cached prefix invalidates the cache — you pay full input price every session. Keep injected text byte-stable, or move the varying part out of the prefix.")
+                        .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Button("Done") { showingCache = false }.keyboardShortcut(.defaultAction)
+            }
+            .padding(16)
+            Divider()
+            ScrollView { VStack(spacing: 0) { ForEach(vm.cache.risks) { cacheRow($0) } } }
+        }
+        .frame(width: 580, height: 460)
+    }
+
+    private func cacheRow(_ r: CacheRisk) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Circle().fill(r.severity == .high ? Color.orange : Color.primary.opacity(0.25))
+                .frame(width: 6, height: 6).padding(.top, 4)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(r.title).font(.system(size: 11.5, weight: .medium)).foregroundStyle(.primary)
+                Text(r.detail).font(.system(size: 10.5)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            Text(r.severity == .high ? "busts cache" : "ok")
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(r.severity == .high ? Color.orange : Color.secondary)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 10)
+        .overlay(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.06)).frame(height: 1) }
     }
 
     // MARK: - Stale memory sheet
@@ -561,6 +601,13 @@ struct CockpitWindowRoot: View {
                             "≈\(fmtTokens(vm.memory.totalTokens)) tok",
                             help: "Memory files unused 30+ days — still reloaded every session") {
                     showingMemory = true
+                }
+            }
+            if vm.cache.highCount > 0 {
+                optimizeRow("bolt.horizontal.circle", "Cache busters · \(vm.cache.highCount)",
+                            "≤10× input",
+                            help: "Hooks inject changing content into the cached prompt prefix — busting the 90%-cheaper cache") {
+                    showingCache = true
                 }
             }
         }

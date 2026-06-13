@@ -103,6 +103,7 @@ final class CockpitViewModel {
     private(set) var mcpProbing = false
     private(set) var dedup: DedupReport = .empty
     private(set) var memory: MemoryReport = .empty
+    private(set) var cache: CacheHygieneReport = .empty
 
     private weak var appState: AppState?
     private var loop: Task<Void, Never>?
@@ -119,6 +120,7 @@ final class CockpitViewModel {
         Task { [weak self] in await self?.probeMCP() }     // one probe on open
         Task { [weak self] in await self?.scanDedup() }     // one dedup scan on open
         Task { [weak self] in await self?.scanMemory() }    // one memory scan on open
+        Task { [weak self] in await self?.scanCache() }     // one cache-hygiene scan on open
     }
 
     func stop() { loop?.cancel(); loop = nil }
@@ -133,6 +135,12 @@ final class CockpitViewModel {
     func scanMemory() async {
         let report = await Task.detached(priority: .utility) { MemoryCleanupService.scan() }.value
         memory = report
+    }
+
+    /// Audit prompt-cache hygiene of the local hooks (off-main, on-demand).
+    func scanCache() async {
+        let report = await Task.detached(priority: .utility) { CacheHygieneService.scan() }.value
+        cache = report
     }
 
     /// On-demand MCP probe (never on the reload timer — spawning servers is heavy).
