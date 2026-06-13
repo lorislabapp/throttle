@@ -133,6 +133,13 @@ final class CockpitViewModel {
         dedup = report
     }
 
+    /// Hoist a duplicated block to a shared skill + remove from CLAUDE.md
+    /// (backed up first), then rescan.
+    func hoistDedup(_ block: DuplicatedBlock) async {
+        await Task.detached(priority: .utility) { ConfigDedupService.hoist(block) }.value
+        await scanDedup()
+    }
+
     /// Scan project memory dirs for stale files (off-main, on-demand).
     func scanMemory() async {
         let report = await Task.detached(priority: .utility) { MemoryCleanupService.scan() }.value

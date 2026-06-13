@@ -20,6 +20,7 @@ struct CockpitWindowRoot: View {
     @State private var showingSkills = false
     @State private var skillToArchive: SkillUsage?
     @State private var memoryArchiveAllConfirm = false
+    @State private var blockToHoist: DuplicatedBlock?
 
     var body: some View {
         Group {
@@ -212,6 +213,18 @@ struct CockpitWindowRoot: View {
             .padding(.horizontal, 16).padding(.vertical, 10)
         }
         .frame(width: 580, height: 520)
+        .confirmationDialog(
+            "Hoist this block to a shared skill?",
+            isPresented: Binding(get: { blockToHoist != nil }, set: { if !$0 { blockToHoist = nil } }),
+            presenting: blockToHoist
+        ) { b in
+            Button("Create skill + remove from \(b.paths.count) CLAUDE.md files") {
+                Task { await vm.hoistDedup(b) }; blockToHoist = nil
+            }
+            Button("Cancel", role: .cancel) { blockToHoist = nil }
+        } message: { b in
+            Text("Creates ~/.claude/skills/shared-… with this block, then removes it from \(b.paths.count) CLAUDE.md files. Each file is backed up to ~/.claude/throttle-backups first. Refine the new skill's description so it triggers when relevant.")
+        }
     }
 
     private func dedupRow(_ b: DuplicatedBlock) -> some View {
@@ -225,9 +238,11 @@ struct CockpitWindowRoot: View {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(b.text, forType: .string)
                 } label: {
-                    Image(systemName: "doc.on.clipboard").font(.system(size: 11)).foregroundStyle(Color.accentColor)
+                    Image(systemName: "doc.on.clipboard").font(.system(size: 11)).foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain).help("Copy this block")
+                Button("Hoist") { blockToHoist = b }
+                    .font(.system(size: 10, weight: .medium)).buttonStyle(.plain).foregroundStyle(Color.accentColor)
             }
             Text(b.text)
                 .font(.system(size: 10.5, design: .monospaced)).foregroundStyle(.secondary)
