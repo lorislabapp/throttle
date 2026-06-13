@@ -721,8 +721,8 @@ struct CockpitWindowRoot: View {
             if vm.data.config.skillCount > 0 {
                 configRow("Skills", value: "\(vm.data.config.skillCount)")
             }
-            if vm.bloat.images > 0 {
-                configRow("Image bloat", value: "\(vm.bloat.images) imgs · ≈\(fmtTokens(vm.bloat.tokens)) tok")
+            if vm.bloat.totalTokens > 0 {
+                configRow("Context bloat", value: "\(vm.bloat.images) imgs · ≈\(fmtTokens(vm.bloat.totalTokens)) tok")
             }
             if !vm.dedup.blocks.isEmpty {
                 optimizeRow("doc.on.doc", "Duplicated × \(vm.dedup.projectCount) projects",
