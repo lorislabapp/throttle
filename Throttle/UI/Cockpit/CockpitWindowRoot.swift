@@ -17,6 +17,7 @@ struct CockpitWindowRoot: View {
     @State private var showingDedup = false
     @State private var showingMemory = false
     @State private var showingCache = false
+    @State private var showingSkills = false
 
     var body: some View {
         Group {
@@ -27,6 +28,42 @@ struct CockpitWindowRoot: View {
         .sheet(isPresented: $showingDedup) { dedupSheet }
         .sheet(isPresented: $showingMemory) { memorySheet }
         .sheet(isPresented: $showingCache) { cacheSheet }
+        .sheet(isPresented: $showingSkills) { skillsSheet }
+    }
+
+    // MARK: - Skill usage sheet
+
+    private var skillsSheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Skill usage").font(.system(size: 15, weight: .semibold))
+                    Text("How often each installed skill actually fires across your transcripts. Skills never invoked are dead weight in the always-loaded skill index — archive them to declutter. Throttle never deletes a skill.")
+                        .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Button("Done") { showingSkills = false }.keyboardShortcut(.defaultAction)
+            }
+            .padding(16)
+            Divider()
+            ScrollView { VStack(spacing: 0) { ForEach(vm.skills.skills) { skillRow($0) } } }
+        }
+        .frame(width: 540, height: 480)
+    }
+
+    private func skillRow(_ s: SkillUsage) -> some View {
+        HStack(spacing: 10) {
+            Circle().fill(s.dead ? Color.orange : Color.green).frame(width: 6, height: 6)
+            Text(s.name).font(.system(size: 11.5, weight: .medium)).foregroundStyle(.primary).lineLimit(1)
+            Spacer(minLength: 6)
+            Text("≈\(fmtTokens(s.tokens)) tok").font(.system(size: 10).monospacedDigit()).foregroundStyle(.tertiary)
+            Text(s.dead ? "never used" : "\(s.invocations)×")
+                .font(.system(size: 10.5, weight: .medium).monospacedDigit())
+                .foregroundStyle(s.dead ? Color.orange : .secondary)
+                .frame(width: 70, alignment: .trailing)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 9)
+        .overlay(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.06)).frame(height: 1) }
     }
 
     // MARK: - Cache hygiene sheet
@@ -608,6 +645,13 @@ struct CockpitWindowRoot: View {
                             "≤10× input",
                             help: "Hooks inject changing content into the cached prompt prefix — busting the 90%-cheaper cache") {
                     showingCache = true
+                }
+            }
+            if vm.skills.deadCount > 0 {
+                optimizeRow("wrench.adjustable", "Dead skills · \(vm.skills.deadCount)/\(vm.skills.skills.count)",
+                            "≈\(fmtTokens(vm.skills.deadTokens)) tok",
+                            help: "Skills installed but never invoked across your transcripts") {
+                    showingSkills = true
                 }
             }
         }
