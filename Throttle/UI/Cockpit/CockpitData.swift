@@ -105,6 +105,7 @@ final class CockpitViewModel {
     private(set) var memory: MemoryReport = .empty
     private(set) var cache: CacheHygieneReport = .empty
     private(set) var skills: SkillReport = .empty
+    private(set) var reads: ReadFirewallReport = .empty
 
     private weak var appState: AppState?
     private var loop: Task<Void, Never>?
@@ -123,6 +124,7 @@ final class CockpitViewModel {
         Task { [weak self] in await self?.scanMemory() }    // one memory scan on open
         Task { [weak self] in await self?.scanCache() }     // one cache-hygiene scan on open
         Task { [weak self] in await self?.scanSkills() }    // one skill-usage scan on open
+        Task { [weak self] in await self?.scanReads() }     // one read-firewall scan on open
     }
 
     func stop() { loop?.cancel(); loop = nil }
@@ -162,6 +164,12 @@ final class CockpitViewModel {
     func archiveSkill(_ name: String) async {
         await Task.detached(priority: .utility) { try? SkillUsageService.archive(skillName: name) }.value
         await scanSkills()
+    }
+
+    /// Audit transcripts for brute-read large files (off-main).
+    func scanReads() async {
+        let report = await Task.detached(priority: .utility) { ReadFirewallService.scan() }.value
+        reads = report
     }
 
     /// Archive stale memory files (reversible move) then rescan.

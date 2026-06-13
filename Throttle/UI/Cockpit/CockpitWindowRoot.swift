@@ -21,6 +21,7 @@ struct CockpitWindowRoot: View {
     @State private var skillToArchive: SkillUsage?
     @State private var memoryArchiveAllConfirm = false
     @State private var blockToHoist: DuplicatedBlock?
+    @State private var showingReads = false
 
     var body: some View {
         Group {
@@ -32,6 +33,52 @@ struct CockpitWindowRoot: View {
         .sheet(isPresented: $showingMemory) { memorySheet }
         .sheet(isPresented: $showingCache) { cacheSheet }
         .sheet(isPresented: $showingSkills) { skillsSheet }
+        .sheet(isPresented: $showingReads) { readsSheet }
+    }
+
+    // MARK: - Read-firewall sheet
+
+    private var readsSheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Brute-read large files").font(.system(size: 15, weight: .semibold))
+                    Text("Big files the agent reads whole, repeatedly — draining the 200k context. Don't build a RAG: route these reads through the local mcp-local-rag server, which returns only relevant snippets. Throttle is the shield, not the engine.")
+                        .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Button("Done") { showingReads = false }.keyboardShortcut(.defaultAction)
+            }
+            .padding(16)
+            HStack(spacing: 8) {
+                Text("Recommended:").font(.system(size: 10.5, weight: .medium)).foregroundStyle(.secondary)
+                Text("mcp-local-rag").font(.system(size: 10.5, design: .monospaced)).foregroundStyle(.primary)
+                Spacer()
+                Button("Copy mcp.json config") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(ReadFirewallReport.mcpSnippet, forType: .string)
+                }
+                .font(.system(size: 10.5, weight: .medium)).buttonStyle(.plain).foregroundStyle(Color.accentColor)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 8)
+            .background(Color.accentColor.opacity(0.06))
+            Divider()
+            ScrollView { VStack(spacing: 0) { ForEach(vm.reads.files) { readRow($0) } } }
+        }
+        .frame(width: 560, height: 480)
+    }
+
+    private func readRow(_ r: BruteRead) -> some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(r.name).font(.system(size: 11.5, weight: .medium)).foregroundStyle(.primary).lineLimit(1)
+                Text("\(r.project) · \(r.lines) lines").font(.system(size: 9.5)).foregroundStyle(.tertiary)
+            }
+            Spacer(minLength: 6)
+            Text("read \(r.reads)×").font(.system(size: 11, weight: .medium).monospacedDigit()).foregroundStyle(.orange)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 9)
+        .overlay(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.06)).frame(height: 1) }
     }
 
     // MARK: - Skill usage sheet
@@ -700,6 +747,13 @@ struct CockpitWindowRoot: View {
                             "≈\(fmtTokens(vm.skills.deadTokens)) tok",
                             help: "Skills installed but never invoked across your transcripts") {
                     showingSkills = true
+                }
+            }
+            if !vm.reads.files.isEmpty {
+                optimizeRow("flame", "Brute reads · \(vm.reads.files.count)",
+                            "RAG candidate",
+                            help: "Large files read repeatedly — route through mcp-local-rag for snippets") {
+                    showingReads = true
                 }
             }
         }
