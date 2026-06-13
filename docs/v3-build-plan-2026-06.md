@@ -48,8 +48,18 @@ can only deny / modify-inputs / add-context — there is NO `tool_result` / `cac
    execution latency); Read's output schema is undocumented → fragile.
 3. Platform change (Anthropic adds a tool_result injection field) — unsupported.
 Conclusion: the "biggest safe lever" is gated by a deliberate Claude Code safety
-boundary. Do NOT build the transparent proxy. Revisit only as an explicit opt-in
-MCP-wrapper decision.
+boundary. Do NOT build the transparent proxy.
+
+**FINAL VERDICT (NotebookLM, 2026-06-13): ABANDON the cache entirely.** Building a
+CachedRead MCP wrapper violates all three pillars: (1) crosses into the execution
+engine (scope creep), (2) the required CLAUDE.md opt-in rule bloats the very file we
+audit (self-contradiction), (3) re-introduces TOCTOU cache-poisoning (hard-invariant
+violation). Throttle RECOMMENDS a third-party cache/RAG (mcp-local-rag), never builds
+one. **Accept the platform ceiling. Throttle v3.0 is feature-complete and defensible**
+with the wedge-pure set: CMV/context-virtualization, prompt-cache linting, config-weight
+audit, dedup hoist, read-firewall recommendation, Caveman. The only optional remaining
+on-wedge build is the CMV "Surgical Context Trimmer" (a user-invoked, non-destructive
+trim action over the bloat detector — not interception).
 
 ## Deterministic cache detail (DESIGN ONLY — blocked, see above)
 Needs Throttle/RTK to be an active proxy. Safe-set: cache Read/Grep/Glob/pure-tests;
