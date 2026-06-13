@@ -1,0 +1,52 @@
+# Throttle v3.0 — consolidated build plan (2026-06-13)
+
+NotebookLM synthesis across the deep-research docs (Caching Design, Context
+Virtualization, Local-RAG comparison, Prompt Caching, Compression Landscape,
+Multimodal, Cost Cockpit Strategy), triaged through the wedge: audit/optimize
+cost+health, never the execution engine/RAG/IDE, 100% local, never degrade reasoning.
+
+## Verdicts
+
+| Build area | Verdict | Token lever | Quality risk | Effort |
+|---|---|---|---|---|
+| **CMV — lossless context/memory virtualization** | 🟢 BUILD (next) | 20% mean, up to 86% | **ZERO** (mathematically lossless) | low (JSONL scan, string-manip) |
+| **Deterministic tool-result cache** (Read/Grep/Glob, Git-Merkle crypto invalidation) | 🟢 BUILD (biggest safe lever) | massive (bypass API) | zero in Conservative | medium-high (active RTK proxy) |
+| Vision/multimodal preprocessing | 🟢 BUILD | 2-5× images | medium (spatial blindness) | high |
+| Semantic response cache | 🟡 opt-in Aggressive only | 5-15% code | high (poisoning) | high |
+| Input compression (LLMLingua) | 🟡 non-code only / NO-GO on code | 20-40% prose | very high on code | high |
+| Code-RAG / read-firewall | 🔵 RECOMMEND `mcp-local-rag` (shinpr) — done | 30-60% | medium | very low |
+
+## Red line (confirmed)
+An **active proxy that caches deterministic tool-results = 100% ON-WEDGE** — a
+"CDN for the agent" ("we already paid to read this file at this commit, here's the
+local answer"). It does NOT orchestrate, decide, or replace the terminal. The line
+is crossed only if Throttle starts executing scripts / generating code for the agent.
+
+## CMV detail (the next build)
+3-pass scan of `~/.claude/projects/*/conversation.jsonl`. Strip only mechanical fat:
+base64 images, file-history/metadata, oversized `tool_result` dumps, orphaned tool
+results, thinking blocks (non-portable). Preserve **every user message + assistant
+response byte-for-byte**. Replace stripped payloads with crypto pointers the agent
+re-expands on demand (an MCP `throttle_expand_pointer`). Output a trimmed
+compact-survival snapshot — never edit the live transcript.
+- **Brick 1 (shipped):** base64-image bloat detector — 1433 embedded images / 120
+  sessions ≈ 4.3M tokens re-charged on resume. Detect-only, read-only.
+- **Brick 2 (next):** oversized tool_result + metadata detection (needs JSONL message
+  parsing to stay lossless — never touch user/assistant content).
+- **Brick 3:** produce a lossless trimmed snapshot file (new file, reversible).
+- **Brick 4:** the `throttle_expand_pointer` MCP so the agent recalls a stub on demand.
+
+## Deterministic cache detail (the big lever, later)
+Needs Throttle/RTK to be an active proxy. Safe-set: cache Read/Grep/Glob/pure-tests;
+bypass Write/Edit/Bash/WebFetch (undecidable). Key = SHA256(Tool+Args+file-SHA256 or
+Git-tree-hash + commit). Workspace siloing by absolute repo path; commit-SHA not
+branch name; canonicalize paths (anti traversal). Conservative mode default (exact
+match, clean tree, Read-only, 1h TTL, semantic OFF). Aggressive = semantic +
+dirty-tree + 30d pinned-commit TTL, with a Nudge + `--no-cache` escape hatch.
+Embeddings: jina-embeddings-v2-base-code (local, 768-dim) in sqlite-vec. Hard
+invariants: fail-open on any mismatch, never forge, never cross namespace, defer to
+the human escape hatch, filesystem truth supersedes cache.
+
+## Positioning (Cost Cockpit doc)
+Frame Throttle as a quality/reliability cockpit (Health Score, RAG/MCP diagnostics,
+remediation) — higher willingness-to-pay than a "budget calculator".

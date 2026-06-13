@@ -106,6 +106,7 @@ final class CockpitViewModel {
     private(set) var cache: CacheHygieneReport = .empty
     private(set) var skills: SkillReport = .empty
     private(set) var reads: ReadFirewallReport = .empty
+    private(set) var bloat: ContextBloat = .empty
 
     private weak var appState: AppState?
     private var loop: Task<Void, Never>?
@@ -125,6 +126,7 @@ final class CockpitViewModel {
         Task { [weak self] in await self?.scanCache() }     // one cache-hygiene scan on open
         Task { [weak self] in await self?.scanSkills() }    // one skill-usage scan on open
         Task { [weak self] in await self?.scanReads() }     // one read-firewall scan on open
+        Task { [weak self] in await self?.scanBloat() }     // one context-bloat scan on open
     }
 
     func stop() { loop?.cancel(); loop = nil }
@@ -170,6 +172,12 @@ final class CockpitViewModel {
     func scanReads() async {
         let report = await Task.detached(priority: .utility) { ReadFirewallService.scan() }.value
         reads = report
+    }
+
+    /// Detect base64 image bloat in transcripts (off-main).
+    func scanBloat() async {
+        let report = await Task.detached(priority: .utility) { ContextBloatService.scan() }.value
+        bloat = report
     }
 
     /// Archive stale memory files (reversible move) then rescan.
