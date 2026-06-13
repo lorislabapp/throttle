@@ -31,6 +31,34 @@ enum SkillUsageService {
         return SkillReport(skills: skills)
     }
 
+    /// Archive a skill by MOVING it to ~/.claude/skills-archive (reversible —
+    /// never deletes). Claude Code won't load skills from outside ~/.claude/skills.
+    static func archive(skillName: String) throws {
+        let fm = FileManager.default
+        let home = fm.homeDirectoryForCurrentUser
+        let skills = home.appendingPathComponent(".claude/skills", isDirectory: true)
+        let archive = home.appendingPathComponent(".claude/skills-archive", isDirectory: true)
+        try fm.createDirectory(at: archive, withIntermediateDirectories: true)
+
+        let asDir = skills.appendingPathComponent(skillName, isDirectory: true)
+        let asMd = skills.appendingPathComponent(skillName + ".md")
+        var isDir: ObjCBool = false
+        if fm.fileExists(atPath: asDir.path, isDirectory: &isDir), isDir.boolValue {
+            try moveAvoidingClash(asDir, into: archive, name: skillName, fm: fm)
+        } else if fm.fileExists(atPath: asMd.path) {
+            try moveAvoidingClash(asMd, into: archive, name: skillName + ".md", fm: fm)
+        }
+    }
+
+    private static func moveAvoidingClash(_ src: URL, into dir: URL, name: String, fm: FileManager) throws {
+        var dest = dir.appendingPathComponent(name)
+        var n = 2
+        while fm.fileExists(atPath: dest.path) {
+            dest = dir.appendingPathComponent("\(name)-\(n)"); n += 1
+        }
+        try fm.moveItem(at: src, to: dest)
+    }
+
     /// Installed global skills: directories with a SKILL.md, plus standalone .md.
     private static func installedSkills() -> [(name: String, tokens: Int)] {
         let fm = FileManager.default

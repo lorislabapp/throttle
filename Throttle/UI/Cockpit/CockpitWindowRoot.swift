@@ -18,6 +18,7 @@ struct CockpitWindowRoot: View {
     @State private var showingMemory = false
     @State private var showingCache = false
     @State private var showingSkills = false
+    @State private var skillToArchive: SkillUsage?
 
     var body: some View {
         Group {
@@ -49,6 +50,18 @@ struct CockpitWindowRoot: View {
             ScrollView { VStack(spacing: 0) { ForEach(vm.skills.skills) { skillRow($0) } } }
         }
         .frame(width: 540, height: 480)
+        .confirmationDialog(
+            "Archive “\(skillToArchive?.name ?? "")”?",
+            isPresented: Binding(get: { skillToArchive != nil }, set: { if !$0 { skillToArchive = nil } }),
+            presenting: skillToArchive
+        ) { s in
+            Button("Move to ~/.claude/skills-archive") {
+                Task { await vm.archiveSkill(s.name) }; skillToArchive = nil
+            }
+            Button("Cancel", role: .cancel) { skillToArchive = nil }
+        } message: { _ in
+            Text("Reversible — the skill is moved, not deleted. Claude Code stops loading it.")
+        }
     }
 
     private func skillRow(_ s: SkillUsage) -> some View {
@@ -57,10 +70,15 @@ struct CockpitWindowRoot: View {
             Text(s.name).font(.system(size: 11.5, weight: .medium)).foregroundStyle(.primary).lineLimit(1)
             Spacer(minLength: 6)
             Text("≈\(fmtTokens(s.tokens)) tok").font(.system(size: 10).monospacedDigit()).foregroundStyle(.tertiary)
-            Text(s.dead ? "never used" : "\(s.invocations)×")
-                .font(.system(size: 10.5, weight: .medium).monospacedDigit())
-                .foregroundStyle(s.dead ? Color.orange : .secondary)
-                .frame(width: 70, alignment: .trailing)
+            if s.dead {
+                Button("Archive") { skillToArchive = s }
+                    .font(.system(size: 10, weight: .medium)).buttonStyle(.plain)
+                    .foregroundStyle(Color.accentColor)
+            } else {
+                Text("\(s.invocations)×")
+                    .font(.system(size: 10.5, weight: .medium).monospacedDigit())
+                    .foregroundStyle(.secondary).frame(width: 50, alignment: .trailing)
+            }
         }
         .padding(.horizontal, 16).padding(.vertical, 9)
         .overlay(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.06)).frame(height: 1) }

@@ -151,6 +151,12 @@ final class CockpitViewModel {
         skills = report
     }
 
+    /// Archive a dead skill (reversible move) then rescan.
+    func archiveSkill(_ name: String) async {
+        await Task.detached(priority: .utility) { try? SkillUsageService.archive(skillName: name) }.value
+        await scanSkills()
+    }
+
     /// On-demand MCP probe (never on the reload timer — spawning servers is heavy).
     func probeMCP() async {
         guard !mcpProbing else { return }
