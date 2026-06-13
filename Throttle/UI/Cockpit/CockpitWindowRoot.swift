@@ -19,6 +19,7 @@ struct CockpitWindowRoot: View {
     @State private var showingCache = false
     @State private var showingSkills = false
     @State private var skillToArchive: SkillUsage?
+    @State private var memoryArchiveAllConfirm = false
 
     var body: some View {
         Group {
@@ -129,10 +130,11 @@ struct CockpitWindowRoot: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Stale memory").font(.system(size: 15, weight: .semibold))
-                    Text("Files in ~/.claude/projects/*/memory/ unused 30+ days — still reloaded into context every session. Reveal and delete the ones you no longer need.")
+                    Text("Files in ~/.claude/projects/*/memory/ unused 30+ days — still reloaded into context every session. Archive the ones you no longer need (reversible — moved to ~/.claude/memory-archive).")
                         .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
+                Button("Archive all \(vm.memory.files.count)") { memoryArchiveAllConfirm = true }
                 Button("Done") { showingMemory = false }.keyboardShortcut(.defaultAction)
             }
             .padding(16)
@@ -147,6 +149,17 @@ struct CockpitWindowRoot: View {
             .padding(.horizontal, 16).padding(.vertical, 10)
         }
         .frame(width: 560, height: 480)
+        .confirmationDialog(
+            "Archive all \(vm.memory.files.count) stale memory files?",
+            isPresented: $memoryArchiveAllConfirm
+        ) {
+            Button("Move \(vm.memory.files.count) files to memory-archive") {
+                Task { await vm.archiveMemory(vm.memory.files.map(\.id)) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Reversible — files are moved, not deleted. Claude Code stops loading them at session start.")
+        }
     }
 
     private func memoryRow(_ m: StaleMemory) -> some View {
@@ -160,9 +173,11 @@ struct CockpitWindowRoot: View {
             Button {
                 NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: m.id)])
             } label: {
-                Image(systemName: "folder").font(.system(size: 11)).foregroundStyle(Color.accentColor)
+                Image(systemName: "folder").font(.system(size: 11)).foregroundStyle(.secondary)
             }
             .buttonStyle(.plain).help("Reveal in Finder")
+            Button("Archive") { Task { await vm.archiveMemory([m.id]) } }
+                .font(.system(size: 10, weight: .medium)).buttonStyle(.plain).foregroundStyle(Color.accentColor)
         }
         .padding(.horizontal, 16).padding(.vertical, 9)
         .overlay(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.06)).frame(height: 1) }

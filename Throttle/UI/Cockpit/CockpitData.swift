@@ -157,6 +157,12 @@ final class CockpitViewModel {
         await scanSkills()
     }
 
+    /// Archive stale memory files (reversible move) then rescan.
+    func archiveMemory(_ paths: [String]) async {
+        await Task.detached(priority: .utility) { MemoryCleanupService.archive(paths: paths) }.value
+        await scanMemory()
+    }
+
     /// On-demand MCP probe (never on the reload timer — spawning servers is heavy).
     func probeMCP() async {
         guard !mcpProbing else { return }

@@ -49,6 +49,32 @@ enum MemoryCleanupService {
         return MemoryReport(files: stale.sorted { $0.tokens > $1.tokens })
     }
 
+    /// Archive stale memory files by MOVING them to ~/.claude/memory-archive
+    /// (reversible — never deletes), preserving the project sub-path. Returns
+    /// the count moved.
+    @discardableResult
+    static func archive(paths: [String]) -> Int {
+        let fm = FileManager.default
+        let home = fm.homeDirectoryForCurrentUser
+        let projects = home.appendingPathComponent(".claude/projects").path
+        let base = home.appendingPathComponent(".claude/memory-archive", isDirectory: true)
+        var moved = 0
+        for p in paths {
+            let src = URL(fileURLWithPath: p)
+            let rel = p.hasPrefix(projects + "/") ? String(p.dropFirst(projects.count + 1)) : src.lastPathComponent
+            var dest = base.appendingPathComponent(rel)
+            try? fm.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
+            var n = 2
+            while fm.fileExists(atPath: dest.path) {
+                dest = dest.deletingLastPathComponent()
+                    .appendingPathComponent("\(src.deletingPathExtension().lastPathComponent)-\(n).md")
+                n += 1
+            }
+            if (try? fm.moveItem(at: src, to: dest)) != nil { moved += 1 }
+        }
+        return moved
+    }
+
     /// `-Users-kevin-GitHub-Throttle` → `Throttle` (best-effort display name).
     private static func decodeName(_ encoded: String) -> String {
         encoded.split(separator: "-").map(String.init).filter { !$0.isEmpty }.last ?? encoded
