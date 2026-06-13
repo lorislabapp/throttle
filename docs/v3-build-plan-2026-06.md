@@ -10,7 +10,7 @@ cost+health, never the execution engine/RAG/IDE, 100% local, never degrade reaso
 | Build area | Verdict | Token lever | Quality risk | Effort |
 |---|---|---|---|---|
 | **CMV — lossless context/memory virtualization** | 🟢 BUILD (next) | 20% mean, up to 86% | **ZERO** (mathematically lossless) | low (JSONL scan, string-manip) |
-| **Deterministic tool-result cache** (Read/Grep/Glob, Git-Merkle crypto invalidation) | 🟢 BUILD (biggest safe lever) | massive (bypass API) | zero in Conservative | medium-high (active RTK proxy) |
+| **Deterministic tool-result cache** (Read/Grep/Glob, Git-Merkle crypto invalidation) | 🔴 **BLOCKED as designed** / 🟡 narrow opt-in MCP-wrapper only | massive in theory | zero | blocked |
 | Vision/multimodal preprocessing | 🟢 BUILD | 2-5× images | medium (spatial blindness) | high |
 | Semantic response cache | 🟡 opt-in Aggressive only | 5-15% code | high (poisoning) | high |
 | Input compression (LLMLingua) | 🟡 non-code only / NO-GO on code | 20-40% prose | very high on code | high |
@@ -36,7 +36,22 @@ compact-survival snapshot — never edit the live transcript.
 - **Brick 3:** produce a lossless trimmed snapshot file (new file, reversible).
 - **Brick 4:** the `throttle_expand_pointer` MCP so the agent recalls a stub on demand.
 
-## Deterministic cache detail (the big lever, later)
+## ⚠️ Deterministic cache — BLOCKED (verified via claude-code-guide, 2026-06-13)
+Claude Code hooks CANNOT transparently substitute a tool result. A PreToolUse hook
+can only deny / modify-inputs / add-context — there is NO `tool_result` / `cachedOutput`
+/ `skipExecution` field. So "intercept Read → return cache → skip execution" is
+**not buildable transparently**. Realistic-but-degraded options:
+1. **MCP wrapper** `CachedRead`/`CachedGrep` — transparent but needs the agent to call
+   the cached variant (opt-in CLAUDE.md rule), and Throttle would be SERVING reads →
+   edges toward "becoming the engine" (wedge decision required before building).
+2. **PostToolUse `updatedToolOutput`** — fires AFTER execution (saves model tokens, not
+   execution latency); Read's output schema is undocumented → fragile.
+3. Platform change (Anthropic adds a tool_result injection field) — unsupported.
+Conclusion: the "biggest safe lever" is gated by a deliberate Claude Code safety
+boundary. Do NOT build the transparent proxy. Revisit only as an explicit opt-in
+MCP-wrapper decision.
+
+## Deterministic cache detail (DESIGN ONLY — blocked, see above)
 Needs Throttle/RTK to be an active proxy. Safe-set: cache Read/Grep/Glob/pure-tests;
 bypass Write/Edit/Bash/WebFetch (undecidable). Key = SHA256(Tool+Args+file-SHA256 or
 Git-tree-hash + commit). Workspace siloing by absolute repo path; commit-SHA not
