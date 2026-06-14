@@ -24,7 +24,7 @@ final class CockpitWindowController: NSObject {
 
         NSApp.setActivationPolicy(.regular)
 
-        let root = CockpitWindowRoot().environment(appState)
+        let root = MultiCockpitRoot().environment(appState)
         let host = NSHostingController(rootView: root)
 
         let win = NSWindow(
