@@ -59,7 +59,7 @@ struct AppleIntelligenceProvider: AIProvider {
         // server-side) keeps working through the same code path.
         let session = LanguageModelSession(
             tools: [ReadFileTool(), ListFilesTool(), BashTool()],
-            instructions: context.asSystemPrompt()
+            instructions: context.asSystemPrompt(lite: true)   // tiny window — slim prompt
         )
         let userPrompt = composeUserPrompt(from: messages)
 

@@ -28,6 +28,14 @@ struct ProjectOptimizerTab: View {
         case settingsJSON      = ".claude/settings.json"
         case settingsLocalJSON = ".claude/settings.local.json"
         var id: String { rawValue }
+        /// Short label for the segmented control (the full path is the value).
+        var shortLabel: String {
+            switch self {
+            case .claudeMd:          return "CLAUDE.md"
+            case .settingsJSON:      return "settings"
+            case .settingsLocalJSON: return "settings.local"
+            }
+        }
     }
 
     var body: some View {
@@ -55,17 +63,21 @@ struct ProjectOptimizerTab: View {
     }
 
     private var toolbar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Picker("", selection: $selectedFile) {
-                ForEach(EditableFile.allCases) { f in Text(f.rawValue).tag(f) }
+                ForEach(EditableFile.allCases) { f in Text(f.shortLabel).tag(f) }
             }
-            .pickerStyle(.segmented).labelsHidden().frame(maxWidth: 300)
+            .pickerStyle(.segmented).labelsHidden().fixedSize()
             Picker("", selection: $diffMode) {
                 Text("Split").tag(false)
                 Text("Diff").tag(true)
             }
-            .pickerStyle(.segmented).labelsHidden().frame(width: 110)
-            Spacer(minLength: 8)
+            .pickerStyle(.segmented).labelsHidden().fixedSize()
+            Spacer(minLength: 12)
+            if hasChanges {
+                Text("Unsaved")
+                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(.orange)
+            }
             if optimizing {
                 HStack(spacing: 6) { ProgressView().controlSize(.small); Text("Optimising…").font(.system(size: 11)).foregroundStyle(.secondary) }
             } else {
@@ -73,13 +85,12 @@ struct ProjectOptimizerTab: View {
                     HStack(spacing: 5) {
                         Image(systemName: "sparkles").font(.system(size: 11))
                         Text("Optimize with AI").font(.system(size: 12, weight: .medium))
-                    }.foregroundStyle(Color.accentColor)
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 11).padding(.vertical, 5)
+                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 7))
                 }
-                .buttonStyle(.plain).help("Propose a leaner, safer version + why it's better")
-            }
-            if hasChanges {
-                Text("Unsaved changes")
-                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(.orange).padding(.leading, 4)
+                .buttonStyle(.plain).help("Propose a leaner, safer version + why it's better").fixedSize()
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 10)

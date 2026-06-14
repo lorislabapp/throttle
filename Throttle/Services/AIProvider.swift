@@ -85,7 +85,7 @@ struct ProjectChatContext: Sendable {
     /// `read_file` exactly the ones it needs. v2.5.0's tool-calling loop
     /// makes that round-trip cheap and lets the AI focus its context on
     /// only the files relevant to the current question.
-    func asSystemPrompt() -> String {
+    func asSystemPrompt(lite: Bool = false) -> String {
         var lines: [String] = []
 
         // Check if Caveman mode is enabled (user preference)
@@ -119,6 +119,16 @@ struct ProjectChatContext: Sendable {
             lines.append("5. Length: 4-10 short sentences. Skip preambles like 'Of course!'.")
         }
         lines.append("")
+
+        // LITE: a small on-device model (Apple Intelligence, ~4K context) can't
+        // hold the full patch/tool/file-listing instructions — they overflow its
+        // window. Give it only the role + rules and stop here.
+        if lite {
+            lines.append("--- LOCAL MODEL ---")
+            lines.append("You run on-device with a SMALL context window — stay brief. If file tools are available, read at most 1-2 of the most relevant files (e.g. CLAUDE.md or settings.json), then give 3-5 concrete, grounded bullets. Do not read everything. Be explicit when you lack the specifics to be sure.")
+            return lines.joined(separator: "\n")
+        }
+
         lines.append("--- APPLY-ABLE PATCHES ---")
         lines.append("When you propose a CONCRETE file edit, append a fenced ```patch block at the END of your message. Two formats are supported:")
         lines.append("")
