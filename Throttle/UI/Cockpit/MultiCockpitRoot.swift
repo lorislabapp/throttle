@@ -252,6 +252,10 @@ struct MultiCockpitRoot: View {
                     if let e = s.eur {
                         Text(String(format: "€%.2f", e)).font(.system(size: 10.5, design: .monospaced)).foregroundStyle(.secondary)
                     }
+                    if let t = s.tokens, t > 0 {
+                        Text(fmtTok(t)).font(.system(size: 10, design: .monospaced)).foregroundStyle(.tertiary)
+                    }
+                    Spacer(minLength: 0)
                     Text("up \(uptime(s.startedAt))").font(.system(size: 10.5)).foregroundStyle(.tertiary)
                 }
             }
@@ -423,6 +427,11 @@ struct MultiCockpitRoot: View {
     private func gb(_ bytes: UInt64) -> String {
         let g = Double(bytes) / 1_073_741_824
         return g >= 10 ? String(format: "%.0fG", g) : String(format: "%.1fG", g)
+    }
+    private func fmtTok(_ n: Int) -> String {
+        if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
+        if n >= 1_000 { return String(format: "%.0fk", Double(n) / 1_000) }
+        return "\(n)"
     }
     private func uptime(_ since: Date) -> String {
         let s = Int(Date().timeIntervalSince(since))

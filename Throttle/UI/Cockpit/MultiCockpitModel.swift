@@ -8,6 +8,7 @@ import SwiftUI
 /// cost/model are real-or-nil — never faked (the golden rule); they stay nil
 /// until a data-linking pass wires them to StatsDataService.
 @MainActor
+@Observable
 final class CockpitTab: Identifiable {
     let id = UUID()
     let projectName: String
@@ -76,8 +77,53 @@ final class MultiCockpitModel {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(5))
                 self?.sampleMachine()
+                self?.refreshStats()
             }
         }
+    }
+
+    /// Wire each tab to its REAL claude session: the newest transcript in the
+    /// tab's project dir (cwd → projects-dir encoding), then DB-query its € +
+    /// tokens. Off-main; nil stays nil (never invented).
+    func refreshStats() {
+        guard let db = appState?.database else { return }
+        let items = sessions.map { (id: $0.id, cwd: $0.cwd, since: $0.startedAt) }
+        guard !items.isEmpty else { return }
+        Task { [weak self] in
+            let results: [(UUID, Double?, Int?)] = await Task.detached(priority: .utility) {
+                items.map { item in
+                    guard let sid = Self.newestSessionId(cwd: item.cwd, since: item.since) else { return (item.id, nil, nil) }
+                    let stats: (Double?, Int?)? = try? db.read { d in
+                        (try? StatsDataService.cockpitSessionCostEUR(in: d, sessionId: sid),
+                         try? StatsDataService.cockpitSessionTokens(in: d, sessionId: sid))
+                    }
+                    return (item.id, stats?.0, stats?.1)
+                }
+            }.value
+            guard let self else { return }
+            for (id, eur, tok) in results {
+                if let tab = self.sessions.first(where: { $0.id == id }) { tab.eur = eur; tab.tokens = tok }
+            }
+        }
+    }
+
+    /// The sessionId of the tab's running claude: newest `.jsonl` in
+    /// `~/.claude/projects/<cwd with / → ->/`, modified at/after the tab started.
+    nonisolated static func newestSessionId(cwd: String, since: Date) -> String? {
+        let encoded = cwd.replacingOccurrences(of: "/", with: "-")
+        let dir = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/projects/\(encoded)", isDirectory: true)
+        guard let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.contentModificationDateKey]) else { return nil }
+        let jsonls = files.filter { $0.pathExtension == "jsonl" }
+        let newest = jsonls.max { a, b in
+            let da = (try? a.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+            let dbb = (try? b.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+            return da < dbb
+        }
+        guard let newest,
+              let mod = try? newest.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
+              mod >= since.addingTimeInterval(-5) else { return nil }
+        return newest.deletingPathExtension().lastPathComponent
     }
 
     func stop() {
