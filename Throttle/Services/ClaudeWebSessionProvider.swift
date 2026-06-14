@@ -259,7 +259,7 @@ struct ClaudeWebSessionProvider: AIProvider {
                                 let detail = (obj["_err"] as? String) ?? "HTTP \(status)"
                                 if status == -2, detail.contains("status=200"), detail.contains("rawLen=0") {
                                     continuation.finish(throwing: AIProviderError.unavailable(
-                                        reason: String(localized: "claude.ai dropped the response — you're likely near your 5-hour Pro/Max limit. Wait until the next reset or switch to Apple Intelligence / a Claude API key in Settings."),
+                                        reason: String(localized: "claude.ai returned an empty response — it throttles browser-driven requests unpredictably (often even with plenty of quota left). For reliable results, add a Claude API key in Settings, or retry in a moment."),
                                         recoverable: true))
                                     return
                                 }
