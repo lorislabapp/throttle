@@ -279,20 +279,24 @@ struct ProjectOptimizerTab: View {
     private func starterTemplate(for file: EditableFile) -> String {
         switch file {
         case .claudeMd:
+            let d = project.url.flatMap { detectStack(at: $0) }
+            let stack = d?.stack ?? "<!-- e.g. Swift 6 / SwiftUI · Node + TypeScript · Python -->"
+            let build = d?.build ?? "<!-- e.g. xcodebuild -scheme … / npm run build -->"
+            let test  = d?.test ?? "<!-- e.g. swift test / npm test -->"
             return """
             # \(project.displayName)
 
             Project context for Claude Code. Keep this tight — it's re-sent every session.
 
             ## Stack
-            <!-- e.g. Swift 6 / SwiftUI · Node + TypeScript · Python -->
+            \(stack)
 
             ## Conventions
             - <!-- coding style, naming, file layout -->
 
             ## Commands
-            - Build: <!-- e.g. xcodebuild -scheme … / npm run build -->
-            - Test:  <!-- e.g. swift test / npm test -->
+            - Build: \(build)
+            - Test:  \(test)
 
             ## Don't
             - <!-- things to avoid in this repo -->
@@ -300,6 +304,29 @@ struct ProjectOptimizerTab: View {
         case .settingsJSON, .settingsLocalJSON:
             return "{\n}\n"
         }
+    }
+
+    /// Detect the project's real stack from disk (honest — never invented).
+    /// Fills Stack + Commands with actual build/test commands.
+    private func detectStack(at root: URL) -> (stack: String, build: String, test: String)? {
+        let fm = FileManager.default
+        func has(_ p: String) -> Bool { fm.fileExists(atPath: root.appendingPathComponent(p).path) }
+        let contents = (try? fm.contentsOfDirectory(atPath: root.path)) ?? []
+
+        if has("Package.swift") { return ("Swift · SwiftPM", "swift build", "swift test") }
+        if let xp = contents.first(where: { $0.hasSuffix(".xcodeproj") }) {
+            let scheme = (xp as NSString).deletingPathExtension
+            return ("Swift · Xcode", "xcodebuild -scheme \(scheme) build", "xcodebuild -scheme \(scheme) test")
+        }
+        if has("package.json") {
+            return (has("tsconfig.json") ? "Node · TypeScript" : "Node · JavaScript", "npm run build", "npm test")
+        }
+        if has("Cargo.toml") { return ("Rust · Cargo", "cargo build", "cargo test") }
+        if has("go.mod") { return ("Go", "go build ./...", "go test ./...") }
+        if has("pyproject.toml") || has("requirements.txt") || has("setup.py") {
+            return ("Python", "<!-- install deps -->", "pytest")
+        }
+        return nil
     }
 
     private var whyPanel: some View {
