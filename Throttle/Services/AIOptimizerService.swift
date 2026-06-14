@@ -41,10 +41,14 @@ enum AIOptimizerService {
         - REMOVE: anything inferable from the code itself, standard/obvious conventions, content that just restates linkable API docs, dumped file trees, tutorials and long prose, and duplicated or stale instructions.
         - Things that belong ELSEWHERE (note in WHY, don't silently delete): situational detail → a skill; path-specific rules → a subdirectory CLAUDE.md; automation → a hook. Real context savings come from skills/path-scoped rules/hooks, NOT from imports.
 
-        For a settings.json / settings.local.json file:
+        For a settings.json / settings.local.json file (HIGH-LEVERAGE cost wins — apply the ones that fit, MERGE into existing keys, never clobber the user's values):
         - permissions precedence is deny > ask > allow (deny ALWAYS wins); prefer tight allow-lists over broad ones.
+        - `permissions.deny` is the ONLY real read-firewall. Strongly consider adding: `Read(./.env)`, `Read(./.env.*)`, `Read(./node_modules/**)`, `Read(./dist/**)`, `Read(./build/**)` — blind reads of secrets/deps/generated files silently drain the token budget (a single node_modules scan can be 10k+ tokens). Also deny destructive shell: `Bash(git push *)`, `Bash(rm -rf *)`.
+        - `.claudeignore` is a MYTH — native Read/Glob/Grep do NOT honor it. If the project relies on it for exclusions, MIGRATE those globs into `permissions.deny` and call this out in WHY.
+        - `model`: if unset, suggest `"claude-sonnet-4-6"` — handles ~90% of coding at ~1/5 the cost of Opus (skip if the work is Opus-only orchestration).
+        - `alwaysThinkingEnabled`: prefer `false` — extended-thinking tokens bill as (expensive) output and can be up to ~40% of a session's cost; leave depth to per-task `/effort`.
         - NEVER place secrets/API keys here (or in CLAUDE.md). Secrets belong only in gitignored settings.local.json.
-        - Consider denying reads of .env / dotenv files and network exfil (e.g. curl) in permissions.deny.
+        - Each WHY line should cite the concrete effect (e.g. "deny node_modules reads → stops 10k+-token blind scans", "model→sonnet ≈ 5× cheaper for ~90% of tasks").
 
         HARD RULE: never drop a real instruction or change the developer's intent; preserve project-specific facts verbatim. If the file is already tight, return it UNCHANGED and say so.
         IF THE CURRENT FILE IS EMPTY: instead CREATE a concise, sensible STARTER — a few sections (stack, build/test commands, conventions, "don't" rules). Keep it minimal; do NOT invent project specifics you cannot know. In WHY, say it's a new starter.

@@ -78,6 +78,9 @@ struct ProjectOptimizerTab: View {
                 Text("Unsaved")
                     .font(.system(size: 11, weight: .semibold)).foregroundStyle(.orange)
             }
+            if selectedFile != .claudeMd && !optimizing {
+                borderedButton("Quick wins") { quickWins() }
+            }
             if optimizing {
                 HStack(spacing: 6) { ProgressView().controlSize(.small); Text("Optimising…").font(.system(size: 11)).foregroundStyle(.secondary) }
             } else {
@@ -279,6 +282,19 @@ struct ProjectOptimizerTab: View {
                 optimizing = false
             }
         }
+    }
+
+    /// Deterministic settings hardening — no AI provider needed. Merges the
+    /// research-backed deny rules / model / thinking wins and shows the diff,
+    /// reusing the existing Apply (backup + atomic) pipeline. Works on an absent
+    /// file too (creates a hardened settings.json from nothing).
+    private func quickWins() {
+        guard selectedFile != .claudeMd else { return }
+        let r = SettingsAuditService.audit(currentJSON: originalContents)
+        proposedContents = r.proposed
+        rationale = r.why
+        diffMode = r.changed
+        status = r.changed ? "" : String(localized: "No quick wins to add — already hardened.")
     }
 
     /// Honest, generic starter — no invented project specifics (placeholders the

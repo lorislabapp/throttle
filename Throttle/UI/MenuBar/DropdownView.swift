@@ -1320,6 +1320,8 @@ private struct InlineGeneralPane: View {
     @State private var showingLedger = false
     @State private var ledger: [AutopilotService.Entry] = []
     @State private var autopilotBusy = false
+    @State private var showingStyles = false
+    @State private var activeStyle = OutputStyleManager.activeName()
 
     /// Flag file the SessionStart hook reads to inject a terse-output directive
     /// into every Claude Code session. App writes it (non-sandboxed); hook reads it.
@@ -1364,12 +1366,31 @@ private struct InlineGeneralPane: View {
                     .onChange(of: conciseClaudeCode) { _, on in setConciseFlag(on) }
             }
             SettingsHair()
+            SettingsRow(title: "Claude Code output style",
+                        sub: "Active: \(activeStyle) — the reply voice for every claude session (terminal + Cockpit). Pick a built-in, or create your own (Caveman, Concise…).") {
+                HStack(spacing: 6) {
+                    if !appState.isPro {
+                        Text("PRO").font(.system(size: 9, weight: .heavy)).tracking(0.3)
+                            .padding(.horizontal, 5).padding(.vertical, 2)
+                            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 4))
+                            .foregroundStyle(.secondary)
+                    }
+                    SettingsButton(title: "Manage…") {
+                        if appState.isPro { showingStyles = true }
+                    }
+                    .disabled(!appState.isPro)
+                }
+            }
+            SettingsHair()
             SettingsRow(title: "Software updates", sub: updatesSubtitle) {
                 SettingsButton(title: "Check now") { UpdaterService.shared.checkForUpdates() }
             }
             SettingsNote(text: "Throttle \(currentVersionLabel) · updates are signed and verified before install.")
         }
         .sheet(isPresented: $showingLedger) { autopilotLedgerSheet }
+        .sheet(isPresented: $showingStyles, onDismiss: { activeStyle = OutputStyleManager.activeName() }) {
+            OutputStyleManagerSheet()
+        }
     }
 
     // MARK: - Autopilot

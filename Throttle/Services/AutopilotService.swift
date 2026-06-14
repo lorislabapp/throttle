@@ -95,8 +95,10 @@ enum AutopilotService {
     static func runPass() -> [Entry] {
         var made: [Entry] = []
 
-        // 1) Concise output-style (system-wide). Install only if not already ours.
-        if !OutputStyleService.isInstalled() {
+        // 1) Concise output-style (system-wide). Install only if not already
+        // ours AND the user hasn't picked their own style in the manager —
+        // never override an explicit choice.
+        if !OutputStyleManager.userOverride, !OutputStyleService.isInstalled() {
             if let res = try? OutputStyleService.install() {
                 made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .outputStyle,
                                   summary: "Installed concise output-style — claude is terse system-wide",
