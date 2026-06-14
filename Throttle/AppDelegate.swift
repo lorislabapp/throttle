@@ -116,6 +116,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         CrashReporter.shared.start()
 
+        // Throttle Autopilot — keep the Claude Code setup optimized, by default,
+        // system-wide. Off-main; debounced to ~once/day; every action reversible
+        // and logged (Settings → Autopilot → Review & undo).
+        Task.detached(priority: .utility) { _ = AutopilotService.runIfDue() }
+
         Task { @MainActor in
             await coordinator.start()
             appState.refresh()

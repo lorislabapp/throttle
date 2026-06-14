@@ -1309,6 +1309,10 @@ private struct InlineGeneralPane: View {
     @State private var calendarStatus: String = ""
     @State private var conciseClaudeCode: Bool =
         FileManager.default.fileExists(atPath: InlineGeneralPane.conciseFlagPath)
+    @State private var autopilotOn: Bool = AutopilotService.isEnabled
+    @State private var showingLedger = false
+    @State private var ledger: [AutopilotService.Entry] = []
+    @State private var autopilotBusy = false
 
     /// Flag file the SessionStart hook reads to inject a terse-output directive
     /// into every Claude Code session. App writes it (non-sandboxed); hook reads it.
@@ -1323,6 +1327,7 @@ private struct InlineGeneralPane: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            autopilotGroup
             SettingsGroupHeader(label: "General")
             SettingsRow(title: "Launch at login") {
                 Toggle("", isOn: $loginItemsEnabled).labelsHidden().toggleStyle(.switch).tint(.accentColor)
@@ -1356,6 +1361,117 @@ private struct InlineGeneralPane: View {
                 SettingsButton(title: "Check now") { UpdaterService.shared.checkForUpdates() }
             }
             SettingsNote(text: "Throttle \(currentVersionLabel) · updates are signed and verified before install.")
+        }
+        .sheet(isPresented: $showingLedger) { autopilotLedgerSheet }
+    }
+
+    // MARK: - Autopilot
+
+    @ViewBuilder
+    private var autopilotGroup: some View {
+        SettingsGroupHeader(label: "Autopilot")
+        SettingsRow(title: "Optimize my setup automatically",
+                    sub: "Keeps Claude Code lean system-wide — installs a concise output-style, archives stale memory & dead skills. 100% local, every action reversible.") {
+            Toggle("", isOn: $autopilotOn).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                .onChange(of: autopilotOn) { _, on in
+                    AutopilotService.isEnabled = on
+                    guard on else { return }
+                    autopilotBusy = true
+                    Task {
+                        let made = await Task.detached(priority: .utility) { AutopilotService.runPass() }.value
+                        ledger = AutopilotService.load()
+                        autopilotBusy = false
+                        _ = made
+                    }
+                }
+        }
+        SettingsHair()
+        SettingsRow(title: "Activity log", sub: autopilotStatusSub) {
+            if autopilotBusy {
+                ProgressView().controlSize(.small)
+            } else {
+                SettingsButton(title: "Review & undo…") {
+                    ledger = AutopilotService.load()
+                    showingLedger = true
+                }
+            }
+        }
+        SettingsNote(text: "Manual one-tap optimizers (transcript trim, dedup hoist) live in the Cockpit — they touch live content, so they stay deliberate.")
+    }
+
+    private var autopilotStatusSub: String {
+        let entries = AutopilotService.load()
+        let active = entries.filter { !$0.undone }.count
+        if !AutopilotService.isEnabled { return "Off — turn on to keep your setup optimized." }
+        if let last = AutopilotService.lastRun {
+            return "\(active) active change\(active == 1 ? "" : "s") · last run \(formatRelative(last))"
+        }
+        return entries.isEmpty ? "On — first pass runs shortly." : "\(active) active change\(active == 1 ? "" : "s")"
+    }
+
+    private var autopilotLedgerSheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Autopilot activity").font(.system(size: 15, weight: .semibold))
+                    Text("Everything Throttle changed on your behalf. Each is reversible — nothing left your Mac.")
+                        .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Button("Done") { showingLedger = false }.keyboardShortcut(.defaultAction)
+            }
+            .padding(16)
+            Divider()
+            if ledger.isEmpty {
+                Text("No changes yet.").font(.system(size: 11)).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center).padding(.vertical, 36)
+            } else {
+                ScrollView { VStack(spacing: 0) { ForEach(ledger) { ledgerRow($0) } } }
+            }
+            Divider()
+            HStack {
+                Button("Undo all") {
+                    AutopilotService.undoAll(); ledger = AutopilotService.load()
+                }
+                .disabled(ledger.allSatisfy { $0.undone })
+                Spacer()
+                Button("Disable & undo everything", role: .destructive) {
+                    AutopilotService.disable(undoEverything: true)
+                    autopilotOn = false; ledger = AutopilotService.load(); showingLedger = false
+                }
+            }
+            .padding(.horizontal, 16).padding(.vertical, 10)
+        }
+        .frame(width: 540, height: 440)
+    }
+
+    private func ledgerRow(_ e: AutopilotService.Entry) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: ledgerIcon(e.kind))
+                .font(.system(size: 12)).foregroundStyle(e.undone ? .tertiary : .secondary).frame(width: 18)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(e.summary).font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(e.undone ? .tertiary : .primary)
+                    .strikethrough(e.undone).lineLimit(2)
+                Text(formatRelative(e.timestamp)).font(.system(size: 9.5)).foregroundStyle(.tertiary)
+            }
+            Spacer(minLength: 6)
+            if e.undone {
+                Text("undone").font(.system(size: 10)).foregroundStyle(.tertiary)
+            } else {
+                Button("Undo") { _ = AutopilotService.undo(e.id); ledger = AutopilotService.load() }
+                    .controlSize(.small)
+            }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 9)
+        .overlay(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.06)).frame(height: 1) }
+    }
+
+    private func ledgerIcon(_ k: AutopilotService.Entry.Kind) -> String {
+        switch k {
+        case .outputStyle: return "text.alignleft"
+        case .memory:      return "clock.badge.xmark"
+        case .skills:      return "wrench.adjustable"
         }
     }
 

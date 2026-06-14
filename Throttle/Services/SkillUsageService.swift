@@ -33,7 +33,9 @@ enum SkillUsageService {
 
     /// Archive a skill by MOVING it to ~/.claude/skills-archive (reversible —
     /// never deletes). Claude Code won't load skills from outside ~/.claude/skills.
-    static func archive(skillName: String) throws {
+    /// Returns the exact move performed (from→to), or nil if the skill wasn't found.
+    @discardableResult
+    static func archive(skillName: String) throws -> FileMove? {
         let fm = FileManager.default
         let home = fm.homeDirectoryForCurrentUser
         let skills = home.appendingPathComponent(".claude/skills", isDirectory: true)
@@ -44,19 +46,22 @@ enum SkillUsageService {
         let asMd = skills.appendingPathComponent(skillName + ".md")
         var isDir: ObjCBool = false
         if fm.fileExists(atPath: asDir.path, isDirectory: &isDir), isDir.boolValue {
-            try moveAvoidingClash(asDir, into: archive, name: skillName, fm: fm)
+            return try moveAvoidingClash(asDir, into: archive, name: skillName, fm: fm)
         } else if fm.fileExists(atPath: asMd.path) {
-            try moveAvoidingClash(asMd, into: archive, name: skillName + ".md", fm: fm)
+            return try moveAvoidingClash(asMd, into: archive, name: skillName + ".md", fm: fm)
         }
+        return nil
     }
 
-    private static func moveAvoidingClash(_ src: URL, into dir: URL, name: String, fm: FileManager) throws {
+    @discardableResult
+    private static func moveAvoidingClash(_ src: URL, into dir: URL, name: String, fm: FileManager) throws -> FileMove {
         var dest = dir.appendingPathComponent(name)
         var n = 2
         while fm.fileExists(atPath: dest.path) {
             dest = dir.appendingPathComponent("\(name)-\(n)"); n += 1
         }
         try fm.moveItem(at: src, to: dest)
+        return FileMove(from: src.path, to: dest.path)
     }
 
     /// Installed global skills: directories with a SKILL.md, plus standalone .md.

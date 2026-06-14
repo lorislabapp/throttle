@@ -51,14 +51,14 @@ enum MemoryCleanupService {
 
     /// Archive stale memory files by MOVING them to ~/.claude/memory-archive
     /// (reversible — never deletes), preserving the project sub-path. Returns
-    /// the count moved.
+    /// the exact moves performed (from→to) so a caller can undo precisely.
     @discardableResult
-    static func archive(paths: [String]) -> Int {
+    static func archive(paths: [String]) -> [FileMove] {
         let fm = FileManager.default
         let home = fm.homeDirectoryForCurrentUser
         let projects = home.appendingPathComponent(".claude/projects").path
         let base = home.appendingPathComponent(".claude/memory-archive", isDirectory: true)
-        var moved = 0
+        var moves: [FileMove] = []
         for p in paths {
             let src = URL(fileURLWithPath: p)
             let rel = p.hasPrefix(projects + "/") ? String(p.dropFirst(projects.count + 1)) : src.lastPathComponent
@@ -70,9 +70,11 @@ enum MemoryCleanupService {
                     .appendingPathComponent("\(src.deletingPathExtension().lastPathComponent)-\(n).md")
                 n += 1
             }
-            if (try? fm.moveItem(at: src, to: dest)) != nil { moved += 1 }
+            if (try? fm.moveItem(at: src, to: dest)) != nil {
+                moves.append(FileMove(from: p, to: dest.path))
+            }
         }
-        return moved
+        return moves
     }
 
     /// `-Users-kevin-GitHub-Throttle` → `Throttle` (best-effort display name).
