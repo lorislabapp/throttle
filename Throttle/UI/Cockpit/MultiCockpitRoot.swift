@@ -14,6 +14,7 @@ struct MultiCockpitRoot: View {
     @Environment(AppState.self) private var appState
     @State private var model = MultiCockpitModel()
     @State private var showInspector = false
+    @State private var activeStyle = OutputStyleManager.activeName()
 
     private let hair = Color.primary.opacity(0.10)
     private let track = Color.primary.opacity(0.08)
@@ -33,8 +34,11 @@ struct MultiCockpitRoot: View {
             }
         }
         .frame(minWidth: 720, minHeight: 460)
-        .onAppear { model.start(appState: appState) }
+        .onAppear { model.start(appState: appState); activeStyle = OutputStyleManager.activeName() }
         .onDisappear { model.stop() }
+        .onReceive(NotificationCenter.default.publisher(for: .outputStyleChanged)) { _ in
+            activeStyle = OutputStyleManager.activeName()
+        }
     }
 
     // MARK: - Top bar (switcher + pills)
@@ -53,10 +57,31 @@ struct MultiCockpitRoot: View {
                     .foregroundStyle(showInspector ? Color.accentColor : Color.secondary)
             }
             .buttonStyle(.plain).help("Audit inspector")
+            styleIndicator
             if appState.isPro { pill("PRO", soft: true) }
             if appState.exactSnapshot != nil { pill("EXACT", solid: true) }
         }
         .padding(.horizontal, 14).frame(height: 40)
+    }
+
+    /// Active output-style at a glance — click to open the manager (the same
+    /// styles drive this Cockpit's `claude` and the terminal).
+    private var styleIndicator: some View {
+        Button { OutputStyleWindowController.shared.show() } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "text.alignleft").font(.system(size: 9, weight: .semibold))
+                Text(styleShort(activeStyle)).font(.system(size: 10, weight: .semibold))
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 7).padding(.vertical, 3)
+            .background(Color.primary.opacity(0.06), in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain).help("Output style: \(activeStyle) — click to change")
+    }
+
+    private func styleShort(_ s: String) -> String {
+        s == "Default" ? "Default" : s.replacingOccurrences(of: "Throttle ", with: "")
     }
 
     private var viewSwitcher: some View {
