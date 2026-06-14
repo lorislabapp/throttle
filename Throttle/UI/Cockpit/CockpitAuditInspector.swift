@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// The audit half of the cockpit, re-homed for the multi-session window: a
 /// collapsible right inspector reusing the existing `CockpitViewModel` (config
@@ -73,9 +74,24 @@ struct CockpitAuditInspector: View {
                     }.contentShape(Rectangle())
                 }.buttonStyle(.plain).help("Hoist duplicated CLAUDE.md blocks to a shared skill (backed up, reversible)")
             }
-            if !vm.memory.files.isEmpty { row("Stale memory · \(vm.memory.files.count)", "≈\(tok(vm.memory.totalTokens)) tok") }
-            if vm.skills.deadCount > 0 { row("Dead skills · \(vm.skills.deadCount)", "≈\(tok(vm.skills.deadTokens)) tok") }
-            if !vm.reads.files.isEmpty { row("Brute reads · \(vm.reads.files.count)", "RAG") }
+            if !vm.memory.files.isEmpty {
+                actionRow("clock.badge.xmark", "Stale memory · \(vm.memory.files.count)", "≈\(tok(vm.memory.totalTokens)) tok", "Archive") {
+                    let paths = vm.memory.files.map { $0.id }
+                    Task { await vm.archiveMemory(paths) }
+                }
+            }
+            if vm.skills.deadCount > 0 {
+                actionRow("wrench.adjustable", "Dead skills · \(vm.skills.deadCount)", "≈\(tok(vm.skills.deadTokens)) tok", "Archive") {
+                    let dead = vm.skills.skills.filter { $0.dead }
+                    Task { for s in dead { await vm.archiveSkill(s.name) } }
+                }
+            }
+            if !vm.reads.files.isEmpty {
+                actionRow("flame", "Brute reads · \(vm.reads.files.count)", "RAG", "Copy cfg") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(ReadFirewallReport.mcpSnippet, forType: .string)
+                }
+            }
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
     }
@@ -192,6 +208,17 @@ struct CockpitAuditInspector: View {
             Spacer(minLength: 4)
             Text(value).font(.system(size: 11).monospacedDigit()).foregroundStyle(.primary)
         }
+    }
+    private func actionRow(_ icon: String, _ label: String, _ value: String, _ action: String, _ act: @escaping () -> Void) -> some View {
+        Button(action: act) {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.system(size: 10)).foregroundStyle(.orange)
+                Text(label).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                Spacer(minLength: 4)
+                Text(action).font(.system(size: 10.5, weight: .medium)).foregroundStyle(Color.accentColor)
+                Text(value).font(.system(size: 11).monospacedDigit()).foregroundStyle(.orange)
+            }.contentShape(Rectangle())
+        }.buttonStyle(.plain)
     }
     private func tok(_ n: Int) -> String {
         if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
