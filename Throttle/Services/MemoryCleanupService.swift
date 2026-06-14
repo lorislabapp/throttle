@@ -49,6 +49,54 @@ enum MemoryCleanupService {
         return MemoryReport(files: stale.sorted { $0.tokens > $1.tokens })
     }
 
+    /// Provably-safe target for auto-archiving: memory files belonging to a
+    /// project whose working directory **no longer exists** (the project was
+    /// deleted). The real cwd is read from the project's own transcript (no
+    /// lossy dir-name decoding), reading at most 64 KB so it stays light on a
+    /// memory-constrained Mac. Guards: only judge projects under the user's
+    /// home (so an unmounted external volume isn't mistaken for deleted), and
+    /// never index files.
+    static func scanOrphaned() -> [String] {
+        let fm = FileManager.default
+        let home = fm.homeDirectoryForCurrentUser.path
+        let projectsDir = fm.homeDirectoryForCurrentUser.appendingPathComponent(".claude/projects", isDirectory: true)
+        guard let projects = try? fm.contentsOfDirectory(at: projectsDir, includingPropertiesForKeys: nil) else { return [] }
+
+        var orphaned: [String] = []
+        for proj in projects {
+            let memDir = proj.appendingPathComponent("memory", isDirectory: true)
+            guard let files = try? fm.contentsOfDirectory(at: memDir, includingPropertiesForKeys: nil),
+                  files.contains(where: { $0.pathExtension == "md" }) else { continue }
+            guard let cwd = projectCwd(proj), cwd.hasPrefix(home) else { continue }
+            var isDir: ObjCBool = false
+            if fm.fileExists(atPath: cwd, isDirectory: &isDir), isDir.boolValue { continue } // still exists → keep
+            for f in files where f.pathExtension == "md" && f.lastPathComponent.lowercased() != "memory.md" {
+                orphaned.append(f.path)
+            }
+        }
+        return orphaned
+    }
+
+    /// Read a project's real `cwd` from one of its transcripts (first 64 KB of
+    /// up to 3 files). Returns nil if undetermined — callers then leave it alone.
+    private static func projectCwd(_ projectDir: URL) -> String? {
+        let fm = FileManager.default
+        guard let entries = try? fm.contentsOfDirectory(at: projectDir, includingPropertiesForKeys: nil) else { return nil }
+        for url in entries.filter({ $0.pathExtension == "jsonl" }).prefix(3) {
+            guard let fh = try? FileHandle(forReadingFrom: url) else { continue }
+            defer { try? fh.close() }
+            let chunk = (try? fh.read(upToCount: 65_536)) ?? Data()
+            guard let text = String(data: chunk, encoding: .utf8),
+                  let r = text.range(of: "\"cwd\":\"") ?? text.range(of: "\"cwd\": \"") else { continue }
+            let rest = text[r.upperBound...]
+            guard let end = rest.firstIndex(of: "\"") else { continue }
+            return String(rest[..<end])
+                .replacingOccurrences(of: "\\/", with: "/")
+                .replacingOccurrences(of: "\\\\", with: "\\")
+        }
+        return nil
+    }
+
     /// Archive stale memory files by MOVING them to ~/.claude/memory-archive
     /// (reversible — never deletes), preserving the project sub-path. Returns
     /// the exact moves performed (from→to) so a caller can undo precisely.

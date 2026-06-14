@@ -112,7 +112,19 @@ enum AutopilotService {
             }
         }
 
-        // 2) Archive stale memory — OPT-IN, and never index files (MEMORY.md).
+        // 2) Orphaned-project memory — DEFAULT ON (provably safe: the project's
+        //    working dir no longer exists, so the memory is unreachable).
+        let orphaned = MemoryCleanupService.scanOrphaned()
+        if !orphaned.isEmpty {
+            let moves = MemoryCleanupService.archive(paths: orphaned)
+            if !moves.isEmpty {
+                made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .memory,
+                                  summary: "Archived \(moves.count) memory file\(moves.count == 1 ? "" : "s") from deleted projects",
+                                  moves: moves))
+            }
+        }
+
+        // 2b) Archive stale memory — OPT-IN, and never index files (MEMORY.md).
         if archiveStaleMemory {
             let files = MemoryCleanupService.scan().files.filter { !isProtectedMemory($0.id) }
             if !files.isEmpty {
