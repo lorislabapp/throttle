@@ -183,7 +183,7 @@ struct MultiCockpitRoot: View {
                         let on = s.id == (model.active?.id)
                         Button { model.activeID = s.id } label: {
                             HStack(spacing: 8) {
-                                stateDot
+                                stateDot(s.isLive)
                                 Text(s.projectName).font(.system(size: 12, weight: .medium))
                                     .foregroundStyle(on ? .primary : .secondary)
                                 Button { model.close(s.id) } label: {
@@ -255,7 +255,7 @@ struct MultiCockpitRoot: View {
         return Button { model.activeID = s.id } label: {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
-                    stateDot
+                    stateDot(s.isLive)
                     Text(s.projectName).font(.system(size: 12.5, weight: .medium))
                         .foregroundStyle(on ? .primary : .secondary).lineLimit(1)
                     Spacer(minLength: 0)
@@ -303,7 +303,7 @@ struct MultiCockpitRoot: View {
         return Button { model.activeID = s.id; model.viewMode = .tabs } label: {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
-                    stateDot
+                    stateDot(s.isLive)
                     Text(s.projectName).font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
                     Spacer(minLength: 0)
                     if let m = s.model { modelChip(m) }
@@ -394,7 +394,9 @@ struct MultiCockpitRoot: View {
 
     // MARK: - Bits
 
-    private var stateDot: some View { Circle().fill(Color.green).frame(width: 6, height: 6) }
+    private func stateDot(_ live: Bool) -> some View {
+        Circle().fill(live ? Color.green : Color.secondary.opacity(0.45)).frame(width: 6, height: 6)
+    }
 
     private func modelChip(_ m: String) -> some View {
         Text(m).font(.system(size: 9.5, weight: .semibold, design: .monospaced))

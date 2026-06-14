@@ -20,6 +20,9 @@ final class CockpitTab: Identifiable {
     var model: String?
     var eur: Double?
     var tokens: Int?
+    /// True when the session's transcript was written in the last ~12 s — i.e.
+    /// claude is actively working (a real signal, not a guess).
+    var isLive = false
 
     init(projectName: String, cwd: String, autostartClaude: Bool = true) {
         self.projectName = projectName
@@ -90,24 +93,25 @@ final class MultiCockpitModel {
         let items = sessions.map { (id: $0.id, cwd: $0.cwd, since: $0.startedAt) }
         guard !items.isEmpty else { return }
         Task { [weak self] in
-            let results: [(UUID, Double?, Int?, String?)] = await Task.detached(priority: .utility) {
+            let results: [(UUID, Double?, Int?, String?, Bool)] = await Task.detached(priority: .utility) {
                 items.map { item in
-                    guard let sid = Self.newestSessionId(cwd: item.cwd, since: item.since) else { return (item.id, nil, nil, nil) }
+                    guard let s = Self.newestSession(cwd: item.cwd, since: item.since) else { return (item.id, nil, nil, nil, false) }
+                    let live = Date().timeIntervalSince(s.mtime) < 12
                     let stats: (Double?, Int?, String?)? = try? db.read { d in
-                        let eur = try? StatsDataService.cockpitSessionCostEUR(in: d, sessionId: sid)
-                        let tok = try? StatsDataService.cockpitSessionTokens(in: d, sessionId: sid)
-                        let split = (try? StatsDataService.cockpitModelSplitForSession(in: d, sessionId: sid)) ?? []
+                        let eur = try? StatsDataService.cockpitSessionCostEUR(in: d, sessionId: s.id)
+                        let tok = try? StatsDataService.cockpitSessionTokens(in: d, sessionId: s.id)
+                        let split = (try? StatsDataService.cockpitModelSplitForSession(in: d, sessionId: s.id)) ?? []
                         let model = split.max { $0.weightedTokens < $1.weightedTokens }
                             .flatMap { Self.modelName($0.tier) }
                         return (eur, tok, model)
                     }
-                    return (item.id, stats?.0, stats?.1, stats?.2)
+                    return (item.id, stats?.0, stats?.1, stats?.2, live)
                 }
             }.value
             guard let self else { return }
-            for (id, eur, tok, model) in results {
+            for (id, eur, tok, model, live) in results {
                 if let tab = self.sessions.first(where: { $0.id == id }) {
-                    tab.eur = eur; tab.tokens = tok; tab.model = model
+                    tab.eur = eur; tab.tokens = tok; tab.model = model; tab.isLive = live
                 }
             }
         }
@@ -124,7 +128,7 @@ final class MultiCockpitModel {
 
     /// The sessionId of the tab's running claude: newest `.jsonl` in
     /// `~/.claude/projects/<cwd with / → ->/`, modified at/after the tab started.
-    nonisolated static func newestSessionId(cwd: String, since: Date) -> String? {
+    nonisolated static func newestSession(cwd: String, since: Date) -> (id: String, mtime: Date)? {
         let encoded = cwd.replacingOccurrences(of: "/", with: "-")
         let dir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude/projects/\(encoded)", isDirectory: true)
@@ -138,7 +142,7 @@ final class MultiCockpitModel {
         guard let newest,
               let mod = try? newest.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
               mod >= since.addingTimeInterval(-5) else { return nil }
-        return newest.deletingPathExtension().lastPathComponent
+        return (newest.deletingPathExtension().lastPathComponent, mod)
     }
 
     func stop() {
