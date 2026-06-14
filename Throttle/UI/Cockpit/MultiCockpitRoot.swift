@@ -14,6 +14,7 @@ struct MultiCockpitRoot: View {
     @Environment(AppState.self) private var appState
     @State private var model = MultiCockpitModel()
     @State private var showPicker = false
+    @State private var showInspector = false
 
     private let hair = Color.primary.opacity(0.10)
     private let track = Color.primary.opacity(0.08)
@@ -24,7 +25,13 @@ struct MultiCockpitRoot: View {
             Rectangle().fill(hair).frame(height: 1)
             globalStrip
             if model.gated { gateBanner }
-            content
+            HStack(spacing: 0) {
+                content
+                if showInspector {
+                    Rectangle().fill(hair).frame(width: 1)
+                    CockpitAuditInspector()
+                }
+            }
         }
         .frame(minWidth: 720, minHeight: 460)
         .overlay(alignment: .topTrailing) {
@@ -44,6 +51,12 @@ struct MultiCockpitRoot: View {
             Spacer(minLength: 12)
             viewSwitcher
             Spacer(minLength: 12)
+            Button { showInspector.toggle() } label: {
+                Image(systemName: "sidebar.trailing")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(showInspector ? Color.accentColor : Color.secondary)
+            }
+            .buttonStyle(.plain).help("Audit inspector")
             if appState.isPro { pill("PRO", soft: true) }
             if appState.exactSnapshot != nil { pill("EXACT", solid: true) }
         }

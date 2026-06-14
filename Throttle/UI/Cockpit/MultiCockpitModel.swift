@@ -90,20 +90,35 @@ final class MultiCockpitModel {
         let items = sessions.map { (id: $0.id, cwd: $0.cwd, since: $0.startedAt) }
         guard !items.isEmpty else { return }
         Task { [weak self] in
-            let results: [(UUID, Double?, Int?)] = await Task.detached(priority: .utility) {
+            let results: [(UUID, Double?, Int?, String?)] = await Task.detached(priority: .utility) {
                 items.map { item in
-                    guard let sid = Self.newestSessionId(cwd: item.cwd, since: item.since) else { return (item.id, nil, nil) }
-                    let stats: (Double?, Int?)? = try? db.read { d in
-                        (try? StatsDataService.cockpitSessionCostEUR(in: d, sessionId: sid),
-                         try? StatsDataService.cockpitSessionTokens(in: d, sessionId: sid))
+                    guard let sid = Self.newestSessionId(cwd: item.cwd, since: item.since) else { return (item.id, nil, nil, nil) }
+                    let stats: (Double?, Int?, String?)? = try? db.read { d in
+                        let eur = try? StatsDataService.cockpitSessionCostEUR(in: d, sessionId: sid)
+                        let tok = try? StatsDataService.cockpitSessionTokens(in: d, sessionId: sid)
+                        let split = (try? StatsDataService.cockpitModelSplitForSession(in: d, sessionId: sid)) ?? []
+                        let model = split.max { $0.weightedTokens < $1.weightedTokens }
+                            .flatMap { Self.modelName($0.tier) }
+                        return (eur, tok, model)
                     }
-                    return (item.id, stats?.0, stats?.1)
+                    return (item.id, stats?.0, stats?.1, stats?.2)
                 }
             }.value
             guard let self else { return }
-            for (id, eur, tok) in results {
-                if let tab = self.sessions.first(where: { $0.id == id }) { tab.eur = eur; tab.tokens = tok }
+            for (id, eur, tok, model) in results {
+                if let tab = self.sessions.first(where: { $0.id == id }) {
+                    tab.eur = eur; tab.tokens = tok; tab.model = model
+                }
             }
+        }
+    }
+
+    private nonisolated static func modelName(_ tier: ModelTier) -> String? {
+        switch tier {
+        case .opus:   return "Opus"
+        case .sonnet: return "Sonnet"
+        case .haiku:  return "Haiku"
+        case .other:  return nil
         }
     }
 
