@@ -37,6 +37,7 @@ enum AIOptimizerService {
         2. Tighten security — flag/parametrise secrets, narrow over-broad permissions.
         3. Improve clarity and structure.
         HARD RULE: never drop a real instruction or change the developer's intent. If the file is already tight, return it UNCHANGED and say so.
+        IF THE CURRENT FILE IS EMPTY: instead CREATE a concise, sensible STARTER for a Claude Code project (a few conventions, model defaults, key paths). Keep it minimal and generic — do NOT invent project specifics you cannot know. In the WHY section, say it's a new starter and what it sets up.
 
         Return EXACTLY this, and nothing else (no preamble, no code fences):
         \(fileStart)

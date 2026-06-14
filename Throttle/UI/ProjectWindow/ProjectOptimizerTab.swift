@@ -45,7 +45,7 @@ struct ProjectOptimizerTab: View {
             if loading {
                 ProgressView().controlSize(.small)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if url(for: selectedFile) != nil {
+            } else if fileExists(for: selectedFile) || !proposedContents.isEmpty {
                 if diffMode { diffPane } else { editorPanes }
             } else {
                 missingFile
@@ -182,10 +182,24 @@ struct ProjectOptimizerTab: View {
     private var missingFile: some View {
         VStack(spacing: 8) {
             Image(systemName: "doc.badge.plus").font(.system(size: 28)).foregroundStyle(.tertiary)
-            Text("File not present").font(.system(size: 14, weight: .semibold))
-            Text("\(selectedFile.rawValue) doesn't exist for this project yet. Create it on disk first, then come back to edit.")
+            Text("\(selectedFile.rawValue) not present").font(.system(size: 14, weight: .semibold))
+            Text("This project doesn't have \(selectedFile.rawValue) yet. Generate a sensible starter with AI — review the diff, then Apply to create it.")
                 .font(.system(size: 12)).foregroundStyle(.secondary)
-                .multilineTextAlignment(.center).frame(maxWidth: 340)
+                .multilineTextAlignment(.center).frame(maxWidth: 360)
+            if optimizing {
+                HStack(spacing: 6) { ProgressView().controlSize(.small); Text("Generating…").font(.system(size: 12)).foregroundStyle(.secondary) }
+                    .padding(.top, 8)
+            } else {
+                Button { Task { await optimizeWithAI() } } label: {
+                    HStack(spacing: 6) { Image(systemName: "sparkles"); Text("Generate a starter with AI") }
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+                        .padding(.horizontal, 16).padding(.vertical, 9)
+                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 9))
+                }.buttonStyle(.plain).padding(.top, 10)
+            }
+            if !status.isEmpty {
+                Text(status).font(.system(size: 11)).foregroundStyle(.secondary).padding(.top, 4)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity).padding(20)
     }
@@ -194,6 +208,7 @@ struct ProjectOptimizerTab: View {
 
     // MARK: - Actions
 
+    /// Existence-gated URL (nil when the file is absent).
     private func url(for file: EditableFile) -> URL? {
         switch file {
         case .claudeMd:          return project.claudeMdURL
@@ -202,19 +217,34 @@ struct ProjectOptimizerTab: View {
         }
     }
 
+    /// The target path REGARDLESS of existence — so we can create the file.
+    private func targetURL(for file: EditableFile) -> URL? {
+        guard let root = project.url else { return nil }
+        switch file {
+        case .claudeMd:          return root.appendingPathComponent("CLAUDE.md")
+        case .settingsJSON:      return root.appendingPathComponent(".claude/settings.json")
+        case .settingsLocalJSON: return root.appendingPathComponent(".claude/settings.local.json")
+        }
+    }
+
+    private func fileExists(for file: EditableFile) -> Bool {
+        guard let u = targetURL(for: file) else { return false }
+        return FileManager.default.fileExists(atPath: u.path)
+    }
+
     private func reload() {
         loading = true
         status = ""
-        guard let url = url(for: selectedFile) else {
-            originalContents = ""
-            proposedContents = ""
-            loading = false
-            return
+        rationale = []
+        diffMode = false
+        let text: String
+        if let u = targetURL(for: selectedFile), FileManager.default.fileExists(atPath: u.path) {
+            text = (try? String(contentsOf: u, encoding: .utf8)) ?? ""
+        } else {
+            text = ""   // file absent — AI can generate a starter
         }
-        let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
         originalContents = text
         proposedContents = text
-        rationale = []
         loading = false
     }
 
@@ -259,7 +289,8 @@ struct ProjectOptimizerTab: View {
     }
 
     private func apply() async {
-        guard let url = url(for: selectedFile) else { return }
+        guard let url = targetURL(for: selectedFile) else { return }
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         do {
             let result = try await FileEditor.shared.write(url, contents: proposedContents)
             await MainActor.run {
