@@ -271,6 +271,18 @@ struct MultiCockpitRoot: View {
                     Spacer(minLength: 0)
                     Text("up \(uptime(s.startedAt))").font(.system(size: 10.5)).foregroundStyle(.tertiary)
                 }
+                if s.ramBytes > 0 {
+                    HStack(spacing: 5) {
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(track)
+                                Capsule().fill(Color.secondary.opacity(0.45))
+                                    .frame(width: max(2, geo.size.width * ramFraction(s.ramBytes)))
+                            }
+                        }.frame(height: 3)
+                        Text(gb(s.ramBytes)).font(.system(size: 9, design: .monospaced)).foregroundStyle(.tertiary)
+                    }
+                }
             }
             .padding(.horizontal, 10).padding(.vertical, 9).frame(maxWidth: .infinity, alignment: .leading)
             .background(on ? Color.primary.opacity(0.06) : .clear, in: RoundedRectangle(cornerRadius: 9))
@@ -321,6 +333,9 @@ struct MultiCockpitRoot: View {
                 HStack {
                     Text("Focus terminal›").font(.system(size: 10)).foregroundStyle(.tertiary)
                     Spacer()
+                    if s.ramBytes > 0 {
+                        Text("\(gb(s.ramBytes)) RAM").font(.system(size: 9.5, design: .monospaced)).foregroundStyle(.tertiary)
+                    }
                 }
             }
             .padding(.horizontal, 14).padding(.vertical, 13).frame(minHeight: 128, alignment: .topLeading)
@@ -456,6 +471,8 @@ struct MultiCockpitRoot: View {
         let g = Double(bytes) / 1_073_741_824
         return g >= 10 ? String(format: "%.0fG", g) : String(format: "%.1fG", g)
     }
+    /// Per-session RAM bar scale — 4 GB fills the bar (sessions rarely exceed that).
+    private func ramFraction(_ bytes: UInt64) -> Double { min(1, Double(bytes) / 4_000_000_000) }
     private func fmtTok(_ n: Int) -> String {
         if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
         if n >= 1_000 { return String(format: "%.0fk", Double(n) / 1_000) }

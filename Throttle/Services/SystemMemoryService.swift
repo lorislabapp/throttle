@@ -71,6 +71,43 @@ enum SystemMemoryService {
         return sysctlbyname("kern.memorystatus_vm_pressure_level", &level, &size, nil, 0) == 0 ? Int(level) : 1
     }
 
+    /// Resident memory of each process SUBTREE rooted at the given pids (shell →
+    /// claude → node descendants). One `ps` sweep, then BFS per root. Used for
+    /// real per-session RAM in the multi-cockpit.
+    static func subtreeRSS(rootPids: [pid_t]) -> [pid_t: UInt64] {
+        guard !rootPids.isEmpty else { return [:] }
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/ps")
+        p.arguments = ["-axo", "pid=,ppid=,rss="]
+        let pipe = Pipe()
+        p.standardOutput = pipe
+        p.standardError = FileHandle.nullDevice
+        do { try p.run() } catch { return [:] }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        guard let text = String(data: data, encoding: .utf8) else { return [:] }
+
+        var children: [pid_t: [pid_t]] = [:]
+        var rssKB: [pid_t: UInt64] = [:]
+        for line in text.split(separator: "\n") {
+            let f = line.split(separator: " ", omittingEmptySubsequences: true)
+            guard f.count == 3, let pid = pid_t(f[0]), let ppid = pid_t(f[1]), let rss = UInt64(f[2]) else { continue }
+            children[ppid, default: []].append(pid)
+            rssKB[pid] = rss
+        }
+        var out: [pid_t: UInt64] = [:]
+        for root in rootPids {
+            var total: UInt64 = 0
+            var stack = [root]
+            while let cur = stack.popLast() {
+                total += (rssKB[cur] ?? 0)
+                if let kids = children[cur] { stack.append(contentsOf: kids) }
+            }
+            out[root] = total * 1024
+        }
+        return out
+    }
+
     // MARK: - Running claude sessions
 
     /// Sum RSS of processes whose executable name is exactly `claude` (the CLI).

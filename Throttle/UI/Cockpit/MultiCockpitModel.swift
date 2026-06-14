@@ -26,8 +26,16 @@ final class CockpitTab: Identifiable {
     var eur: Double?
     var tokens: Int?
     var isLive = false
+    /// Resident memory of this session's process subtree (shell → claude → node).
+    var ramBytes: UInt64 = 0
     /// The running claude session id, discovered at runtime — used for persistence.
     var sessionId: String?
+
+    /// PID of the session's login shell (root of its process subtree), if spawned.
+    var shellPid: Int32? {
+        guard let pid = terminal?.process?.shellPid, pid > 0 else { return nil }
+        return pid
+    }
 
     init(projectName: String, cwd: String, resumeSessionId: String? = nil) {
         self.projectName = projectName
@@ -94,6 +102,7 @@ final class MultiCockpitModel {
                 try? await Task.sleep(for: .seconds(5))
                 self?.sampleMachine()
                 self?.refreshStats()
+                self?.sampleSessionRAM()
             }
         }
     }
@@ -196,6 +205,23 @@ final class MultiCockpitModel {
         Task { [weak self] in
             let h = await Task.detached(priority: .utility) { SystemMemoryService.sample() }.value
             self?.machine = h
+        }
+    }
+
+    /// Real per-session RAM: resident memory of each spawned tab's process
+    /// subtree (shell → claude → node). One `ps` sweep, off-main.
+    func sampleSessionRAM() {
+        let pairs: [(UUID, Int32)] = sessions.compactMap { tab in tab.shellPid.map { (tab.id, $0) } }
+        guard !pairs.isEmpty else { return }
+        let pids = pairs.map { $0.1 }
+        Task { [weak self] in
+            let map = await Task.detached(priority: .utility) { SystemMemoryService.subtreeRSS(rootPids: pids) }.value
+            guard let self else { return }
+            for (id, pid) in pairs {
+                if let bytes = map[pid], let tab = self.sessions.first(where: { $0.id == id }) {
+                    tab.ramBytes = bytes
+                }
+            }
         }
     }
 
