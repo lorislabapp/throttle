@@ -40,11 +40,27 @@ enum AutopilotService {
     private static let enabledKey = "autopilotEnabled"
     private static let lastRunKey = "autopilotLastRun"
 
-    /// Master switch. Default ON — the user asked for system-wide-by-default;
-    /// every action it takes is reversible and logged.
+    /// Master switch. Default ON — the user asked for system-wide-by-default.
+    /// By default the only auto action is the concise output-style (provably
+    /// safe + trivially reversible). Archiving is OPT-IN (below) because the
+    /// "stale memory" / "dead skill" heuristics are too blunt to run unattended:
+    /// a 30-day-untouched memory file is normal, and a never-invoked skill is
+    /// often a situational one the user keeps on purpose.
     static var isEnabled: Bool {
         get { UserDefaults.standard.object(forKey: enabledKey) as? Bool ?? true }
         set { UserDefaults.standard.set(newValue, forKey: enabledKey) }
+    }
+
+    /// Opt-in (default OFF). Even when on, index files are protected.
+    static var archiveStaleMemory: Bool {
+        get { UserDefaults.standard.bool(forKey: "autopilotArchiveMemory") }
+        set { UserDefaults.standard.set(newValue, forKey: "autopilotArchiveMemory") }
+    }
+    /// Opt-in (default OFF). Even when on, skills referenced in any CLAUDE.md
+    /// are protected.
+    static var archiveDeadSkills: Bool {
+        get { UserDefaults.standard.bool(forKey: "autopilotArchiveSkills") }
+        set { UserDefaults.standard.set(newValue, forKey: "autopilotArchiveSkills") }
     }
 
     static var lastRun: Date? {
@@ -86,31 +102,61 @@ enum AutopilotService {
             }
         }
 
-        // 2) Archive stale memory (30+ days unused). StaleMemory.id is the path.
-        let mem = MemoryCleanupService.scan()
-        if !mem.files.isEmpty {
-            let moves = MemoryCleanupService.archive(paths: mem.files.map { $0.id })
-            if !moves.isEmpty {
-                made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .memory,
-                                  summary: "Archived \(moves.count) stale memory file\(moves.count == 1 ? "" : "s")",
-                                  moves: moves))
+        // 2) Archive stale memory — OPT-IN, and never index files (MEMORY.md).
+        if archiveStaleMemory {
+            let files = MemoryCleanupService.scan().files.filter { !isProtectedMemory($0.id) }
+            if !files.isEmpty {
+                let moves = MemoryCleanupService.archive(paths: files.map { $0.id })
+                if !moves.isEmpty {
+                    made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .memory,
+                                      summary: "Archived \(moves.count) stale memory file\(moves.count == 1 ? "" : "s")",
+                                      moves: moves))
+                }
             }
         }
 
-        // 3) Archive dead skills (installed, never invoked).
-        let dead = SkillUsageService.scan().skills.filter { $0.dead }
-        if !dead.isEmpty {
-            var moves: [FileMove] = []
-            for s in dead { if let m = try? SkillUsageService.archive(skillName: s.name) { moves.append(m) } }
-            if !moves.isEmpty {
-                made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .skills,
-                                  summary: "Archived \(moves.count) dead skill\(moves.count == 1 ? "" : "s")",
-                                  moves: moves))
+        // 3) Archive dead skills — OPT-IN, and never skills referenced in a CLAUDE.md.
+        if archiveDeadSkills {
+            let keep = skillsReferencedInClaudeMd()
+            let dead = SkillUsageService.scan().skills.filter { $0.dead && !keep.contains($0.name) }
+            if !dead.isEmpty {
+                var moves: [FileMove] = []
+                for s in dead { if let m = try? SkillUsageService.archive(skillName: s.name) { moves.append(m) } }
+                if !moves.isEmpty {
+                    made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .skills,
+                                      summary: "Archived \(moves.count) dead skill\(moves.count == 1 ? "" : "s")",
+                                      moves: moves))
+                }
             }
         }
 
         if !made.isEmpty { append(made) }
         return made
+    }
+
+    // MARK: - Guards (so opt-in archiving can't catch the wrong things)
+
+    /// Never archive a memory index — it's loaded every session and other files
+    /// link to it.
+    private static func isProtectedMemory(_ path: String) -> Bool {
+        let name = URL(fileURLWithPath: path).lastPathComponent.lowercased()
+        return name == "memory.md" || name == "index.md" || name == "readme.md"
+    }
+
+    /// Skill names mentioned in any user-level CLAUDE.md are intentional even if
+    /// never invoked in transcripts (they fire situationally) — keep them.
+    private static func skillsReferencedInClaudeMd() -> Set<String> {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let docs = [
+            home.appendingPathComponent(".claude/CLAUDE.md"),
+            home.appendingPathComponent(".claude/CLAUDE-reference.md"),
+            home.appendingPathComponent("CLAUDE.md"),
+        ]
+        var blob = ""
+        for d in docs { if let t = try? String(contentsOf: d, encoding: .utf8) { blob += "\n" + t } }
+        guard !blob.isEmpty else { return [] }
+        let installed = SkillUsageService.scan().skills.map { $0.name }
+        return Set(installed.filter { blob.contains($0) })
     }
 
     // MARK: - Undo

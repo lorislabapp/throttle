@@ -1310,6 +1310,8 @@ private struct InlineGeneralPane: View {
     @State private var conciseClaudeCode: Bool =
         FileManager.default.fileExists(atPath: InlineGeneralPane.conciseFlagPath)
     @State private var autopilotOn: Bool = AutopilotService.isEnabled
+    @State private var apMemory: Bool = AutopilotService.archiveStaleMemory
+    @State private var apSkills: Bool = AutopilotService.archiveDeadSkills
     @State private var showingLedger = false
     @State private var ledger: [AutopilotService.Entry] = []
     @State private var autopilotBusy = false
@@ -1370,8 +1372,8 @@ private struct InlineGeneralPane: View {
     @ViewBuilder
     private var autopilotGroup: some View {
         SettingsGroupHeader(label: "Autopilot")
-        SettingsRow(title: "Optimize my setup automatically",
-                    sub: "Keeps Claude Code lean system-wide — installs a concise output-style, archives stale memory & dead skills. 100% local, every action reversible.") {
+        SettingsRow(title: "Keep Claude Code concise system-wide",
+                    sub: "Installs an official concise output-style so every session (terminal + Cockpit) stays terse — engineering instructions kept, reasoning untouched. 100% local, reversible.") {
             Toggle("", isOn: $autopilotOn).labelsHidden().toggleStyle(.switch).tint(.accentColor)
                 .onChange(of: autopilotOn) { _, on in
                     AutopilotService.isEnabled = on
@@ -1384,6 +1386,20 @@ private struct InlineGeneralPane: View {
                         _ = made
                     }
                 }
+        }
+        SettingsHair()
+        SettingsRow(title: "Auto-archive stale memory",
+                    sub: "Off by default — the 30-day heuristic is blunt. Never touches MEMORY.md. Reversible.") {
+            Toggle("", isOn: $apMemory).labelsHidden().toggleStyle(.switch).tint(.orange)
+                .disabled(!autopilotOn)
+                .onChange(of: apMemory) { _, on in AutopilotService.archiveStaleMemory = on }
+        }
+        SettingsHair()
+        SettingsRow(title: "Auto-archive dead skills",
+                    sub: "Off by default — never invoked ≠ unwanted. Skills named in your CLAUDE.md are kept. Reversible.") {
+            Toggle("", isOn: $apSkills).labelsHidden().toggleStyle(.switch).tint(.orange)
+                .disabled(!autopilotOn)
+                .onChange(of: apSkills) { _, on in AutopilotService.archiveDeadSkills = on }
         }
         SettingsHair()
         SettingsRow(title: "Activity log", sub: autopilotStatusSub) {
