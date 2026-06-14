@@ -103,9 +103,7 @@ struct DropdownView: View {
                 savingsFootnote
             }
             hairline
-            proSection.padding(.horizontal, 16).padding(.vertical, 8)
-            hairline
-            footer.padding(.horizontal, 12).padding(.vertical, 6)
+            dockFooter
         }
         .onAppear {
             // Keep milestone accrual + the footer's signed-in label working.
@@ -649,123 +647,105 @@ struct DropdownView: View {
     }
 
 
-    private var proSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Image(systemName: appState.isPro ? "checkmark.seal.fill" : "lock.fill")
-                Text("Run Optimizer")
-                Spacer()
-                Text(appState.isPro ? "Pro ✓" : "Pro")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+    /// Direction A — "The Dock". Four destinations as a compact icon row over
+    /// one quiet meta line carrying sign-in STATUS and demoted chrome. Replaces
+    /// the old flat 10-row menu (incl. the two inert Run Optimizer / Manage
+    /// Hooks rows, which did nothing and duplicated Settings/Project). Pro/Free
+    /// already lives in the title pill, so the footer stays pure navigation and
+    /// subordinate to the meter above.
+    private var dockFooter: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 3) {
+                DockTile(icon: "chart.line.uptrend.xyaxis", label: "Stats") {
+                    mode = .stats
+                }
+                DockTile(icon: "rectangle.split.3x1", label: "Project",
+                         badgeText: appState.isPro ? nil : "PRO", badgeStyle: .pro) {
+                    ProjectWindowController.shared.show(appState: appState)
+                }
+                DockTile(icon: "terminal", label: "Cockpit",
+                         badgeText: "BETA", badgeStyle: .beta) {
+                    CockpitWindowController.shared.show(appState: appState)
+                }
+                DockTile(icon: "gear", label: "Settings") {
+                    mode = .settings(.general)
+                }
             }
-            .foregroundStyle(appState.isPro ? .primary : .secondary)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                // Plan 2 wires the optimizer wizard here. For Plan 1 it's a no-op
-                // even when Pro is unlocked — the wizard view doesn't exist yet.
-            }
-            HStack {
-                Image(systemName: appState.isPro ? "checkmark.seal.fill" : "lock.fill")
-                Text("Manage Hooks")
-                Spacer()
-                Text(appState.isPro ? "Pro ✓" : "Pro")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .foregroundStyle(appState.isPro ? .primary : .secondary)
+            .padding(.horizontal, 10)
+            .padding(.top, 9)
+
+            dockMeta
         }
+        .padding(.bottom, 8)
     }
 
-    private var footer: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Always-available sign-in entry. The user shouldn't have to
-            // wait for an exact-mode poll to fail before they can hit
-            // the sign-in window. State (signed in vs not) is reflected
-            // in the label itself, so a glance is enough.
-            Button {
-                Task { @MainActor in
-                    let signed = await EmbeddedClaudeSession.shared.presentSignIn()
-                    if signed { await ExactModeService.shared.refresh() }
-                }
-            } label: {
-                Label(
-                    embeddedSignedIn ? "claude.ai signed in ✓" : "Sign in to claude.ai…",
-                    systemImage: embeddedSignedIn ? "checkmark.shield" : "person.badge.key"
-                )
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                if let url = URL(string: "https://claude.ai/settings/usage") {
-                    NSWorkspace.shared.open(url)
-                }
-            } label: {
-                Label("Open claude.ai/usage", systemImage: "arrow.up.right.square")
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                mode = .stats
-            } label: {
-                Label("Stats…", systemImage: "chart.line.uptrend.xyaxis")
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                ProjectWindowController.shared.show(appState: appState)
-            } label: {
-                HStack {
-                    Label("Project window", systemImage: "rectangle.split.3x1")
-                    Spacer()
-                    if !appState.isPro {
-                        Text("PRO")
-                            .font(.system(size: 9, weight: .heavy))
-                            .padding(.horizontal, 5).padding(.vertical, 1)
-                            .background(Color.accentColor.opacity(0.2), in: Capsule())
-                            .foregroundStyle(Color.accentColor)
+    /// The quiet meta line under the dock: sign-in status on the left, demoted
+    /// chrome (Usage / About / Quit) on the right, separated from the dock by a
+    /// hairline. Sign-in is always tappable (opens the embedded sign-in / re-auth
+    /// window) so the user never has to wait for an exact-mode poll to fail first.
+    private var dockMeta: some View {
+        VStack(spacing: 0) {
+            Rectangle().fill(hairColor).frame(height: 1)
+            HStack(spacing: 8) {
+                Button {
+                    Task { @MainActor in
+                        let signed = await EmbeddedClaudeSession.shared.presentSignIn()
+                        if signed { await ExactModeService.shared.refresh() }
+                    }
+                } label: {
+                    if embeddedSignedIn {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(.secondary)
+                            Text("claude.ai").foregroundStyle(.secondary)
+                        }
+                    } else {
+                        HStack(spacing: 6) {
+                            Image(systemName: "person.crop.circle")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.tertiary)
+                            Text("Sign in…").foregroundStyle(.tint)
+                        }
                     }
                 }
-            }
-            .buttonStyle(.plain)
+                .buttonStyle(.plain)
 
-            Button {
-                CockpitWindowController.shared.show(appState: appState)
-            } label: {
-                HStack {
-                    Label("Cockpit", systemImage: "terminal")
-                    Spacer()
-                    Text("BETA")
-                        .font(.system(size: 9, weight: .heavy))
-                        .padding(.horizontal, 5).padding(.vertical, 1)
-                        .background(Color.primary.opacity(0.12), in: Capsule())
-                        .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+
+                HStack(spacing: 11) {
+                    metaLink("Usage", systemImage: "arrow.up.right") {
+                        if let url = URL(string: "https://claude.ai/settings/usage") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                    metaLink("About") { mode = .settings(.about) }
+                    metaLink("Quit") { NSApp.terminate(nil) }
+                        .keyboardShortcut("q")
                 }
             }
-            .buttonStyle(.plain)
-
-            Button {
-                mode = .settings(.general)
-            } label: {
-                Label("Settings…", systemImage: "gear")
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                mode = .settings(.about)
-            } label: {
-                Label("About Throttle", systemImage: "info.circle")
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                NSApp.terminate(nil)
-            } label: {
-                Label("Quit Throttle", systemImage: "power")
-            }
-            .buttonStyle(.plain)
-            .keyboardShortcut("q")
+            .font(.system(size: 11))
+            .padding(.horizontal, 9)
+            .padding(.top, 8)
         }
+        .padding(.horizontal, 5)
+        .padding(.top, 7)
+    }
+
+    /// A small tertiary text link for the demoted-chrome group in the meta line.
+    private func metaLink(_ title: LocalizedStringKey, systemImage: String? = nil,
+                          action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                if let systemImage {
+                    Image(systemName: systemImage).font(.system(size: 9.5))
+                }
+                Text(title)
+            }
+            .foregroundStyle(.tertiary)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Settings mode
@@ -841,6 +821,75 @@ struct DropdownView: View {
         .overlay(alignment: .bottom) {
             Rectangle().fill(Color.primary.opacity(0.09)).frame(height: 1)
         }
+    }
+}
+
+// MARK: - Dock footer kit
+
+private enum DockBadgeStyle { case pro, beta }
+
+/// Tiny floating badge over a dock tile. `.pro` = soft graphite fill (only when
+/// Free); `.beta` = transparent with a hairline border — matching the title
+/// pills' exact-vs-estimate restraint (no accent, no colour).
+private struct DockBadgeView: View {
+    let text: String
+    let style: DockBadgeStyle
+    var body: some View {
+        Group {
+            switch style {
+            case .pro:
+                Text(text)
+                    .padding(.horizontal, 5).padding(.vertical, 2)
+                    .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 4))
+                    .foregroundStyle(.secondary)
+            case .beta:
+                Text(text)
+                    .padding(.horizontal, 5).padding(.vertical, 2)
+                    .foregroundStyle(.tertiary)
+                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.primary.opacity(0.12), lineWidth: 1))
+            }
+        }
+        .font(.system(size: 8.5, weight: .heavy))
+        .tracking(0.4)
+    }
+}
+
+/// One destination tile in the dock: icon over a small label, a subtle hover
+/// fill, and an optional floating badge. Uses `onTapGesture` + `onHover`
+/// (the macOS-preferred pattern over Button for hover-reactive cells).
+private struct DockTile: View {
+    let icon: String
+    let label: LocalizedStringKey
+    var badgeText: String? = nil
+    var badgeStyle: DockBadgeStyle = .beta
+    let action: () -> Void
+    @State private var hover = false
+
+    var body: some View {
+        VStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(.primary)
+                .opacity(0.82)
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 44)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 9)
+                .fill(hover ? Color.primary.opacity(0.06) : Color.clear)
+        )
+        .overlay(alignment: .top) {
+            if let badgeText {
+                DockBadgeView(text: badgeText, style: badgeStyle)
+                    .offset(x: 14, y: -1)
+            }
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 9))
+        .onTapGesture(perform: action)
+        .onHover { hover = $0 }
     }
 }
 
