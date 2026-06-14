@@ -263,7 +263,14 @@ struct ProjectOptimizerTab: View {
                 proposedContents = p.proposed
                 rationale = p.why
                 diffMode = p.changed   // show the diff when there's something to see
-                if !p.changed { status = String(localized: "Already optimal — no changes proposed.") }
+                let local = p.provider.contains("Apple Intelligence")
+                if !p.changed {
+                    status = String(localized: "Already optimal — no changes (via \(p.provider)).")
+                } else if local {
+                    status = String(localized: "via \(p.provider) — a small local model. Sign in to claude.ai or add an API key for a stronger result.")
+                } else {
+                    status = String(localized: "Proposed via \(p.provider).")
+                }
                 optimizing = false
             }
         } catch {

@@ -11,6 +11,7 @@ enum AIOptimizerService {
         let proposed: String
         let why: [String]
         let changed: Bool
+        var provider: String = ""   // which model produced it (transparency)
     }
 
     enum OptimizerError: LocalizedError {
@@ -86,7 +87,9 @@ enum AIOptimizerService {
                 let stream = try await provider.streamChat(messages: messages, context: ctx)
                 for try await chunk in stream { full += chunk }
                 guard !full.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw OptimizerError.empty }
-                return parse(full, fallback: content)
+                var p = parse(full, fallback: content)
+                p.provider = provider.displayName
+                return p
             } catch {
                 lastError = error
                 continue   // try the next provider
