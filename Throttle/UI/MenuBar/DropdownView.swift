@@ -1615,7 +1615,7 @@ private struct InlineProPane: View {
 
     private var buyRow: some View {
         HStack(spacing: 9) {
-            SettingsButton(title: "Buy Pro · €19", primary: true) {
+            SettingsButton(title: "Buy Pro · €29", primary: true) {
                 if let url = URL(string: "https://lorislab.fr/throttle/buy") { NSWorkspace.shared.open(url) }
             }
             Button {
@@ -1694,7 +1694,7 @@ private struct InlineProPane: View {
                 Text("Polls claude.ai so figures aren't local estimates.")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                SettingsButton(title: "Buy Pro · €19", primary: true) {
+                SettingsButton(title: "Buy Pro · €29", primary: true) {
                     if let url = URL(string: "https://lorislab.fr/throttle/buy") { NSWorkspace.shared.open(url) }
                 }
             }

@@ -218,7 +218,7 @@ struct ProjectWindowRoot: View {
                         NSWorkspace.shared.open(url)
                     }
                 } label: {
-                    Text("Upgrade to Pro · €19")
+                    Text("Upgrade to Pro · €29")
                         .font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
                         .padding(.horizontal, 18).padding(.vertical, 9)
                         .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 9))
