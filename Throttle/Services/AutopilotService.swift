@@ -24,15 +24,16 @@ enum AutopilotService {
     // MARK: - Ledger model
 
     struct Entry: Codable, Identifiable, Sendable {
-        enum Kind: String, Codable, Sendable { case outputStyle, memory, skills }
+        enum Kind: String, Codable, Sendable { case outputStyle, statusline, memory, skills }
         let id: String
         let timestamp: Date
         let kind: Kind
         let summary: String
         var undone: Bool = false
         // undo payloads — only the field for this kind is populated:
-        var previousOutputStyle: String?   // .outputStyle (nil = key was unset)
-        var moves: [FileMove]?             // .memory / .skills
+        var previousOutputStyle: String?       // .outputStyle (nil = key was unset)
+        var previousStatusLineJSON: String?    // .statusline
+        var moves: [FileMove]?                 // .memory / .skills
     }
 
     // MARK: - Prefs
@@ -99,6 +100,15 @@ enum AutopilotService {
                 made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .outputStyle,
                                   summary: "Installed concise output-style — claude is terse system-wide",
                                   previousOutputStyle: res.previousStyle))
+            }
+        }
+
+        // 1b) Usage statusline — live headroom in every terminal session.
+        if !StatuslineService.isInstalled() {
+            if let res = try? StatuslineService.install() {
+                made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .statusline,
+                                  summary: "Installed usage statusline — live headroom in every terminal session",
+                                  previousStatusLineJSON: res.previousJSON))
             }
         }
 
@@ -171,6 +181,8 @@ enum AutopilotService {
         switch e.kind {
         case .outputStyle:
             try? OutputStyleService.remove(restorePreviousStyle: e.previousOutputStyle)
+        case .statusline:
+            try? StatuslineService.remove(restorePreviousJSON: e.previousStatusLineJSON)
         case .memory, .skills:
             let fm = FileManager.default
             for m in (e.moves ?? []) {

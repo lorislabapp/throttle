@@ -177,6 +177,12 @@ final class AppState: @unchecked Sendable {
                 self.savedTokensThisWeek = savedTokens
                 self.savedTokensByDay = savedByDay
                 ThresholdNotifier.shared.evaluate(snapshot: computed, exact: self.exactSnapshot)
+                // Keep the terminal statusline's pre-rendered line fresh (the
+                // script reads this file; falls back to Claude Code's own
+                // rate_limits when it's stale). Cheap atomic write.
+                if computed.hasAnyData {
+                    StatuslineService.update(snapshot: computed, exact: self.exactSnapshot, savedTokens: savedTokens)
+                }
                 // Persist a compact snapshot for App Intents (Shortcuts).
                 // The intent reads UserDefaults so it can answer in <50 ms
                 // and stay consistent with what the menu bar is showing.

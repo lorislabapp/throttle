@@ -1372,8 +1372,8 @@ private struct InlineGeneralPane: View {
     @ViewBuilder
     private var autopilotGroup: some View {
         SettingsGroupHeader(label: "Autopilot")
-        SettingsRow(title: "Keep Claude Code concise system-wide",
-                    sub: "Installs an official concise output-style so every session (terminal + Cockpit) stays terse — engineering instructions kept, reasoning untouched. 100% local, reversible.") {
+        SettingsRow(title: "Optimize Claude Code system-wide",
+                    sub: "Installs a concise output-style (every session stays terse, reasoning untouched) + a usage statusline (live headroom in every terminal tab). 100% local, reversible.") {
             Toggle("", isOn: $autopilotOn).labelsHidden().toggleStyle(.switch).tint(.accentColor)
                 .onChange(of: autopilotOn) { _, on in
                     AutopilotService.isEnabled = on
@@ -1486,6 +1486,7 @@ private struct InlineGeneralPane: View {
     private func ledgerIcon(_ k: AutopilotService.Entry.Kind) -> String {
         switch k {
         case .outputStyle: return "text.alignleft"
+        case .statusline:  return "menubar.rectangle"
         case .memory:      return "clock.badge.xmark"
         case .skills:      return "wrench.adjustable"
         }
