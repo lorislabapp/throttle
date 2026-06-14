@@ -183,20 +183,15 @@ struct ProjectOptimizerTab: View {
         VStack(spacing: 8) {
             Image(systemName: "doc.badge.plus").font(.system(size: 28)).foregroundStyle(.tertiary)
             Text("\(selectedFile.rawValue) not present").font(.system(size: 14, weight: .semibold))
-            Text("This project doesn't have \(selectedFile.rawValue) yet. Generate a sensible starter with AI — review the diff, then Apply to create it.")
+            Text("This project doesn't have \(selectedFile.rawValue) yet. Create a sensible starter — review the diff, fill in the placeholders, then Apply to create it.")
                 .font(.system(size: 12)).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center).frame(maxWidth: 360)
-            if optimizing {
-                HStack(spacing: 6) { ProgressView().controlSize(.small); Text("Generating…").font(.system(size: 12)).foregroundStyle(.secondary) }
-                    .padding(.top, 8)
-            } else {
-                Button { Task { await optimizeWithAI() } } label: {
-                    HStack(spacing: 6) { Image(systemName: "sparkles"); Text("Generate a starter with AI") }
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
-                        .padding(.horizontal, 16).padding(.vertical, 9)
-                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 9))
-                }.buttonStyle(.plain).padding(.top, 10)
-            }
+            Button { Task { await optimizeWithAI() } } label: {
+                HStack(spacing: 6) { Image(systemName: "doc.badge.plus"); Text("Create a starter") }
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+                    .padding(.horizontal, 16).padding(.vertical, 9)
+                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 9))
+            }.buttonStyle(.plain).padding(.top, 10)
             if !status.isEmpty {
                 Text(status).font(.system(size: 11)).foregroundStyle(.secondary).padding(.top, 4)
             }
@@ -248,8 +243,17 @@ struct ProjectOptimizerTab: View {
         loading = false
     }
 
-    /// Ask the active AI provider to propose a leaner/safer version + why.
+    /// Empty file → an honest static starter (the AI can't know this project's
+    /// specifics, so asking it invents fake paths/models). Existing file → AI.
     private func optimizeWithAI() async {
+        if originalContents.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            proposedContents = starterTemplate(for: selectedFile)
+            rationale = ["New starter — a generic scaffold; fill in the placeholders for this project.",
+                         "Grounds Claude Code in your conventions from the first session, kept short."]
+            diffMode = true
+            status = ""
+            return
+        }
         optimizing = true; status = ""; rationale = []
         do {
             let p = try await AIOptimizerService.optimize(
@@ -267,6 +271,34 @@ struct ProjectOptimizerTab: View {
                 status = String(localized: "Optimize failed: \(error.localizedDescription)")
                 optimizing = false
             }
+        }
+    }
+
+    /// Honest, generic starter — no invented project specifics (placeholders the
+    /// user fills in). Far better than a weak model hallucinating /tmp paths.
+    private func starterTemplate(for file: EditableFile) -> String {
+        switch file {
+        case .claudeMd:
+            return """
+            # \(project.displayName)
+
+            Project context for Claude Code. Keep this tight — it's re-sent every session.
+
+            ## Stack
+            <!-- e.g. Swift 6 / SwiftUI · Node + TypeScript · Python -->
+
+            ## Conventions
+            - <!-- coding style, naming, file layout -->
+
+            ## Commands
+            - Build: <!-- e.g. xcodebuild -scheme … / npm run build -->
+            - Test:  <!-- e.g. swift test / npm test -->
+
+            ## Don't
+            - <!-- things to avoid in this repo -->
+            """
+        case .settingsJSON, .settingsLocalJSON:
+            return "{\n}\n"
         }
     }
 

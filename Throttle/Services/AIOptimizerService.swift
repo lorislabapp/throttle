@@ -90,7 +90,7 @@ enum AIOptimizerService {
         var proposed = fallback
         if let s = text.range(of: fileStart), let e = text.range(of: fileEnd),
            s.upperBound < e.lowerBound {
-            proposed = String(text[s.upperBound..<e.lowerBound]).trimmingCharacters(in: .newlines)
+            proposed = stripOuterFence(String(text[s.upperBound..<e.lowerBound]).trimmingCharacters(in: .newlines))
         }
         var why: [String] = []
         if let w = text.range(of: whyMark) {
@@ -104,5 +104,15 @@ enum AIOptimizerService {
         let changed = proposed.trimmingCharacters(in: .whitespacesAndNewlines)
             != fallback.trimmingCharacters(in: .whitespacesAndNewlines)
         return Proposal(proposed: proposed, why: why, changed: changed)
+    }
+
+    /// Defensive: some models wrap the whole file in ``` fences despite the
+    /// instruction. Strip a leading ```lang line + matching trailing ``` line.
+    private static func stripOuterFence(_ s: String) -> String {
+        var lines = s.components(separatedBy: "\n")
+        guard let first = lines.first, first.trimmingCharacters(in: .whitespaces).hasPrefix("```") else { return s }
+        lines.removeFirst()
+        if let last = lines.last, last.trimmingCharacters(in: .whitespaces).hasPrefix("```") { lines.removeLast() }
+        return lines.joined(separator: "\n").trimmingCharacters(in: .newlines)
     }
 }
