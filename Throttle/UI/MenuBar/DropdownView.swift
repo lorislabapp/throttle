@@ -1469,6 +1469,10 @@ private struct InlineGeneralPane: View {
                 Text(e.summary).font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(e.undone ? .tertiary : .primary)
                     .strikethrough(e.undone).lineLimit(2)
+                if let why = e.detail, !e.undone {
+                    Text(why).font(.system(size: 10)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Text(formatRelative(e.timestamp)).font(.system(size: 9.5)).foregroundStyle(.tertiary)
             }
             Spacer(minLength: 6)

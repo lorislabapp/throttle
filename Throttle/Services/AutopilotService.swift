@@ -29,6 +29,7 @@ enum AutopilotService {
         let timestamp: Date
         let kind: Kind
         let summary: String
+        var detail: String?      // "why this is better" — the commit-mode rationale
         var undone: Bool = false
         // undo payloads — only the field for this kind is populated:
         var previousOutputStyle: String?       // .outputStyle (nil = key was unset)
@@ -99,6 +100,7 @@ enum AutopilotService {
             if let res = try? OutputStyleService.install() {
                 made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .outputStyle,
                                   summary: "Installed concise output-style — claude is terse system-wide",
+                                  detail: "Every session stays terse without losing Claude Code's engineering prompt — cuts repeated verbosity, never reduces reasoning or code quality.",
                                   previousOutputStyle: res.previousStyle))
             }
         }
@@ -108,6 +110,7 @@ enum AutopilotService {
             if let res = try? StatuslineService.install() {
                 made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .statusline,
                                   summary: "Installed usage statusline — live headroom in every terminal session",
+                                  detail: "Your cap %, reset and savings show in every terminal tab — you see saturation coming without opening the app.",
                                   previousStatusLineJSON: res.previousJSON))
             }
         }
@@ -120,6 +123,7 @@ enum AutopilotService {
             if !moves.isEmpty {
                 made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .memory,
                                   summary: "Archived \(moves.count) memory file\(moves.count == 1 ? "" : "s") from deleted projects",
+                                  detail: "These belong to project folders that no longer exist — unreachable dead weight. Reversible from the archive.",
                                   moves: moves))
             }
         }
@@ -132,6 +136,7 @@ enum AutopilotService {
                 if !moves.isEmpty {
                     made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .memory,
                                       summary: "Archived \(moves.count) stale memory file\(moves.count == 1 ? "" : "s")",
+                                      detail: "Unused 30+ days — still reloaded every session until archived. The index (MEMORY.md) is always kept. Reversible.",
                                       moves: moves))
                 }
             }
@@ -147,6 +152,7 @@ enum AutopilotService {
                 if !moves.isEmpty {
                     made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .skills,
                                       summary: "Archived \(moves.count) dead skill\(moves.count == 1 ? "" : "s")",
+                                      detail: "Never invoked across your transcripts and not referenced in any CLAUDE.md — their listing still costs prompt tokens. Reversible.",
                                       moves: moves))
                 }
             }
