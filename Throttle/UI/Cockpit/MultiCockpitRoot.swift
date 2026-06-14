@@ -211,7 +211,7 @@ struct MultiCockpitRoot: View {
     private var newTabButton: some View {
         newSessionMenu(gated: model.gated) {
             Image(systemName: "plus").font(.system(size: 13, weight: .medium))
-                .foregroundStyle(model.gated ? Color.secondary : Color.accentColor)
+                .foregroundStyle(Color.accentColor)
                 .padding(.horizontal, 12).frame(minHeight: 40).contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton).fixedSize()
@@ -239,7 +239,7 @@ struct MultiCockpitRoot: View {
                         Image(systemName: "plus").font(.system(size: 12, weight: .medium))
                         Text("New session").font(.system(size: 12.5, weight: .medium))
                     }
-                    .foregroundStyle(model.gated ? Color.secondary : Color.accentColor)
+                    .foregroundStyle(Color.accentColor)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 11).padding(.vertical, 9).contentShape(Rectangle())
                 }.menuStyle(.borderlessButton)
@@ -351,9 +351,9 @@ struct MultiCockpitRoot: View {
         newSessionMenu(gated: model.gated) {
             VStack(spacing: 7) {
                 Image(systemName: "plus").font(.system(size: 18, weight: .medium))
-                Text(model.gated ? "Mac saturated" : "New session").font(.system(size: 12, weight: .medium))
+                Text("New session").font(.system(size: 12, weight: .medium))
             }
-            .foregroundStyle(model.gated ? Color.secondary : Color.accentColor)
+            .foregroundStyle(Color.accentColor)
             .frame(maxWidth: .infinity, minHeight: 128)
             .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(hair, style: StrokeStyle(lineWidth: 1, dash: [4, 4])) }
             .contentShape(RoundedRectangle(cornerRadius: 12))
@@ -400,12 +400,29 @@ struct MultiCockpitRoot: View {
             Button { openFolderPanel() } label: { Label("Open other folder…", systemImage: "folder.badge.plus") }
         } label: { label() }
         .menuIndicator(.hidden)
-        .disabled(gated)
+        // NOTE: intentionally NOT .disabled(gated). On a memory-constrained Mac
+        // the saturation gate can be true ~permanently — disabling the button
+        // outright leaves a dead "New session" control. Instead we keep it
+        // clickable and confirm before opening when saturated (see `open`).
     }
 
     private func open(_ name: String, _ cwd: String) {
+        if model.gated, !confirmOpenUnderPressure() { return }
         model.newSession(projectName: name, cwd: cwd)
         if model.viewMode == .mission { model.viewMode = .tabs }
+    }
+
+    /// Saturation is advisory, not a hard block — it's the user's Mac. Warn
+    /// once, let them decide.
+    private func confirmOpenUnderPressure() -> Bool {
+        let alert = NSAlert()
+        alert.messageText = "Your Mac is low on memory"
+        alert.informativeText = "Throttle detects heavy memory pressure (swap is high). Opening another claude session may cause significant swapping and slow everything down.\n\nOpen it anyway?"
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Open Anyway")
+        alert.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+        return alert.runModal() == .alertFirstButtonReturn
     }
 
     private func openFolderPanel() {

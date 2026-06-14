@@ -50,7 +50,7 @@ final class CockpitTab: Identifiable {
     /// project and launch (or `--resume`) claude.
     func ensureSpawned() {
         guard terminal == nil else { return }
-        let term = LocalProcessTerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 480))
+        let term = DroppableTerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 480))
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let shellName = (shell as NSString).lastPathComponent
         let env = Terminal.getEnvironmentVariables(termName: "xterm-256color", trueColor: true)
