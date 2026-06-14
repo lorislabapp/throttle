@@ -117,7 +117,9 @@ enum StatuslineService {
         var reset: Date?
         var exactMark = ""
 
-        if let ex = exact {
+        // Use exact ONLY when fresh — exactly the rule the menu-bar popover uses,
+        // so the statusline never disagrees with the app.
+        if let ex = exact, ex.isFresh() {
             let ws = [ex.fiveHour, ex.sevenDay, ex.sevenDaySonnet]
             if let b = ws.max(by: { $0.utilization < $1.utilization }) {
                 pct = b.utilization; reset = b.resetsAt; exactMark = " ✓"

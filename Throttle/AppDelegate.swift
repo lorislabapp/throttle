@@ -96,6 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task { @MainActor in
                 self?.appState.exactSnapshot = snap
                 self?.appState.exactModeError = nil
+                self?.appState.refreshStatusline()   // keep the terminal line in sync with exact
             }
         }
         exact.onError = { [weak self] err in

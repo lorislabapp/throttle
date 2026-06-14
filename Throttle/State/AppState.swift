@@ -198,6 +198,15 @@ final class AppState: @unchecked Sendable {
         }
     }
 
+    /// Re-render the terminal statusline from current state — cheap, no DB.
+    /// Called on every exact-mode poll so the line never lags the menu bar
+    /// (same exact-vs-local freshness rule, so they always agree).
+    @MainActor
+    func refreshStatusline() {
+        guard snapshot.hasAnyData else { return }
+        StatuslineService.update(snapshot: snapshot, exact: exactSnapshot, savedTokens: savedTokensThisWeek)
+    }
+
     // Note: refreshTask cleanup removed — Swift 6 deinit cannot access MainActor-isolated
     // properties. The Task will be automatically canceled when AppState is deallocated
     // (structured concurrency guarantees).
