@@ -19,6 +19,7 @@ struct ProjectOptimizerTab: View {
     @State private var loading = true
     @State private var rationale: [String] = []
     @State private var optimizing = false
+    @State private var diffMode = false
 
     private let hair = Color.primary.opacity(0.09)
 
@@ -37,7 +38,7 @@ struct ProjectOptimizerTab: View {
                 ProgressView().controlSize(.small)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if url(for: selectedFile) != nil {
-                editorPanes
+                if diffMode { diffPane } else { editorPanes }
             } else {
                 missingFile
             }
@@ -58,7 +59,12 @@ struct ProjectOptimizerTab: View {
             Picker("", selection: $selectedFile) {
                 ForEach(EditableFile.allCases) { f in Text(f.rawValue).tag(f) }
             }
-            .pickerStyle(.segmented).labelsHidden().frame(maxWidth: 360)
+            .pickerStyle(.segmented).labelsHidden().frame(maxWidth: 300)
+            Picker("", selection: $diffMode) {
+                Text("Split").tag(false)
+                Text("Diff").tag(true)
+            }
+            .pickerStyle(.segmented).labelsHidden().frame(width: 110)
             Spacer(minLength: 8)
             if optimizing {
                 HStack(spacing: 6) { ProgressView().controlSize(.small); Text("Optimising…").font(.system(size: 11)).foregroundStyle(.secondary) }
@@ -89,6 +95,23 @@ struct ProjectOptimizerTab: View {
                         body: proposedContents, isEditable: true,
                         binding: $proposedContents)
         }
+    }
+
+    private var diffPane: some View {
+        let lines = LineDiff.compute(originalContents, proposedContents)
+        let c = LineDiff.counts(lines)
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 10) {
+                Text("CHANGES").font(.system(size: 10.5, weight: .semibold)).tracking(0.8).foregroundStyle(.tertiary)
+                if c.added > 0 { Text("+\(c.added)").font(.system(size: 11, weight: .semibold).monospaced()).foregroundStyle(.green) }
+                if c.removed > 0 { Text("−\(c.removed)").font(.system(size: 11, weight: .semibold).monospaced()).foregroundStyle(.red) }
+                if c.added == 0 && c.removed == 0 { Text("no changes").font(.system(size: 11)).foregroundStyle(.tertiary) }
+                Spacer()
+            }
+            .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 4)
+            DiffView(lines: lines)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func paneSection(title: String, body: String, isEditable: Bool,
@@ -194,6 +217,7 @@ struct ProjectOptimizerTab: View {
             await MainActor.run {
                 proposedContents = p.proposed
                 rationale = p.why
+                diffMode = p.changed   // show the diff when there's something to see
                 if !p.changed { status = String(localized: "Already optimal — no changes proposed.") }
                 optimizing = false
             }
