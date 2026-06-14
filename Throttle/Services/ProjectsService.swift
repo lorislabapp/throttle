@@ -52,7 +52,18 @@ enum ProjectsService {
             guard isDir else { return nil }
             return makeProjectInfo(encodedDir: entry, fm: fm)
         }
-        let filtered = infos.filter { includeArchived || $0.lastActive >= archiveCutoff }
+        let home = fm.homeDirectoryForCurrentUser.path
+        let filtered = infos.filter {
+            guard includeArchived || $0.lastActive >= archiveCutoff else { return false }
+            // Not a real project: the home dir itself, temp/system paths, or
+            // hidden dirs. Auditing the home dir explodes the Assistant's
+            // context (the global CLAUDE.md + thousands of files).
+            if let p = $0.projectPath {
+                if p == home || p.hasPrefix("/tmp") || p.hasPrefix("/private/") || p == "/" { return false }
+            }
+            if $0.displayName.hasPrefix(".") { return false }
+            return true
+        }
         projectsLog.info("listProjects: built=\(infos.count) filtered=\(filtered.count) cutoff=\(archiveCutoff.ISO8601Format())")
         return filtered.sorted { $0.lastActive > $1.lastActive }
     }
