@@ -17,6 +17,8 @@ struct ProjectOptimizerTab: View {
     @State private var status: String = ""
     @State private var lastBackupURL: URL?
     @State private var loading = true
+    @State private var rationale: [String] = []
+    @State private var optimizing = false
 
     private let hair = Color.primary.opacity(0.09)
 
@@ -39,6 +41,10 @@ struct ProjectOptimizerTab: View {
             } else {
                 missingFile
             }
+            if !rationale.isEmpty {
+                Rectangle().fill(hair).frame(height: 1)
+                whyPanel
+            }
             Rectangle().fill(hair).frame(height: 1)
             actionBar
         }
@@ -52,11 +58,22 @@ struct ProjectOptimizerTab: View {
             Picker("", selection: $selectedFile) {
                 ForEach(EditableFile.allCases) { f in Text(f.rawValue).tag(f) }
             }
-            .pickerStyle(.segmented).labelsHidden().frame(maxWidth: 420)
-            Spacer(minLength: 0)
+            .pickerStyle(.segmented).labelsHidden().frame(maxWidth: 360)
+            Spacer(minLength: 8)
+            if optimizing {
+                HStack(spacing: 6) { ProgressView().controlSize(.small); Text("Optimising…").font(.system(size: 11)).foregroundStyle(.secondary) }
+            } else {
+                Button { Task { await optimizeWithAI() } } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "sparkles").font(.system(size: 11))
+                        Text("Optimize with AI").font(.system(size: 12, weight: .medium))
+                    }.foregroundStyle(Color.accentColor)
+                }
+                .buttonStyle(.plain).help("Propose a leaner, safer version + why it's better")
+            }
             if hasChanges {
                 Text("Unsaved changes")
-                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(.orange)
+                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(.orange).padding(.leading, 4)
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
@@ -163,7 +180,47 @@ struct ProjectOptimizerTab: View {
         let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
         originalContents = text
         proposedContents = text
+        rationale = []
         loading = false
+    }
+
+    /// Ask the active AI provider to propose a leaner/safer version + why.
+    private func optimizeWithAI() async {
+        optimizing = true; status = ""; rationale = []
+        do {
+            let p = try await AIOptimizerService.optimize(
+                fileLabel: selectedFile.rawValue, content: originalContents,
+                projectName: project.displayName, projectPath: project.projectPath)
+            await MainActor.run {
+                proposedContents = p.proposed
+                rationale = p.why
+                if !p.changed { status = String(localized: "Already optimal — no changes proposed.") }
+                optimizing = false
+            }
+        } catch {
+            await MainActor.run {
+                status = String(localized: "Optimize failed: \(error.localizedDescription)")
+                optimizing = false
+            }
+        }
+    }
+
+    private var whyPanel: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 5) {
+                Image(systemName: "sparkles").font(.system(size: 10)).foregroundStyle(Color.accentColor)
+                Text("WHY THIS IS BETTER").font(.system(size: 9.5, weight: .semibold)).tracking(0.8).foregroundStyle(.tertiary)
+            }
+            ForEach(rationale, id: \.self) { r in
+                HStack(alignment: .top, spacing: 6) {
+                    Text("•").font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text(r).font(.system(size: 11.5)).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16).padding(.vertical, 10)
+        .background(Color.accentColor.opacity(0.05))
     }
 
     private func apply() async {
