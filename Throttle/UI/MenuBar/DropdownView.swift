@@ -1320,7 +1320,6 @@ private struct InlineGeneralPane: View {
     @State private var showingLedger = false
     @State private var ledger: [AutopilotService.Entry] = []
     @State private var autopilotBusy = false
-    @State private var showingStyles = false
     @State private var activeStyle = OutputStyleManager.activeName()
 
     /// Flag file the SessionStart hook reads to inject a terse-output directive
@@ -1376,7 +1375,7 @@ private struct InlineGeneralPane: View {
                             .foregroundStyle(.secondary)
                     }
                     SettingsButton(title: "Manage…") {
-                        if appState.isPro { showingStyles = true }
+                        if appState.isPro { OutputStyleWindowController.shared.show() }
                     }
                     .disabled(!appState.isPro)
                 }
@@ -1388,8 +1387,8 @@ private struct InlineGeneralPane: View {
             SettingsNote(text: "Throttle \(currentVersionLabel) · updates are signed and verified before install.")
         }
         .sheet(isPresented: $showingLedger) { autopilotLedgerSheet }
-        .sheet(isPresented: $showingStyles, onDismiss: { activeStyle = OutputStyleManager.activeName() }) {
-            OutputStyleManagerSheet()
+        .onReceive(NotificationCenter.default.publisher(for: .outputStyleChanged)) { _ in
+            activeStyle = OutputStyleManager.activeName()
         }
     }
 

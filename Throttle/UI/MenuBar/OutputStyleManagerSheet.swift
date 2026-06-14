@@ -5,7 +5,7 @@ import SwiftUI
 /// writes `~/.claude/output-styles/*.md` and the `outputStyle` settings key
 /// (backed up). Applies to every `claude` session — terminal and Cockpit.
 struct OutputStyleManagerSheet: View {
-    @Environment(\.dismiss) private var dismiss
+    var onDone: () -> Void = {}
     @State private var styles: [OutputStyleManager.Style] = []
     @State private var editing: EditTarget?
 
@@ -43,7 +43,7 @@ struct OutputStyleManagerSheet: View {
                 Button { editing = .new } label: { Label("New", systemImage: "plus") }
                     .controlSize(.small)
             }
-            Button("Done") { dismiss() }.controlSize(.small)
+            Button("Done") { onDone() }.controlSize(.small)
         }
         .padding(.horizontal, 16).padding(.vertical, 11)
     }
@@ -73,22 +73,25 @@ struct OutputStyleManagerSheet: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(style.name).font(.system(size: 13, weight: .medium))
-                    if style.isBuiltIn {
-                        Text("BUILT-IN").font(.system(size: 8.5, weight: .heavy)).tracking(0.3)
-                            .padding(.horizontal, 4).padding(.vertical, 1.5)
-                            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 3))
-                            .foregroundStyle(.secondary)
-                    }
+                    if style.isBuiltIn { tag("BUILT-IN") }
+                    else if style.isTemplate { tag("READY") }
                 }
                 Text(style.description).font(.system(size: 11)).foregroundStyle(.secondary)
                     .lineLimit(2).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 6)
-            if !style.isBuiltIn { rowActions(style) }
+            if style.fileURL != nil { rowActions(style) }   // edit/delete only for real files
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
         .contentShape(Rectangle())
         .onTapGesture { activate(style) }
+    }
+
+    private func tag(_ text: String) -> some View {
+        Text(text).font(.system(size: 8.5, weight: .heavy)).tracking(0.3)
+            .padding(.horizontal, 4).padding(.vertical, 1.5)
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 3))
+            .foregroundStyle(.secondary)
     }
 
     private func rowActions(_ style: OutputStyleManager.Style) -> some View {
@@ -107,7 +110,7 @@ struct OutputStyleManagerSheet: View {
 
     private func activate(_ style: OutputStyleManager.Style) {
         guard !style.isActive else { return }
-        try? OutputStyleManager.setActive(style.name)
+        try? OutputStyleManager.activate(style)   // installs a curated template's file if needed
         reload()
     }
 

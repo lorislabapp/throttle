@@ -21,8 +21,9 @@ enum OutputStyleManager {
         let name: String
         let description: String
         let isBuiltIn: Bool      // Claude Code ships it — no file, can't edit/delete
-        let fileURL: URL?        // nil for built-ins
+        let fileURL: URL?        // nil for built-ins AND not-yet-installed templates
         var isActive: Bool = false
+        var isTemplate: Bool = false   // a Throttle-curated style not yet written to disk
     }
 
     /// Claude Code's built-in styles. "Default" = the `outputStyle` key absent.
@@ -53,28 +54,51 @@ enum OutputStyleManager {
         (readSettings()?["outputStyle"] as? String).flatMap { $0.isEmpty ? nil : $0 }
     }
 
-    /// Built-ins first, then user styles (alphabetical), each flagged active.
+    /// Built-ins, then installed user/Throttle styles, then any Throttle-curated
+    /// templates not yet written to disk (so Caveman etc. are visible and
+    /// one-click-activatable out of the box, not hidden behind "New").
     static func allStyles() -> [Style] {
         let active = activeName()
-        var seen = Set(builtIns.map { $0.name })
-        var out: [Style] = builtIns.map {
-            Style(name: $0.name, description: $0.description, isBuiltIn: true,
-                  fileURL: nil, isActive: $0.name == active)
+        var seen = Set<String>()
+        var out: [Style] = []
+
+        for b in builtIns {
+            out.append(Style(name: b.name, description: b.description, isBuiltIn: true,
+                             fileURL: nil, isActive: b.name == active))
+            seen.insert(b.name)
         }
+
         let fm = FileManager.default
         if let files = try? fm.contentsOfDirectory(at: stylesDir, includingPropertiesForKeys: nil) {
             for url in files.filter({ $0.pathExtension == "md" })
                 .sorted(by: { $0.lastPathComponent.localizedCaseInsensitiveCompare($1.lastPathComponent) == .orderedAscending }) {
                 let meta = parseFrontmatter(url)
                 let name = meta.name ?? url.deletingPathExtension().lastPathComponent
-                guard !seen.contains(name) else { continue }   // a user file shadowing a built-in name: keep the file
+                guard !seen.contains(name) else { continue }
                 seen.insert(name)
                 out.append(Style(name: name,
                                  description: meta.description ?? "Custom output style.",
                                  isBuiltIn: false, fileURL: url, isActive: name == active))
             }
         }
+
+        // Curated templates not yet on disk → show as ready-to-activate.
+        for t in templates where t.name != "Blank" && !seen.contains(t.name) {
+            seen.insert(t.name)
+            out.append(Style(name: t.name, description: t.description, isBuiltIn: false,
+                             fileURL: nil, isActive: t.name == active, isTemplate: true))
+        }
         return out
+    }
+
+    /// Activate a style. For a not-yet-installed curated template, write its
+    /// file first so Claude Code can actually find it, then set it active.
+    static func activate(_ style: Style) throws {
+        if style.isTemplate, style.fileURL == nil,
+           let t = templates.first(where: { $0.name == style.name }) {
+            try saveStyle(name: t.name, description: t.description, body: t.body, keepCoding: t.keepCoding)
+        }
+        try setActive(style.name)
     }
 
     /// Full markdown of a file-based style (for the editor). nil for built-ins.
@@ -143,7 +167,7 @@ enum OutputStyleManager {
     struct Template { let name: String; let description: String; let body: String; let keepCoding: Bool }
 
     static let templates: [Template] = [
-        Template(name: "Concise",
+        Template(name: "Throttle Concise",
                  description: "Answer-first, tight replies. The safe token saver.",
                  body: """
                  Be concise by default.
