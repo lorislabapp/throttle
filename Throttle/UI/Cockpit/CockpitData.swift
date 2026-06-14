@@ -180,6 +180,53 @@ final class CockpitViewModel {
         bloat = report
     }
 
+    // MARK: - Surgical Context Trimmer (CMV brick 3)
+
+    private(set) var trimCandidates: [ContextTrimmerService.Plan] = []
+    private(set) var trimScanning = false
+    private(set) var trimBusy: String?     // session stem currently being applied
+    private(set) var trimNote: String?     // transient result line for the sheet
+
+    /// Lazily find trimmable PAST sessions. Heavy (per-session preview), so it
+    /// runs only when the user opens the trim sheet — never on the reload timer.
+    func scanTrim(aggressive: Bool = false) async {
+        trimScanning = true
+        defer { trimScanning = false }
+        let exclude = currentSessionId()
+        let opt: ContextTrimmerService.Options = aggressive ? .aggressive : .safe
+        trimCandidates = await Task.detached(priority: .utility) {
+            ContextTrimmerService.scanCandidates(excludingSessionId: exclude, options: opt)
+        }.value
+    }
+
+    /// Apply a reversible trim to one past session (backup kept), then refresh
+    /// so the now-light session drops out of the candidate list.
+    func applyTrim(_ plan: ContextTrimmerService.Plan, aggressive: Bool = false) async {
+        trimBusy = plan.sessionShort
+        defer { trimBusy = nil }
+        let exclude = currentSessionId()
+        let opt: ContextTrimmerService.Options = aggressive ? .aggressive : .safe
+        let url = plan.sessionURL
+        trimNote = await Task.detached(priority: .utility) {
+            do {
+                let (p, backup) = try ContextTrimmerService.apply(url, options: opt, currentSessionId: exclude)
+                let mb = Double(p.bytesSaved) / 1_048_576
+                return String(format: "Trimmed %d imgs · saved %.1f MB — backup kept (%@)",
+                              p.imagesTrimmed, mb, backup.lastPathComponent)
+            } catch {
+                return (error as? ContextTrimmerService.TrimError)?.errorDescription
+                    ?? error.localizedDescription
+            }
+        }.value
+        await scanTrim(aggressive: aggressive)
+        await scanBloat()
+    }
+
+    private func currentSessionId() -> String? {
+        guard let db = appState?.database else { return nil }
+        return (try? db.read { try StatsDataService.cockpitCurrentSessionId(in: $0) }) ?? nil
+    }
+
     /// Archive stale memory files (reversible move) then rescan.
     func archiveMemory(_ paths: [String]) async {
         await Task.detached(priority: .utility) { MemoryCleanupService.archive(paths: paths) }.value

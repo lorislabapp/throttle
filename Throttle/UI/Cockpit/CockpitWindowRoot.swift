@@ -22,6 +22,8 @@ struct CockpitWindowRoot: View {
     @State private var memoryArchiveAllConfirm = false
     @State private var blockToHoist: DuplicatedBlock?
     @State private var showingReads = false
+    @State private var showingTrim = false
+    @State private var trimAggressive = false
 
     var body: some View {
         Group {
@@ -34,6 +36,79 @@ struct CockpitWindowRoot: View {
         .sheet(isPresented: $showingCache) { cacheSheet }
         .sheet(isPresented: $showingSkills) { skillsSheet }
         .sheet(isPresented: $showingReads) { readsSheet }
+        .sheet(isPresented: $showingTrim) { trimSheet }
+    }
+
+    // MARK: - Surgical context-trim sheet (CMV brick 3)
+
+    private var trimSheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Trim past transcripts").font(.system(size: 15, weight: .semibold))
+                    Text("Embedded screenshots are re-sent — and re-charged as image tokens — every time you `--resume` a session. Throttle replaces them with a text pointer so the lighter transcript reloads. It never deletes a message or a tool call; the original is backed up first, so it's reversible. The active session is excluded.")
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Button("Done") { showingTrim = false }.keyboardShortcut(.defaultAction)
+            }
+            .padding(16)
+
+            HStack(spacing: 8) {
+                Toggle(isOn: $trimAggressive) {
+                    Text("Also stub large tool outputs (>4 KB)")
+                        .font(.system(size: 10.5, weight: .medium))
+                }
+                .toggleStyle(.checkbox)
+                .onChange(of: trimAggressive) { _, _ in
+                    Task { await vm.scanTrim(aggressive: trimAggressive) }
+                }
+                Spacer()
+                if let note = vm.trimNote {
+                    Text(note).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 16).padding(.vertical, 8)
+            .background(Color.accentColor.opacity(0.06))
+            Divider()
+
+            if vm.trimScanning && vm.trimCandidates.isEmpty {
+                HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Scanning transcripts…").font(.system(size: 11)).foregroundStyle(.secondary) }
+                    .frame(maxWidth: .infinity, alignment: .center).padding(.vertical, 40)
+            } else if vm.trimCandidates.isEmpty {
+                Text("No trimmable past sessions — nothing with embedded images outside the active one.")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center).padding(.vertical, 40).padding(.horizontal, 24)
+                    .multilineTextAlignment(.center)
+            } else {
+                ScrollView { VStack(spacing: 0) { ForEach(vm.trimCandidates, id: \.sessionShort) { trimRow($0) } } }
+            }
+        }
+        .frame(width: 560, height: 480)
+    }
+
+    private func trimRow(_ p: ContextTrimmerService.Plan) -> some View {
+        let mb = Double(p.bytesSaved) / 1_048_576
+        return HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(p.projectLabel).font(.system(size: 11.5, weight: .medium)).foregroundStyle(.primary).lineLimit(1)
+                Text("\(p.sessionShort) · \(p.imagesTrimmed) imgs"
+                     + (p.toolResultsStubbed > 0 ? " · \(p.toolResultsStubbed) outputs" : ""))
+                    .font(.system(size: 9.5, design: .monospaced)).foregroundStyle(.tertiary)
+            }
+            Spacer(minLength: 6)
+            Text(String(format: "≈%.1f MB", mb))
+                .font(.system(size: 11, weight: .medium).monospacedDigit()).foregroundStyle(.secondary)
+            if vm.trimBusy == p.sessionShort {
+                ProgressView().controlSize(.mini).frame(width: 54)
+            } else {
+                Button("Trim") { Task { await vm.applyTrim(p, aggressive: trimAggressive) } }
+                    .controlSize(.small).frame(width: 54)
+            }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 9)
+        .overlay(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.06)).frame(height: 1) }
     }
 
     // MARK: - Read-firewall sheet
@@ -722,7 +797,12 @@ struct CockpitWindowRoot: View {
                 configRow("Skills", value: "\(vm.data.config.skillCount)")
             }
             if vm.bloat.totalTokens > 0 {
-                configRow("Context bloat", value: "\(vm.bloat.images) imgs · ≈\(fmtTokens(vm.bloat.totalTokens)) tok")
+                optimizeRow("photo.on.rectangle.angled", "Context bloat · \(vm.bloat.images) imgs",
+                            "≈\(fmtTokens(vm.bloat.totalTokens)) tok",
+                            help: "Embedded images re-charged on every --resume. Trim a past transcript losslessly (reversible, backed up).") {
+                    showingTrim = true
+                    Task { await vm.scanTrim(aggressive: trimAggressive) }
+                }
             }
             if !vm.dedup.blocks.isEmpty {
                 optimizeRow("doc.on.doc", "Duplicated × \(vm.dedup.projectCount) projects",
