@@ -59,7 +59,20 @@ struct CockpitAuditInspector: View {
                     }.contentShape(Rectangle())
                 }.buttonStyle(.plain).help("Trim a past transcript losslessly (reversible)")
             }
-            if !vm.dedup.blocks.isEmpty { row("Duplicated · \(vm.dedup.projectCount) proj", "≈\(tok(vm.dedup.totalWasteTokens)) tok") }
+            if !vm.dedup.blocks.isEmpty {
+                Button {
+                    let blocks = vm.dedup.blocks
+                    Task { for b in blocks { await vm.hoistDedup(b) } }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc.on.doc").font(.system(size: 10)).foregroundStyle(.orange)
+                        Text("Duplicated · \(vm.dedup.projectCount) proj").font(.system(size: 11)).foregroundStyle(.secondary)
+                        Spacer(minLength: 4)
+                        Text("Hoist").font(.system(size: 10.5, weight: .medium)).foregroundStyle(Color.accentColor)
+                        Text("≈\(tok(vm.dedup.totalWasteTokens)) tok").font(.system(size: 11).monospacedDigit()).foregroundStyle(.orange)
+                    }.contentShape(Rectangle())
+                }.buttonStyle(.plain).help("Hoist duplicated CLAUDE.md blocks to a shared skill (backed up, reversible)")
+            }
             if !vm.memory.files.isEmpty { row("Stale memory · \(vm.memory.files.count)", "≈\(tok(vm.memory.totalTokens)) tok") }
             if vm.skills.deadCount > 0 { row("Dead skills · \(vm.skills.deadCount)", "≈\(tok(vm.skills.deadTokens)) tok") }
             if !vm.reads.files.isEmpty { row("Brute reads · \(vm.reads.files.count)", "RAG") }
