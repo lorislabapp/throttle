@@ -13,7 +13,6 @@ import AppKit
 struct MultiCockpitRoot: View {
     @Environment(AppState.self) private var appState
     @State private var model = MultiCockpitModel()
-    @State private var showPicker = false
     @State private var showInspector = false
 
     private let hair = Color.primary.opacity(0.10)
@@ -34,9 +33,6 @@ struct MultiCockpitRoot: View {
             }
         }
         .frame(minWidth: 720, minHeight: 460)
-        .overlay(alignment: .topTrailing) {
-            if showPicker { picker.padding(.top, 96).padding(.trailing, 14) }
-        }
         .onAppear { model.start(appState: appState) }
         .onDisappear { model.stop() }
     }
@@ -209,12 +205,12 @@ struct MultiCockpitRoot: View {
     }
 
     private var newTabButton: some View {
-        Button { if !model.gated { showPicker.toggle() } } label: {
+        newSessionMenu(gated: model.gated) {
             Image(systemName: "plus").font(.system(size: 13, weight: .medium))
                 .foregroundStyle(model.gated ? Color.secondary : Color.accentColor)
                 .padding(.horizontal, 12).frame(minHeight: 40).contentShape(Rectangle())
         }
-        .buttonStyle(.plain).disabled(model.gated)
+        .menuStyle(.borderlessButton).fixedSize()
         .help(model.gated ? "Mac saturated" : "New session")
     }
 
@@ -234,7 +230,7 @@ struct MultiCockpitRoot: View {
                 }
                 Spacer(minLength: 0)
                 Rectangle().fill(hair).frame(height: 1)
-                Button { if !model.gated { showPicker.toggle() } } label: {
+                newSessionMenu(gated: model.gated) {
                     HStack(spacing: 6) {
                         Image(systemName: "plus").font(.system(size: 12, weight: .medium))
                         Text("New session").font(.system(size: 12.5, weight: .medium))
@@ -242,7 +238,7 @@ struct MultiCockpitRoot: View {
                     .foregroundStyle(model.gated ? Color.secondary : Color.accentColor)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 11).padding(.vertical, 9).contentShape(Rectangle())
-                }.buttonStyle(.plain).disabled(model.gated)
+                }.menuStyle(.borderlessButton)
             }
             .frame(width: 234)
             .overlay(alignment: .trailing) { Rectangle().fill(hair).frame(width: 1) }
@@ -329,7 +325,7 @@ struct MultiCockpitRoot: View {
     }
 
     private var addCard: some View {
-        Button { if !model.gated { showPicker.toggle() } } label: {
+        newSessionMenu(gated: model.gated) {
             VStack(spacing: 7) {
                 Image(systemName: "plus").font(.system(size: 18, weight: .medium))
                 Text(model.gated ? "Mac saturated" : "New session").font(.system(size: 12, weight: .medium))
@@ -338,7 +334,7 @@ struct MultiCockpitRoot: View {
             .frame(maxWidth: .infinity, minHeight: 128)
             .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(hair, style: StrokeStyle(lineWidth: 1, dash: [4, 4])) }
             .contentShape(RoundedRectangle(cornerRadius: 12))
-        }.buttonStyle(.plain).disabled(model.gated)
+        }.menuStyle(.borderlessButton)
     }
 
     // MARK: - Empty + picker
@@ -351,45 +347,54 @@ struct MultiCockpitRoot: View {
             Text("Start your first claude session — Throttle keeps every project's headroom, cost and machine load in view as you work.")
                 .font(.system(size: 12.5)).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 .frame(maxWidth: 320).padding(.top, 6)
-            Button { showPicker = true } label: {
+            newSessionMenu(gated: false) {
                 HStack(spacing: 8) { Image(systemName: "plus"); Text("Start a session") }
                     .font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
                     .padding(.horizontal, 16).padding(.vertical, 9)
                     .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 9))
-            }.buttonStyle(.plain).padding(.top, 18)
+            }.menuStyle(.borderlessButton).fixedSize().padding(.top, 18)
             Spacer()
         }.frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var picker: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("OPEN A SESSION IN…").font(.system(size: 9.5, weight: .semibold)).tracking(0.7)
-                .foregroundStyle(.tertiary).padding(.horizontal, 13).padding(.top, 10).padding(.bottom, 5)
+    /// Native dropdown anchored to its trigger (no random floating popup):
+    /// recent projects + "Open other folder…" (a real NSOpenPanel for new
+    /// projects). `gated` disables it under memory pressure — except the very
+    /// first session, which is always allowed.
+    private func newSessionMenu<L: View>(gated: Bool, @ViewBuilder label: () -> L) -> some View {
+        Menu {
             let projects = model.recentProjects()
             if projects.isEmpty {
-                Text("No recent projects").font(.system(size: 11)).foregroundStyle(.secondary)
-                    .padding(.horizontal, 13).padding(.vertical, 8)
+                Text("No recent projects")
             } else {
-                ForEach(projects) { p in
-                    Button {
-                        model.newSession(projectName: p.name, cwd: p.cwd)
-                        model.viewMode = model.viewMode == .mission ? .tabs : model.viewMode
-                        showPicker = false
-                    } label: {
-                        HStack(spacing: 9) {
-                            Image(systemName: "folder").font(.system(size: 12)).foregroundStyle(.secondary)
-                            Text(p.name).font(.system(size: 12.5)).foregroundStyle(.primary).lineLimit(1)
-                            Spacer(minLength: 0)
-                        }
-                        .padding(.horizontal, 13).padding(.vertical, 8).contentShape(Rectangle())
-                    }.buttonStyle(.plain)
+                Section("Recent projects") {
+                    ForEach(projects) { p in
+                        Button { open(p.name, p.cwd) } label: { Label(p.name, systemImage: "folder") }
+                    }
                 }
             }
+            Divider()
+            Button { openFolderPanel() } label: { Label("Open other folder…", systemImage: "folder.badge.plus") }
+        } label: { label() }
+        .menuIndicator(.hidden)
+        .disabled(gated)
+    }
+
+    private func open(_ name: String, _ cwd: String) {
+        model.newSession(projectName: name, cwd: cwd)
+        if model.viewMode == .mission { model.viewMode = .tabs }
+    }
+
+    private func openFolderPanel() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Open Session"
+        panel.message = "Choose a project folder to start a claude session in."
+        if panel.runModal() == .OK, let url = panel.url {
+            open(url.lastPathComponent, url.path)
         }
-        .frame(width: 240)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 11))
-        .overlay { RoundedRectangle(cornerRadius: 11).stroke(hair, lineWidth: 1) }
-        .shadow(color: .black.opacity(0.18), radius: 16, y: 8)
     }
 
     // MARK: - Bits

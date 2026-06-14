@@ -13,38 +13,50 @@ final class CockpitTab: Identifiable {
     let id = UUID()
     let projectName: String
     let cwd: String
-    let terminal: LocalProcessTerminalView
     let startedAt = Date()
+
+    /// LAZY: nil until the tab is first activated (memory-safe restore — a
+    /// dormant restored tab costs nothing until you open it).
+    private(set) var terminal: LocalProcessTerminalView?
+    /// When restoring, resume the exact prior claude session.
+    private let resumeSessionId: String?
 
     // Live metadata — nil = "not yet known", rendered as ≈/— (never invented).
     var model: String?
     var eur: Double?
     var tokens: Int?
-    /// True when the session's transcript was written in the last ~12 s — i.e.
-    /// claude is actively working (a real signal, not a guess).
     var isLive = false
+    /// The running claude session id, discovered at runtime — used for persistence.
+    var sessionId: String?
 
-    init(projectName: String, cwd: String, autostartClaude: Bool = true) {
+    init(projectName: String, cwd: String, resumeSessionId: String? = nil) {
         self.projectName = projectName
         self.cwd = cwd
+        self.resumeSessionId = resumeSessionId
+        self.sessionId = resumeSessionId
+    }
+
+    var isSpawned: Bool { terminal != nil }
+
+    /// Spawn the terminal on first activation: a login shell, then cd into the
+    /// project and launch (or `--resume`) claude.
+    func ensureSpawned() {
+        guard terminal == nil else { return }
         let term = LocalProcessTerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 480))
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let shellName = (shell as NSString).lastPathComponent
         let env = Terminal.getEnvironmentVariables(termName: "xterm-256color", trueColor: true)
-        // Login shell (execName "-…") so the user's full PATH loads and `claude`
-        // resolves — a Finder-launched GUI app otherwise gets a minimal PATH.
         term.startProcess(executable: shell, args: [], environment: env, execName: "-\(shellName)")
         self.terminal = term
 
-        // cd into the project, then (optionally) start claude.
         let quoted = "'" + cwd.replacingOccurrences(of: "'", with: "'\\''") + "'"
-        var cmd = "cd \(quoted) && clear"
-        if autostartClaude { cmd += " && claude" }
+        var cmd = "cd \(quoted) && clear && "
+        if let sid = resumeSessionId { cmd += "claude --resume \(sid)" } else { cmd += "claude" }
         term.send(txt: cmd + "\n")
     }
 
     /// Exit claude (Ctrl-D) then the shell, releasing the PTY.
-    func terminate() { terminal.send(txt: "\u{04}\nexit\n") }
+    func terminate() { terminal?.send(txt: "\u{04}\nexit\n") }
 }
 
 /// Manages the set of cockpit sessions and the shared decision-layer data:
@@ -61,7 +73,7 @@ final class MultiCockpitModel {
     }
 
     private(set) var sessions: [CockpitTab] = []
-    var activeID: UUID?
+    var activeID: UUID? { didSet { active?.ensureSpawned() } }
     var viewMode: ViewMode = .rail
     private(set) var machine: MemoryHealth = .unknown
 
@@ -74,6 +86,7 @@ final class MultiCockpitModel {
 
     func start(appState: AppState) {
         self.appState = appState
+        if sessions.isEmpty { restore() }   // bring back the working set (lazy)
         sampleMachine()
         tick?.cancel()
         tick = Task { [weak self] in
@@ -93,9 +106,9 @@ final class MultiCockpitModel {
         let items = sessions.map { (id: $0.id, cwd: $0.cwd, since: $0.startedAt) }
         guard !items.isEmpty else { return }
         Task { [weak self] in
-            let results: [(UUID, Double?, Int?, String?, Bool)] = await Task.detached(priority: .utility) {
+            let results: [(UUID, Double?, Int?, String?, Bool, String?)] = await Task.detached(priority: .utility) {
                 items.map { item in
-                    guard let s = Self.newestSession(cwd: item.cwd, since: item.since) else { return (item.id, nil, nil, nil, false) }
+                    guard let s = Self.newestSession(cwd: item.cwd, since: item.since) else { return (item.id, nil, nil, nil, false, nil) }
                     let live = Date().timeIntervalSince(s.mtime) < 12
                     let stats: (Double?, Int?, String?)? = try? db.read { d in
                         let eur = try? StatsDataService.cockpitSessionCostEUR(in: d, sessionId: s.id)
@@ -105,15 +118,18 @@ final class MultiCockpitModel {
                             .flatMap { Self.modelName($0.tier) }
                         return (eur, tok, model)
                     }
-                    return (item.id, stats?.0, stats?.1, stats?.2, live)
+                    return (item.id, stats?.0, stats?.1, stats?.2, live, s.id)
                 }
             }.value
             guard let self else { return }
-            for (id, eur, tok, model, live) in results {
+            var changed = false
+            for (id, eur, tok, model, live, sid) in results {
                 if let tab = self.sessions.first(where: { $0.id == id }) {
                     tab.eur = eur; tab.tokens = tok; tab.model = model; tab.isLive = live
+                    if tab.sessionId != sid { tab.sessionId = sid; changed = true }
                 }
             }
+            if changed { self.persist() }   // keep saved resume-ids fresh
         }
     }
 
@@ -146,9 +162,34 @@ final class MultiCockpitModel {
     }
 
     func stop() {
+        persist()                            // remember the working set first
         tick?.cancel(); tick = nil
         for s in sessions { s.terminate() }
         sessions.removeAll()
+    }
+
+    // MARK: - Persistence (memory-aware: restored tabs spawn lazily via resume)
+
+    private static let persistKey = "cockpitOpenSessions"
+    private struct Saved: Codable { let cwd: String; let name: String; let sessionId: String? }
+
+    func persist() {
+        let saved = sessions.map { Saved(cwd: $0.cwd, name: $0.projectName, sessionId: $0.sessionId) }
+        if let data = try? JSONEncoder().encode(saved) {
+            UserDefaults.standard.set(data, forKey: Self.persistKey)
+        }
+    }
+
+    private func restore() {
+        guard let data = UserDefaults.standard.data(forKey: Self.persistKey),
+              let saved = try? JSONDecoder().decode([Saved].self, from: data), !saved.isEmpty else { return }
+        let fm = FileManager.default
+        for item in saved {
+            var isDir: ObjCBool = false
+            guard fm.fileExists(atPath: item.cwd, isDirectory: &isDir), isDir.boolValue else { continue }
+            sessions.append(CockpitTab(projectName: item.name, cwd: item.cwd, resumeSessionId: item.sessionId))
+        }
+        activeID = sessions.first?.id   // spawns ONLY the active tab (others dormant)
     }
 
     func sampleMachine() {
@@ -162,7 +203,8 @@ final class MultiCockpitModel {
     func newSession(projectName: String, cwd: String) -> CockpitTab {
         let s = CockpitTab(projectName: projectName, cwd: cwd)
         sessions.append(s)
-        activeID = s.id
+        activeID = s.id   // didSet → ensureSpawned
+        persist()
         return s
     }
 
@@ -171,6 +213,7 @@ final class MultiCockpitModel {
         sessions[idx].terminate()
         sessions.remove(at: idx)
         if activeID == id { activeID = sessions.first?.id }
+        persist()
     }
 
     // MARK: - Global binding (account-wide, shared by all sessions)
@@ -221,10 +264,14 @@ final class MultiCockpitModel {
             let b = (try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
             return a > b
         }
+        let home = fm.homeDirectoryForCurrentUser.path
         var seen = Set<String>()
         var out: [Project] = []
         for dir in sorted {
             guard let cwd = Self.projectCwd(dir), !seen.contains(cwd) else { continue }
+            // Skip the home dir itself and obvious non-projects (temp/hidden).
+            guard cwd != home, !cwd.hasPrefix("/private/"), !cwd.hasPrefix("/tmp"),
+                  !(cwd as NSString).lastPathComponent.hasPrefix(".") else { continue }
             var isDir: ObjCBool = false
             guard fm.fileExists(atPath: cwd, isDirectory: &isDir), isDir.boolValue else { continue }
             seen.insert(cwd)

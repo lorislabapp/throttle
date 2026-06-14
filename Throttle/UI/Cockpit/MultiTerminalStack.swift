@@ -20,7 +20,9 @@ struct MultiTerminalStack: NSViewRepresentable {
     }
 
     func updateNSView(_ container: NSView, context: Context) {
-        let keep = Set(sessions.map { ObjectIdentifier($0.terminal) })
+        // Only SPAWNED tabs have a terminal (dormant restored tabs are nil).
+        let spawned = sessions.compactMap { $0.terminal }
+        let keep = Set(spawned.map { ObjectIdentifier($0) })
 
         // Remove terminals whose session is gone.
         for sub in container.subviews where !keep.contains(ObjectIdentifier(sub)) {
@@ -28,8 +30,7 @@ struct MultiTerminalStack: NSViewRepresentable {
         }
 
         let activeTerminal = (sessions.first { $0.id == activeID } ?? sessions.first)?.terminal
-        for s in sessions {
-            let t = s.terminal
+        for t in spawned {
             if t.superview !== container {
                 t.translatesAutoresizingMaskIntoConstraints = true
                 t.autoresizingMask = [.width, .height]
