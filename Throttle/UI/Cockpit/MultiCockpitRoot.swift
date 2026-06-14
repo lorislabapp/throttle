@@ -73,10 +73,11 @@ struct MultiCockpitRoot: View {
     private var globalStrip: some View {
         HStack(spacing: 0) {
             bindingCell
-            Rectangle().fill(hair).frame(width: 1)
+            Rectangle().fill(hair).frame(width: 1, height: 48)
             machineCell
             Spacer(minLength: 0)
         }
+        .frame(height: 76)
         .overlay(alignment: .bottom) { Rectangle().fill(hair).frame(height: 1) }
     }
 
@@ -99,7 +100,7 @@ struct MultiCockpitRoot: View {
                 Text("—").font(.system(size: 26, weight: .regular, design: .monospaced)).foregroundStyle(.tertiary)
             }
         }
-        .padding(.horizontal, 15).padding(.vertical, 9).frame(minWidth: 188, alignment: .leading)
+        .padding(.horizontal, 15).padding(.vertical, 9).frame(width: 240, alignment: .leading)
     }
 
     private var machineCell: some View {
