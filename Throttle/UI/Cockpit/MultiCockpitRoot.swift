@@ -182,6 +182,10 @@ struct MultiCockpitRoot: View {
                                 stateDot(s.isLive)
                                 Text(s.projectName).font(.system(size: 12, weight: .medium))
                                     .foregroundStyle(on ? .primary : .secondary)
+                                if let e = s.eur {
+                                    Text(String(format: "€%.2f", e))
+                                        .font(.system(size: 10, design: .monospaced)).foregroundStyle(.tertiary)
+                                }
                                 Button { model.close(s.id) } label: {
                                     Image(systemName: "xmark").font(.system(size: 8, weight: .bold))
                                         .foregroundStyle(.tertiary)
@@ -307,7 +311,11 @@ struct MultiCockpitRoot: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(s.eur.map { String(format: "€%.2f", $0) } ?? "—")
                         .font(.system(size: 19, design: .monospaced)).foregroundStyle(.primary)
-                    Text("up \(uptime(s.startedAt))").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    if let t = s.tokens, t > 0 {
+                        Text("\(fmtTok(t)) tokens this session").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    } else {
+                        Text("up \(uptime(s.startedAt))").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    }
                 }
                 Spacer(minLength: 0)
                 HStack {
