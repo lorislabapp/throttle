@@ -107,6 +107,7 @@ final class CockpitViewModel {
     private(set) var skills: SkillReport = .empty
     private(set) var reads: ReadFirewallReport = .empty
     private(set) var bloat: ContextBloat = .empty
+    private(set) var memHealth: MemoryHealth = .unknown
 
     private weak var appState: AppState?
     private var loop: Task<Void, Never>?
@@ -117,6 +118,7 @@ final class CockpitViewModel {
         loop = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.reload()
+                await self?.sampleMemory()
                 try? await Task.sleep(for: .seconds(10))
             }
         }
@@ -172,6 +174,13 @@ final class CockpitViewModel {
     func scanReads() async {
         let report = await Task.detached(priority: .utility) { ReadFirewallService.scan() }.value
         reads = report
+    }
+
+    /// Sample system-memory health (off-main) — the machine-capacity half of the
+    /// keep-going decision. Cheap (mach stats + one `ps`).
+    func sampleMemory() async {
+        let h = await Task.detached(priority: .utility) { SystemMemoryService.sample() }.value
+        memHealth = h
     }
 
     /// Detect base64 image bloat in transcripts (off-main).

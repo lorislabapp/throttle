@@ -644,6 +644,10 @@ struct CockpitWindowRoot: View {
                     railSection("CONFIG WEIGHT") { configWeightView }
                     railHairline
                 }
+                if vm.memHealth.totalBytes > 0 {
+                    railSection("MACHINE") { memoryView }
+                    railHairline
+                }
                 mcpSection
                 if !vm.data.sessions.isEmpty {
                     railSection("RECENT SESSIONS") { sessionsView }
@@ -786,6 +790,56 @@ struct CockpitWindowRoot: View {
                 }
             }
         }
+    }
+
+    /// MACHINE — the capacity half of "keep going?". Colour earned only under
+    /// genuine memory pressure (matches the cockpit's pressure-only discipline).
+    private var memoryView: some View {
+        let m = vm.memHealth
+        let tint: Color = m.critical ? .red : (m.underPressure ? .orange : .secondary)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Text("RAM").font(.system(size: 10.5, weight: .medium)).foregroundStyle(.secondary)
+                Spacer(minLength: 4)
+                Text("\(fmtGB(m.usedBytes)) / \(fmtGB(m.totalBytes))")
+                    .font(.system(size: 10.5).monospacedDigit()).foregroundStyle(.primary)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.primary.opacity(0.08))
+                    Capsule().fill(m.underPressure ? tint : Color.primary.opacity(0.35))
+                        .frame(width: max(2, geo.size.width * m.usedFraction))
+                }
+            }
+            .frame(height: 5)
+            HStack(spacing: 6) {
+                Text("swap").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                Text(fmtGB(m.swapUsedBytes)).font(.system(size: 10.5).monospacedDigit())
+                    .foregroundStyle(m.swapUsedBytes > 4_000_000_000 ? tint : .secondary)
+                Spacer(minLength: 4)
+                if m.claudeCount > 0 {
+                    Text("claude ×\(m.claudeCount)").font(.system(size: 10.5).monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if m.underPressure {
+                HStack(alignment: .top, spacing: 5) {
+                    Image(systemName: m.critical ? "exclamationmark.triangle.fill" : "exclamationmark.circle")
+                        .font(.system(size: 10)).foregroundStyle(tint)
+                    Text(m.critical ? "Mac saturated — close a session before opening another"
+                                    : "Memory pressure — another session may push to swap")
+                        .font(.system(size: 10)).foregroundStyle(tint)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private func fmtGB(_ bytes: UInt64) -> String {
+        let gb = Double(bytes) / 1_073_741_824
+        if gb >= 10 { return String(format: "%.0f GB", gb) }
+        if gb >= 1 { return String(format: "%.1f GB", gb) }
+        return String(format: "%.0f MB", Double(bytes) / 1_048_576)
     }
 
     private var configWeightView: some View {
