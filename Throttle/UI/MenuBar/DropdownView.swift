@@ -664,8 +664,13 @@ struct DropdownView: View {
                     ProjectWindowController.shared.show(appState: appState)
                 }
                 DockTile(icon: "terminal", label: "Cockpit",
-                         badgeText: "BETA", badgeStyle: .beta) {
-                    CockpitWindowController.shared.show(appState: appState)
+                         badgeText: appState.isPro ? "BETA" : "PRO",
+                         badgeStyle: appState.isPro ? .beta : .pro) {
+                    if appState.isPro {
+                        CockpitWindowController.shared.show(appState: appState)
+                    } else {
+                        mode = .settings(.pro)   // Pro feature → upsell
+                    }
                 }
                 DockTile(icon: "gear", label: "Settings") {
                     mode = .settings(.general)
@@ -1374,18 +1379,29 @@ private struct InlineGeneralPane: View {
         SettingsGroupHeader(label: "Autopilot")
         SettingsRow(title: "Optimize Claude Code system-wide",
                     sub: "Installs a concise output-style (every session stays terse, reasoning untouched) + a usage statusline (live headroom in every terminal tab). 100% local, reversible.") {
-            Toggle("", isOn: $autopilotOn).labelsHidden().toggleStyle(.switch).tint(.accentColor)
-                .onChange(of: autopilotOn) { _, on in
-                    AutopilotService.isEnabled = on
-                    guard on else { return }
-                    autopilotBusy = true
-                    Task {
-                        let made = await Task.detached(priority: .utility) { AutopilotService.runPass() }.value
-                        ledger = AutopilotService.load()
-                        autopilotBusy = false
-                        _ = made
-                    }
+            HStack(spacing: 6) {
+                if !appState.isPro {
+                    Text("PRO").font(.system(size: 9, weight: .heavy)).tracking(0.3)
+                        .padding(.horizontal, 5).padding(.vertical, 2)
+                        .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 4))
+                        .foregroundStyle(.secondary)
                 }
+                Toggle("", isOn: appState.isPro ? $autopilotOn : .constant(false))
+                    .labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                    .disabled(!appState.isPro)
+                    .onChange(of: autopilotOn) { _, on in
+                        guard appState.isPro else { return }
+                        AutopilotService.isEnabled = on
+                        guard on else { return }
+                        autopilotBusy = true
+                        Task {
+                            let made = await Task.detached(priority: .utility) { AutopilotService.runPass() }.value
+                            ledger = AutopilotService.load()
+                            autopilotBusy = false
+                            _ = made
+                        }
+                    }
+            }
         }
         SettingsHair()
         SettingsRow(title: "Auto-archive stale memory",

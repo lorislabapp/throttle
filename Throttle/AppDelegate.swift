@@ -120,7 +120,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Throttle Autopilot — keep the Claude Code setup optimized, by default,
         // system-wide. Off-main; debounced to ~once/day; every action reversible
         // and logged (Settings → Autopilot → Review & undo).
-        Task.detached(priority: .utility) { _ = AutopilotService.runIfDue() }
+        if appState.isPro {   // Autopilot is a Pro feature
+            Task.detached(priority: .utility) { _ = AutopilotService.runIfDue() }
+        }
 
         Task { @MainActor in
             await coordinator.start()
