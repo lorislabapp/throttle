@@ -32,12 +32,21 @@ enum AIOptimizerService {
     static func optimize(fileLabel: String, content: String,
                          projectName: String, projectPath: String?) async throws -> Proposal {
         let prompt = """
-        You are optimising the file `\(fileLabel)` for a Claude Code project. Goals, in priority order:
-        1. Cut token cost — remove redundancy, dead instructions, and verbosity that is re-sent every session.
-        2. Tighten security — flag/parametrise secrets, narrow over-broad permissions.
-        3. Improve clarity and structure.
-        HARD RULE: never drop a real instruction or change the developer's intent. If the file is already tight, return it UNCHANGED and say so.
-        IF THE CURRENT FILE IS EMPTY: instead CREATE a concise, sensible STARTER for a Claude Code project (a few conventions, model defaults, key paths). Keep it minimal and generic — do NOT invent project specifics you cannot know. In the WHY section, say it's a new starter and what it sets up.
+        You are optimising the file `\(fileLabel)` for a Claude Code project. Apply these RESEARCHED best practices (Anthropic Claude Code docs + power-user consensus, 2026):
+
+        For a CLAUDE.md file:
+        - TARGET under ~200 lines. It reloads EVERY session — bloat makes Claude IGNORE the real instructions, so smaller is genuinely better.
+        - KEEP: non-guessable build/test/lint commands, non-default code style, test runners, repo & commit/PR etiquette, architecture pointers, environment quirks, and gotchas.
+        - REMOVE: anything inferable from the code itself, standard/obvious conventions, content that just restates linkable API docs, dumped file trees, tutorials and long prose, and duplicated or stale instructions.
+        - Things that belong ELSEWHERE (note in WHY, don't silently delete): situational detail → a skill; path-specific rules → a subdirectory CLAUDE.md; automation → a hook. Real context savings come from skills/path-scoped rules/hooks, NOT from imports.
+
+        For a settings.json / settings.local.json file:
+        - permissions precedence is deny > ask > allow (deny ALWAYS wins); prefer tight allow-lists over broad ones.
+        - NEVER place secrets/API keys here (or in CLAUDE.md). Secrets belong only in gitignored settings.local.json.
+        - Consider denying reads of .env / dotenv files and network exfil (e.g. curl) in permissions.deny.
+
+        HARD RULE: never drop a real instruction or change the developer's intent; preserve project-specific facts verbatim. If the file is already tight, return it UNCHANGED and say so.
+        IF THE CURRENT FILE IS EMPTY: instead CREATE a concise, sensible STARTER — a few sections (stack, build/test commands, conventions, "don't" rules). Keep it minimal; do NOT invent project specifics you cannot know. In WHY, say it's a new starter.
 
         Return EXACTLY this, and nothing else (no preamble, no code fences):
         \(fileStart)
