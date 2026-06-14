@@ -708,9 +708,10 @@ struct ProjectAssistantTab: View {
                 var nextTried = triedKinds
                 nextTried.insert(provider.kind)
                 if let fallback = await AIProviderRegistry.shared.firstAvailable(excluding: nextTried) {
+                    let why = (error as? AIProviderError)?.errorDescription ?? error.localizedDescription
                     let note = fallback.displayName.contains("Apple Intelligence")
-                        ? "\n\n_\(provider.displayName) couldn't finish — switching to \(fallback.displayName). This is a small on-device model, so the audit is lighter; for the full analysis, sign in to claude.ai or add an API key in settings._\n\n"
-                        : "\n\n_\(provider.displayName) couldn't finish — falling back to \(fallback.displayName)._\n\n"
+                        ? "\n\n_\(provider.displayName) couldn't finish: \(why)\n\nFalling back to \(fallback.displayName) — a small on-device model, so the answer is lighter. Add a Claude API key in settings for the full analysis._\n\n"
+                        : "\n\n_\(provider.displayName) couldn't finish: \(why) — falling back to \(fallback.displayName)._\n\n"
                     appendDelta(note, to: assistantMsg.id)
                     // Drop the now-half-empty assistant message; the
                     // fallback will append a fresh one. Keep the
