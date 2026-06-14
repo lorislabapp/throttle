@@ -31,10 +31,6 @@ enum AIOptimizerService {
 
     static func optimize(fileLabel: String, content: String,
                          projectName: String, projectPath: String?) async throws -> Proposal {
-        guard let provider = await AIProviderRegistry.shared.resolveActive() else {
-            throw OptimizerError.noProvider
-        }
-
         let prompt = """
         You are optimising the file `\(fileLabel)` for a Claude Code project. Goals, in priority order:
         1. Cut token cost — remove redundancy, dead instructions, and verbosity that is re-sent every session.
@@ -62,13 +58,31 @@ enum AIOptimizerService {
             claudeMd: nil, settingsJSON: nil, weeklyTokens: 0,
             modelSplit: [], hookScripts: [:], mcpServers: [], costEUR: 0
         )
+        let messages = [ChatMessage(role: .user, content: prompt)]
 
-        var full = ""
-        let stream = try await provider.streamChat(messages: [ChatMessage(role: .user, content: prompt)], context: ctx)
-        for try await chunk in stream { full += chunk }
-
-        guard !full.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw OptimizerError.empty }
-        return parse(full, fallback: content)
+        // Walk the provider chain (active → next available) so a flaky Claude-web
+        // session falls through to the API key / Apple Intelligence instead of
+        // failing the whole optimisation.
+        var tried = Set<AIProviderKind>()
+        var lastError: Error = OptimizerError.noProvider
+        for _ in 0..<3 {
+            let provider = tried.isEmpty
+                ? await AIProviderRegistry.shared.resolveActive()
+                : await AIProviderRegistry.shared.firstAvailable(excluding: tried)
+            guard let provider else { break }
+            tried.insert(provider.kind)
+            do {
+                var full = ""
+                let stream = try await provider.streamChat(messages: messages, context: ctx)
+                for try await chunk in stream { full += chunk }
+                guard !full.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw OptimizerError.empty }
+                return parse(full, fallback: content)
+            } catch {
+                lastError = error
+                continue   // try the next provider
+            }
+        }
+        throw lastError
     }
 
     private static func parse(_ text: String, fallback: String) -> Proposal {
