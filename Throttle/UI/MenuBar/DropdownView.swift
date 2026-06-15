@@ -672,6 +672,9 @@ struct DropdownView: View {
                         mode = .settings(.pro)   // Pro feature → upsell
                     }
                 }
+                DockTile(icon: "magnifyingglass", label: "Search") {
+                    TranscriptSearchWindowController.shared.show()
+                }
                 DockTile(icon: "gear", label: "Settings") {
                     mode = .settings(.general)
                 }
