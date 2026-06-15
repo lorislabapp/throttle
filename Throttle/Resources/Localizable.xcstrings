@@ -3946,6 +3946,546 @@
           }
         }
       }
+    },
+    "Notify at 80% and 95%": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifier à 80 % et 95 %"
+          }
+        }
+      }
+    },
+    "A quiet banner as each window nears its cap.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une bannière discrète quand chaque fenêtre approche de son plafond."
+          }
+        }
+      }
+    },
+    "Weekly-reset reminder": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rappel de réinitialisation hebdomadaire"
+          }
+        }
+      }
+    },
+    "Add a Monday reset event to Calendar.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un événement de réinitialisation le lundi au Calendrier."
+          }
+        }
+      }
+    },
+    "Add to Calendar": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter au Calendrier"
+          }
+        }
+      }
+    },
+    "Concise Claude Code replies": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réponses Claude Code concises"
+          }
+        }
+      }
+    },
+    "Inject a terse-output directive into every Claude Code session via the hook.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Injecte une directive de sortie concise dans chaque session Claude Code via le hook."
+          }
+        }
+      }
+    },
+    "Claude Code output style": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Style de sortie Claude Code"
+          }
+        }
+      }
+    },
+    "Active: %@ — the reply voice for every claude session (terminal + Cockpit). Pick a built-in, or create your own (Caveman, Concise…).": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actif : %@ — la voix des réponses de chaque session claude (terminal + Cockpit). Choisissez-en un intégré, ou créez le vôtre (Caveman, Concise…)."
+          }
+        }
+      }
+    },
+    "Manage…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gérer…"
+          }
+        }
+      }
+    },
+    "Compress command output": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compresser la sortie des commandes"
+          }
+        }
+      }
+    },
+    "Cockpit: drop images as OCR text": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cockpit : déposer les images en texte OCR"
+          }
+        }
+      }
+    },
+    "Drop a screenshot into a Cockpit session as locally-OCR'd text (≈80–90% fewer tokens than a vision image) — loses the visual, so hold ⌥ while dropping to flip per-drop.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déposez une capture d'écran dans une session Cockpit sous forme de texte OCR local (≈80–90 % de tokens en moins qu'une image vision) — fait perdre le visuel, maintenez donc ⌥ en déposant pour inverser au cas par cas."
+          }
+        }
+      }
+    },
+    "Software updates": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mises à jour du logiciel"
+          }
+        }
+      }
+    },
+    "Check now": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifier maintenant"
+          }
+        }
+      }
+    },
+    "Throttle %@ · updates are signed and verified before install.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Throttle %@ · les mises à jour sont signées et vérifiées avant installation."
+          }
+        }
+      }
+    },
+    "Autopilot": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autopilot"
+          }
+        }
+      }
+    },
+    "Optimize Claude Code system-wide": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimiser Claude Code à l'échelle du système"
+          }
+        }
+      }
+    },
+    "Installs a concise output-style (every session stays terse, reasoning untouched) + a usage statusline (live headroom in every terminal tab). 100% local, reversible.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installe un style de sortie concis (chaque session reste brève, le raisonnement intact) + une barre d'état d'usage (marge en temps réel dans chaque onglet du terminal). 100 % local, réversible."
+          }
+        }
+      }
+    },
+    "Auto-archive stale memory": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archiver automatiquement la mémoire obsolète"
+          }
+        }
+      }
+    },
+    "Off by default — the 30-day heuristic is blunt. Never touches MEMORY.md. Reversible.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Désactivé par défaut — l'heuristique des 30 jours est grossière. Ne touche jamais à MEMORY.md. Réversible."
+          }
+        }
+      }
+    },
+    "Auto-archive dead skills": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archiver automatiquement les skills inutilisés"
+          }
+        }
+      }
+    },
+    "Off by default — never invoked ≠ unwanted. Skills named in your CLAUDE.md are kept. Reversible.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Désactivé par défaut — jamais invoqué ≠ indésirable. Les skills nommés dans votre CLAUDE.md sont conservés. Réversible."
+          }
+        }
+      }
+    },
+    "Activity log": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Journal d'activité"
+          }
+        }
+      }
+    },
+    "Review & undo…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Examiner et annuler…"
+          }
+        }
+      }
+    },
+    "Manual one-tap optimizers (transcript trim, dedup hoist) live in the Cockpit — they touch live content, so they stay deliberate.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les optimiseurs manuels en un clic (élagage du transcript, factorisation des doublons) se trouvent dans le Cockpit — ils touchent du contenu actif, ils restent donc volontaires."
+          }
+        }
+      }
+    },
+    "License": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licence"
+          }
+        }
+      }
+    },
+    "Unlock Exact mode, Stats history and projections.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Débloque le mode exact, l'historique des Stats et les projections."
+          }
+        }
+      }
+    },
+    "Buy Pro · €29": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acheter Pro · 29 €"
+          }
+        }
+      }
+    },
+    "Sign in": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se connecter"
+          }
+        }
+      }
+    },
+    "Test": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tester"
+          }
+        }
+      }
+    },
+    "Set your three usage caps": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Définissez vos trois plafonds d'usage"
+          }
+        }
+      }
+    },
+    "Reset all": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout réinitialiser"
+          }
+        }
+      }
+    },
+    "Shell integration status": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "État de l'intégration au shell"
+          }
+        }
+      }
+    },
+    "Hooks are managed by the Claude Code CLI — Throttle reads their status, never edits your shell. To disable, run: export CLAUDE_DISABLE_TOKOPT_HOOKS=1": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les hooks sont gérés par la CLI Claude Code — Throttle lit leur état, ne modifie jamais votre shell. Pour désactiver, exécutez : export CLAUDE_DISABLE_TOKOPT_HOOKS=1"
+          }
+        }
+      }
+    },
+    "Reveal log file": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher le fichier journal"
+          }
+        }
+      }
+    },
+    "~/Library/Logs/Throttle — app behaviour only, no session content.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "~/Library/Logs/Throttle — comportement de l'app uniquement, aucun contenu de session."
+          }
+        }
+      }
+    },
+    "Export diagnostics": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporter les diagnostics"
+          }
+        }
+      }
+    },
+    "Anonymized stats .zip to Desktop — token totals only.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stats anonymisées en .zip sur le bureau — uniquement les totaux de tokens."
+          }
+        }
+      }
+    },
+    "Export": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporter"
+          }
+        }
+      }
+    },
+    "Export usage CSV": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporter l'usage en CSV"
+          }
+        }
+      }
+    },
+    "Full event history to Desktop — no message content.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historique complet des événements sur le bureau — aucun contenu de message."
+          }
+        }
+      }
+    },
+    "Throttle collects no telemetry. Future opt-ins will appear here.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Throttle ne collecte aucune télémétrie. Les futures options seront proposées ici."
+          }
+        }
+      }
+    },
+    "Check for updates": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher les mises à jour"
+          }
+        }
+      }
+    },
+    "AI Assistant": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistant IA"
+          }
+        }
+      }
+    },
+    "Powers the Project window's chat": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alimente le chat de la fenêtre Projet"
+          }
+        }
+      }
+    },
+    "Provider": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fournisseur"
+          }
+        }
+      }
+    },
+    "Who answers “why am I burning tokens?”": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qui répond à « pourquoi je consomme autant de tokens ? »"
+          }
+        }
+      }
+    },
+    "Caveman mode": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode Caveman"
+          }
+        }
+      }
+    },
+    "Terse, telegraphic replies from the project Assistant. Ug.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réponses brèves et télégraphiques de l'Assistant projet. Ug."
+          }
+        }
+      }
+    },
+    "Import ccusage data": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importer les données ccusage"
+          }
+        }
+      }
+    },
+    "Pull usage history from the ccusage CLI.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Récupère l'historique d'usage depuis la CLI ccusage."
+          }
+        }
+      }
+    },
+    "Importing…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import en cours…"
+          }
+        }
+      }
+    },
+    "Import": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importer"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

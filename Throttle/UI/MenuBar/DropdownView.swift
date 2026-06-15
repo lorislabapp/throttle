@@ -911,10 +911,10 @@ private struct SettingsGroupHeader: View {
     var desc: String? = nil
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(label).font(.system(size: 10.5, weight: .semibold))
+            Text(LocalizedStringKey(label)).font(.system(size: 10.5, weight: .semibold))
                 .tracking(0.9).textCase(.uppercase).foregroundStyle(.tertiary)
             if let desc {
-                Text(desc).font(.system(size: 11)).foregroundStyle(.tertiary)
+                Text(LocalizedStringKey(desc)).font(.system(size: 11)).foregroundStyle(.tertiary)
             }
             Spacer(minLength: 0)
         }
@@ -930,9 +930,9 @@ private struct SettingsRow<Trailing: View>: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 13))
+                Text(LocalizedStringKey(title)).font(.system(size: 13))
                 if let sub {
-                    Text(sub).font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text(LocalizedStringKey(sub)).font(.system(size: 11)).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -948,7 +948,7 @@ private struct SettingsRow<Trailing: View>: View {
 private struct SettingsNote: View {
     let text: String
     var body: some View {
-        Text(text)
+        Text(LocalizedStringKey(text))
             .font(.system(size: 11)).foregroundStyle(.tertiary)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -967,7 +967,7 @@ private struct SettingsButton: View {
         Button(role: role, action: action) {
             HStack(spacing: 6) {
                 if let systemImage { Image(systemName: systemImage).font(.system(size: 11)) }
-                Text(title)
+                Text(LocalizedStringKey(title))
             }
             .font(.system(size: 12.5, weight: primary ? .semibold : .medium))
             .padding(.horizontal, 13).padding(.vertical, 7)
