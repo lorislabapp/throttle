@@ -46,27 +46,53 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         containsFileURLs(sender) ? .copy : super.draggingUpdated(sender)
     }
 
+    /// UserDefaults flag: drop images as locally-OCR'd TEXT (cheap) instead of
+    /// as `[Image #N]` (costly vision tokens). Hold Option while dropping to
+    /// flip the choice for one drop.
+    static let ocrDefaultsKey = "cockpitDropImagesAsText"
+
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         let opts: [NSPasteboard.ReadingOptionKey: Any] = [.urlReadingFileURLsOnly: true]
         guard let urls = sender.draggingPasteboard.readObjects(
                 forClasses: [NSURL.self], options: opts) as? [URL], !urls.isEmpty else {
             return super.performDragOperation(sender)
         }
-        let escaped = urls.map { Self.terminalEscape($0.path) }.joined(separator: " ")
 
-        // Bracketed paste → the foreground program treats this as a paste and
-        // runs paste-time handling (claude → [Image #N] for image files).
-        // Fall back to raw bytes if bracketed paste isn't enabled, so we never
-        // dump a literal "[200~".
-        let payload: String
-        if getTerminal().bracketedPasteMode {
-            payload = "\u{1b}[200~" + escaped + "\u{1b}[201~"
-        } else {
-            payload = escaped + " "
+        let ocrDefault = UserDefaults.standard.bool(forKey: Self.ocrDefaultsKey)
+        let optionHeld = NSEvent.modifierFlags.contains(.option)
+        let useOCR = (ocrDefault != optionHeld) && urls.contains(where: { ImageTextExtractor.isImage($0) })
+
+        if useOCR {
+            // OCR is synchronous and can take 100s of ms — run it off-main, then
+            // paste the recognised text (with non-image paths kept as paths).
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                let pieces: [String] = urls.map { u in
+                    if ImageTextExtractor.isImage(u), let text = ImageTextExtractor.extractText(from: u) {
+                        return "[image: \(u.lastPathComponent)]\n\(text)"
+                    }
+                    return Self.terminalEscape(u.path)
+                }
+                let joined = pieces.joined(separator: "\n\n")
+                DispatchQueue.main.async { self?.paste(joined) }
+            }
+            window?.makeFirstResponder(self)
+            return true
         }
-        send(txt: payload)
+
+        // Default: shell-escaped paths (claude turns image paths into [Image #N]).
+        paste(urls.map { Self.terminalEscape($0.path) }.joined(separator: " "), trailingSpace: true)
         window?.makeFirstResponder(self)
         return true
+    }
+
+    /// Feed text to the PTY as a bracketed paste when the foreground program
+    /// supports it (claude does), else raw bytes — never a literal "[200~".
+    private func paste(_ text: String, trailingSpace: Bool = false) {
+        if getTerminal().bracketedPasteMode {
+            send(txt: "\u{1b}[200~" + text + "\u{1b}[201~")
+        } else {
+            send(txt: text + (trailingSpace ? " " : ""))
+        }
     }
 
     /// Backslash-escape shell/Claude-significant characters, matching how

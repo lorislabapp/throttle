@@ -1321,6 +1321,7 @@ private struct InlineGeneralPane: View {
     @State private var ledger: [AutopilotService.Entry] = []
     @State private var autopilotBusy = false
     @State private var activeStyle = OutputStyleManager.activeName()
+    @State private var dropImagesAsText = UserDefaults.standard.bool(forKey: DroppableTerminalView.ocrDefaultsKey)
 
     /// Flag file the SessionStart hook reads to inject a terse-output directive
     /// into every Claude Code session. App writes it (non-sandboxed); hook reads it.
@@ -1379,6 +1380,14 @@ private struct InlineGeneralPane: View {
                     }
                     .disabled(!appState.isPro)
                 }
+            }
+            SettingsHair()
+            SettingsRow(title: "Cockpit: drop images as OCR text",
+                        sub: "Drop a screenshot into a Cockpit session as locally-OCR'd text (≈80–90% fewer tokens than a vision image) — loses the visual, so hold ⌥ while dropping to flip per-drop.") {
+                Toggle("", isOn: $dropImagesAsText).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                    .onChange(of: dropImagesAsText) { _, on in
+                        UserDefaults.standard.set(on, forKey: DroppableTerminalView.ocrDefaultsKey)
+                    }
             }
             SettingsHair()
             SettingsRow(title: "Software updates", sub: updatesSubtitle) {
