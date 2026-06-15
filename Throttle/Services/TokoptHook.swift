@@ -62,11 +62,98 @@ enum TokoptHook {
     // MARK: - Compression (generic, conservative). Per-command recipes = stage 2.
 
     static func compress(_ stdout: String, command: String) -> String {
-        var s = stripANSI(stdout)
-        s = collapseBlankRuns(s)
+        let clean = stripANSI(stdout)
+        // Try a per-command recipe first (safe, success-only); else generic.
+        if let r = recipe(for: command, on: clean) { return r }
+        var s = collapseBlankRuns(clean)
         s = dedupConsecutive(s)
         s = headTailTruncate(s, command: command)
         return s
+    }
+
+    // MARK: - Per-command recipes (conservative; nil = fall back to generic)
+
+    /// The base executable, ignoring leading `VAR=val`, `cd … &&`, `sudo`, `time`.
+    static func baseCommand(_ command: String) -> (cmd: String, sub: String) {
+        var toks = command.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(String.init)
+        // peel a leading `cd … &&`
+        if let amp = toks.firstIndex(of: "&&") { toks = Array(toks[(amp + 1)...]) }
+        // peel env assignments / wrappers
+        while let first = toks.first, first.contains("=") || ["sudo", "time", "env"].contains(first) {
+            toks.removeFirst()
+        }
+        let cmd = (toks.first.map { ($0 as NSString).lastPathComponent }) ?? ""
+        let sub = toks.count > 1 ? toks[1] : ""
+        return (cmd, sub)
+    }
+
+    static func recipe(for command: String, on clean: String) -> String? {
+        let (cmd, sub) = baseCommand(command)
+        switch cmd {
+        case "git" where sub == "status": return gitStatusRecipe(clean)
+        case "git" where sub == "log":    return gitLogRecipe(command, clean)
+        case "npm", "pnpm", "yarn", "cargo", "pip", "pip3", "go", "make", "bundle", "brew", "docker":
+            return stripBuildProgress(clean)
+        default: return nil
+        }
+    }
+
+    /// `git status` — drop the instructional "(use \"git …\")" hint lines and
+    /// blank padding; keep every branch line and file path verbatim.
+    static func gitStatusRecipe(_ s: String) -> String? {
+        let lines = s.components(separatedBy: "\n")
+        let kept = lines.filter { l in
+            let t = l.trimmingCharacters(in: .whitespaces)
+            return !t.hasPrefix("(use \"git") && !(t.isEmpty)
+        }
+        guard kept.count < lines.count else { return nil }
+        return kept.joined(separator: "\n")
+    }
+
+    /// `git log` (default multi-line format only) — one line per commit
+    /// "<hash7> <subject>". Skipped if the user passed a custom --format/--pretty
+    /// or --oneline (don't mangle their chosen shape).
+    static func gitLogRecipe(_ command: String, _ s: String) -> String? {
+        if command.contains("--oneline") || command.contains("--pretty") || command.contains("--format") || command.contains("--stat") || command.contains("-p") { return nil }
+        let lines = s.components(separatedBy: "\n")
+        var out: [String] = []
+        var hash = ""
+        for line in lines {
+            if line.hasPrefix("commit ") {
+                hash = String(line.dropFirst(7).prefix(7))
+            } else {
+                let t = line.trimmingCharacters(in: .whitespaces)
+                // First non-empty, non-header line after a commit = the subject.
+                if !hash.isEmpty, !t.isEmpty,
+                   !t.hasPrefix("Author:"), !t.hasPrefix("Date:"), !t.hasPrefix("Merge:") {
+                    out.append("\(hash) \(t)")
+                    hash = ""
+                }
+            }
+        }
+        guard out.count >= 3, out.count < lines.count / 2 else { return nil }
+        return out.joined(separator: "\n")
+    }
+
+    /// Build / package managers — drop transient progress, spinners and download
+    /// chatter; keep result + warning lines. Conservative (only strips lines that
+    /// are clearly progress noise).
+    static func stripBuildProgress(_ s: String) -> String? {
+        let progress = [
+            "(?i)^\\s*(downloading|fetching|resolving|compiling|building|installing|updating|extracting|unpacking|preparing|reading|writing|verifying)\\b",
+            "^\\s*[\\[(]?\\d{1,3}%",                 // 42%  / [42%]
+            "^[⠁-⣿✔✓●○◐◓◑◒\\-\\\\|/]\\s",            // spinner glyphs
+            "^\\s*\\d+\\s+packages?\\s+(are|in)\\b", // npm "N packages are looking for funding"
+        ]
+        let res = progress.map { try? NSRegularExpression(pattern: $0) }
+        let lines = s.components(separatedBy: "\n")
+        let kept = lines.filter { l in
+            let r = NSRange(l.startIndex..<l.endIndex, in: l)
+            return !res.contains { $0?.firstMatch(in: l, range: r) != nil }
+        }
+        // Only worth it if it actually removed a meaningful chunk.
+        guard kept.count <= (lines.count * 85) / 100 else { return nil }
+        return kept.joined(separator: "\n")
     }
 
     /// Remove ANSI/CSI escape sequences and carriage returns (progress redraws).
