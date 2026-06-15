@@ -326,6 +326,12 @@ struct MultiCockpitRoot: View {
             }
         }
         .onHover { hoveredSession = $0 ? s.id : nil }
+        .draggable(s.id.uuidString)
+        .dropDestination(for: String.self) { items, _ in
+            guard let str = items.first, let dragged = UUID(uuidString: str) else { return false }
+            model.move(dragged: dragged, onto: s.id)
+            return true
+        }
     }
 
     // MARK: C — Mission control

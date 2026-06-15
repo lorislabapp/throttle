@@ -242,6 +242,16 @@ final class MultiCockpitModel {
         persist()
     }
 
+    /// Drag-reorder: move `dragged` to where `target` sits. Persists the order.
+    func move(dragged: UUID, onto target: UUID) {
+        guard dragged != target,
+              let from = sessions.firstIndex(where: { $0.id == dragged }) else { return }
+        let item = sessions.remove(at: from)
+        let to = sessions.firstIndex(where: { $0.id == target }) ?? sessions.count
+        sessions.insert(item, at: to)
+        persist()
+    }
+
     // MARK: - Global binding (account-wide, shared by all sessions)
 
     struct Binding { let pct: Int; let name: String; let reset: String; let estimate: Bool }
