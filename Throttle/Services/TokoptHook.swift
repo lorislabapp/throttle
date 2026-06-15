@@ -40,9 +40,17 @@ enum TokoptHook {
     static func shouldCompress(stdout: String, stderr: String) -> Bool {
         if !stderr.isEmpty { return false }                 // never compress a failure
         if stdout.utf8.count < 1_000 { return false }       // too small to bother
-        let low = stdout.lowercased()
-        for marker in ["error", "panic", "traceback", "exception", "fatal", "failed", " fail "]
-        where low.contains(marker) { return false }         // preserve diagnostics verbatim
+        // Treat as a failure only on a real failure SHAPE — a line-anchored
+        // error/panic/FAILED banner or a traceback — NOT any line that merely
+        // contains "error" as a substring (e.g. the filename "macerror").
+        let failureSignals = [
+            "(?im)^\\s*(error|fatal|panic|exception)\\b[: ]",
+            "(?im)traceback \\(most recent call last\\)",
+            "(?im)^[\\s=-]*FAIL(ED|URE)?\\b",
+        ]
+        for re in failureSignals where stdout.range(of: re, options: .regularExpression) != nil {
+            return false                                     // preserve diagnostics verbatim
+        }
         // Structured output: corrupting JSON/NDJSON is the worst failure → pass through.
         let trimmed = stdout.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.hasPrefix("{") || trimmed.hasPrefix("[") {
