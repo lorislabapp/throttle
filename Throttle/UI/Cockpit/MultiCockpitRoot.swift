@@ -422,6 +422,9 @@ struct MultiCockpitRoot: View {
                 }
             }
             Divider()
+            Button { open("Home", FileManager.default.homeDirectoryForCurrentUser.path) } label: {
+                Label("Scratch session (Home)", systemImage: "house")
+            }
             Button { openFolderPanel() } label: { Label("Open other folder…", systemImage: "folder.badge.plus") }
         } label: { label() }
         .menuIndicator(.hidden)
