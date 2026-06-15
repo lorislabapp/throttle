@@ -1,5 +1,6 @@
 import Foundation
 import GRDB
+import NaturalLanguage
 
 /// Local full-text index over the user's Claude Code transcripts — so they (and
 /// Claude itself, via the MCP server) can search PAST sessions for context the
@@ -143,11 +144,21 @@ enum TranscriptIndex {
         }) ?? []
     }
 
-    /// Make an arbitrary user query safe for FTS5 MATCH: quote each token so
-    /// punctuation never throws, join with implicit AND.
+    /// Make an arbitrary user query safe for FTS5 MATCH, EXPANDED with on-device
+    /// word-embedding neighbours for semantic recall (e.g. "auth" also matches
+    /// "login", "token") — so the user finds the right session even when they
+    /// don't remember the exact word. All terms OR'd; FTS5 rank handles precision.
     private static func sanitize(_ q: String) -> String {
-        let toks = q.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init)
-        return toks.filter { $0.count > 1 }.map { "\"\($0)\"" }.joined(separator: " ")
+        let toks = q.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init).filter { $0.count > 1 }
+        var terms = Set(toks.map { $0.lowercased() })
+        if let emb = NLEmbedding.wordEmbedding(for: .english) {
+            for t in toks where t.count > 3 {
+                for (neighbour, dist) in emb.neighbors(for: t.lowercased(), maximumCount: 3) where dist < 0.85 {
+                    if neighbour.allSatisfy({ $0.isLetter }) { terms.insert(neighbour) }
+                }
+            }
+        }
+        return terms.prefix(24).map { "\"\($0)\"" }.joined(separator: " OR ")
     }
 
     private static func decodeProject(_ jsonl: URL) -> String {

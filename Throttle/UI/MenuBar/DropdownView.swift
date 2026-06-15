@@ -1341,6 +1341,17 @@ private struct InlineGeneralPane: View {
         else { try? FileManager.default.removeItem(atPath: Self.conciseFlagPath) }
     }
 
+    /// Save the generated team hardening policy as managed-settings.json.
+    private func exportTeamPolicy() {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "managed-settings.json"
+        panel.message = "Deploy this to \(TeamPolicyService.deployPath) via MDM to enforce across a team."
+        panel.prompt = "Export Policy"
+        if panel.runModal() == .OK, let url = panel.url {
+            try? TeamPolicyService.generate().write(to: url, atomically: true, encoding: .utf8)
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             autopilotGroup
@@ -1449,6 +1460,20 @@ private struct InlineGeneralPane: View {
                     .onChange(of: dropImagesAsText) { _, on in
                         UserDefaults.standard.set(on, forKey: DroppableTerminalView.ocrDefaultsKey)
                     }
+            }
+            SettingsHair()
+            SettingsRow(title: "Team policy (managed-settings.json)",
+                        sub: "Export a Claude Code hardening policy (deny rules, model, output-style) for an admin to deploy across a team via MDM. 100% local — Throttle generates it, you distribute it.") {
+                HStack(spacing: 6) {
+                    if !appState.isPro {
+                        Text("PRO").font(.system(size: 9, weight: .heavy)).tracking(0.3)
+                            .padding(.horizontal, 5).padding(.vertical, 2)
+                            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 4))
+                            .foregroundStyle(.secondary)
+                    }
+                    SettingsButton(title: "Export…") { if appState.isPro { exportTeamPolicy() } }
+                        .disabled(!appState.isPro)
+                }
             }
             SettingsHair()
             SettingsRow(title: "Software updates", sub: updatesSubtitle) {
