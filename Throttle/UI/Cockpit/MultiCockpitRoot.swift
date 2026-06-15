@@ -291,7 +291,8 @@ struct MultiCockpitRoot: View {
                     Text(s.projectName).font(.system(size: 12.5, weight: .medium))
                         .foregroundStyle(on ? .primary : .secondary).lineLimit(1)
                     Spacer(minLength: 0)
-                    if s.needsInput { waitingChip() }
+                    if s.isHibernated { hibernatedChip }
+                    else if s.needsInput { waitingChip() }
                     if let model = s.model { modelChip(model) }
                 }
                 if s.needsInput, let q = s.latestQuestion {
@@ -331,12 +332,23 @@ struct MultiCockpitRoot: View {
         }.buttonStyle(.plain)
         .overlay(alignment: .topTrailing) {
             if hoveredSession == s.id {
-                Button { model.close(s.id) } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 13)).foregroundStyle(.secondary)
-                        .background(Circle().fill(.background))
+                HStack(spacing: 6) {
+                    if s.isSpawned {
+                        Button { model.hibernate(s.id) } label: {
+                            Image(systemName: "moon.zzz.fill")
+                                .font(.system(size: 12)).foregroundStyle(.secondary)
+                                .background(Circle().fill(.background))
+                        }
+                        .buttonStyle(.plain).help("Hibernate — free RAM, keep context")
+                    }
+                    Button { model.close(s.id) } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 13)).foregroundStyle(.secondary)
+                            .background(Circle().fill(.background))
+                    }
+                    .buttonStyle(.plain).help("Close session")
                 }
-                .buttonStyle(.plain).padding(5).help("Close session")
+                .padding(5)
             }
         }
         .onHover { hoveredSession = $0 ? s.id : nil }
@@ -483,18 +495,26 @@ struct MultiCockpitRoot: View {
         alert.addButton(withTitle: "Open Anyway")
         alert.addButton(withTitle: "Cancel")
         NSApp.activate(ignoringOtherApps: true)
+        alert.window.makeKeyAndOrderFront(nil)
         return alert.runModal() == .alertFirstButtonReturn
     }
 
     private func openFolderPanel() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        panel.prompt = "Open Session"
-        panel.message = "Choose a project folder to start a claude session in."
-        if panel.runModal() == .OK, let url = panel.url {
-            open(url.lastPathComponent, url.path)
+        // Run after the SwiftUI Menu has fully dismissed, and activate the app
+        // first — otherwise (esp. as a menu-bar/accessory app under memory
+        // pressure) the panel can open behind the window and look like a no-op.
+        DispatchQueue.main.async {
+            let panel = NSOpenPanel()
+            panel.canChooseDirectories = true
+            panel.canChooseFiles = false
+            panel.allowsMultipleSelection = false
+            panel.prompt = "Open Session"
+            panel.message = "Choose a project folder to start a claude session in."
+            NSApp.activate(ignoringOtherApps: true)
+            panel.makeKeyAndOrderFront(nil)
+            if panel.runModal() == .OK, let url = panel.url {
+                open(url.lastPathComponent, url.path)
+            }
         }
     }
 
@@ -547,6 +567,16 @@ struct MultiCockpitRoot: View {
         .foregroundStyle(.orange)
         .padding(.horizontal, 5).padding(.vertical, 1)
         .background(Color.orange.opacity(0.12), in: Capsule())
+    }
+
+    private var hibernatedChip: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "moon.zzz.fill").font(.system(size: 8.5, weight: .semibold))
+            Text("hibernated").font(.system(size: 9, weight: .semibold))
+        }
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 5).padding(.vertical, 1)
+        .background(Color.primary.opacity(0.07), in: Capsule())
     }
 
     private func modelChip(_ m: String) -> some View {

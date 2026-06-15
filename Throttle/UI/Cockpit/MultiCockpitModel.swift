@@ -39,6 +39,9 @@ final class CockpitTab: Identifiable {
     var onQuestion: ((CockpitTab, String) -> Void)?
     /// Last time the session emitted output (for live/idle heuristics).
     var lastActivityAt = Date()
+    /// Hibernated = process subtree terminated to free RAM, resume-id kept.
+    /// Distinct from a never-opened restored tab (both have terminal == nil).
+    var isHibernated = false
     /// Resident memory of this session's process subtree (shell → claude → node).
     var ramBytes: UInt64 = 0
     /// The running claude session id, discovered at runtime — used for persistence.
@@ -63,6 +66,7 @@ final class CockpitTab: Identifiable {
     /// project and launch (or `--resume`) claude.
     func ensureSpawned() {
         guard terminal == nil else { return }
+        isHibernated = false
         let term = DroppableTerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 480))
         term.onActivity = { [weak self] in self?.lastActivityAt = Date() }
         term.onPrompt = { [weak self] q in self?.handlePrompt(q) }
@@ -78,7 +82,7 @@ final class CockpitTab: Identifiable {
         // Prefer the persisted id; if it was lost, fall back to the newest
         // transcript in this project dir so we resume real context instead of
         // starting an empty session.
-        let sid = resumeSessionId
+        let sid = sessionId ?? resumeSessionId
             ?? MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
         if let sid { cmd += "claude --resume \(sid)"; self.sessionId = sid } else { cmd += "claude" }
         term.send(txt: cmd + "\n")
@@ -86,6 +90,22 @@ final class CockpitTab: Identifiable {
 
     /// Exit claude (Ctrl-D) then the shell, releasing the PTY.
     func terminate() { terminal?.send(txt: "\u{04}\nexit\n") }
+
+    /// Free this session's RAM: snapshot the resume-id, terminate the process
+    /// subtree, drop the terminal → dormant. Reactivating respawns via
+    /// `claude --resume` with full context. The tab stays in the rail.
+    func hibernate() {
+        guard terminal != nil else { return }
+        if sessionId == nil {
+            sessionId = MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
+        }
+        terminate()
+        terminal = nil
+        ramBytes = 0
+        isLive = false
+        needsInput = false
+        isHibernated = true
+    }
 
     /// A detected question settled on the PTY. Flag attention + log it (deduped
     /// against the latest), then let the model decide whether to notify.
@@ -309,6 +329,21 @@ final class MultiCockpitModel {
         persist()
         return s
     }
+
+    /// Hibernate a session to free RAM. If it's the active one, move focus to
+    /// another live tab first (so the terminal area isn't left blank).
+    func hibernate(_ id: UUID) {
+        guard let tab = sessions.first(where: { $0.id == id }), tab.isSpawned else { return }
+        if activeID == id {
+            activeID = sessions.first(where: { $0.id != id && $0.isSpawned })?.id ?? id
+        }
+        tab.hibernate()
+        persist()
+    }
+
+    /// Wake a hibernated session: make it active → ensureSpawned respawns it
+    /// and `claude --resume`s its context.
+    func wake(_ id: UUID) { activeID = id }
 
     func close(_ id: UUID) {
         guard let idx = sessions.firstIndex(where: { $0.id == id }) else { return }
