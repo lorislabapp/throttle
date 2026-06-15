@@ -496,7 +496,7 @@ struct MultiCockpitRoot: View {
     }
 
     private func gLabel(_ t: String) -> some View {
-        Text(t).font(.system(size: 8.5, weight: .semibold)).tracking(0.8).foregroundStyle(.tertiary)
+        Text(LocalizedStringKey(t)).font(.system(size: 8.5, weight: .semibold)).tracking(0.8).foregroundStyle(.tertiary)
     }
 
     private func bar(fraction: Double, tone: Color, estimate: Bool, ticks: Bool) -> some View {

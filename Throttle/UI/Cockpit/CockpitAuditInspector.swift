@@ -238,11 +238,11 @@ struct CockpitAuditInspector: View {
     // MARK: - Bits
 
     private func dl(_ t: String) -> some View {
-        Text(t).font(.system(size: 8.5, weight: .semibold)).tracking(0.8).foregroundStyle(.tertiary)
+        Text(LocalizedStringKey(t)).font(.system(size: 8.5, weight: .semibold)).tracking(0.8).foregroundStyle(.tertiary)
     }
     private func row(_ label: String, _ value: String) -> some View {
         HStack(spacing: 6) {
-            Text(label).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+            Text(LocalizedStringKey(label)).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
             Spacer(minLength: 4)
             Text(value).font(.system(size: 11).monospacedDigit()).foregroundStyle(.primary)
         }
@@ -251,9 +251,9 @@ struct CockpitAuditInspector: View {
         Button(action: act) {
             HStack(spacing: 6) {
                 Image(systemName: icon).font(.system(size: 10)).foregroundStyle(.orange)
-                Text(label).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                Text(LocalizedStringKey(label)).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                 Spacer(minLength: 4)
-                Text(action).font(.system(size: 10.5, weight: .medium)).foregroundStyle(Color.accentColor)
+                Text(LocalizedStringKey(action)).font(.system(size: 10.5, weight: .medium)).foregroundStyle(Color.accentColor)
                 Text(value).font(.system(size: 11).monospacedDigit()).foregroundStyle(.orange)
             }.contentShape(Rectangle())
         }.buttonStyle(.plain)
