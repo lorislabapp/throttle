@@ -16,6 +16,7 @@ struct MultiCockpitRoot: View {
     @State private var showInspector = false
     @State private var activeStyle = OutputStyleManager.activeName()
     @State private var hoveredSession: UUID?
+    @State private var expandedFeed: UUID?
 
     private let hair = Color.primary.opacity(0.10)
     private let track = Color.primary.opacity(0.08)
@@ -192,7 +193,7 @@ struct MultiCockpitRoot: View {
 
     private var terminal: some View {
         MultiTerminalStack(sessions: model.sessions, activeID: model.activeID)
-            .background(Color.black)
+            .background(Color(nsColor: CockpitTerminalTheme.backgroundColor))
     }
 
     // MARK: A — Tab bar
@@ -208,6 +209,10 @@ struct MultiCockpitRoot: View {
                                 stateDot(s.isLive)
                                 Text(s.projectName).font(.system(size: 12, weight: .medium))
                                     .foregroundStyle(on ? .primary : .secondary)
+                                if s.needsInput {
+                                    Image(systemName: "bell.badge.fill").font(.system(size: 10))
+                                        .foregroundStyle(.orange)
+                                }
                                 if let e = s.eur {
                                     Text(String(format: "€%.2f", e))
                                         .font(.system(size: 10, design: .monospaced)).foregroundStyle(.tertiary)
@@ -252,6 +257,7 @@ struct MultiCockpitRoot: View {
                 HStack {
                     gLabel("SESSIONS · \(model.sessions.count)")
                     Spacer()
+                    if model.waitingCount > 0 { waitingChip(model.waitingCount) }
                 }.padding(.horizontal, 13).padding(.vertical, 9)
                 ScrollView {
                     VStack(spacing: 2) {
@@ -285,8 +291,16 @@ struct MultiCockpitRoot: View {
                     Text(s.projectName).font(.system(size: 12.5, weight: .medium))
                         .foregroundStyle(on ? .primary : .secondary).lineLimit(1)
                     Spacer(minLength: 0)
+                    if s.needsInput { waitingChip() }
                     if let model = s.model { modelChip(model) }
                 }
+                if s.needsInput, let q = s.latestQuestion {
+                    HStack(alignment: .top, spacing: 5) {
+                        Image(systemName: "arrow.turn.down.left").font(.system(size: 9, weight: .semibold))
+                        Text(q).font(.system(size: 10.5)).lineLimit(2)
+                    }.foregroundStyle(.orange)
+                }
+                questionFeed(s)
                 HStack(spacing: 8) {
                     if let e = s.eur {
                         Text(String(format: "€%.2f", e)).font(.system(size: 10.5, design: .monospaced)).foregroundStyle(.secondary)
@@ -361,6 +375,7 @@ struct MultiCockpitRoot: View {
                     stateDot(s.isLive)
                     Text(s.projectName).font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
                     Spacer(minLength: 0)
+                    if s.needsInput { waitingChip() }
                     if let m = s.model { modelChip(m) }
                 }
                 VStack(alignment: .leading, spacing: 2) {
@@ -487,6 +502,51 @@ struct MultiCockpitRoot: View {
 
     private func stateDot(_ live: Bool) -> some View {
         Circle().fill(live ? Color.green : Color.secondary.opacity(0.45)).frame(width: 6, height: 6)
+    }
+
+    /// Per-session question history — the "don't lose the question" feed.
+    /// Shown whenever claude has asked anything this session (even after you've
+    /// answered), collapsed to a count; tap to expand the full list with times.
+    @ViewBuilder
+    private func questionFeed(_ s: CockpitTab) -> some View {
+        let qs = s.questions
+        if !qs.isEmpty {
+            let open = expandedFeed == s.id
+            Button { expandedFeed = open ? nil : s.id } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "questionmark.bubble").font(.system(size: 9))
+                    Text("\(qs.count) question\(qs.count == 1 ? "" : "s")")
+                        .font(.system(size: 9.5, weight: .medium))
+                    Image(systemName: open ? "chevron.up" : "chevron.down").font(.system(size: 7, weight: .bold))
+                }
+                .foregroundStyle(.tertiary).contentShape(Rectangle())
+            }.buttonStyle(.plain)
+            if open {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(qs.reversed()) { q in
+                        HStack(alignment: .top, spacing: 6) {
+                            Text(uptime(q.at)).font(.system(size: 9, design: .monospaced))
+                                .foregroundStyle(.tertiary).frame(width: 30, alignment: .trailing)
+                            Text(q.text).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(3)
+                        }
+                    }
+                }
+                .padding(.leading, 2).padding(.top, 2)
+            }
+        }
+    }
+
+    /// "waiting" badge — claude is blocked on a question in this session. Orange
+    /// is earned here: it's a real action-required state. Optional count for the
+    /// header rollup.
+    private func waitingChip(_ count: Int = 0) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: "bell.badge.fill").font(.system(size: 8.5, weight: .semibold))
+            Text(count > 0 ? "\(count) waiting" : "waiting").font(.system(size: 9, weight: .semibold))
+        }
+        .foregroundStyle(.orange)
+        .padding(.horizontal, 5).padding(.vertical, 1)
+        .background(Color.orange.opacity(0.12), in: Capsule())
     }
 
     private func modelChip(_ m: String) -> some View {

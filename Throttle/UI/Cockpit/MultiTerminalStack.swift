@@ -15,7 +15,7 @@ struct MultiTerminalStack: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
         let container = NSView()
         container.wantsLayer = true
-        container.layer?.backgroundColor = NSColor.black.cgColor
+        container.layer?.backgroundColor = CockpitTerminalTheme.backgroundColor.cgColor
         return container
     }
 

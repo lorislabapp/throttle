@@ -190,6 +190,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.notifyActivation(success: false, message: self.describeActivationError(err))
                 }
             }
+        case "cockpit":
+            Task { @MainActor in CockpitWindowController.shared.show(appState: self.appState) }
         default:
             logger.notice("Ignoring throttle:// URL with unknown host: \(host ?? "nil", privacy: .public)")
         }

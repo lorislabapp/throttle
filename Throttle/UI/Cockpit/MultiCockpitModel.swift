@@ -26,6 +26,19 @@ final class CockpitTab: Identifiable {
     var eur: Double?
     var tokens: Int?
     var isLive = false
+
+    /// A question claude printed and is (best-effort) waiting on.
+    struct Question: Identifiable { let id = UUID(); let text: String; let at = Date() }
+    /// claude appears to be blocked on a prompt the user hasn't answered.
+    var needsInput = false
+    /// Recent detected questions (newest last), capped — the "don't lose it" feed.
+    private(set) var questions: [Question] = []
+    /// The latest question text, for inline display.
+    var latestQuestion: String? { questions.last?.text }
+    /// Called by the model when a hidden session raises a question (→ notify).
+    var onQuestion: ((CockpitTab, String) -> Void)?
+    /// Last time the session emitted output (for live/idle heuristics).
+    var lastActivityAt = Date()
     /// Resident memory of this session's process subtree (shell → claude → node).
     var ramBytes: UInt64 = 0
     /// The running claude session id, discovered at runtime — used for persistence.
@@ -51,20 +64,41 @@ final class CockpitTab: Identifiable {
     func ensureSpawned() {
         guard terminal == nil else { return }
         let term = DroppableTerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 480))
+        term.onActivity = { [weak self] in self?.lastActivityAt = Date() }
+        term.onPrompt = { [weak self] q in self?.handlePrompt(q) }
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let shellName = (shell as NSString).lastPathComponent
         let env = Terminal.getEnvironmentVariables(termName: "xterm-256color", trueColor: true)
         term.startProcess(executable: shell, args: [], environment: env, execName: "-\(shellName)")
+        CockpitTerminalTheme.apply(to: term)   // after spawn so the engine is live + a redraw is queued
         self.terminal = term
 
         let quoted = "'" + cwd.replacingOccurrences(of: "'", with: "'\\''") + "'"
         var cmd = "cd \(quoted) && clear && "
-        if let sid = resumeSessionId { cmd += "claude --resume \(sid)" } else { cmd += "claude" }
+        // Prefer the persisted id; if it was lost, fall back to the newest
+        // transcript in this project dir so we resume real context instead of
+        // starting an empty session.
+        let sid = resumeSessionId
+            ?? MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
+        if let sid { cmd += "claude --resume \(sid)"; self.sessionId = sid } else { cmd += "claude" }
         term.send(txt: cmd + "\n")
     }
 
     /// Exit claude (Ctrl-D) then the shell, releasing the PTY.
     func terminate() { terminal?.send(txt: "\u{04}\nexit\n") }
+
+    /// A detected question settled on the PTY. Flag attention + log it (deduped
+    /// against the latest), then let the model decide whether to notify.
+    func handlePrompt(_ q: String) {
+        if questions.last?.text == q { return }
+        questions.append(Question(text: q))
+        if questions.count > 8 { questions.removeFirst(questions.count - 8) }
+        needsInput = true
+        onQuestion?(self, q)
+    }
+
+    /// User is now looking at this session → clear the attention flag.
+    func clearAttention() { needsInput = false }
 }
 
 /// Manages the set of cockpit sessions and the shared decision-layer data:
@@ -81,12 +115,15 @@ final class MultiCockpitModel {
     }
 
     private(set) var sessions: [CockpitTab] = []
-    var activeID: UUID? { didSet { active?.ensureSpawned() } }
+    var activeID: UUID? { didSet { active?.ensureSpawned(); active?.clearAttention() } }
     var viewMode: ViewMode = .rail
     private(set) var machine: MemoryHealth = .unknown
+    /// Count of sessions currently waiting on a question (for the header badge).
+    var waitingCount: Int { sessions.filter { $0.needsInput }.count }
 
     private weak var appState: AppState?
     private var tick: Task<Void, Never>?
+    private var focusObserver: NSObjectProtocol?
 
     var active: CockpitTab? { sessions.first { $0.id == activeID } ?? sessions.first }
     /// Opening another session would push the Mac past saturation.
@@ -94,6 +131,18 @@ final class MultiCockpitModel {
 
     func start(appState: AppState) {
         self.appState = appState
+        CockpitNotifier.shared.activate(appState: appState)
+        if focusObserver == nil {
+            focusObserver = NotificationCenter.default.addObserver(
+                forName: .cockpitFocusSession, object: nil, queue: .main) { [weak self] note in
+                guard let str = note.userInfo?["tab"] as? String, let id = UUID(uuidString: str) else { return }
+                Task { @MainActor in
+                    guard let self, self.sessions.contains(where: { $0.id == id }) else { return }
+                    self.activeID = id
+                    if self.viewMode == .mission { self.viewMode = .tabs }
+                }
+            }
+        }
         if sessions.isEmpty { restore() }   // bring back the working set (lazy)
         sampleMachine()
         tick?.cancel()
@@ -135,7 +184,11 @@ final class MultiCockpitModel {
             for (id, eur, tok, model, live, sid) in results {
                 if let tab = self.sessions.first(where: { $0.id == id }) {
                     tab.eur = eur; tab.tokens = tok; tab.model = model; tab.isLive = live
-                    if tab.sessionId != sid { tab.sessionId = sid; changed = true }
+                    // Only adopt a freshly-discovered id — NEVER clear to nil.
+                    // A dormant restored tab has an old transcript mtime, so
+                    // newestSession returns nil; clearing here would erase its
+                    // persisted resume-id and lose the session on next restart.
+                    if let sid, tab.sessionId != sid { tab.sessionId = sid; changed = true }
                 }
             }
             if changed { self.persist() }   // keep saved resume-ids fresh
@@ -151,10 +204,19 @@ final class MultiCockpitModel {
         }
     }
 
+    /// Claude Code's project-dir encoding: EVERY non-alphanumeric character in
+    /// the absolute cwd becomes `-` (so `/`, spaces, dots, accents all collapse
+    /// to `-`). Matching this exactly is critical — "Opnsens Prod" → "…-Opnsens
+    /// -Prod", not "…-Opnsens Prod". A mismatch unlinks the session and loses it.
+    nonisolated static func claudeProjectDirName(_ cwd: String) -> String {
+        let allowed = Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+        return String(cwd.map { allowed.contains($0) ? $0 : "-" })
+    }
+
     /// The sessionId of the tab's running claude: newest `.jsonl` in
-    /// `~/.claude/projects/<cwd with / → ->/`, modified at/after the tab started.
+    /// `~/.claude/projects/<encoded cwd>/`, modified at/after the tab started.
     nonisolated static func newestSession(cwd: String, since: Date) -> (id: String, mtime: Date)? {
-        let encoded = cwd.replacingOccurrences(of: "/", with: "-")
+        let encoded = claudeProjectDirName(cwd)
         let dir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude/projects/\(encoded)", isDirectory: true)
         guard let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.contentModificationDateKey]) else { return nil }
@@ -173,8 +235,19 @@ final class MultiCockpitModel {
     func stop() {
         persist()                            // remember the working set first
         tick?.cancel(); tick = nil
+        if let focusObserver { NotificationCenter.default.removeObserver(focusObserver); self.focusObserver = nil }
         for s in sessions { s.terminate() }
         sessions.removeAll()
+    }
+
+    /// Wire a tab's question callback: a question in a HIDDEN session raises a
+    /// local notification (you may be in another window); the active session
+    /// already shows the prompt, so no notification — just the in-app badge.
+    private func wire(_ tab: CockpitTab) {
+        tab.onQuestion = { [weak self] tab, q in
+            guard let self, tab.id != self.activeID else { return }
+            CockpitNotifier.shared.notifyWaiting(project: tab.projectName, question: q, tabID: tab.id)
+        }
     }
 
     // MARK: - Persistence (memory-aware: restored tabs spawn lazily via resume)
@@ -196,7 +269,9 @@ final class MultiCockpitModel {
         for item in saved {
             var isDir: ObjCBool = false
             guard fm.fileExists(atPath: item.cwd, isDirectory: &isDir), isDir.boolValue else { continue }
-            sessions.append(CockpitTab(projectName: item.name, cwd: item.cwd, resumeSessionId: item.sessionId))
+            let tab = CockpitTab(projectName: item.name, cwd: item.cwd, resumeSessionId: item.sessionId)
+            wire(tab)
+            sessions.append(tab)
         }
         activeID = sessions.first?.id   // spawns ONLY the active tab (others dormant)
     }
@@ -228,6 +303,7 @@ final class MultiCockpitModel {
     @discardableResult
     func newSession(projectName: String, cwd: String) -> CockpitTab {
         let s = CockpitTab(projectName: projectName, cwd: cwd)
+        wire(s)
         sessions.append(s)
         activeID = s.id   // didSet → ensureSpawned
         persist()

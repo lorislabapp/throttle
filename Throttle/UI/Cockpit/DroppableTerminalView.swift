@@ -1,22 +1,39 @@
 import AppKit
 import SwiftTerm
 
-/// A SwiftTerm terminal that accepts file drops like Terminal.app — and, when
-/// `claude` is the foreground program, makes a dragged image attach as an inline
-/// `[Image #N]` (so Claude can SEE it) instead of a literal path.
+/// A SwiftTerm terminal that (1) accepts file drops like Terminal.app — turning
+/// dropped images into inline `[Image #N]` (or OCR'd text) for `claude` — and
+/// (2) sniffs the PTY output stream so the Cockpit can tell when `claude` is
+/// blocked on a question, even in a hidden background session.
 ///
-/// Mechanism (confirmed against Claude Code behaviour):
+/// Drop behaviour (confirmed against Claude Code):
 ///  • The drop is fed to the PTY wrapped in a **bracketed paste**
 ///    (`ESC[200~ … ESC[201~`) whenever the foreground program enabled bracketed
 ///    paste mode (claude does; so do zsh/bash). That is the signal Claude Code's
 ///    paste handler uses to run its image-path detection: a recognised image
-///    extension (.png/.jpg/.jpeg/.gif/.webp/.bmp/.tiff/.svg) is read from disk
-///    and shown as `[Image #N]`. Non-image paths (and shell prompts) just
-///    receive the literal text — exactly Terminal.app's behaviour.
+///    extension is read from disk and shown as `[Image #N]`.
 ///  • Paths are **backslash-escaped**, NOT single-quoted: Claude Code's detector
-///    expects bare escaped paths and does not strip surrounding quotes (quoting
-///    was why the path showed up verbatim and got "Read" instead of attached).
+///    expects bare escaped paths and does not strip surrounding quotes.
+///
+/// Output sniffing: `dataReceived` is `open` and SwiftTerm posts it on the main
+/// queue (LocalProcess defaults its dispatchQueue to `.main`). We strip ANSI,
+/// keep a small rolling tail of visible text, and — after the stream settles —
+/// fire `onPrompt` when the tail looks like an interactive question. We never
+/// rewrite the stream; we only observe bytes we already render.
 final class DroppableTerminalView: LocalProcessTerminalView {
+
+    // MARK: Output-sniffing hooks (assigned by CockpitTab, called on main)
+    var onActivity: (@MainActor () -> Void)?
+    var onPrompt: (@MainActor (String) -> Void)?
+
+    // Detection state — main-thread-confined (LocalProcess posts on .main).
+    nonisolated(unsafe) private var tail = ""
+    nonisolated(unsafe) private var escState: EscState = .normal
+    nonisolated(unsafe) private var detectWork: DispatchWorkItem?
+    nonisolated(unsafe) private var lastFired = ""
+
+    private enum EscState { case normal, esc, csi, osc, oscEsc }
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         enableFileDrops()
@@ -27,8 +44,102 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         enableFileDrops()
     }
 
+    // MARK: - Output sniffing
+
+    override func dataReceived(slice: ArraySlice<UInt8>) {
+        super.dataReceived(slice: slice)   // render as normal
+        appendStripped(slice)              // pure; no isolation needed
+        // SwiftTerm posts this on .main, but never assume — assumeIsolated would
+        // hard-crash if it ever fired off-main. Hop explicitly when needed.
+        if Thread.isMainThread {
+            MainActor.assumeIsolated { onActivity?(); scheduleDetect() }
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                MainActor.assumeIsolated { self?.onActivity?(); self?.scheduleDetect() }
+            }
+        }
+    }
+
+    /// Strip ANSI/OSC escapes incrementally (carrying state across chunks) and
+    /// append the visible text to a capped rolling tail.
+    private func appendStripped(_ bytes: ArraySlice<UInt8>) {
+        var visible: [UInt8] = []
+        visible.reserveCapacity(bytes.count)
+        for b in bytes {
+            switch escState {
+            case .normal:
+                if b == 0x1B { escState = .esc }
+                else if b == 0x07 { /* BEL */ }
+                else if b == 0x08 { if !visible.isEmpty { visible.removeLast() } }  // backspace
+                else if b >= 0x20 || b == 0x0A || b == 0x09 { visible.append(b) }
+            case .esc:
+                if b == UInt8(ascii: "[") { escState = .csi }
+                else if b == UInt8(ascii: "]") { escState = .osc }
+                else { escState = .normal }                                       // 2-byte/other escape
+            case .csi:
+                if (0x40...0x7E).contains(b) { escState = .normal }               // final byte
+            case .osc:
+                if b == 0x07 { escState = .normal }                               // BEL terminates OSC
+                else if b == 0x1B { escState = .oscEsc }
+            case .oscEsc:
+                escState = (b == UInt8(ascii: "\\")) ? .normal : .osc             // ST = ESC \
+            }
+        }
+        guard !visible.isEmpty else { return }
+        // Decode as UTF-8 so multi-byte glyphs (❯, accents) survive intact.
+        tail += String(decoding: visible, as: UTF8.self)
+        if tail.count > 1400 { tail = String(tail.suffix(1200)) }
+    }
+
+    /// Debounce: only inspect once the stream has been quiet briefly — that's
+    /// when claude has finished printing the prompt and is waiting on stdin.
+    private func scheduleDetect() {
+        detectWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            MainActor.assumeIsolated { self?.detect() }
+        }
+        detectWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55, execute: work)
+    }
+
+    private func detect() {
+        let lines = tail.split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        let recent = lines.suffix(8)
+        let hay = recent.joined(separator: "\n")
+        let lower = hay.lowercased()
+
+        // ONLY fire on a genuine interactive prompt — the thing that actually
+        // blocks claude on stdin. Two robust shapes:
+        //  • a numbered selection menu: "❯" plus at least TWO options (1. + 2.)
+        //    — claude's permission / trust / plan dialogs always have ≥2.
+        //  • an explicit yes/no confirmation.
+        // Loose prose triggers ("do you want", a stray "?") are deliberately
+        // gone: they fired on claude's own normal output.
+        let hasMenu = hay.contains("❯") && lower.contains("1.") && lower.contains("2.")
+        let hasYN = lower.contains("(y/n)") || lower.contains("[y/n]")
+        guard hasMenu || hasYN else { return }
+
+        let q = questionText(from: recent)
+        guard q != lastFired else { return }
+        lastFired = q
+        onPrompt?(q)
+    }
+
+    /// The question is normally the line just above the options, ending in "?".
+    /// Our ANSI strip can lose spaces when claude redraws, so guard against
+    /// mangled output (one giant run-on token) and fall back to a clean label.
+    private func questionText(from lines: ArraySlice<String>) -> String {
+        let q = lines.last { $0.contains("?") && !$0.contains("1.") && !$0.contains("❯") }
+        let cleaned = (q ?? "").replacingOccurrences(of: "❯", with: "").trimmingCharacters(in: .whitespaces)
+        let longestRun = cleaned.split(separator: " ").map(\.count).max() ?? 0
+        if cleaned.isEmpty || longestRun > 28 { return "Waiting for your choice" }
+        return cleaned.count > 140 ? String(cleaned.prefix(137)) + "…" : cleaned
+    }
+
+    // MARK: - File drops
+
     private func enableFileDrops() {
-        // Append .fileURL without clobbering any types SwiftTerm registered.
         registerForDraggedTypes(Array(Set(registeredDraggedTypes + [.fileURL])))
     }
 
@@ -47,8 +158,8 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     }
 
     /// UserDefaults flag: drop images as locally-OCR'd TEXT (cheap) instead of
-    /// as `[Image #N]` (costly vision tokens). Hold Option while dropping to
-    /// flip the choice for one drop.
+    /// as `[Image #N]` (costly vision tokens). Used as the default only on the
+    /// **Option-held** fast path; otherwise a drop menu lets the user choose.
     static let ocrDefaultsKey = "cockpitDropImagesAsText"
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
@@ -57,32 +168,87 @@ final class DroppableTerminalView: LocalProcessTerminalView {
                 forClasses: [NSURL.self], options: opts) as? [URL], !urls.isEmpty else {
             return super.performDragOperation(sender)
         }
+        window?.makeFirstResponder(self)
 
-        let ocrDefault = UserDefaults.standard.bool(forKey: Self.ocrDefaultsKey)
-        let optionHeld = NSEvent.modifierFlags.contains(.option)
-        let useOCR = (ocrDefault != optionHeld) && urls.contains(where: { ImageTextExtractor.isImage($0) })
+        let hasImage = urls.contains { ImageTextExtractor.isImage($0) }
 
-        if useOCR {
-            // OCR is synchronous and can take 100s of ms — run it off-main, then
-            // paste the recognised text (with non-image paths kept as paths).
-            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                let pieces: [String] = urls.map { u in
-                    if ImageTextExtractor.isImage(u), let text = ImageTextExtractor.extractText(from: u) {
-                        return "[image: \(u.lastPathComponent)]\n\(text)"
-                    }
-                    return Self.terminalEscape(u.path)
-                }
-                let joined = pieces.joined(separator: "\n\n")
-                DispatchQueue.main.async { self?.paste(joined) }
-            }
-            window?.makeFirstResponder(self)
+        // No image, or Option-held fast path → no menu (keep the power-user bypass).
+        if !hasImage {
+            paste(urls.map { Self.terminalEscape($0.path) }.joined(separator: " "), trailingSpace: true)
+            return true
+        }
+        if NSEvent.modifierFlags.contains(.option) {
+            performDrop(urls, ocr: UserDefaults.standard.bool(forKey: Self.ocrDefaultsKey))
             return true
         }
 
-        // Default: shell-escaped paths (claude turns image paths into [Image #N]).
-        paste(urls.map { Self.terminalEscape($0.path) }.joined(separator: " "), trailingSpace: true)
-        window?.makeFirstResponder(self)
+        // Pop the choice menu IMMEDIATELY. Image-token estimate is read from
+        // the file header (no decode), so it's instant; OCR runs only if the
+        // user actually picks "OCR → text", off-main, in performDrop.
+        let point = convert(sender.draggingLocation, from: nil)
+        let imageTok = urls.filter { ImageTextExtractor.isImage($0) }
+            .reduce(0) { $0 + ImageTextExtractor.imageTokenEstimate($1) }
+        presentDropMenu(urls: urls, at: point, imageTok: imageTok)
         return true
+    }
+
+    /// Boxed closure so a single @objc action can dispatch either menu choice.
+    private final class BlockBox { let run: () -> Void; init(_ r: @escaping () -> Void) { self.run = r } }
+    @objc private func dropMenuChose(_ sender: NSMenuItem) { (sender.representedObject as? BlockBox)?.run() }
+
+    private func presentDropMenu(urls: [URL], at point: NSPoint, imageTok: Int) {
+        let menu = NSMenu()
+        menu.autoenablesItems = false   // we set isEnabled ourselves; AppKit's
+                                        // auto-enable disables items popped outside an event.
+        let header = NSMenuItem(title: "Dropped image — choose how to send", action: nil, keyEquivalent: "")
+        header.isEnabled = false
+        menu.addItem(header)
+        menu.addItem(.separator())
+
+        let attach = NSMenuItem(title: "Attach image  ·  ≈\(Self.fmt(imageTok)) vision tok",
+                                action: #selector(dropMenuChose(_:)), keyEquivalent: "")
+        attach.target = self
+        attach.isEnabled = true
+        attach.representedObject = BlockBox { [weak self] in self?.performDrop(urls, ocr: false) }
+        menu.addItem(attach)
+
+        let ocr = NSMenuItem(title: "OCR → text (local)  ·  saves ≈\(Self.fmt(imageTok)) tok",
+                             action: #selector(dropMenuChose(_:)), keyEquivalent: "")
+        ocr.target = self
+        ocr.isEnabled = true
+        ocr.representedObject = BlockBox { [weak self] in self?.performDrop(urls, ocr: true) }
+        menu.addItem(ocr)
+
+        menu.popUp(positioning: nil, at: point, in: self)
+    }
+
+    /// Commit the drop. `ocr=true` pastes recognised text for images (paths for
+    /// non-images); `ocr=false` pastes escaped paths (claude → `[Image #N]`).
+    /// OCR is synchronous and can take 100s of ms — run it off-main, then paste.
+    private func performDrop(_ urls: [URL], ocr: Bool) {
+        guard ocr else {
+            paste(urls.map { Self.terminalEscape($0.path) }.joined(separator: " "), trailingSpace: true)
+            window?.makeFirstResponder(self)
+            return
+        }
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let pieces: [String] = urls.map { u in
+                if ImageTextExtractor.isImage(u), let t = ImageTextExtractor.extractText(from: u) {
+                    return "[image: \(u.lastPathComponent)]\n\(t)"
+                }
+                return Self.terminalEscape(u.path)
+            }
+            let joined = pieces.joined(separator: "\n\n")
+            DispatchQueue.main.async {
+                self?.paste(joined)
+                self?.window?.makeFirstResponder(self)
+            }
+        }
+    }
+
+    private static func fmt(_ n: Int) -> String {
+        if n >= 1000 { return String(format: "%.1fk", Double(n) / 1000) }
+        return "\(n)"
     }
 
     /// Feed text to the PTY as a bracketed paste when the foreground program
