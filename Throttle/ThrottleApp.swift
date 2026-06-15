@@ -1,6 +1,7 @@
 import SwiftUI
 
-@main
+// Entry point is main.swift (so the --tokopt-hook CLI path runs before any GUI
+// init). ThrottleApp.main() is called from there — no @main attribute here.
 struct ThrottleApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 

@@ -1322,6 +1322,8 @@ private struct InlineGeneralPane: View {
     @State private var autopilotBusy = false
     @State private var activeStyle = OutputStyleManager.activeName()
     @State private var dropImagesAsText = UserDefaults.standard.bool(forKey: DroppableTerminalView.ocrDefaultsKey)
+    @State private var tokoptOn = TokoptHookInstaller.isInstalled()
+    @State private var tokoptNote = ""
 
     /// Flag file the SessionStart hook reads to inject a terse-output directive
     /// into every Claude Code session. App writes it (non-sandboxed); hook reads it.
@@ -1379,6 +1381,33 @@ private struct InlineGeneralPane: View {
                         if appState.isPro { OutputStyleWindowController.shared.show() }
                     }
                     .disabled(!appState.isPro)
+                }
+            }
+            SettingsHair()
+            SettingsRow(title: "Compress command output",
+                        sub: tokoptNote.isEmpty
+                            ? "Installs a PostToolUse hook that strips ANSI, dedups and trims verbose CLI output before Claude sees it — fewer tokens, errors always passed through raw. Reversible; restart Claude Code after."
+                            : tokoptNote) {
+                HStack(spacing: 6) {
+                    if !appState.isPro {
+                        Text("PRO").font(.system(size: 9, weight: .heavy)).tracking(0.3)
+                            .padding(.horizontal, 5).padding(.vertical, 2)
+                            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 4))
+                            .foregroundStyle(.secondary)
+                    }
+                    Toggle("", isOn: appState.isPro ? $tokoptOn : .constant(false))
+                        .labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                        .disabled(!appState.isPro)
+                        .onChange(of: tokoptOn) { _, on in
+                            guard appState.isPro else { return }
+                            Task.detached(priority: .utility) {
+                                if on { _ = try? TokoptHookInstaller.install() }
+                                else { try? TokoptHookInstaller.remove() }
+                            }
+                            tokoptNote = on
+                                ? "Installed — restart Claude Code to start compressing."
+                                : "Removed — restart Claude Code."
+                        }
                 }
             }
             SettingsHair()
