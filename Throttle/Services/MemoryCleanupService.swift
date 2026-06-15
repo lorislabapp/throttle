@@ -18,8 +18,66 @@ struct MemoryReport: Sendable {
     static let empty = MemoryReport(files: [])
 }
 
+/// A `MEMORY.md` index whose content overruns Claude Code's auto-load cap.
+/// Per the docs, only the first **200 lines OR 25 KB (whichever comes first)**
+/// of `MEMORY.md` are loaded at session start — anything past that silently
+/// never reaches Claude. (`CLAUDE.md`, by contrast, is loaded in full.)
+struct MemoryIndexFile: Sendable, Identifiable {
+    let id: String          // full path
+    let project: String
+    let lines: Int
+    let bytes: Int
+    let ignoredLines: Int   // lines past the load cutoff (0 if within cap)
+    let pctOfCap: Int       // fullest of line% / byte% vs the cap
+    var isOver: Bool { ignoredLines > 0 }
+}
+
+struct MemoryIndexReport: Sendable {
+    let files: [MemoryIndexFile]
+    static let empty = MemoryIndexReport(files: [])
+    var worst: MemoryIndexFile? { files.max { $0.pctOfCap < $1.pctOfCap } }
+}
+
 enum MemoryCleanupService {
     static let staleDays = 30
+
+    // MEMORY.md auto-load cap (docs: code.claude.com/docs/en/memory.md).
+    static let indexLineCap = 200
+    static let indexByteCap = 25 * 1024
+
+    /// MEMORY.md indexes at/over the auto-load cap, so the user sees content
+    /// that silently won't load. Only surfaces files ≥85% full (invisible until
+    /// it matters). Reports the exact overflow, honestly.
+    static func scanIndexLoad() -> MemoryIndexReport {
+        let fm = FileManager.default
+        let projectsDir = fm.homeDirectoryForCurrentUser.appendingPathComponent(".claude/projects", isDirectory: true)
+        guard let projects = try? fm.contentsOfDirectory(at: projectsDir, includingPropertiesForKeys: nil) else {
+            return .empty
+        }
+        var out: [MemoryIndexFile] = []
+        for proj in projects.prefix(160) {
+            let idx = proj.appendingPathComponent("memory/MEMORY.md")
+            guard let text = try? String(contentsOf: idx, encoding: .utf8) else { continue }
+            let lines = text.components(separatedBy: "\n")
+            let bytes = text.utf8.count
+            let linePct = lines.count * 100 / indexLineCap
+            let bytePct = bytes * 100 / indexByteCap
+            let pct = max(linePct, bytePct)
+            guard pct >= 85 else { continue }
+
+            // Effective cutoff: first of (line 200, 25 KB) reached.
+            var acc = 0, cutoff = lines.count
+            for (i, line) in lines.enumerated() {
+                acc += line.utf8.count + 1
+                if i + 1 >= indexLineCap || acc >= indexByteCap { cutoff = i + 1; break }
+            }
+            out.append(MemoryIndexFile(
+                id: idx.path, project: decodeName(proj.lastPathComponent),
+                lines: lines.count, bytes: bytes,
+                ignoredLines: max(0, lines.count - cutoff), pctOfCap: pct))
+        }
+        return MemoryIndexReport(files: out.sorted { $0.pctOfCap > $1.pctOfCap })
+    }
 
     static func scan(now: Date = Date()) -> MemoryReport {
         let fm = FileManager.default

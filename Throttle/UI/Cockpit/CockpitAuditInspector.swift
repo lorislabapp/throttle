@@ -92,6 +92,26 @@ struct CockpitAuditInspector: View {
                     NSPasteboard.general.setString(ReadFirewallReport.mcpSnippet, forType: .string)
                 }
             }
+            if let mi = vm.memoryIndex.worst {
+                Button {
+                    NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: mi.id)])
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc.badge.ellipsis").font(.system(size: 10))
+                            .foregroundStyle(mi.isOver ? Color.red : Color.orange)
+                        Text(mi.isOver
+                             ? "MEMORY.md · \(mi.project) · \(mi.ignoredLines) lines cut"
+                             : "MEMORY.md · \(mi.project) · \(mi.pctOfCap)% of cap")
+                            .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                        Spacer(minLength: 4)
+                        Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold)).foregroundStyle(.tertiary)
+                    }.contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(mi.isOver
+                      ? "Claude Code loads only the first 200 lines / 25 KB of MEMORY.md — \(mi.ignoredLines) lines past that never load. Trim the index or move detail into linked topic files."
+                      : "MEMORY.md is near the 200-line / 25 KB auto-load cap; content past it won't load. Keep the index tight.")
+            }
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
     }

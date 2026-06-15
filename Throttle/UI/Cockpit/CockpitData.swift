@@ -103,6 +103,7 @@ final class CockpitViewModel {
     private(set) var mcpProbing = false
     private(set) var dedup: DedupReport = .empty
     private(set) var memory: MemoryReport = .empty
+    private(set) var memoryIndex: MemoryIndexReport = .empty
     private(set) var cache: CacheHygieneReport = .empty
     private(set) var skills: SkillReport = .empty
     private(set) var reads: ReadFirewallReport = .empty
@@ -125,6 +126,7 @@ final class CockpitViewModel {
         Task { [weak self] in await self?.probeMCP() }     // one probe on open
         Task { [weak self] in await self?.scanDedup() }     // one dedup scan on open
         Task { [weak self] in await self?.scanMemory() }    // one memory scan on open
+        Task { [weak self] in await self?.scanMemoryIndex() } // MEMORY.md auto-load cap
         Task { [weak self] in await self?.scanCache() }     // one cache-hygiene scan on open
         Task { [weak self] in await self?.scanSkills() }    // one skill-usage scan on open
         Task { [weak self] in await self?.scanReads() }     // one read-firewall scan on open
@@ -150,6 +152,13 @@ final class CockpitViewModel {
     func scanMemory() async {
         let report = await Task.detached(priority: .utility) { MemoryCleanupService.scan() }.value
         memory = report
+    }
+
+    /// Scan MEMORY.md indexes for ones at/over the 200-line / 25 KB auto-load
+    /// cap, where content silently won't reach Claude (off-main, on-demand).
+    func scanMemoryIndex() async {
+        let report = await Task.detached(priority: .utility) { MemoryCleanupService.scanIndexLoad() }.value
+        memoryIndex = report
     }
 
     /// Audit prompt-cache hygiene of the local hooks (off-main, on-demand).
