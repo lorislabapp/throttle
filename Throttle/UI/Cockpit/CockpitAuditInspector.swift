@@ -109,6 +109,17 @@ struct CockpitAuditInspector: View {
                       ? "Claude Code loads only the first 200 lines / 25 KB of MEMORY.md — \(mi.ignoredLines) lines past that never load. Trim the index or move detail into linked topic files."
                       : "MEMORY.md is near the 200-line / 25 KB auto-load cap; content past it won't load. Keep the index tight.")
             }
+            if vm.cache.highCount > 0 {
+                HStack(spacing: 6) {
+                    Image(systemName: "bolt.horizontal").font(.system(size: 10)).foregroundStyle(.orange)
+                    Text("Cache busters · \(vm.cache.highCount)").font(.system(size: 11))
+                        .foregroundStyle(.secondary).lineLimit(1)
+                    Spacer(minLength: 4)
+                    Image(systemName: "info.circle").font(.system(size: 10)).foregroundStyle(.tertiary)
+                }
+                .contentShape(Rectangle())
+                .help(vm.cache.risks.filter { $0.severity == .high }.map { "• \($0.title): \($0.detail)" }.joined(separator: "\n\n"))
+            }
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
     }
@@ -143,6 +154,16 @@ struct CockpitAuditInspector: View {
                 Button { Task { await vm.probeMCP() } } label: {
                     Image(systemName: "arrow.clockwise").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
                 }.buttonStyle(.plain).help("Probe MCP servers")
+            }
+            // Tool-loadout audit: too many tools degrade the agent + bloat the
+            // cached prefix (≈46 vs 19 tools measured +44% accuracy / 77% faster).
+            if mcpToolTotal > 40 {
+                HStack(spacing: 6) {
+                    Image(systemName: "wrench.and.screwdriver").font(.system(size: 10)).foregroundStyle(.orange)
+                    Text("\(mcpToolTotal) tools loaded").font(.system(size: 10.5)).foregroundStyle(.orange)
+                    Spacer()
+                }
+                .help("Large tool loadouts degrade the agent — every tool schema sits in the cached prefix, and ~46 vs 19 tools measured +44% accuracy / 77% faster. Disable the MCP servers you're not using.")
             }
             if vm.mcp.isEmpty {
                 Text(vm.mcpProbing ? "probing…" : "not probed").font(.system(size: 10.5)).foregroundStyle(.tertiary)
@@ -267,6 +288,9 @@ struct CockpitAuditInspector: View {
         NSApp.activate(ignoringOtherApps: true)
         if alert.runModal() == .alertFirstButtonReturn { Task { await vm.installFirewall() } }
     }
+
+    /// Total tools across probed MCP servers — the tool-loadout figure.
+    private var mcpToolTotal: Int { vm.mcp.compactMap { $0.toolCount }.reduce(0, +) }
 
     private func tok(_ n: Int) -> String {
         if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }

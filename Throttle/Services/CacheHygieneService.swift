@@ -67,7 +67,32 @@ enum CacheHygieneService {
                 }
             }
         }
+        // CLAUDE.md content: it's loaded into every session's cached prefix, so
+        // volatile literals (a date, an "as of" marker, a UUID) bust the cache
+        // the moment they change or the file is edited.
+        let globalMd = home.appendingPathComponent(".claude/CLAUDE.md")
+        if let text = try? String(contentsOf: globalMd, encoding: .utf8) {
+            let hits = volatileHits(in: text)
+            if !hits.isEmpty {
+                risks.append(CacheRisk(
+                    id: "claudemd-volatile",
+                    title: "CLAUDE.md · volatile content",
+                    detail: "Contains \(hits.joined(separator: ", ")) in the cached prompt prefix. CLAUDE.md loads into every session's cached prefix — when that literal changes (or you edit the file) the 90%-cheaper cache is invalidated. Move the varying detail into an on-demand skill (.claude/skills) so the prefix stays byte-stable.",
+                    severity: .high))
+            }
+        }
+
         return CacheHygieneReport(risks: risks)
+    }
+
+    /// Only GENUINELY volatile literals — high confidence, low false-positive.
+    /// (Static dates like "since 2026-04-17" are facts, not cache-busters, so we
+    /// deliberately do NOT flag bare dates — flagging a fact as a cost would be a
+    /// claim we can't stand behind.)
+    private static func volatileHits(in text: String) -> [String] {
+        var hits: [String] = []
+        if text.range(of: "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", options: .regularExpression) != nil { hits.append("a UUID") }
+        return Array(Set(hits))
     }
 
     /// Read the hook script (best-effort) and check for dynamic-output markers.
