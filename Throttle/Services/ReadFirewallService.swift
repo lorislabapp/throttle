@@ -33,6 +33,74 @@ enum ReadFirewallService {
     static let minReads = 3
     static let minLines = 300
 
+    // MARK: - Auto-config (opt-in): install the local-RAG read firewall
+
+    private static var home: URL { FileManager.default.homeDirectoryForCurrentUser }
+    /// Global MCP config (where Claude Code keeps `mcpServers`).
+    private static var globalConfig: URL { home.appendingPathComponent(".claude.json") }
+    private static var backupsDir: URL { home.appendingPathComponent(".claude/throttle-backups", isDirectory: true) }
+    static let serverKey = "mcp-local-rag"
+
+    /// The third-party local-RAG MCP we install (runs via npx; no daemon).
+    /// Computed (not a stored static) so it carries no shared mutable state.
+    static func serverConfig() -> [String: Any] {
+        ["command": "npx", "args": ["-y", "mcp-local-rag"], "env": ["BASE_DIR": "."]]
+    }
+
+    static func isInstalled() -> Bool {
+        guard let dict = readJSON(globalConfig),
+              let mcp = dict["mcpServers"] as? [String: Any] else { return false }
+        return mcp[serverKey] != nil
+    }
+
+    /// Add the read-firewall MCP to the GLOBAL config, backed up first. Idempotent.
+    /// Returns true if it wrote (false if already present). Restart Claude Code to load it.
+    @discardableResult
+    static func install() throws -> Bool {
+        guard var dict = readJSON(globalConfig) else { throw FirewallError.noConfig }
+        var mcp = dict["mcpServers"] as? [String: Any] ?? [:]
+        guard mcp[serverKey] == nil else { return false }
+        try backup(globalConfig)
+        mcp[serverKey] = serverConfig()
+        dict["mcpServers"] = mcp
+        try writeJSON(dict, to: globalConfig)
+        return true
+    }
+
+    /// Reverse install: splice out the read-firewall MCP (only if it's ours), backed up.
+    static func remove() throws {
+        guard var dict = readJSON(globalConfig),
+              var mcp = dict["mcpServers"] as? [String: Any], mcp[serverKey] != nil else { return }
+        try backup(globalConfig)
+        mcp.removeValue(forKey: serverKey)
+        dict["mcpServers"] = mcp
+        try writeJSON(dict, to: globalConfig)
+    }
+
+    enum FirewallError: Error { case noConfig }
+
+    private static func readJSON(_ url: URL) -> [String: Any]? {
+        guard let data = try? Data(contentsOf: url),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        return obj
+    }
+
+    private static func writeJSON(_ dict: [String: Any], to url: URL) throws {
+        let data = try JSONSerialization.data(withJSONObject: dict,
+                                              options: [.prettyPrinted, .withoutEscapingSlashes])
+        try data.write(to: url, options: .atomic)
+    }
+
+    @discardableResult
+    private static func backup(_ url: URL) throws -> URL {
+        let fm = FileManager.default
+        try fm.createDirectory(at: backupsDir, withIntermediateDirectories: true)
+        let stamp = Int(Date().timeIntervalSince1970)
+        let dest = backupsDir.appendingPathComponent("claude.json-\(stamp).bak")
+        if fm.fileExists(atPath: url.path) { try? fm.copyItem(at: url, to: dest) }
+        return dest
+    }
+
     static func scan() -> ReadFirewallReport {
         let counts = readCounts()
         guard !counts.isEmpty else { return .empty }

@@ -86,11 +86,8 @@ struct CockpitAuditInspector: View {
                     Task { for s in dead { await vm.archiveSkill(s.name) } }
                 }
             }
-            if !vm.reads.files.isEmpty {
-                actionRow("flame", "Brute reads · \(vm.reads.files.count)", "RAG", "Copy cfg") {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(ReadFirewallReport.mcpSnippet, forType: .string)
-                }
+            if !vm.reads.files.isEmpty || vm.firewallInstalled {
+                firewallRow
             }
             if let mi = vm.memoryIndex.worst {
                 Button {
@@ -240,6 +237,37 @@ struct CockpitAuditInspector: View {
             }.contentShape(Rectangle())
         }.buttonStyle(.plain)
     }
+    @ViewBuilder
+    private var firewallRow: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "flame").font(.system(size: 10))
+                .foregroundStyle(vm.firewallInstalled ? Color.green : Color.orange)
+            Text(vm.firewallInstalled ? "Read firewall · on" : "Brute reads · \(vm.reads.files.count)")
+                .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+            Spacer(minLength: 4)
+            if vm.firewallBusy {
+                ProgressView().controlSize(.mini)
+            } else if vm.firewallInstalled {
+                Button("Remove") { Task { await vm.removeFirewall() } }
+                    .controlSize(.small).font(.system(size: 10.5))
+            } else {
+                Button("Install") { confirmInstallFirewall() }
+                    .controlSize(.small).font(.system(size: 10.5))
+            }
+        }
+    }
+
+    private func confirmInstallFirewall() {
+        let alert = NSAlert()
+        alert.messageText = "Install the read firewall?"
+        alert.informativeText = "Adds the mcp-local-rag server (runs via npx) to your global Claude Code config, so brute file-reads are answered with semantic snippets instead of whole files (≈30–60% fewer context tokens). Your config is backed up first and this is fully reversible. Restart Claude Code afterwards to load it."
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "Install")
+        alert.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn { Task { await vm.installFirewall() } }
+    }
+
     private func tok(_ n: Int) -> String {
         if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
         if n >= 1_000 { return String(format: "%.0fk", Double(n) / 1_000) }

@@ -107,6 +107,8 @@ final class CockpitViewModel {
     private(set) var cache: CacheHygieneReport = .empty
     private(set) var skills: SkillReport = .empty
     private(set) var reads: ReadFirewallReport = .empty
+    private(set) var firewallInstalled = ReadFirewallService.isInstalled()
+    private(set) var firewallBusy = false
     private(set) var bloat: ContextBloat = .empty
     private(set) var memHealth: MemoryHealth = .unknown
 
@@ -183,6 +185,22 @@ final class CockpitViewModel {
     func scanReads() async {
         let report = await Task.detached(priority: .utility) { ReadFirewallService.scan() }.value
         reads = report
+    }
+
+    /// Install the local-RAG read firewall into the global MCP config (backed up,
+    /// reversible). Opt-in — it adds a third-party npx server. Restart Claude Code after.
+    func installFirewall() async {
+        firewallBusy = true
+        await Task.detached(priority: .utility) { try? ReadFirewallService.install() }.value
+        firewallInstalled = ReadFirewallService.isInstalled()
+        firewallBusy = false
+    }
+
+    func removeFirewall() async {
+        firewallBusy = true
+        await Task.detached(priority: .utility) { try? ReadFirewallService.remove() }.value
+        firewallInstalled = ReadFirewallService.isInstalled()
+        firewallBusy = false
     }
 
     /// Sample system-memory health (off-main) — the machine-capacity half of the
