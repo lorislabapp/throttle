@@ -1324,6 +1324,8 @@ private struct InlineGeneralPane: View {
     @State private var dropImagesAsText = UserDefaults.standard.bool(forKey: DroppableTerminalView.ocrDefaultsKey)
     @State private var tokoptOn = TokoptHookInstaller.isInstalled()
     @State private var tokoptNote = ""
+    @State private var memoryOn = TranscriptMemoryInstaller.isInstalled()
+    @State private var memoryNote = ""
 
     /// Flag file the SessionStart hook reads to inject a terse-output directive
     /// into every Claude Code session. App writes it (non-sandboxed); hook reads it.
@@ -1406,6 +1408,33 @@ private struct InlineGeneralPane: View {
                             }
                             tokoptNote = on
                                 ? "Installed — restart Claude Code to start compressing."
+                                : "Removed — restart Claude Code."
+                        }
+                }
+            }
+            SettingsHair()
+            SettingsRow(title: "Searchable session memory",
+                        sub: memoryNote.isEmpty
+                            ? "Installs a local MCP server so Claude can search your OWN past sessions for context its window has lost (an earlier decision, an error from last week). 100% local — full-text search over ~/.claude. Reversible; restart Claude Code after."
+                            : memoryNote) {
+                HStack(spacing: 6) {
+                    if !appState.isPro {
+                        Text("PRO").font(.system(size: 9, weight: .heavy)).tracking(0.3)
+                            .padding(.horizontal, 5).padding(.vertical, 2)
+                            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 4))
+                            .foregroundStyle(.secondary)
+                    }
+                    Toggle("", isOn: appState.isPro ? $memoryOn : .constant(false))
+                        .labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                        .disabled(!appState.isPro)
+                        .onChange(of: memoryOn) { _, on in
+                            guard appState.isPro else { return }
+                            Task.detached(priority: .utility) {
+                                if on { _ = try? TranscriptMemoryInstaller.install() }
+                                else { try? TranscriptMemoryInstaller.remove() }
+                            }
+                            memoryNote = on
+                                ? "Installed — restart Claude Code, then ask it to search your past sessions."
                                 : "Removed — restart Claude Code."
                         }
                 }
