@@ -15,6 +15,7 @@ struct MultiCockpitRoot: View {
     @State private var model = MultiCockpitModel()
     @State private var showInspector = false
     @State private var activeStyle = OutputStyleManager.activeName()
+    @State private var hoveredSession: UUID?
 
     private let hair = Color.primary.opacity(0.10)
     private let track = Color.primary.opacity(0.08)
@@ -314,6 +315,17 @@ struct MultiCockpitRoot: View {
             .overlay { if on { RoundedRectangle(cornerRadius: 9).stroke(hair, lineWidth: 1) } }
             .contentShape(Rectangle())
         }.buttonStyle(.plain)
+        .overlay(alignment: .topTrailing) {
+            if hoveredSession == s.id {
+                Button { model.close(s.id) } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 13)).foregroundStyle(.secondary)
+                        .background(Circle().fill(.background))
+                }
+                .buttonStyle(.plain).padding(5).help("Close session")
+            }
+        }
+        .onHover { hoveredSession = $0 ? s.id : nil }
     }
 
     // MARK: C — Mission control
