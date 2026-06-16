@@ -135,6 +135,28 @@ enum Migrations {
             )
         }
 
+        // v6: dedupe usage_events + UNIQUE natural key → idempotent ingestion.
+        // Re-scans (file rotation / watcher races) were re-inserting identical
+        // events: ~12% of rows were exact full-row duplicates, inflating every
+        // token/cost metric. Keep the earliest row per natural key, then enforce
+        // uniqueness so future re-inserts are no-ops (paired with the
+        // INSERT OR IGNORE conflict policy on UsageEvent).
+        migrator.registerMigration("v6_dedupe_usage_events") { db in
+            try db.execute(sql: """
+                DELETE FROM usage_events
+                WHERE id NOT IN (
+                    SELECT MIN(id) FROM usage_events
+                    GROUP BY session_id, timestamp, model,
+                             input_tokens, output_tokens, cache_create, cache_read
+                )
+                """)
+            try db.execute(sql: """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_natural
+                ON usage_events(session_id, timestamp, model,
+                                input_tokens, output_tokens, cache_create, cache_read)
+                """)
+        }
+
         try migrator.migrate(writer)
     }
 }

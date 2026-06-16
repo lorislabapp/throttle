@@ -14,6 +14,11 @@ struct UsageEvent: Codable, FetchableRecord, MutablePersistableRecord, Sendable 
 
     static let databaseTableName = "usage_events"
 
+    /// Ingestion is idempotent: a re-scanned event that already exists (same
+    /// natural key, enforced by idx_usage_natural) is silently ignored instead
+    /// of inserted again. Prevents the ~12% double-count from file re-scans.
+    static let persistenceConflictPolicy = PersistenceConflictPolicy(insert: .ignore)
+
     enum CodingKeys: String, CodingKey {
         case id
         case sessionId = "session_id"
