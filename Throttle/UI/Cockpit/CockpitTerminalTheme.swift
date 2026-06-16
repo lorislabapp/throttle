@@ -1,23 +1,68 @@
 import AppKit
 import SwiftTerm
 
-/// The Cockpit's embedded-terminal look. ONE fixed palette that matches the
-/// precise-cockpit design language — deliberately NOT a user-facing theme
-/// picker (that's Warp's turf and an explicit non-goal). The single lever we
-/// care about: claude already colour-codes its own output (prose in the default
-/// foreground, tool-call / meta lines dimmed). We can't re-parse the PTY to
-/// re-style it, but we DO own the 256-colour table — so we tune ANSI 8 (the
-/// "dim" colour claude uses for tool meta) to a clearly muted grey and ANSI 15
-/// (bright white, prose emphasis) to pop. That makes Claude's answers stand out
-/// from the actions it runs, using only the palette, no stream rewriting.
+/// The Cockpit's embedded-terminal look. A small set of CURATED presets — not a
+/// full colour/sound editor (that's Warp's turf and an explicit non-goal). Each
+/// preset is a finished, coherent look. The load-bearing pair in every palette
+/// is ANSI 8 (the "dim" colour claude uses for tool/meta lines, kept recessive)
+/// and ANSI 15 (bright white, prose emphasis) so Claude's answers stand out from
+/// the actions it runs — using only the palette, never rewriting the stream.
 enum CockpitTerminalTheme {
 
-    /// hex 0xRRGGBB → SwiftTerm.Color (16-bit channels, byte * 257).
+    enum Preset: String, CaseIterable, Identifiable {
+        case graphite, midnight, light, contrast
+        var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .graphite: return "Graphite"
+            case .midnight: return "Midnight"
+            case .light:    return "Light"
+            case .contrast: return "High Contrast"
+            }
+        }
+    }
+
+    private static let defaultsKey = "cockpitTerminalPreset"
+
+    static var current: Preset {
+        get { Preset(rawValue: UserDefaults.standard.string(forKey: defaultsKey) ?? "") ?? .graphite }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: defaultsKey) }
+    }
+
+    // MARK: - Palettes
+
+    private struct Palette {
+        let bg: UInt32, fg: UInt32, accent: UInt32
+        let ansi: [UInt32]   // 16 ANSI colours
+    }
+
+    private static func palette(_ p: Preset) -> Palette {
+        switch p {
+        case .graphite:
+            return Palette(bg: 0x121214, fg: 0xF2F2F4, accent: 0x0071E3, ansi: [
+                0x1A1A1D, 0xFF6B68, 0x5DD08A, 0xE6C079, 0x6AA0FF, 0xC99BFF, 0x65C7D8, 0xC8C8CC,
+                0x595962, 0xFF8A87, 0x7EE0A3, 0xF2D08C, 0x8AB6FF, 0xD9B8FF, 0x8AD8E6, 0xF4F4F6])
+        case .midnight:
+            return Palette(bg: 0x0B0F1A, fg: 0xDCE3F0, accent: 0x4D9CFF, ansi: [
+                0x141A2A, 0xFF6E6E, 0x59D9A0, 0xE7C97A, 0x5B9BFF, 0xB99BFF, 0x5CC8E0, 0xB6BFD2,
+                0x4A5570, 0xFF9090, 0x84E8BC, 0xF2D89A, 0x86B6FF, 0xD2B8FF, 0x8EDCEE, 0xEEF3FB])
+        case .light:
+            return Palette(bg: 0xFBFBFD, fg: 0x1D1D1F, accent: 0x0071E3, ansi: [
+                0xE8E8EC, 0xC0392B, 0x1E8A4C, 0x9A6B00, 0x0060D0, 0x7A3FBF, 0x0E7C8C, 0x3A3A40,
+                0x8A8A90, 0xD0473A, 0x27A05C, 0xB07E10, 0x1672E6, 0x8E54D0, 0x1894A6, 0x111114])
+        case .contrast:
+            return Palette(bg: 0x000000, fg: 0xFFFFFF, accent: 0x00B0FF, ansi: [
+                0x000000, 0xFF5C57, 0x5AF78E, 0xF3F99D, 0x57C7FF, 0xFF6AC1, 0x9AEDFE, 0xE0E0E0,
+                0x9A9AA2, 0xFF6E67, 0x6BFF9E, 0xF7FCB0, 0x6FD0FF, 0xFF82CF, 0xB0F4FF, 0xFFFFFF])
+        }
+    }
+
+    // MARK: - Colour helpers
+
     private static func c(_ hex: UInt32) -> SwiftTerm.Color {
-        let r = UInt16((hex >> 16) & 0xFF) * 257
-        let g = UInt16((hex >> 8) & 0xFF) * 257
-        let b = UInt16(hex & 0xFF) * 257
-        return SwiftTerm.Color(red: r, green: g, blue: b)
+        SwiftTerm.Color(red: UInt16((hex >> 16) & 0xFF) * 257,
+                        green: UInt16((hex >> 8) & 0xFF) * 257,
+                        blue: UInt16(hex & 0xFF) * 257)
     }
 
     private static func ns(_ hex: UInt32, alpha: CGFloat = 1) -> NSColor {
@@ -26,43 +71,18 @@ enum CockpitTerminalTheme {
                 blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
     }
 
-    private static let background: UInt32 = 0x121214   // graphite, not pure black
-    private static let foreground: UInt32 = 0xF2F2F4   // bright soft-white (claude prose)
-    private static let accent:     UInt32 = 0x0071E3   // system blue — caret only
-
-    /// 16 ANSI colours. Indices 8 (dim grey) and 15 (bright white) are the
-    /// load-bearing ones for prose-vs-action contrast.
-    private static let ansi: [UInt32] = [
-        0x1A1A1D, // 0  black
-        0xFF6B68, // 1  red
-        0x5DD08A, // 2  green
-        0xE6C079, // 3  yellow
-        0x6AA0FF, // 4  blue
-        0xC99BFF, // 5  magenta
-        0x65C7D8, // 6  cyan
-        0xC8C8CC, // 7  white (normal)
-        0x595962, // 8  bright-black  → DIM: claude's tool-call / meta grey (recessive)
-        0xFF8A87, // 9  bright red
-        0x7EE0A3, // 10 bright green
-        0xF2D08C, // 11 bright yellow
-        0x8AB6FF, // 12 bright blue
-        0xD9B8FF, // 13 bright magenta
-        0x8AD8E6, // 14 bright cyan
-        0xF4F4F6, // 15 bright white → prose emphasis pops
-    ]
-
-    /// The graphite terminal background, for container views behind the PTY.
-    static var backgroundColor: NSColor { ns(background) }
+    /// The current preset's terminal background, for container views behind the PTY.
+    static var backgroundColor: NSColor { ns(palette(current).bg) }
 
     static func apply(to term: LocalProcessTerminalView) {
-        term.installColors(ansi.map(c))
-        term.nativeBackgroundColor = ns(background)
-        term.nativeForegroundColor = ns(foreground)
-        term.caretColor = ns(accent)
-        term.selectedTextBackgroundColor = ns(accent, alpha: 0.30)
+        let p = palette(current)
+        term.installColors(p.ansi.map(c))
+        term.nativeBackgroundColor = ns(p.bg)
+        term.nativeForegroundColor = ns(p.fg)
+        term.caretColor = ns(p.accent)
+        term.selectedTextBackgroundColor = ns(p.accent, alpha: 0.30)
         term.font = NSFont.monospacedSystemFont(ofSize: 12.5, weight: .regular)
-        term.layer?.backgroundColor = ns(background).cgColor
-        // The nativeBackgroundColor setter doesn't force a repaint on its own.
-        term.needsDisplay = true
+        term.layer?.backgroundColor = ns(p.bg).cgColor
+        term.needsDisplay = true   // the nativeBackgroundColor setter doesn't repaint on its own
     }
 }

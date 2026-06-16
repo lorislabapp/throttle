@@ -17,6 +17,7 @@ struct MultiCockpitRoot: View {
     @State private var activeStyle = OutputStyleManager.activeName()
     @State private var hoveredSession: UUID?
     @State private var expandedFeed: UUID?
+    @State private var themePreset = CockpitTerminalTheme.current
 
     private let hair = Color.primary.opacity(0.10)
     private let track = Color.primary.opacity(0.08)
@@ -53,6 +54,8 @@ struct MultiCockpitRoot: View {
             Spacer(minLength: 12)
             viewSwitcher
             Spacer(minLength: 12)
+            if !model.sessions.isEmpty { timelineNav }
+            themeMenu
             Button { showInspector.toggle() } label: {
                 Image(systemName: "sidebar.trailing")
                     .font(.system(size: 13, weight: .medium))
@@ -84,6 +87,45 @@ struct MultiCockpitRoot: View {
 
     private func styleShort(_ s: String) -> String {
         s == "Default" ? "Default" : s.replacingOccurrences(of: "Throttle ", with: "")
+    }
+
+    /// Jump the active terminal between conversation turns (prev/next prompt or
+    /// response) and back to live — a timeline for the session.
+    private var timelineNav: some View {
+        HStack(spacing: 2) {
+            navButton("chevron.up", "Previous turn") { model.jumpTurn(older: true) }
+            navButton("chevron.down", "Next turn") { model.jumpTurn(older: false) }
+            navButton("arrow.down.to.line", "Jump to live") { model.scrollLive() }
+        }
+        .padding(.horizontal, 4)
+        .overlay(alignment: .leading) { Rectangle().fill(hair).frame(width: 1).padding(.vertical, 6) }
+        .overlay(alignment: .trailing) { Rectangle().fill(hair).frame(width: 1).padding(.vertical, 6) }
+    }
+
+    private func navButton(_ icon: String, _ help: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon).font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary).frame(width: 22, height: 22).contentShape(Rectangle())
+        }.buttonStyle(.plain).help(help)
+    }
+
+    /// Curated terminal presets (no full editor — that's a non-goal). Switching
+    /// re-styles every live session immediately.
+    private var themeMenu: some View {
+        Menu {
+            ForEach(CockpitTerminalTheme.Preset.allCases) { p in
+                Button {
+                    CockpitTerminalTheme.current = p
+                    themePreset = p
+                    model.restyleTerminals()
+                } label: {
+                    if themePreset == p { Label(p.label, systemImage: "checkmark") } else { Text(p.label) }
+                }
+            }
+        } label: {
+            Image(systemName: "paintpalette").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+        }
+        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help("Terminal theme: \(themePreset.label)")
     }
 
     private var viewSwitcher: some View {

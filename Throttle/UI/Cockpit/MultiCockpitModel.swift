@@ -119,6 +119,10 @@ final class CockpitTab: Identifiable {
 
     /// User is now looking at this session → clear the attention flag.
     func clearAttention() { needsInput = false }
+
+    // MARK: - Timeline navigation (acts on this tab's live terminal)
+    func jumpTurn(older: Bool) { (terminal as? DroppableTerminalView)?.scrollToTurn(older: older) }
+    func scrollLive() { (terminal as? DroppableTerminalView)?.scrollToLive() }
 }
 
 /// Manages the set of cockpit sessions and the shared decision-layer data:
@@ -344,6 +348,15 @@ final class MultiCockpitModel {
     /// Wake a hibernated session: make it active → ensureSpawned respawns it
     /// and `claude --resume`s its context.
     func wake(_ id: UUID) { activeID = id }
+
+    /// Re-apply the current terminal preset to every live session (theme switch).
+    func restyleTerminals() {
+        for tab in sessions { if let t = tab.terminal { CockpitTerminalTheme.apply(to: t) } }
+    }
+
+    /// Nav helpers routed to the active session's terminal.
+    func jumpTurn(older: Bool) { active?.jumpTurn(older: older) }
+    func scrollLive() { active?.scrollLive() }
 
     func close(_ id: UUID) {
         guard let idx = sessions.firstIndex(where: { $0.id == id }) else { return }

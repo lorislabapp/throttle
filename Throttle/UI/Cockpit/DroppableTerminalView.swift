@@ -137,6 +137,37 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         return cleaned.count > 140 ? String(cleaned.prefix(137)) + "…" : cleaned
     }
 
+    // MARK: - Timeline navigation
+
+    /// Scroll the viewport to the previous (older) / next (newer) conversation
+    /// turn — a line whose first glyph is a claude bullet (⏺ / ●) or a user
+    /// prompt (> / ❯). Steps one line at a time using only public SwiftTerm APIs
+    /// (scrollUp/Down + getCharData on the top visible row).
+    func scrollToTurn(older: Bool) {
+        let term = getTerminal()
+        var steps = 0
+        while steps < 8000 {
+            steps += 1
+            let pos = scrollPosition
+            if older && pos <= 0 { break }
+            if !older && pos >= 1 { break }
+            if older { scrollUp(lines: 1) } else { scrollDown(lines: 1) }
+            if topLineIsTurnMarker(term) { return }
+        }
+    }
+
+    private func topLineIsTurnMarker(_ term: Terminal) -> Bool {
+        var s = ""
+        for col in 0..<min(term.cols, 8) {
+            if let cd = term.getCharData(col: col, row: 0) { s.append(cd.getCharacter()) }
+        }
+        guard let first = s.trimmingCharacters(in: .whitespaces).first else { return false }
+        return first == "⏺" || first == "●" || first == ">" || first == "❯"
+    }
+
+    /// Jump back to the live bottom of the scrollback.
+    func scrollToLive() { scroll(toPosition: 1) }
+
     // MARK: - File drops
 
     private func enableFileDrops() {
