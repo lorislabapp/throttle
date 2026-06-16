@@ -121,6 +121,33 @@ final class AppState: @unchecked Sendable {
     }
     #endif
 
+    /// Anchor the local cap of each window to the server-true utilization from a
+    /// fresh exact snapshot, so the local estimate (used between exact refreshes
+    /// and when exact is stale) actually tracks reality. Without this the cap
+    /// stays at "auto" (rolling-max + 5%), which is unrelated to Anthropic's real
+    /// metering — the cause of the 12%-local vs 92%-exact divergence.
+    /// Skips windows with a user-set "manual" cap (highest precedence).
+    func anchorCalibration(from exact: ExactSnapshot) {
+        let pairs: [(WindowKind, Int)] = [
+            (.session5h, exact.fiveHour.utilization),
+            (.weeklyAll, exact.sevenDay.utilization),
+            (.weeklySonnet, exact.sevenDaySonnet.utilization),
+        ]
+        let database = self.database
+        Task { [weak self] in
+            try? await Task.detached {
+                try database.write { db in
+                    for (kind, pct) in pairs where pct > 0 {
+                        if let cal = try? DatabaseQueries.calibration(in: db, kind: kind),
+                           cal.source == "manual" { continue }
+                        try? CalibrationEngine.anchor(in: db, kind: kind, observedPercent: pct)
+                    }
+                }
+            }.value
+            self?.refresh()   // recompute local % against the freshly anchored caps
+        }
+    }
+
     /// Recompute the snapshot from the database. Call from UI thread or from Coordinator hooks.
     func refresh() {
         // Cancel any in-flight refresh

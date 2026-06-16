@@ -96,6 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task { @MainActor in
                 self?.appState.exactSnapshot = snap
                 self?.appState.exactModeError = nil
+                self?.appState.anchorCalibration(from: snap)   // make the local estimate track server truth
                 self?.appState.refreshStatusline()   // keep the terminal line in sync with exact
             }
         }
