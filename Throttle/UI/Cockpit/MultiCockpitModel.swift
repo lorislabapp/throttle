@@ -369,7 +369,10 @@ final class MultiCockpitModel {
 
     var binding: Binding? {
         guard let appState else { return nil }
-        if let ex = appState.exactSnapshot {
+        // Only claim EXACT when the server snapshot is actually fresh — otherwise
+        // degrade to the local estimate (≈), same as the menu-bar dropdown. A
+        // stale exact value labelled EXACT violates the golden rule.
+        if let ex = appState.exactSnapshot, ex.isFresh() {
             let ws: [(String, Int, Date?)] = [
                 ("Session", ex.fiveHour.utilization, ex.fiveHour.resetsAt),
                 ("Weekly", ex.sevenDay.utilization, ex.sevenDay.resetsAt),
