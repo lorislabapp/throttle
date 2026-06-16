@@ -15,6 +15,11 @@ final class ThresholdNotifier {
     private let logger = Logger(subsystem: "com.lorislab.throttle", category: "ThresholdNotifier")
     private let debounceInterval: TimeInterval = 6 * 3600
     private let thresholds: [Double] = [0.80, 0.95]
+    /// Predictive nudge: warn when the current burn rate projects hitting the cap
+    /// within this horizon — BEFORE the fixed 80/95 thresholds catch it.
+    private let forecastHorizon: TimeInterval = 30 * 60
+    private let forecastDebounce: TimeInterval = 2 * 3600
+    private let forecastMinInterval: TimeInterval = 120   // need a ≥2-min baseline for a stable rate
 
     private var enabled: Bool {
         UserDefaults.standard.bool(forKey: "thresholdNotificationsEnabled")
@@ -34,22 +39,24 @@ final class ThresholdNotifier {
     func evaluate(snapshot: UsageSnapshot, exact: ExactSnapshot?) {
         guard enabled else { return }
 
-        let metrics: [(String, Double)] = {
+        // (label, pct, secondsUntilReset) — reset seconds let the forecast skip a
+        // window that will reset before the burn would ever reach the cap.
+        let metrics: [(String, Double, Double)] = {
             if let ex = exact, ex.isFresh() {
                 return [
-                    ("Session 5h",    Double(ex.fiveHour.utilization) / 100.0),
-                    ("Weekly all",    Double(ex.sevenDay.utilization) / 100.0),
-                    ("Weekly Sonnet", Double(ex.sevenDaySonnet.utilization) / 100.0)
+                    ("Session 5h",    Double(ex.fiveHour.utilization) / 100.0,      ex.fiveHour.resetsAt?.timeIntervalSinceNow ?? -1),
+                    ("Weekly all",    Double(ex.sevenDay.utilization) / 100.0,      ex.sevenDay.resetsAt?.timeIntervalSinceNow ?? -1),
+                    ("Weekly Sonnet", Double(ex.sevenDaySonnet.utilization) / 100.0, ex.sevenDaySonnet.resetsAt?.timeIntervalSinceNow ?? -1)
                 ]
             }
             return [
-                ("Session 5h",    snapshot.session5h.percentUsed ?? 0),
-                ("Weekly all",    snapshot.weeklyAll.percentUsed ?? 0),
-                ("Weekly Sonnet", snapshot.weeklySonnet.percentUsed ?? 0)
+                ("Session 5h",    snapshot.session5h.percentUsed ?? 0,    Double(snapshot.session5h.resetInSeconds)),
+                ("Weekly all",    snapshot.weeklyAll.percentUsed ?? 0,    Double(snapshot.weeklyAll.resetInSeconds)),
+                ("Weekly Sonnet", snapshot.weeklySonnet.percentUsed ?? 0, Double(snapshot.weeklySonnet.resetInSeconds))
             ]
         }()
 
-        for (label, pct) in metrics {
+        for (label, pct, _) in metrics {
             for threshold in thresholds where pct >= threshold {
                 let key = "lastFired_\(label)_\(Int(threshold * 100))"
                 let lastFired = UserDefaults.standard.double(forKey: key)
@@ -61,6 +68,8 @@ final class ThresholdNotifier {
                 break
             }
         }
+
+        for (label, pct, resetSec) in metrics { forecastCapETA(label: label, pct: pct, resetSeconds: resetSec) }
 
         detectSessionReset(snapshot: snapshot, exact: exact)
     }
@@ -103,6 +112,61 @@ final class ThresholdNotifier {
             if let err {
                 self?.logger.error("Session-reset notification failed: \(err.localizedDescription)")
             }
+        }
+    }
+
+    /// Predictive cap nudge — the moat. From the pct change since the last
+    /// baseline (≥2 min ago) derive a burn rate, project ETA to 100%, and warn
+    /// if the cap is within `forecastHorizon` AND the window won't reset first.
+    /// Only in the mid-range (50–95%); below is premature, ≥95% the fixed
+    /// threshold already fires. Pure derivation from pct — no DB, no burn query.
+    private func forecastCapETA(label: String, pct: Double, resetSeconds: Double) {
+        let pKey = "fcPct_\(label)", tKey = "fcT_\(label)", fKey = "fcFired_\(label)"
+        // Outside the actionable band: clear the baseline so a fresh rise starts clean.
+        guard pct >= 0.50, pct < 0.95 else {
+            UserDefaults.standard.removeObject(forKey: pKey)
+            UserDefaults.standard.removeObject(forKey: tKey)
+            return
+        }
+        let now = Date().timeIntervalSince1970
+        let lastT = UserDefaults.standard.double(forKey: tKey)
+        let lastPct = UserDefaults.standard.double(forKey: pKey)
+        // No baseline yet, or it's too fresh to give a stable rate → keep waiting
+        // (don't move the anchor until it's old enough).
+        guard lastT > 0 else {
+            UserDefaults.standard.set(now, forKey: tKey); UserDefaults.standard.set(pct, forKey: pKey); return
+        }
+        let dt = now - lastT
+        guard dt >= forecastMinInterval else { return }
+        // Re-anchor for the next interval.
+        UserDefaults.standard.set(now, forKey: tKey); UserDefaults.standard.set(pct, forKey: pKey)
+
+        let dpct = pct - lastPct
+        guard dpct > 0 else { return }                       // not rising → no ETA
+        let etaSec = (1.0 - pct) / (dpct / dt)
+        guard etaSec <= forecastHorizon else { return }      // not imminent
+        if resetSeconds > 0, resetSeconds <= etaSec { return } // resets before cap → safe
+
+        let lastFired = UserDefaults.standard.double(forKey: fKey)
+        guard now - lastFired >= forecastDebounce else { return }
+        UserDefaults.standard.set(now, forKey: fKey)
+        fireForecast(label: label, etaMinutes: max(1, Int(etaSec / 60)), pct: Int(pct * 100))
+    }
+
+    private func fireForecast(label: String, etaMinutes: Int, pct: Int) {
+        let content = UNMutableNotificationContent()
+        content.title = "\(label) cap in ~\(etaMinutes) min"
+        content.body = label == "Weekly Sonnet"
+            ? "At your current rate the Sonnet weekly cap is ~\(etaMinutes) min away (\(pct)% now) — switch to Opus to keep going."
+            : "At your current burn rate you'll hit the \(label) cap in ~\(etaMinutes) min (\(pct)% now). Wrap up or batch to avoid a lockout."
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: "throttle.forecast.\(label)",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request) { [weak self] err in
+            if let err { self?.logger.error("Forecast notification failed: \(err.localizedDescription)") }
         }
     }
 
