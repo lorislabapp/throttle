@@ -25,6 +25,12 @@ enum TokoptHook {
         let stderr = resp["stderr"] as? String ?? ""
         let command = (payload["tool_input"] as? [String: Any])?["command"] as? String ?? ""
 
+        // Phase 1 (measure-only): JSON-array outputs are something we deliberately
+        // pass through uncompressed below — but we record how much TOON *would*
+        // save (separate log, never applied) so the value is provable before we
+        // ever opt into replacing. Returns true when it logged a candidate.
+        if stderr.isEmpty, TOONTranspiler.measurePotential(stdout, tool: "Bash") { return }
+
         guard shouldCompress(stdout: stdout, stderr: stderr) else { return }
 
         let compressed = compress(stdout, command: command)
