@@ -137,6 +137,41 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         return cleaned.count > 140 ? String(cleaned.prefix(137)) + "…" : cleaned
     }
 
+    // MARK: - Right-click context menu
+
+    /// SwiftTerm ships no contextual menu, so right-click did nothing. Provide
+    /// the expected Copy / Paste / Select All / Clear, plus — when there's a
+    /// selection — one-click "ask claude" prompts that paste into the session.
+    override func menu(for event: NSEvent) -> NSMenu? {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let sel = getSelection()
+        let hasSel = (sel?.isEmpty == false)
+
+        ctxItem(menu, "Copy", enabled: hasSel) { [weak self] in self?.copy(NSNull()) }
+        ctxItem(menu, "Paste", enabled: true) { [weak self] in self?.paste(NSNull()) }
+        ctxItem(menu, "Select All", enabled: true) { [weak self] in self?.selectAll(nil) }
+        menu.addItem(.separator())
+        ctxItem(menu, "Clear", enabled: true) { [weak self] in self?.send(txt: "\u{0c}") }
+
+        if hasSel, let s = sel {
+            menu.addItem(.separator())
+            ctxItem(menu, "Ask claude to summarize", enabled: true) { [weak self] in
+                self?.paste("Summarize this:\n\n\(s)\n") }
+            ctxItem(menu, "Ask claude to explain", enabled: true) { [weak self] in
+                self?.paste("Explain this:\n\n\(s)\n") }
+        }
+        return menu
+    }
+
+    private func ctxItem(_ menu: NSMenu, _ title: String, enabled: Bool, _ run: @escaping () -> Void) {
+        let it = NSMenuItem(title: title, action: #selector(dropMenuChose(_:)), keyEquivalent: "")
+        it.target = self
+        it.isEnabled = enabled
+        it.representedObject = BlockBox(run)
+        menu.addItem(it)
+    }
+
     // MARK: - Timeline navigation
 
     /// Scroll the viewport to the previous (older) / next (newer) conversation
