@@ -47,9 +47,16 @@ enum CockpitTerminalTheme {
                 0x141A2A, 0xFF6E6E, 0x59D9A0, 0xE7C97A, 0x5B9BFF, 0xB99BFF, 0x5CC8E0, 0xB6BFD2,
                 0x4A5570, 0xFF9090, 0x84E8BC, 0xF2D89A, 0x86B6FF, 0xD2B8FF, 0x8EDCEE, 0xEEF3FB])
         case .light:
+            // claude assumes a DARK terminal and fills diff lines with an ANSI
+            // green/red BACKGROUND. On a light theme that made text invisible
+            // (dark text on a dark-green/red fill; and idx0 "black" was light, so
+            // black text vanished too). Fix: idx0 dark again, and the diff colours
+            // (red/green + their brights) PALE so dark text stays readable on them.
+            // Trade-off: green/red as foreground text is lower-contrast on white,
+            // which claude rarely uses — diff readability is the case that broke.
             return Palette(bg: 0xFBFBFD, fg: 0x1D1D1F, accent: 0x0071E3, ansi: [
-                0xE8E8EC, 0xC0392B, 0x1E8A4C, 0x9A6B00, 0x0060D0, 0x7A3FBF, 0x0E7C8C, 0x3A3A40,
-                0x8A8A90, 0xD0473A, 0x27A05C, 0xB07E10, 0x1672E6, 0x8E54D0, 0x1894A6, 0x111114])
+                0x2B2B2E, 0xE8A0A0, 0xA8DCB0, 0x9A6B00, 0x0060D0, 0x7A3FBF, 0x0E7C8C, 0x3A3A40,
+                0x8A8A90, 0xF0BEBE, 0xBEE6C4, 0xB07E10, 0x1672E6, 0x8E54D0, 0x1894A6, 0x111114])
         case .contrast:
             return Palette(bg: 0x000000, fg: 0xFFFFFF, accent: 0x00B0FF, ansi: [
                 0x000000, 0xFF5C57, 0x5AF78E, 0xF3F99D, 0x57C7FF, 0xFF6AC1, 0x9AEDFE, 0xE0E0E0,
