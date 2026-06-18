@@ -550,8 +550,9 @@ struct MultiCockpitRoot: View {
             panel.canChooseDirectories = true
             panel.canChooseFiles = false
             panel.allowsMultipleSelection = false
+            panel.canCreateDirectories = true   // adds the "New Folder" button → start a brand-new project
             panel.prompt = "Open Session"
-            panel.message = "Choose a project folder to start a claude session in."
+            panel.message = "Choose or create a project folder to start a claude session in."
             NSApp.activate(ignoringOtherApps: true)
             panel.makeKeyAndOrderFront(nil)
             if panel.runModal() == .OK, let url = panel.url {
