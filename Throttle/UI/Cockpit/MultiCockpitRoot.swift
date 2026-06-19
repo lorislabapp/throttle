@@ -55,6 +55,7 @@ struct MultiCockpitRoot: View {
             viewSwitcher
             Spacer(minLength: 12)
             if !model.sessions.isEmpty { timelineNav }
+            caffeineToggle
             themeMenu
             Button { showInspector.toggle() } label: {
                 Image(systemName: "sidebar.trailing")
@@ -107,6 +108,19 @@ struct MultiCockpitRoot: View {
             Image(systemName: icon).font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary).frame(width: 22, height: 22).contentShape(Rectangle())
         }.buttonStyle(.plain).help(help)
+    }
+
+    /// Caffeine: keep the Mac from idle-sleeping while sessions run (lid open).
+    private var caffeineToggle: some View {
+        let on = CaffeineService.shared.active
+        return Button { CaffeineService.shared.toggle() } label: {
+            Image(systemName: on ? "cup.and.saucer.fill" : "cup.and.saucer")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(on ? Color.accentColor : Color.secondary)
+        }
+        .buttonStyle(.plain)
+        .help(on ? "Caffeine on — Mac won't idle-sleep while sessions run"
+                 : "Keep Mac awake while sessions run (idle only — not lid-closed)")
     }
 
     /// Curated terminal presets (no full editor — that's a non-goal). Switching
