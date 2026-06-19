@@ -14,6 +14,8 @@ struct ProjectStatsTab: View {
     @State private var avgSessionTokens: Int = 0
     @State private var modelSplit: [(label: String, share: Double)] = []
     @State private var costEUR: Double = 0
+    @State private var timeSpentMonth: TimeInterval = 0
+    @State private var timeSpentWeek: TimeInterval = 0
     @State private var loading = true
 
     private let hair = Color.primary.opacity(0.09)
@@ -50,6 +52,7 @@ struct ProjectStatsTab: View {
                 statCell("This month", formatTokens(monthTokens), "weighted")
                 statCell("Sessions", "\(sessionCount)", "avg \(formatTokens(avgSessionTokens))")
                 statCell("API cost", formatEUR(costEUR), "this month")
+                statCell("Time spent", formatDuration(timeSpentMonth), "active · \(formatDuration(timeSpentWeek)) wk")
             }
             .background(hair)
             .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -137,6 +140,8 @@ struct ProjectStatsTab: View {
                 var avgSession: Int = 0
                 var split: [(String, Double)] = []
                 var cost: Double = 0
+                var timeMonth: TimeInterval = 0
+                var timeWeek: TimeInterval = 0
             }
             let result: Bundle = await Task.detached {
                 var b = Bundle()
@@ -148,6 +153,8 @@ struct ProjectStatsTab: View {
                     b.avgSession = avg
                     b.split = (try? StatsDataService.modelSplitForProject(in: db, encodedName: encoded, fromHoursAgo: 0, toHoursAgo: 720)) ?? []
                     b.cost = (try? StatsDataService.costForProject(in: db, encodedName: encoded, fromHoursAgo: 0, toHoursAgo: 720)) ?? 0
+                    b.timeMonth = (try? StatsDataService.activeTimeForProject(in: db, encodedName: encoded, fromHoursAgo: 0, toHoursAgo: 720)) ?? 0
+                    b.timeWeek = (try? StatsDataService.activeTimeForProject(in: db, encodedName: encoded, fromHoursAgo: 0, toHoursAgo: 168)) ?? 0
                 }
                 return b
             }.value
@@ -158,6 +165,8 @@ struct ProjectStatsTab: View {
                 self.avgSessionTokens = result.avgSession
                 self.modelSplit = result.split.map { (label: $0.0, share: $0.1) }
                 self.costEUR = result.cost
+                self.timeSpentMonth = result.timeMonth
+                self.timeSpentWeek = result.timeWeek
                 self.loading = false
             }
         }
@@ -167,6 +176,13 @@ struct ProjectStatsTab: View {
         if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
         if n >= 1_000     { return String(format: "%.0fk", Double(n) / 1_000) }
         return "\(n)"
+    }
+
+    private func formatDuration(_ seconds: TimeInterval) -> String {
+        let m = Int(seconds) / 60
+        if m < 60 { return "\(m)m" }
+        let h = m / 60, rm = m % 60
+        return rm == 0 ? "\(h)h" : "\(h)h \(rm)m"
     }
 
     private func formatEUR(_ value: Double) -> String {

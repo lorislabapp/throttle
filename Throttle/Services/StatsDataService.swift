@@ -200,6 +200,45 @@ enum StatsDataService {
         return row?["w"] ?? 0
     }
 
+    /// Active time spent on a project, in seconds. Derived from usage_events
+    /// timestamps: consecutive events ≤ `idleGap` apart form one active block;
+    /// a larger gap is a break. A block's time is (last − first); a lone event
+    /// counts as `minBlock`. Sums all blocks in the window — a real "time spent"
+    /// that ignores idle/breaks, unlike wall-clock session uptime.
+    static func activeTimeForProject(
+        in db: Database,
+        encodedName: String,
+        fromHoursAgo: Int,
+        toHoursAgo: Int,
+        idleGap: Int64 = 300,
+        minBlock: Int64 = 60,
+        now: Date = Date()
+    ) throws -> TimeInterval {
+        let nowEpoch = Int64(now.timeIntervalSince1970)
+        let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
+        let startTs = nowEpoch - Int64(toHoursAgo) * 3600
+        let ts = try Int64.fetchAll(db, sql: """
+            SELECT e.timestamp
+            FROM usage_events e
+            JOIN file_state fs ON fs.session_id = e.session_id
+            WHERE e.timestamp >= ? AND e.timestamp < ? AND fs.encoded_project = ?
+            ORDER BY e.timestamp
+            """, arguments: [startTs, endTs, encodedName])
+        guard let first = ts.first else { return 0 }
+        var total: Int64 = 0
+        var blockStart = first
+        var prev = first
+        for t in ts.dropFirst() {
+            if t - prev > idleGap {
+                total += max(prev - blockStart, minBlock)
+                blockStart = t
+            }
+            prev = t
+        }
+        total += max(prev - blockStart, minBlock)
+        return TimeInterval(total)
+    }
+
     /// (sessionCount, avgTokensPerSession) for a project.
     static func sessionsForProject(
         in db: Database,
