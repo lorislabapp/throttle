@@ -501,6 +501,14 @@ struct MultiCockpitRoot: View {
             if hoveredSession == s.id {
                 HStack(spacing: 6) {
                     if s.isSpawned {
+                        Button { s.isPaused ? s.resumeProcess() : s.pauseProcess() } label: {
+                            Image(systemName: s.isPaused ? "play.fill" : "pause.fill")
+                                .font(.system(size: 11)).foregroundStyle(s.isPaused ? Color.purple : .secondary)
+                                .background(Circle().fill(.background))
+                        }
+                        .buttonStyle(.plain)
+                        .help(s.isPaused ? "Resume — unfreeze this session"
+                                         : "Pause — freeze this session (stops token burn, keeps state)")
                         Button { model.hibernate(s.id) } label: {
                             Image(systemName: "moon.zzz.fill")
                                 .font(.system(size: 12)).foregroundStyle(.secondary)
@@ -701,6 +709,9 @@ struct MultiCockpitRoot: View {
             Circle().fill(Color.green).frame(width: 6, height: 6)
         case .rateLimited:
             Circle().fill(Color.red).frame(width: 6, height: 6)
+        case .paused:
+            Image(systemName: "pause.fill").font(.system(size: 7, weight: .bold)).foregroundStyle(.purple)
+                .frame(width: 7, height: 7)
         case .waiting:
             Circle().strokeBorder(Color.orange, lineWidth: 1.5).frame(width: 7, height: 7)
         case .idle:
@@ -713,6 +724,7 @@ struct MultiCockpitRoot: View {
     private func stateDotHelp(_ s: CockpitTab) -> String {
         switch s.state {
         case .working:    return "Working"
+        case .paused:     return "Paused (frozen) — click ▶ to resume"
         case .rateLimited:
             let when = s.rateLimitedUntil.map { " — frees up in \(MultiCockpitModel.countdown(Int64($0.timeIntervalSinceNow)))" } ?? ""
             return "Rate-limited\(when)"

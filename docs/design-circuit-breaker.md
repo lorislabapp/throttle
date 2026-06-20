@@ -4,9 +4,15 @@
 blocks an expensive model) before Anthropic's hard 5h cap locks the user out.
 
 ## What's now built (the safe half)
-- **Predictive cap nudge** (this session): `ThresholdNotifier.forecastCapETA`
-  derives burn rate from the pct delta and warns "cap in ~N min" before the
-  fixed 80/95 thresholds. This is the *warn* half — safe, shipped.
+- **Predictive cap nudge**: `ThresholdNotifier.forecastCapETA` derives burn rate
+  from the pct delta and warns "cap in ~N min" before the fixed 80/95 thresholds.
+  This is the *warn* half — safe, shipped.
+- **Manual Pause/Resume** (shipped 3.2.2): user-triggered SIGSTOP/SIGCONT freeze
+  of a session's subtree (`SystemMemoryService.signalSubtree`, `CockpitTab.pause/
+  resumeProcess`, rail hover button, `.paused` state). Reversible — stops token
+  burn without killing state. The design's endorsed safe variant of the ACT: the
+  user pauses a runaway themselves; Throttle never auto-freezes. Still deferred:
+  true AUTO-pause (≥97% + ETA<5min, countdown-cancelable) — gated on user demand.
 
 ## The risky half: actively ACTING (pause / block)
 "Pause the session" means interrupting the user's live `claude` mid-work, or

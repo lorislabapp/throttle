@@ -153,6 +153,17 @@ enum SystemMemoryService {
         }
     }
 
+    /// Freeze (SIGSTOP) or resume (SIGCONT) a session's whole subtree — a
+    /// reversible pause that stops token burn without killing state. User-
+    /// triggered only (the circuit-breaker's safe half). Deepest-first on stop so
+    /// a parent can't step a child past the freeze; shallowest-first on resume.
+    static func signalSubtree(rootPid: pid_t, signal sig: Int32) {
+        guard rootPid > 1 else { return }
+        let pids = subtreePids(rootPids: [rootPid])
+        let ordered = (sig == SIGSTOP) ? pids.reversed() : Array(pids)
+        for pid in ordered where pid > 1 { kill(pid, sig) }
+    }
+
     // MARK: - Running claude sessions
 
     /// Sum RSS of processes whose executable name is exactly `claude` (the CLI).

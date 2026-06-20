@@ -55,13 +55,31 @@ final class CockpitTab: Identifiable {
     /// `working` covers BOTH claude streaming AND the user typing (lastActivityAt
     /// is bumped on keystrokes too), so the "claude is thinking before the first
     /// token" gap no longer reads as idle.
-    enum SessionState { case dormant, hibernated, rateLimited, working, waiting, idle }
+    /// Frozen via SIGSTOP (reversible) to stop token burn without killing state —
+    /// the circuit-breaker's safe, user-triggered half.
+    var isPaused = false
+
+    enum SessionState { case dormant, hibernated, rateLimited, paused, working, waiting, idle }
     var state: SessionState {
         if terminal == nil { return isHibernated ? .hibernated : .dormant }
+        if isPaused { return .paused }
         if isRateLimited { return .rateLimited }
         if needsInput { return .waiting }
         if Date().timeIntervalSince(lastActivityAt) < 6 { return .working }
         return .idle
+    }
+
+    /// Freeze/resume this session's process subtree (SIGSTOP/SIGCONT). No-op if
+    /// not spawned. Reversible — never loses state, unlike hibernate (which kills).
+    func pauseProcess() {
+        guard let pid = shellPid, !isPaused else { return }
+        SystemMemoryService.signalSubtree(rootPid: pid, signal: SIGSTOP)
+        isPaused = true
+    }
+    func resumeProcess() {
+        guard let pid = shellPid, isPaused else { return }
+        SystemMemoryService.signalSubtree(rootPid: pid, signal: SIGCONT)
+        isPaused = false
     }
 
     /// PID of the session's login shell (root of its process subtree), if spawned.
