@@ -54,9 +54,14 @@ enum CockpitTerminalTheme {
             // (red/green + their brights) PALE so dark text stays readable on them.
             // Trade-off: green/red as foreground text is lower-contrast on white,
             // which claude rarely uses — diff readability is the case that broke.
+            // red/green must be readable as FOREGROUND text on white (claude uses
+            // them for +N/-N summaries and ✓/✗) — pale tones failed WCAG (~1.4:1).
+            // claude colours its diff BACKGROUNDS in truecolor (not these 16), so
+            // these only need to be good foregrounds; the proper diff fix is
+            // `/theme light` in claude. (H01)
             return Palette(bg: 0xFBFBFD, fg: 0x1D1D1F, accent: 0x0071E3, ansi: [
-                0x2B2B2E, 0xE8A0A0, 0xA8DCB0, 0x9A6B00, 0x0060D0, 0x7A3FBF, 0x0E7C8C, 0x3A3A40,
-                0x8A8A90, 0xF0BEBE, 0xBEE6C4, 0xB07E10, 0x1672E6, 0x8E54D0, 0x1894A6, 0x111114])
+                0x2B2B2E, 0xB42318, 0x067647, 0x9A6B00, 0x0060D0, 0x7A3FBF, 0x0E7C8C, 0x3A3A40,
+                0x8A8A90, 0xCB3A2B, 0x0A7D4E, 0xB07E10, 0x1672E6, 0x8E54D0, 0x1894A6, 0x111114])
         case .contrast:
             return Palette(bg: 0x000000, fg: 0xFFFFFF, accent: 0x00B0FF, ansi: [
                 0x000000, 0xFF5C57, 0x5AF78E, 0xF3F99D, 0x57C7FF, 0xFF6AC1, 0x9AEDFE, 0xE0E0E0,

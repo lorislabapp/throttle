@@ -18,6 +18,7 @@ struct MultiCockpitRoot: View {
     @State private var hoveredSession: UUID?
     @State private var expandedFeed: UUID?
     @State private var themePreset = CockpitTerminalTheme.current
+    @State private var caffeine = CaffeineService.shared   // @Observable → body tracks .active (H05)
 
     private let hair = Color.primary.opacity(0.10)
     private let track = Color.primary.opacity(0.08)
@@ -112,8 +113,8 @@ struct MultiCockpitRoot: View {
 
     /// Caffeine: keep the Mac from idle-sleeping while sessions run (lid open).
     private var caffeineToggle: some View {
-        let on = CaffeineService.shared.active
-        return Button { CaffeineService.shared.toggle() } label: {
+        let on = caffeine.active
+        return Button { caffeine.toggle() } label: {
             Image(systemName: on ? "cup.and.saucer.fill" : "cup.and.saucer")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(on ? Color.accentColor : Color.secondary)

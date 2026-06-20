@@ -84,7 +84,11 @@ final class CockpitTab: Identifiable {
         // starting an empty session.
         let sid = sessionId ?? resumeSessionId
             ?? MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
-        if let sid { cmd += "claude --resume \(sid)"; self.sessionId = sid } else { cmd += "claude" }
+        // Quote the id (M19): it's a transcript-derived value interpolated into a
+        // shell command. Only accept a sane session-id shape, else start fresh.
+        if let sid, sid.allSatisfy({ $0.isHexDigit || $0 == "-" }) {
+            cmd += "claude --resume '\(sid)'"; self.sessionId = sid
+        } else { cmd += "claude" }
         term.send(txt: cmd + "\n")
     }
 
@@ -441,8 +445,11 @@ final class MultiCockpitModel {
         return nil
     }
 
+    private static let hmFormatter: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "h:mm a"; return f
+    }()
     static func hm(_ d: Date) -> String {
-        let f = DateFormatter(); f.dateFormat = "h:mm a"; return f.string(from: d)
+        return hmFormatter.string(from: d)
     }
 
     // MARK: - Project picker (existing projects only)

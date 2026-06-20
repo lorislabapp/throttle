@@ -2,14 +2,13 @@ import Foundation
 import GRDB
 import Observation
 
-/// @unchecked Sendable: All mutable state is MainActor-isolated. The `database`
-/// property is a GRDB DatabaseWriter (DatabaseQueue or DatabasePool), which is
-/// itself Sendable-compliant via internal queue confinement. All async DB operations
-/// use `Task.detached` to hop off MainActor, and results are written back via
-/// `await MainActor.run`. No cross-actor shared mutable state exists.
+/// All mutable state is MainActor-isolated; the `database` (GRDB DatabaseWriter)
+/// is Sendable via internal queue confinement, and async DB work hops off via
+/// `Task.detached` + `await MainActor.run`. A `@MainActor` class is implicitly
+/// Sendable, so the prior `@unchecked Sendable` was redundant (L01).
 @Observable
 @MainActor
-final class AppState: @unchecked Sendable {
+final class AppState {
     /// True when ~/.claude/ is not present.
     var claudeCodeDetected: Bool = false
 

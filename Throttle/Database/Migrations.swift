@@ -142,6 +142,16 @@ enum Migrations {
         // uniqueness so future re-inserts are no-ops (paired with the
         // INSERT OR IGNORE conflict policy on UsageEvent).
         migrator.registerMigration("v6_dedupe_usage_events") { db in
+            // Build a NON-unique covering index on the natural key FIRST so the
+            // dedupe GROUP BY is index-backed — otherwise the anti-join DELETE is
+            // an unindexed O(n) self-join that can hang launch for tens of seconds
+            // on a large usage.db (H03). The UNIQUE index can only be created
+            // AFTER duplicates are gone.
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_usage_natural_tmp
+                ON usage_events(session_id, timestamp, model,
+                                input_tokens, output_tokens, cache_create, cache_read)
+                """)
             try db.execute(sql: """
                 DELETE FROM usage_events
                 WHERE id NOT IN (
@@ -150,6 +160,7 @@ enum Migrations {
                              input_tokens, output_tokens, cache_create, cache_read
                 )
                 """)
+            try db.execute(sql: "DROP INDEX IF EXISTS idx_usage_natural_tmp")
             try db.execute(sql: """
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_natural
                 ON usage_events(session_id, timestamp, model,
