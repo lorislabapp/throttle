@@ -117,6 +117,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         savingsIngester.start()
 
         CrashReporter.shared.start()
+        TokoptHook.purgeRaw()   // age out raw command-output dumps (M16)
 
         // Throttle Autopilot — keep the Claude Code setup optimized, by default,
         // system-wide. Off-main; debounced to ~once/day; every action reversible

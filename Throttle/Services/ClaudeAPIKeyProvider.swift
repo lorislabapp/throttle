@@ -191,7 +191,9 @@ enum ClaudeAPIKeyStore {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
-            kSecValueData as String: data
+            kSecValueData as String: data,
+            // M17: keep the Anthropic API key on THIS device — never sync it to iCloud Keychain.
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
         SecItemDelete(attrs as CFDictionary)
         return SecItemAdd(attrs as CFDictionary, nil) == errSecSuccess

@@ -205,7 +205,7 @@ private enum LicenseKeychain {
         SecItemDelete(base as CFDictionary)
         var add = base
         add[kSecValueData as String] = data
-        add[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlocked
+        add[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly   // M17: don't replicate to iCloud Keychain
         let status = SecItemAdd(add as CFDictionary, nil)
         if status != errSecSuccess {
             throw NSError(domain: NSOSStatusErrorDomain, code: Int(status))

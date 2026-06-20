@@ -30,6 +30,7 @@ final class ExactModeService {
 
     private let logger = Logger(subsystem: "com.lorislab.throttle", category: "ExactMode")
     private var pollTask: Task<Void, Never>?
+    private var consecutiveFailures = 0   // drives exponential backoff (H10)
 
     private(set) var lastSnapshot: ExactSnapshot?
     private(set) var lastError: ExactModeError?
@@ -70,14 +71,26 @@ final class ExactModeService {
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.pollOnce()
+                if let self {
+                    if self.lastError == nil, self.hasFreshSnapshot { self.consecutiveFailures = 0 }
+                    else { self.consecutiveFailures = min(self.consecutiveFailures + 1, 6) }
+                }
                 let interval = self?.nextPollInterval() ?? .seconds(5 * 60)
                 try? await Task.sleep(for: interval)
             }
         }
     }
 
-    /// 60 s when any window is hot (>=80%), 5 min otherwise.
+    /// 60 s when any window is hot (>=80%), 5 min otherwise. On consecutive
+    /// failures, exponential backoff with jitter so a dead claude.ai / captive
+    /// portal isn't hammered every 60 s (H10) — each retry also spins the hidden
+    /// WKWebView, which is steady pressure on a saturated Mac.
     private func nextPollInterval() -> Duration {
+        if consecutiveFailures > 0 {
+            let base = min(30 * (1 << min(consecutiveFailures - 1, 5)), 15 * 60)   // 30,60,…,cap 15min
+            let jittered = Double(base) * Double.random(in: 0.8...1.2)             // ±20%
+            return .seconds(Int(jittered))
+        }
         guard let snap = lastSnapshot, snap.isFresh() else {
             return .seconds(5 * 60)
         }

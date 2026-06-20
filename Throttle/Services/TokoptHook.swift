@@ -242,6 +242,20 @@ enum TokoptHook {
             .appendingPathComponent("Throttle", isDirectory: true)
     }
 
+    /// Purge tokopt-raw dumps older than `maxAge` (default 2h). These tees can
+    /// contain secrets from command output; they exist only as a same-session
+    /// breadcrumb, so age them out aggressively (M16). Called on app launch.
+    static func purgeRaw(maxAge: TimeInterval = 2 * 3600) {
+        let dir = appSupport.appendingPathComponent("tokopt-raw", isDirectory: true)
+        let fm = FileManager.default
+        guard let files = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.contentModificationDateKey]) else { return }
+        let cutoff = Date().addingTimeInterval(-maxAge)
+        for f in files {
+            let mod = (try? f.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+            if mod < cutoff { try? fm.removeItem(at: f) }
+        }
+    }
+
     /// Write the full raw output to a rolling temp file; return its path.
     static func teeRaw(_ s: String) -> String {
         let dir = appSupport.appendingPathComponent("tokopt-raw", isDirectory: true)
