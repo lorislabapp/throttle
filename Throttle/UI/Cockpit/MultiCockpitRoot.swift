@@ -61,14 +61,19 @@ struct MultiCockpitRoot: View {
             viewSwitcher
             Spacer(minLength: 12)
             if !model.sessions.isEmpty { timelineNav }
-            caffeineToggle
-            themeMenu
-            Button { showInspector.toggle() } label: {
-                Image(systemName: "sidebar.trailing")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(showInspector ? Color.accentColor : Color.secondary)
+            // H08: hairline separator + tighter spacing groups the session-tools
+            // cluster so 8+ adjacent glyphs don't read as one undifferentiated row.
+            Rectangle().fill(hair).frame(width: 1, height: 16)
+            HStack(spacing: 8) {
+                caffeineToggle
+                themeMenu
+                Button { showInspector.toggle() } label: {
+                    Image(systemName: "sidebar.trailing")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(showInspector ? Color.accentColor : Color.secondary)
+                }
+                .buttonStyle(.plain).help("Audit inspector").accessibilityLabel("Audit inspector")
             }
-            .buttonStyle(.plain).help("Audit inspector").accessibilityLabel("Audit inspector")
             styleIndicator
             if appState.isPro { pill("PRO", soft: true) }
             if appState.exactSnapshot != nil { pill("EXACT", solid: true) }
@@ -489,7 +494,10 @@ struct MultiCockpitRoot: View {
                 }
                 Spacer(minLength: 0)
                 HStack {
-                    Text("Focus terminal›").font(.system(size: 10)).foregroundStyle(.tertiary)
+                    HStack(spacing: 1) {
+                        Text("Focus terminal").font(.system(size: 10))
+                        Image(systemName: "chevron.right").font(.system(size: 7, weight: .semibold))
+                    }.foregroundStyle(.tertiary)
                     Spacer()
                     if s.ramBytes > 0 {
                         Text("\(gb(s.ramBytes)) RAM").font(.system(size: 9.5, design: .monospaced)).foregroundStyle(.tertiary)
@@ -697,7 +705,9 @@ struct MultiCockpitRoot: View {
                     .frame(width: max(2, geo.size.width * min(1, fraction)))
                 if ticks {
                     ForEach([0.80, 0.95], id: \.self) { t in
-                        Rectangle().fill(Color.primary.opacity(0.25)).frame(width: 1)
+                        // L04: blend bg+fg so the 80/95% marks stay visible over
+                        // both the empty track AND a saturated orange/red fill.
+                        Rectangle().fill(Color(nsColor: .windowBackgroundColor).opacity(0.55)).frame(width: 1.5)
                             .offset(x: geo.size.width * t)
                     }
                 }
