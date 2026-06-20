@@ -213,6 +213,26 @@ final class MultiCockpitModel {
     /// Count of sessions currently waiting on a question (for the header badge).
     var waitingCount: Int { sessions.filter { $0.needsInput }.count }
 
+    /// cwds open in more than one SPAWNED tab — wasted RAM + tokens on the same
+    /// project. (Cost reads identical across them because cost is per-project.)
+    var duplicateCwds: Set<String> {
+        let live = sessions.filter { $0.isSpawned }
+        var counts: [String: Int] = [:]
+        for t in live { counts[t.cwd, default: 0] += 1 }
+        return Set(counts.filter { $0.value > 1 }.keys)
+    }
+
+    /// Consolidate: for each duplicated cwd, keep the most-recently-active spawned
+    /// tab and hibernate the rest (resume-id preserved → wake-able, frees RAM).
+    /// Never closes — nothing is lost. Doctrine: 1-click, user-initiated.
+    func consolidateDuplicates() {
+        for cwd in duplicateCwds {
+            let dupes = sessions.filter { $0.isSpawned && $0.cwd == cwd }
+                .sorted { $0.lastActivityAt > $1.lastActivityAt }
+            for extra in dupes.dropFirst() { hibernate(extra.id) }
+        }
+    }
+
     private weak var appState: AppState?
     private var tick: Task<Void, Never>?
     private var focusObserver: NSObjectProtocol?
@@ -467,7 +487,15 @@ final class MultiCockpitModel {
 
     // MARK: - Global binding (account-wide, shared by all sessions)
 
-    struct Binding { let pct: Int; let name: String; let reset: String; let estimate: Bool }
+    struct Binding { let pct: Int; let name: String; let reset: String; let estimate: Bool; let resetInSeconds: Int64? }
+
+    /// "2h 14m" style countdown for the binding reset.
+    static func countdown(_ seconds: Int64) -> String {
+        guard seconds > 0 else { return "now" }
+        let h = seconds / 3600, m = (seconds % 3600) / 60
+        if h > 0 { return "\(h)h \(m)m" }
+        return "\(m)m"
+    }
 
     var binding: Binding? {
         guard let appState else { return nil }
@@ -481,7 +509,8 @@ final class MultiCockpitModel {
                 ("Weekly · Sonnet", ex.sevenDaySonnet.utilization, ex.sevenDaySonnet.resetsAt),
             ]
             if let b = ws.max(by: { $0.1 < $1.1 }) {
-                return Binding(pct: b.1, name: b.0, reset: b.2.map(Self.hm) ?? "—", estimate: false)
+                return Binding(pct: b.1, name: b.0, reset: b.2.map(Self.hm) ?? "—", estimate: false,
+                               resetInSeconds: b.2.map { Int64($0.timeIntervalSinceNow) })
             }
         }
         let snap = appState.snapshot
@@ -492,7 +521,8 @@ final class MultiCockpitModel {
         ].filter { $0.1 >= 0 }
         if let b = cands.max(by: { $0.1 < $1.1 }) {
             return Binding(pct: Int((b.1 * 100).rounded()), name: b.0,
-                           reset: Self.hm(Date().addingTimeInterval(TimeInterval(b.2))), estimate: true)
+                           reset: Self.hm(Date().addingTimeInterval(TimeInterval(b.2))), estimate: true,
+                           resetInSeconds: b.2)
         }
         return nil
     }

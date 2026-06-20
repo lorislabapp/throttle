@@ -31,6 +31,7 @@ struct MultiCockpitRoot: View {
             globalStrip
             if model.gated { gateBanner }
             if showNotifBanner { notifDeniedBanner }
+            if !model.duplicateCwds.isEmpty { duplicateBanner }
             HStack(spacing: 0) {
                 content
                 if showInspector {
@@ -197,7 +198,8 @@ struct MultiCockpitRoot: View {
                             .foregroundStyle(toneColor(b.pct, estimate: b.estimate))
                         Text("%").font(.system(size: 12)).foregroundStyle(.secondary)
                     }
-                    Text("\(b.name)\nresets \(b.reset)").font(.system(size: 10.5)).foregroundStyle(.secondary)
+                    Text("\(b.name)\nresets \(b.reset)\(b.resetInSeconds.map { " · in \(MultiCockpitModel.countdown($0))" } ?? "")")
+                        .font(.system(size: 10.5)).foregroundStyle(.secondary)
                 }
                 bar(fraction: Double(b.pct) / 100, tone: toneColor(b.pct, estimate: false),
                     estimate: b.estimate, ticks: true)
@@ -243,6 +245,26 @@ struct MultiCockpitRoot: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 8)
         .background(Color.red.opacity(0.10))
+    }
+
+    /// Same project open in >1 live session = wasted RAM + tokens. Offer a
+    /// 1-click consolidate (hibernate the extras, keep the most-recent; resume-id
+    /// preserved → nothing lost).
+    private var duplicateBanner: some View {
+        let names = model.duplicateCwds
+            .map { cwd in (cwd as NSString).lastPathComponent }
+            .sorted().joined(separator: ", ")
+        return HStack(spacing: 8) {
+            Image(systemName: "rectangle.on.rectangle").font(.system(size: 12)).foregroundStyle(.orange)
+            Text("Same project open twice: \(names) — wasting RAM + tokens.")
+                .font(.system(size: 11.5)).foregroundStyle(.primary)
+            Spacer(minLength: 0)
+            Button("Consolidate") { model.consolidateDuplicates() }
+                .buttonStyle(.plain).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(Color.accentColor)
+                .help("Hibernate the extra session(s), keep the most recent — nothing lost")
+        }
+        .padding(.horizontal, 14).padding(.vertical, 8)
+        .background(Color.orange.opacity(0.10))
     }
 
     /// Shown when a hidden session needed you but notifications are off (C02) —
