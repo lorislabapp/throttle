@@ -20,6 +20,7 @@ struct MultiCockpitRoot: View {
     @State private var themePreset = CockpitTerminalTheme.current
     @State private var caffeine = CaffeineService.shared   // @Observable → body tracks .active (H05)
     @State private var showNotifBanner = false             // C02: notifications-denied banner
+    @State private var showHealth = false                  // Throttle Health panel
 
     private let hair = Color.primary.opacity(0.10)
     private let track = Color.primary.opacity(0.08)
@@ -50,6 +51,7 @@ struct MultiCockpitRoot: View {
         .onReceive(NotificationCenter.default.publisher(for: .cockpitNotificationsDenied)) { _ in
             showNotifBanner = true
         }
+        .sheet(isPresented: $showHealth) { HealthCheckView().environment(appState) }
     }
 
     // MARK: - Top bar (switcher + pills)
@@ -69,6 +71,12 @@ struct MultiCockpitRoot: View {
             HStack(spacing: 8) {
                 caffeineToggle
                 themeMenu
+                Button { showHealth = true } label: {
+                    Image(systemName: "stethoscope")
+                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain).help("Throttle Health — operational self-checks")
+                .accessibilityLabel("Throttle Health")
                 Button { showInspector.toggle() } label: {
                     Image(systemName: "sidebar.trailing")
                         .font(.system(size: 13, weight: .medium))
