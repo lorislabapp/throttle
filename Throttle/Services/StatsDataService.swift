@@ -239,6 +239,19 @@ enum StatsDataService {
         return TimeInterval(total)
     }
 
+    /// First and last activity timestamps for a project (all-time), as Dates —
+    /// powers "working since" and "last active". nil if the project has no events.
+    static func activitySpanForProject(in db: Database, encodedName: String) throws -> (first: Date, last: Date)? {
+        let row = try Row.fetchOne(db, sql: """
+            SELECT MIN(e.timestamp) AS first, MAX(e.timestamp) AS last
+            FROM usage_events e
+            JOIN file_state fs ON fs.session_id = e.session_id
+            WHERE fs.encoded_project = ?
+            """, arguments: [encodedName])
+        guard let first = row?["first"] as Int64?, let last = row?["last"] as Int64? else { return nil }
+        return (Date(timeIntervalSince1970: TimeInterval(first)), Date(timeIntervalSince1970: TimeInterval(last)))
+    }
+
     /// (sessionCount, avgTokensPerSession) for a project.
     static func sessionsForProject(
         in db: Database,

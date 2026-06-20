@@ -16,6 +16,9 @@ struct ProjectStatsTab: View {
     @State private var costEUR: Double = 0
     @State private var timeSpentMonth: TimeInterval = 0
     @State private var timeSpentWeek: TimeInterval = 0
+    @State private var totalTime: TimeInterval = 0
+    @State private var firstActivity: Date?
+    @State private var lastActivity: Date?
     @State private var loading = true
 
     private let hair = Color.primary.opacity(0.09)
@@ -27,6 +30,8 @@ struct ProjectStatsTab: View {
                     ProgressView().controlSize(.small)
                         .frame(maxWidth: .infinity, alignment: .center).padding(.top, 40)
                 } else {
+                    projectSection
+                    Rectangle().fill(hair).frame(height: 1).padding(.horizontal, 22)
                     usageSection
                     Rectangle().fill(hair).frame(height: 1).padding(.horizontal, 22)
                     modelSplitSection
@@ -40,6 +45,25 @@ struct ProjectStatsTab: View {
     private func secHeader(_ t: String) -> some View {
         Text(t).font(.system(size: 10.5, weight: .semibold)).tracking(0.8)
             .textCase(.uppercase).foregroundStyle(.tertiary)
+    }
+
+    // MARK: - Project detail
+
+    private var projectSection: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            secHeader("Project")
+            HStack(spacing: 1) {
+                statCell("Working since", firstActivity.map(shortDate) ?? "—",
+                         firstActivity.map { "\(daysSince($0)) days" } ?? "")
+                statCell("Total time", formatDuration(totalTime), "active, all-time")
+                statCell("Last active", lastActivity.map(relativeShort) ?? "—",
+                         lastActivity.map(shortDate) ?? "")
+            }
+            .background(hair)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(hair, lineWidth: 1))
+        }
+        .padding(.horizontal, 22).padding(.top, 16).padding(.bottom, 16)
     }
 
     // MARK: - Usage grid
@@ -142,6 +166,9 @@ struct ProjectStatsTab: View {
                 var cost: Double = 0
                 var timeMonth: TimeInterval = 0
                 var timeWeek: TimeInterval = 0
+                var totalTime: TimeInterval = 0
+                var first: Date?
+                var last: Date?
             }
             let result: Bundle = await Task.detached {
                 var b = Bundle()
@@ -155,6 +182,10 @@ struct ProjectStatsTab: View {
                     b.cost = (try? StatsDataService.costForProject(in: db, encodedName: encoded, fromHoursAgo: 0, toHoursAgo: 720)) ?? 0
                     b.timeMonth = (try? StatsDataService.activeTimeForProject(in: db, encodedName: encoded, fromHoursAgo: 0, toHoursAgo: 720)) ?? 0
                     b.timeWeek = (try? StatsDataService.activeTimeForProject(in: db, encodedName: encoded, fromHoursAgo: 0, toHoursAgo: 168)) ?? 0
+                    b.totalTime = (try? StatsDataService.activeTimeForProject(in: db, encodedName: encoded, fromHoursAgo: 0, toHoursAgo: 24 * 3660)) ?? 0   // ~all-time
+                    if let span = try? StatsDataService.activitySpanForProject(in: db, encodedName: encoded) {
+                        b.first = span.first; b.last = span.last
+                    }
                 }
                 return b
             }.value
@@ -167,6 +198,9 @@ struct ProjectStatsTab: View {
                 self.costEUR = result.cost
                 self.timeSpentMonth = result.timeMonth
                 self.timeSpentWeek = result.timeWeek
+                self.totalTime = result.totalTime
+                self.firstActivity = result.first
+                self.lastActivity = result.last
                 self.loading = false
             }
         }
@@ -176,6 +210,19 @@ struct ProjectStatsTab: View {
         if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
         if n >= 1_000     { return String(format: "%.0fk", Double(n) / 1_000) }
         return "\(n)"
+    }
+
+    private func shortDate(_ d: Date) -> String {
+        let f = DateFormatter(); f.dateFormat = "d MMM yyyy"; return f.string(from: d)
+    }
+    private func daysSince(_ d: Date) -> Int {
+        max(0, Calendar.current.dateComponents([.day], from: d, to: Date()).day ?? 0)
+    }
+    private func relativeShort(_ d: Date) -> String {
+        let s = Int(Date().timeIntervalSince(d))
+        if s < 3600 { return "\(max(1, s / 60))m ago" }
+        if s < 86400 { return "\(s / 3600)h ago" }
+        return "\(s / 86400)d ago"
     }
 
     private func formatDuration(_ seconds: TimeInterval) -> String {
