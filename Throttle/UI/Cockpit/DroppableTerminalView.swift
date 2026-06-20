@@ -48,15 +48,20 @@ final class DroppableTerminalView: LocalProcessTerminalView {
 
     override func dataReceived(slice: ArraySlice<UInt8>) {
         super.dataReceived(slice: slice)   // render as normal
-        appendStripped(slice)              // pure; no isolation needed
-        // SwiftTerm posts this on .main, but never assume — assumeIsolated would
-        // hard-crash if it ever fired off-main. Hop explicitly when needed.
+        // M02: do ALL detection-state mutation (appendStripped + scheduleDetect)
+        // inside the main-confined block, so `tail`/`escState`/`detectWork` are
+        // only ever touched on the main thread — not on whatever thread SwiftTerm
+        // happened to post on. Copy the bytes out first (Sendable) for the hop.
+        let bytes = Array(slice)
+        let work: @MainActor () -> Void = { [weak self] in
+            self?.appendStripped(bytes[...])
+            self?.onActivity?()
+            self?.scheduleDetect()
+        }
         if Thread.isMainThread {
-            MainActor.assumeIsolated { onActivity?(); scheduleDetect() }
+            MainActor.assumeIsolated(work)
         } else {
-            DispatchQueue.main.async { [weak self] in
-                MainActor.assumeIsolated { self?.onActivity?(); self?.scheduleDetect() }
-            }
+            DispatchQueue.main.async { MainActor.assumeIsolated(work) }
         }
     }
 
@@ -131,7 +136,11 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// mangled output (one giant run-on token) and fall back to a clean label.
     private func questionText(from lines: ArraySlice<String>) -> String {
         let q = lines.last { $0.contains("?") && !$0.contains("1.") && !$0.contains("❯") }
-        let cleaned = (q ?? "").replacingOccurrences(of: "❯", with: "").trimmingCharacters(in: .whitespaces)
+        var cleaned = (q ?? "").replacingOccurrences(of: "❯", with: "").trimmingCharacters(in: .whitespaces)
+        // M11: collapse internal whitespace so a repainted prompt (claude redraws
+        // the same question with different spacing) normalizes to the SAME string
+        // — `lastFired` then dedupes it instead of firing a duplicate notification.
+        cleaned = cleaned.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
         let longestRun = cleaned.split(separator: " ").map(\.count).max() ?? 0
         if cleaned.isEmpty || longestRun > 28 { return "Waiting for your choice" }
         return cleaned.count > 140 ? String(cleaned.prefix(137)) + "…" : cleaned

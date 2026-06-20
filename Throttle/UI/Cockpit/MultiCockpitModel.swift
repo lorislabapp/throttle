@@ -207,22 +207,28 @@ final class MultiCockpitModel {
     /// tokens. Off-main; nil stays nil (never invented).
     func refreshStats() {
         guard let db = appState?.database else { return }
-        let items = sessions.map { (id: $0.id, cwd: $0.cwd, since: $0.startedAt) }
+        let items = sessions.map { (id: $0.id, cwd: $0.cwd, since: $0.startedAt, sessionId: $0.sessionId) }
         guard !items.isEmpty else { return }
         Task { [weak self] in
             let results: [(UUID, Double?, Int?, String?, Bool, String?)] = await Task.detached(priority: .utility) {
                 items.map { item in
-                    guard let s = Self.newestSession(cwd: item.cwd, since: item.since) else { return (item.id, nil, nil, nil, false, nil) }
-                    let live = Date().timeIntervalSince(s.mtime) < 12
+                    // since-gated discovery → liveness + the id we're allowed to adopt.
+                    let recent = Self.newestSession(cwd: item.cwd, since: item.since)
+                    let live = recent.map { Date().timeIntervalSince($0.mtime) < 12 } ?? false
+                    // For COST, fall back to the persisted id / newest-ever transcript
+                    // so a dormant restored tab with real history isn't shown "—" (M07).
+                    let costId = recent?.id ?? item.sessionId
+                        ?? Self.newestSession(cwd: item.cwd, since: .distantPast)?.id
+                    guard let costId else { return (item.id, nil, nil, nil, live, recent?.id) }
                     let stats: (Double?, Int?, String?)? = try? db.read { d in
-                        let eur = try? StatsDataService.cockpitSessionCostEUR(in: d, sessionId: s.id)
-                        let tok = try? StatsDataService.cockpitSessionTokens(in: d, sessionId: s.id)
-                        let split = (try? StatsDataService.cockpitModelSplitForSession(in: d, sessionId: s.id)) ?? []
+                        let eur = try? StatsDataService.cockpitSessionCostEUR(in: d, sessionId: costId)
+                        let tok = try? StatsDataService.cockpitSessionTokens(in: d, sessionId: costId)
+                        let split = (try? StatsDataService.cockpitModelSplitForSession(in: d, sessionId: costId)) ?? []
                         let model = split.max { $0.weightedTokens < $1.weightedTokens }
                             .flatMap { Self.modelName($0.tier) }
                         return (eur, tok, model)
                     }
-                    return (item.id, stats?.0, stats?.1, stats?.2, live, s.id)
+                    return (item.id, stats?.0, stats?.1, stats?.2, live, recent?.id)
                 }
             }.value
             guard let self else { return }
