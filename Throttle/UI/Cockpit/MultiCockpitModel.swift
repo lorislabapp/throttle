@@ -155,7 +155,41 @@ final class MultiCockpitModel {
         var label: String { self == .tabs ? "Tabs" : (self == .rail ? "Rail" : "Overview") }
     }
 
+    enum SortMode: String, CaseIterable, Identifiable {
+        case manual, recent, cost, ram, name, waiting
+        var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .manual:  return "Manual order"
+            case .recent:  return "Last activity"
+            case .cost:    return "Cost"
+            case .ram:     return "Memory"
+            case .name:    return "Name"
+            case .waiting: return "Waiting first"
+            }
+        }
+    }
+    var sortMode: SortMode = .manual
+
     private(set) var sessions: [CockpitTab] = []
+
+    /// Sessions in display order. `.manual` keeps the drag-reordered order; the
+    /// others sort a copy so the underlying drag order isn't mutated.
+    var displaySessions: [CockpitTab] {
+        switch sortMode {
+        case .manual:  return sessions
+        case .recent:  return sessions.sorted { $0.lastActivityAt > $1.lastActivityAt }
+        case .cost:    return sessions.sorted { ($0.eur ?? -1) > ($1.eur ?? -1) }
+        case .ram:     return sessions.sorted { $0.ramBytes > $1.ramBytes }
+        case .name:    return sessions.sorted { $0.projectName.localizedCaseInsensitiveCompare($1.projectName) == .orderedAscending }
+        case .waiting: return sessions.sorted {
+            ($0.needsInput ? 1 : 0) != ($1.needsInput ? 1 : 0)
+                ? ($0.needsInput ? 1 : 0) > ($1.needsInput ? 1 : 0)
+                : $0.lastActivityAt > $1.lastActivityAt
+        }
+        }
+    }
+
     // Don't auto-spawn a HIBERNATED tab (that's the hibernate→instant-respawn
     // loop, LR-H04). wake() clears isHibernated first, so explicit wakes still spawn.
     var activeID: UUID? { didSet {

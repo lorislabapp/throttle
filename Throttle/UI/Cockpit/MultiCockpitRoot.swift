@@ -348,10 +348,11 @@ struct MultiCockpitRoot: View {
                     gLabel("SESSIONS · \(model.sessions.count)")
                     Spacer()
                     if model.waitingCount > 0 { waitingChip(model.waitingCount) }
+                    sortMenu
                 }.padding(.horizontal, 13).padding(.vertical, 9)
                 ScrollView {
                     VStack(spacing: 2) {
-                        ForEach(model.sessions) { s in railRow(s) }
+                        ForEach(model.displaySessions) { s in railRow(s) }
                     }.padding(.horizontal, 8).padding(.vertical, 4)
                 }
                 Spacer(minLength: 0)
@@ -370,6 +371,26 @@ struct MultiCockpitRoot: View {
             .overlay(alignment: .trailing) { Rectangle().fill(hair).frame(width: 1) }
             terminal
         }
+    }
+
+    /// Sort the session rail (last activity, cost, memory, name, waiting-first,
+    /// or manual drag order). Drag-reorder stays available in Manual mode.
+    private var sortMenu: some View {
+        Menu {
+            ForEach(MultiCockpitModel.SortMode.allCases) { mode in
+                Button {
+                    model.sortMode = mode
+                } label: {
+                    if model.sortMode == mode { Label(mode.label, systemImage: "checkmark") }
+                    else { Text(mode.label) }
+                }
+            }
+        } label: {
+            Image(systemName: "arrow.up.arrow.down").font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.tertiary)
+        }
+        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+        .help("Sort sessions: \(model.sortMode.label)")
+        .accessibilityLabel("Sort sessions").accessibilityValue(model.sortMode.label)
     }
 
     private func railRow(_ s: CockpitTab) -> some View {
