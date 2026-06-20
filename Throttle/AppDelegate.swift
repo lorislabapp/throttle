@@ -150,6 +150,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        MultiCockpitModel.shared.stop()        // hard-kill every cockpit session subtree (C01)
+        CaffeineService.shared.setActive(false) // release the power assertion (M04)
         coordinator.stop()
         savingsIngester.stop()
         logger.notice("Throttle quitting")

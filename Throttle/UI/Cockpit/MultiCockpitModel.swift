@@ -88,8 +88,15 @@ final class CockpitTab: Identifiable {
         term.send(txt: cmd + "\n")
     }
 
-    /// Exit claude (Ctrl-D) then the shell, releasing the PTY.
-    func terminate() { terminal?.send(txt: "\u{04}\nexit\n") }
+    /// Exit claude (Ctrl-D) then the shell, then GUARANTEE the process subtree
+    /// is gone. Cooperative exit alone can't kill a busy claude TUI (it ignores
+    /// Ctrl-D mid-task), which orphaned shell→claude→node and leaked the RAM
+    /// hibernate is meant to free. Capture the pid before the PTY ref drops.
+    func terminate() {
+        let pid = shellPid
+        terminal?.send(txt: "\u{04}\nexit\n")
+        if let pid { SystemMemoryService.killSubtree(rootPid: pid) }
+    }
 
     /// Free this session's RAM: snapshot the resume-id, terminate the process
     /// subtree, drop the terminal → dormant. Reactivating respawns via
@@ -132,6 +139,12 @@ final class CockpitTab: Identifiable {
 @MainActor
 @Observable
 final class MultiCockpitModel {
+    /// Single shared instance — session lifetime must OUTLIVE the Cockpit window.
+    /// Previously the model lived in the window's `@State`, so closing the window
+    /// deallocated it and mass-killed all live `claude` sessions. As a singleton
+    /// it survives window close: closing pauses the UI tick, never the PTYs.
+    static let shared = MultiCockpitModel()
+
     enum ViewMode: String, CaseIterable, Identifiable {
         case tabs, rail, mission
         var id: String { rawValue }
@@ -139,7 +152,12 @@ final class MultiCockpitModel {
     }
 
     private(set) var sessions: [CockpitTab] = []
-    var activeID: UUID? { didSet { active?.ensureSpawned(); active?.clearAttention() } }
+    // Don't auto-spawn a HIBERNATED tab (that's the hibernate→instant-respawn
+    // loop, LR-H04). wake() clears isHibernated first, so explicit wakes still spawn.
+    var activeID: UUID? { didSet {
+        if let a = active, !a.isHibernated { a.ensureSpawned() }
+        active?.clearAttention()
+    } }
     var viewMode: ViewMode = .rail
     private(set) var machine: MemoryHealth = .unknown
     /// Count of sessions currently waiting on a question (for the header badge).
@@ -172,7 +190,7 @@ final class MultiCockpitModel {
         tick?.cancel()
         tick = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(5))
+                try? await Task.sleep(for: .seconds(10))   // 10s (was 5s): 29-tab fs walks were heavy on a swap-bound Mac
                 self?.sampleMachine()
                 self?.refreshStats()
                 self?.sampleSessionRAM()
@@ -256,6 +274,16 @@ final class MultiCockpitModel {
         return (newest.deletingPathExtension().lastPathComponent, mod)
     }
 
+    /// Window closed (NOT app quit): pause the sampling tick + persist, but KEEP
+    /// every session running in the background. Reopening the window re-arms via
+    /// start(). This is the half of the C01 fix that stops window-close from
+    /// killing live sessions.
+    func pause() {
+        persist()
+        tick?.cancel(); tick = nil
+    }
+
+    /// Full teardown — app quit only. Hard-kills each session's process subtree.
     func stop() {
         persist()                            // remember the working set first
         tick?.cancel(); tick = nil
@@ -339,15 +367,20 @@ final class MultiCockpitModel {
     func hibernate(_ id: UUID) {
         guard let tab = sessions.first(where: { $0.id == id }), tab.isSpawned else { return }
         if activeID == id {
-            activeID = sessions.first(where: { $0.id != id && $0.isSpawned })?.id ?? id
+            // Move focus to another LIVE tab, or to nil (placeholder) if none —
+            // never keep focus on the tab we're about to hibernate (respawn loop).
+            activeID = sessions.first(where: { $0.id != id && $0.isSpawned })?.id
         }
         tab.hibernate()
         persist()
     }
 
-    /// Wake a hibernated session: make it active → ensureSpawned respawns it
-    /// and `claude --resume`s its context.
-    func wake(_ id: UUID) { activeID = id }
+    /// Wake a hibernated session: clear the hibernated flag (so the didSet guard
+    /// allows the spawn), make it active → ensureSpawned respawns + `--resume`s.
+    func wake(_ id: UUID) {
+        sessions.first(where: { $0.id == id })?.isHibernated = false
+        activeID = id
+    }
 
     /// Re-apply the current terminal preset to every live session (theme switch).
     func restyleTerminals() {

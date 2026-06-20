@@ -108,6 +108,51 @@ enum SystemMemoryService {
         return out
     }
 
+    /// All PIDs in a process subtree (root + every descendant), via one ps sweep.
+    static func subtreePids(rootPids: [pid_t]) -> [pid_t] {
+        guard !rootPids.isEmpty else { return [] }
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/ps")
+        p.arguments = ["-axo", "pid=,ppid="]
+        let pipe = Pipe()
+        p.standardOutput = pipe
+        p.standardError = FileHandle.nullDevice
+        do { try p.run() } catch { return rootPids }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        guard let text = String(data: data, encoding: .utf8) else { return rootPids }
+        var children: [pid_t: [pid_t]] = [:]
+        for line in text.split(separator: "\n") {
+            let f = line.split(separator: " ", omittingEmptySubsequences: true)
+            guard f.count == 2, let pid = pid_t(f[0]), let ppid = pid_t(f[1]) else { continue }
+            children[ppid, default: []].append(pid)
+        }
+        var out: [pid_t] = []
+        for root in rootPids {
+            var stack = [root]
+            while let cur = stack.popLast() {
+                out.append(cur)
+                if let kids = children[cur] { stack.append(contentsOf: kids) }
+            }
+        }
+        return out
+    }
+
+    /// Guaranteed teardown of a session's process subtree (shell → claude → node):
+    /// SIGTERM the whole tree (deepest first so a parent can't respawn a child),
+    /// then SIGKILL any survivor after a grace period. This is what actually frees
+    /// the RAM — a cooperative Ctrl-D can't kill a busy claude TUI, which is how
+    /// hibernate was orphaning subtrees. Safe no-op for pid ≤ 1.
+    static func killSubtree(rootPid: pid_t, grace: TimeInterval = 1.5) {
+        guard rootPid > 1 else { return }
+        let term = subtreePids(rootPids: [rootPid])
+        for pid in term.reversed() where pid > 1 { kill(pid, SIGTERM) }
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + grace) {
+            let survivors = subtreePids(rootPids: [rootPid])
+            for pid in survivors.reversed() where pid > 1 { kill(pid, SIGKILL) }
+        }
+    }
+
     // MARK: - Running claude sessions
 
     /// Sum RSS of processes whose executable name is exactly `claude` (the CLI).

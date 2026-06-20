@@ -12,7 +12,7 @@ import AppKit
 /// cap or memory pressure.
 struct MultiCockpitRoot: View {
     @Environment(AppState.self) private var appState
-    @State private var model = MultiCockpitModel()
+    @State private var model = MultiCockpitModel.shared   // singleton: sessions outlive the window
     @State private var showInspector = false
     @State private var activeStyle = OutputStyleManager.activeName()
     @State private var hoveredSession: UUID?
@@ -38,7 +38,7 @@ struct MultiCockpitRoot: View {
         }
         .frame(minWidth: 720, minHeight: 460)
         .onAppear { model.start(appState: appState); activeStyle = OutputStyleManager.activeName() }
-        .onDisappear { model.stop() }
+        .onDisappear { model.pause() }   // window close pauses the tick, never the sessions (C01)
         .onReceive(NotificationCenter.default.publisher(for: .outputStyleChanged)) { _ in
             activeStyle = OutputStyleManager.activeName()
         }
@@ -260,7 +260,7 @@ struct MultiCockpitRoot: View {
                 HStack(spacing: 1) {
                     ForEach(model.sessions) { s in
                         let on = s.id == (model.active?.id)
-                        Button { model.activeID = s.id } label: {
+                        Button { model.wake(s.id) } label: {
                             HStack(spacing: 8) {
                                 stateDot(s.isLive)
                                 Text(s.projectName).font(.system(size: 12, weight: .medium))
@@ -340,7 +340,7 @@ struct MultiCockpitRoot: View {
 
     private func railRow(_ s: CockpitTab) -> some View {
         let on = s.id == model.active?.id
-        return Button { model.activeID = s.id } label: {
+        return Button { model.wake(s.id) } label: {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     stateDot(s.isLive)
@@ -437,7 +437,7 @@ struct MultiCockpitRoot: View {
 
     private func missionCard(_ s: CockpitTab) -> some View {
         let active = s.id == model.active?.id
-        return Button { model.activeID = s.id; model.viewMode = .tabs } label: {
+        return Button { model.wake(s.id); model.viewMode = .tabs } label: {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
                     stateDot(s.isLive)
