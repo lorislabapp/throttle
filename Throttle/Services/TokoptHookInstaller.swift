@@ -27,8 +27,9 @@ enum TokoptHookInstaller {
         var dict = readSettings() ?? [:]
         var hooks = dict["hooks"] as? [String: Any] ?? [:]
         var post = hooks["PostToolUse"] as? [[String: Any]] ?? []
-        // Idempotent — bail if one of ours is already there.
-        guard ourEntryIndices(in: post).isEmpty else { return false }
+        // Already present → don't duplicate, but DO heal a stale exec path
+        // (e.g. an old DerivedData build path after installing to /Applications).
+        guard ourEntryIndices(in: post).isEmpty else { return reconcile() }
         try backupSettings()
         let entry: [String: Any] = [
             "matcher": "Bash",
@@ -42,6 +43,36 @@ enum TokoptHookInstaller {
         hooks["PostToolUse"] = post
         dict["hooks"] = hooks
         try writeSettings(dict)
+        return true
+    }
+
+    /// Heal a stale exec path in our hook entry without requiring the user to
+    /// re-toggle — the running Throttle owns the `--tokopt-hook` path, so when the
+    /// binary moves (DerivedData → /Applications, or a Sparkle update) the next
+    /// launch repoints it. No-op if not installed or already current. Safe to call
+    /// on every launch (writes + backs up only when the path actually changed).
+    @discardableResult
+    static func reconcile() -> Bool {
+        guard var dict = readSettings(),
+              var hooks = dict["hooks"] as? [String: Any],
+              var post = hooks["PostToolUse"] as? [[String: Any]] else { return false }
+        let want = "'\(execPath)' \(marker)"
+        var changed = false
+        for i in post.indices {
+            guard var cmds = post[i]["hooks"] as? [[String: Any]] else { continue }
+            var entryChanged = false
+            for j in cmds.indices {
+                if let c = cmds[j]["command"] as? String, c.contains(marker), c != want {
+                    cmds[j]["command"] = want; entryChanged = true; changed = true
+                }
+            }
+            if entryChanged { post[i]["hooks"] = cmds }
+        }
+        guard changed else { return false }
+        try? backupSettings()
+        hooks["PostToolUse"] = post
+        dict["hooks"] = hooks
+        try? writeSettings(dict)
         return true
     }
 

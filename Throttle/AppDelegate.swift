@@ -63,6 +63,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // and on heavy users with thousands of subagent files (now
         // filtered out, but defensively cap higher anyway) we'd hit
         // EMFILE which masquerades as "directory not readable".
+        // Heal the tokopt hook's exec path if it points at a stale build (e.g. an
+        // old DerivedData path after installing to /Applications or a Sparkle
+        // update). No-op if the hook isn't installed or is already current.
+        TokoptHookInstaller.reconcile()
+
         var rlim = rlimit()
         if getrlimit(RLIMIT_NOFILE, &rlim) == 0 {
             let target = min(rlim.rlim_max, rlim_t(10_240))
