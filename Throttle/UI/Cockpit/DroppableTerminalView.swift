@@ -208,6 +208,11 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         menu.addItem(.separator())
         ctxItem(menu, "Clear", enabled: true) { [weak self] in self?.send(txt: "\u{0c}") }
 
+        menu.addItem(.separator())
+        ctxItem(menu, "Paste latest Xcode build errors", enabled: true) { [weak self] in
+            self?.pasteXcodeErrors()
+        }
+
         if hasSel, let s = sel {
             menu.addItem(.separator())
             ctxItem(menu, "Ask claude to summarize", enabled: true) { [weak self] in
@@ -216,6 +221,20 @@ final class DroppableTerminalView: LocalProcessTerminalView {
                 self?.paste("Explain this:\n\n\(s)\n") }
         }
         return menu
+    }
+
+    /// Pull distilled errors from the newest Xcode build (off-main — runs
+    /// `xcresulttool`) and paste them for claude to fix. No-op chatter if none.
+    private func pasteXcodeErrors() {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let text = XcodeBuildErrorsService.distilledErrors(projectHint: nil)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if let text { self.paste(text + "\n") }
+                else { NSSound.beep() }
+                self.window?.makeFirstResponder(self)
+            }
+        }
     }
 
     private func ctxItem(_ menu: NSMenu, _ title: String, enabled: Bool, _ run: @escaping () -> Void) {
