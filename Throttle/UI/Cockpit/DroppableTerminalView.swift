@@ -42,10 +42,14 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     // mouse-up, so a selection survives mid-stream. Bounded so a stuck drag can't
     // hoard output forever.
     nonisolated(unsafe) private var selecting = false
+    // The user scrolled up to read scrollback — hold new output so it doesn't yank
+    // the viewport back to the live bottom. Set on an upward scroll, cleared when
+    // they return to the bottom (or hit "jump to live"). Reuses the same buffer.
+    nonisolated(unsafe) private var scrolledUpByUser = false
     nonisolated(unsafe) private var pendingChunks: [[UInt8]] = []
     nonisolated(unsafe) private var pendingBytes = 0
     nonisolated(unsafe) private var selectionMonitor: Any?
-    private static let pendingCap = 512 * 1024   // give up buffering past 512 KB
+    private static let pendingCap = 2 * 1024 * 1024   // give up holding past 2 MB
 
     private enum EscState { case normal, esc, csi, osc, oscEsc }
 
@@ -79,10 +83,10 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         let bytes = Array(slice)
         let handle: @MainActor () -> Void = { [weak self] in
             guard let self else { return }
-            // While the user is dragging a selection, defer output so the buffer
-            // doesn't scroll the selection away. Bounded — past the cap we give
-            // up and render live (a stuck drag must never starve the terminal).
-            if self.selecting && self.pendingBytes < Self.pendingCap {
+            // Hold output while the user is dragging a selection OR has scrolled up
+            // to read — either way, rendering would yank the viewport. Bounded —
+            // past the cap we render live (output must never be starved forever).
+            if (self.selecting || self.scrolledUpByUser) && self.pendingBytes < Self.pendingCap {
                 self.pendingChunks.append(bytes)
                 self.pendingBytes += bytes.count
                 return
@@ -101,7 +105,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         scheduleDetect()
     }
 
-    /// Selection drag ended → replay everything we buffered, in order.
+    /// Replay everything we buffered, in order (lands the viewport at live).
     @MainActor private func flushPending() {
         guard !pendingChunks.isEmpty else { return }
         let chunks = pendingChunks
@@ -109,21 +113,41 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         for c in chunks { renderAndSniff(c) }
     }
 
-    /// Track an active selection drag via a local event monitor (mouseDown/Dragged
-    /// aren't `open` on SwiftTerm's view, so we observe instead of override).
+    /// Flush only when nothing is holding output back (no active selection drag,
+    /// not scrolled up) — i.e. the user is back at the live bottom.
+    @MainActor private func flushIfReady() {
+        if !selecting && !scrolledUpByUser { flushPending() }
+    }
+
+    /// True once the scrollback is parked at (or within a hair of) the live bottom.
+    private var atLiveBottom: Bool { scrollPosition >= 0.999 }
+
+    /// Track selection drags AND scroll-up via a local event monitor (mouseDragged/
+    /// scrollWheel aren't `open` on SwiftTerm's view, so we observe instead of
+    /// override). Holds output while reading up; flushes on return to the bottom.
     private func installSelectionMonitor() {
-        selectionMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDragged, .leftMouseUp]) { [weak self] event in
+        selectionMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDragged, .leftMouseUp, .scrollWheel]) { [weak self] event in
             guard let self else { return event }
             MainActor.assumeIsolated {
                 switch event.type {
                 case .leftMouseDragged:
                     if self.eventIsOverSelf(event) { self.selecting = true }
                 case .leftMouseUp:
-                    if self.selecting { self.selecting = false; self.flushPending() }
+                    self.selecting = false
+                    self.flushIfReady()
+                case .scrollWheel:
+                    if self.eventIsOverSelf(event), event.deltaY > 0 { self.scrolledUpByUser = true }
+                    // After SwiftTerm applies the scroll, re-evaluate: back at the
+                    // bottom → stop holding and flush what streamed while reading.
+                    DispatchQueue.main.async {
+                        MainActor.assumeIsolated {
+                            if self.atLiveBottom { self.scrolledUpByUser = false; self.flushIfReady() }
+                        }
+                    }
                 default: break
                 }
             }
-            return event   // never consume — let SwiftTerm handle the selection
+            return event   // never consume — let SwiftTerm handle the gesture
         }
     }
 
@@ -304,6 +328,10 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// prompt (> / ❯). Steps one line at a time using only public SwiftTerm APIs
     /// (scrollUp/Down + getCharData on the top visible row).
     func scrollToTurn(older: Bool) {
+        // Programmatic scroll (no scrollWheel event), so set the hold flag from the
+        // final position ourselves — otherwise live output yanks away from the turn
+        // the user just navigated to.
+        defer { scrolledUpByUser = !atLiveBottom; if atLiveBottom { flushIfReady() } }
         let term = getTerminal()
         var steps = 0
         while steps < 8000 {
@@ -325,8 +353,13 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         return first == "⏺" || first == "●" || first == ">" || first == "❯"
     }
 
-    /// Jump back to the live bottom of the scrollback.
-    func scrollToLive() { scroll(toPosition: 1) }
+    /// Jump back to the live bottom of the scrollback — stop holding output and
+    /// replay anything that streamed while the user was reading up.
+    func scrollToLive() {
+        scrolledUpByUser = false
+        flushPending()
+        scroll(toPosition: 1)
+    }
 
     // MARK: - File drops
 
