@@ -4,6 +4,18 @@ Nothing here is broken or urgent. These are deferred-on-purpose or on-demand.
 Current shipped version: **3.2.0** (build 100).
 
 ## Build on explicit go
+- [ ] **Rate-limit handling, full** (greenlit 2026-06-20) — Kevin's pain: running
+      many parallel sessions, some get blocked when the cap is hit. Detect a
+      rate-limited/blocked session (from its transcript/output), flag WHICH
+      sessions are throttled in the rail, predictive cross-session pacing before
+      the wall (extends ThresholdNotifier.forecastCapETA), honor Retry-After on
+      claude.ai 429s, and keep exact-mode backoff (already in 3.2.1). Pairs with
+      the Health check.
+- [ ] **Duplicate-session detect + consolidate** (greenlit 2026-06-20) — group
+      tabs by cwd, flag groups >1 ("2 sessions on 360 → consolidate?"), 1-click
+      hibernate-the-extra (resume-id preserved, frees RAM/tokens). Detect + ASK,
+      never silent-kill (doctrine). Fold into the Health check. NOTE: cost shows
+      identical across dup tabs because cost is per-PROJECT (cwd), not per-session.
 - [ ] **Throttle Health check** (greenlit 2026-06-20) — a "Throttle Health" panel
       that aggregates operational self-checks with ✅/⚠️/❌ + 1-click fixes,
       reusing the existing audit services. Checks: tracking-live (last usage_event
