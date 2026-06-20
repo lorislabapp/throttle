@@ -296,7 +296,7 @@ struct MultiCockpitRoot: View {
                         let on = s.id == (model.active?.id)
                         Button { model.wake(s.id) } label: {
                             HStack(spacing: 8) {
-                                stateDot(s.isLive)
+                                stateDot(s).help(stateDotHelp(s))
                                 Text(s.projectName).font(.system(size: 12, weight: .medium))
                                     .foregroundStyle(on ? .primary : .secondary)
                                 if s.needsInput {
@@ -398,7 +398,7 @@ struct MultiCockpitRoot: View {
         return Button { model.wake(s.id) } label: {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
-                    stateDot(s.isLive)
+                    stateDot(s).help(stateDotHelp(s))
                     Text(s.projectName).font(.system(size: 12.5, weight: .medium))
                         .foregroundStyle(on ? .primary : .secondary).lineLimit(1)
                     Spacer(minLength: 0)
@@ -498,7 +498,7 @@ struct MultiCockpitRoot: View {
         return Button { model.wake(s.id); model.viewMode = .tabs } label: {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
-                    stateDot(s.isLive)
+                    stateDot(s).help(stateDotHelp(s))
                     Text(s.projectName).font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
                     Spacer(minLength: 0)
                     if s.needsInput { waitingChip() }
@@ -638,8 +638,31 @@ struct MultiCockpitRoot: View {
 
     // MARK: - Bits
 
-    private func stateDot(_ live: Bool) -> some View {
-        Circle().fill(live ? Color.green : Color.secondary.opacity(0.45)).frame(width: 6, height: 6)
+    /// Rich session-state dot: green=claude working (or you typing), orange ring=
+    /// claude answered & waiting for you, gray=idle at prompt, hollow=dormant/
+    /// hibernated. Replaces the binary live/gray flicker.
+    @ViewBuilder
+    private func stateDot(_ s: CockpitTab) -> some View {
+        switch s.state {
+        case .working:
+            Circle().fill(Color.green).frame(width: 6, height: 6)
+        case .waiting:
+            Circle().strokeBorder(Color.orange, lineWidth: 1.5).frame(width: 7, height: 7)
+        case .idle:
+            Circle().fill(Color.secondary.opacity(0.5)).frame(width: 6, height: 6)
+        case .dormant, .hibernated:
+            Circle().strokeBorder(Color.secondary.opacity(0.4), lineWidth: 1).frame(width: 6, height: 6)
+        }
+    }
+
+    private func stateDotHelp(_ s: CockpitTab) -> String {
+        switch s.state {
+        case .working:    return "Working"
+        case .waiting:    return "Claude answered — waiting for you"
+        case .idle:       return "Idle (at prompt)"
+        case .dormant:    return "Not started"
+        case .hibernated: return "Hibernated"
+        }
     }
 
     /// Per-session question history — the "don't lose the question" feed.

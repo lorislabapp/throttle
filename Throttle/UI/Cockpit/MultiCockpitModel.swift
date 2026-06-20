@@ -47,6 +47,18 @@ final class CockpitTab: Identifiable {
     /// The running claude session id, discovered at runtime — used for persistence.
     var sessionId: String?
 
+    /// Rich session state for the rail dot — replaces the binary live/gray flicker.
+    /// `working` covers BOTH claude streaming AND the user typing (lastActivityAt
+    /// is bumped on keystrokes too), so the "claude is thinking before the first
+    /// token" gap no longer reads as idle.
+    enum SessionState { case dormant, hibernated, working, waiting, idle }
+    var state: SessionState {
+        if terminal == nil { return isHibernated ? .hibernated : .dormant }
+        if needsInput { return .waiting }
+        if Date().timeIntervalSince(lastActivityAt) < 6 { return .working }
+        return .idle
+    }
+
     /// PID of the session's login shell (root of its process subtree), if spawned.
     var shellPid: Int32? {
         guard let pid = terminal?.process?.shellPid, pid > 0 else { return nil }

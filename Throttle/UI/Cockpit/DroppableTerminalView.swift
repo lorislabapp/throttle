@@ -44,6 +44,17 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         enableFileDrops()
     }
 
+    // MARK: - Input activity
+
+    /// User input (keystrokes/paste) sent to the PTY counts as activity too, so
+    /// the session reads as "working" the instant you hit Enter — through claude's
+    /// pre-first-token think gap — instead of flickering to idle. `send(source:)`
+    /// is SwiftTerm's open hook for terminal→process bytes.
+    override func send(source: TerminalView, data: ArraySlice<UInt8>) {
+        MainActor.assumeIsolated { onActivity?() }
+        super.send(source: source, data: data)
+    }
+
     // MARK: - Output sniffing
 
     override func dataReceived(slice: ArraySlice<UInt8>) {
