@@ -22,6 +22,7 @@ struct MultiCockpitRoot: View {
     @State private var showNotifBanner = false             // C02: notifications-denied banner
     @State private var showHealth = false                  // Throttle Health panel
     @State private var showActivity = false                // Work activity panel
+    @State private var showSetup = false                   // Claude Code setup panel
 
     private let hair = Color.primary.opacity(0.10)
     private let track = Color.primary.opacity(0.08)
@@ -54,6 +55,7 @@ struct MultiCockpitRoot: View {
         }
         .sheet(isPresented: $showHealth) { HealthCheckView().environment(appState) }
         .sheet(isPresented: $showActivity) { WorkActivityView().environment(appState) }
+        .sheet(isPresented: $showSetup) { ClaudeSetupView() }
     }
 
     // MARK: - Top bar (switcher + pills)
@@ -79,6 +81,12 @@ struct MultiCockpitRoot: View {
                 }
                 .buttonStyle(.plain).help("Work activity — hours/day, projects this week")
                 .accessibilityLabel("Work activity")
+                Button { showSetup = true } label: {
+                    Image(systemName: "puzzlepiece.extension")
+                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain).help("Claude Code setup — MCP servers, skills, plugins")
+                .accessibilityLabel("Claude Code setup")
                 Button { showHealth = true } label: {
                     Image(systemName: "stethoscope")
                         .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.secondary)
