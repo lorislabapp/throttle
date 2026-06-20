@@ -39,6 +39,10 @@ final class CockpitTab: Identifiable {
     var onQuestion: ((CockpitTab, String) -> Void)?
     /// Last time the session emitted output (for live/idle heuristics).
     var lastActivityAt = Date()
+    /// Set when claude prints a usage/rate-limit message; cleared once the stated
+    /// reset time passes. Drives the `.rateLimited` state + cockpit banner.
+    var rateLimitedUntil: Date?
+    var isRateLimited: Bool { (rateLimitedUntil.map { $0 > Date() }) ?? false }
     /// Hibernated = process subtree terminated to free RAM, resume-id kept.
     /// Distinct from a never-opened restored tab (both have terminal == nil).
     var isHibernated = false
@@ -51,9 +55,10 @@ final class CockpitTab: Identifiable {
     /// `working` covers BOTH claude streaming AND the user typing (lastActivityAt
     /// is bumped on keystrokes too), so the "claude is thinking before the first
     /// token" gap no longer reads as idle.
-    enum SessionState { case dormant, hibernated, working, waiting, idle }
+    enum SessionState { case dormant, hibernated, rateLimited, working, waiting, idle }
     var state: SessionState {
         if terminal == nil { return isHibernated ? .hibernated : .dormant }
+        if isRateLimited { return .rateLimited }
         if needsInput { return .waiting }
         if Date().timeIntervalSince(lastActivityAt) < 6 { return .working }
         return .idle
@@ -82,6 +87,7 @@ final class CockpitTab: Identifiable {
         let term = DroppableTerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 480))
         term.onActivity = { [weak self] in self?.lastActivityAt = Date() }
         term.onPrompt = { [weak self] q in self?.handlePrompt(q) }
+        term.onRateLimit = { [weak self] reset in self?.handleRateLimit(reset) }
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let shellName = (shell as NSString).lastPathComponent
         let env = Terminal.getEnvironmentVariables(termName: "xterm-256color", trueColor: true)
@@ -138,6 +144,18 @@ final class CockpitTab: Identifiable {
         if questions.count > 8 { questions.removeFirst(questions.count - 8) }
         needsInput = true
         onQuestion?(self, q)
+    }
+
+    /// claude hit the account usage cap on this session. Record the reset time
+    /// (fallback +1h when claude stated none) so the cockpit can flag it + count
+    /// down. onRateLimited lets the model raise an aggregate banner/notification.
+    var onRateLimited: ((CockpitTab) -> Void)?
+    func handleRateLimit(_ reset: Date?) {
+        let until = reset ?? Date().addingTimeInterval(3600)
+        // Only escalate on a fresh hit (not every repaint of the same banner).
+        let wasLimited = isRateLimited
+        rateLimitedUntil = until
+        if !wasLimited { onRateLimited?(self) }
     }
 
     /// User is now looking at this session → clear the attention flag.
@@ -376,7 +394,19 @@ final class MultiCockpitModel {
             guard let self, tab.id != self.activeID else { return }
             CockpitNotifier.shared.notifyWaiting(project: tab.projectName, question: q, tabID: tab.id)
         }
+        tab.onRateLimited = { tab in
+            CockpitNotifier.shared.notifyRateLimited(
+                project: tab.projectName, until: tab.rateLimitedUntil, tabID: tab.id)
+        }
     }
+
+    /// Sessions currently blocked by the account cap, soonest-reset first.
+    var rateLimitedSessions: [CockpitTab] {
+        sessions.filter { $0.isRateLimited }
+            .sorted { ($0.rateLimitedUntil ?? .distantFuture) < ($1.rateLimitedUntil ?? .distantFuture) }
+    }
+    /// The earliest reset among blocked sessions (for the aggregate banner).
+    var soonestRateLimitReset: Date? { rateLimitedSessions.first?.rateLimitedUntil }
 
     // MARK: - Persistence (memory-aware: restored tabs spawn lazily via resume)
 

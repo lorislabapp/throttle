@@ -61,6 +61,33 @@ final class CockpitNotifier: NSObject {
         }
     }
 
+    /// claude hit the usage cap on a session — notify so you know WHICH project is
+    /// blocked and when it frees up, even from another window. Same live-status
+    /// gating as notifyWaiting (never trust an in-memory latch).
+    func notifyRateLimited(project: String, until: Date?, tabID: UUID) {
+        let body: String
+        if let until {
+            let f = DateFormatter(); f.timeStyle = .short
+            body = "Usage limit reached — frees up at \(f.string(from: until))."
+        } else {
+            body = "Usage limit reached on this session."
+        }
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let status = settings.authorizationStatus
+            Task { @MainActor in
+                guard status == .authorized || status == .provisional else { return }
+                let content = UNMutableNotificationContent()
+                content.title = "\(project) is rate-limited"
+                content.body = body
+                content.sound = .default
+                content.userInfo = ["tab": tabID.uuidString]
+                let req = UNNotificationRequest(identifier: "cockpit-ratelimit-\(tabID.uuidString)",
+                                                content: content, trigger: nil)
+                UNUserNotificationCenter.current().add(req)
+            }
+        }
+    }
+
     /// Notifications are off but a hidden session needs the user — tell the UI to
     /// show an in-cockpit "turn on notifications" banner (debounced ~2h) so the
     /// feature degrades visibly instead of silently (C02).

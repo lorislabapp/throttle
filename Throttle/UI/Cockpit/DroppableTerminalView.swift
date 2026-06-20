@@ -25,6 +25,10 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     // MARK: Output-sniffing hooks (assigned by CockpitTab, called on main)
     var onActivity: (@MainActor () -> Void)?
     var onPrompt: (@MainActor (String) -> Void)?
+    /// Fired when claude prints a usage/rate-limit message. Date = parsed reset
+    /// time if claude stated one, else nil (caller applies a fallback window).
+    var onRateLimit: (@MainActor (Date?) -> Void)?
+    nonisolated(unsafe) private var lastRateLimitFire = Date.distantPast
 
     // Detection state — main-thread-confined (LocalProcess posts on .main).
     nonisolated(unsafe) private var tail = ""
@@ -125,6 +129,18 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         let hay = recent.joined(separator: "\n")
         let lower = hay.lowercased()
 
+        // Rate-limit: claude prints "Claude usage limit reached. Your limit will
+        // reset at 11pm." (5h or weekly cap) when the account is throttled. Catch
+        // it so the cockpit can flag WHICH session is blocked + when it frees up.
+        // Debounced (claude redraws the banner) so we fire at most once / 30s.
+        if lower.contains("usage limit reached") || lower.contains("limit will reset")
+            || (lower.contains("limit reached") && lower.contains("reset")) {
+            if Date().timeIntervalSince(lastRateLimitFire) > 30 {
+                lastRateLimitFire = Date()
+                onRateLimit?(Self.parseResetTime(from: hay))
+            }
+        }
+
         // ONLY fire on a genuine interactive prompt — the thing that actually
         // blocks claude on stdin. Two robust shapes:
         //  • a numbered selection menu: "❯" plus at least TWO options (1. + 2.)
@@ -155,6 +171,24 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         let longestRun = cleaned.split(separator: " ").map(\.count).max() ?? 0
         if cleaned.isEmpty || longestRun > 28 { return "Waiting for your choice" }
         return cleaned.count > 140 ? String(cleaned.prefix(137)) + "…" : cleaned
+    }
+
+    /// Parse claude's "reset at 11pm" / "resets 3:30pm" into the next such clock
+    /// time (today, or tomorrow if already past). nil if no time is stated.
+    static func parseResetTime(from text: String) -> Date? {
+        guard let m = try? NSRegularExpression(pattern: "(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)", options: .caseInsensitive),
+              let r = m.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              let hr = Range(r.range(at: 1), in: text).flatMap({ Int(text[$0]) }) else { return nil }
+        let minute = Range(r.range(at: 2), in: text).flatMap { Int(text[$0]) } ?? 0
+        let isPM = Range(r.range(at: 3), in: text).map { text[$0].lowercased() == "pm" } ?? false
+        var hour24 = hr % 12
+        if isPM { hour24 += 12 }
+        let cal = Calendar.current
+        var comps = cal.dateComponents([.year, .month, .day], from: Date())
+        comps.hour = hour24; comps.minute = minute
+        guard var date = cal.date(from: comps) else { return nil }
+        if date <= Date() { date = cal.date(byAdding: .day, value: 1, to: date) ?? date }
+        return date
     }
 
     // MARK: - Right-click context menu

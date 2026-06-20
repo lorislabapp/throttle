@@ -32,6 +32,7 @@ struct MultiCockpitRoot: View {
             if model.gated { gateBanner }
             if showNotifBanner { notifDeniedBanner }
             if !model.duplicateCwds.isEmpty { duplicateBanner }
+            if !model.rateLimitedSessions.isEmpty { rateLimitBanner }
             HStack(spacing: 0) {
                 content
                 if showInspector {
@@ -242,6 +243,28 @@ struct MultiCockpitRoot: View {
             }
             .foregroundStyle(.primary)
             Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 8)
+        .background(Color.red.opacity(0.10))
+    }
+
+    /// One or more sessions hit the account usage cap. Account limits are shared
+    /// across every session, so this flags WHICH are blocked + the soonest reset.
+    private var rateLimitBanner: some View {
+        let blocked = model.rateLimitedSessions
+        let names = blocked.map(\.projectName).joined(separator: ", ")
+        let eta = model.soonestRateLimitReset.map { MultiCockpitModel.countdown(Int64($0.timeIntervalSinceNow)) }
+        return HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.octagon.fill").font(.system(size: 12)).foregroundStyle(.red)
+            Text(blocked.count == 1
+                 ? "\(names) hit the usage limit\(eta.map { " — frees up in \($0)" } ?? "")."
+                 : "\(blocked.count) sessions rate-limited (\(names))\(eta.map { " — soonest frees up in \($0)" } ?? "").")
+                .font(.system(size: 11.5)).foregroundStyle(.primary).lineLimit(1)
+            Spacer(minLength: 0)
+            if let first = blocked.first {
+                Button("Show") { model.wake(first.id) }
+                    .buttonStyle(.plain).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(Color.accentColor)
+            }
         }
         .padding(.horizontal, 14).padding(.vertical, 8)
         .background(Color.red.opacity(0.10))
@@ -668,6 +691,8 @@ struct MultiCockpitRoot: View {
         switch s.state {
         case .working:
             Circle().fill(Color.green).frame(width: 6, height: 6)
+        case .rateLimited:
+            Circle().fill(Color.red).frame(width: 6, height: 6)
         case .waiting:
             Circle().strokeBorder(Color.orange, lineWidth: 1.5).frame(width: 7, height: 7)
         case .idle:
@@ -680,6 +705,9 @@ struct MultiCockpitRoot: View {
     private func stateDotHelp(_ s: CockpitTab) -> String {
         switch s.state {
         case .working:    return "Working"
+        case .rateLimited:
+            let when = s.rateLimitedUntil.map { " — frees up in \(MultiCockpitModel.countdown(Int64($0.timeIntervalSinceNow)))" } ?? ""
+            return "Rate-limited\(when)"
         case .waiting:    return "Claude answered — waiting for you"
         case .idle:       return "Idle (at prompt)"
         case .dormant:    return "Not started"
