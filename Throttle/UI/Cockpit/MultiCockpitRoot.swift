@@ -19,6 +19,7 @@ struct MultiCockpitRoot: View {
     @State private var expandedFeed: UUID?
     @State private var themePreset = CockpitTerminalTheme.current
     @State private var caffeine = CaffeineService.shared   // @Observable → body tracks .active (H05)
+    @State private var showNotifBanner = false             // C02: notifications-denied banner
 
     private let hair = Color.primary.opacity(0.10)
     private let track = Color.primary.opacity(0.08)
@@ -29,6 +30,7 @@ struct MultiCockpitRoot: View {
             Rectangle().fill(hair).frame(height: 1)
             globalStrip
             if model.gated { gateBanner }
+            if showNotifBanner { notifDeniedBanner }
             HStack(spacing: 0) {
                 content
                 if showInspector {
@@ -42,6 +44,9 @@ struct MultiCockpitRoot: View {
         .onDisappear { model.pause() }   // window close pauses the tick, never the sessions (C01)
         .onReceive(NotificationCenter.default.publisher(for: .outputStyleChanged)) { _ in
             activeStyle = OutputStyleManager.activeName()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .cockpitNotificationsDenied)) { _ in
+            showNotifBanner = true
         }
     }
 
@@ -63,7 +68,7 @@ struct MultiCockpitRoot: View {
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(showInspector ? Color.accentColor : Color.secondary)
             }
-            .buttonStyle(.plain).help("Audit inspector")
+            .buttonStyle(.plain).help("Audit inspector").accessibilityLabel("Audit inspector")
             styleIndicator
             if appState.isPro { pill("PRO", soft: true) }
             if appState.exactSnapshot != nil { pill("EXACT", solid: true) }
@@ -108,7 +113,7 @@ struct MultiCockpitRoot: View {
         Button(action: action) {
             Image(systemName: icon).font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary).frame(width: 22, height: 22).contentShape(Rectangle())
-        }.buttonStyle(.plain).help(help)
+        }.buttonStyle(.plain).help(help).accessibilityLabel(help)
     }
 
     /// Caffeine: keep the Mac from idle-sleeping while sessions run (lid open).
@@ -122,6 +127,7 @@ struct MultiCockpitRoot: View {
         .buttonStyle(.plain)
         .help(on ? "Caffeine on — Mac won't idle-sleep while sessions run"
                  : "Keep Mac awake while sessions run (idle only — not lid-closed)")
+        .accessibilityLabel("Keep Mac awake").accessibilityValue(on ? "On" : "Off")
     }
 
     /// Curated terminal presets (no full editor — that's a non-goal). Switching
@@ -141,6 +147,7 @@ struct MultiCockpitRoot: View {
             Image(systemName: "paintpalette").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
         }
         .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help("Terminal theme: \(themePreset.label)")
+        .accessibilityLabel("Terminal theme").accessibilityValue(themePreset.label)
     }
 
     private var viewSwitcher: some View {
@@ -231,6 +238,27 @@ struct MultiCockpitRoot: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 8)
         .background(Color.red.opacity(0.10))
+    }
+
+    /// Shown when a hidden session needed you but notifications are off (C02) —
+    /// so the "never lose a background prompt" promise degrades visibly.
+    private var notifDeniedBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "bell.slash.fill").font(.system(size: 12)).foregroundStyle(.orange)
+            Text("A background session needs you, but notifications are off.")
+                .font(.system(size: 11.5)).foregroundStyle(.primary)
+            Spacer(minLength: 0)
+            Button("Open Settings") {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.notifications") {
+                    NSWorkspace.shared.open(url)
+                }
+            }.buttonStyle(.plain).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(Color.accentColor)
+            Button { showNotifBanner = false } label: {
+                Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
+            }.buttonStyle(.plain)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 8)
+        .background(Color.orange.opacity(0.10))
     }
 
     // MARK: - Content (the active layout)
@@ -387,6 +415,9 @@ struct MultiCockpitRoot: View {
             .overlay { if on { RoundedRectangle(cornerRadius: 9).stroke(hair, lineWidth: 1) } }
             .contentShape(Rectangle())
         }.buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(railRowA11yLabel(s))
+        .accessibilityAddTraits(s.id == model.active?.id ? [.isButton, .isSelected] : .isButton)
         .overlay(alignment: .topTrailing) {
             if hoveredSession == s.id {
                 HStack(spacing: 6) {
@@ -625,6 +656,17 @@ struct MultiCockpitRoot: View {
         .foregroundStyle(.orange)
         .padding(.horizontal, 5).padding(.vertical, 1)
         .background(Color.orange.opacity(0.12), in: Capsule())
+    }
+
+    /// One spoken label per rail row — surfaces the waiting/attention state that
+    /// was conveyed only by an orange dot before (C03; the feature's differentiator).
+    private func railRowA11yLabel(_ s: CockpitTab) -> String {
+        var parts = [s.projectName]
+        if s.needsInput { parts.append("waiting for your input") }
+        if s.isHibernated { parts.append("hibernated") }
+        if let m = s.model { parts.append(m) }
+        if let e = s.eur { parts.append(String(format: "%.2f euros", e)) }
+        return parts.joined(separator: ", ")
     }
 
     private var hibernatedChip: some View {

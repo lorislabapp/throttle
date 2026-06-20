@@ -207,6 +207,8 @@ final class DroppableTerminalView: LocalProcessTerminalView {
 
     private func enableFileDrops() {
         registerForDraggedTypes(Array(Set(registeredDraggedTypes + [.fileURL])))
+        setAccessibilityLabel("Claude terminal")
+        setAccessibilityRole(.textArea)
     }
 
     private func containsFileURLs(_ sender: NSDraggingInfo) -> Bool {
