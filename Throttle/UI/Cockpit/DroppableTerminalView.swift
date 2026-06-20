@@ -36,6 +36,17 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     nonisolated(unsafe) private var detectWork: DispatchWorkItem?
     nonisolated(unsafe) private var lastFired = ""
 
+    // Selection preservation: while the user is dragging a selection, streamed
+    // PTY output would scroll the buffer out from under the mouse and clear the
+    // selection. We BUFFER incoming bytes during an active drag and flush them on
+    // mouse-up, so a selection survives mid-stream. Bounded so a stuck drag can't
+    // hoard output forever.
+    nonisolated(unsafe) private var selecting = false
+    nonisolated(unsafe) private var pendingChunks: [[UInt8]] = []
+    nonisolated(unsafe) private var pendingBytes = 0
+    nonisolated(unsafe) private var selectionMonitor: Any?
+    private static let pendingCap = 512 * 1024   // give up buffering past 512 KB
+
     private enum EscState { case normal, esc, csi, osc, oscEsc }
 
     override init(frame: CGRect) {
@@ -62,22 +73,63 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     // MARK: - Output sniffing
 
     override func dataReceived(slice: ArraySlice<UInt8>) {
-        super.dataReceived(slice: slice)   // render as normal
-        // M02: do ALL detection-state mutation (appendStripped + scheduleDetect)
-        // inside the main-confined block, so `tail`/`escState`/`detectWork` are
-        // only ever touched on the main thread — not on whatever thread SwiftTerm
-        // happened to post on. Copy the bytes out first (Sendable) for the hop.
+        // Copy the bytes out first (Sendable) for the main hop. ALL rendering +
+        // detection-state mutation happens inside the main-confined block, so
+        // `tail`/`escState`/`selecting` are only ever touched on the main thread.
         let bytes = Array(slice)
-        let work: @MainActor () -> Void = { [weak self] in
-            self?.appendStripped(bytes[...])
-            self?.onActivity?()
-            self?.scheduleDetect()
+        let handle: @MainActor () -> Void = { [weak self] in
+            guard let self else { return }
+            // While the user is dragging a selection, defer output so the buffer
+            // doesn't scroll the selection away. Bounded — past the cap we give
+            // up and render live (a stuck drag must never starve the terminal).
+            if self.selecting && self.pendingBytes < Self.pendingCap {
+                self.pendingChunks.append(bytes)
+                self.pendingBytes += bytes.count
+                return
+            }
+            self.renderAndSniff(bytes)
         }
-        if Thread.isMainThread {
-            MainActor.assumeIsolated(work)
-        } else {
-            DispatchQueue.main.async { MainActor.assumeIsolated(work) }
+        if Thread.isMainThread { MainActor.assumeIsolated(handle) }
+        else { DispatchQueue.main.async { MainActor.assumeIsolated(handle) } }
+    }
+
+    /// Render bytes to the terminal and run the prompt/rate-limit sniffer.
+    @MainActor private func renderAndSniff(_ bytes: [UInt8]) {
+        super.dataReceived(slice: bytes[...])
+        appendStripped(bytes[...])
+        onActivity?()
+        scheduleDetect()
+    }
+
+    /// Selection drag ended → replay everything we buffered, in order.
+    @MainActor private func flushPending() {
+        guard !pendingChunks.isEmpty else { return }
+        let chunks = pendingChunks
+        pendingChunks.removeAll(); pendingBytes = 0
+        for c in chunks { renderAndSniff(c) }
+    }
+
+    /// Track an active selection drag via a local event monitor (mouseDown/Dragged
+    /// aren't `open` on SwiftTerm's view, so we observe instead of override).
+    private func installSelectionMonitor() {
+        selectionMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDragged, .leftMouseUp]) { [weak self] event in
+            guard let self else { return event }
+            MainActor.assumeIsolated {
+                switch event.type {
+                case .leftMouseDragged:
+                    if self.eventIsOverSelf(event) { self.selecting = true }
+                case .leftMouseUp:
+                    if self.selecting { self.selecting = false; self.flushPending() }
+                default: break
+                }
+            }
+            return event   // never consume — let SwiftTerm handle the selection
         }
+    }
+
+    private func eventIsOverSelf(_ event: NSEvent) -> Bool {
+        guard let win = window, event.window === win else { return false }
+        return bounds.contains(convert(event.locationInWindow, from: nil))
     }
 
     /// Strip ANSI/OSC escapes incrementally (carrying state across chunks) and
@@ -282,7 +334,10 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         registerForDraggedTypes(Array(Set(registeredDraggedTypes + [.fileURL])))
         setAccessibilityLabel("Claude terminal")
         setAccessibilityRole(.textArea)
+        installSelectionMonitor()
     }
+
+    deinit { if let m = selectionMonitor { NSEvent.removeMonitor(m) } }
 
     private func containsFileURLs(_ sender: NSDraggingInfo) -> Bool {
         sender.draggingPasteboard.canReadObject(
