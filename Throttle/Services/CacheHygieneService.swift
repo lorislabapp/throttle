@@ -25,10 +25,18 @@ enum CacheHygieneService {
     /// Events whose hook stdout is injected into the prompt / cached prefix.
     private static let injectionEvents = ["SessionStart", "UserPromptSubmit"]
 
-    /// Markers that suggest a hook emits *varying* content → busts the cache.
+    /// High-confidence markers that a hook emits *genuinely varying* content
+    /// (clock / randomness / host-identity / live network) → busts the cache.
+    /// Deliberately NOT broad file-read or substitution tokens (`cat `, `$(`,
+    /// `memory`, bare `date`): reading a STABLE file or routing by cwd is cache-
+    /// FRIENDLY, and bare "date" matched "update"/"candidate". Flagging a
+    /// deterministic hook as a cost is a claim we can't stand behind.
     private static let dynamicMarkers = [
-        "date", "random", "uuid", "timestamp", "%s",
-        "cat ", "head ", "tail ", "memory", "savings", "$(", "curl", "echo \"$"
+        "$(date", "`date", "date +", "date -u", "+%s",              // wall-clock
+        "$random", "${random", "uuidgen", "$(uuidgen",             // randomness
+        "timestamp", "epoch", "nanosecond",
+        "$(hostname", "`hostname", "ifconfig", "ipconfig",         // host/net identity
+        "curl ", "wget ",                                          // live network fetch
     ]
 
     static func scan() -> CacheHygieneReport {
@@ -102,10 +110,27 @@ enum CacheHygieneService {
             .replacingOccurrences(of: "~", with: home.path)
             .components(separatedBy: " ").first ?? command
         guard let script = try? String(contentsOfFile: path, encoding: .utf8) else {
-            // Can't read it → assume it could be dynamic (conservative).
-            return true
+            // Can't read it → don't cry wolf. Flagging an unverifiable hook as a
+            // definite cache-buster is a claim we can't stand behind (golden rule);
+            // it surfaces as a benign .info instead.
+            return false
         }
-        let lower = script.lowercased()
-        return dynamicMarkers.contains { lower.contains($0) }
+        // A volatile marker only busts the cache if it reaches STDOUT (the injected
+        // prefix). Markers on comment lines, variable assignments, or file-redirected
+        // telemetry (e.g. `TS=$(date +%s)` then `>> savings.jsonl`) never enter the
+        // prompt — flagging those is the false positive that lit up clean hooks.
+        for raw in script.split(separator: "\n") {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if line.hasPrefix("#") { continue }
+            let lower = line.lowercased()
+            guard dynamicMarkers.contains(where: { lower.contains($0) }) else { continue }
+            let redirectsToFile = lower.contains(">>") || lower.contains("> \"")
+                || lower.contains("> $") || lower.contains("/dev/null")
+                || lower.contains(".jsonl") || lower.contains(".log") || lower.contains("tee ")
+            let isAssignment = line.range(of: "^[a-z_][a-z0-9_]*=", options: [.regularExpression, .caseInsensitive]) != nil
+            if redirectsToFile || isAssignment { continue }   // telemetry/var, not stdout
+            return true                                       // volatile content on a stdout-bound line
+        }
+        return false
     }
 }
