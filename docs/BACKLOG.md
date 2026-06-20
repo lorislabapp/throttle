@@ -1,48 +1,44 @@
-# Throttle — backlog (deferred, as of 2026-06-16, post-3.2.0)
+# Throttle — backlog (deferred, as of 2026-06-20, post-3.2.2)
 
 Nothing here is broken or urgent. These are deferred-on-purpose or on-demand.
-Current shipped version: **3.2.0** (build 100).
+Current shipped version: **3.2.2** (build 102).
+
+## Shipped in 3.2.2 (2026-06-20)
+- [x] **Rate-limit handling** — DroppableTerminalView detects claude's usage-limit
+      banner, parses the reset time; CockpitTab `.rateLimited` state (red dot +
+      countdown), model aggregates a red banner + a "which project" notification.
+- [x] **Duplicate-session detect + consolidate** — `duplicateCwds` + a banner with
+      1-click Consolidate (hibernate extras, keep most-recent, resume-id kept).
+- [x] **Throttle Health check** — HealthCheckService + HealthCheckView (stethoscope
+      button): tracking-live, dedup index, DB integrity/size, orphaned procs (1-click
+      kill), memory, disk, exact-mode, cache-busting hooks.
+- [x] **Circuit-breaker (safe half)** — manual SIGSTOP/SIGCONT Pause/Resume per
+      session (`signalSubtree`, rail hover button, `.paused` state). Auto-pause
+      still deferred per design verdict.
+- [x] **Xcode-errors→claude** — XcodeBuildErrorsService distills the newest .xcresult
+      (via xcresulttool) → terminal right-click "Paste latest Xcode build errors".
+- [x] **Project detail** (Stats: working-since/total-time/last-active), **session
+      sort** (activity/cost/RAM/name/waiting), **rich state dot** (fixes gray
+      flicker), **reset countdown** (HH:MM), **/wk projection label** clarified.
 
 ## Build on explicit go
-- [ ] **Rate-limit handling, full** (greenlit 2026-06-20) — Kevin's pain: running
-      many parallel sessions, some get blocked when the cap is hit. Detect a
-      rate-limited/blocked session (from its transcript/output), flag WHICH
-      sessions are throttled in the rail, predictive cross-session pacing before
-      the wall (extends ThresholdNotifier.forecastCapETA), honor Retry-After on
-      claude.ai 429s, and keep exact-mode backoff (already in 3.2.1). Pairs with
-      the Health check.
-- [ ] **Duplicate-session detect + consolidate** (greenlit 2026-06-20) — group
-      tabs by cwd, flag groups >1 ("2 sessions on 360 → consolidate?"), 1-click
-      hibernate-the-extra (resume-id preserved, frees RAM/tokens). Detect + ASK,
-      never silent-kill (doctrine). Fold into the Health check. NOTE: cost shows
-      identical across dup tabs because cost is per-PROJECT (cwd), not per-session.
-- [ ] **Throttle Health check** (greenlit 2026-06-20) — a "Throttle Health" panel
-      that aggregates operational self-checks with ✅/⚠️/❌ + 1-click fixes,
-      reusing the existing audit services. Checks: tracking-live (last usage_event
-      age), **orphaned node/claude processes** (the C01 RAM-leak class — reuse
-      SystemMemoryService.subtreePids), exact-mode connected/fresh/backoff, hooks
-      installed + cache-busters (CacheHygieneService), DB integrity + dedup index
-      + size, calibration anchored-vs-stale, savings.jsonl ingesting, disk/RAM
-      thresholds. On-doctrine ("CFO/health cockpit that audits"); would have caught
-      half this session's bugs (orphan leak, disk-full, stale exact).
+- [ ] **Auto-pause (true ACT)** — the deferred risky half: ≥97% + burn ETA <5min,
+      opt-in, countdown-cancelable, reuse the new SIGSTOP/CONT pause. Gated on user
+      demand (design verdict). Per-model "switch to cheaper" nudge is the softer
+      variant. Design: `docs/design-circuit-breaker.md`.
+- [ ] **Rate-limit pacing/Retry-After** — extend 3.2.2's detection: predictive
+      cross-session pacing before the wall + honor Retry-After on claude.ai 429s
+      (detection + surfacing already shipped).
 - [ ] **TOON Phase 2** — opt-in replace of JSON tool outputs with TOON via
       `updatedToolOutput`, per-tool allowlist, lossless round-trip-or-passthrough.
       WAIT for `toon-potential.jsonl` data (Phase 1 measure-only is live) to prove
       the gain first. Design: `docs/design-toon-transpile.md`.
 - [ ] **TOON readout UI** (Phase 1.5) — surface accumulated potential savings from
       `toon-potential.jsonl` in the Optimizer.
-- [ ] **Circuit-breaker ACT** — auto-pause a runaway session before the cap.
-      Predictive WARN already shipped (`ThresholdNotifier.forecastCapETA`). ACT is
-      opt-in, warn-first, cancelable, reuse hibernation's SIGSTOP/CONT. Design:
-      `docs/design-circuit-breaker.md`.
-- [ ] **Xcode errors→claude** — 1-click button: parse newest build log/`.xcresult`
-      in DerivedData, paste DISTILLED errors into the terminal (token-saving, local).
-      Hard part = parsing `.xcactivitylog` (gzip SLF).
 
 ## Stats polish (small)
-- [ ] Clarify the "/wk" figure is a *weekly projection* from the selected range
-      (24h×7, 7d, 30d÷30×7) — users read 24h>30j as a bug; it isn't.
-- [ ] Reset shows clock time → add an HH:MM countdown ("resets in 2h14").
+- [ ] Reset shows clock time → add an HH:MM countdown in the menu-bar dropdown too
+      (cockpit binding already has it as of 3.2.2).
 
 ## Parked — premise unverified
 - [ ] **MEMORY.md 200-line cap audit / segmentation** — the claim "Claude Code

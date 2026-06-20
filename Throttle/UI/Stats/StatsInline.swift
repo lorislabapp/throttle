@@ -345,6 +345,7 @@ struct StatsInline: View {
         return Text("You burn \(est ? "≈" : "")\(formatTokens(weeklyTokens)) weighted tokens/wk, \(heavy).")
             .font(.system(size: 11.5)).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
+            .help("Weekly projection from the selected range — not last-7-days actuals. A busy 24h can project higher than a quiet 30-day span; that's the rate, not a bug.")
     }
 
     private var advisorEmpty: some View {
