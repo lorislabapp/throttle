@@ -65,7 +65,12 @@ final class LicenseService {
         var req = URLRequest(url: activateURL)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try? JSONSerialization.data(withJSONObject: payload)
+        req.timeoutInterval = 20   // M21: don't hang the activation indefinitely
+        // L14: surface an encode failure instead of POSTing an empty body.
+        guard let body = try? JSONSerialization.data(withJSONObject: payload) else {
+            return .failure(.network("could not encode activation request"))
+        }
+        req.httpBody = body
 
         do {
             let (data, response) = try await URLSession.shared.data(for: req)
@@ -107,6 +112,7 @@ final class LicenseService {
                 "machineId": MachineFingerprint.id
             ]
             var req = URLRequest(url: deactivateURL)
+            req.timeoutInterval = 15   // M21
             req.httpMethod = "POST"
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             req.httpBody = try? JSONSerialization.data(withJSONObject: payload)
