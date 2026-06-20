@@ -252,6 +252,85 @@ enum StatsDataService {
         return (Date(timeIntervalSince1970: TimeInterval(first)), Date(timeIntervalSince1970: TimeInterval(last)))
     }
 
+    /// Active seconds from a sorted timestamp list (same block rule as
+    /// activeTimeForProject: gaps ≤ idleGap join a block; a lone event = minBlock).
+    static func activeSeconds(_ ts: [Int64], idleGap: Int64 = 300, minBlock: Int64 = 60) -> Int64 {
+        guard let first = ts.first else { return 0 }
+        var total: Int64 = 0, blockStart = first, prev = first
+        for t in ts.dropFirst() {
+            if t - prev > idleGap { total += max(prev - blockStart, minBlock); blockStart = t }
+            prev = t
+        }
+        return total + max(prev - blockStart, minBlock)
+    }
+
+    /// Cross-project work activity: how much real time you actually spend in Claude
+    /// Code per day/week, how many projects + sessions you touched this week, and a
+    /// per-day breakdown for the chart. "Active" ignores idle/breaks (block rule),
+    /// so it's honest time-at-keyboard, not wall-clock.
+    struct WorkActivity: Sendable {
+        var activeToday: TimeInterval = 0
+        var activeWeek: TimeInterval = 0
+        var projectsThisWeek: Int = 0
+        var sessionsThisWeek: Int = 0
+        var daily: [(day: Date, seconds: TimeInterval)] = []          // last 7 local days, oldest first
+        var topProjects: [(name: String, seconds: TimeInterval)] = [] // this week, desc
+    }
+
+    static func workActivity(in db: Database, now: Date = Date(), days: Int = 7) throws -> WorkActivity {
+        var out = WorkActivity()
+        let cal = Calendar.current
+        let todayStart = cal.startOfDay(for: now)
+        guard let weekStart = cal.date(byAdding: .day, value: -(days - 1), to: todayStart) else { return out }
+        let weekStartEpoch = Int64(weekStart.timeIntervalSince1970)
+        let nowEpoch = Int64(now.timeIntervalSince1970)
+
+        // All events in the window, with project, ordered.
+        let rows = try Row.fetchAll(db, sql: """
+            SELECT e.timestamp AS ts, fs.encoded_project AS proj, e.session_id AS sid
+            FROM usage_events e
+            JOIN file_state fs ON fs.session_id = e.session_id
+            WHERE e.timestamp >= ? AND e.timestamp < ?
+            ORDER BY e.timestamp
+            """, arguments: [weekStartEpoch, nowEpoch])
+
+        // Bucket timestamps by local day + per project, and tally distinct sets.
+        var byDay: [Date: [Int64]] = [:]
+        var byProject: [String: [Int64]] = [:]
+        var projects = Set<String>(), sessions = Set<String>()
+        for r in rows {
+            let ts = r["ts"] as Int64
+            let day = cal.startOfDay(for: Date(timeIntervalSince1970: TimeInterval(ts)))
+            byDay[day, default: []].append(ts)
+            if let p = r["proj"] as String? { byProject[p, default: []].append(ts); projects.insert(p) }
+            if let s = r["sid"] as String? { sessions.insert(s) }
+        }
+
+        // Daily breakdown (every day in range, even empty), oldest first.
+        for i in 0..<days {
+            guard let day = cal.date(byAdding: .day, value: -(days - 1 - i), to: todayStart) else { continue }
+            let secs = TimeInterval(activeSeconds(byDay[day]?.sorted() ?? []))
+            out.daily.append((day: day, seconds: secs))
+        }
+        out.activeToday = out.daily.last?.seconds ?? 0
+        out.activeWeek = out.daily.reduce(0) { $0 + $1.seconds }
+        out.projectsThisWeek = projects.count
+        out.sessionsThisWeek = sessions.count
+        out.topProjects = byProject
+            .map { (name: displayName(forEncoded: $0.key), seconds: TimeInterval(activeSeconds($0.value.sorted()))) }
+            .sorted { $0.seconds > $1.seconds }
+            .prefix(6).map { $0 }
+        return out
+    }
+
+    /// Encoded project dir → human display name (last path component), best-effort.
+    private static func displayName(forEncoded encoded: String) -> String {
+        if let path = ProjectsService.decodePath(encoded) {
+            return (path as NSString).lastPathComponent
+        }
+        return (encoded as NSString).lastPathComponent
+    }
+
     /// (sessionCount, avgTokensPerSession) for a project.
     static func sessionsForProject(
         in db: Database,

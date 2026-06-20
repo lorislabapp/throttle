@@ -21,6 +21,7 @@ struct MultiCockpitRoot: View {
     @State private var caffeine = CaffeineService.shared   // @Observable → body tracks .active (H05)
     @State private var showNotifBanner = false             // C02: notifications-denied banner
     @State private var showHealth = false                  // Throttle Health panel
+    @State private var showActivity = false                // Work activity panel
 
     private let hair = Color.primary.opacity(0.10)
     private let track = Color.primary.opacity(0.08)
@@ -52,6 +53,7 @@ struct MultiCockpitRoot: View {
             showNotifBanner = true
         }
         .sheet(isPresented: $showHealth) { HealthCheckView().environment(appState) }
+        .sheet(isPresented: $showActivity) { WorkActivityView().environment(appState) }
     }
 
     // MARK: - Top bar (switcher + pills)
@@ -71,6 +73,12 @@ struct MultiCockpitRoot: View {
             HStack(spacing: 8) {
                 caffeineToggle
                 themeMenu
+                Button { showActivity = true } label: {
+                    Image(systemName: "chart.bar.xaxis")
+                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain).help("Work activity — hours/day, projects this week")
+                .accessibilityLabel("Work activity")
                 Button { showHealth = true } label: {
                     Image(systemName: "stethoscope")
                         .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.secondary)
