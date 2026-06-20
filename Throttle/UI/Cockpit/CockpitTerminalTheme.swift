@@ -86,14 +86,16 @@ enum CockpitTerminalTheme {
     /// The current preset's terminal background, for container views behind the PTY.
     static var backgroundColor: NSColor { ns(palette(current).bg) }
 
-    static func apply(to term: LocalProcessTerminalView) {
+    /// `setFont: false` on a live re-style (theme switch) so it doesn't clobber a
+    /// font size the user has zoomed (L07); the initial spawn sets it once.
+    static func apply(to term: LocalProcessTerminalView, setFont: Bool = true) {
         let p = palette(current)
         term.installColors(p.ansi.map(c))
         term.nativeBackgroundColor = ns(p.bg)
         term.nativeForegroundColor = ns(p.fg)
         term.caretColor = ns(p.accent)
         term.selectedTextBackgroundColor = ns(p.accent, alpha: 0.30)
-        term.font = NSFont.monospacedSystemFont(ofSize: 12.5, weight: .regular)
+        if setFont { term.font = NSFont.monospacedSystemFont(ofSize: 12.5, weight: .regular) }
         term.layer?.backgroundColor = ns(p.bg).cgColor
         term.needsDisplay = true   // the nativeBackgroundColor setter doesn't repaint on its own
     }

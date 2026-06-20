@@ -388,7 +388,7 @@ final class MultiCockpitModel {
 
     /// Re-apply the current terminal preset to every live session (theme switch).
     func restyleTerminals() {
-        for tab in sessions { if let t = tab.terminal { CockpitTerminalTheme.apply(to: t) } }
+        for tab in sessions { if let t = tab.terminal { CockpitTerminalTheme.apply(to: t, setFont: false) } }
     }
 
     /// Nav helpers routed to the active session's terminal.

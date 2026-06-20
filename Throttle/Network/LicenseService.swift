@@ -164,11 +164,12 @@ final class LicenseService {
         // Decode + validate claims.
         guard let claims = try? JSONDecoder().decode(Claims.self, from: payloadData) else { return nil }
         let now = Date().timeIntervalSince1970
+        let skew: TimeInterval = 300   // L13: tolerate ±5 min clock skew so a slightly-off clock doesn't void a valid license
         guard claims.iss == "throttle-license",
               claims.product == "throttle.pro",
               claims.machineId == MachineFingerprint.id,
-              now >= claims.nbf,
-              now < claims.exp else {
+              now >= claims.nbf - skew,
+              now < claims.exp + skew else {
             return nil
         }
         return claims

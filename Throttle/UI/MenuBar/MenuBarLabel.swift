@@ -12,7 +12,11 @@ struct MenuBarLabel: View {
             // Show the window closest to its limit — that's the one that
             // will actually throttle the user. Hiding a 100% weekly cap
             // behind a 0% session pill is misleading.
-            Label("\(Int(pct * 100))%", systemImage: meterIcon(for: pct))
+            // H07: a hidden session waiting on input swaps the gauge for a bell,
+            // so "needs you" surfaces on the always-visible menu-bar item even
+            // with the Cockpit closed / notifications off.
+            Label("\(Int(pct * 100))%",
+                  systemImage: MultiCockpitModel.shared.waitingCount > 0 ? "bell.badge.fill" : meterIcon(for: pct))
                 .labelStyle(.titleAndIcon)
         } else {
             Image(systemName: "gauge.with.dots.needle.bottom.50percent")
