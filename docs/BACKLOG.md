@@ -29,10 +29,17 @@ Current shipped version: **3.2.2** (build 102).
 - [ ] **Rate-limit pacing/Retry-After** — extend 3.2.2's detection: predictive
       cross-session pacing before the wall + honor Retry-After on claude.ai 429s
       (detection + surfacing already shipped).
-- [ ] **TOON Phase 2** — opt-in replace of JSON tool outputs with TOON via
-      `updatedToolOutput`, per-tool allowlist, lossless round-trip-or-passthrough.
-      WAIT for `toon-potential.jsonl` data (Phase 1 measure-only is live) to prove
-      the gain first. Design: `docs/design-toon-transpile.md`.
+- [ ] **TOON Phase 2 → CCR (Compress-Cache-Retrieve)** — upgraded target (NotebookLM
+      2026-06-20): a `PostToolUse` hook replaces verbose low-signal tool output with
+      a ~50-token pointer + stashes the raw text in a local SQLite cache; a bundled
+      `throttle_expand(hash)` MCP tool lets claude pull it back on demand. HARD no-op
+      on failures/stderr/stack-traces/JSON the model needs. WAIT for `toon-potential.
+      jsonl` data to confirm the gain before ship. Design: `docs/design-toon-transpile.md`.
+- [ ] **Read-Firewall / local-RAG auto-config** — detect brute-force file reading
+      (≥N sequential reads or >150 KB/turn), attribute the waste per project, and
+      offer a 1-click (preview + revert) inject of `mcp-local-rag` (local LanceDB,
+      no cloud) into the project `.mcp.json`. Watch the lossy-recall golden-rule
+      risk. Design: `docs/design-read-firewall.md`.
 - [ ] **TOON readout UI** (Phase 1.5) — surface accumulated potential savings from
       `toon-potential.jsonl` in the Optimizer.
 

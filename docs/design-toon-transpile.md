@@ -50,3 +50,24 @@ CSV (still a real saving, zero comprehension risk).
 ## Throttle scope check
 ✅ cuts tokens · ✅ local-only · ✅ Throttle owns the hook + UI + attribution.
 Off by default; opt-in; lossless-or-passthrough. No data-path proxy, no cloud.
+
+## Phase 2 upgrade — CCR (Compress-Cache-Retrieve), NotebookLM 2026-06-20
+Stronger variant of "transpile in place". Instead of (or on top of) reformatting
+the output, REPLACE a verbose tool result with a tiny pointer and stash the raw
+text in a local SQLite cache; claude pulls the full text back only if it needs it.
+- **Mechanism:** `PostToolUse` hook → if the output is large + low-signal (e.g.
+  `npm install`, `cargo build` chatter), write the raw bytes to a local cache
+  keyed by hash, and emit `hookSpecificOutput.updatedToolOutput` = a ~50-token
+  pointer: a one-line summary + "call `throttle_expand(hash=…)` for the full
+  output". Needs a tiny bundled MCP tool `throttle_expand` so claude can retrieve.
+- **Claimed gain:** up to ~89% on CLI-noise tokens (tool results ≈60% of agentic
+  context). MUST be confirmed against our own `toon-potential.jsonl` before ship —
+  do not render the headline number until measured (golden rule).
+- **Golden-rule guardrail (hard no-op):** if the command FAILED (non-zero exit),
+  wrote to stderr, contains a stack trace / error, or is structured JSON the model
+  likely needs verbatim → emit nothing, pass the FULL original through. Compress
+  only provably-low-signal success output. PostToolUse runs AFTER execution, so it
+  never bypasses Claude Code's permission prompts (unlike PreToolUse rewriting).
+- **Scope check:** native hook + local cache + local MCP retrieval tool = no proxy,
+  no cloud. Opt-in, per-tool allowlist. This supersedes the plain-transpile plan as
+  the Phase 2 target; keep minified-JSON/CSV as the fallback encoding inside it.
