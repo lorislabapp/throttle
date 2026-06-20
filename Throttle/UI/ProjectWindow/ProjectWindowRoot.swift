@@ -8,6 +8,9 @@ import SwiftUI
 struct ProjectWindowRoot: View {
     @Environment(AppState.self) private var appState
     let onBack: () -> Void
+    /// Optional project to focus on open (encoded id) — used when the cockpit's
+    /// "more info" button jumps straight to a session's project.
+    var initialProjectID: String? = nil
     @State private var projects: [ProjectInfo] = []
     @State private var selectedProjectID: String?
     @State private var selectedTab: Tab = .stats
@@ -99,7 +102,7 @@ struct ProjectWindowRoot: View {
         if let id = selectedProjectID, !list.contains(where: { $0.id == id }) {
             self.selectedProjectID = list.first?.id
         } else if selectedProjectID == nil {
-            self.selectedProjectID = list.first?.id
+            self.selectedProjectID = initialProjectID.flatMap { id in list.first(where: { $0.id == id })?.id } ?? list.first?.id
         }
     }
 

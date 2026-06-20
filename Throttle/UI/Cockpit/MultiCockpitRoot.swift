@@ -474,7 +474,11 @@ struct MultiCockpitRoot: View {
                         Text(fmtTok(t)).font(.system(size: 10, design: .monospaced)).foregroundStyle(.tertiary)
                     }
                     Spacer(minLength: 0)
-                    Text("up \(uptime(s.startedAt))").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    if let started = s.spawnedAt {
+                        Text("up \(uptime(started))").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    } else {
+                        Text("dormant").font(.system(size: 10.5)).foregroundStyle(.quaternary)
+                    }
                 }
                 if s.ramBytes > 0 {
                     HStack(spacing: 5) {
@@ -500,6 +504,12 @@ struct MultiCockpitRoot: View {
         .overlay(alignment: .topTrailing) {
             if hoveredSession == s.id {
                 HStack(spacing: 6) {
+                    Button { ProjectWindowController.shared.show(appState: appState, projectID: MultiCockpitModel.claudeProjectDirName(s.cwd)) } label: {
+                        Image(systemName: "chart.bar.doc.horizontal")
+                            .font(.system(size: 11.5)).foregroundStyle(.secondary)
+                            .background(Circle().fill(.background))
+                    }
+                    .buttonStyle(.plain).help("Project stats + CLAUDE.md optimizer")
                     if s.isSpawned {
                         Button { s.isPaused ? s.resumeProcess() : s.pauseProcess() } label: {
                             Image(systemName: s.isPaused ? "play.fill" : "pause.fill")
@@ -570,8 +580,10 @@ struct MultiCockpitRoot: View {
                         .font(.system(size: 19, design: .monospaced)).foregroundStyle(.primary)
                     if let t = s.tokens, t > 0 {
                         Text("\(fmtTok(t)) tokens this session").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    } else if let started = s.spawnedAt {
+                        Text("up \(uptime(started))").font(.system(size: 10.5)).foregroundStyle(.tertiary)
                     } else {
-                        Text("up \(uptime(s.startedAt))").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                        Text("dormant").font(.system(size: 10.5)).foregroundStyle(.quaternary)
                     }
                 }
                 Spacer(minLength: 0)

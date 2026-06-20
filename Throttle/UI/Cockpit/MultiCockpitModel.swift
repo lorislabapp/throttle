@@ -13,7 +13,13 @@ final class CockpitTab: Identifiable {
     let id = UUID()
     let projectName: String
     let cwd: String
+    /// When this TAB was created (cockpit launch / new session) — used as the
+    /// since-floor for transcript discovery. NOT the session's run time.
     let startedAt = Date()
+    /// When the live `claude` PROCESS actually spawned — the real uptime. nil
+    /// until spawned (a dormant restored tab has no running process, so it shows
+    /// no uptime instead of the misleading shared "cockpit has been open Xm").
+    var spawnedAt: Date?
 
     /// LAZY: nil until the tab is first activated (memory-safe restore — a
     /// dormant restored tab costs nothing until you open it).
@@ -112,6 +118,7 @@ final class CockpitTab: Identifiable {
         term.startProcess(executable: shell, args: [], environment: env, execName: "-\(shellName)")
         CockpitTerminalTheme.apply(to: term)   // after spawn so the engine is live + a redraw is queued
         self.terminal = term
+        self.spawnedAt = Date()                // real process start → honest uptime
 
         let quoted = "'" + cwd.replacingOccurrences(of: "'", with: "'\\''") + "'"
         var cmd = "cd \(quoted) && clear && "

@@ -25,7 +25,7 @@ final class ProjectWindowController: NSObject {
 
     private override init() {}
 
-    func show(appState: AppState) {
+    func show(appState: AppState, projectID: String? = nil) {
         self.appState = appState
         if let window {
             window.makeKeyAndOrderFront(nil)
@@ -39,7 +39,7 @@ final class ProjectWindowController: NSObject {
 
         let root = ProjectWindowRoot(onBack: { [weak self] in
             self?.close()
-        })
+        }, initialProjectID: projectID)
         .environment(appState)
         let host = NSHostingController(rootView: root)
 
