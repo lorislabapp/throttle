@@ -4,6 +4,15 @@ Nothing here is broken or urgent. These are deferred-on-purpose or on-demand.
 Current shipped version: **3.2.0** (build 100).
 
 ## Build on explicit go
+- [ ] **Throttle Health check** (greenlit 2026-06-20) — a "Throttle Health" panel
+      that aggregates operational self-checks with ✅/⚠️/❌ + 1-click fixes,
+      reusing the existing audit services. Checks: tracking-live (last usage_event
+      age), **orphaned node/claude processes** (the C01 RAM-leak class — reuse
+      SystemMemoryService.subtreePids), exact-mode connected/fresh/backoff, hooks
+      installed + cache-busters (CacheHygieneService), DB integrity + dedup index
+      + size, calibration anchored-vs-stale, savings.jsonl ingesting, disk/RAM
+      thresholds. On-doctrine ("CFO/health cockpit that audits"); would have caught
+      half this session's bugs (orphan leak, disk-full, stale exact).
 - [ ] **TOON Phase 2** — opt-in replace of JSON tool outputs with TOON via
       `updatedToolOutput`, per-tool allowlist, lossless round-trip-or-passthrough.
       WAIT for `toon-potential.jsonl` data (Phase 1 measure-only is live) to prove
