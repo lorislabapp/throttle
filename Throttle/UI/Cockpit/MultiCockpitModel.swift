@@ -217,25 +217,44 @@ final class MultiCockpitModel {
             }
         }
     }
-    var sortMode: SortMode = .manual
+    var sortMode: SortMode = .manual { didSet { if sortMode != oldValue { recomputeSortOrder() } } }
 
     private(set) var sessions: [CockpitTab] = []
 
-    /// Sessions in display order. `.manual` keeps the drag-reordered order; the
-    /// others sort a copy so the underlying drag order isn't mutated.
+    /// Cached display order (session ids). Recomputed only on an explicit trigger
+    /// — sort-mode change, session add/remove, and the periodic tick — NOT on every
+    /// `@Observable` mutation. Without this, sorting by "last activity" / cost / RAM
+    /// re-sorts on every streamed byte and the rows thrash every few ms.
+    private var sortedOrder: [UUID] = []
+
+    /// Sessions in display order. `.manual` keeps the drag order; other modes map
+    /// the live `sessions` onto the cached `sortedOrder` (stable between recomputes;
+    /// ids not yet ranked fall to the end in their current order).
     var displaySessions: [CockpitTab] {
+        guard sortMode != .manual else { return sessions }
+        var rank: [UUID: Int] = [:]
+        for (i, id) in sortedOrder.enumerated() { rank[id] = i }
+        return sessions.enumerated().sorted {
+            (rank[$0.element.id] ?? Int.max, $0.offset) < (rank[$1.element.id] ?? Int.max, $1.offset)
+        }.map(\.element)
+    }
+
+    /// Snapshot a fresh ordering for the current `sortMode` into `sortedOrder`.
+    func recomputeSortOrder() {
+        let ordered: [CockpitTab]
         switch sortMode {
-        case .manual:  return sessions
-        case .recent:  return sessions.sorted { $0.lastActivityAt > $1.lastActivityAt }
-        case .cost:    return sessions.sorted { ($0.eur ?? -1) > ($1.eur ?? -1) }
-        case .ram:     return sessions.sorted { $0.ramBytes > $1.ramBytes }
-        case .name:    return sessions.sorted { $0.projectName.localizedCaseInsensitiveCompare($1.projectName) == .orderedAscending }
-        case .waiting: return sessions.sorted {
+        case .manual:  ordered = sessions
+        case .recent:  ordered = sessions.sorted { $0.lastActivityAt > $1.lastActivityAt }
+        case .cost:    ordered = sessions.sorted { ($0.eur ?? -1) > ($1.eur ?? -1) }
+        case .ram:     ordered = sessions.sorted { $0.ramBytes > $1.ramBytes }
+        case .name:    ordered = sessions.sorted { $0.projectName.localizedCaseInsensitiveCompare($1.projectName) == .orderedAscending }
+        case .waiting: ordered = sessions.sorted {
             ($0.needsInput ? 1 : 0) != ($1.needsInput ? 1 : 0)
                 ? ($0.needsInput ? 1 : 0) > ($1.needsInput ? 1 : 0)
                 : $0.lastActivityAt > $1.lastActivityAt
         }
         }
+        sortedOrder = ordered.map(\.id)
     }
 
     // Don't auto-spawn a HIBERNATED tab (that's the hibernate→instant-respawn
@@ -346,6 +365,7 @@ final class MultiCockpitModel {
                 }
             }
             if changed { self.persist() }   // keep saved resume-ids fresh
+            self.recomputeSortOrder()        // refresh sort order on the tick, not per-byte
         }
     }
 
@@ -449,6 +469,7 @@ final class MultiCockpitModel {
             wire(tab)
             sessions.append(tab)
         }
+        recomputeSortOrder()
         activeID = sessions.first?.id   // spawns ONLY the active tab (others dormant)
     }
 
@@ -481,6 +502,7 @@ final class MultiCockpitModel {
         let s = CockpitTab(projectName: projectName, cwd: cwd)
         wire(s)
         sessions.append(s)
+        recomputeSortOrder()
         activeID = s.id   // didSet → ensureSpawned
         persist()
         return s
@@ -519,6 +541,7 @@ final class MultiCockpitModel {
         guard let idx = sessions.firstIndex(where: { $0.id == id }) else { return }
         sessions[idx].terminate()
         sessions.remove(at: idx)
+        recomputeSortOrder()
         if activeID == id { activeID = sessions.first?.id }
         persist()
     }
