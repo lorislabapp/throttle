@@ -46,6 +46,10 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     // the viewport back to the live bottom. Set on an upward scroll, cleared when
     // they return to the bottom (or hit "jump to live"). Reuses the same buffer.
     nonisolated(unsafe) private var scrolledUpByUser = false
+    // A selection still EXISTS after the drag ends (mouse released). Keep holding
+    // output until the user deselects (a fresh click) — otherwise the flush on
+    // mouse-up would redraw and wipe the selection the user just made mid-stream.
+    nonisolated(unsafe) private var holdForSelection = false
     nonisolated(unsafe) private var pendingChunks: [[UInt8]] = []
     nonisolated(unsafe) private var pendingBytes = 0
     nonisolated(unsafe) private var selectionMonitor: Any?
@@ -86,7 +90,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
             // Hold output while the user is dragging a selection OR has scrolled up
             // to read — either way, rendering would yank the viewport. Bounded —
             // past the cap we render live (output must never be starved forever).
-            if (self.selecting || self.scrolledUpByUser) && self.pendingBytes < Self.pendingCap {
+            if (self.selecting || self.holdForSelection || self.scrolledUpByUser) && self.pendingBytes < Self.pendingCap {
                 self.pendingChunks.append(bytes)
                 self.pendingBytes += bytes.count
                 return
@@ -113,11 +117,13 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         for c in chunks { renderAndSniff(c) }
     }
 
-    /// Flush only when nothing is holding output back (no active selection drag,
-    /// not scrolled up) — i.e. the user is back at the live bottom.
+    /// Flush only when nothing is holding output back — no active drag, no live
+    /// selection sitting on screen, and not scrolled up.
     @MainActor private func flushIfReady() {
-        if !selecting && !scrolledUpByUser { flushPending() }
+        if !selecting && !holdForSelection && !scrolledUpByUser { flushPending() }
     }
+
+    private func hasSelection() -> Bool { (getSelection()?.isEmpty == false) }
 
     /// True once the scrollback is parked at (or within a hair of) the live bottom.
     private var atLiveBottom: Bool { scrollPosition >= 0.999 }
@@ -126,14 +132,21 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// scrollWheel aren't `open` on SwiftTerm's view, so we observe instead of
     /// override). Holds output while reading up; flushes on return to the bottom.
     private func installSelectionMonitor() {
-        selectionMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDragged, .leftMouseUp, .scrollWheel]) { [weak self] event in
+        selectionMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp, .scrollWheel]) { [weak self] event in
             guard let self else { return event }
             MainActor.assumeIsolated {
                 switch event.type {
+                case .leftMouseDown:
+                    // A fresh click abandons any prior selection → stop holding for
+                    // it and let the held output catch up (a drag may re-hold next).
+                    self.holdForSelection = false
+                    self.flushIfReady()
                 case .leftMouseDragged:
                     if self.eventIsOverSelf(event) { self.selecting = true }
                 case .leftMouseUp:
                     self.selecting = false
+                    // Keep holding if a selection now sits on screen; flush if not.
+                    self.holdForSelection = self.eventIsOverSelf(event) && self.hasSelection()
                     self.flushIfReady()
                 case .scrollWheel:
                     if self.eventIsOverSelf(event), event.deltaY > 0 { self.scrolledUpByUser = true }
@@ -357,6 +370,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// replay anything that streamed while the user was reading up.
     func scrollToLive() {
         scrolledUpByUser = false
+        holdForSelection = false
         flushPending()
         scroll(toPosition: 1)
     }
