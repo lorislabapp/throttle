@@ -76,14 +76,12 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     override func send(source: TerminalView, data: ArraySlice<UInt8>) {
         MainActor.assumeIsolated {
             onActivity?()
-            // Typing/pasting means the user wants the LIVE prompt. Drop any output
-            // hold (a lingering selection, scrolled-up, or a missed mouse-up) and
-            // flush — otherwise the echoed input is swallowed by the buffer and the
-            // session looks frozen ("I type and nothing happens").
-            if selecting || holdForSelection || scrolledUpByUser {
-                selecting = false; holdForSelection = false; scrolledUpByUser = false
-                flushPending()
-            }
+            // Typing/pasting means the user wants the LIVE prompt. Drop every output
+            // hold and flush anything buffered — otherwise the echoed input is
+            // swallowed and the line looks blank until you press Enter.
+            selecting = false; holdForSelection = false; scrolledUpByUser = false
+            flushPending()
+            needsDisplay = true   // force the echo to paint now, not on next redraw
         }
         super.send(source: source, data: data)
     }
@@ -118,6 +116,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// Render bytes to the terminal and run the prompt/rate-limit sniffer.
     @MainActor private func renderAndSniff(_ bytes: [UInt8]) {
         super.dataReceived(slice: bytes[...])
+        needsDisplay = true   // ensure the input echo actually paints (blank-line fix)
         appendStripped(bytes[...])
         onActivity?()
         scheduleDetect()

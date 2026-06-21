@@ -462,6 +462,15 @@ struct MultiCockpitRoot: View {
         .accessibilityLabel("Sort sessions").accessibilityValue(model.sortMode.label)
     }
 
+    /// One icon button in the rail-row hover cluster.
+    private func railAction(_ icon: String, _ size: CGFloat, _ color: Color, _ help: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon).font(.system(size: size)).foregroundStyle(color)
+                .frame(width: 18, height: 18).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).help(help).accessibilityLabel(help)
+    }
+
     private func railRow(_ s: CockpitTab) -> some View {
         let on = s.id == model.active?.id
         return Button { model.wake(s.id) } label: {
@@ -519,36 +528,24 @@ struct MultiCockpitRoot: View {
         .accessibilityAddTraits(s.id == model.active?.id ? [.isButton, .isSelected] : .isButton)
         .overlay(alignment: .topTrailing) {
             if hoveredSession == s.id {
-                HStack(spacing: 6) {
-                    Button { ProjectWindowController.shared.show(appState: appState, projectID: MultiCockpitModel.claudeProjectDirName(s.cwd)) } label: {
-                        Image(systemName: "chart.bar.doc.horizontal")
-                            .font(.system(size: 11.5)).foregroundStyle(.secondary)
-                            .background(Circle().fill(.background))
+                // Solid floating cluster so it OCCLUDES the model badge underneath
+                // instead of overlapping it (per-button circles left gaps).
+                HStack(spacing: 9) {
+                    railAction("chart.bar.doc.horizontal", 11.5, .secondary, "Project stats + CLAUDE.md optimizer") {
+                        ProjectWindowController.shared.show(appState: appState, projectID: MultiCockpitModel.claudeProjectDirName(s.cwd))
                     }
-                    .buttonStyle(.plain).help("Project stats + CLAUDE.md optimizer")
                     if s.isSpawned {
-                        Button { s.isPaused ? s.resumeProcess() : s.pauseProcess() } label: {
-                            Image(systemName: s.isPaused ? "play.fill" : "pause.fill")
-                                .font(.system(size: 11)).foregroundStyle(s.isPaused ? Color.purple : .secondary)
-                                .background(Circle().fill(.background))
+                        railAction(s.isPaused ? "play.fill" : "pause.fill", 11, s.isPaused ? .purple : .secondary,
+                                   s.isPaused ? "Resume — unfreeze this session" : "Pause — freeze this session (keeps state)") {
+                            s.isPaused ? s.resumeProcess() : s.pauseProcess()
                         }
-                        .buttonStyle(.plain)
-                        .help(s.isPaused ? "Resume — unfreeze this session"
-                                         : "Pause — freeze this session (stops token burn, keeps state)")
-                        Button { model.hibernate(s.id) } label: {
-                            Image(systemName: "moon.zzz.fill")
-                                .font(.system(size: 12)).foregroundStyle(.secondary)
-                                .background(Circle().fill(.background))
-                        }
-                        .buttonStyle(.plain).help("Hibernate — free RAM, keep context")
+                        railAction("moon.zzz.fill", 12, .secondary, "Hibernate — free RAM, keep context") { model.hibernate(s.id) }
                     }
-                    Button { model.close(s.id) } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 13)).foregroundStyle(.secondary)
-                            .background(Circle().fill(.background))
-                    }
-                    .buttonStyle(.plain).help("Close session")
+                    railAction("xmark.circle.fill", 13, .secondary, "Close session") { model.close(s.id) }
                 }
+                .padding(.horizontal, 8).padding(.vertical, 5)
+                .background(.regularMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(hair, lineWidth: 0.5))
                 .padding(5)
             }
         }
