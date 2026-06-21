@@ -74,7 +74,17 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// pre-first-token think gap — instead of flickering to idle. `send(source:)`
     /// is SwiftTerm's open hook for terminal→process bytes.
     override func send(source: TerminalView, data: ArraySlice<UInt8>) {
-        MainActor.assumeIsolated { onActivity?() }
+        MainActor.assumeIsolated {
+            onActivity?()
+            // Typing/pasting means the user wants the LIVE prompt. Drop any output
+            // hold (a lingering selection, scrolled-up, or a missed mouse-up) and
+            // flush — otherwise the echoed input is swallowed by the buffer and the
+            // session looks frozen ("I type and nothing happens").
+            if selecting || holdForSelection || scrolledUpByUser {
+                selecting = false; holdForSelection = false; scrolledUpByUser = false
+                flushPending()
+            }
+        }
         super.send(source: source, data: data)
     }
 
@@ -87,9 +97,13 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         let bytes = Array(slice)
         let handle: @MainActor () -> Void = { [weak self] in
             guard let self else { return }
-            // Hold output while the user is dragging a selection OR has scrolled up
-            // to read — either way, rendering would yank the viewport. Bounded —
-            // past the cap we render live (output must never be starved forever).
+            // Self-heal: if the scroll-up flag is stuck (e.g. the user returned to
+            // the bottom via the scrollbar, which fires no scrollWheel event) but
+            // we're actually at the live bottom, drop it so output isn't held forever.
+            if self.scrolledUpByUser && self.atLiveBottom { self.scrolledUpByUser = false }
+            // Hold output while the user is dragging a selection, a selection sits
+            // on screen, OR they've scrolled up — rendering would yank the viewport
+            // or wipe the selection. Bounded — past the cap we render live.
             if (self.selecting || self.holdForSelection || self.scrolledUpByUser) && self.pendingBytes < Self.pendingCap {
                 self.pendingChunks.append(bytes)
                 self.pendingBytes += bytes.count
