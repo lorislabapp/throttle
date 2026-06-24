@@ -42,10 +42,6 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     // mouse-up, so a selection survives mid-stream. Bounded so a stuck drag can't
     // hoard output forever.
     nonisolated(unsafe) private var selecting = false
-    // The user scrolled up to read scrollback — hold new output so it doesn't yank
-    // the viewport back to the live bottom. Set on an upward scroll, cleared when
-    // they return to the bottom (or hit "jump to live"). Reuses the same buffer.
-    nonisolated(unsafe) private var scrolledUpByUser = false
     // A selection still EXISTS after the drag ends (mouse released). Keep holding
     // output until the user deselects (a fresh click) — otherwise the flush on
     // mouse-up would redraw and wipe the selection the user just made mid-stream.
@@ -79,7 +75,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
             // Typing/pasting means the user wants the LIVE prompt. Drop every output
             // hold and flush anything buffered — otherwise the echoed input is
             // swallowed and the line looks blank until you press Enter.
-            selecting = false; holdForSelection = false; scrolledUpByUser = false
+            selecting = false; holdForSelection = false
             flushPending()
             needsDisplay = true   // force the echo to paint now, not on next redraw
         }
@@ -95,14 +91,10 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         let bytes = Array(slice)
         let handle: @MainActor () -> Void = { [weak self] in
             guard let self else { return }
-            // Self-heal: if the scroll-up flag is stuck (e.g. the user returned to
-            // the bottom via the scrollbar, which fires no scrollWheel event) but
-            // we're actually at the live bottom, drop it so output isn't held forever.
-            if self.scrolledUpByUser && self.atLiveBottom { self.scrolledUpByUser = false }
-            // Hold output while the user is dragging a selection, a selection sits
-            // on screen, OR they've scrolled up — rendering would yank the viewport
-            // or wipe the selection. Bounded — past the cap we render live.
-            if (self.selecting || self.holdForSelection || self.scrolledUpByUser) && self.pendingBytes < Self.pendingCap {
+            // Hold output only while the user is selecting / has a selection on
+            // screen, so rendering can't wipe it. Scrolling is left to SwiftTerm
+            // natively (holding output during scroll broke scrolling under load).
+            if (self.selecting || self.holdForSelection) && self.pendingBytes < Self.pendingCap {
                 self.pendingChunks.append(bytes)
                 self.pendingBytes += bytes.count
                 return
@@ -133,19 +125,16 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// Flush only when nothing is holding output back — no active drag, no live
     /// selection sitting on screen, and not scrolled up.
     @MainActor private func flushIfReady() {
-        if !selecting && !holdForSelection && !scrolledUpByUser { flushPending() }
+        if !selecting && !holdForSelection { flushPending() }
     }
 
     private func hasSelection() -> Bool { (getSelection()?.isEmpty == false) }
 
-    /// True once the scrollback is parked at (or within a hair of) the live bottom.
-    private var atLiveBottom: Bool { scrollPosition >= 0.999 }
-
-    /// Track selection drags AND scroll-up via a local event monitor (mouseDragged/
-    /// scrollWheel aren't `open` on SwiftTerm's view, so we observe instead of
-    /// override). Holds output while reading up; flushes on return to the bottom.
+    /// Track selection drags via a local event monitor (mouseDragged isn't `open`
+    /// on SwiftTerm's view, so we observe instead of override). Holds output while
+    /// a selection exists so a redraw can't wipe it.
     private func installSelectionMonitor() {
-        selectionMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp, .scrollWheel]) { [weak self] event in
+        selectionMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp]) { [weak self] event in
             guard let self else { return event }
             MainActor.assumeIsolated {
                 switch event.type {
@@ -161,15 +150,6 @@ final class DroppableTerminalView: LocalProcessTerminalView {
                     // Keep holding if a selection now sits on screen; flush if not.
                     self.holdForSelection = self.eventIsOverSelf(event) && self.hasSelection()
                     self.flushIfReady()
-                case .scrollWheel:
-                    if self.eventIsOverSelf(event), event.deltaY > 0 { self.scrolledUpByUser = true }
-                    // After SwiftTerm applies the scroll, re-evaluate: back at the
-                    // bottom → stop holding and flush what streamed while reading.
-                    DispatchQueue.main.async {
-                        MainActor.assumeIsolated {
-                            if self.atLiveBottom { self.scrolledUpByUser = false; self.flushIfReady() }
-                        }
-                    }
                 default: break
                 }
             }
@@ -354,10 +334,6 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// prompt (> / ❯). Steps one line at a time using only public SwiftTerm APIs
     /// (scrollUp/Down + getCharData on the top visible row).
     func scrollToTurn(older: Bool) {
-        // Programmatic scroll (no scrollWheel event), so set the hold flag from the
-        // final position ourselves — otherwise live output yanks away from the turn
-        // the user just navigated to.
-        defer { scrolledUpByUser = !atLiveBottom; if atLiveBottom { flushIfReady() } }
         let term = getTerminal()
         var steps = 0
         while steps < 8000 {
@@ -379,10 +355,9 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         return first == "⏺" || first == "●" || first == ">" || first == "❯"
     }
 
-    /// Jump back to the live bottom of the scrollback — stop holding output and
-    /// replay anything that streamed while the user was reading up.
+    /// Jump back to the live bottom of the scrollback — drop any selection hold
+    /// and replay anything buffered.
     func scrollToLive() {
-        scrolledUpByUser = false
         holdForSelection = false
         flushPending()
         scroll(toPosition: 1)
