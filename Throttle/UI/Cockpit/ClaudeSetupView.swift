@@ -9,6 +9,11 @@ struct ClaudeSetupView: View {
     @State private var setup = ClaudeSetup()
     @State private var loading = true
     @State private var section: Section = .mcp
+    // Dead-Skill audit (load-vs-use). Keyed by name; folded onto the same rows so
+    // "what's loaded" and "is it earning its schema cost" live in one place.
+    @State private var usageMCP: [String: DeadSkillRow] = [:]
+    @State private var usageSkill: [String: DeadSkillRow] = [:]
+    @State private var report: DeadSkillReport?
 
     enum Section: String, CaseIterable, Identifiable {
         case mcp = "MCP", skills = "Skills", plugins = "Plugins"
@@ -67,8 +72,9 @@ struct ClaudeSetupView: View {
     private var mcpList: some View {
         VStack(alignment: .leading, spacing: 0) {
             if setup.mcp.isEmpty { empty("No global MCP servers configured.") }
-            ForEach(setup.mcp) { m in
-                row(title: m.name, badge: m.kind, detail: m.locator)
+            if let n = report?.deadCount, n > 0 { auditNote("\(n) loaded item\(n == 1 ? "" : "s") unused in \(report?.windowDays ?? 30)d — paying schema cost for nothing.") }
+            ForEach(sortedDead(setup.mcp, by: { usageMCP[$0.name] })) { m in
+                row(title: m.name, badge: m.kind, detail: m.locator, usage: usageMCP[m.name])
             }
             if setup.projectMCPCount > 0 {
                 Text("+ \(setup.projectMCPCount) project-scoped server\(setup.projectMCPCount == 1 ? "" : "s")")
@@ -80,8 +86,27 @@ struct ClaudeSetupView: View {
     private var skillsList: some View {
         VStack(alignment: .leading, spacing: 0) {
             if setup.skills.isEmpty { empty("No user skills in ~/.claude/skills.") }
-            ForEach(setup.skills) { s in row(title: s.name, badge: nil, detail: s.detail, wrapDetail: true) }
+            ForEach(sortedDead(setup.skills, by: { usageSkill[$0.name.lowercased()] })) { s in
+                row(title: s.name, badge: nil, detail: s.detail, wrapDetail: true, usage: usageSkill[s.name.lowercased()])
+            }
         }
+    }
+
+    /// Stable sort that floats dead (loaded ∧ 0 uses), then least-used, to the top.
+    private func sortedDead<T: Identifiable>(_ items: [T], by usage: (T) -> DeadSkillRow?) -> [T] {
+        items.enumerated().sorted { a, b in
+            let ua = usage(a.element), ub = usage(b.element)
+            let da = ua?.isDead == true, db = ub?.isDead == true
+            if da != db { return da }
+            let cu = ua?.uses ?? Int.max, cv = ub?.uses ?? Int.max
+            if cu != cv { return cu < cv }
+            return a.offset < b.offset
+        }.map(\.element)
+    }
+
+    private func auditNote(_ s: String) -> some View {
+        Text(s).font(.system(size: 10.5)).foregroundStyle(.secondary)
+            .padding(.bottom, 8).padding(.horizontal, 2)
     }
 
     private var pluginsList: some View {
@@ -93,7 +118,7 @@ struct ClaudeSetupView: View {
         }
     }
 
-    private func row(title: String, badge: String?, detail: String, wrapDetail: Bool = false) -> some View {
+    private func row(title: String, badge: String?, detail: String, wrapDetail: Bool = false, usage: DeadSkillRow? = nil) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 7) {
                 Text(title).font(.system(size: 12, weight: .medium))
@@ -103,15 +128,36 @@ struct ClaudeSetupView: View {
                         .background(Color.primary.opacity(0.07), in: Capsule())
                 }
                 Spacer(minLength: 0)
+                // Graphite-only status — no pressure colour (colour is earned).
+                if let u = usage {
+                    if u.isDead {
+                        Text("unused \(report?.windowDays ?? 30)d")
+                            .font(.system(size: 9, weight: .semibold)).textCase(.lowercase).foregroundStyle(.tertiary)
+                            .padding(.horizontal, 5).padding(.vertical, 1.5)
+                            .overlay(Capsule().strokeBorder(hair, lineWidth: 1))
+                    } else {
+                        Text("\(u.uses)×").font(.system(size: 10, weight: .medium).monospacedDigit()).foregroundStyle(.secondary)
+                    }
+                }
             }
             if !detail.isEmpty {
                 Text(detail).font(.system(size: 10.5)).foregroundStyle(.secondary)
                     .lineLimit(wrapDetail ? 3 : 1).fixedSize(horizontal: false, vertical: wrapDetail)
             }
+            if let u = usage, !u.isDead, let last = u.lastUsed {
+                Text("last used \(relative(last))").font(.system(size: 9.5).monospacedDigit()).foregroundStyle(.tertiary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 9)
         .overlay(alignment: .bottom) { Rectangle().fill(hair).frame(height: 1) }
+    }
+
+    private func relative(_ d: Date) -> String {
+        let s = Int(Date().timeIntervalSince(d))
+        if s < 3600 { return "\(max(1, s/60))m ago" }
+        if s < 86400 { return "\(s/3600)h ago" }
+        return "\(s/86400)d ago"
     }
 
     private func empty(_ msg: String) -> some View {
@@ -124,6 +170,13 @@ struct ClaudeSetupView: View {
         Task {
             let result = await Task.detached(priority: .utility) { ClaudeSetupService.load() }.value
             await MainActor.run { self.setup = result; self.loading = false }
+            // Audit is heavier (scans transcripts) — run after the inventory shows.
+            let rep = await Task.detached(priority: .utility) { DeadSkillService.audit(loadout: result) }.value
+            await MainActor.run {
+                self.report = rep
+                self.usageMCP = Dictionary(rep.rows.filter { $0.kind == .mcp }.map { ($0.name, $0) }) { a, _ in a }
+                self.usageSkill = Dictionary(rep.rows.filter { $0.kind == .skill }.map { ($0.name.lowercased(), $0) }) { a, _ in a }
+            }
         }
     }
 }
