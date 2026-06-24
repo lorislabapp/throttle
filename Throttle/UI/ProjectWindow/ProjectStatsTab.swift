@@ -19,6 +19,7 @@ struct ProjectStatsTab: View {
     @State private var totalTime: TimeInterval = 0
     @State private var firstActivity: Date?
     @State private var lastActivity: Date?
+    @State private var workflow = StatsDataService.WorkflowCounts()
     @State private var loading = true
 
     private let hair = Color.primary.opacity(0.09)
@@ -33,6 +34,10 @@ struct ProjectStatsTab: View {
                     projectSection
                     Rectangle().fill(hair).frame(height: 1).padding(.horizontal, 22)
                     usageSection
+                    if workflow.commits > 0 || workflow.verifyRuns > 0 {
+                        Rectangle().fill(hair).frame(height: 1).padding(.horizontal, 22)
+                        workflowSection
+                    }
                     Rectangle().fill(hair).frame(height: 1).padding(.horizontal, 22)
                     modelSplitSection
                 }
@@ -81,6 +86,31 @@ struct ProjectStatsTab: View {
             .background(hair)
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(hair, lineWidth: 1))
+        }
+        .padding(.horizontal, 22).padding(.top, 16).padding(.bottom, 16)
+    }
+
+    // MARK: - Workflow (cost-per-outcome, honest units — no pass/fail inference)
+
+    private var workflowSection: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            secHeader("Workflow · cost per outcome")
+            HStack(spacing: 1) {
+                if workflow.commits > 0 {
+                    statCell("Per commit", "≈\(formatEUR(costEUR / Double(workflow.commits)))",
+                             "est · \(workflow.commits) commit\(workflow.commits == 1 ? "" : "s") / mo")
+                }
+                if workflow.verifyRuns > 0 {
+                    statCell("Per verify run", "≈\(formatEUR(costEUR / Double(workflow.verifyRuns)))",
+                             "est · \(workflow.verifyRuns) test run\(workflow.verifyRuns == 1 ? "" : "s") / mo")
+                }
+                statCell("Verify gates", "\(workflow.verifyRuns)", "test invocations · mo")
+            }
+            .background(hair)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(hair, lineWidth: 1))
+            Text("Cost ÷ a deterministic milestone count — never a pass/fail claim.")
+                .font(.system(size: 10)).foregroundStyle(.tertiary)
         }
         .padding(.horizontal, 22).padding(.top, 16).padding(.bottom, 16)
     }
@@ -169,6 +199,7 @@ struct ProjectStatsTab: View {
                 var totalTime: TimeInterval = 0
                 var first: Date?
                 var last: Date?
+                var workflow = StatsDataService.WorkflowCounts()
             }
             let result: Bundle = await Task.detached {
                 var b = Bundle()
@@ -187,6 +218,7 @@ struct ProjectStatsTab: View {
                         b.first = span.first; b.last = span.last
                     }
                 }
+                b.workflow = StatsDataService.workflowCounts(encodedName: encoded)   // jsonl, not DB
                 return b
             }.value
             await MainActor.run {
@@ -201,6 +233,7 @@ struct ProjectStatsTab: View {
                 self.totalTime = result.totalTime
                 self.firstActivity = result.first
                 self.lastActivity = result.last
+                self.workflow = result.workflow
                 self.loading = false
             }
         }

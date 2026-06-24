@@ -331,6 +331,44 @@ enum StatsDataService {
         return (encoded as NSString).lastPathComponent
     }
 
+    /// Deterministic workflow milestones for a project from its transcripts —
+    /// `git commit` (objective "done" markers) and test-runner invocations (verify
+    /// gates). We count them WITHOUT inferring pass/fail (golden rule): cost ÷ count
+    /// is an honest "cost per committed unit / per verify run", not a quality claim.
+    struct WorkflowCounts: Sendable { var commits = 0; var verifyRuns = 0 }
+
+    nonisolated(unsafe) private static let verifyRegex = try! NSRegularExpression(
+        pattern: #"\b(pytest|jest|vitest|mocha|rspec|phpunit|deepeval|(cargo|go|swift|dotnet)\s+test|xcodebuild\s+[^\n]*\btest\b|npm\s+(run\s+)?test|yarn\s+test|pnpm\s+test|make\s+test)\b"#,
+        options: [.caseInsensitive])
+
+    static func workflowCounts(encodedName: String, windowDays: Int = 30) -> WorkflowCounts {
+        var c = WorkflowCounts()
+        let dir = (NSHomeDirectory() as NSString)
+            .appendingPathComponent(".claude/projects/\(encodedName)")
+        let fm = FileManager.default
+        guard let entries = try? fm.contentsOfDirectory(atPath: dir) else { return c }
+        let cutoff = Date().addingTimeInterval(-Double(windowDays) * 86_400)
+        for name in entries where name.hasSuffix(".jsonl") {
+            let path = (dir as NSString).appendingPathComponent(name)
+            let attrs = try? fm.attributesOfItem(atPath: path)
+            if let mt = attrs?[.modificationDate] as? Date, mt < cutoff { continue }
+            guard let data = fm.contents(atPath: path), let text = String(data: data, encoding: .utf8) else { continue }
+            for line in text.split(separator: "\n", omittingEmptySubsequences: true) {
+                guard line.contains("\"Bash\"") || line.contains("tool_use") else { continue }
+                guard let obj = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
+                      let msg = obj["message"] as? [String: Any],
+                      let blocks = msg["content"] as? [[String: Any]] else { continue }
+                for b in blocks where (b["type"] as? String) == "tool_use" && (b["name"] as? String) == "Bash" {
+                    guard let cmd = (b["input"] as? [String: Any])?["command"] as? String else { continue }
+                    if cmd.range(of: #"\bgit\s+commit\b"#, options: .regularExpression) != nil { c.commits += 1 }
+                    let r = NSRange(cmd.startIndex..., in: cmd)
+                    if verifyRegex.firstMatch(in: cmd, range: r) != nil { c.verifyRuns += 1 }
+                }
+            }
+        }
+        return c
+    }
+
     /// (sessionCount, avgTokensPerSession) for a project.
     static func sessionsForProject(
         in db: Database,
