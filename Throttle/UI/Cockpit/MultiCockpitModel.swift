@@ -321,6 +321,7 @@ final class MultiCockpitModel {
             }
         }
         if sessions.isEmpty { restore() }   // bring back the working set (lazy)
+        sessionsLoaded = true               // cockpit opened → `sessions` is canonical, safe to persist
         sampleMachine()
         tick?.cancel()
         tick = Task { [weak self] in
@@ -466,7 +467,15 @@ final class MultiCockpitModel {
     private static let persistKey = "cockpitOpenSessions"
     private struct Saved: Codable { let cwd: String; let name: String; let sessionId: String? }
 
+    /// True once restore() has run or a session was added — i.e. `sessions` is the
+    /// canonical working set. Until then, persisting would write garbage.
+    private var sessionsLoaded = false
+
     func persist() {
+        // NEVER overwrite the saved working set with an empty list we never loaded
+        // (e.g. the app launched but the cockpit was never opened, so restore()
+        // didn't run). That would wipe the user's sessions on quit.
+        guard sessionsLoaded else { return }
         let saved = sessions.map { Saved(cwd: $0.cwd, name: $0.projectName, sessionId: $0.sessionId) }
         if let data = try? JSONEncoder().encode(saved) {
             UserDefaults.standard.set(data, forKey: Self.persistKey)
