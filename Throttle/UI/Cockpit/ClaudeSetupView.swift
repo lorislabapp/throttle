@@ -76,6 +76,12 @@ struct ClaudeSetupView: View {
         VStack(alignment: .leading, spacing: 0) {
             if setup.mcp.isEmpty { empty("No global MCP servers configured.") }
             if let n = report?.deadCount, n > 0 { auditNote("\(n) loaded item\(n == 1 ? "" : "s") unused in \(report?.windowDays ?? 30)d — paying schema cost for nothing.") }
+            if report == nil && !setup.mcp.isEmpty {
+                HStack(spacing: 6) {
+                    ProgressView().controlSize(.mini)
+                    Text("scanning transcripts for usage…").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                }.padding(.bottom, 8).padding(.horizontal, 2)
+            }
             if !setup.mcp.isEmpty { probeBar }
             ForEach(sortedDead(setup.mcp, by: { usageMCP[$0.name] })) { m in
                 row(title: m.name, badge: m.kind, detail: m.locator, usage: usageMCP[m.name], probe: probe[m.name])

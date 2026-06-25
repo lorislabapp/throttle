@@ -48,7 +48,10 @@ struct ExactSnapshot: Sendable, Equatable, Codable {
         return ExactSnapshot(
             fiveHour: wire.fiveHour,
             sevenDay: wire.sevenDay,
-            sevenDaySonnet: wire.sevenDaySonnet,
+            // claude.ai now returns "seven_day_sonnet": null (the per-model window
+            // was removed). Default to a zero window so the snapshot still decodes
+            // — five_hour + seven_day are the binding numbers that matter.
+            sevenDaySonnet: wire.sevenDaySonnet ?? Window(utilization: 0, resetsAt: nil),
             fetchedAt: fetchedAt
         )
     }
@@ -56,7 +59,7 @@ struct ExactSnapshot: Sendable, Equatable, Codable {
     private struct Wire: Decodable {
         let fiveHour: Window
         let sevenDay: Window
-        let sevenDaySonnet: Window
+        let sevenDaySonnet: Window?
         enum CodingKeys: String, CodingKey {
             case fiveHour = "five_hour"
             case sevenDay = "seven_day"
