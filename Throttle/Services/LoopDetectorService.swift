@@ -48,8 +48,11 @@ enum LoopDetectorService {
 
         let recent = Array(sigs.suffix(window))
         let recentTokens = Array(tokensByIndex.suffix(window))
-        // Any real file change in the window → genuine progress, not a loop.
-        if recent.contains(where: { sig in mutationTools.contains(String(sig.prefix(while: { $0 != ":" }))) }) { return nil }
+        // Any real file change in the window → genuine progress, not a loop. This
+        // counts both the edit TOOLS and a Bash command that writes to disk (claude
+        // often mutates via the shell, not the Edit tool — covers that ground truth
+        // without a separate fsevents watcher, cutting false positives).
+        if recent.contains(where: { sig in mutatesDisk(sig) }) { return nil }
 
         // Most-repeated identical payload in the window.
         var counts: [String: Int] = [:]
@@ -58,6 +61,20 @@ enum LoopDetectorService {
 
         let burned = recentTokens.reduce(0, +)
         return LoopSignal(repeatedTool: prettySig(sig), repeats: n, tokensBurned: burned)
+    }
+
+    /// A signature represents real disk mutation if it's an edit tool, or a Bash
+    /// command that writes (redirect, tee, in-place sed, file ops, scaffolding).
+    private static func mutatesDisk(_ sig: String) -> Bool {
+        let name = String(sig.prefix(while: { $0 != ":" }))
+        if mutationTools.contains(name) { return true }
+        guard name == "Bash" else { return false }
+        let cmd = String(sig.dropFirst(name.count + 1)).lowercased()
+        if cmd.contains(">") || cmd.contains("|& tee") || cmd.contains("| tee") { return true }
+        let writers = ["tee ", "sed -i", "cp ", "mv ", "touch ", "mkdir", "rm ", "rmdir",
+                       "git commit", "git add", "git apply", "git checkout", "patch ",
+                       "npm install", "pip install", "cargo add", "ln -s", "chmod ", "dd "]
+        return writers.contains { cmd.contains($0) }
     }
 
     // MARK: - Helpers
