@@ -23,6 +23,7 @@ struct MultiCockpitRoot: View {
     @State private var showHealth = false                  // Throttle Health panel
     @State private var showActivity = false                // Work activity panel
     @State private var showSetup = false                   // Claude Code setup panel
+    @State private var showWhatsNew = false                // What's-new / optimizations tour
 
     private let hair = Color.primary.opacity(0.10)
     private let track = Color.primary.opacity(0.08)
@@ -46,7 +47,10 @@ struct MultiCockpitRoot: View {
             }
         }
         .frame(minWidth: 720, minHeight: 460)
-        .onAppear { model.start(appState: appState); activeStyle = OutputStyleManager.activeName() }
+        .onAppear {
+            model.start(appState: appState); activeStyle = OutputStyleManager.activeName()
+            if WhatsNewService.shouldShow { showWhatsNew = true }   // once per new version
+        }
         .onDisappear { model.pause() }   // window close pauses the tick, never the sessions (C01)
         .onReceive(NotificationCenter.default.publisher(for: .outputStyleChanged)) { _ in
             activeStyle = OutputStyleManager.activeName()
@@ -57,6 +61,7 @@ struct MultiCockpitRoot: View {
         .sheet(isPresented: $showHealth) { HealthCheckView().environment(appState) }
         .sheet(isPresented: $showActivity) { WorkActivityView().environment(appState) }
         .sheet(isPresented: $showSetup) { ClaudeSetupView() }
+        .sheet(isPresented: $showWhatsNew) { WhatsNewView() }
     }
 
     // MARK: - Top bar (switcher + pills)
@@ -88,6 +93,12 @@ struct MultiCockpitRoot: View {
                 }
                 .buttonStyle(.plain).help("Claude Code setup — MCP servers, skills, plugins")
                 .accessibilityLabel("Claude Code setup")
+                Button { showWhatsNew = true } label: {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain).help("What's new — optimization features")
+                .accessibilityLabel("What's new")
                 Button { showHealth = true } label: {
                     Image(systemName: "stethoscope")
                         .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.secondary)
