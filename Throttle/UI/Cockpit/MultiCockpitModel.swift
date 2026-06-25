@@ -115,6 +115,11 @@ final class CockpitTab: Identifiable {
         term.onActivity = { [weak self] in self?.lastActivityAt = Date() }
         term.onPrompt = { [weak self] q in self?.handlePrompt(q) }
         term.onRateLimit = { [weak self] reset in self?.handleRateLimit(reset) }
+        term.isPausedProvider = { [weak self] in self?.isPaused ?? false }
+        term.onTogglePause = { [weak self] in
+            guard let self else { return }
+            if self.isPaused { self.resumeProcess() } else { self.pauseProcess() }
+        }
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let shellName = (shell as NSString).lastPathComponent
         let env = Terminal.getEnvironmentVariables(termName: "xterm-256color", trueColor: true)

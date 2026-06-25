@@ -28,6 +28,11 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// Fired when claude prints a usage/rate-limit message. Date = parsed reset
     /// time if claude stated one, else nil (caller applies a fallback window).
     var onRateLimit: (@MainActor (Date?) -> Void)?
+    /// Toggle SIGSTOP/SIGCONT on the session's process subtree (the circuit-breaker
+    /// pause). Wired to the owning CockpitTab; nil until spawned.
+    var onTogglePause: (@MainActor () -> Void)?
+    /// Current paused state, so the context menu shows Pause vs Resume. nil = not spawned.
+    var isPausedProvider: (@MainActor () -> Bool)?
     nonisolated(unsafe) private var lastRateLimitFire = Date.distantPast
 
     // Detection state — main-thread-confined (LocalProcess posts on .main).
@@ -317,34 +322,85 @@ final class DroppableTerminalView: LocalProcessTerminalView {
 
     // MARK: - Right-click context menu
 
-    /// SwiftTerm ships no contextual menu, so right-click did nothing. Provide
-    /// the expected Copy / Paste / Select All / Clear, plus — when there's a
-    /// selection — one-click "ask claude" prompts that paste into the session.
+    /// SwiftTerm ships no contextual menu, so right-click did nothing. Rather than
+    /// generic terminal basics, this is a Throttle-shaped menu: the expected
+    /// essentials, then claude-workflow prompts, then the token/cost optimization
+    /// levers (compact context, OCR-paste to dodge vision tokens, distilled build
+    /// errors), then reversible session control (SIGSTOP pause).
     override func menu(for event: NSEvent) -> NSMenu? {
         let menu = NSMenu()
         menu.autoenablesItems = false
         let sel = getSelection()
         let hasSel = (sel?.isEmpty == false)
 
+        // 1) Essentials.
         ctxItem(menu, "Copy", enabled: hasSel) { [weak self] in self?.copy(NSNull()) }
         ctxItem(menu, "Paste", enabled: true) { [weak self] in self?.paste(NSNull()) }
-        ctxItem(menu, "Select All", enabled: true) { [weak self] in self?.selectAll(nil) }
-        menu.addItem(.separator())
-        ctxItem(menu, "Clear", enabled: true) { [weak self] in self?.send(txt: "\u{0c}") }
-
-        menu.addItem(.separator())
-        ctxItem(menu, "Paste latest Xcode build errors", enabled: true) { [weak self] in
-            self?.pasteXcodeErrors()
+        // Vision tokens are expensive: if the clipboard holds an image, offer to
+        // paste it as locally-OCR'd TEXT instead — same lever as the drag-drop path.
+        if let imgURL = clipboardImageURL() {
+            ctxItem(menu, "Paste image as text (OCR · saves vision tokens)", enabled: true) { [weak self] in
+                self?.pasteImageAsText(imgURL)
+            }
         }
+        ctxItem(menu, "Select All", enabled: true) { [weak self] in self?.selectAll(nil) }
 
+        // 2) Claude-workflow prompts on a selection.
         if hasSel, let s = sel {
             menu.addItem(.separator())
-            ctxItem(menu, "Ask claude to summarize", enabled: true) { [weak self] in
-                self?.paste("Summarize this:\n\n\(s)\n") }
             ctxItem(menu, "Ask claude to explain", enabled: true) { [weak self] in
                 self?.paste("Explain this:\n\n\(s)\n") }
+            ctxItem(menu, "Ask claude to fix", enabled: true) { [weak self] in
+                self?.paste("Fix this:\n\n\(s)\n") }
+            ctxItem(menu, "Ask claude to summarize", enabled: true) { [weak self] in
+                self?.paste("Summarize this:\n\n\(s)\n") }
         }
+
+        // 3) Token / cost optimization.
+        menu.addItem(.separator())
+        ctxItem(menu, "Compact context  (/compact)", enabled: true) { [weak self] in
+            self?.send(txt: "/compact\n") }
+        ctxItem(menu, "Paste latest Xcode build errors", enabled: true) { [weak self] in
+            self?.pasteXcodeErrors() }
+
+        // 4) Reversible session control — freeze token burn without losing state.
+        if let paused = isPausedProvider?() {
+            menu.addItem(.separator())
+            ctxItem(menu, paused ? "Resume session" : "Pause session  (freeze, no token burn)", enabled: true) {
+                [weak self] in self?.onTogglePause?() }
+        }
+        ctxItem(menu, "Clear", enabled: true) { [weak self] in self?.send(txt: "\u{0c}") }
         return menu
+    }
+
+    /// First image on the general pasteboard, as a file URL — either a dropped
+    /// file URL or raw image data spilled to a temp PNG. nil if no image.
+    private func clipboardImageURL() -> URL? {
+        let pb = NSPasteboard.general
+        if let urls = pb.readObjects(forClasses: [NSURL.self],
+                                     options: [.urlReadingFileURLsOnly: true]) as? [URL],
+           let img = urls.first(where: { ImageTextExtractor.isImage($0) }) {
+            return img
+        }
+        guard let data = pb.data(forType: .png) ?? pb.data(forType: .tiff) else { return nil }
+        let png = NSBitmapImageRep(data: data)?.representation(using: .png, properties: [:]) ?? data
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("throttle-clip-\(UUID().uuidString).png")
+        try? png.write(to: url)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    /// OCR the image off-main, then paste the recognised text (cheap) instead of
+    /// the image (costly vision tokens). Beeps if nothing was recognised.
+    private func pasteImageAsText(_ url: URL) {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let text = ImageTextExtractor.extractText(from: url)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if let text, !text.isEmpty { self.paste(text + "\n") } else { NSSound.beep() }
+                self.window?.makeFirstResponder(self)
+            }
+        }
     }
 
     /// Pull distilled errors from the newest Xcode build (off-main — runs
