@@ -326,10 +326,15 @@ final class MultiCockpitModel {
         tick?.cancel()
         tick = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(10))   // 10s (was 5s): 29-tab fs walks were heavy on a swap-bound Mac
+                // Quiet mode: under memory pressure, tick 3× slower and skip the
+                // heavy per-session RSS fs-walk so Throttle stops amplifying the
+                // lag. The loop detector (in refreshStats) is the red line — it
+                // keeps running, just less often. (NotebookLM hierarchy.)
+                let quiet = MemoryPressureMonitor.shared.isQuiet
+                try? await Task.sleep(for: .seconds(quiet ? 30 : 10))
                 self?.sampleMachine()
                 self?.refreshStats()
-                self?.sampleSessionRAM()
+                if !quiet { self?.sampleSessionRAM() }
             }
         }
     }

@@ -81,8 +81,14 @@ struct ClaudeSetupView: View {
             if let n = report?.deadCount, n > 0 { auditNote("\(n) loaded item\(n == 1 ? "" : "s") unused in \(report?.windowDays ?? 30)d — paying schema cost for nothing.") }
             if report == nil && !setup.mcp.isEmpty {
                 HStack(spacing: 6) {
-                    ProgressView().controlSize(.mini)
-                    Text("scanning transcripts for usage…").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    if MemoryPressureMonitor.shared.isQuiet {
+                        Text("usage audit paused").font(.system(size: 9, weight: .semibold)).textCase(.lowercase).foregroundStyle(.tertiary)
+                            .padding(.horizontal, 5).padding(.vertical, 1.5).overlay(Capsule().strokeBorder(hair, lineWidth: 1))
+                        Text("freeing memory — runs when the Mac isn't swapping").font(.system(size: 10)).foregroundStyle(.tertiary)
+                    } else {
+                        ProgressView().controlSize(.mini)
+                        Text("scanning transcripts for usage…").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    }
                 }.padding(.bottom, 8).padding(.horizontal, 2)
             }
             if !setup.mcp.isEmpty { probeBar }
@@ -230,6 +236,10 @@ struct ClaudeSetupView: View {
         Task {
             let result = await Task.detached(priority: .utility) { ClaudeSetupService.load() }.value
             await MainActor.run { self.setup = result; self.loading = false }
+            // Quiet mode: the dead-skill audit scans thousands of transcripts — the
+            // heaviest background I/O — so under memory pressure we suspend it
+            // entirely (hide the cell rather than fake a stale view).
+            guard !MemoryPressureMonitor.shared.isQuiet else { return }
             // Audit is heavier (scans transcripts) — run after the inventory shows.
             let rep = await Task.detached(priority: .utility) { DeadSkillService.audit(loadout: result) }.value
             await MainActor.run {

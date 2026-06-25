@@ -240,7 +240,16 @@ struct MultiCockpitRoot: View {
         let m = model.machine
         let tint: Color = m.critical ? .red : (m.underPressure ? .orange : .secondary)
         return VStack(alignment: .leading, spacing: 5) {
-            gLabel("MACHINE")
+            HStack(spacing: 6) {
+                gLabel("MACHINE")
+                // Quiet mode: Throttle backs off its own scans under memory pressure.
+                // Graphite tag, no pressure colour (memory ≠ cap pressure).
+                if MemoryPressureMonitor.shared.isQuiet {
+                    Text("quiet").font(.system(size: 8.5, weight: .semibold)).textCase(.lowercase).foregroundStyle(.tertiary)
+                        .padding(.horizontal, 4).padding(.vertical, 1).overlay(Capsule().strokeBorder(hair, lineWidth: 1))
+                        .help("Memory pressure — Throttle paused its background scans to free RAM")
+                }
+            }
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 HStack(spacing: 0) {
                     Text(gb(m.usedBytes)).font(.system(size: 16, weight: .medium, design: .monospaced))
