@@ -74,6 +74,13 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// pre-first-token think gap — instead of flickering to idle. `send(source:)`
     /// is SwiftTerm's open hook for terminal→process bytes.
     override func send(source: TerminalView, data: ArraySlice<UInt8>) {
+        // DIAGNOSTIC (opt-in via `defaults write com.lorislab.throttle throttlePtyInputLog
+        // -bool YES`): record EVERY byte that reaches the PTY. This is SwiftTerm's
+        // single chokepoint for terminal→process bytes — keystrokes, mouse reports,
+        // AND any focus-in/out (CSI I/O) the view emits on becoming first responder.
+        // Lets us prove what byte sequence auto-confirms a claude question prompt on
+        // tab-switch / first keypress (the "auto-validate first answer" bug).
+        Self.logPtyInput(data)
         MainActor.assumeIsolated {
             onActivity?()
             // Typing means the user wants the live prompt — drop any output hold so
@@ -84,6 +91,26 @@ final class DroppableTerminalView: LocalProcessTerminalView {
             }
         }
         super.send(source: source, data: data)
+    }
+
+    nonisolated(unsafe) private static var ptyLogEnabled: Bool? = nil
+    private static func logPtyInput(_ data: ArraySlice<UInt8>) {
+        if ptyLogEnabled == nil {
+            ptyLogEnabled = UserDefaults.standard.bool(forKey: "throttlePtyInputLog")
+        }
+        guard ptyLogEnabled == true, !data.isEmpty else { return }
+        let hex = data.map { String(format: "%02x", $0) }.joined(separator: " ")
+        let printable = data.map { (32...126).contains($0) ? Character(UnicodeScalar($0)) : "·" }
+        let line = "\(Date().timeIntervalSince1970) [\(data.count)B] \(hex)  |\(String(printable))|\n"
+        let dir = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/Throttle/diagnostics", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let url = dir.appendingPathComponent("pty-input.log")
+        if let fh = try? FileHandle(forWritingTo: url) {
+            fh.seekToEndOfFile(); fh.write(Data(line.utf8)); try? fh.close()
+        } else {
+            try? Data(line.utf8).write(to: url)
+        }
     }
 
     // MARK: - Output sniffing
