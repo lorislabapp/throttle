@@ -36,6 +36,7 @@ struct MultiCockpitRoot: View {
             if showNotifBanner { notifDeniedBanner }
             if !model.duplicateCwds.isEmpty { duplicateBanner }
             if !model.rateLimitedSessions.isEmpty { rateLimitBanner }
+            if let loop = model.loopSessions.first { loopBanner(loop) }
             HStack(spacing: 0) {
                 content
                 if showInspector {
@@ -270,6 +271,29 @@ struct MultiCockpitRoot: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 8)
         .background(Color.red.opacity(0.10))
+    }
+
+    /// The loop detector flagged a session cycling the same action with no file
+    /// changes — likely a runaway "Ralph Wiggum" loop burning tokens. Advisory:
+    /// offers the (already-shipped) Pause; never auto-pauses.
+    @ViewBuilder
+    private func loopBanner(_ s: CockpitTab) -> some View {
+        if let sig = s.loopSignal {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 12)).foregroundStyle(.orange)
+                Text("\(s.projectName): possible runaway loop — \(sig.repeatedTool) ×\(sig.repeats), no file changes\(sig.tokensBurned > 0 ? " · ≈\(fmtTok(sig.tokensBurned)) tok burned" : "").")
+                    .font(.system(size: 11.5)).foregroundStyle(.primary).lineLimit(1)
+                Spacer(minLength: 0)
+                if s.isSpawned {
+                    Button(s.isPaused ? "Resume" : "Pause") { s.isPaused ? s.resumeProcess() : s.pauseProcess() }
+                        .buttonStyle(.plain).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(Color.accentColor)
+                }
+                Button { s.loopSignal = nil } label: { Image(systemName: "xmark").font(.system(size: 10)) }
+                    .buttonStyle(.plain).foregroundStyle(.secondary).help("Dismiss")
+            }
+            .padding(.horizontal, 14).padding(.vertical, 8)
+            .background(Color.orange.opacity(0.10))
+        }
     }
 
     /// One or more sessions hit the account usage cap. Account limits are shared

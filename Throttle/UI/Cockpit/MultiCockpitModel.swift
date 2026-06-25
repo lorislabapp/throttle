@@ -49,6 +49,9 @@ final class CockpitTab: Identifiable {
     /// reset time passes. Drives the `.rateLimited` state + cockpit banner.
     var rateLimitedUntil: Date?
     var isRateLimited: Bool { (rateLimitedUntil.map { $0 > Date() }) ?? false }
+    /// Set when the loop detector spots a runaway cycle (same action, no file
+    /// changes) burning tokens. Advisory — drives a nudge, never auto-pauses.
+    var loopSignal: LoopSignal?
     /// Hibernated = process subtree terminated to free RAM, resume-id kept.
     /// Distinct from a never-opened restored tab (both have terminal == nil).
     var isHibernated = false
@@ -338,16 +341,18 @@ final class MultiCockpitModel {
         let items = sessions.map { (id: $0.id, cwd: $0.cwd, since: $0.startedAt, sessionId: $0.sessionId) }
         guard !items.isEmpty else { return }
         Task { [weak self] in
-            let results: [(UUID, Double?, Int?, String?, Bool, String?)] = await Task.detached(priority: .utility) {
+            let results: [(UUID, Double?, Int?, String?, Bool, String?, LoopSignal?)] = await Task.detached(priority: .utility) {
                 items.map { item in
                     // since-gated discovery → liveness + the id we're allowed to adopt.
                     let recent = Self.newestSession(cwd: item.cwd, since: item.since)
                     let live = recent.map { Date().timeIntervalSince($0.mtime) < 12 } ?? false
+                    // Runaway-loop check on the LIVE transcript only (cheap tail read).
+                    let loop = (live ? recent?.id : nil).flatMap { LoopDetectorService.detect(cwd: item.cwd, sessionId: $0) }
                     // For COST, fall back to the persisted id / newest-ever transcript
                     // so a dormant restored tab with real history isn't shown "—" (M07).
                     let costId = recent?.id ?? item.sessionId
                         ?? Self.newestSession(cwd: item.cwd, since: .distantPast)?.id
-                    guard let costId else { return (item.id, nil, nil, nil, live, recent?.id) }
+                    guard let costId else { return (item.id, nil, nil, nil, live, recent?.id, loop) }
                     let stats: (Double?, Int?, String?)? = try? db.read { d in
                         let eur = try? StatsDataService.cockpitSessionCostEUR(in: d, sessionId: costId)
                         let tok = try? StatsDataService.cockpitSessionTokens(in: d, sessionId: costId)
@@ -356,14 +361,14 @@ final class MultiCockpitModel {
                             .flatMap { Self.modelName($0.tier) }
                         return (eur, tok, model)
                     }
-                    return (item.id, stats?.0, stats?.1, stats?.2, live, recent?.id)
+                    return (item.id, stats?.0, stats?.1, stats?.2, live, recent?.id, loop)
                 }
             }.value
             guard let self else { return }
             var changed = false
-            for (id, eur, tok, model, live, sid) in results {
+            for (id, eur, tok, model, live, sid, loop) in results {
                 if let tab = self.sessions.first(where: { $0.id == id }) {
-                    tab.eur = eur; tab.tokens = tok; tab.model = model; tab.isLive = live
+                    tab.eur = eur; tab.tokens = tok; tab.model = model; tab.isLive = live; tab.loopSignal = loop
                     // Only adopt a freshly-discovered id — NEVER clear to nil.
                     // A dormant restored tab has an old transcript mtime, so
                     // newestSession returns nil; clearing here would erase its
@@ -452,6 +457,9 @@ final class MultiCockpitModel {
     }
     /// The earliest reset among blocked sessions (for the aggregate banner).
     var soonestRateLimitReset: Date? { rateLimitedSessions.first?.rateLimitedUntil }
+
+    /// Sessions the loop detector flagged as cycling without progress.
+    var loopSessions: [CockpitTab] { sessions.filter { $0.loopSignal != nil } }
 
     // MARK: - Persistence (memory-aware: restored tabs spawn lazily via resume)
 
