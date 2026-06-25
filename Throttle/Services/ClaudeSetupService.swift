@@ -8,6 +8,7 @@ struct SkillEntry: Sendable, Identifiable { let id = UUID(); let name: String; l
 struct PluginEntry: Sendable, Identifiable { let id = UUID(); let name: String; let marketplace: String; let version: String }
 
 struct ClaudeSetup: Sendable {
+    var claudeVersion: String = ""   // e.g. "2.1.191"
     var mcp: [MCPEntry] = []
     var skills: [SkillEntry] = []
     var plugins: [PluginEntry] = []
@@ -19,10 +20,25 @@ enum ClaudeSetupService {
     static func load() -> ClaudeSetup {
         var setup = ClaudeSetup()
         let home = FileManager.default.homeDirectoryForCurrentUser
+        setup.claudeVersion = claudeVersion()
         loadMCP(home: home, into: &setup)
         loadSkills(home: home, into: &setup)
         loadPlugins(home: home, into: &setup)
         return setup
+    }
+
+    /// `claude --version` → "2.1.191" (drops the "(Claude Code)" suffix). Empty if
+    /// claude isn't found. Login shell so PATH/nvm resolve like Claude's own spawn.
+    private static func claudeVersion() -> String {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        p.arguments = ["-lc", "claude --version"]
+        let pipe = Pipe(); p.standardOutput = pipe; p.standardError = FileHandle.nullDevice
+        do { try p.run() } catch { return "" }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        let out = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        return out.split(separator: " ").first.map(String.init) ?? ""
     }
 
     // MARK: - MCP servers (~/.claude.json)

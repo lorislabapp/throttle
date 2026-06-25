@@ -46,7 +46,10 @@ struct ClaudeSetupView: View {
             Image(systemName: "puzzlepiece.extension.fill").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.accentColor)
             VStack(alignment: .leading, spacing: 1) {
                 Text("Claude Code setup").font(.system(size: 13, weight: .semibold))
-                Text("MCP servers · skills · plugins").font(.system(size: 10.5)).foregroundStyle(.secondary)
+                Text(setup.claudeVersion.isEmpty
+                     ? "MCP servers · skills · plugins"
+                     : "Claude Code \(setup.claudeVersion) · MCP · skills · plugins")
+                    .font(.system(size: 10.5)).foregroundStyle(.secondary)
             }
             Spacer()
             Button { reload() } label: { Image(systemName: "arrow.clockwise") }.buttonStyle(.plain).help("Refresh")
