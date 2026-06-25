@@ -14,6 +14,9 @@ struct ClaudeSetupView: View {
     @State private var usageMCP: [String: DeadSkillRow] = [:]
     @State private var usageSkill: [String: DeadSkillRow] = [:]
     @State private var report: DeadSkillReport?
+    // Opt-in live probe (spawns each stdio server once, reads tools/list, kills it).
+    @State private var probe: [String: MCPProbeResult] = [:]
+    @State private var probing = false
 
     enum Section: String, CaseIterable, Identifiable {
         case mcp = "MCP", skills = "Skills", plugins = "Plugins"
@@ -73,8 +76,9 @@ struct ClaudeSetupView: View {
         VStack(alignment: .leading, spacing: 0) {
             if setup.mcp.isEmpty { empty("No global MCP servers configured.") }
             if let n = report?.deadCount, n > 0 { auditNote("\(n) loaded item\(n == 1 ? "" : "s") unused in \(report?.windowDays ?? 30)d — paying schema cost for nothing.") }
+            if !setup.mcp.isEmpty { probeBar }
             ForEach(sortedDead(setup.mcp, by: { usageMCP[$0.name] })) { m in
-                row(title: m.name, badge: m.kind, detail: m.locator, usage: usageMCP[m.name])
+                row(title: m.name, badge: m.kind, detail: m.locator, usage: usageMCP[m.name], probe: probe[m.name])
             }
             if setup.projectMCPCount > 0 {
                 Text("+ \(setup.projectMCPCount) project-scoped server\(setup.projectMCPCount == 1 ? "" : "s")")
@@ -109,6 +113,36 @@ struct ClaudeSetupView: View {
             .padding(.bottom, 8).padding(.horizontal, 2)
     }
 
+    /// Opt-in live probe: spawns each stdio server once to read its real tool count
+    /// + schema cost, then kills it. Off by default; never rewrites config.
+    private var probeBar: some View {
+        HStack(spacing: 8) {
+            Button { runProbe() } label: {
+                HStack(spacing: 5) {
+                    if probing { ProgressView().controlSize(.mini) }
+                    else { Image(systemName: "dot.radiowaves.left.and.right").font(.system(size: 10.5)) }
+                    Text(probing ? "Probing…" : "Probe servers").font(.system(size: 11, weight: .medium))
+                }
+            }
+            .buttonStyle(.plain).foregroundStyle(Color.accentColor).disabled(probing)
+            Text("spawns each server once to read live tool count + schema cost")
+                .font(.system(size: 10)).foregroundStyle(.tertiary).lineLimit(1)
+            Spacer(minLength: 0)
+        }
+        .padding(.bottom, 8).padding(.horizontal, 2)
+    }
+
+    private func runProbe() {
+        probing = true
+        Task {
+            let results = await MCPProbeService.probeAll()
+            await MainActor.run {
+                self.probe = Dictionary(results.map { ($0.server, $0) }) { a, _ in a }
+                self.probing = false
+            }
+        }
+    }
+
     private var pluginsList: some View {
         VStack(alignment: .leading, spacing: 0) {
             if setup.plugins.isEmpty { empty("No plugins installed.") }
@@ -118,7 +152,7 @@ struct ClaudeSetupView: View {
         }
     }
 
-    private func row(title: String, badge: String?, detail: String, wrapDetail: Bool = false, usage: DeadSkillRow? = nil) -> some View {
+    private func row(title: String, badge: String?, detail: String, wrapDetail: Bool = false, usage: DeadSkillRow? = nil, probe: MCPProbeResult? = nil) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 7) {
                 Text(title).font(.system(size: 12, weight: .medium))
@@ -147,10 +181,27 @@ struct ClaudeSetupView: View {
             if let u = usage, !u.isDead, let last = u.lastUsed {
                 Text("last used \(relative(last))").font(.system(size: 9.5).monospacedDigit()).foregroundStyle(.tertiary)
             }
+            if let pr = probe { probeLine(pr) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 9)
         .overlay(alignment: .bottom) { Rectangle().fill(hair).frame(height: 1) }
+    }
+
+    @ViewBuilder
+    private func probeLine(_ pr: MCPProbeResult) -> some View {
+        switch pr.status {
+        case .healthy:
+            let tok = pr.schemaTokensEst.map { " · ≈\($0 >= 1000 ? String(format: "%.1fk", Double($0)/1000) : "\($0)") tok schema" } ?? ""
+            Text("probe: \(pr.toolCount ?? 0) tool\((pr.toolCount ?? 0) == 1 ? "" : "s")\(tok)")
+                .font(.system(size: 9.5).monospacedDigit()).foregroundStyle(.secondary)
+        case .unresponsive:
+            Text("probe: no response from Throttle's environment").font(.system(size: 9.5)).foregroundStyle(.tertiary)
+        case .spawnError:
+            Text("probe: couldn't start from here").font(.system(size: 9.5)).foregroundStyle(.tertiary)
+        case .notStdio:
+            EmptyView()
+        }
     }
 
     private func relative(_ d: Date) -> String {
