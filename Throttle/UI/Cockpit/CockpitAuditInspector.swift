@@ -86,6 +86,15 @@ struct CockpitAuditInspector: View {
                     Task { for s in dead { await vm.archiveSkill(s.name) } }
                 }
             }
+            if !vm.scopeCandidates.isEmpty {
+                let total = vm.scopeCandidates.reduce(0) { $0 + $1.tokens }
+                actionRow("scope", "Scopeable skills · \(vm.scopeCandidates.count)", "≈\(tok(total)) tok",
+                          vm.scopeBusy ? "…" : "Scope") {
+                    Task { await vm.scopeAllCandidates() }
+                }
+                .help("Used in only one project but loaded into every session. Scoping moves each into that project (reversible):\n\n"
+                      + vm.scopeCandidates.map { "• \($0.skillDir) → \($0.projectName) · \($0.uses) uses · ≈\(tok($0.tokens)) tok/session" }.joined(separator: "\n"))
+            }
             if !vm.reads.files.isEmpty || vm.firewallInstalled {
                 firewallRow
             }

@@ -109,6 +109,8 @@ final class CockpitViewModel {
     private(set) var reads: ReadFirewallReport = .empty
     private(set) var firewallInstalled = ReadFirewallService.isInstalled()
     private(set) var firewallBusy = false
+    private(set) var scopeCandidates: [SkillScopeService.Candidate] = []
+    private(set) var scopeBusy = false
     private(set) var bloat: ContextBloat = .empty
     private(set) var memHealth: MemoryHealth = .unknown
 
@@ -132,6 +134,7 @@ final class CockpitViewModel {
         Task { [weak self] in await self?.scanCache() }     // one cache-hygiene scan on open
         Task { [weak self] in await self?.scanSkills() }    // one skill-usage scan on open
         Task { [weak self] in await self?.scanReads() }     // one read-firewall scan on open
+        Task { [weak self] in await self?.scanScopeCandidates() } // skills usable in one project only
         Task { [weak self] in await self?.scanBloat() }     // one context-bloat scan on open
     }
 
@@ -185,6 +188,27 @@ final class CockpitViewModel {
     func scanReads() async {
         let report = await Task.detached(priority: .utility) { ReadFirewallService.scan() }.value
         reads = report
+    }
+
+    /// Find global skills used in exactly one project — candidates to scope there
+    /// so they stop taxing every other session (off-main, on-demand).
+    func scanScopeCandidates() async {
+        let cands = await Task.detached(priority: .utility) { SkillScopeService.scopeCandidates() }.value
+        scopeCandidates = cands
+    }
+
+    /// Scope every single-project skill into its project (reversible file move),
+    /// then rescan. Stops on the first error but keeps what already moved.
+    func scopeAllCandidates() async {
+        guard !scopeBusy else { return }
+        scopeBusy = true
+        let cands = scopeCandidates
+        await Task.detached(priority: .utility) {
+            for c in cands { _ = try? SkillScopeService.scope(skillDir: c.skillDir, toProject: c.project) }
+        }.value
+        scopeBusy = false
+        await scanScopeCandidates()
+        await scanSkills()
     }
 
     /// Install the local-RAG read firewall into the global MCP config (backed up,
