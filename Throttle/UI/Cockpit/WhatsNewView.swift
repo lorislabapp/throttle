@@ -15,22 +15,24 @@ struct WhatsNewView: View {
 
     // Curated: the optimizations, newest first. `now` flags this release's additions.
     private let features: [Feature] = [
+        .init(icon: "bolt.horizontal", title: "Recoverable Miss Cost",
+              blurb: "The audit panel now puts a € figure on cache waste: money spent re-writing a prompt cache that should still have been warm (a busted prefix billed at the 1.25× write rate instead of the 0.10× read rate).", now: true),
+        .init(icon: "scope", title: "Spatial skill scoping",
+              blurb: "Throttle spots a skill used in only one project but loaded into every session, and offers to move it into that project (reversible) so it stops taxing the rest.", now: true),
+        .init(icon: "contextualmenu.and.cursorarrow", title: "Throttle-shaped terminal menu",
+              blurb: "Right-click the terminal: Compact context (/compact), paste an image as OCR'd text (skip vision tokens), ask claude to explain/fix/summarize, and pause/resume the session (freeze token burn, no lost state).", now: true),
         .init(icon: "arrow.triangle.2.circlepath", title: "Runaway-loop circuit breaker",
-              blurb: "Spots an agent cycling the same action with no file changes — burning tokens toward your 5-hour cap — and lets you pause it.", now: true),
+              blurb: "Spots an agent cycling the same action with no file changes — burning tokens toward your 5-hour cap — and lets you pause it.", now: false),
         .init(icon: "gauge.with.dots.needle.33percent", title: "Quiet mode under memory pressure",
-              blurb: "When your Mac is swapping hard, Throttle backs off its own background scans so it stops adding to the lag. Automatic.", now: true),
+              blurb: "When your Mac is swapping hard, Throttle backs off its own background scans so it stops adding to the lag. Automatic.", now: false),
         .init(icon: "puzzlepiece.extension", title: "Dead-skill & MCP audit",
-              blurb: "Claude Code setup panel flags loaded MCP servers / skills you haven't used in 30 days — paying schema-token cost for nothing.", now: true),
+              blurb: "Claude Code setup panel flags loaded MCP servers / skills you haven't used in 30 days — paying schema-token cost for nothing.", now: false),
+        .init(icon: "dot.radiowaves.left.and.right", title: "Read firewall + MCP probe",
+              blurb: "Detects brute-force whole-file reads and offers a 1-click local-RAG config (snippets, not whole files); probes each MCP server for its real tool + schema cost.", now: false),
         .init(icon: "eurosign.circle", title: "Cost per outcome",
-              blurb: "Project Stats shows ≈ cost per commit and per verify-run — honest workflow economics, never a faked pass/fail.", now: true),
-        .init(icon: "dot.radiowaves.left.and.right", title: "MCP server probe",
-              blurb: "Spawn each MCP server once to read its real tool count + schema cost. Opt-in, never rewrites your config.", now: true),
-        .init(icon: "scissors", title: "Context-bloat trimmer",
-              blurb: "Embedded screenshots are re-charged every --resume. The trimmer replaces them with pointers — lossless + reversible.", now: false),
-        .init(icon: "wand.and.stars", title: "Autopilot",
-              blurb: "Auto-applies the provably-safe optimizations (concise output style, usage statusline) and, opt-in, archives stale memory / dead skills. Every action is reversible.", now: false),
-        .init(icon: "text.append", title: "Tool-output compression",
-              blurb: "A PostToolUse hook compresses verbose low-signal command output before Claude sees it — fail-open, errors always pass through raw.", now: false),
+              blurb: "Project Stats shows ≈ cost per commit and per verify-run — honest workflow economics, never a faked pass/fail.", now: false),
+        .init(icon: "wand.and.stars", title: "Autopilot + tool-output compression",
+              blurb: "Auto-applies the provably-safe optimizations (concise output style, usage statusline), opt-in archives stale memory / dead skills, and compresses verbose command output before Claude sees it. All reversible / fail-open.", now: false),
     ]
 
     var body: some View {
