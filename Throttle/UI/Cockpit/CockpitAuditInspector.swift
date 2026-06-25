@@ -118,16 +118,20 @@ struct CockpitAuditInspector: View {
                       ? "Claude Code loads only the first 200 lines / 25 KB of MEMORY.md — \(mi.ignoredLines) lines past that never load. Trim the index or move detail into linked topic files."
                       : "MEMORY.md is near the 200-line / 25 KB auto-load cap; content past it won't load. Keep the index tight.")
             }
-            if vm.cache.highCount > 0 {
+            if vm.cache.highCount > 0 || vm.cacheRecoverableEUR >= 0.01 {
                 HStack(spacing: 6) {
                     Image(systemName: "bolt.horizontal").font(.system(size: 10)).foregroundStyle(.orange)
                     Text("Cache busters · \(vm.cache.highCount)").font(.system(size: 11))
                         .foregroundStyle(.secondary).lineLimit(1)
                     Spacer(minLength: 4)
+                    if vm.cacheRecoverableEUR >= 0.01 {
+                        Text("≈€\(String(format: "%.2f", vm.cacheRecoverableEUR)) wasted/7d")
+                            .font(.system(size: 11).monospacedDigit()).foregroundStyle(.orange)
+                    }
                     Image(systemName: "info.circle").font(.system(size: 10)).foregroundStyle(.tertiary)
                 }
                 .contentShape(Rectangle())
-                .help(vm.cache.risks.filter { $0.severity == .high }.map { "• \($0.title): \($0.detail)" }.joined(separator: "\n\n"))
+                .help(cacheHelp)
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
@@ -266,6 +270,18 @@ struct CockpitAuditInspector: View {
             Text(value).font(.system(size: 11).monospacedDigit()).foregroundStyle(.primary)
         }
     }
+    private var cacheHelp: String {
+        var s = ""
+        if vm.cacheRecoverableEUR >= 0.01 {
+            s += "≈€\(String(format: "%.2f", vm.cacheRecoverableEUR)) (7d) was spent re-writing a prompt cache that should still have been warm — a large cache write <5 min after the prior turn means the cached prefix got busted (changing prefix, model swap, dynamic injection) and billed at the 1.25× write rate instead of the 0.10× read rate.\n\n"
+        }
+        let risks = vm.cache.risks.filter { $0.severity == .high }
+        if !risks.isEmpty {
+            s += risks.map { "• \($0.title): \($0.detail)" }.joined(separator: "\n\n")
+        }
+        return s.isEmpty ? "Prompt cache looks healthy." : s
+    }
+
     private func actionRow(_ icon: String, _ label: String, _ value: String, _ action: String, _ act: @escaping () -> Void) -> some View {
         Button(action: act) {
             HStack(spacing: 6) {

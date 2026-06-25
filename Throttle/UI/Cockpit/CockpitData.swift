@@ -105,6 +105,7 @@ final class CockpitViewModel {
     private(set) var memory: MemoryReport = .empty
     private(set) var memoryIndex: MemoryIndexReport = .empty
     private(set) var cache: CacheHygieneReport = .empty
+    private(set) var cacheRecoverableEUR: Double = 0   // € re-written into a cache that should've been warm
     private(set) var skills: SkillReport = .empty
     private(set) var reads: ReadFirewallReport = .empty
     private(set) var firewallInstalled = ReadFirewallService.isInstalled()
@@ -170,6 +171,17 @@ final class CockpitViewModel {
     func scanCache() async {
         let report = await Task.detached(priority: .utility) { CacheHygieneService.scan() }.value
         cache = report
+        await scanRecoverableMiss()
+    }
+
+    /// Compute the Recoverable Miss Cost (€ wasted re-writing a cache that should
+    /// have been warm) from usage.db (off-main, GRDB read is thread-safe).
+    func scanRecoverableMiss() async {
+        guard let db = appState?.database else { return }
+        let eur = await Task.detached(priority: .utility) {
+            (try? db.read { try StatsDataService.recoverableMissCostEUR(in: $0).eur }) ?? 0
+        }.value
+        cacheRecoverableEUR = eur
     }
 
     /// Cross-ref installed skills vs invocation counts in transcripts (off-main).

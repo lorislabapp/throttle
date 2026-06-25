@@ -543,6 +543,57 @@ enum StatsDataService {
         return totalUsd * usdToEur
     }
 
+    /// Recoverable Miss Cost — EUR you burned re-writing a prompt cache that SHOULD
+    /// have still been warm. Within a session, a large `cache_create` <5 min after
+    /// the previous turn means the cached prefix got busted (a changing prefix, a
+    /// model swap, a dynamic injection): those tokens billed at the 1.25× write rate
+    /// when a warm cache would have billed them at the 0.10× read rate. The saving
+    /// is the 1.15× delta. Conservative on purpose (golden rule — never overstate):
+    /// only counts writes >10 k tokens within the 5-min TTL, so normal incremental
+    /// writes don't inflate it. Returns (eur, tokens). 0 when the cache is healthy.
+    static func recoverableMissCostEUR(in db: Database, days: Int = 7, now: Date = Date()) throws -> (eur: Double, tokens: Int) {
+        let cutoff = Int(now.timeIntervalSince1970) - days * 86_400
+        // Per-session sequential gap via window function; flag big writes within TTL.
+        let sql = """
+            WITH seq AS (
+                SELECT
+                    CASE
+                        WHEN lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%' THEN 'fable'
+                        WHEN lower(model) LIKE '%opus%'   THEN 'opus'
+                        WHEN lower(model) LIKE '%sonnet%' THEN 'sonnet'
+                        WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
+                        ELSE 'other'
+                    END AS bucket,
+                    cache_create AS cc,
+                    timestamp - LAG(timestamp) OVER (PARTITION BY session_id ORDER BY timestamp) AS gap
+                FROM usage_events
+                WHERE timestamp >= ?
+            )
+            SELECT bucket, SUM(cc) AS recoverable
+            FROM seq
+            WHERE gap IS NOT NULL AND gap >= 0 AND gap < 300 AND cc > 10000
+            GROUP BY bucket
+            """
+        let rows = try Row.fetchAll(db, sql: sql, arguments: [cutoff])
+        let perMillion = 1_000_000.0, usdToEur = 0.93
+        var usd: Double = 0, tokens = 0
+        for row in rows {
+            let bucket: String = row["bucket"] ?? ""
+            let cc: Int = row["recoverable"] ?? 0
+            let inRate: Double
+            switch bucket {
+            case "fable":  inRate = 10
+            case "opus":   inRate = 5
+            case "sonnet": inRate = 3
+            case "haiku":  inRate = 1
+            default:       inRate = 3
+            }
+            usd += Double(cc) / perMillion * inRate * 1.15   // write 1.25× → read 0.10× delta
+            tokens += cc
+        }
+        return (usd * usdToEur, tokens)
+    }
+
     // MARK: - Per-project breakdown
 
     struct ProjectSlice: Hashable, Sendable, Identifiable {
