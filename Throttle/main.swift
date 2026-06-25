@@ -16,6 +16,13 @@ if CommandLine.arguments.contains("--mcp-server") {
     exit(0)
 }
 
+// MCP supervisor mode (opt-in, Pattern-B): wrap ONE MCP server's command so it
+// auto-respawns + drains stderr. The user sets a server's command to
+// `Throttle --mcp-wrap <real-cmd> [args]` by hand — Throttle never rewrites config.
+if let i = CommandLine.arguments.firstIndex(of: "--mcp-wrap"), i + 1 < CommandLine.arguments.count {
+    MCPWrapper.run(Array(CommandLine.arguments[(i + 1)...]))
+}
+
 // Dev/test: reindex transcripts then run an FTS5 search (`Throttle --index-search "query"`).
 if let i = CommandLine.arguments.firstIndex(of: "--index-search"), i + 1 < CommandLine.arguments.count {
     let added = TranscriptIndex.reindex()
