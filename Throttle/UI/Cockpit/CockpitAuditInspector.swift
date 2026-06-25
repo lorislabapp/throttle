@@ -199,7 +199,15 @@ struct CockpitAuditInspector: View {
                     .toggleStyle(.checkbox)
                     .onChange(of: trimAggressive) { _, _ in Task { await vm.scanTrim(aggressive: trimAggressive) } }
                 Spacer()
-                if let note = vm.trimNote { Text(note).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1) }
+                if let busy = vm.trimBusy {
+                    HStack(spacing: 5) {
+                        ProgressView().controlSize(.mini)
+                        Text("trimming \(busy)… runs to completion + reversible (backup kept)")
+                            .font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                } else if let note = vm.trimNote {
+                    Text(note).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
+                }
             }
             .padding(.horizontal, 16).padding(.vertical, 8).background(Color.accentColor.opacity(0.06))
             Divider()
@@ -228,7 +236,9 @@ struct CockpitAuditInspector: View {
             if vm.trimBusy == p.sessionShort {
                 ProgressView().controlSize(.mini).frame(width: 54)
             } else {
-                Button("Trim") { Task { await vm.applyTrim(p, aggressive: trimAggressive) } }.controlSize(.small).frame(width: 54)
+                // Disable every Trim while one runs — no confusing concurrent applies.
+                Button("Trim") { Task { await vm.applyTrim(p, aggressive: trimAggressive) } }
+                    .controlSize(.small).frame(width: 54).disabled(vm.trimBusy != nil)
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 9)
