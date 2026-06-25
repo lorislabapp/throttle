@@ -134,8 +134,9 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// on SwiftTerm's view, so we observe instead of override). Holds output while
     /// a selection exists so a redraw can't wipe it.
     private func installSelectionMonitor() {
-        selectionMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp]) { [weak self] event in
+        selectionMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp, .scrollWheel]) { [weak self] event in
             guard let self else { return event }
+            var consume = false
             MainActor.assumeIsolated {
                 switch event.type {
                 case .leftMouseDown:
@@ -150,10 +151,21 @@ final class DroppableTerminalView: LocalProcessTerminalView {
                     // Keep holding if a selection now sits on screen; flush if not.
                     self.holdForSelection = self.eventIsOverSelf(event) && self.hasSelection()
                     self.flushIfReady()
+                case .scrollWheel:
+                    // claude's TUI turns on mouse tracking, which swallows the wheel
+                    // so the terminal scrollback never moves ("can't scroll up").
+                    // Drive the scrollback directly and CONSUME the event so it never
+                    // reaches claude — the user can read history regardless of mode.
+                    guard self.eventIsOverSelf(event) else { break }
+                    let dy = event.scrollingDeltaY != 0 ? event.scrollingDeltaY : event.deltaY
+                    guard dy != 0 else { break }
+                    let lines = max(1, min(Int(abs(dy) / 4) + 1, 8))
+                    if dy > 0 { self.scrollUp(lines: lines) } else { self.scrollDown(lines: lines) }
+                    consume = true
                 default: break
                 }
             }
-            return event   // never consume — let SwiftTerm handle the gesture
+            return consume ? nil : event
         }
     }
 
