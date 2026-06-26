@@ -12,6 +12,7 @@ struct CockpitDashboardView: View {
     @State private var data = DashData()
     @State private var host = HostMetricsService.shared
     @State private var sampler: Task<Void, Never>?
+    @State private var localRuntimes: [String] = []
 
     private let hair = Color.primary.opacity(0.10)
 
@@ -30,6 +31,11 @@ struct CockpitDashboardView: View {
                 OSIssueBanner()
                 claudePanel
                 machinePanel
+                if !localRuntimes.isEmpty {
+                    Text("Figures cover Anthropic usage only — \(localRuntimes.joined(separator: " · ")) runs locally and isn't tracked here.")
+                        .font(.system(size: 10)).foregroundStyle(.tertiary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
             .padding(16)
             .frame(maxWidth: 720)
@@ -165,6 +171,7 @@ struct CockpitDashboardView: View {
     // MARK: - Load + sample
 
     private func load() {
+        localRuntimes = MultiVendorService.localRuntimes()
         // Caps: prefer the server-true exact utilization, else the local estimate.
         if let ex = appState.exactSnapshot {
             data.cap5h = Double(ex.fiveHour.utilization) / 100
