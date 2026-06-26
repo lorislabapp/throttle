@@ -78,7 +78,30 @@ final class MCPProxyChild: @unchecked Sendable {
         return true
     }
 
-    func shutdown() { q.sync { child?.terminate(); child = nil } }
+    func shutdown() { monitor?.cancel(); monitor = nil; q.sync { child?.terminate(); child = nil } }
+
+    // MARK: - Proactive health monitor
+
+    private let monQ = DispatchQueue(label: "throttle.mcpproxy.mon")
+    private var monitor: DispatchSourceTimer?
+
+    /// Ping the downstream periodically; a missed ping means it hung/zombied, so we
+    /// respawn it BEFORE the next real tools/call fails — proactive sub-second MTTR
+    /// instead of failing one agent call first. Runs on its own queue so the ping's
+    /// blocking rawRequest doesn't deadlock the child's serial queue.
+    func startHealthMonitor(interval: TimeInterval = 15) {
+        let t = DispatchSource.makeTimerSource(queue: monQ)
+        t.schedule(deadline: .now() + interval, repeating: interval)
+        t.setEventHandler { [weak self] in
+            guard let self else { return }
+            if self.rawRequest(method: "ping", params: [:], timeout: 5) == nil {
+                FileHandle.standardError.write(Data("throttle --mcp-proxy: downstream unresponsive → respawning\n".utf8))
+                _ = self.respawnAndReverify()
+            }
+        }
+        t.resume()
+        monitor = t
+    }
 
     // MARK: - JSON-RPC
 

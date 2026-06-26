@@ -20,6 +20,7 @@ enum MCPProxyServer {
             FileHandle.standardError.write(Data("throttle --mcp-proxy: downstream init failed: \(child.lastError ?? "?")\n".utf8))
             exit(1)
         }
+        child.startHealthMonitor()   // proactively respawn a zombie downstream
         let sessionId = UUID().uuidString
         let q = DispatchQueue(label: "throttle.mcpproxy.http")
 
