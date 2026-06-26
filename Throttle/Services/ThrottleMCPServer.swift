@@ -33,15 +33,24 @@ enum ThrottleMCPServer {
                 "serverInfo": ["name": "throttle-memory", "version": "1.0.0"],
             ])
         case "tools/list":
-            respond(id: id, result: ["tools": [toolSchema()]])
+            respond(id: id, result: ["tools": [searchSchema(), budgetSchema(), costSchema()]])
         case "tools/call":
             let params = req["params"] as? [String: Any]
             let args = params?["arguments"] as? [String: Any]
             let name = params?["name"] as? String ?? ""
-            if name == "search_sessions", let query = args?["query"] as? String {
-                respond(id: id, result: searchResult(query: query, limit: (args?["limit"] as? Int) ?? 12))
-            } else {
-                respond(id: id, error: [-32602, "Unknown tool or missing query"])
+            switch name {
+            case "search_sessions":
+                if let query = args?["query"] as? String {
+                    respond(id: id, result: searchResult(query: query, limit: (args?["limit"] as? Int) ?? 12))
+                } else {
+                    respond(id: id, error: [-32602, "Missing query"])
+                }
+            case "get_budget_headroom":
+                respond(id: id, result: textResult(budgetText()))
+            case "get_session_cost":
+                respond(id: id, result: textResult(costText()))
+            default:
+                respond(id: id, error: [-32602, "Unknown tool: \(name)"])
             }
         case "ping":
             respond(id: id, result: [:] as [String: Any])
@@ -51,7 +60,7 @@ enum ThrottleMCPServer {
         }
     }
 
-    private static func toolSchema() -> [String: Any] {
+    private static func searchSchema() -> [String: Any] {
         [
             "name": "search_sessions",
             "description": "Search the user's PAST Claude Code sessions (their own conversation history across all projects) for context the current window has lost — e.g. an earlier decision, an error from days ago, what was tried before. Returns ranked snippets with project and date. Local full-text search; use it when you need prior context you can't see.",
@@ -64,6 +73,59 @@ enum ThrottleMCPServer {
                 "required": ["query"],
             ],
         ]
+    }
+
+    private static func budgetSchema() -> [String: Any] {
+        [
+            "name": "get_budget_headroom",
+            "description": "How much Claude Code usage budget the user has left RIGHT NOW: the 5-hour rolling cap and the 7-day cap, as % used and % headroom remaining. Call this before starting an expensive task, or when the user asks 'how much do I have left' / 'am I close to the cap'. Read-only; reflects what Throttle's meter currently shows.",
+            "inputSchema": ["type": "object", "properties": [:] as [String: Any]],
+        ]
+    }
+
+    private static func costSchema() -> [String: Any] {
+        [
+            "name": "get_session_cost",
+            "description": "The user's recent Claude Code token spend and reference cost (last 7 days, weighted tokens + ≈EUR at developer-API rates), plus tokens Throttle's optimizations saved. A reference figure, not the user's actual subscription bill. Use when the user asks what their work is costing or how much Throttle is saving.",
+            "inputSchema": ["type": "object", "properties": [:] as [String: Any]],
+        ]
+    }
+
+    // MARK: - Budget / cost (read the same snapshot the menu bar shows)
+
+    /// nil when the snapshot is missing or stale (app not running / not recomputed
+    /// lately) — we report that honestly instead of a stale number (golden rule).
+    private static func freshSnapshot() -> ThrottleIntentSnapshot? {
+        let s = ThrottleIntentSnapshotStore.read()
+        let age = Date().timeIntervalSince(s.computedAt)
+        guard s.computedAt != .distantPast, age < 600 else { return nil }
+        return s
+    }
+
+    private static func ago(_ d: Date) -> String {
+        let s = Int(max(0, Date().timeIntervalSince(d)))
+        return s < 60 ? "\(s)s ago" : "\(s / 60)m ago"
+    }
+
+    private static func budgetText() -> String {
+        guard let s = freshSnapshot() else {
+            return "Budget data unavailable — open Throttle (or it hasn't refreshed recently). I can't give a verified headroom number right now."
+        }
+        let h5 = max(0, 100 - s.session5hPercent), hw = max(0, 100 - s.weeklyAllPercent)
+        return String(format: "5-hour cap: %.0f%% used, %.0f%% headroom left. 7-day cap: %.0f%% used, %.0f%% headroom left. (as of %@)",
+                      s.session5hPercent, h5, s.weeklyAllPercent, hw, ago(s.computedAt))
+    }
+
+    private static func costText() -> String {
+        guard let s = freshSnapshot() else {
+            return "Cost data unavailable — open Throttle (or it hasn't refreshed recently)."
+        }
+        return String(format: "Last 7 days: %d weighted tokens, ≈€%.2f at developer-API rates (reference, not your actual subscription bill). Throttle's optimizations saved ≈%d tokens this week. (as of %@)",
+                      s.weeklyTokens, s.weeklyCostEUR, s.savedTokensThisWeek, ago(s.computedAt))
+    }
+
+    private static func textResult(_ text: String) -> [String: Any] {
+        ["content": [["type": "text", "text": text]]]
     }
 
     private static func searchResult(query: String, limit: Int) -> [String: Any] {
