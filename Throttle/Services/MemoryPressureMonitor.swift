@@ -13,8 +13,14 @@ final class MemoryPressureMonitor {
     enum Level: Int, Sendable { case normal = 0, warning = 1, critical = 2 }
     private(set) var level: Level = .normal
 
+    /// User/Focus-driven override (an App Intent or a Deep-Work Focus Filter). ORs
+    /// with the kernel signal — quiet mode is on if EITHER the system is under
+    /// pressure OR the user asked for it. NotebookLM design: a manual override on
+    /// top of the automatic memory-pressure signal.
+    var manualQuietOverride = false
+
     /// True when Throttle should suppress non-vital background work.
-    var isQuiet: Bool { level != .normal }
+    var isQuiet: Bool { level != .normal || manualQuietOverride }
 
     private var source: DispatchSourceMemoryPressure?
 

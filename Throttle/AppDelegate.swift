@@ -58,6 +58,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // Listen for cross-process commands from App Intents / Shortcuts / Focus
+        // Filters (pause/resume/quiet) and apply anything queued before launch.
+        ThrottleCommandChannel.startObserving()
+
         // Raise the per-process FD limit. macOS defaults to ~256 soft;
         // LiveFileWatcher used to open one descriptor per session JSONL,
         // and on heavy users with thousands of subagent files (now

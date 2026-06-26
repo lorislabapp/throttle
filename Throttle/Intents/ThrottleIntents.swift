@@ -122,6 +122,51 @@ struct GetSavedTokensIntent: AppIntent {
     }
 }
 
+// MARK: - Action intents (safe + reversible only)
+//
+// Only state-reversible actions are exposed to automation. File-mutating actions
+// (trim, scope, /compact) are deliberately NOT here — per doctrine they require an
+// attended confirmation in the cockpit, never a fire-and-forget Shortcut.
+
+struct PauseAllSessionsIntent: AppIntent {
+    static let title: LocalizedStringResource = "Pause all Claude sessions"
+    static let description = IntentDescription(
+        "Freeze every running Claude Code session (SIGSTOP) to stop token burn. Fully reversible — no state is lost; resume picks up exactly where it left off."
+    )
+    static let openAppWhenRun = true   // launch-then-execute if Throttle isn't running
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        ThrottleCommandChannel.enqueue(.pauseAll)
+        return .result(dialog: "Paused all Claude Code sessions.")
+    }
+}
+
+struct ResumeAllSessionsIntent: AppIntent {
+    static let title: LocalizedStringResource = "Resume all Claude sessions"
+    static let description = IntentDescription("Resume every paused Claude Code session (SIGCONT).")
+    static let openAppWhenRun = true
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        ThrottleCommandChannel.enqueue(.resumeAll)
+        return .result(dialog: "Resumed all Claude Code sessions.")
+    }
+}
+
+struct SetQuietModeIntent: AppIntent {
+    static let title: LocalizedStringResource = "Set Throttle quiet mode"
+    static let description = IntentDescription(
+        "Turn Throttle's quiet mode on or off — backs off background scans so it stops adding to terminal lag. Use it from a Deep-Work Focus or a Shortcut."
+    )
+    static let openAppWhenRun = true
+
+    @Parameter(title: "Enabled") var enabled: Bool
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        ThrottleCommandChannel.enqueue(enabled ? .quietOn : .quietOff)
+        return .result(dialog: enabled ? "Quiet mode on." : "Quiet mode off.")
+    }
+}
+
 // MARK: - Shortcuts provider
 
 struct ThrottleAppShortcuts: AppShortcutsProvider {
@@ -161,6 +206,33 @@ struct ThrottleAppShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Tokens saved",
             systemImageName: "leaf.circle"
+        )
+        AppShortcut(
+            intent: PauseAllSessionsIntent(),
+            phrases: [
+                "Pause Claude in \(.applicationName)",
+                "Pause all Claude sessions with \(.applicationName)"
+            ],
+            shortTitle: "Pause Claude",
+            systemImageName: "pause.circle"
+        )
+        AppShortcut(
+            intent: ResumeAllSessionsIntent(),
+            phrases: [
+                "Resume Claude in \(.applicationName)",
+                "Resume all Claude sessions with \(.applicationName)"
+            ],
+            shortTitle: "Resume Claude",
+            systemImageName: "play.circle"
+        )
+        AppShortcut(
+            intent: SetQuietModeIntent(),
+            phrases: [
+                "Set \(.applicationName) quiet mode",
+                "Turn on \(.applicationName) quiet mode"
+            ],
+            shortTitle: "Quiet mode",
+            systemImageName: "moon.circle"
         )
     }
 }

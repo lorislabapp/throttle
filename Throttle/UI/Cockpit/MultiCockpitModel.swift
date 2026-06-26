@@ -306,8 +306,14 @@ final class MultiCockpitModel {
     private weak var appState: AppState?
     private var tick: Task<Void, Never>?
     private var focusObserver: NSObjectProtocol?
+    private var commandObserver: NSObjectProtocol?
 
     var active: CockpitTab? { sessions.first { $0.id == activeID } ?? sessions.first }
+
+    /// Freeze / unfreeze every live session (SIGSTOP/SIGCONT) — the reversible
+    /// pause exposed to App Intents / Shortcuts. No-op on dormant tabs.
+    func pauseAll()  { for s in sessions { s.pauseProcess() } }
+    func resumeAll() { for s in sessions { s.resumeProcess() } }
     /// Opening another session would push the Mac past saturation.
     var gated: Bool { machine.critical }
 
@@ -322,6 +328,18 @@ final class MultiCockpitModel {
                     guard let self, self.sessions.contains(where: { $0.id == id }) else { return }
                     self.activeID = id
                     if self.viewMode == .mission { self.viewMode = .tabs }
+                }
+            }
+        }
+        if commandObserver == nil {
+            // Cross-process pause/resume from App Intents / Shortcuts (ThrottleCommandChannel).
+            commandObserver = NotificationCenter.default.addObserver(
+                forName: .throttleCommand, object: nil, queue: .main) { [weak self] note in
+                guard let action = note.userInfo?["action"] as? String else { return }
+                Task { @MainActor in
+                    guard let self else { return }
+                    if action == ThrottleAction.pauseAll.rawValue { self.pauseAll() }
+                    else if action == ThrottleAction.resumeAll.rawValue { self.resumeAll() }
                 }
             }
         }
@@ -443,6 +461,7 @@ final class MultiCockpitModel {
         persist()                            // remember the working set first
         tick?.cancel(); tick = nil
         if let focusObserver { NotificationCenter.default.removeObserver(focusObserver); self.focusObserver = nil }
+        if let commandObserver { NotificationCenter.default.removeObserver(commandObserver); self.commandObserver = nil }
         for s in sessions { s.terminate() }
         sessions.removeAll()
     }
