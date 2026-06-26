@@ -119,19 +119,28 @@ struct CockpitAuditInspector: View {
                       : "MEMORY.md is near the 200-line / 25 KB auto-load cap; content past it won't load. Keep the index tight.")
             }
             if vm.cache.highCount > 0 || vm.cacheRecoverableEUR >= 0.01 {
-                HStack(spacing: 6) {
-                    Image(systemName: "bolt.horizontal").font(.system(size: 10)).foregroundStyle(.orange)
-                    Text("Cache busters · \(vm.cache.highCount)").font(.system(size: 11))
-                        .foregroundStyle(.secondary).lineLimit(1)
-                    Spacer(minLength: 4)
-                    if vm.cacheRecoverableEUR >= 0.01 {
-                        Text("≈€\(String(format: "%.2f", vm.cacheRecoverableEUR)) wasted/7d")
-                            .font(.system(size: 11).monospacedDigit()).foregroundStyle(.orange)
+                let fixPath = vm.cache.risks.first { $0.severity == .high && $0.path != nil }?.path
+                Button {
+                    if let p = fixPath {
+                        NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: p)])
                     }
-                    Image(systemName: "info.circle").font(.system(size: 10)).foregroundStyle(.tertiary)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "bolt.horizontal").font(.system(size: 10)).foregroundStyle(.orange)
+                        Text("Cache busters · \(vm.cache.highCount)").font(.system(size: 11))
+                            .foregroundStyle(.secondary).lineLimit(1)
+                        Spacer(minLength: 4)
+                        if vm.cacheRecoverableEUR >= 0.01 {
+                            Text("≈€\(String(format: "%.2f", vm.cacheRecoverableEUR)) wasted/7d")
+                                .font(.system(size: 11).monospacedDigit()).foregroundStyle(.orange)
+                        }
+                        Image(systemName: fixPath != nil ? "arrow.up.right.square" : "info.circle")
+                            .font(.system(size: 10)).foregroundStyle(.tertiary)
+                    }.contentShape(Rectangle())
                 }
-                .contentShape(Rectangle())
-                .help(cacheHelp)
+                .buttonStyle(.plain)
+                .disabled(fixPath == nil)
+                .help(cacheHelp + (fixPath != nil ? "\n\nClick to reveal the file to fix." : ""))
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 12)

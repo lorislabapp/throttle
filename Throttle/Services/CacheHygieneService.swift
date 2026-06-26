@@ -13,6 +13,9 @@ struct CacheRisk: Sendable, Identifiable {
     let title: String
     let detail: String
     let severity: Severity
+    /// The file the user should open to fix this — the hook script (or
+    /// settings.json where it's wired) / the CLAUDE.md. nil if unresolved.
+    var path: String? = nil
 }
 
 struct CacheHygieneReport: Sendable {
@@ -57,19 +60,21 @@ enum CacheHygieneService {
                     guard let command = cmd["command"] as? String else { continue }
                     let name = (command as NSString).lastPathComponent
                     let dynamic = looksDynamic(command: command, home: home)
+                    // Reveal the hook script itself if resolvable, else settings.json.
+                    let revealPath = scriptPath(command: command, home: home) ?? settings.path
                     if dynamic {
                         risks.append(CacheRisk(
                             id: "\(event):\(command)",
                             title: "\(event) hook · \(name)",
                             detail: "Emits content into the cached prompt prefix that appears to vary per session. Changing prefix → the 90%-cheaper cache is invalidated and you pay full input price every time. Keep the injected text byte-stable, or move the varying part out of the cached prefix.",
-                            severity: .high
+                            severity: .high, path: revealPath
                         ))
                     } else {
                         risks.append(CacheRisk(
                             id: "\(event):\(command)",
                             title: "\(event) hook · \(name)",
                             detail: "Injects into the cached prefix but looks static — fine for the cache as long as its output never changes.",
-                            severity: .info
+                            severity: .info, path: revealPath
                         ))
                     }
                 }
@@ -86,7 +91,7 @@ enum CacheHygieneService {
                     id: "claudemd-volatile",
                     title: "CLAUDE.md · volatile content",
                     detail: "Contains \(hits.joined(separator: ", ")) in the cached prompt prefix. CLAUDE.md loads into every session's cached prefix — when that literal changes (or you edit the file) the 90%-cheaper cache is invalidated. Move the varying detail into an on-demand skill (.claude/skills) so the prefix stays byte-stable.",
-                    severity: .high))
+                    severity: .high, path: globalMd.path))
             }
         }
 
@@ -101,6 +106,19 @@ enum CacheHygieneService {
         var hits: [String] = []
         if text.range(of: "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", options: .regularExpression) != nil { hits.append("a UUID") }
         return Array(Set(hits))
+    }
+
+    /// Resolve a hook command's first token to an on-disk script path, if it exists.
+    private static func scriptPath(command: String, home: URL) -> String? {
+        for tok in command
+            .replacingOccurrences(of: "$HOME", with: home.path)
+            .replacingOccurrences(of: "~", with: home.path)
+            .components(separatedBy: " ") where !tok.isEmpty {
+            // Skip the interpreter (bash/sh/zsh/python…) and grab the script arg.
+            if ["bash", "sh", "zsh", "python", "python3", "node"].contains((tok as NSString).lastPathComponent) { continue }
+            if FileManager.default.fileExists(atPath: tok) { return tok }
+        }
+        return nil
     }
 
     /// Read the hook script (best-effort) and check for dynamic-output markers.
