@@ -37,9 +37,19 @@ struct MultiTerminalStack: NSViewRepresentable {
                 container.addSubview(t)
             }
             t.frame = container.bounds
-            t.isHidden = (t !== activeTerminal)
+            // Only flip when it actually changes — re-setting isHidden churns the
+            // responder chain and makes SwiftTerm spam focus-out/in reports.
+            let shouldHide = (t !== activeTerminal)
+            if t.isHidden != shouldHide { t.isHidden = shouldHide }
         }
-        // Focus the visible terminal so keystrokes go to the active session.
-        if let active = activeTerminal { container.window?.makeFirstResponder(active) }
+        // Focus the visible terminal so keystrokes go to the active session — but
+        // ONLY if it isn't already first responder. updateNSView runs on every
+        // re-render (incl. the 10 s stats tick); an unconditional makeFirstResponder
+        // resigns + re-acquires focus each time, and with focus-reporting on (Claude
+        // Code enables it) that emits a rapid ESC[O/ESC[I pair to the PTY. That focus
+        // thrash, landing on an Ink question prompt, auto-confirms the first option.
+        if let active = activeTerminal, container.window?.firstResponder !== active {
+            container.window?.makeFirstResponder(active)
+        }
     }
 }
