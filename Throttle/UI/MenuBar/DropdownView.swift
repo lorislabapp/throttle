@@ -1427,9 +1427,9 @@ private struct InlineGeneralPane: View {
                 }
             }
             SettingsHair()
-            SettingsRow(title: "Searchable session memory",
+            SettingsRow(title: "Throttle as an MCP source",
                         sub: memoryNote.isEmpty
-                            ? "Installs a local MCP server so Claude can search your OWN past sessions for context its window has lost (an earlier decision, an error from last week). 100% local — full-text search over ~/.claude. Reversible; restart Claude Code after."
+                            ? "Installs a local MCP server so Claude can ask Throttle about ITSELF mid-session: search your past sessions, check budget headroom (how much before the 5-hour cap), session cost, and which loaded tools went unused. 100% local + read-only. Reversible; restart Claude Code after."
                             : memoryNote) {
                 HStack(spacing: 6) {
                     if !appState.isPro {
@@ -1448,7 +1448,7 @@ private struct InlineGeneralPane: View {
                                 else { try? TranscriptMemoryInstaller.remove() }
                             }
                             memoryNote = on
-                                ? "Installed — restart Claude Code, then ask it to search your past sessions."
+                                ? "Installed — restart Claude Code, then ask it your budget headroom, cost, dead tools, or to search past sessions."
                                 : "Removed — restart Claude Code."
                         }
                 }
