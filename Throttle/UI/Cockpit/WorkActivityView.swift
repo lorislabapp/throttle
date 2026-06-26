@@ -10,12 +10,38 @@ struct WorkActivityView: View {
 
     @State private var data = StatsDataService.WorkActivity()
     @State private var loading = true
+    @State private var range: RangeSel = .week
+    @State private var day = Calendar.current.startOfDay(for: Date())
+
+    enum RangeSel: String, CaseIterable, Identifiable { case week, month, day
+        var id: String { rawValue }
+        var label: String { self == .week ? "7 days" : (self == .month ? "30 days" : "Day") }
+    }
 
     private let hair = Color.primary.opacity(0.10)
+
+    /// [from, to) for the selected range.
+    private var bounds: (from: Date, to: Date) {
+        let cal = Calendar.current, today = cal.startOfDay(for: Date())
+        switch range {
+        case .week:  return (cal.date(byAdding: .day, value: -6, to: today)!, Date())
+        case .month: return (cal.date(byAdding: .day, value: -29, to: today)!, Date())
+        case .day:   return (day, cal.date(byAdding: .day, value: 1, to: day)!)
+        }
+    }
+    private var rangeTitle: String {
+        switch range {
+        case .week:  return "LAST 7 DAYS"
+        case .month: return "LAST 30 DAYS"
+        case .day:   let f = DateFormatter(); f.dateFormat = "EEE d MMM"; return f.string(from: day).uppercased()
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             header
+            Rectangle().fill(hair).frame(height: 1)
+            rangeBar
             Rectangle().fill(hair).frame(height: 1)
             if loading {
                 ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -49,10 +75,27 @@ struct WorkActivityView: View {
         .padding(.horizontal, 16).padding(.vertical, 11)
     }
 
+    private var rangeBar: some View {
+        HStack(spacing: 8) {
+            Picker("", selection: $range) {
+                ForEach(RangeSel.allCases) { Text($0.label).tag($0) }
+            }
+            .pickerStyle(.segmented).labelsHidden().fixedSize()
+            .onChange(of: range) { _, _ in reload() }
+            if range == .day {
+                DatePicker("", selection: $day, in: ...Date(), displayedComponents: .date)
+                    .labelsHidden().datePickerStyle(.field).fixedSize()
+                    .onChange(of: day) { _, _ in reload() }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 16).padding(.vertical, 8)
+    }
+
     private var topStats: some View {
         HStack(spacing: 1) {
-            cell("Today", hm(data.activeToday), "active")
-            cell("This week", hm(data.activeWeek), "active")
+            cell(range == .day ? "That day" : "Today", hm(range == .day ? data.activeWeek : data.activeToday), "active")
+            cell(range == .day ? "Range" : (range == .month ? "30 days" : "This week"), hm(data.activeWeek), "active")
             cell("Projects", "\(data.projectsThisWeek)", "this week")
             cell("Sessions", "\(data.sessionsThisWeek)", "this week")
         }
@@ -72,7 +115,7 @@ struct WorkActivityView: View {
 
     private var chartSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("LAST 7 DAYS").font(.system(size: 10, weight: .semibold)).tracking(0.8).foregroundStyle(.tertiary)
+            Text(rangeTitle).font(.system(size: 10, weight: .semibold)).tracking(0.8).foregroundStyle(.tertiary)
             let maxSecs = max(data.daily.map(\.seconds).max() ?? 1, 1)
             HStack(alignment: .bottom, spacing: 8) {
                 ForEach(Array(data.daily.enumerated()), id: \.offset) { _, d in
@@ -92,7 +135,7 @@ struct WorkActivityView: View {
 
     private var topProjectsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("TOP PROJECTS · THIS WEEK").font(.system(size: 10, weight: .semibold)).tracking(0.8).foregroundStyle(.tertiary)
+            Text("TOP PROJECTS · \(rangeTitle)").font(.system(size: 10, weight: .semibold)).tracking(0.8).foregroundStyle(.tertiary)
             let maxSecs = max(data.topProjects.map(\.seconds).max() ?? 1, 1)
             ForEach(Array(data.topProjects.enumerated()), id: \.offset) { _, p in
                 HStack(spacing: 10) {
@@ -113,9 +156,10 @@ struct WorkActivityView: View {
     private func reload() {
         loading = true
         let database = appState.database
+        let b = bounds
         Task {
             let result = await Task.detached(priority: .utility) {
-                (try? database.read { try StatsDataService.workActivity(in: $0) }) ?? StatsDataService.WorkActivity()
+                (try? database.read { try StatsDataService.workActivity(in: $0, from: b.from, to: b.to) }) ?? StatsDataService.WorkActivity()
             }.value
             await MainActor.run { self.data = result; self.loading = false }
         }

@@ -27,6 +27,7 @@ struct CockpitDashboardView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
+                OSIssueBanner()
                 claudePanel
                 machinePanel
             }

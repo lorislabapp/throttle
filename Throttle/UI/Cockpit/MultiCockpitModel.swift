@@ -285,7 +285,7 @@ final class MultiCockpitModel {
         if let a = active, !a.isHibernated { a.ensureSpawned() }
         active?.clearAttention()
     } }
-    var viewMode: ViewMode = .rail
+    var viewMode: ViewMode = .dashboard   // the cover page is the landing view
     private(set) var machine: MemoryHealth = .unknown
     /// Count of sessions currently waiting on a question (for the header badge).
     var waitingCount: Int { sessions.filter { $0.needsInput }.count }

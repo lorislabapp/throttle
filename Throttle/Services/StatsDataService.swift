@@ -323,6 +323,49 @@ enum StatsDataService {
         return out
     }
 
+    /// Same active-time analysis over an ARBITRARY date range [from, to) — powers
+    /// the time-tracking day / custom-range picker. Daily buckets span the range;
+    /// `activeWeek` here is the range total (idle gaps >5 min excluded, like above).
+    static func workActivity(in db: Database, from: Date, to: Date) throws -> WorkActivity {
+        var out = WorkActivity()
+        let cal = Calendar.current
+        let startEpoch = Int64(from.timeIntervalSince1970)
+        let endEpoch = Int64(to.timeIntervalSince1970)
+        let rows = try Row.fetchAll(db, sql: """
+            SELECT e.timestamp AS ts, fs.encoded_project AS proj, e.session_id AS sid
+            FROM usage_events e
+            JOIN file_state fs ON fs.session_id = e.session_id
+            WHERE e.timestamp >= ? AND e.timestamp < ?
+            ORDER BY e.timestamp
+            """, arguments: [startEpoch, endEpoch])
+
+        var byDay: [Date: [Int64]] = [:], byProject: [String: [Int64]] = [:]
+        var projects = Set<String>(), sessions = Set<String>()
+        for r in rows {
+            let ts = r["ts"] as Int64
+            let day = cal.startOfDay(for: Date(timeIntervalSince1970: TimeInterval(ts)))
+            byDay[day, default: []].append(ts)
+            if let p = r["proj"] as String? { byProject[p, default: []].append(ts); projects.insert(p) }
+            if let s = r["sid"] as String? { sessions.insert(s) }
+        }
+
+        let startDay = cal.startOfDay(for: from)
+        let dayCount = max(1, (cal.dateComponents([.day], from: startDay, to: cal.startOfDay(for: to)).day ?? 0) + 1)
+        for i in 0..<dayCount {
+            guard let day = cal.date(byAdding: .day, value: i, to: startDay) else { continue }
+            out.daily.append((day: day, seconds: TimeInterval(activeSeconds(byDay[day]?.sorted() ?? []))))
+        }
+        out.activeToday = out.daily.last?.seconds ?? 0
+        out.activeWeek = out.daily.reduce(0) { $0 + $1.seconds }
+        out.projectsThisWeek = projects.count
+        out.sessionsThisWeek = sessions.count
+        out.topProjects = byProject
+            .map { (name: displayName(forEncoded: $0.key), seconds: TimeInterval(activeSeconds($0.value.sorted()))) }
+            .sorted { $0.seconds > $1.seconds }
+            .prefix(8).map { $0 }
+        return out
+    }
+
     /// Encoded project dir → human display name (last path component), best-effort.
     private static func displayName(forEncoded encoded: String) -> String {
         if let path = ProjectsService.decodePath(encoded) {
