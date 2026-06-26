@@ -383,13 +383,17 @@ struct MultiCockpitRoot: View {
 
     @ViewBuilder
     private var content: some View {
-        if model.sessions.isEmpty {
+        if model.viewMode == .dashboard {
+            // The cover page — stats work even with no live session.
+            CockpitDashboardView(machine: model.machine).environment(appState)
+        } else if model.sessions.isEmpty {
             emptyState
         } else {
             switch model.viewMode {
             case .tabs:    tabsLayout
             case .rail:    railLayout
             case .mission: missionLayout
+            case .dashboard: EmptyView()   // handled above
             }
         }
     }
