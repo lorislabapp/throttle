@@ -33,7 +33,7 @@ enum ThrottleMCPServer {
                 "serverInfo": ["name": "throttle-memory", "version": "1.0.0"],
             ])
         case "tools/list":
-            respond(id: id, result: ["tools": [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema()]])
+            respond(id: id, result: ["tools": [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema(), mcpHealthSchema()]])
         case "tools/call":
             let params = req["params"] as? [String: Any]
             let args = params?["arguments"] as? [String: Any]
@@ -51,6 +51,8 @@ enum ThrottleMCPServer {
                 respond(id: id, result: textResult(costText()))
             case "get_dead_skills":
                 respond(id: id, result: textResult(deadSkillsText()))
+            case "get_mcp_health_status":
+                respond(id: id, result: textResult(mcpHealthText()))
             default:
                 respond(id: id, error: [-32602, "Unknown tool: \(name)"])
             }
@@ -142,6 +144,29 @@ enum ThrottleMCPServer {
         }
         let list = dead.map { "• \($0.name) — \($0.kind.rawValue)" }.joined(separator: "\n")
         return "Loaded but UNUSED in 30 days (paying schema tokens for nothing):\n\(list)\n\n\(dead.count) of \(report.rows.count) loaded tools are dead weight."
+    }
+
+    private static func mcpHealthSchema() -> [String: Any] {
+        [
+            "name": "get_mcp_health_status",
+            "description": "Health of the user's OTHER MCP servers as last probed by Throttle: which are ok / slow / down / unreachable, their latency and tool count. Call this if one of your tools is failing or hanging, to know whether a server is a zombie. Informative only; reports how long ago it was probed.",
+            "inputSchema": ["type": "object", "properties": [:] as [String: Any]],
+        ]
+    }
+
+    private static func mcpHealthText() -> String {
+        guard let snap = ThrottleMCPHealthStore.read(), !snap.servers.isEmpty else {
+            return "No MCP health data yet — open Throttle's cockpit so it probes your servers, then ask again."
+        }
+        let age = Int(max(0, Date().timeIntervalSince(snap.probedAt)))
+        let ageStr = age < 60 ? "\(age)s ago" : (age < 3600 ? "\(age / 60)m ago" : "\(age / 3600)h ago")
+        let lines = snap.servers.map { r -> String in
+            var bits = [r.status]
+            if let ms = r.latencyMs { bits.append("\(ms)ms") }
+            if let t = r.toolCount { bits.append("\(t) tools") }
+            return "• \(r.name): \(bits.joined(separator: " · "))"
+        }.joined(separator: "\n")
+        return "MCP servers (probed \(ageStr)):\n\(lines)"
     }
 
     private static func textResult(_ text: String) -> [String: Any] {

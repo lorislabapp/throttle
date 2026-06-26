@@ -311,6 +311,7 @@ final class CockpitViewModel {
         mcpProbing = true
         let results = await MCPHealthService.probeAll()
         mcp = results
+        ThrottleMCPHealthStore.write(results)   // share to the --mcp-server CLI for get_mcp_health_status
         mcpProbing = false
     }
 
