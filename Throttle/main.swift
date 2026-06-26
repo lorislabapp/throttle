@@ -23,6 +23,16 @@ if let i = CommandLine.arguments.firstIndex(of: "--mcp-proxy-selftest"), i + 1 <
     exit(ok && reok ? 0 : 1)
 }
 
+// Pattern-A proxy FRONT (`Throttle --mcp-proxy <PORT> <cmd> [args]`): a Streamable-
+// HTTP MCP server Claude Code connects to, owning the downstream stdio server so it
+// can respawn it without busting the prompt cache. Before --mcp-server (the <cmd>
+// args may legitimately contain "--mcp-server").
+if let i = CommandLine.arguments.firstIndex(of: "--mcp-proxy"),
+   i + 2 < CommandLine.arguments.count, let port = UInt16(CommandLine.arguments[i + 1]) {
+    MCPProxyServer.run(port: port, downstream: CommandLine.arguments[i + 2],
+                       args: Array(CommandLine.arguments[(i + 3)...]))
+}
+
 // MCP server mode: Claude Code launches `Throttle --mcp-server` and talks JSON-RPC
 // over stdio to search the user's own past sessions (search_sessions tool).
 if CommandLine.arguments.contains("--mcp-server") {

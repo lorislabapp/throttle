@@ -47,7 +47,7 @@ final class MCPProxyChild: @unchecked Sendable {
 
     /// Route a tools/call to the child. On a dead/hung child, respawn (preserving
     /// the cached tools) and retry once. Returns the JSON-RPC `result` object.
-    func callTool(name: String, arguments: [String: Any], timeout: TimeInterval = 30) -> [String: Any]? {
+    func callTool(name: String, arguments: [String: Any], timeout: TimeInterval = 60) -> [String: Any]? {
         let params: [String: Any] = ["name": name, "arguments": arguments]
         if let r = rawRequest(method: "tools/call", params: params, timeout: timeout),
            let result = r["result"] as? [String: Any] { return result }
