@@ -9,6 +9,20 @@ if CommandLine.arguments.contains("--tokopt-hook") {
     exit(0)
 }
 
+// Pattern-A proxy CORE self-test (`Throttle --mcp-proxy-selftest <cmd> [args]`).
+// MUST run before the --mcp-server check below, because the downstream <cmd> args
+// legitimately contain "--mcp-server" (we proxy Throttle's own MCP as a test target).
+if let i = CommandLine.arguments.firstIndex(of: "--mcp-proxy-selftest"), i + 1 < CommandLine.arguments.count {
+    let child = MCPProxyChild(command: CommandLine.arguments[i + 1], args: Array(CommandLine.arguments[(i + 2)...]))
+    let ok = child.startAndInitialize()
+    let names = child.cachedTools.compactMap { $0["name"] as? String }
+    FileHandle.standardError.write(Data("init=\(ok) tools=\(names)\n".utf8))
+    let reok = ok && child.respawnAndReverify()
+    FileHandle.standardError.write(Data("respawn+reverify(tools identical)=\(reok) err=\(child.lastError ?? "none")\n".utf8))
+    child.shutdown()
+    exit(ok && reok ? 0 : 1)
+}
+
 // MCP server mode: Claude Code launches `Throttle --mcp-server` and talks JSON-RPC
 // over stdio to search the user's own past sessions (search_sessions tool).
 if CommandLine.arguments.contains("--mcp-server") {
