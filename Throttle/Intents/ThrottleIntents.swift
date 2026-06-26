@@ -167,6 +167,32 @@ struct SetQuietModeIntent: AppIntent {
     }
 }
 
+// MARK: - Focus Filter (Deep-Work → quiet mode)
+
+/// A Focus Filter so a macOS "Deep Work" Focus auto-enables Throttle's quiet mode
+/// (backs off background scans → less terminal lag). On-brand: Throttle cuts noise.
+/// Revert is safe by construction: turning the override off just hands quiet mode
+/// back to the automatic memory-pressure signal (it ORs), so a missed deactivate
+/// callback at worst leaves quiet mode on — never a destructive state.
+struct ThrottleFocusFilter: SetFocusFilterIntent {
+    static let title: LocalizedStringResource = "Throttle quiet mode"
+    static var description: IntentDescription {
+        IntentDescription("While this Focus is on, Throttle backs off its background scans so the embedded terminal stays responsive.")
+    }
+
+    @Parameter(title: "Quiet mode", default: true)
+    var quiet: Bool
+
+    var displayRepresentation: DisplayRepresentation {
+        DisplayRepresentation(title: quiet ? "Quiet mode on" : "Quiet mode off")
+    }
+
+    func perform() async throws -> some IntentResult {
+        ThrottleCommandChannel.enqueue(quiet ? .quietOn : .quietOff)
+        return .result()
+    }
+}
+
 // MARK: - Shortcuts provider
 
 struct ThrottleAppShortcuts: AppShortcutsProvider {

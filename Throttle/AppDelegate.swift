@@ -205,6 +205,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         case "cockpit":
             Task { @MainActor in CockpitWindowController.shared.show(appState: self.appState) }
+        case "pause":   ThrottleCommandChannel.enqueue(.pauseAll)
+        case "resume":  ThrottleCommandChannel.enqueue(.resumeAll)
+        case "quiet":   ThrottleCommandChannel.enqueue(.quietOn)
+        case "unquiet": ThrottleCommandChannel.enqueue(.quietOff)
         default:
             logger.notice("Ignoring throttle:// URL with unknown host: \(host ?? "nil", privacy: .public)")
         }
