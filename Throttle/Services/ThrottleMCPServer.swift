@@ -33,7 +33,7 @@ enum ThrottleMCPServer {
                 "serverInfo": ["name": "throttle-memory", "version": "1.0.0"],
             ])
         case "tools/list":
-            respond(id: id, result: ["tools": [searchSchema(), budgetSchema(), costSchema()]])
+            respond(id: id, result: ["tools": [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema()]])
         case "tools/call":
             let params = req["params"] as? [String: Any]
             let args = params?["arguments"] as? [String: Any]
@@ -49,6 +49,8 @@ enum ThrottleMCPServer {
                 respond(id: id, result: textResult(budgetText()))
             case "get_session_cost":
                 respond(id: id, result: textResult(costText()))
+            case "get_dead_skills":
+                respond(id: id, result: textResult(deadSkillsText()))
             default:
                 respond(id: id, error: [-32602, "Unknown tool: \(name)"])
             }
@@ -122,6 +124,24 @@ enum ThrottleMCPServer {
         }
         return String(format: "Last 7 days: %d weighted tokens, ≈€%.2f at developer-API rates (reference, not your actual subscription bill). Throttle's optimizations saved ≈%d tokens this week. (as of %@)",
                       s.weeklyTokens, s.weeklyCostEUR, s.savedTokensThisWeek, ago(s.computedAt))
+    }
+
+    private static func deadSkillsSchema() -> [String: Any] {
+        [
+            "name": "get_dead_skills",
+            "description": "List the MCP servers and skills that are LOADED into every Claude Code session (costing schema tokens in the context window) but went UNUSED over the last 30 days. Purely informative context about your own tool-loadout weight — it does not tell you to change anything; the user decides what to prune.",
+            "inputSchema": ["type": "object", "properties": [:] as [String: Any]],
+        ]
+    }
+
+    private static func deadSkillsText() -> String {
+        let report = DeadSkillService.audit(loadout: ClaudeSetupService.load(), windowDays: 30)
+        let dead = report.rows.filter(\.isDead)
+        guard !dead.isEmpty else {
+            return "No dead tools — every loaded MCP server / skill was used in the last 30 days (\(report.rows.count) loaded)."
+        }
+        let list = dead.map { "• \($0.name) — \($0.kind.rawValue)" }.joined(separator: "\n")
+        return "Loaded but UNUSED in 30 days (paying schema tokens for nothing):\n\(list)\n\n\(dead.count) of \(report.rows.count) loaded tools are dead weight."
     }
 
     private static func textResult(_ text: String) -> [String: Any] {
