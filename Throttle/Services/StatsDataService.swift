@@ -711,6 +711,31 @@ enum StatsDataService {
 
     // MARK: - Hook savings
 
+    /// Realized, byte-measured savings grouped by the hook that produced them
+    /// (e.g. `tokopt-bash`). EXACT: a true before/after on the same tool output.
+    /// `days`-window, most-saved first. Drives the per-technique Savings Ledger.
+    struct HookSaving: Sendable, Identifiable {
+        var id: String { hook }
+        let hook: String
+        let bytes: Int       // exact: Σ max(0, baseline − actual)
+        let records: Int     // how many hook fires contributed
+    }
+
+    static func savedByHook(in db: Database, days: Int = 7, now: Date = Date()) throws -> [HookSaving] {
+        let cutoff = Int64(now.timeIntervalSince1970) - Int64(days) * 24 * 3600
+        let rows = try Row.fetchAll(db, sql: """
+            SELECT hook,
+                   COALESCE(SUM(MAX(0, baseline_bytes - actual_bytes)), 0) AS bytes,
+                   COUNT(*) AS n
+            FROM tokopt_savings
+            WHERE timestamp >= ?
+            GROUP BY hook
+            HAVING bytes > 0
+            ORDER BY bytes DESC
+            """, arguments: [cutoff])
+        return rows.map { HookSaving(hook: $0["hook"] ?? "?", bytes: $0["bytes"] ?? 0, records: $0["n"] ?? 0) }
+    }
+
     static func savedBytesThisWeek(in db: Database, now: Date = Date()) throws -> Int {
         let cutoff = Int64(now.timeIntervalSince1970) - 7 * 24 * 3600
         let row = try Row.fetchOne(db, sql: """

@@ -31,6 +31,9 @@ struct CockpitDashboardView: View {
                 OSIssueBanner()
                 claudePanel
                 machinePanel
+                SavingsLedgerView()
+                    .background(Color.primary.opacity(0.025), in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(hair, lineWidth: 1))
                 if !localRuntimes.isEmpty {
                     Text("Figures cover Anthropic usage only — \(localRuntimes.joined(separator: " · ")) runs locally and isn't tracked here.")
                         .font(.system(size: 10)).foregroundStyle(.tertiary)
