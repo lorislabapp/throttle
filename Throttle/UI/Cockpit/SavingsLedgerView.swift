@@ -14,15 +14,34 @@ struct SavingsLedgerView: View {
     @Environment(AppState.self) private var appState
 
     @State private var realized: [StatsDataService.HookSaving] = []
-    @State private var deadSkillTokens = 0
+    @State private var skills = SkillReport.empty
     @State private var toon = TOONTranspiler.Potential()
+    @State private var rmcEUR: Double = 0
+    @State private var archiving = false
     @State private var loaded = false
+
+    private var deadSkillTokens: Int { skills.deadTokens }
 
     private var hair: Color { Color.primary.opacity(0.09) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
+
+            // RMC hero — the one € number a user acts on: cash burned because bad prompt
+            // hygiene forced a cache re-write instead of a 0.1× cache read (NotebookLM Q4).
+            if rmcEUR >= 0.01 {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Image(systemName: "flame.fill").font(.system(size: 12)).foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("≈€\(String(format: "%.2f", rmcEUR)) burned this week re-writing a cache that should've been warm")
+                            .font(.system(size: 11.5, weight: .semibold)).foregroundStyle(.primary).lineLimit(2)
+                        Text("A big cache write <5 min after the prior turn = the prefix got busted (dynamic injection / model swap / re-sorted tools), billed at 1.25× instead of 0.10×.")
+                            .font(.system(size: 9.5)).foregroundStyle(.tertiary).lineLimit(2)
+                    }
+                }
+                .padding(.horizontal, 14).padding(.bottom, 10)
+            }
 
             if loaded && realized.isEmpty && deadSkillTokens == 0 && !toon.hasData {
                 Text("No savings measured yet. As Throttle's hooks process tool output, exact byte savings land here.")
@@ -43,9 +62,26 @@ struct SavingsLedgerView: View {
             if deadSkillTokens > 0 || toon.hasData {
                 sectionLabel("AVOIDABLE · ESTIMATED", "counterfactual weight — not realized spend")
                 if deadSkillTokens > 0 {
-                    row(label: "Dead skills (unused 30d)",
-                        method: "SKILL.md schema bytes loaded every session — remove to stop paying",
-                        bytes: deadSkillTokens, exact: false)
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            HStack(spacing: 6) {
+                                Text("Dead skills (\(skills.deadCount), unused)").font(.system(size: 11.5, weight: .medium))
+                                tag(false)
+                            }
+                            Text("SKILL.md bytes loaded every session — archive to stop paying")
+                                .font(.system(size: 9.5)).foregroundStyle(.tertiary).lineLimit(1)
+                        }
+                        Spacer(minLength: 8)
+                        Button(archiving ? "Archiving…" : "Archive \(skills.deadCount)") { archiveDead() }
+                            .buttonStyle(.plain).font(.system(size: 10.5, weight: .semibold))
+                            .foregroundStyle(Color.accentColor).disabled(archiving)
+                            .help("Reversible move of every unused skill out of the load path, then rescan")
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text("≈\(byteStr(deadSkillTokens))").font(.system(size: 12, weight: .semibold).monospacedDigit())
+                            Text("≈\(tokenStr(deadSkillTokens / 4)) tok").font(.system(size: 9.5).monospacedDigit()).foregroundStyle(.tertiary)
+                        }
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 7)
                 }
                 if toon.hasData {
                     row(label: "TOON-compressible output",
@@ -56,13 +92,35 @@ struct SavingsLedgerView: View {
         }
         .task {
             guard !loaded else { return }
-            let db = appState.database
-            realized = (try? await Task.detached(priority: .utility) {
-                try db.read { try StatsDataService.savedByHook(in: $0) }
-            }.value) ?? []
-            deadSkillTokens = await Task.detached(priority: .utility) { SkillUsageService.scan().deadTokens }.value
-            toon = await Task.detached(priority: .utility) { TOONTranspiler.potentialSummary() }.value
+            await reload()
             loaded = true
+        }
+    }
+
+    private func reload() async {
+        let db = appState.database
+        realized = (try? await Task.detached(priority: .utility) {
+            try db.read { try StatsDataService.savedByHook(in: $0) }
+        }.value) ?? []
+        rmcEUR = (try? await Task.detached(priority: .utility) {
+            try db.read { try StatsDataService.recoverableMissCostEUR(in: $0).eur }
+        }.value) ?? 0
+        skills = await Task.detached(priority: .utility) { SkillUsageService.scan() }.value
+        toon = await Task.detached(priority: .utility) { TOONTranspiler.potentialSummary() }.value
+    }
+
+    /// 1-click remediation for the AVOIDABLE dead-skill row — archive every unused
+    /// skill (reversible file move) then rescan so the ledger reflects the drop.
+    private func archiveDead() {
+        guard !archiving else { return }
+        archiving = true
+        let dead = skills.skills.filter { $0.dead }.map(\.name)
+        Task {
+            await Task.detached(priority: .utility) {
+                for name in dead { _ = try? SkillUsageService.archive(skillName: name) }
+            }.value
+            await reload()
+            archiving = false
         }
     }
 
