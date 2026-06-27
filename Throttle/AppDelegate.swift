@@ -246,10 +246,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return pool
     }
 
+    /// Held for the GUI process's whole lifetime so the advisory lock stays taken.
+    private static var singletonLockFD: Int32 = -1
+
+    /// Single-instance guard via an advisory file lock (`flock`), NOT an
+    /// `NSRunningApplication` bundle-id count. The CLI sub-modes (`--mcp-server`,
+    /// `--tokopt-hook`, the proxy modes) live in the SAME signed bundle and so
+    /// share its bundle identifier; Claude Code keeps one or more
+    /// `Throttle --mcp-server` children alive per connected session. A bundle-id
+    /// count therefore reads ≥2 and the menubar app would terminate itself even
+    /// though no other *GUI* instance exists. Those CLI modes `exit()` in
+    /// `main.swift` before `ThrottleApp.main()`, so they never reach this code —
+    /// an flock taken only here counts GUI instances exactly.
     private static func acquireSingletonLock() -> Bool {
-        let bundleID = Bundle.main.bundleIdentifier ?? "com.lorislab.throttle"
-        let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
-        return running.count == 1
+        let path = (NSTemporaryDirectory() as NSString)
+            .appendingPathComponent("com.lorislab.throttle.singleton.lock")
+        let fd = open(path, O_CREAT | O_RDWR, 0o644)
+        guard fd >= 0 else { return true }   // fail-open: never block launch on a lock error
+        if flock(fd, LOCK_EX | LOCK_NB) != 0 {
+            close(fd)
+            return false                      // another GUI instance holds it
+        }
+        singletonLockFD = fd                  // keep open for the process lifetime
+        return true
     }
 }
 
