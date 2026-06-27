@@ -372,7 +372,7 @@ final class MultiCockpitModel {
                 self.autoPauseCountdown = (self.autoPauseCountdown ?? 1) - 1
             }
             guard !Task.isCancelled else { return }
-            self?.fireAutoPause()
+            await self?.fireAutoPause()
         }
     }
 
@@ -384,19 +384,38 @@ final class MultiCockpitModel {
         apLastPct = nil; apLastAt = nil
     }
 
-    private func fireAutoPause() {
+    private func fireAutoPause() async {
         // Target the actual runaway, not every live session: if any session is flagged
         // as looping, freeze ONLY those; otherwise fall back to all live sessions. Keeps
         // the blast radius minimal (NotebookLM: don't freeze the whole fleet).
-        // NOTE: SIGSTOP can land mid-flight (a request in-transit to Anthropic, a held
-        // file lock). It's reversible (SIGCONT), the user opted in and can cancel — but
-        // this is why it stays OFF by default and warn-first.
         let looping = sessions.filter { $0.isLive && !$0.isPaused && $0.loopSignal != nil }
         let targets = looping.isEmpty ? sessions.filter { $0.isLive && !$0.isPaused } : looping
-        for s in targets { s.pauseProcess() }
+        for s in targets { await drainThenPause(s) }
         autoPauseTask = nil
         autoPauseCountdown = nil
         apLastPct = nil; apLastAt = nil
+    }
+
+    /// State-aware drain (NotebookLM Q2): a bare SIGSTOP can land mid-flight — a held
+    /// file lock, or a response in transit from Anthropic that arrives at a frozen
+    /// client → corrupt state. We can't buffer the cloud socket (no-data-path-proxy
+    /// doctrine), but we CAN avoid freezing during active work: pause only once the
+    /// session's transcript has been quiet for a beat (no stream/tool-write in flight).
+    /// Capped at 4 s so a relentlessly busy session is still paused — it already had
+    /// the 10 s cancelable countdown.
+    private func drainThenPause(_ s: CockpitTab) async {
+        let cwd = s.cwd
+        let deadline = Date().addingTimeInterval(4)
+        var last = Self.newestSession(cwd: cwd, since: .distantPast)?.mtime
+        while Date() < deadline {
+            try? await Task.sleep(for: .milliseconds(400))
+            if Task.isCancelled { return }
+            let now = Self.newestSession(cwd: cwd, since: .distantPast)?.mtime
+            if let now, let last, now == last { break }   // 400 ms quiescent → safe window
+            last = now
+        }
+        guard !s.isPaused else { return }
+        s.pauseProcess()
     }
     /// Opening another session would push the Mac past saturation.
     var gated: Bool { machine.critical }

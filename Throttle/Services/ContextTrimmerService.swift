@@ -32,9 +32,15 @@ enum ContextTrimmerService {
         /// tool result is lossless for *reasoning* only because the assistant's
         /// summary remains, so it stays opt-in).
         var stubToolResultsOver: Int? = nil
+        /// If set, the bulky string INPUTS of write-oriented tool_use blocks
+        /// (`content` / `old_string` / `new_string` of Write/Edit/…) longer than
+        /// this many UTF-8 bytes are stubbed. Lossless for reasoning: the file is
+        /// already on disk and the whitelist metadata (`file_path`, `command`)
+        /// stays, so the model still knows what was written where. Opt-in.
+        var stubToolInputsOver: Int? = nil
 
         static let safe = Options(trimImages: true, stubToolResultsOver: nil)
-        static let aggressive = Options(trimImages: true, stubToolResultsOver: 4_000)
+        static let aggressive = Options(trimImages: true, stubToolResultsOver: 4_000, stubToolInputsOver: 4_000)
     }
 
     struct Plan: Sendable {
@@ -44,12 +50,14 @@ enum ContextTrimmerService {
         let imageBytesSaved: Int       // raw base64 UTF-8 bytes removed
         let toolResultsStubbed: Int
         let toolResultBytesSaved: Int
+        var toolInputsStubbed: Int = 0
+        var toolInputBytesSaved: Int = 0
 
-        var bytesSaved: Int { imageBytesSaved + toolResultBytesSaved }
-        var isEmpty: Bool { imagesTrimmed == 0 && toolResultsStubbed == 0 }
+        var bytesSaved: Int { imageBytesSaved + toolResultBytesSaved + toolInputBytesSaved }
+        var isEmpty: Bool { imagesTrimmed == 0 && toolResultsStubbed == 0 && toolInputsStubbed == 0 }
         /// Rough re-charge estimate: images cost image-tokens (~1500 each on the
-        /// Opus/Fable scale, not chars/4), tool output costs ≈ chars/4.
-        var estTokensSaved: Int { imagesTrimmed * 1_500 + toolResultBytesSaved / 4 }
+        /// Opus/Fable scale, not chars/4), tool payload costs ≈ chars/4.
+        var estTokensSaved: Int { imagesTrimmed * 1_500 + (toolResultBytesSaved + toolInputBytesSaved) / 4 }
 
         /// First 8 chars of the session UUID — enough to recognise a session.
         var sessionShort: String {
@@ -158,17 +166,27 @@ enum ContextTrimmerService {
     // MARK: - Core (pure transform + validation)
 
     private struct Counters {
-        var images = 0, imageBytes = 0, stubs = 0, stubBytes = 0
+        var images = 0, imageBytes = 0, stubs = 0, stubBytes = 0, inStubs = 0, inBytes = 0
         mutating func add(_ o: Counters) {
             images += o.images; imageBytes += o.imageBytes
             stubs += o.stubs; stubBytes += o.stubBytes
+            inStubs += o.inStubs; inBytes += o.inBytes
         }
         func plan(url: URL, totalLines: Int) -> Plan {
             Plan(sessionURL: url, totalLines: totalLines,
                  imagesTrimmed: images, imageBytesSaved: imageBytes,
-                 toolResultsStubbed: stubs, toolResultBytesSaved: stubBytes)
+                 toolResultsStubbed: stubs, toolResultBytesSaved: stubBytes,
+                 toolInputsStubbed: inStubs, toolInputBytesSaved: inBytes)
         }
     }
+
+    /// Write-oriented tools whose bulky string inputs are pure resume bloat — the
+    /// file already exists on disk, so stubbing the payload loses nothing for the
+    /// model's reasoning. The metadata whitelist (file_path/command/…) is untouched.
+    private static let writeToolInputs: [String: [String]] = [
+        "Write": ["content"], "Edit": ["old_string", "new_string"],
+        "NotebookEdit": ["new_source"],
+    ]   // MultiEdit's `edits` array is handled separately (nested old/new strings).
 
     private struct LineOutcome { var line: String; var counters = Counters() }
 
@@ -178,7 +196,8 @@ enum ContextTrimmerService {
         // Cheap byte gate: only parse lines that could carry a trimmable payload.
         let mayImage = opt.trimImages && raw.contains("\"base64\"")
         let mayTR = opt.stubToolResultsOver != nil && raw.contains("\"tool_result\"")
-        guard mayImage || mayTR else { return LineOutcome(line: raw) }
+        let mayInput = opt.stubToolInputsOver != nil && raw.contains("\"tool_use\"")
+        guard mayImage || mayTR || mayInput else { return LineOutcome(line: raw) }
 
         guard let data = raw.data(using: .utf8),
               var obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
@@ -201,6 +220,33 @@ enum ContextTrimmerService {
                 content[i] = imagePointer(mediaType: src["media_type"] as? String ?? "image",
                                           base64Bytes: b64.utf8.count)
                 changed = true
+                continue
+            }
+
+            // (c) tool_use — stub the bulky write-tool string inputs (file is on disk)
+            if mayInput, type == "tool_use", let lim = opt.stubToolInputsOver,
+               let name = content[i]["name"] as? String,
+               var input = content[i]["input"] as? [String: Any] {
+                var inChanged = false
+                for field in writeToolInputs[name] ?? [] {
+                    if let s = input[field] as? String, s.utf8.count > lim {
+                        c.inStubs += 1; c.inBytes += s.utf8.count
+                        input[field] = stubText(s); inChanged = true
+                    }
+                }
+                if name == "MultiEdit", var edits = input["edits"] as? [[String: Any]] {
+                    var eChanged = false
+                    for k in edits.indices {
+                        for field in ["old_string", "new_string"] {
+                            if let s = edits[k][field] as? String, s.utf8.count > lim {
+                                c.inStubs += 1; c.inBytes += s.utf8.count
+                                edits[k][field] = stubText(s); eChanged = true
+                            }
+                        }
+                    }
+                    if eChanged { input["edits"] = edits; inChanged = true }
+                }
+                if inChanged { content[i]["input"] = input; changed = true }
                 continue
             }
 
