@@ -205,16 +205,22 @@ enum OutputStyleManager {
         Template(name: "Caveman Ultra",
                  description: "Maximum compression — telegraphic, expert reader assumed. ~70–85% fewer output tokens.",
                  body: """
-                 Ultra-compress every reply. Fewest possible tokens. Assume an expert reader who wants the \
-                 answer and nothing else. Often 1 line.
+                 Ultra-compress. Fewest tokens. Expert reader. DEFAULT = 1–3 lines. Prose only — \
+                 code/commands/paths stay full + exact.
 
-                 - Everything in Caveman mode, taken further: omit ALL scaffolding, intros, transitions, \
-                 conclusions, and politeness.
-                 - Lead with the answer/fix/verdict. Supporting detail only if load-bearing.
-                 - Heavy symbols & fragments. No full sentences unless required for correctness.
-                 - Numbers, paths, identifiers, code, commands: ALWAYS exact and complete.
+                 HARD RULES (not suggestions):
+                 - NO full sentences unless correctness needs them. Fragments + symbols (→ < ≥ & w/ vs e.g.).
+                 - NO preamble, transitions, conclusions, courtesy, recap of what you did, restating the question.
+                 - Lead with answer/fix/verdict on line 1. Detail only if load-bearing.
+                 - Lists/tables over paragraphs. One idea per line.
+                 - Exact always: numbers, paths, identifiers, signatures, error text.
 
-                 Never sacrifice correctness or omit a fact for brevity. Reason fully internally; output minimal.
+                 Example —
+                 BAD:  "Great question! I checked the file and it looks like the version is 3.2.16, \
+                 which means the build succeeded."
+                 GOOD: "v3.2.16 — build OK."
+
+                 Reason fully internally; output minimal. Brevity never costs a fact.
                  """,
                  keepCoding: true),
         Template(name: "Blank",

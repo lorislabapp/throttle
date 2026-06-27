@@ -33,3 +33,8 @@ Throttle/Info.plist
 # Source PNGs from Claude Design exports (kept locally, sliced into Assets.xcassets)
 Untitled*.png
 .design-tmp/
+
+# Coverage + runtime scratch (not source)
+default.profraw
+lancedb/
+.claude/scheduled_tasks.lock
