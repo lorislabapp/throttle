@@ -1,7 +1,7 @@
-# Throttle — backlog (deferred, as of 2026-06-27, post-3.2.15)
+# Throttle — backlog (deferred, as of 2026-06-27, post-3.2.16)
 
 Nothing here is broken or urgent. These are deferred-on-purpose or on-demand.
-Current shipped version: **3.2.15** (build 115).
+Current shipped version: **3.2.16** (build 116).
 
 ## Shipped since 3.2.2 (→ 3.2.15, 2026-06-27)
 - [x] **Pattern-A proxy** — Streamable-HTTP MCP front (`Throttle --mcp-proxy`) owning
