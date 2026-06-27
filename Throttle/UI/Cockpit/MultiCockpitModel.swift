@@ -335,7 +335,7 @@ final class MultiCockpitModel {
     private var autoPauseTask: Task<Void, Never>?
     private var apLastPct: Double?
     private var apLastAt: Date?
-    private let apThresholdPct = 97.0
+    private let apThresholdPct = 95.0   // matches the design's `atcap` — 97% is too late, a runaway burns ~600k tok/min
     private let apEtaHorizon: TimeInterval = 5 * 60
     private let apGraceSeconds = 10
 
@@ -385,7 +385,15 @@ final class MultiCockpitModel {
     }
 
     private func fireAutoPause() {
-        for s in sessions where s.isLive && !s.isPaused { s.pauseProcess() }
+        // Target the actual runaway, not every live session: if any session is flagged
+        // as looping, freeze ONLY those; otherwise fall back to all live sessions. Keeps
+        // the blast radius minimal (NotebookLM: don't freeze the whole fleet).
+        // NOTE: SIGSTOP can land mid-flight (a request in-transit to Anthropic, a held
+        // file lock). It's reversible (SIGCONT), the user opted in and can cancel — but
+        // this is why it stays OFF by default and warn-first.
+        let looping = sessions.filter { $0.isLive && !$0.isPaused && $0.loopSignal != nil }
+        let targets = looping.isEmpty ? sessions.filter { $0.isLive && !$0.isPaused } : looping
+        for s in targets { s.pauseProcess() }
         autoPauseTask = nil
         autoPauseCountdown = nil
         apLastPct = nil; apLastAt = nil

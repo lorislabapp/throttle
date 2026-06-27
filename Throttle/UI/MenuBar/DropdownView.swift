@@ -1380,7 +1380,7 @@ private struct InlineGeneralPane: View {
             }
             SettingsHair()
             SettingsRow(title: "Auto-pause near the cap",
-                        sub: "Off by default. When a window hits 97% with the wall under 5 min away, Throttle shows a 10-second cancelable countdown, then freezes (SIGSTOP) your live sessions to save quota. Fully reversible — resume anytime, nothing lost.") {
+                        sub: "Off by default. At 95% with the wall under 5 min away, Throttle shows a 10-second cancelable countdown, then freezes (SIGSTOP) the runaway session — or all live ones if none is looping. Reversible (resume anytime, nothing lost), but a freeze can land mid-request, so it stays opt-in and warn-first.") {
                 Toggle("", isOn: $autoPauseEnabled).labelsHidden().toggleStyle(.switch).tint(.accentColor)
             }
             SettingsHair()
