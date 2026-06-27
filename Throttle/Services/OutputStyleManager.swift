@@ -122,9 +122,24 @@ enum OutputStyleManager {
         var dict = readSettings() ?? [:]
         _ = try? backupSettings()
         if name == "Default" { dict.removeValue(forKey: "outputStyle") }
-        else { dict["outputStyle"] = name }
+        else {
+            dict["outputStyle"] = name
+            // Mutually exclusive with the "Concise Claude Code replies" flag: an
+            // active output style already governs reply voice, so clear the flag
+            // — otherwise the SessionStart hook injects the weaker concise
+            // directive on top and dilutes the chosen style.
+            clearConciseFlag()
+        }
         try writeSettings(dict)
         userOverride = true
+    }
+
+    /// The bare flag the SessionStart hook reads (`~/.claude/throttle-concise`).
+    /// Removed when a non-Default output style is activated (see `setActive`).
+    private static func clearConciseFlag() {
+        let flag = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/throttle-concise")
+        try? FileManager.default.removeItem(at: flag)
     }
 
     // MARK: - Create / edit
