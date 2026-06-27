@@ -321,6 +321,75 @@ final class MultiCockpitModel {
     /// pause exposed to App Intents / Shortcuts. No-op on dormant tabs.
     func pauseAll()  { for s in sessions { s.pauseProcess() } }
     func resumeAll() { for s in sessions { s.resumeProcess() } }
+
+    // MARK: - Auto-pause ACT (opt-in, ≥97% binding AND ETA<5min, cancelable)
+    //
+    // The deferred "risky half" of the circuit breaker (docs/design-circuit-breaker.md):
+    // OFF by default, behind explicit consent (`throttleAutoPauseEnabled`). Only fires
+    // when the binding window is ≥97% AND a derived burn-ETA to 100% is under 5 min AND
+    // a live session is actually burning — then arms a cancelable countdown before a
+    // reversible SIGSTOP. Never a hard kill; the user can always cancel or resume.
+
+    /// Seconds left in the cancelable arming window (nil = not armed). Drives the banner.
+    var autoPauseCountdown: Int?
+    private var autoPauseTask: Task<Void, Never>?
+    private var apLastPct: Double?
+    private var apLastAt: Date?
+    private let apThresholdPct = 97.0
+    private let apEtaHorizon: TimeInterval = 5 * 60
+    private let apGraceSeconds = 10
+
+    private var autoPauseEnabled: Bool { UserDefaults.standard.bool(forKey: "throttleAutoPauseEnabled") }
+
+    /// Called each tick. Derives ETA-to-100% from the binding-pct rise (same method as
+    /// `ThresholdNotifier`, so no token-cap math needed) and arms the countdown when all
+    /// guards pass. Cheap + synchronous; `binding` reads `AppState.snapshot` directly.
+    func evaluateAutoPause() {
+        guard autoPauseEnabled else { if autoPauseTask != nil { cancelAutoPause() }; return }
+        guard autoPauseTask == nil else { return }          // a countdown is already running
+        guard let b = binding else { return }
+        let pct = Double(b.pct), now = Date()
+        let p0 = apLastPct, t0 = apLastAt
+        apLastPct = pct; apLastAt = now
+        guard pct >= apThresholdPct, let p0, let t0 else { return }
+        let dt = now.timeIntervalSince(t0)
+        guard dt >= 1 else { return }
+        let dpct = pct - p0
+        guard dpct > 0 else { return }                      // not rising → no imminent wall
+        let etaSec = (100.0 - pct) / (dpct / dt)
+        guard etaSec <= apEtaHorizon else { return }
+        guard sessions.contains(where: { $0.isLive && !$0.isPaused }) else { return }
+        armAutoPause()
+    }
+
+    private func armAutoPause() {
+        autoPauseCountdown = apGraceSeconds
+        autoPauseTask = Task { [weak self] in
+            while let left = self?.autoPauseCountdown, left > 0 {
+                try? await Task.sleep(for: .seconds(1))
+                if Task.isCancelled { return }
+                guard let self else { return }
+                self.autoPauseCountdown = (self.autoPauseCountdown ?? 1) - 1
+            }
+            guard !Task.isCancelled else { return }
+            self?.fireAutoPause()
+        }
+    }
+
+    /// User (or a disable) cancels the pending pause. Resets the sample so it must
+    /// rise again before re-arming — no instant re-trigger on the next tick.
+    func cancelAutoPause() {
+        autoPauseTask?.cancel(); autoPauseTask = nil
+        autoPauseCountdown = nil
+        apLastPct = nil; apLastAt = nil
+    }
+
+    private func fireAutoPause() {
+        for s in sessions where s.isLive && !s.isPaused { s.pauseProcess() }
+        autoPauseTask = nil
+        autoPauseCountdown = nil
+        apLastPct = nil; apLastAt = nil
+    }
     /// Opening another session would push the Mac past saturation.
     var gated: Bool { machine.critical }
 
@@ -364,6 +433,7 @@ final class MultiCockpitModel {
                 try? await Task.sleep(for: .seconds(quiet ? 30 : 10))
                 self?.sampleMachine()
                 self?.refreshStats()
+                self?.evaluateAutoPause()
                 if !quiet { self?.sampleSessionRAM() }
             }
         }

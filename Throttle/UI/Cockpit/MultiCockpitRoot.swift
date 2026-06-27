@@ -37,6 +37,7 @@ struct MultiCockpitRoot: View {
             if showNotifBanner { notifDeniedBanner }
             if !model.duplicateCwds.isEmpty { duplicateBanner }
             if !model.rateLimitedSessions.isEmpty { rateLimitBanner }
+            if let n = model.autoPauseCountdown { autoPauseBanner(n) }
             if let loop = model.loopSessions.first { loopBanner(loop) }
             HStack(spacing: 0) {
                 content
@@ -336,6 +337,22 @@ struct MultiCockpitRoot: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 8)
         .background(Color.red.opacity(0.10))
+    }
+
+    /// Auto-pause ACT armed: binding ≥97% + imminent wall. Cancelable countdown
+    /// before a reversible SIGSTOP of the live sessions. Opt-in; never a kill.
+    private func autoPauseBanner(_ seconds: Int) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "pause.circle.fill").font(.system(size: 12)).foregroundStyle(.orange)
+            Text("Near the usage cap — auto-pausing live sessions in \(seconds)s to save your quota.")
+                .font(.system(size: 11.5)).foregroundStyle(.primary).lineLimit(1)
+            Spacer(minLength: 0)
+            Button("Cancel") { model.cancelAutoPause() }
+                .buttonStyle(.plain).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(Color.accentColor)
+                .help("Keep running — don't pause. (You can also disable auto-pause in Settings.)")
+        }
+        .padding(.horizontal, 14).padding(.vertical, 8)
+        .background(Color.orange.opacity(0.10))
     }
 
     /// Same project open in >1 live session = wasted RAM + tokens. Offer a

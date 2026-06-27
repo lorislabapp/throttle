@@ -1317,6 +1317,7 @@ private struct InlineGeneralPane: View {
     @State private var calendarStatus: String = ""
     @State private var conciseClaudeCode: Bool =
         FileManager.default.fileExists(atPath: InlineGeneralPane.conciseFlagPath)
+    @AppStorage("throttleAutoPauseEnabled") private var autoPauseEnabled = false
     @State private var autopilotOn: Bool = AutopilotService.isEnabled
     @State private var apMemory: Bool = AutopilotService.archiveStaleMemory
     @State private var apSkills: Bool = AutopilotService.archiveDeadSkills
@@ -1376,6 +1377,11 @@ private struct InlineGeneralPane: View {
                         await MainActor.run { handleCalendarResult(result) }
                     }
                 }
+            }
+            SettingsHair()
+            SettingsRow(title: "Auto-pause near the cap",
+                        sub: "Off by default. When a window hits 97% with the wall under 5 min away, Throttle shows a 10-second cancelable countdown, then freezes (SIGSTOP) your live sessions to save quota. Fully reversible — resume anytime, nothing lost.") {
+                Toggle("", isOn: $autoPauseEnabled).labelsHidden().toggleStyle(.switch).tint(.accentColor)
             }
             SettingsHair()
             SettingsRow(title: "Concise Claude Code replies",
