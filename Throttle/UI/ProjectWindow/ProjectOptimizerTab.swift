@@ -42,6 +42,7 @@ struct ProjectOptimizerTab: View {
         VStack(spacing: 0) {
             toolbar
             Rectangle().fill(hair).frame(height: 1)
+            TOONPotentialReadout()
             if loading {
                 ProgressView().controlSize(.small)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

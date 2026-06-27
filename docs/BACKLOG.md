@@ -1,7 +1,19 @@
-# Throttle — backlog (deferred, as of 2026-06-20, post-3.2.2)
+# Throttle — backlog (deferred, as of 2026-06-27, post-3.2.15)
 
 Nothing here is broken or urgent. These are deferred-on-purpose or on-demand.
-Current shipped version: **3.2.2** (build 102).
+Current shipped version: **3.2.15** (build 115).
+
+## Shipped since 3.2.2 (→ 3.2.15, 2026-06-27)
+- [x] **Pattern-A proxy** — Streamable-HTTP MCP front (`Throttle --mcp-proxy`) owning
+      the downstream stdio server; respawns it prefix-stable without busting the prompt
+      cache. CORE + FRONT + **proactive health monitor** (15s ping → respawn zombie
+      before a real `tools/call` hits it). VERIFIED end-to-end 2026-06-27 against
+      Claude Code's real HTTP MCP client (`claude -p --mcp-config --transport http`):
+      client connected + listed tools + called a tool through the proxy; froze the
+      downstream (SIGSTOP zombie) → monitor respawned it → a 2nd real `claude` call
+      succeeded via the respawned child. No longer an open risk.
+- [x] **Focus Filter (quiet mode)** + interactive widget **Pause** + `pause`/`quiet`
+      URL scheme.
 
 ## Shipped in 3.2.2 (2026-06-20)
 - [x] **Rate-limit handling** — DroppableTerminalView detects claude's usage-limit
@@ -35,13 +47,19 @@ Current shipped version: **3.2.2** (build 102).
       `throttle_expand(hash)` MCP tool lets claude pull it back on demand. HARD no-op
       on failures/stderr/stack-traces/JSON the model needs. WAIT for `toon-potential.
       jsonl` data to confirm the gain before ship. Design: `docs/design-toon-transpile.md`.
+      NB — do NOT conflate with the **tokopt-bash trimming** that IS live (strips
+      headers/hints/ANSI from `git status` etc., logs realized savings to
+      `savings.jsonl` via `TokoptHook`). Any doc claiming "CCR shipped, ~53% proven"
+      means that trimming, NOT this array→TOON transpile, which is unbuilt.
 - [ ] **Read-Firewall / local-RAG auto-config** — detect brute-force file reading
       (≥N sequential reads or >150 KB/turn), attribute the waste per project, and
       offer a 1-click (preview + revert) inject of `mcp-local-rag` (local LanceDB,
       no cloud) into the project `.mcp.json`. Watch the lossy-recall golden-rule
       risk. Design: `docs/design-read-firewall.md`.
-- [ ] **TOON readout UI** (Phase 1.5) — surface accumulated potential savings from
-      `toon-potential.jsonl` in the Optimizer.
+- [x] **TOON readout UI** (Phase 1.5, done 2026-06-27) — `TOONPotentialReadout` in the
+      Project Optimizer tab folds `toon-potential.jsonl` via `TOONTranspiler.potentialSummary()`
+      (≈% / ≈bytes / ≈tokens / sample count, measure-only, hidden when empty). Still
+      collecting data — no samples on the dev Mac yet, so TOON Phase 2 stays gated.
 
 ## Stats polish (small)
 - [ ] Reset shows clock time → add an HH:MM countdown in the menu-bar dropdown too

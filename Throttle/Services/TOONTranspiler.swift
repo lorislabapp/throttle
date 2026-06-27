@@ -95,4 +95,56 @@ enum TOONTranspiler {
         }
         return true
     }
+
+    // MARK: - Phase 1.5 readout (measure-only summary)
+
+    /// Accumulated, would-be TOON savings read straight from `toon-potential.jsonl`.
+    /// Measure-only: this is what Phase 2 (CCR) *could* save, never realized spend —
+    /// the UI must label it as potential and stay honest (golden rule).
+    struct Potential: Sendable, Equatable {
+        var samples = 0
+        var jsonBytes = 0
+        var toonBytes = 0
+        var savedBytes = 0
+        var since: Date?
+        var topTool: String?
+
+        /// Fraction of the measured JSON bytes TOON would shed (0…1).
+        var savedFraction: Double { jsonBytes > 0 ? Double(savedBytes) / Double(jsonBytes) : 0 }
+        /// Rough token equivalent of the saved bytes (~4 bytes/token, English-ish).
+        var savedTokensApprox: Int { savedBytes / 4 }
+        var hasData: Bool { samples > 0 && savedBytes > 0 }
+    }
+
+    private static var potentialURL: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Throttle", isDirectory: true)
+            .appendingPathComponent("toon-potential.jsonl")
+    }
+
+    /// Fold `toon-potential.jsonl` into a single summary. Pure file read, no DB,
+    /// silent no-op (empty summary) on any failure — safe to call off-main.
+    static func potentialSummary() -> Potential {
+        guard let raw = try? String(contentsOf: potentialURL, encoding: .utf8) else { return Potential() }
+        var out = Potential()
+        var byTool: [String: Int] = [:]
+        for line in raw.split(separator: "\n") {
+            guard let data = line.data(using: .utf8),
+                  let rec = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let jb = rec["json_bytes"] as? Int,
+                  let tb = rec["toon_bytes"] as? Int else { continue }
+            let saved = (rec["would_save_bytes"] as? Int) ?? max(0, jb - tb)
+            out.samples += 1
+            out.jsonBytes += jb
+            out.toonBytes += tb
+            out.savedBytes += saved
+            if let ts = rec["ts"] as? Int {
+                let d = Date(timeIntervalSince1970: TimeInterval(ts))
+                if out.since == nil || d < out.since! { out.since = d }
+            }
+            if let tool = rec["tool"] as? String { byTool[tool, default: 0] += saved }
+        }
+        out.topTool = byTool.max { $0.value < $1.value }?.key
+        return out
+    }
 }
