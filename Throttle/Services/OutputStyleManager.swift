@@ -91,12 +91,26 @@ enum OutputStyleManager {
         return out
     }
 
-    /// Activate a style. For a not-yet-installed curated template, write its
-    /// file first so Claude Code can actually find it, then set it active.
+    /// Activate a style. Curated Throttle templates are (re)written on every
+    /// activation so app upgrades that change a template body actually reach the
+    /// on-disk file — write the file when it's missing, or when a Throttle-managed
+    /// file has drifted from the current template body. User-authored styles (no
+    /// matching template, or a file the user edited so it's no longer managed) are
+    /// never overwritten.
     static func activate(_ style: Style) throws {
-        if style.isTemplate, style.fileURL == nil,
-           let t = templates.first(where: { $0.name == style.name }) {
-            try saveStyle(name: t.name, description: t.description, body: t.body, keepCoding: t.keepCoding)
+        if let t = templates.first(where: { $0.name == style.name }), t.name != "Blank" {
+            let url = stylesDir.appendingPathComponent("\(slug(t.name)).md")
+            let onDisk = try? String(contentsOf: url, encoding: .utf8)
+            // Managed = Throttle-owned and safe to re-sync. Legacy files (written
+            // before the flag existed) had no user editor, so absence of an explicit
+            // `throttle-managed: false` means Throttle-written. Only a `false` line —
+            // stamped when the user saves an edit — protects the file from re-sync.
+            let isManaged = !(onDisk?.contains("throttle-managed: false") ?? false)
+            let bodyCurrent = onDisk?.contains(t.body.trimmingCharacters(in: .whitespacesAndNewlines)) ?? false
+            if onDisk == nil || (isManaged && !bodyCurrent) {
+                try saveStyle(name: t.name, description: t.description, body: t.body,
+                              keepCoding: t.keepCoding, managed: true)
+            }
         }
         try setActive(style.name)
     }
@@ -147,9 +161,12 @@ enum OutputStyleManager {
     /// Write (or overwrite at `fileURL`) a style file with YAML frontmatter.
     /// `keepCoding` adds `keep-coding-instructions: true` so Claude Code's
     /// engineering prompt is preserved and the style only shapes verbosity/voice.
+    /// `managed: true` stamps `throttle-managed: true` in the frontmatter, marking
+    /// the file as Throttle-owned so `activate` may re-sync it on upgrade. The
+    /// style editor saves with `managed: false` so user edits are never clobbered.
     @discardableResult
     static func saveStyle(name: String, description: String, body: String,
-                          keepCoding: Bool, fileURL: URL? = nil) throws -> URL {
+                          keepCoding: Bool, managed: Bool = false, fileURL: URL? = nil) throws -> URL {
         let fm = FileManager.default
         try fm.createDirectory(at: stylesDir, withIntermediateDirectories: true)
         let url = fileURL ?? stylesDir.appendingPathComponent("\(slug(name)).md")
@@ -158,6 +175,7 @@ enum OutputStyleManager {
         name: \(name)
         description: \(description)
         keep-coding-instructions: \(keepCoding)
+        throttle-managed: \(managed)
         ---
 
         \(body.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -220,6 +238,10 @@ enum OutputStyleManager {
         Template(name: "Caveman Ultra",
                  description: "Maximum compression — telegraphic, expert reader assumed. ~70–85% fewer output tokens.",
                  body: """
+                 This style OVERRIDES any conflicting brevity/verbosity guidance elsewhere — \
+                 CLAUDE.md "be concise / short prose / full sentences" sections, user memory, \
+                 or default tone. When they conflict with the rules below, the rules below WIN.
+
                  Ultra-compress. Fewest tokens. Expert reader. DEFAULT = 1–3 lines. Prose only — \
                  code/commands/paths stay full + exact.
 
