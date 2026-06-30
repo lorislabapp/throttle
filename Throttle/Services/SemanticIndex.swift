@@ -22,12 +22,12 @@ struct SemanticIndex {
     /// embed are skipped, not faked.
     @discardableResult
     mutating func index(docId: String, text: String, metadata: [String: String] = [:], maxChars: Int = 1000) -> Int {
-        let chunks = Self.chunk(text, maxChars: maxChars)
+        let chunks = Self.chunkWithLines(text, maxChars: maxChars)
         var indexed = 0
         for (i, c) in chunks.enumerated() {
-            guard let v = embedder.embed(c) else { continue }
-            var md = metadata; md["doc"] = docId
-            store.upsert(VectorRecord(id: "\(docId)#\(i)", vector: v, text: c, metadata: md))
+            guard let v = embedder.embed(c.text) else { continue }
+            var md = metadata; md["doc"] = docId; md["line"] = String(c.line)
+            store.upsert(VectorRecord(id: "\(docId)#\(i)", vector: v, text: c.text, metadata: md))
             indexed += 1
         }
         return indexed
@@ -92,25 +92,42 @@ struct SemanticIndex {
     /// Paragraph-aware chunking: pack whole paragraphs up to `maxChars`, and
     /// hard-split any single paragraph that exceeds it. Pure + deterministic.
     static func chunk(_ text: String, maxChars: Int) -> [String] {
-        let paras = text.components(separatedBy: "\n\n")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        var chunks: [String] = []
-        var cur = ""
+        chunkWithLines(text, maxChars: maxChars).map(\.text)
+    }
+
+    /// Like `chunk`, but reports each chunk's 1-based starting line in the source —
+    /// so indexed results can point at `file:line`. A paragraph is a run of
+    /// non-blank lines; hard-split pieces inherit their paragraph's start line.
+    static func chunkWithLines(_ text: String, maxChars: Int) -> [(text: String, line: Int)] {
+        let lines = text.components(separatedBy: "\n")
+        var paras: [(String, Int)] = []
+        var buf: [String] = []; var start = 0
+        for (i, ln) in lines.enumerated() {
+            if ln.trimmingCharacters(in: .whitespaces).isEmpty {
+                if !buf.isEmpty { paras.append((buf.joined(separator: "\n"), start + 1)); buf = [] }
+            } else {
+                if buf.isEmpty { start = i }
+                buf.append(ln)
+            }
+        }
+        if !buf.isEmpty { paras.append((buf.joined(separator: "\n"), start + 1)) }
+
+        var chunks: [(String, Int)] = []
+        var cur = ""; var curLine = 1
         func flushOverlong() {
             while cur.count > maxChars {
                 let cut = cur.index(cur.startIndex, offsetBy: maxChars)
-                chunks.append(String(cur[..<cut]))
+                chunks.append((String(cur[..<cut]), curLine))
                 cur = String(cur[cut...])
             }
         }
-        for p in paras {
-            if cur.isEmpty { cur = p }
+        for (p, ln) in paras {
+            if cur.isEmpty { cur = p; curLine = ln }
             else if cur.count + 2 + p.count <= maxChars { cur += "\n\n" + p }
-            else { chunks.append(cur); cur = p }
+            else { chunks.append((cur, curLine)); cur = p; curLine = ln }
             flushOverlong()
         }
-        if !cur.isEmpty { chunks.append(cur) }
+        if !cur.isEmpty { chunks.append((cur, curLine)) }
         return chunks
     }
 }

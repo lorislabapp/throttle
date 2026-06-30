@@ -43,6 +43,19 @@ final class SemanticIndexTests: XCTestCase {
         XCTAssertTrue(SemanticIndex.chunk("   \n\n  ", maxChars: 10).isEmpty)
     }
 
+    func test_chunkWithLines_tracksStartLine() {
+        let text = "first para line\n\n\nsecond"   // lines 1, (2,3 blank), 4
+        XCTAssertEqual(SemanticIndex.chunkWithLines(text, maxChars: 1000).first?.line, 1)
+        XCTAssertEqual(SemanticIndex.chunkWithLines(text, maxChars: 16).map(\.line), [1, 4])
+    }
+
+    func test_index_storesLineMetadata() {
+        var idx = SemanticIndex(embedder: StubEmbedder())
+        idx.index(docId: "f.swift", text: "alpha\n\n\n\nomega", maxChars: 8)
+        let hit = idx.searchHybrid("omega", k: 1).first
+        XCTAssertEqual(hit?.metadata["line"], "5")   // omega is on line 5
+    }
+
     // MARK: - Index + query
 
     func test_index_countsChunks_andDedupesByDoc() {

@@ -267,8 +267,9 @@ enum ThrottleMCPServer {
         guard !hits.isEmpty else { return "No semantic matches for “\(query)” in \(root.lastPathComponent) (\(index.chunkCount) chunks indexed)." }
         return hits.map { h in
             let path = h.metadata["path"] ?? h.id
+            let loc = h.metadata["line"].map { ":\($0)" } ?? ""
             let snippet = h.text.replacingOccurrences(of: "\n", with: " ").prefix(200)
-            return "• \(path) (\(String(format: "%.2f", h.score))) — \(snippet)"
+            return "• \(path)\(loc) (\(String(format: "%.2f", h.score))) — \(snippet)"
         }.joined(separator: "\n")
     }
 
