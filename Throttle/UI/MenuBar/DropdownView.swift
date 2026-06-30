@@ -457,7 +457,8 @@ struct DropdownView: View {
             HStack {
                 if m.resetInSeconds > 0 {
                     (Text("resets ").foregroundStyle(.tertiary)
-                     + Text(formatWallClock(m.resetInSeconds)).foregroundStyle(.secondary))
+                     + Text(formatWallClock(m.resetInSeconds)).foregroundStyle(.secondary)
+                     + Text(" (in \(MultiCockpitModel.countdown(m.resetInSeconds)))").foregroundStyle(.tertiary))
                         .font(.system(size: 11))
                 }
                 Spacer(minLength: 0)
@@ -500,7 +501,8 @@ struct DropdownView: View {
                 UsageBar(pct: pct, tint: progressTint(for: pct), degraded: deg, height: 6)
                 HStack {
                     if m.resetInSeconds > 0 {
-                        (Text("resets ") + Text(formatWallClock(m.resetInSeconds)))
+                        (Text("resets ") + Text(formatWallClock(m.resetInSeconds))
+                         + Text(" (in \(MultiCockpitModel.countdown(m.resetInSeconds)))").foregroundStyle(.tertiary))
                             .font(.system(size: 11)).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)

@@ -62,8 +62,9 @@ Current shipped version: **3.2.16** (build 116).
       collecting data — no samples on the dev Mac yet, so TOON Phase 2 stays gated.
 
 ## Stats polish (small)
-- [ ] Reset shows clock time → add an HH:MM countdown in the menu-bar dropdown too
-      (cockpit binding already has it as of 3.2.2).
+- [x] Reset shows clock time → countdown added to the menu-bar dropdown too
+      (3.2.21: "resets 9pm (in 2h 14m)" on hero + secondary rows, via
+      `MultiCockpitModel.countdown`; cockpit binding already had it).
 
 ## Parked — premise unverified
 - [ ] **MEMORY.md 200-line cap audit / segmentation** — the claim "Claude Code
