@@ -55,19 +55,15 @@ APP_PATH="$EXPORT_DIR/Throttle.app"
 echo "→ Smoke-testing the build"
 "$PROJECT_DIR/scripts/smoke-test.sh" "$APP_PATH"
 
-echo "→ Building DMG"
+echo "→ Building DMG (hdiutil — no create-dmg AppleScript, which needs Automation→Finder TCC and fails headless / on macOS betas)"
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist")
 DMG_PATH="$PROJECT_DIR/build/Throttle-${VERSION}.dmg"
 rm -f "$DMG_PATH"
-create-dmg \
-    --volname "Throttle" \
-    --window-size 540 380 \
-    --icon-size 96 \
-    --icon "Throttle.app" 140 200 \
-    --hide-extension "Throttle.app" \
-    --app-drop-link 400 200 \
-    "$DMG_PATH" \
-    "$APP_PATH"
+STAGING=$(mktemp -d)
+cp -R "$APP_PATH" "$STAGING/"
+ln -s /Applications "$STAGING/Applications"   # drag-to-install
+hdiutil create -volname "Throttle" -srcfolder "$STAGING" -ov -format UDZO "$DMG_PATH"
+rm -rf "$STAGING"
 
 echo "→ Signing DMG itself (Gatekeeper trusts the container too)"
 codesign --force --sign "Developer ID Application: Christine Martin (TDV6D5L785)" \
