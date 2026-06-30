@@ -12,9 +12,9 @@ Current shipped version: **3.2.16** (build 116).
 - ⚠️ The 4 new MCP tools (`expand_pointer`/`recall`/`semantic_search`) only surface after a Throttle restart (reloads `--mcp-server`).
 
 ## Deferred from the v3 build (DON'T FORGET)
-- [ ] **C4 native vector engine** — swap BruteForce for sqlite-vec (C-ext → bundle+sign in the notarized app, hardened runtime; risky while notarization is flaky) OR Wax (Swift-native, young dep). + ANE embeddings (bge-small / CoreML / MLX) behind `EmbeddingProvider`. PREMATURE for single-dev scale (brute-force fine to ~thousands of chunks); revisit at 100k+ vectors or for ANE speed. Both drop in behind `VectorStore`/`EmbeddingProvider`.
+- [~] **C4 native vector engine** — DONE the safe/native part 2026-07-01: BruteForce cosine now uses **Accelerate/vDSP** (`vDSP_dotpr`/`vDSP_svesq`, SIMD on Apple Silicon, zero deps / zero C-ext / zero signing). STILL DEFERRED (premature for single-dev scale, fork): a true ANN backend (sqlite-vec C-ext — bundle+sign risk — vs Wax Swift-native young dep) + ANE embeddings (bge-small / CoreML / MLX), both behind `VectorStore`/`EmbeddingProvider`. Revisit at 100k+ vectors.
 - [x] **Semantic auto-indexing** — DONE 2026-06-30: `SemanticAutoIndexer` (off-main, opt-in, memory-pressure-gated, incremental over project roots) + launch wiring + Settings toggle ("Semantic project index"). Makes `throttle_semantic_search` usable without manual `--index-repo`.
-- [ ] **Deploy 3.2.21** — DMG built+signed; notarization upload to Apple's S3 keeps timing out on this macOS-27-beta Mac (env, not config — 3.2.20 notarized fine here). Resume: IPv6-off / phone hotspot / macOS-26 Mac → then staple + appcast + `deploy.mjs`.
+- [x] **Deploy 3.2.21** — SHIPPED 2026-07-01: notarized + stapled + Sparkle-signed + appcast updated + full `deploy.mjs`. Verified live (appcast top 3.2.21, DMG 200, content-length matches signed length). Notarization had timed out repeatedly on the beta Mac (env) then went through on retry.
 
 ## Shipped since 3.2.2 (→ 3.2.15, 2026-06-27)
 - [x] **Pattern-A proxy** — Streamable-HTTP MCP front (`Throttle --mcp-proxy`) owning
@@ -47,10 +47,11 @@ Current shipped version: **3.2.16** (build 116).
       flicker), **reset countdown** (HH:MM), **/wk projection label** clarified.
 
 ## Build on explicit go
-- [ ] **Auto-pause (true ACT)** — the deferred risky half: ≥97% + burn ETA <5min,
-      opt-in, countdown-cancelable, reuse the new SIGSTOP/CONT pause. Gated on user
-      demand (design verdict). Per-model "switch to cheaper" nudge is the softer
-      variant. Design: `docs/design-circuit-breaker.md`.
+- [x] **Auto-pause (true ACT)** — SHIPPED (found wired 2026-06-30): `evaluateAutoPause`
+      ticks each cycle; ≥95% binding + derived burn-ETA <5min + a live burning session
+      → cancelable 10s countdown → `drainThenPause` (quiescent-window SIGSTOP, targets
+      the looping session only). Opt-in `throttleAutoPauseEnabled`, Settings toggle
+      "Auto-pause near the cap", banner + Cancel in MultiCockpitRoot. Never a hard kill.
 - [ ] **Rate-limit pacing/Retry-After** — extend 3.2.2's detection: predictive
       cross-session pacing before the wall + honor Retry-After on claude.ai 429s
       (detection + surfacing already shipped).

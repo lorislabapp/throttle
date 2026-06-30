@@ -1,4 +1,5 @@
 import Foundation
+import Accelerate
 
 /// Edge vector store (Chantier 4) — the stack-agnostic layer. `VectorStore` is the
 /// contract; `BruteForceVectorStore` is the pure-Swift V1 baseline (cosine over
@@ -76,12 +77,12 @@ struct BruteForceVectorStore: VectorStore, Codable, Equatable {
         return store
     }
 
-    // MARK: - Math
+    // MARK: - Math (Accelerate/vDSP — SIMD on Apple Silicon, no deps, no C-ext)
 
     private func dot(_ a: [Float], _ b: [Float]) -> Float {
-        var s: Float = 0; for i in a.indices { s += a[i] * b[i] }; return s
+        var r: Float = 0; vDSP_dotpr(a, 1, b, 1, &r, vDSP_Length(a.count)); return r
     }
     private func norm(_ a: [Float]) -> Float {
-        var s: Float = 0; for v in a { s += v * v }; return s.squareRoot()
+        var ss: Float = 0; vDSP_svesq(a, 1, &ss, vDSP_Length(a.count)); return ss.squareRoot()
     }
 }
