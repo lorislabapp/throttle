@@ -76,6 +76,19 @@ enum DeltaMemStore {
         return d
     }
 
+    /// Promote a validated OKF research bundle into a DeltaMem ROOT, so it becomes
+    /// a recallable long-term fact (throttle_recall surfaces both stores, but as a
+    /// root it can additionally carry project-specific deltas). Sources are appended
+    /// to the body for provenance.
+    @discardableResult
+    static func importOKF(_ bundle: OKFBundle, now: Date = Date()) -> DeltaMemNode {
+        var body = bundle.body
+        if !bundle.sources.isEmpty {
+            body += "\n\nSources:\n" + bundle.sources.map { "- \($0)" }.joined(separator: "\n")
+        }
+        return addRoot(title: bundle.title, body: body, now: now)
+    }
+
     // MARK: - Queries
 
     static func roots() -> [DeltaMemNode] { load().roots }

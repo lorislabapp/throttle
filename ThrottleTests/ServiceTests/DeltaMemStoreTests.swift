@@ -56,4 +56,16 @@ final class DeltaMemStoreTests: XCTestCase {
         let r = DeltaMemStore.addRoot(title: "Persisted", body: "kept")
         XCTAssertEqual(DeltaMemStore.load().roots.first?.id, r.id)
     }
+
+    func test_importOKF_becomesRecallableRoot() {
+        let bundle = OKFBundle(title: "Prompt Caching", confidence: "high",
+                               tags: ["cache"], sources: ["https://ex.com/cache"],
+                               created: Date(timeIntervalSince1970: 1_700_000_000),
+                               body: "Cache reads cost 0.1×; writes 1.25×.")
+        let root = DeltaMemStore.importOKF(bundle)
+        XCTAssertEqual(DeltaMemStore.findRoot(matching: "prompt caching")?.id, root.id)
+        let resolved = DeltaMemStore.resolve(rootId: root.id, scope: "Throttle")!
+        XCTAssertTrue(resolved.contains("Cache reads cost 0.1×"))
+        XCTAssertTrue(resolved.contains("https://ex.com/cache"), "sources carried for provenance")
+    }
 }
