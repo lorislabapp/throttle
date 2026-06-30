@@ -12,11 +12,15 @@ final class CalibrationEngineTests: XCTestCase {
     func test_anchorAt90Percent_setsCapFromObservedTotal() throws {
         let db = try makeDatabase()
         try db.write { db in
-            // Pretend the user has consumed 18,000 tokens this weekly window
-            for _ in 0..<10 {
+            // Pretend the user has consumed 18,000 tokens this weekly window.
+            // Timestamps must be DISTINCT: the v6 UNIQUE natural key
+            // (session_id, timestamp, model, …) + INSERT OR IGNORE dedupes
+            // identical rows, so same-timestamp inserts would collapse to one.
+            let base = Int64(Date().timeIntervalSince1970)
+            for i in 0..<10 {
                 var ev = UsageEvent(
                     id: nil, sessionId: "s",
-                    timestamp: Int64(Date().timeIntervalSince1970),
+                    timestamp: base - Int64(i),   // distinct, all within the weekly window
                     model: "claude-sonnet-4-6",
                     inputTokens: 1800, outputTokens: 0,
                     cacheCreate: 0, cacheRead: 0, serviceTier: nil

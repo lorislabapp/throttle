@@ -131,7 +131,8 @@ enum ContextTrimmerService {
     /// Validates before writing; throws and writes nothing on any failure.
     @discardableResult
     static func writeSnapshot(_ url: URL, options: Options = .safe) throws -> (url: URL, plan: Plan) {
-        let (lines, plan) = try buildTrimmed(url, options)
+        // Persist trimmed originals so the snapshot's pointers stay expandable.
+        let (lines, plan) = try buildTrimmed(url, options, sink: { _, data in ContentStore.put(data) })
         guard !plan.isEmpty else { throw TrimError.nothingToTrim }
         let out = url.deletingPathExtension()
             .appendingPathExtension("throttle-trimmed.jsonl")
@@ -149,7 +150,9 @@ enum ContextTrimmerService {
         if let mod = try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
            Date().timeIntervalSince(mod) < 60 { throw TrimError.activeSession }
 
-        let (lines, plan) = try buildTrimmed(url, options)
+        // Persist each trimmed payload to the content store BEFORE replacing the
+        // file, so every pointer in the new transcript is rehydratable.
+        let (lines, plan) = try buildTrimmed(url, options, sink: { _, data in ContentStore.put(data) })
         guard !plan.isEmpty else { throw TrimError.nothingToTrim }
 
         // 1) Back up the original BEFORE touching it.
@@ -192,7 +195,7 @@ enum ContextTrimmerService {
 
     /// Pure: maps one raw transcript line to its (possibly rewritten) form.
     /// Falls back to the verbatim input on ANY ambiguity — losslessness wins.
-    private static func transform(_ raw: String, _ opt: Options) -> LineOutcome {
+    private static func transform(_ raw: String, _ opt: Options, _ sink: PointerSink? = nil) -> LineOutcome {
         // Cheap byte gate: only parse lines that could carry a trimmable payload.
         let mayImage = opt.trimImages && raw.contains("\"base64\"")
         let mayTR = opt.stubToolResultsOver != nil && raw.contains("\"tool_result\"")
@@ -218,7 +221,7 @@ enum ContextTrimmerService {
                let b64 = src["data"] as? String {
                 c.images += 1; c.imageBytes += b64.utf8.count
                 content[i] = imagePointer(mediaType: src["media_type"] as? String ?? "image",
-                                          base64Bytes: b64.utf8.count)
+                                          base64: b64, sink: sink)
                 changed = true
                 continue
             }
@@ -231,7 +234,7 @@ enum ContextTrimmerService {
                 for field in writeToolInputs[name] ?? [] {
                     if let s = input[field] as? String, s.utf8.count > lim {
                         c.inStubs += 1; c.inBytes += s.utf8.count
-                        input[field] = stubText(s); inChanged = true
+                        input[field] = stubText(s, sink: sink); inChanged = true
                     }
                 }
                 if name == "MultiEdit", var edits = input["edits"] as? [[String: Any]] {
@@ -240,7 +243,7 @@ enum ContextTrimmerService {
                         for field in ["old_string", "new_string"] {
                             if let s = edits[k][field] as? String, s.utf8.count > lim {
                                 c.inStubs += 1; c.inBytes += s.utf8.count
-                                edits[k][field] = stubText(s); eChanged = true
+                                edits[k][field] = stubText(s, sink: sink); eChanged = true
                             }
                         }
                     }
@@ -255,7 +258,7 @@ enum ContextTrimmerService {
                 if let str = content[i]["content"] as? String,
                    let lim = opt.stubToolResultsOver, str.utf8.count > lim {
                     c.stubs += 1; c.stubBytes += str.utf8.count
-                    content[i]["content"] = stubText(str)
+                    content[i]["content"] = stubText(str, sink: sink)
                     changed = true
                 } else if var sub = content[i]["content"] as? [[String: Any]] {
                     var subChanged = false
@@ -267,12 +270,12 @@ enum ContextTrimmerService {
                            let b64 = src["data"] as? String {
                             c.images += 1; c.imageBytes += b64.utf8.count
                             sub[j] = imagePointer(mediaType: src["media_type"] as? String ?? "image",
-                                                  base64Bytes: b64.utf8.count)
+                                                  base64: b64, sink: sink)
                             subChanged = true
                         } else if let lim = opt.stubToolResultsOver, st == "text",
                                   let t = sub[j]["text"] as? String, t.utf8.count > lim {
                             c.stubs += 1; c.stubBytes += t.utf8.count
-                            sub[j]["text"] = stubText(t)
+                            sub[j]["text"] = stubText(t, sink: sink)
                             subChanged = true
                         }
                     }
@@ -295,13 +298,13 @@ enum ContextTrimmerService {
 
     /// Build the full trimmed line array + plan, and VALIDATE it before returning.
     /// Throws (writing nothing) if any invariant is violated.
-    private static func buildTrimmed(_ url: URL, _ opt: Options) throws -> ([String], Plan) {
+    private static func buildTrimmed(_ url: URL, _ opt: Options, sink: PointerSink? = nil) throws -> ([String], Plan) {
         let original = try readLines(url)
         var output = [String](); output.reserveCapacity(original.count)
         var counters = Counters()
 
         for line in original {
-            let o = transform(line, opt)
+            let o = transform(line, opt, sink)
             output.append(o.line)
             counters.add(o.counters)
         }
@@ -332,16 +335,29 @@ enum ContextTrimmerService {
 
     // MARK: - Pointer / stub builders
 
-    private static func imagePointer(mediaType: String, base64Bytes: Int) -> [String: Any] {
-        let kb = max(1, base64Bytes * 3 / 4 / 1024)   // base64 → raw bytes ≈ ×3/4
+    /// A pointer-persistence sink: `(sha256Hex, originalBytes)`. nil on preview/
+    /// scan (read-only, nothing persisted); set on apply/snapshot so the bytes
+    /// land in the ContentStore and the pointer's hash can later rehydrate them.
+    /// The pointer TEXT is identical regardless (the hash is a pure function of
+    /// the bytes), so preview stays byte-for-byte what apply produces.
+    typealias PointerSink = (String, Data) -> Void
+
+    private static func imagePointer(mediaType: String, base64 b64: String, sink: PointerSink?) -> [String: Any] {
+        let data = Data(b64.utf8)
+        let hash = ContentStore.sha256Hex(data)
+        sink?(hash, data)
+        let kb = max(1, b64.utf8.count * 3 / 4 / 1024)   // base64 → raw bytes ≈ ×3/4
         return ["type": "text",
-                "text": "[image removed by Throttle — \(mediaType), ≈\(kb) KB. The original is preserved in the Throttle backup; resume the backup to restore it.]"]
+                "text": "[image removed by Throttle — \(mediaType), ≈\(kb) KB. Rehydrate the original with throttle_expand_pointer(hash: \"\(hash)\"), or resume the Throttle backup.]"]
     }
 
-    private static func stubText(_ s: String) -> String {
+    private static func stubText(_ s: String, sink: PointerSink?) -> String {
+        let data = Data(s.utf8)
+        let hash = ContentStore.sha256Hex(data)
+        sink?(hash, data)
         let head = String(s.prefix(280))
         let kb = max(1, s.utf8.count / 1024)
-        return head + "\n…[trimmed by Throttle — \(kb) KB of tool output removed; the assistant’s summary above is retained. Resume the backup to restore the full output.]"
+        return head + "\n…[trimmed by Throttle — \(kb) KB removed; the assistant’s summary above is retained. Rehydrate the full output with throttle_expand_pointer(hash: \"\(hash)\"), or resume the backup.]"
     }
 
     // MARK: - IO

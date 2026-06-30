@@ -94,6 +94,10 @@ enum TokoptHook {
     }
 
     static func recipe(for command: String, on clean: String) -> String? {
+        // Test runners first (before the build case, which also matches cargo/go/
+        // npm/yarn). On a green run we collapse passing chatter; if there's
+        // nothing to collapse, still strip any build/compile progress.
+        if isTestCommand(command) { return testRunnerRecipe(clean) ?? stripBuildProgress(clean) }
         let (cmd, sub) = baseCommand(command)
         switch cmd {
         case "git" where sub == "status": return gitStatusRecipe(clean)
@@ -102,6 +106,84 @@ enum TokoptHook {
             return stripBuildProgress(clean)
         default: return nil
         }
+    }
+
+    /// Is this command a test-runner invocation? (Covers the common Rust/Go/
+    /// Swift/JS/Python/Ruby/JVM runners.) Conservative: anything not matched
+    /// here falls through to the generic recipes, never mislabelled.
+    static func isTestCommand(_ command: String) -> Bool {
+        let (cmd, sub) = baseCommand(command)
+        switch cmd {
+        case "pytest", "py.test", "jest", "vitest", "mocha", "ava", "phpunit", "rspec":
+            return true
+        case "cargo", "go", "swift", "mix", "ctest", "deno", "bun":
+            return sub == "test"
+        case "npm", "pnpm", "yarn":
+            return sub == "test" || sub == "t"
+        case "npx":
+            return ["jest", "vitest", "mocha", "ava", "playwright"].contains(sub)
+        case "python", "python3":
+            return command.contains("pytest") || command.contains("unittest")
+        case "gradlew", "gradle", "mvn":
+            return command.contains("test")
+        case "make":
+            return sub == "test" || sub == "check"
+        default:
+            return false
+        }
+    }
+
+    /// Collapse the low-signal "passing" chatter of a GREEN test run into its
+    /// summary. This is only ever reached after `shouldCompress` passed — i.e.
+    /// the moment any failure / error / panic / traceback shape appears the
+    /// whole output is left VERBATIM upstream, so a failing suite is NEVER
+    /// touched and the model sees every diagnostic. Here we drop the per-test
+    /// "ok / passed / ✓" lines, keep the result summary plus any warning, tee
+    /// the full raw, and leave a breadcrumb. Returns nil when nothing worth
+    /// collapsing survived (no recognizable summary), so we never hand back a
+    /// confusing summary-less blob.
+    static func testRunnerRecipe(_ s: String) -> String? {
+        // Self-safe gate: if the run reports ANY failure anywhere, leave it
+        // verbatim (nil). Belt to shouldCompress's braces — its failure regex
+        // is start-of-line anchored and can miss e.g. cargo's "test result:
+        // FAILED" shape, so we re-check here against the test-summary forms.
+        // "0 failed" must NOT trip it (requires a non-zero count).
+        if let fail = try? NSRegularExpression(pattern:
+            #"(?im)(^[\s=-]*FAIL(ED|URE)?\b|--- FAIL|\b[1-9]\d* (failed|failures?|errors?)\b|test result: FAILED|FAILED \(|^\s*[✗✘])"#) {
+            let rs = NSRange(s.startIndex..<s.endIndex, in: s)
+            if fail.firstMatch(in: s, range: rs) != nil { return nil }
+        }
+        let dropPatterns = [
+            #"^test .+ \.\.\. (ok|ignored)$"#,            // cargo: test foo ... ok
+            #"^(=== (RUN|PAUSE|CONT)\b|\s*--- PASS:)"#,   // go -v scaffolding
+            #"^ok\s+\S+\s+[\d.]+m?s\b"#,                  // go: ok  pkg  0.5s
+            #"^Test Case .+ passed \(.*\)$"#,             // XCTest case pass
+            #"^Test Suite .+ (started|passed) at "#,      // XCTest suite frames
+            #"^\s*[✓√]\s"#,                                // jest/vitest pass tick
+            #"^PASS\s+\S+"#,                              // jest per-file PASS <path>
+            #"\bPASSED\b"#,                               // pytest -v: ::test PASSED
+        ]
+        let dropRes = dropPatterns.compactMap { try? NSRegularExpression(pattern: $0) }
+        // Defensive belt-and-braces: never drop a line carrying any diagnostic
+        // signal, even though shouldCompress should have caught failures already.
+        let keep = try? NSRegularExpression(pattern: #"(?i)(fail|error|panic|warn|assert|exception)"#)
+        let lines = s.components(separatedBy: "\n")
+        var kept: [String] = []
+        for l in lines {
+            let r = NSRange(l.startIndex..<l.endIndex, in: l)
+            if let keep, keep.firstMatch(in: l, range: r) != nil { kept.append(l); continue }
+            let noise = dropRes.contains { $0.firstMatch(in: l, range: r) != nil }
+            if !noise { kept.append(l) }
+        }
+        guard kept.count < lines.count else { return nil }   // collapsed nothing
+        let body = collapseBlankRuns(kept.joined(separator: "\n"))
+        // Only return if a recognizable result summary survived.
+        let summary = try? NSRegularExpression(pattern:
+            #"(?im)(test result:|tests?:\s*\d|\d+ passed|\d+ failed|Executed \d+ test|=+[^=]*\b(passed|failed)\b[^=]*=+|^PASS$|all tests passed)"#)
+        let rb = NSRange(body.startIndex..<body.endIndex, in: body)
+        guard let summary, summary.firstMatch(in: body, range: rb) != nil else { return nil }
+        let path = teeRaw(s)
+        return body + "\n[Throttle: collapsed passing test lines — full output: \(path)]"
     }
 
     /// `git status` — drop the instructional "(use \"git …\")" hint lines and

@@ -9,9 +9,10 @@ import Network
 /// (and its prompt cache) never changes.
 ///
 /// Scope: handles POST /mcp request→response as application/json (the spec allows a
-/// JSON reply without SSE for simple request/response). GET (SSE) returns 405. This
-/// is the MVP that proves the cache-preservation win on one server; it needs live
-/// testing against Claude Code's HTTP MCP client (can't be verified headless).
+/// JSON reply without SSE for simple request/response). GET (SSE) returns 405. The
+/// cache-preservation win was validated end-to-end against Claude Code's real HTTP
+/// MCP client (2026-06-27): a downstream kill/respawn keeps the stable HTTP session
+/// and byte-identical tools list, so the prompt-cache prefix never rebuilds.
 enum MCPProxyServer {
 
     static func run(port: UInt16, downstream cmd: String, args: [String]) -> Never {
@@ -85,8 +86,11 @@ enum MCPProxyServer {
         let rpc = req["method"] as? String ?? ""
         switch rpc {
         case "initialize":
+            // Echo the client's requested protocol version (forward-compat with
+            // newer Claude Code releases); fall back to the baseline we speak.
+            let reqVer = (req["params"] as? [String: Any])?["protocolVersion"] as? String ?? "2024-11-05"
             return http(200, sessionId: sessionId, json: rpcResult(id, [
-                "protocolVersion": "2024-11-05",
+                "protocolVersion": reqVer,
                 "capabilities": ["tools": [:] as [String: Any]],
                 "serverInfo": ["name": "throttle-proxy", "version": "1.0.0"],
             ]))

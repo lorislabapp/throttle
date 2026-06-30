@@ -78,7 +78,11 @@ struct ClaudeSetupView: View {
     private var mcpList: some View {
         VStack(alignment: .leading, spacing: 0) {
             if setup.mcp.isEmpty { empty("No global MCP servers configured.") }
-            if let n = report?.deadCount, n > 0 { auditNote("\(n) loaded item\(n == 1 ? "" : "s") unused in \(report?.windowDays ?? 30)d — paying schema cost for nothing.") }
+            if let n = report?.deadCount, n > 0 {
+                let tax = deadMCPTokenTax
+                let suffix = tax > 0 ? " ≈\(tax) tok/session on dead MCP servers." : ""
+                auditNote("\(n) loaded item\(n == 1 ? "" : "s") unused in \(report?.windowDays ?? 30)d — paying schema cost for nothing.\(suffix)")
+            }
             if report == nil && !setup.mcp.isEmpty {
                 HStack(spacing: 6) {
                     if MemoryPressureMonitor.shared.isQuiet {
@@ -121,6 +125,15 @@ struct ClaudeSetupView: View {
             if cu != cv { return cu < cv }
             return a.offset < b.offset
         }.map(\.element)
+    }
+
+    /// Schema-token tax of dead MCP servers, known only once the user has run a
+    /// live probe (0 before then). Computed via DeadSkillService.folding so the
+    /// model owns the "dead ∧ probed" rule.
+    private var deadMCPTokenTax: Int {
+        guard let report else { return 0 }
+        let tokensByServer = probe.compactMapValues { $0.schemaTokensEst }
+        return DeadSkillService.folding(report, withProbe: tokensByServer).deadMCPTokens
     }
 
     private func auditNote(_ s: String) -> some View {

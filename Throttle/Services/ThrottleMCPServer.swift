@@ -33,7 +33,7 @@ enum ThrottleMCPServer {
                 "serverInfo": ["name": "throttle-memory", "version": "1.0.0"],
             ])
         case "tools/list":
-            respond(id: id, result: ["tools": [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema(), mcpHealthSchema()]])
+            respond(id: id, result: ["tools": [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema(), mcpHealthSchema(), expandPointerSchema(), recallSchema()]])
         case "tools/call":
             let params = req["params"] as? [String: Any]
             let args = params?["arguments"] as? [String: Any]
@@ -53,6 +53,18 @@ enum ThrottleMCPServer {
                 respond(id: id, result: textResult(deadSkillsText()))
             case "get_mcp_health_status":
                 respond(id: id, result: textResult(mcpHealthText()))
+            case "throttle_expand_pointer":
+                if let hash = args?["hash"] as? String {
+                    respond(id: id, result: textResult(expandPointerText(hash)))
+                } else {
+                    respond(id: id, error: [-32602, "Missing hash"])
+                }
+            case "throttle_recall":
+                if let topic = args?["topic"] as? String {
+                    respond(id: id, result: textResult(recallText(topic: topic, scope: args?["scope"] as? String ?? "")))
+                } else {
+                    respond(id: id, error: [-32602, "Missing topic"])
+                }
             default:
                 respond(id: id, error: [-32602, "Unknown tool: \(name)"])
             }
@@ -167,6 +179,59 @@ enum ThrottleMCPServer {
             return "• \(r.name): \(bits.joined(separator: " · "))"
         }.joined(separator: "\n")
         return "MCP servers (probed \(ageStr)):\n\(lines)"
+    }
+
+    private static func expandPointerSchema() -> [String: Any] {
+        [
+            "name": "throttle_expand_pointer",
+            "description": "Rehydrate a payload that Throttle trimmed from a transcript to save tokens. When you see a marker like '[… trimmed by Throttle … throttle_expand_pointer(hash: \"…\")]' or '[image removed by Throttle …]', call this with that hash to get back the FULL original content (the complete tool output, or the base64 image data). Local content-addressed lookup; returns the exact bytes that were removed, or a not-found note if they have expired.",
+            "inputSchema": [
+                "type": "object",
+                "properties": [
+                    "hash": ["type": "string", "description": "The 64-char SHA-256 hash from the Throttle pointer."],
+                ],
+                "required": ["hash"],
+            ],
+        ]
+    }
+
+    private static func expandPointerText(_ hash: String) -> String {
+        guard let data = ContentStore.get(hash) else {
+            return "No stored payload for that hash — it may have expired (Throttle keeps trimmed originals ~30 days) or the hash is malformed. Resume the Throttle backup of that session to recover it."
+        }
+        if let text = String(data: data, encoding: .utf8) { return text }
+        return "[binary payload, \(data.count) bytes, base64-encoded below]\n" + data.base64EncodedString()
+    }
+
+    private static func recallSchema() -> [String: Any] {
+        [
+            "name": "throttle_recall",
+            "description": "Recall durable knowledge Throttle has stored locally about a topic: long-term facts (DeltaMem — a general fact composed with any project-specific variations for the given scope) and validated research bundles (OKF). Use this when you need established prior knowledge rather than searching raw transcripts. Local; returns a not-found note if nothing is recorded.",
+            "inputSchema": [
+                "type": "object",
+                "properties": [
+                    "topic": ["type": "string", "description": "Subject to recall, e.g. 'Stripe API'."],
+                    "scope": ["type": "string", "description": "Optional project/context to specialize the fact, e.g. 'Throttle'."],
+                ],
+                "required": ["topic"],
+            ],
+        ]
+    }
+
+    private static func recallText(topic: String, scope: String) -> String {
+        var parts: [String] = []
+        if let root = DeltaMemStore.findRoot(matching: topic),
+           let resolved = DeltaMemStore.resolve(rootId: root.id, scope: scope) {
+            parts.append("Known fact — \(root.title):\n\(resolved)")
+        }
+        let bundles = OKFStore.search(topic)
+        if !bundles.isEmpty {
+            let list = bundles.prefix(3).map { b in
+                "• \(b.title) [\(b.confidence)] — \(String(b.body.prefix(240)))"
+            }.joined(separator: "\n")
+            parts.append("Knowledge bundles (OKF):\n\(list)")
+        }
+        return parts.isEmpty ? "Nothing recorded for “\(topic)”." : parts.joined(separator: "\n\n")
     }
 
     private static func textResult(_ text: String) -> [String: Any] {

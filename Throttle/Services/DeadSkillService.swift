@@ -16,6 +16,7 @@ struct DeadSkillRow: Sendable, Identifiable {
     let uses: Int             // tool_use count over the window
     let lastUsed: Date?
     let loaded: Bool          // present in the current loadout
+    var schemaTokensEst: Int? = nil   // ~schema-token tax (filled from a live probe)
     enum Kind: String, Sendable { case mcp = "MCP server", skill = "Skill" }
     var isDead: Bool { loaded && uses == 0 }
 }
@@ -25,6 +26,12 @@ struct DeadSkillReport: Sendable {
     var filesScanned: Int = 0
     var windowDays: Int = 30
     var deadCount: Int { rows.filter(\.isDead).count }
+    /// The CFO number: schema tokens paid every session for DEAD MCP servers
+    /// (loaded ∧ 0 uses) whose cost we know from a probe. Skills are sized
+    /// separately by SkillUsageService; this is the MCP-server side.
+    var deadMCPTokens: Int {
+        rows.filter { $0.isDead && $0.kind == .mcp }.compactMap(\.schemaTokensEst).reduce(0, +)
+    }
 }
 
 enum DeadSkillService {
@@ -54,6 +61,18 @@ enum DeadSkillService {
             return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
         return DeadSkillReport(rows: rows, filesScanned: scanned, windowDays: windowDays)
+    }
+
+    /// Fold a live probe pass (server name → estimated schema tokens) onto an
+    /// existing audit, so the UI can surface "≈N tokens/session paid for dead
+    /// servers" without re-scanning transcripts. Pure; only MCP rows change.
+    static func folding(_ report: DeadSkillReport, withProbe tokensByServer: [String: Int]) -> DeadSkillReport {
+        var r = report
+        r.rows = r.rows.map { row in
+            guard row.kind == .mcp, let est = tokensByServer[row.name] else { return row }
+            var m = row; m.schemaTokensEst = est; return m
+        }
+        return r
     }
 
     // MARK: - Transcript tally
