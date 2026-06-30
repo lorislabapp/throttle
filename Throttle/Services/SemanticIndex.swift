@@ -33,6 +33,15 @@ struct SemanticIndex {
         return indexed
     }
 
+    /// Drop every chunk belonging to a document (its `<docId>` and `<docId>#n`
+    /// records). Used before re-indexing a changed file so stale chunks from a
+    /// now-shorter file don't linger.
+    mutating func removeDoc(_ docId: String) {
+        for id in store.records.keys where id == docId || id.hasPrefix(docId + "#") {
+            store.remove(id)
+        }
+    }
+
     /// Query by natural-language text: embed it, then cosine-rank the store. Empty
     /// if the embedder can't embed the query (e.g. model absent).
     func search(_ query: String, k: Int = 5) -> [VectorHit] {

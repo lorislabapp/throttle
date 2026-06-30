@@ -33,7 +33,7 @@ enum ThrottleMCPServer {
                 "serverInfo": ["name": "throttle-memory", "version": "1.0.0"],
             ])
         case "tools/list":
-            respond(id: id, result: ["tools": [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema(), mcpHealthSchema(), expandPointerSchema(), recallSchema()]])
+            respond(id: id, result: ["tools": [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema(), mcpHealthSchema(), expandPointerSchema(), recallSchema(), semanticSearchSchema()]])
         case "tools/call":
             let params = req["params"] as? [String: Any]
             let args = params?["arguments"] as? [String: Any]
@@ -64,6 +64,12 @@ enum ThrottleMCPServer {
                     respond(id: id, result: textResult(recallText(topic: topic, scope: args?["scope"] as? String ?? "")))
                 } else {
                     respond(id: id, error: [-32602, "Missing topic"])
+                }
+            case "throttle_semantic_search":
+                if let query = args?["query"] as? String {
+                    respond(id: id, result: textResult(semanticSearchText(query: query, repo: args?["repo"] as? String, k: (args?["k"] as? Int) ?? 6)))
+                } else {
+                    respond(id: id, error: [-32602, "Missing query"])
                 }
             default:
                 respond(id: id, error: [-32602, "Unknown tool: \(name)"])
@@ -232,6 +238,38 @@ enum ThrottleMCPServer {
             parts.append("Knowledge bundles (OKF):\n\(list)")
         }
         return parts.isEmpty ? "Nothing recorded for “\(topic)”." : parts.joined(separator: "\n\n")
+    }
+
+    private static func semanticSearchSchema() -> [String: Any] {
+        [
+            "name": "throttle_semantic_search",
+            "description": "Semantic (meaning-based) search over a repo's code + docs that Throttle has indexed locally with on-device embeddings — finds relevant chunks even when keywords don't match. Complements search_sessions (your past conversations) and plain grep (exact text). Defaults to the current project; returns a build hint if the repo hasn't been indexed yet.",
+            "inputSchema": [
+                "type": "object",
+                "properties": [
+                    "query": ["type": "string", "description": "What you're looking for, in natural language."],
+                    "repo": ["type": "string", "description": "Optional absolute repo path; defaults to the current working directory's repo."],
+                    "k": ["type": "integer", "description": "Max results (default 6)."],
+                ],
+                "required": ["query"],
+            ],
+        ]
+    }
+
+    private static func semanticSearchText(query: String, repo: String?, k: Int) -> String {
+        let root = repo.map { URL(fileURLWithPath: $0) }
+            ?? SemanticCorpusStore.repoRoot(from: URL(fileURLWithPath: FileManager.default.currentDirectoryPath))
+        let index = SemanticCorpusStore.loadIndex(repo: root.standardizedFileURL.path)
+        guard index.chunkCount > 0 else {
+            return "No semantic index for \(root.lastPathComponent) yet. Build it with `Throttle --index-repo \(root.path)` (or from Throttle), then ask again."
+        }
+        let hits = index.search(query, k: k)
+        guard !hits.isEmpty else { return "No semantic matches for “\(query)” in \(root.lastPathComponent) (\(index.chunkCount) chunks indexed)." }
+        return hits.map { h in
+            let path = h.metadata["path"] ?? h.id
+            let snippet = h.text.replacingOccurrences(of: "\n", with: " ").prefix(200)
+            return "• \(path) (\(String(format: "%.2f", h.score))) — \(snippet)"
+        }.joined(separator: "\n")
     }
 
     private static func textResult(_ text: String) -> [String: Any] {

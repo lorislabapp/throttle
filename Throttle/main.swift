@@ -47,6 +47,23 @@ if let i = CommandLine.arguments.firstIndex(of: "--mcp-wrap"), i + 1 < CommandLi
     MCPWrapper.run(Array(CommandLine.arguments[(i + 1)...]))
 }
 
+// Build/update the semantic corpus for a repo (`Throttle --index-repo <path>`):
+// crawl text files, embed chunks on-device, persist incrementally. Heavy — runs
+// as a one-shot CLI, never inside an MCP tool call.
+if let i = CommandLine.arguments.firstIndex(of: "--index-repo"), i + 1 < CommandLine.arguments.count {
+    let root = URL(fileURLWithPath: CommandLine.arguments[i + 1]).standardizedFileURL
+    var index = SemanticCorpusStore.loadIndex(repo: root.path)
+    var manifest = SemanticCorpusStore.loadManifest(repo: root.path)
+    let stats = RepoIndexer.indexDirectory(root, into: &index, manifest: &manifest)
+    do {
+        try SemanticCorpusStore.save(repo: root.path, index: index, manifest: manifest)
+        FileHandle.standardError.write(Data("indexed \(stats.indexed) files (\(stats.chunks) chunks), \(stats.unchanged) unchanged, \(stats.removed) removed → \(index.chunkCount) chunks total\n".utf8))
+        exit(0)
+    } catch {
+        FileHandle.standardError.write(Data("index-repo failed: \(error)\n".utf8)); exit(1)
+    }
+}
+
 // Dev/test: reindex transcripts then run an FTS5 search (`Throttle --index-search "query"`).
 if let i = CommandLine.arguments.firstIndex(of: "--index-search"), i + 1 < CommandLine.arguments.count {
     let added = TranscriptIndex.reindex()
