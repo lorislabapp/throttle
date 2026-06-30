@@ -71,6 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // old DerivedData path after installing to /Applications or a Sparkle
         // update). No-op if the hook isn't installed or is already current.
         TokoptHookInstaller.reconcile()
+        TranscriptMemoryInstaller.reconcile()   // heal a stale throttle-memory --mcp-server path (e.g. dev build → /Applications)
 
         var rlim = rlimit()
         if getrlimit(RLIMIT_NOFILE, &rlim) == 0 {

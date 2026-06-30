@@ -32,6 +32,33 @@ enum TranscriptMemoryInstaller {
         return true
     }
 
+    /// Heal a stale exec path in our `throttle-memory` entry without the user
+    /// re-toggling — Throttle owns the `--mcp-server` path, so when the binary
+    /// moves (a dev DerivedData build → /Applications, or a Sparkle update) the
+    /// next launch repoints it. No-op if not installed or already current; backs
+    /// up + writes only when the path actually changed. Restart Claude Code to
+    /// pick it up. Mirrors TokoptHookInstaller.reconcile().
+    @discardableResult
+    static func reconcile() -> Bool {
+        guard let dict = readJSON(), let healed = healing(dict, execPath: execPath) else { return false }
+        try? backup()
+        try? writeJSON(healed)
+        return true
+    }
+
+    /// Pure: repoint `throttle-memory`'s command to `execPath`, or nil if no change
+    /// is needed (not installed / already current). Heals a missing args too.
+    static func healing(_ dict: [String: Any], execPath: String) -> [String: Any]? {
+        guard var mcp = dict["mcpServers"] as? [String: Any],
+              var entry = mcp[serverKey] as? [String: Any],
+              (entry["command"] as? String) != execPath else { return nil }
+        entry["command"] = execPath
+        if (entry["args"] as? [String]) == nil { entry["args"] = ["--mcp-server"] }
+        mcp[serverKey] = entry
+        var out = dict; out["mcpServers"] = mcp
+        return out
+    }
+
     static func remove() throws {
         guard var dict = readJSON(),
               var mcp = dict["mcpServers"] as? [String: Any], mcp[serverKey] != nil else { return }
