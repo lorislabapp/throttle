@@ -1323,6 +1323,7 @@ private struct InlineGeneralPane: View {
     @State private var autopilotOn: Bool = AutopilotService.isEnabled
     @State private var apMemory: Bool = AutopilotService.archiveStaleMemory
     @State private var apSkills: Bool = AutopilotService.archiveDeadSkills
+    @State private var semanticAutoIndex: Bool = SemanticAutoIndexer.isEnabled
     @State private var showingLedger = false
     @State private var ledger: [AutopilotService.Entry] = []
     @State private var autopilotBusy = false
@@ -1539,6 +1540,12 @@ private struct InlineGeneralPane: View {
             Toggle("", isOn: $apSkills).labelsHidden().toggleStyle(.switch).tint(.orange)
                 .disabled(!autopilotOn)
                 .onChange(of: apSkills) { _, on in AutopilotService.archiveDeadSkills = on }
+        }
+        SettingsHair()
+        SettingsRow(title: "Semantic project index",
+                    sub: "Off by default. Builds a local on-device index of your projects so throttle_semantic_search finds code by meaning. CPU-heavy; auto-paused under memory pressure. 100% local; updates incrementally on launch.") {
+            Toggle("", isOn: $semanticAutoIndex).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                .onChange(of: semanticAutoIndex) { _, on in SemanticAutoIndexer.isEnabled = on }
         }
         SettingsHair()
         SettingsRow(title: "Activity log", sub: autopilotStatusSub) {

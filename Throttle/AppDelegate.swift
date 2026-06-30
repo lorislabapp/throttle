@@ -136,6 +136,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task.detached(priority: .utility) { _ = AutopilotService.runIfDue() }
         }
 
+        // Semantic auto-index (opt-in, OFF by default): keep each project's corpus
+        // fresh for throttle_semantic_search without manual --index-repo. Skipped
+        // under memory pressure (16 GB Mac). Gate read on main, heavy work off-main.
+        if SemanticAutoIndexer.isEnabled, !MemoryPressureMonitor.shared.isQuiet {
+            Task.detached(priority: .utility) {
+                let roots = ProjectsService.listProjects().compactMap { $0.projectPath }
+                _ = SemanticAutoIndexer.run(roots: roots, enabled: true, memoryQuiet: false,
+                                            embedder: NLEmbeddingProvider())
+            }
+        }
+
         Task { @MainActor in
             await coordinator.start()
             appState.refresh()

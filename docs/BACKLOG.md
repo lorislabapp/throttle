@@ -3,6 +3,19 @@
 Nothing here is broken or urgent. These are deferred-on-purpose or on-demand.
 Current shipped version: **3.2.16** (build 116).
 
+## Built 2026-06-30 — v3.0 chantiers (3.2.21, COMMITTED, NOT yet released — deploy blocked on notarization)
+- [x] **C1 tokopt test-runner recipe** — cargo/go/swift/pytest/jest green-run collapse, self-safe verbatim on failure.
+- [x] **C2 CMV reversible pointers** — SHA-256 `ContentStore` + trimmer pointers (apply/snapshot-only persist) + `throttle_expand_pointer` MCP tool.
+- [x] **C2 DeltaMem** (residual Root+Delta graph) + **OKF v0.1** bundles + `throttle_recall` MCP tool + `importOKF` bridge.
+- [x] **C4 edge vector RAG (Throttle-native)** — `VectorStore`/BruteForce + `EmbeddingProvider`/NLEmbedding + `SemanticIndex` + `RepoIndexer` (incremental) + `SemanticCorpusStore` + `--index-repo` CLI + `throttle_semantic_search` MCP tool.
+- [x] T2 proxy `protocolVersion` echo · T3 dead-MCP token-tax · dropdown reset countdown · fix stale calibration test.
+- ⚠️ The 4 new MCP tools (`expand_pointer`/`recall`/`semantic_search`) only surface after a Throttle restart (reloads `--mcp-server`).
+
+## Deferred from the v3 build (DON'T FORGET)
+- [ ] **C4 native vector engine** — swap BruteForce for sqlite-vec (C-ext → bundle+sign in the notarized app, hardened runtime; risky while notarization is flaky) OR Wax (Swift-native, young dep). + ANE embeddings (bge-small / CoreML / MLX) behind `EmbeddingProvider`. PREMATURE for single-dev scale (brute-force fine to ~thousands of chunks); revisit at 100k+ vectors or for ANE speed. Both drop in behind `VectorStore`/`EmbeddingProvider`.
+- [x] **Semantic auto-indexing** — DONE 2026-06-30: `SemanticAutoIndexer` (off-main, opt-in, memory-pressure-gated, incremental over project roots) + launch wiring + Settings toggle ("Semantic project index"). Makes `throttle_semantic_search` usable without manual `--index-repo`.
+- [ ] **Deploy 3.2.21** — DMG built+signed; notarization upload to Apple's S3 keeps timing out on this macOS-27-beta Mac (env, not config — 3.2.20 notarized fine here). Resume: IPv6-off / phone hotspot / macOS-26 Mac → then staple + appcast + `deploy.mjs`.
+
 ## Shipped since 3.2.2 (→ 3.2.15, 2026-06-27)
 - [x] **Pattern-A proxy** — Streamable-HTTP MCP front (`Throttle --mcp-proxy`) owning
       the downstream stdio server; respawns it prefix-stable without busting the prompt
