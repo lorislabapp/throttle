@@ -263,7 +263,7 @@ enum ThrottleMCPServer {
         guard index.chunkCount > 0 else {
             return "No semantic index for \(root.lastPathComponent) yet. Build it with `Throttle --index-repo \(root.path)` (or from Throttle), then ask again."
         }
-        let hits = index.search(query, k: k)
+        let hits = index.searchHybrid(query, k: k)
         guard !hits.isEmpty else { return "No semantic matches for “\(query)” in \(root.lastPathComponent) (\(index.chunkCount) chunks indexed)." }
         return hits.map { h in
             let path = h.metadata["path"] ?? h.id

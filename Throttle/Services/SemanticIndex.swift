@@ -49,6 +49,37 @@ struct SemanticIndex {
         return store.search(v, k: k)
     }
 
+    /// Hybrid retrieval: blend cosine similarity with verbatim keyword overlap, so
+    /// exact identifiers (function names, error strings) that embeddings under-rank
+    /// still surface. If the embedder is unavailable, degrade to PURE keyword
+    /// ranking over the store instead of returning nothing.
+    func searchHybrid(_ query: String, k: Int = 5, keywordWeight: Float = 0.35) -> [VectorHit] {
+        let terms = Self.terms(query)
+        if let vec = embedder.embed(query) {
+            let pool = store.search(vec, k: max(k * 4, 20))
+            let rescored = pool.map { h in
+                VectorHit(id: h.id, score: h.score + keywordWeight * Self.keywordOverlap(terms, in: h.text),
+                          text: h.text, metadata: h.metadata)
+            }
+            return Array(rescored.sorted { $0.score > $1.score }.prefix(k))
+        }
+        guard !terms.isEmpty else { return [] }
+        let scored = store.records.values.compactMap { r -> VectorHit? in
+            let kw = Self.keywordOverlap(terms, in: r.text)
+            return kw > 0 ? VectorHit(id: r.id, score: kw, text: r.text, metadata: r.metadata) : nil
+        }
+        return Array(scored.sorted { $0.score > $1.score }.prefix(k))
+    }
+
+    static func terms(_ s: String) -> [String] {
+        Array(Set(s.lowercased().split { !$0.isLetter && !$0.isNumber }.map(String.init).filter { $0.count >= 3 }))
+    }
+    static func keywordOverlap(_ terms: [String], in text: String) -> Float {
+        guard !terms.isEmpty else { return 0 }
+        let lower = text.lowercased()
+        return Float(terms.reduce(0) { $0 + (lower.contains($1) ? 1 : 0) }) / Float(terms.count)
+    }
+
     func save(to url: URL) throws { try store.save(to: url) }
 
     /// Load a persisted store and pair it with an embedder for querying.

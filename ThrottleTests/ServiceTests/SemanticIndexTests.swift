@@ -64,6 +64,29 @@ final class SemanticIndexTests: XCTestCase {
         XCTAssertEqual(hits.first?.metadata["doc"], "near", "closest word-set ranks first")
     }
 
+    func test_searchHybrid_keywordFallbackWhenNoEmbedder() {
+        // Built with a model; queried later when the model is gone → pure keyword
+        // ranking over the stored chunks still finds the exact identifier.
+        struct Dead: EmbeddingProvider { var dimension: Int { 0 }; func embed(_ t: String) -> [Float]? { nil } }
+        var built = SemanticIndex(embedder: StubEmbedder())
+        built.index(docId: "match", text: "func authenticateUser keychain token", maxChars: 100)
+        built.index(docId: "other", text: "networking retry backoff timeout", maxChars: 100)
+        let queryTime = SemanticIndex(embedder: Dead(), store: built.store)
+        let hits = queryTime.searchHybrid("authenticateUser", k: 2)
+        XCTAssertEqual(hits.first?.metadata["doc"], "match", "keyword fallback ranks the exact identifier")
+    }
+
+    func test_searchHybrid_returnsTopWithEmbedder() {
+        var idx = SemanticIndex(embedder: StubEmbedder())
+        idx.index(docId: "a", text: "alpha beta gamma", maxChars: 100)
+        idx.index(docId: "b", text: "zeta omega kappa", maxChars: 100)
+        XCTAssertEqual(idx.searchHybrid("alpha beta", k: 1).first?.metadata["doc"], "a")
+    }
+
+    func test_terms_filtersShortTokens() {
+        XCTAssertEqual(Set(SemanticIndex.terms("API is ok now now")), ["api", "now"])  // drop <3 + dedup
+    }
+
     func test_search_emptyWhenEmbedderUnavailable() {
         struct Dead: EmbeddingProvider { var dimension: Int { 0 }; func embed(_ t: String) -> [Float]? { nil } }
         var idx = SemanticIndex(embedder: Dead())
