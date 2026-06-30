@@ -86,19 +86,32 @@ final class ExactModeService {
     /// portal isn't hammered every 60 s (H10) — each retry also spins the hidden
     /// WKWebView, which is steady pressure on a saturated Mac.
     private func nextPollInterval() -> Duration {
+        let base = Self.pollPolicy(now: Date(), snapshot: lastSnapshot, consecutiveFailures: consecutiveFailures)
+        // Jitter only the failure-backoff branch (±20%) so a dead claude.ai /
+        // captive portal isn't hammered in lockstep.
+        guard consecutiveFailures > 0 else { return base }
+        return .seconds(Int(Double(base.components.seconds) * Double.random(in: 0.8...1.2)))
+    }
+
+    /// Pure poll-cadence policy (testable). Priority:
+    /// 1. consecutive failures → exponential backoff (caller adds the jitter);
+    /// 2. a window fully CAPPED (100%) with a known reset → wait until the soonest
+    ///    such reset (+5 s), capped at 15 min — honors the window's `resets_at` the
+    ///    way a Retry-After would (no point polling claude.ai into the wall every
+    ///    60 s while capped), while still refreshing the meter at least every 15 min;
+    /// 3. ≥80% util → 60 s; otherwise 5 min (also 5 min when no fresh snapshot).
+    nonisolated static func pollPolicy(now: Date, snapshot: ExactSnapshot?, consecutiveFailures: Int) -> Duration {
         if consecutiveFailures > 0 {
-            let base = min(30 * (1 << min(consecutiveFailures - 1, 5)), 15 * 60)   // 30,60,…,cap 15min
-            let jittered = Double(base) * Double.random(in: 0.8...1.2)             // ±20%
-            return .seconds(Int(jittered))
+            return .seconds(min(30 * (1 << min(consecutiveFailures - 1, 5)), 15 * 60))   // 30,60,…,cap 15min
         }
-        guard let snap = lastSnapshot, snap.isFresh() else {
-            return .seconds(5 * 60)
+        guard let snap = snapshot, snap.isFresh(now: now) else { return .seconds(5 * 60) }
+        let windows = [snap.fiveHour, snap.sevenDay, snap.sevenDaySonnet]
+        let cappedResets = windows.compactMap { $0.utilization >= 100 ? $0.resetsAt : nil }.filter { $0 > now }
+        if let soonest = cappedResets.min() {
+            let wait = Int(soonest.timeIntervalSince(now)) + 5
+            return .seconds(min(max(wait, 60), 15 * 60))
         }
-        let highest = max(
-            snap.fiveHour.utilization,
-            snap.sevenDay.utilization,
-            snap.sevenDaySonnet.utilization
-        )
+        let highest = windows.map(\.utilization).max() ?? 0
         return highest >= 80 ? .seconds(60) : .seconds(5 * 60)
     }
 
