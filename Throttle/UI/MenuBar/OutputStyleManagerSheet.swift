@@ -61,6 +61,10 @@ struct OutputStyleManagerSheet: View {
                     styleRow(style)
                     Rectangle().fill(Color.primary.opacity(0.06)).frame(height: 1)
                 }
+                Label("Applies to new Claude Code sessions. In an open session, run /output-style to switch it live.", systemImage: "info.circle")
+                    .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16).padding(.vertical, 10)
             }
         }
     }

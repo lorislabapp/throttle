@@ -80,6 +80,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // update). No-op if the hook isn't installed or is already current.
         TokoptHookInstaller.reconcile()
         TranscriptMemoryInstaller.reconcile()   // heal a stale throttle-memory --mcp-server path (e.g. dev build → /Applications)
+        OutputStyleManager.resyncManagedTemplates()   // heal stale managed output-style files after an app upgrade changed a template body
 
         var rlim = rlimit()
         if getrlimit(RLIMIT_NOFILE, &rlim) == 0 {

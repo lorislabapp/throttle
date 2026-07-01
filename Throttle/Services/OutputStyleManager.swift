@@ -115,6 +115,32 @@ enum OutputStyleManager {
         try setActive(style.name)
     }
 
+    /// Rewrite any Throttle-owned on-disk style file whose body has drifted from
+    /// its current curated template — so an app upgrade that changes a template
+    /// body reaches the file the user already activated, instead of waiting for a
+    /// manual re-select (the old behaviour, which left stale style files that
+    /// silently lost to CLAUDE.md verbosity guidance). Never touches user-edited
+    /// files (`throttle-managed: false`) or the active selection. Idempotent.
+    static func resyncManagedTemplates() {
+        let fm = FileManager.default
+        guard let files = try? fm.contentsOfDirectory(at: stylesDir, includingPropertiesForKeys: nil) else { return }
+        for url in files where url.pathExtension == "md" {
+            guard let onDisk = try? String(contentsOf: url, encoding: .utf8) else { continue }
+            // Same rule as `activate`: only `throttle-managed: false` (stamped when
+            // the user saves an edit) protects a file. Legacy Throttle files have
+            // no flag → still ours → still healed.
+            guard !onDisk.contains("throttle-managed: false") else { continue }
+            let meta = parseFrontmatter(url)
+            let name = meta.name ?? url.deletingPathExtension().lastPathComponent
+            guard let t = templates.first(where: { $0.name == name }), t.name != "Blank" else { continue }
+            let bodyCurrent = onDisk.contains(t.body.trimmingCharacters(in: .whitespacesAndNewlines))
+            if !bodyCurrent {
+                try? saveStyle(name: t.name, description: t.description, body: t.body,
+                               keepCoding: t.keepCoding, managed: true, fileURL: url)
+            }
+        }
+    }
+
     /// Full markdown of a file-based style (for the editor). nil for built-ins.
     static func body(of style: Style) -> String? {
         guard let url = style.fileURL, let text = try? String(contentsOf: url, encoding: .utf8) else { return nil }
