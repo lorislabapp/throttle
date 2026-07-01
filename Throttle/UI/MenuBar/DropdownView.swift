@@ -1315,6 +1315,7 @@ private struct FirstRunInline: View {
 private struct InlineGeneralPane: View {
     @Environment(AppState.self) private var appState
     @State private var loginItemsEnabled: Bool = LoginItemService.isEnabled
+    @State private var cockpitOnTop: Bool = CockpitWindowController.alwaysOnTop
     @State private var notificationsOn: Bool = ThresholdNotifier.shared.isEnabled
     @State private var calendarStatus: String = ""
     @State private var conciseClaudeCode: Bool =
@@ -1363,6 +1364,12 @@ private struct InlineGeneralPane: View {
             SettingsRow(title: "Launch at login") {
                 Toggle("", isOn: $loginItemsEnabled).labelsHidden().toggleStyle(.switch).tint(.accentColor)
                     .onChange(of: loginItemsEnabled) { _, new in try? LoginItemService.setEnabled(new) }
+            }
+            SettingsHair()
+            SettingsRow(title: "Keep Cockpit on top",
+                        sub: "Float the Cockpit window above other apps — a companion you watch while working.") {
+                Toggle("", isOn: $cockpitOnTop).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                    .onChange(of: cockpitOnTop) { _, new in CockpitWindowController.alwaysOnTop = new }
             }
             SettingsHair()
             SettingsRow(title: "Notify at 80% and 95%",

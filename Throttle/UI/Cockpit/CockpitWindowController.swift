@@ -14,11 +14,22 @@ final class CockpitWindowController: NSObject {
 
     private override init() {}
 
+    private static let alwaysOnTopKey = "cockpitAlwaysOnTop"
+    /// Opt-in: keep the Cockpit window floating above other apps (a companion you
+    /// watch while working). OFF by default; setter applies to the live window.
+    static var alwaysOnTop: Bool {
+        get { UserDefaults.standard.bool(forKey: alwaysOnTopKey) }
+        set { UserDefaults.standard.set(newValue, forKey: alwaysOnTopKey); shared.applyLevel() }
+    }
+
+    private func applyLevel() { window?.level = Self.alwaysOnTop ? .floating : .normal }
+
     func show(appState: AppState) {
         self.appState = appState
         if let window {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
+            applyLevel()
             return
         }
 
@@ -44,6 +55,7 @@ final class CockpitWindowController: NSObject {
         self.window = win
         win.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        applyLevel()
     }
 
     func close() {

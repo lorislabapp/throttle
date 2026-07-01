@@ -49,6 +49,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// User re-opened Throttle (double-clicked the app while it's already running).
+    /// LSUIElement menu-bar apps do NOT get this on the login-item launch, so the
+    /// Cockpit opens only on an intentional reopen — never on boot auto-launch.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        CockpitWindowController.shared.show(appState: appState)
+        return true
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         let isDemoMode = CommandLine.arguments.contains("-demo")
 
