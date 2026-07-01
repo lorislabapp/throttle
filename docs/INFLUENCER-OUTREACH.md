@@ -26,7 +26,7 @@
 | Tech With Tim | YT 2.04M | X/YT DM (no public email) | 2 | ☐ | | | |
 | ThePrimeagen | Twitch/YT | X DM | 2 | ☐ | | | |
 | Greg Isenberg | X | X DM | 2 | ☐ | | | |
-| Underscore_ / Micode | YT 943K / ~1.5M (FR) | underscore@micorp.fr *(verified partnerships)* | 2 | ☐ | | | |
+| Underscore_ / Micode | YT 943K / ~1.5M (FR) | underscore@micorp.fr *(verified partnerships)* | 2 | ☑ 2026-07-01 | | | |
 
 Codes `THROTTLE-<NAME>` get created in Stripe once unblocked, then filled into "Code sent".
 
@@ -115,7 +115,7 @@ Targets: Tech With Tim (already runs `code techwithtim` — most affiliate-ready
 >
 > Bonjour,
 >
-> Je suis Kevin Nadjarian, développeur français (LorisLabs). Je suis Underscore_ et Micode depuis un moment — votre audience IA/dev est exactement celle de mon outil.
+> Je suis Kevin Nadjarian, développeur français et fondateur de LorisLabs — avant ça, 14 ans chez Apple en ingénierie logicielle et prévention de la fraude. Je suis Underscore_ et Micode depuis un moment, et votre audience IA/dev est exactement celle de mon outil.
 >
 > J'ai créé **Throttle** : une app macOS (barre de menu) qui montre en temps réel la consommation de Claude Code et réduit la facture de 40 à 70 % (compression des sorties, attribution du cache, gestion des serveurs MCP). 100 % local, aucun compte. https://lorislab.fr/throttle/
 >
