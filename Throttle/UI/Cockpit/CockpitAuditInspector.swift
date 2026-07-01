@@ -141,6 +141,12 @@ struct CockpitAuditInspector: View {
                 .buttonStyle(.plain)
                 .disabled(fixPath == nil)
                 .help(cacheHelp + (fixPath != nil ? "\n\nClick to reveal the file to fix." : ""))
+                if let cause = vm.cacheBustReport?.dominant, vm.cacheRecoverableEUR >= 0.01 {
+                    Text("mostly \(cause.kind == .modelSwap ? "model swaps" : "prefix churn") — \(cause.kind.advice)")
+                        .font(.system(size: 10)).foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 1)
+                }
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 12)
@@ -282,7 +288,11 @@ struct CockpitAuditInspector: View {
     private var cacheHelp: String {
         var s = ""
         if vm.cacheRecoverableEUR >= 0.01 {
-            s += "≈€\(String(format: "%.2f", vm.cacheRecoverableEUR)) (7d) was spent re-writing a prompt cache that should still have been warm — a large cache write <5 min after the prior turn means the cached prefix got busted (changing prefix, model swap, dynamic injection) and billed at the 1.25× write rate instead of the 0.10× read rate.\n\n"
+            s += "≈€\(String(format: "%.2f", vm.cacheRecoverableEUR)) (7d) was spent re-writing a prompt cache that should still have been warm — a large cache write <5 min after the prior turn means the cached prefix got busted and billed at the 1.25× write rate instead of the 0.10× read rate.\n\n"
+            if let r = vm.cacheBustReport, let dom = r.dominant {
+                let parts = r.causes.map { "\($0.kind == .modelSwap ? "model swaps" : "prefix churn") ≈€\(String(format: "%.2f", $0.eur))" }
+                s += "Attributed: \(parts.joined(separator: ", ")). Mostly \(dom.kind == .modelSwap ? "model swaps" : "prefix churn") — \(dom.kind.advice)\n\n"
+            }
         }
         let risks = vm.cache.risks.filter { $0.severity == .high }
         if !risks.isEmpty {
