@@ -17,16 +17,14 @@ struct ProUpsellBanner: View {
     var body: some View {
         if !dismissed {
             HStack(spacing: 12) {
-                // Warning icon
+                // Warning icon — SOLID fill, not a gradient: on macOS 27 RenderBox
+                // crashes (SIGTRAP) rasterizing a gradient-filled SF Symbol glyph
+                // (CUINamedVectorGlyph → renderVectorGlyph) during layout, which took
+                // down the whole dropdown when opening Settings. Solid also matches the
+                // design language (orange = earned pressure colour, no data gradients).
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 24))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.orange, .red],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .foregroundStyle(.orange)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Your config is bloated")
