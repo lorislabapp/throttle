@@ -76,7 +76,7 @@ enum MCPAdvisorService {
         if calls == 0 {
             return (.disable, "No tool calls in 30 days\(ram) — a local process spawned for nothing, plus its tool list in every session's context. Disable it.")
         }
-        return (.offload, "Used \(calls)× in 30d and runs locally\(ram) — host it on Proxmox over HTTP so `claude` connects by URL and spawns zero process on the Mac.")
+        return (.offload, "Used \(calls)× in 30d and runs locally\(ram) — if it doesn't read local files/repos, host it on your server over HTTP so `claude` connects by URL and spawns zero process on the Mac (a preflight confirms before moving).")
     }
 
     /// LLM-ready seam. Today: the heuristic reason. Later: a local model could
