@@ -39,6 +39,7 @@ struct MultiCockpitRoot: View {
             if !model.rateLimitedSessions.isEmpty { rateLimitBanner }
             if let n = model.autoPauseCountdown { autoPauseBanner(n) }
             if let loop = model.loopSessions.first { loopBanner(loop) }
+            if let leak = model.leakSessions.first { leakBanner(leak) }
             HStack(spacing: 0) {
                 content
                 if showInspector {
@@ -315,6 +316,23 @@ struct MultiCockpitRoot: View {
             .padding(.horizontal, 14).padding(.vertical, 8)
             .background(Color.orange.opacity(0.10))
         }
+    }
+
+    /// A session's node subtree has ballooned (leak #4953). Offer a restart-in-place
+    /// that reclaims the leaked heap while keeping context via --resume. Advisory.
+    private func leakBanner(_ s: CockpitTab) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "memorychip").font(.system(size: 12)).foregroundStyle(.orange)
+            Text("\(s.projectName): using \(ByteCountFormatter.string(fromByteCount: Int64(s.ramBytes), countStyle: .memory)) — possible memory leak. Restart reclaims it, keeps your context.")
+                .font(.system(size: 11.5)).foregroundStyle(.primary).lineLimit(1)
+            Spacer(minLength: 0)
+            Button("Restart") { s.restartInPlace() }
+                .buttonStyle(.plain).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(Color.accentColor)
+            Button { s.leakSuspected = false } label: { Image(systemName: "xmark").font(.system(size: 10)) }
+                .buttonStyle(.plain).foregroundStyle(.secondary).help("Dismiss")
+        }
+        .padding(.horizontal, 14).padding(.vertical, 8)
+        .background(Color.orange.opacity(0.10))
     }
 
     /// One or more sessions hit the account usage cap. Account limits are shared

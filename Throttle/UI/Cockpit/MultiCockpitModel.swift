@@ -662,6 +662,8 @@ final class MultiCockpitModel {
 
     /// Sessions the loop detector flagged as cycling without progress.
     var loopSessions: [CockpitTab] { sessions.filter { $0.loopSignal != nil } }
+    /// Spawned sessions whose subtree RSS ballooned past the leak threshold (#4953).
+    var leakSessions: [CockpitTab] { sessions.filter { $0.leakSuspected && $0.isSpawned } }
 
     // MARK: - Persistence (memory-aware: restored tabs spawn lazily via resume)
 
