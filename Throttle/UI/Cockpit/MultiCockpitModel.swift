@@ -355,6 +355,48 @@ final class MultiCockpitModel {
     // a live session is actually burning — then arms a cancelable countdown before a
     // reversible SIGSTOP. Never a hard kill; the user can always cancel or resume.
 
+    // ── Predictive cross-session pacing ──────────────────────────────────────
+    // The SOFT tier below auto-pause: when the binding window is climbing toward
+    // the cap and MORE THAN ONE session is actively burning, warn early so you can
+    // distribute or pause idle sessions YOURSELF, before the hard 95% auto-pause
+    // arms. Purely informational + a one-tap convenience — never auto-acts, always
+    // on (no token math, reuses the pct-rise ETA). Distinct from auto-pause (hard,
+    // single-session, opt-in) and the global cap-ETA notification.
+    struct PacingHint: Equatable { let etaText: String; let burning: Int }
+    var pacingHint: PacingHint?
+    private var pcLastPct: Double?
+    private var pcLastAt: Date?
+    private let pcLowPct = 80.0            // don't nag below 80% of the binding window
+    private let pcEtaHorizon: TimeInterval = 30 * 60
+
+    /// Cheap, synchronous, every tick. Sets `pacingHint` when the binding window is
+    /// in [80%, auto-pause threshold), rising, ETA-to-cap ≤ 30 min, and ≥2 sessions
+    /// are actively burning; clears it otherwise.
+    func evaluatePacing() {
+        guard let b = binding else { pacingHint = nil; return }
+        let pct = Double(b.pct), now = Date()
+        let p0 = pcLastPct, t0 = pcLastAt
+        pcLastPct = pct; pcLastAt = now
+        let burning = sessions.filter { $0.isLive && !$0.isPaused && $0.state == .working }.count
+        guard pct >= pcLowPct, pct < apThresholdPct, burning >= 2,
+              let p0, let t0 else { pacingHint = nil; return }
+        let dt = now.timeIntervalSince(t0), dpct = pct - p0
+        guard dt >= 1, dpct > 0 else { pacingHint = nil; return }   // not rising → no wall coming
+        let etaSec = (100.0 - pct) / (dpct / dt)
+        guard etaSec <= pcEtaHorizon else { pacingHint = nil; return }
+        pacingHint = PacingHint(etaText: Self.countdown(Int64(etaSec)), burning: burning)
+    }
+
+    /// One-tap from the pacing banner: reversibly SIGSTOP-pause every LIVE session
+    /// that isn't the focused one and isn't currently working — reclaim burn from
+    /// idle-but-live sessions without touching what you're actively using.
+    func pauseIdleSessions() {
+        for s in sessions where s.isLive && s.id != activeID && s.state != .working && !s.isPaused {
+            s.pauseProcess()
+        }
+        recomputeSortOrder(); persist()
+    }
+
     /// Seconds left in the cancelable arming window (nil = not armed). Drives the banner.
     var autoPauseCountdown: Int?
     private var autoPauseTask: Task<Void, Never>?
@@ -537,6 +579,7 @@ final class MultiCockpitModel {
                 self?.sampleMachine()
                 self?.refreshStats()
                 self?.evaluateAutoPause()
+                self?.evaluatePacing()             // soft cross-session pacing tier below auto-pause
                 self?.autoHibernateIfPressured()   // MEM-H01: reclaim idle-session RAM under critical pressure
                 if !quiet { self?.sampleSessionRAM() }
             }

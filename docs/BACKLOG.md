@@ -52,9 +52,15 @@ Current shipped version: **3.2.16** (build 116).
       → cancelable 10s countdown → `drainThenPause` (quiescent-window SIGSTOP, targets
       the looping session only). Opt-in `throttleAutoPauseEnabled`, Settings toggle
       "Auto-pause near the cap", banner + Cancel in MultiCockpitRoot. Never a hard kill.
-- [ ] **Rate-limit pacing/Retry-After** — extend 3.2.2's detection: predictive
-      cross-session pacing before the wall + honor Retry-After on claude.ai 429s
-      (detection + surfacing already shipped).
+- [x] **Rate-limit pacing/Retry-After** — DONE 2026-07-02 (3.2.33). Predictive
+      CROSS-SESSION pacing shipped: `evaluatePacing()` + soft banner tier BELOW
+      auto-pause — when the binding window is in [80%, 95%), rising, ETA-to-cap
+      ≤30 min AND ≥2 sessions actively burning, a non-destructive banner warns
+      "N sessions burning — ≈Xm to your cap" with a one-tap "Pause idle"
+      (`pauseIdleSessions()`, reversible SIGSTOP of live-but-not-working, non-focused
+      sessions). Retry-After half was already effectively covered: `ExactModeService.
+      pollPolicy` honors each window's `resets_at` (Retry-After-equivalent) + expo
+      backoff on failure, and `ClaudeWebSessionProvider` handles hard 429 + resetsAt.
 - [ ] **TOON Phase 2 → CCR (Compress-Cache-Retrieve)** — upgraded target (NotebookLM
       2026-06-20): a `PostToolUse` hook replaces verbose low-signal tool output with
       a ~50-token pointer + stashes the raw text in a local SQLite cache; a bundled

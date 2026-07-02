@@ -38,6 +38,7 @@ struct MultiCockpitRoot: View {
             if !model.duplicateCwds.isEmpty { duplicateBanner }
             if !model.rateLimitedSessions.isEmpty { rateLimitBanner }
             if let n = model.autoPauseCountdown { autoPauseBanner(n) }
+            else if let hint = model.pacingHint { pacingBanner(hint) }
             if let loop = model.loopSessions.first { loopBanner(loop) }
             if let leak = model.leakSessions.first { leakBanner(leak) }
             HStack(spacing: 0) {
@@ -355,6 +356,25 @@ struct MultiCockpitRoot: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 8)
         .background(Color.red.opacity(0.10))
+    }
+
+    /// Soft pacing tier (below auto-pause): several sessions burning toward the
+    /// shared cap. Informational + a one-tap "Pause idle" convenience; never acts
+    /// on its own. Suppressed while the auto-pause countdown is showing.
+    private func pacingBanner(_ hint: MultiCockpitModel.PacingHint) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "gauge.with.needle").font(.system(size: 12)).foregroundStyle(.orange)
+            Text("\(hint.burning) sessions burning — ≈\(hint.etaText) to your cap.")
+                .font(.system(size: 11.5)).foregroundStyle(.primary).lineLimit(1)
+            Spacer(minLength: 0)
+            Button("Pause idle") { model.pauseIdleSessions() }
+                .buttonStyle(.plain).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(Color.accentColor)
+            Button { model.pacingHint = nil } label: {
+                Image(systemName: "xmark").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
+            }.buttonStyle(.plain)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 8)
+        .background(Color.orange.opacity(0.08))
     }
 
     /// Auto-pause ACT armed: binding ≥97% + imminent wall. Cancelable countdown
