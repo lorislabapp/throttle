@@ -8,6 +8,7 @@ import SwiftUI
 struct MCPManagerSheet: View {
     var onDone: () -> Void = {}
     @State private var entries: [MCPConfigService.Entry] = []
+    @State private var recs: [String: MCPAdvisorService.Recommendation] = [:]
     @State private var adding = false
     @State private var errorText: String?
 
@@ -102,9 +103,15 @@ struct MCPManagerSheet: View {
                     Text(entry.name).font(.system(size: 13, weight: .medium))
                         .foregroundStyle(entry.disabled ? .secondary : .primary)
                     if entry.disabled { tag("OFF") }
+                    if let r = recs[entry.id] { advisorChip(r.verdict) }
                 }
                 Text(entry.transport).font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                if let r = recs[entry.id] {
+                    Text(MCPAdvisorService.explain(r))
+                        .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                        .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                }
             }
             Spacer(minLength: 6)
             rowActions(entry)
@@ -172,7 +179,30 @@ struct MCPManagerSheet: View {
             .compactMap { map[$0] }
     }
 
-    private func reload() { entries = MCPConfigService.list() }
+    private func reload() {
+        entries = MCPConfigService.list()
+        let quiet = MemoryPressureMonitor.shared.isQuiet
+        Task {
+            let out = await Task.detached(priority: .utility) { MCPAdvisorService.analyze(memoryQuiet: quiet) }.value
+            await MainActor.run { self.recs = Dictionary(uniqueKeysWithValues: out.map { ($0.id, $0) }) }
+        }
+    }
+
+    @ViewBuilder
+    private func advisorChip(_ v: MCPAdvisorService.Verdict) -> some View {
+        let (label, color): (String, Color) = {
+            switch v {
+            case .disable: return ("DISABLE", .orange)
+            case .offload: return ("OFFLOAD", .accentColor)
+            case .review:  return ("REVIEW", .yellow)
+            case .keep:    return ("KEEP", .green)
+            }
+        }()
+        Text(label).font(.system(size: 8.5, weight: .heavy)).tracking(0.3)
+            .padding(.horizontal, 4).padding(.vertical, 1.5)
+            .background(color.opacity(0.15), in: RoundedRectangle(cornerRadius: 3))
+            .foregroundStyle(color)
+    }
 
     private func run(_ op: () throws -> Void) {
         do { try op(); errorText = nil; reload() }

@@ -1322,6 +1322,8 @@ private struct InlineGeneralPane: View {
         FileManager.default.fileExists(atPath: InlineGeneralPane.conciseFlagPath)
     @AppStorage("throttleAutoPauseEnabled") private var autoPauseEnabled = false
     @AppStorage("throttleAutoHibernateEnabled") private var autoHibernateEnabled = true
+    @AppStorage("throttleNodeHeapCapMB") private var nodeHeapCapMB = 0
+    @AppStorage("throttleMaxAgents") private var maxAgents = 0
     @State private var autopilotOn: Bool = AutopilotService.isEnabled
     @State private var apMemory: Bool = AutopilotService.archiveStaleMemory
     @State private var apSkills: Bool = AutopilotService.archiveDeadSkills
@@ -1398,6 +1400,18 @@ private struct InlineGeneralPane: View {
             SettingsRow(title: "Auto-hibernate idle sessions under memory pressure",
                         sub: "On by default. When the Mac hits critical memory pressure, Throttle hibernates cockpit sessions idle 15+ min — kills the ~300 MB–1 GB subtree, keeps the resume-id — to free real RAM (SIGSTOP pause only freezes tokens, not memory). Never the active/working/waiting session. Reversible: reopen the tab to resume with full context via --resume.") {
                 Toggle("", isOn: $autoHibernateEnabled).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+            }
+            SettingsHair()
+            SettingsRow(title: "Cap Node heap per session",
+                        sub: "Off by default. Sets NODE_OPTIONS=--max-old-space-size for each Cockpit session before launching claude — bounds the V8 heap so many concurrent sessions swap less. 0 = off. ⚠️ Too low crashes claude on a big context (\"JS heap out of memory\"); 4096+ is safe for most, drop toward 1536 only if you run many light sessions.") {
+                TextField("0", value: $nodeHeapCapMB, format: .number)
+                    .frame(width: 64).textFieldStyle(.roundedBorder).multilineTextAlignment(.trailing)
+            }
+            SettingsHair()
+            SettingsRow(title: "Limit sub-agents per session",
+                        sub: "Off by default. Appends --max-agents to the claude launch to cap parallel sub-agents (each is another process). 0 = off. Verify your Claude Code version supports the flag before enabling.") {
+                TextField("0", value: $maxAgents, format: .number)
+                    .frame(width: 64).textFieldStyle(.roundedBorder).multilineTextAlignment(.trailing)
             }
             SettingsHair()
             SettingsRow(title: "Concise Claude Code replies",

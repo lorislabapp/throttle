@@ -55,6 +55,10 @@ final class CockpitTab: Identifiable {
     /// Hibernated = process subtree terminated to free RAM, resume-id kept.
     /// Distinct from a never-opened restored tab (both have terminal == nil).
     var isHibernated = false
+    /// Set when this session's subtree RSS has ballooned past the leak threshold
+    /// (Claude Code node leak #4953). Advisory only — drives a "restart to reclaim"
+    /// nudge, never an automatic restart.
+    var leakSuspected = false
     /// Resident memory of this session's process subtree (shell → claude → node).
     var ramBytes: UInt64 = 0
     /// The running claude session id, discovered at runtime — used for persistence.
@@ -130,6 +134,16 @@ final class CockpitTab: Identifiable {
 
         let quoted = "'" + cwd.replacingOccurrences(of: "'", with: "'\\''") + "'"
         var cmd = "cd \(quoted) && clear && "
+        // Spawn-tuning (16 GB constraint): Throttle owns the shell, so it can cap
+        // the Node/V8 heap per session before launching claude. Opt-in — a cap set
+        // too low crashes claude on a big context ("JS heap out of memory"), so it
+        // ships OFF (0). --max-agents is likewise opt-in (verify your Claude Code
+        // version supports the flag before enabling).
+        let d = UserDefaults.standard
+        let heapMB = d.integer(forKey: "throttleNodeHeapCapMB")
+        if heapMB > 0 { cmd += "export NODE_OPTIONS='--max-old-space-size=\(heapMB)' && " }
+        let maxAgents = d.integer(forKey: "throttleMaxAgents")
+        let agentsFlag = maxAgents > 0 ? " --max-agents \(maxAgents)" : ""
         // Prefer the persisted id; if it was lost, fall back to the newest
         // transcript in this project dir so we resume real context instead of
         // starting an empty session.
@@ -138,8 +152,8 @@ final class CockpitTab: Identifiable {
         // Quote the id (M19): it's a transcript-derived value interpolated into a
         // shell command. Only accept a sane session-id shape, else start fresh.
         if let sid, sid.allSatisfy({ $0.isHexDigit || $0 == "-" }) {
-            cmd += "claude --resume '\(sid)'"; self.sessionId = sid
-        } else { cmd += "claude" }
+            cmd += "claude --resume '\(sid)'\(agentsFlag)"; self.sessionId = sid
+        } else { cmd += "claude\(agentsFlag)" }
         term.send(txt: cmd + "\n")
     }
 
@@ -167,6 +181,17 @@ final class CockpitTab: Identifiable {
         isLive = false
         needsInput = false
         isHibernated = true
+    }
+
+    /// Restart this session in place to reclaim leaked/ballooned RAM: hibernate
+    /// (kills the subtree, snapshots the resume-id) then immediately respawn via
+    /// `claude --resume`, so the leaked node heap is freed but the conversation
+    /// continues with full context. The user-triggered answer to a suspected leak.
+    func restartInPlace() {
+        guard terminal != nil else { return }
+        hibernate()        // captures sessionId, kills subtree, terminal = nil
+        ensureSpawned()    // respawns with --resume; clears isHibernated + leakSuspected
+        leakSuspected = false
     }
 
     /// A detected question settled on the PTY. Flag attention + log it (deduped
@@ -692,6 +717,11 @@ final class MultiCockpitModel {
             for (id, pid) in pairs {
                 if let bytes = map[pid], let tab = self.sessions.first(where: { $0.id == id }) {
                     tab.ramBytes = bytes
+                    // Leak heuristic (#4953): Claude Code's node process can grow
+                    // unbounded on long sessions/subagents. Flag a ballooned subtree
+                    // so the UI can nudge a restart-in-place (reclaims the leaked
+                    // heap, keeps context via --resume) — advisory, never automatic.
+                    tab.leakSuspected = bytes > 3_000_000_000
                 }
             }
         }
