@@ -274,7 +274,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // a negative cache_size (KiB). Writer keeps its own connection.
         var config = Configuration()
         config.maximumReaderCount = 2
-        config.prepareDatabase { db in
+        // @Sendable: GRDB runs this on its own serial DB queue. Without it the
+        // closure inherits AppDelegate's @MainActor isolation and macOS 27's
+        // runtime isolation check traps (SIGTRAP in dispatch_assert_queue).
+        config.prepareDatabase { @Sendable db in
             try db.execute(sql: "PRAGMA cache_size = -2000")
         }
         let pool = try DatabasePool(path: url.path, configuration: config)
