@@ -11,6 +11,7 @@ struct MCPManagerSheet: View {
     @State private var recs: [String: MCPAdvisorService.Recommendation] = [:]
     @State private var adding = false
     @State private var errorText: String?
+    @State private var offloadTarget: MCPConfigService.Entry?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -29,6 +30,9 @@ struct MCPManagerSheet: View {
         }
         .frame(width: 500, height: 560)
         .onAppear(perform: reload)
+        .sheet(item: $offloadTarget) { e in
+            MCPOffloadSheet(entry: e) { offloadTarget = nil }
+        }
     }
 
     private var header: some View {
@@ -138,6 +142,10 @@ struct MCPManagerSheet: View {
 
             Menu {
                 moveMenu(entry)
+                if !entry.transport.hasPrefix("HTTP") {
+                    Divider()
+                    Button { offloadTarget = entry } label: { Label("Run on your server…", systemImage: "server.rack") }
+                }
                 Divider()
                 Button(role: .destructive) { run { try MCPConfigService.delete(entry) } } label: {
                     Label("Delete", systemImage: "trash")
