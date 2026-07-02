@@ -64,6 +64,8 @@ struct MCPManagerSheet: View {
                         .padding(.horizontal, 16).padding(.vertical, 6)
                 }
 
+                advisorSummary
+
                 ForEach(groupedScopes, id: \.0.key) { scope, rows in
                     scopeHeader(scope)
                     ForEach(rows) { entry in
@@ -79,6 +81,38 @@ struct MCPManagerSheet: View {
                 }
             }
         }
+    }
+
+    /// On-device advisor summary: estimated local MCP RAM on this Mac + a one-tap
+    /// "Optimize" that disables every server the advisor flags DISABLE (0 real
+    /// tool calls in 30d). Reversible — disabling parks the def, it isn't deleted.
+    @ViewBuilder
+    private var advisorSummary: some View {
+        let disableable = entries.filter { recs[$0.id]?.verdict == .disable && !$0.disabled }
+        let localRSS = recs.values.filter { !$0.transportRemote }.reduce(UInt64(0)) { $0 + $1.estRSSBytes }
+        if !recs.isEmpty {
+            HStack(spacing: 8) {
+                Image(systemName: "gauge.with.dots.needle.33percent").font(.system(size: 12)).foregroundStyle(.secondary)
+                let ram = ByteCountFormatter.string(fromByteCount: Int64(localRSS), countStyle: .memory)
+                Text("Local MCP ≈ \(ram) · \(disableable.count) unused")
+                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                Spacer()
+                if !disableable.isEmpty {
+                    Button("Optimize (\(disableable.count))") { applyAdvisor() }
+                        .controlSize(.small).buttonStyle(.borderedProminent)
+                }
+            }
+            .padding(.horizontal, 16).padding(.vertical, 8)
+            .background(Color.primary.opacity(0.03))
+        }
+    }
+
+    /// Disable every DISABLE-verdict server (unused, spawns locally for nothing).
+    private func applyAdvisor() {
+        for e in entries where recs[e.id]?.verdict == .disable && !e.disabled {
+            try? MCPConfigService.setDisabled(e, true)
+        }
+        reload()
     }
 
     private func scopeHeader(_ scope: MCPConfigService.Scope) -> some View {

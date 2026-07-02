@@ -460,10 +460,19 @@ final class MultiCockpitModel {
     private var lastAutoHibernateAt = Date.distantPast
     private var pressureObserverRegistered = false
 
+    /// Also reclaim proactively when too many sessions are spawned at once —
+    /// macOS memory compression masks pressure until it's extreme, so waiting for
+    /// `machine.critical` reclaims too late. 0 = off. Default 6.
+    var maxLiveSessions: Int {
+        UserDefaults.standard.object(forKey: "throttleMaxLiveSessions") as? Int ?? 6
+    }
+
     func autoHibernateIfPressured() {
-        guard autoHibernateEnabled, machine.critical else { return }
-        // Debounce: at most once every 2 min so a sustained-critical machine
-        // doesn't churn hibernate attempts every tick.
+        let spawnedCount = sessions.filter { $0.isSpawned && !$0.isHibernated }.count
+        let crowded = maxLiveSessions > 0 && spawnedCount > maxLiveSessions
+        guard autoHibernateEnabled, machine.critical || crowded else { return }
+        // Debounce: at most once every 2 min so a sustained trigger doesn't churn
+        // hibernate attempts every tick.
         guard Date().timeIntervalSince(lastAutoHibernateAt) > 120 else { return }
         let now = Date()
         let victims = sessions.filter {
