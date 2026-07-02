@@ -139,6 +139,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         TokoptHook.purgeRaw()   // age out raw command-output dumps (M16)
         ContentStore.purge()    // age out trimmed-payload blobs (CMV, ~30d)
 
+        // Auto-trim idle transcripts (opt-in, OFF by default). Reuses the manual
+        // trimmer's lossless + reversible apply path (backup + validation + post-write
+        // verify + rehydratable pointers); a 10-min idle floor never touches a session
+        // you're actively resuming. Off-main, images-only, best-effort.
+        if UserDefaults.standard.bool(forKey: "throttleAutoTrimEnabled") {
+            Task.detached(priority: .utility) {
+                let r = ContextTrimmerService.autoTrimIdle()
+                if r.count > 0 {
+                    await CockpitNotifier.shared.notifyAutoTrim(count: r.count, tokensSaved: r.tokensSaved)
+                }
+            }
+        }
+
         // Throttle Autopilot — keep the Claude Code setup optimized, by default,
         // system-wide. Off-main; debounced to ~once/day; every action reversible
         // and logged (Settings → Autopilot → Review & undo).

@@ -11,6 +11,24 @@ Current shipped version: **3.2.16** (build 116).
 - [x] T2 proxy `protocolVersion` echo · T3 dead-MCP token-tax · dropdown reset countdown · fix stale calibration test.
 - ⚠️ The 4 new MCP tools (`expand_pointer`/`recall`/`semantic_search`) only surface after a Throttle restart (reloads `--mcp-server`).
 
+## Built 2026-07-02 (3.2.35) — CMV auto-trim + NotebookLM-driven hardening
+- [x] **Auto-trim idle transcripts (opt-in)** — `ContextTrimmerService.autoTrimIdle`
+      + launch hook (`throttleAutoTrimEnabled`, default OFF) + Settings row + silent
+      `notifyAutoTrim`. Reuses the existing lossless+reversible `apply` path; 10-min
+      idle floor (`minIdleSeconds`) so a session you're resuming is never touched.
+      The manual trimmer shipped 3.2.21 but nobody benefited — this makes it automatic
+      without crossing doctrine (structurally lossless, backed up, pointers rehydrate
+      via `throttle_expand_pointer`). NotebookLM's #2 missed-opportunity, done in-doctrine.
+- [x] **Post-write byte-verify in the trimmer** — `apply` now reads the file back and
+      restores the backup + aborts on any round-trip mismatch (FileEditor-style).
+- [x] **State-aware `pauseIdleSessions`** — routed through `drainThenPause` so the
+      pacing banner's "Pause idle" can't SIGSTOP mid-flight (NotebookLM Q2 catch).
+- [ ] NOT built (lossy / crosses doctrine): orphaned-tool_result removal, structural
+      block/turn dropping, retrieval-time semantic dedup proxy, AST diff interception.
+      NotebookLM flagged these as higher-savings but they silently change the model's
+      inputs or become a data-path proxy — parked behind explicit consent + real
+      before/after task-success measurement.
+
 ## Deferred from the v3 build (DON'T FORGET)
 - [~] **C4 native vector engine** — DONE the safe/native part 2026-07-01: BruteForce cosine now uses **Accelerate/vDSP** (`vDSP_dotpr`/`vDSP_svesq`, SIMD on Apple Silicon, zero deps / zero C-ext / zero signing). STILL DEFERRED (premature for single-dev scale, fork): a true ANN backend (sqlite-vec C-ext — bundle+sign risk — vs Wax Swift-native young dep) + ANE embeddings (bge-small / CoreML / MLX), both behind `VectorStore`/`EmbeddingProvider`. Revisit at 100k+ vectors.
 - [x] **Semantic auto-indexing** — DONE 2026-06-30: `SemanticAutoIndexer` (off-main, opt-in, memory-pressure-gated, incremental over project roots) + launch wiring + Settings toggle ("Semantic project index"). Makes `throttle_semantic_search` usable without manual `--index-repo`.

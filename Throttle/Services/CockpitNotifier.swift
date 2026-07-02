@@ -112,6 +112,27 @@ final class CockpitNotifier: NSObject {
         }
     }
 
+    /// Throttle auto-trimmed idle transcripts (opt-in). One aggregate, silent
+    /// banner — the trim is lossless + reversible (whole-file backups in
+    /// ~/.claude/throttle-backups; pointers rehydrate via throttle_expand_pointer).
+    func notifyAutoTrim(count: Int, tokensSaved: Int) {
+        guard count > 0 else { return }
+        let tok = tokensSaved >= 1000 ? "~\(tokensSaved / 1000)K" : "~\(tokensSaved)"
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let status = settings.authorizationStatus
+            Task { @MainActor in
+                guard status == .authorized || status == .provisional else { return }
+                let content = UNMutableNotificationContent()
+                content.title = "Trimmed \(count) idle transcript\(count == 1 ? "" : "s")"
+                content.body = "≈\(tok) tokens lighter on resume — reversible (backups kept)."
+                content.sound = nil
+                let req = UNNotificationRequest(identifier: "cockpit-autotrim",
+                                                content: content, trigger: nil)
+                UNUserNotificationCenter.current().add(req)
+            }
+        }
+    }
+
     /// Notifications are off but a hidden session needs the user — tell the UI to
     /// show an in-cockpit "turn on notifications" banner (debounced ~2h) so the
     /// feature degrades visibly instead of silently (C02).

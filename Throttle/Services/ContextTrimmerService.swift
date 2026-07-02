@@ -102,7 +102,7 @@ enum ContextTrimmerService {
     /// Cheap by construction: greps for image-bearing files first (small set),
     /// then previews only those. Sorted by bytes saved, capped to `limit`.
     static func scanCandidates(excludingSessionId: String?, limit: Int = 8,
-                               options: Options = .safe) -> [Plan] {
+                               options: Options = .safe, minIdleSeconds: TimeInterval = 60) -> [Plan] {
         let projects = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude/projects").path
         var plans: [Plan] = []
@@ -111,7 +111,7 @@ enum ContextTrimmerService {
             let stem = url.deletingPathExtension().lastPathComponent
             if let ex = excludingSessionId, ex == stem { continue }
             if let mod = try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
-               Date().timeIntervalSince(mod) < 60 { continue }
+               Date().timeIntervalSince(mod) < minIdleSeconds { continue }
             guard let p = try? preview(url, options: options), !p.isEmpty else { continue }
             plans.append(p)
         }
@@ -144,11 +144,12 @@ enum ContextTrimmerService {
     /// then atomically replace it with the trimmed content. Refuses the active
     /// session and any file touched in the last 60 s (a live-session proxy).
     @discardableResult
-    static func apply(_ url: URL, options: Options = .safe, currentSessionId: String? = nil) throws -> (plan: Plan, backup: URL) {
+    static func apply(_ url: URL, options: Options = .safe, currentSessionId: String? = nil,
+                      minIdleSeconds: TimeInterval = 60) throws -> (plan: Plan, backup: URL) {
         let stem = url.deletingPathExtension().lastPathComponent
         if let cur = currentSessionId, cur == stem { throw TrimError.activeSession }
         if let mod = try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
-           Date().timeIntervalSince(mod) < 60 { throw TrimError.activeSession }
+           Date().timeIntervalSince(mod) < minIdleSeconds { throw TrimError.activeSession }
 
         // Persist each trimmed payload to the content store BEFORE replacing the
         // file, so every pointer in the new transcript is rehydratable.
@@ -163,7 +164,38 @@ enum ContextTrimmerService {
 
         // 2) Atomically replace the original with the validated trimmed content.
         try writeAtomically(lines, to: url)
+
+        // 3) Post-write byte-verify (FileEditor-style hardening): read the file back
+        // and confirm it round-trips to exactly the lines we intended. On any drift
+        // (disk glitch, encoding surprise), restore the backup and abort — never
+        // leave a half-written transcript that `--resume` would choke on.
+        let readBack = (try? readLines(url)) ?? []
+        if readBack != lines {
+            try? FileManager.default.removeItem(at: url)
+            try? FileManager.default.copyItem(at: backup, to: url)
+            throw TrimError.validationFailed("post-write read-back mismatch; original restored")
+        }
         return (plan, backup)
+    }
+
+    /// Opt-in automatic pass: trim the heaviest idle PAST transcripts in one go.
+    /// Reuses the exact lossless+reversible `apply` path (backup + validation +
+    /// rehydratable pointers), just without a manual button. Conservative by
+    /// default — a 10-min idle floor so a session you're actively resuming is never
+    /// touched, images-only (`.safe`), best-effort per file. Returns the totals for
+    /// a single summary notification. Never throws.
+    @discardableResult
+    static func autoTrimIdle(minIdleSeconds: TimeInterval = 600,
+                             options: Options = .safe,
+                             limit: Int = 24) -> (count: Int, bytesSaved: Int, tokensSaved: Int) {
+        var count = 0, bytes = 0, tokens = 0
+        for plan in scanCandidates(excludingSessionId: nil, limit: limit,
+                                   options: options, minIdleSeconds: minIdleSeconds) {
+            guard let r = try? apply(plan.sessionURL, options: options,
+                                     currentSessionId: nil, minIdleSeconds: minIdleSeconds) else { continue }
+            count += 1; bytes += r.plan.bytesSaved; tokens += r.plan.estTokensSaved
+        }
+        return (count, bytes, tokens)
     }
 
     // MARK: - Core (pure transform + validation)

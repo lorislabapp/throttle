@@ -1321,6 +1321,7 @@ private struct InlineGeneralPane: View {
     @State private var conciseClaudeCode: Bool =
         FileManager.default.fileExists(atPath: InlineGeneralPane.conciseFlagPath)
     @AppStorage("throttleAutoPauseEnabled") private var autoPauseEnabled = false
+    @AppStorage("throttleAutoTrimEnabled") private var autoTrimEnabled = false
     @AppStorage("throttleAutoHibernateEnabled") private var autoHibernateEnabled = true
     @AppStorage("throttleNodeHeapCapMB") private var nodeHeapCapMB = 0
     @AppStorage("throttleMaxAgents") private var maxAgents = 0
@@ -1400,6 +1401,11 @@ private struct InlineGeneralPane: View {
             SettingsRow(title: "Auto-hibernate idle sessions under memory pressure",
                         sub: "On by default. When the Mac hits critical memory pressure, Throttle hibernates cockpit sessions idle 15+ min — kills the ~300 MB–1 GB subtree, keeps the resume-id — to free real RAM (SIGSTOP pause only freezes tokens, not memory). Never the active/working/waiting session. Reversible: reopen the tab to resume with full context via --resume.") {
                 Toggle("", isOn: $autoHibernateEnabled).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+            }
+            SettingsHair()
+            SettingsRow(title: "Auto-trim idle transcripts",
+                        sub: "Off by default. On launch, Throttle shrinks the heaviest idle past-session .jsonl files — replaces already-seen base64 images with a rehydratable pointer so `claude --resume` reloads a lighter file and re-charges fewer tokens. Lossless + reversible: whole-file backups in ~/.claude/throttle-backups, and the model can pull any image back via throttle_expand_pointer. Never touches a session idle < 10 min.") {
+                Toggle("", isOn: $autoTrimEnabled).labelsHidden().toggleStyle(.switch).tint(.accentColor)
             }
             SettingsHair()
             SettingsRow(title: "Cap Node heap per session",
