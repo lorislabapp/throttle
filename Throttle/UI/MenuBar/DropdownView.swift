@@ -1452,6 +1452,22 @@ private struct InlineGeneralPane: View {
                 }
             }
             SettingsHair()
+            SettingsRow(title: "Command runner",
+                        sub: "Run saved shell commands from Throttle — no claude session, no `!`, zero tokens. Output stays local. Runs via your login shell (PATH + secrets).") {
+                HStack(spacing: 6) {
+                    if !appState.isPro {
+                        Text("PRO").font(.system(size: 9, weight: .heavy)).tracking(0.3)
+                            .padding(.horizontal, 5).padding(.vertical, 2)
+                            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 4))
+                            .foregroundStyle(.secondary)
+                    }
+                    SettingsButton(title: "Open…") {
+                        if appState.isPro { CommandRunnerWindowController.shared.show() }
+                    }
+                    .disabled(!appState.isPro)
+                }
+            }
+            SettingsHair()
             SettingsRow(title: "Compress command output",
                         sub: tokoptNote.isEmpty
                             ? "Installs a PostToolUse hook that strips ANSI, dedups and trims verbose CLI output before Claude sees it — fewer tokens, errors always passed through raw. Reversible; restart Claude Code after."
