@@ -29,6 +29,17 @@ Current shipped version: **3.2.16** (build 116).
       inputs or become a data-path proxy — parked behind explicit consent + real
       before/after task-success measurement.
 
+## Built 2026-07-02 (3.2.37) — eval-driven test-outcome signal (NotebookLM missed-opp #5)
+- [~] **"Cost per outcome" — detection half DONE.** `TestOutcomeDetector` parses
+      pytest/cargo/go/jest/swift-test summaries out of the PTY stream (via the existing
+      DroppableTerminalView sniff, dedup by value + 2-min floor); `TestOutcomeStore`
+      logs green/red counts per project to `test-outcomes.jsonl`; `EvalReadout` shows
+      pass-rate + green/red runs (14d) in the Optimizer tab, measure-only. Unit-tested
+      (TestOutcomeDetectorTests, 9 cases incl. prose false-positive guard). GAP left:
+      joining each run to its exact token cost for a true "€/green run" — needs a cost
+      snapshot at outcome time (StatsDataService.cockpitSessionCostEUR) threaded through;
+      deferred until the pass/fail signal proves useful. Pure measure-only, in-doctrine.
+
 ## Deferred from the v3 build (DON'T FORGET)
 - [~] **C4 native vector engine** — DONE the safe/native part 2026-07-01: BruteForce cosine now uses **Accelerate/vDSP** (`vDSP_dotpr`/`vDSP_svesq`, SIMD on Apple Silicon, zero deps / zero C-ext / zero signing). STILL DEFERRED (premature for single-dev scale, fork): a true ANN backend (sqlite-vec C-ext — bundle+sign risk — vs Wax Swift-native young dep) + ANE embeddings (bge-small / CoreML / MLX), both behind `VectorStore`/`EmbeddingProvider`. Revisit at 100k+ vectors.
 - [x] **Semantic auto-indexing** — DONE 2026-06-30: `SemanticAutoIndexer` (off-main, opt-in, memory-pressure-gated, incremental over project roots) + launch wiring + Settings toggle ("Semantic project index"). Makes `throttle_semantic_search` usable without manual `--index-repo`.

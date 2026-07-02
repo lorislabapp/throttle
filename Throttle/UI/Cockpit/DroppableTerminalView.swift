@@ -28,6 +28,11 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// Fired when claude prints a usage/rate-limit message. Date = parsed reset
     /// time if claude stated one, else nil (caller applies a fallback window).
     var onRateLimit: (@MainActor (Date?) -> Void)?
+    /// Fired when a test-runner summary (pytest/cargo/go/jest/swift) appears in the
+    /// stream. Feeds the eval-ROI readout; measure-only.
+    var onTestOutcome: (@MainActor (TestOutcomeDetector.Outcome) -> Void)?
+    nonisolated(unsafe) private var lastTestFire = Date.distantPast
+    nonisolated(unsafe) private var lastTestOutcome: TestOutcomeDetector.Outcome?
     /// Toggle SIGSTOP/SIGCONT on the session's process subtree (the circuit-breaker
     /// pause). Wired to the owning CockpitTab; nil until spawned.
     var onTogglePause: (@MainActor () -> Void)?
@@ -268,6 +273,14 @@ final class DroppableTerminalView: LocalProcessTerminalView {
                 lastRateLimitFire = Date()
                 onRateLimit?(Self.parseResetTime(from: hay))
             }
+        }
+
+        // Test-runner summary → eval-ROI telemetry. Dedup by value (the tail repaints
+        // the same summary) with a 2-min floor so a genuine re-run still counts.
+        if let out = TestOutcomeDetector.detect(in: hay),
+           out != lastTestOutcome || Date().timeIntervalSince(lastTestFire) > 120 {
+            lastTestOutcome = out; lastTestFire = Date()
+            onTestOutcome?(out)
         }
 
         // ONLY fire on a genuine interactive prompt — the thing that actually

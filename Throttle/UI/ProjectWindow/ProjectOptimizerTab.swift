@@ -44,6 +44,7 @@ struct ProjectOptimizerTab: View {
             Rectangle().fill(hair).frame(height: 1)
             TOONPotentialReadout()
             ReadFirewallReadout(project: project)
+            EvalReadout(project: project)
             if loading {
                 ProgressView().controlSize(.small)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

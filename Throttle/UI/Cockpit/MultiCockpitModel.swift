@@ -119,6 +119,11 @@ final class CockpitTab: Identifiable {
         term.onActivity = { [weak self] in self?.lastActivityAt = Date() }
         term.onPrompt = { [weak self] q in self?.handlePrompt(q) }
         term.onRateLimit = { [weak self] reset in self?.handleRateLimit(reset) }
+        term.onTestOutcome = { [weak self] out in
+            guard let self else { return }
+            let enc = MultiCockpitModel.claudeProjectDirName(self.cwd)
+            Task.detached(priority: .utility) { TestOutcomeStore.record(project: enc, outcome: out) }
+        }
         term.isPausedProvider = { [weak self] in self?.isPaused ?? false }
         term.onTogglePause = { [weak self] in
             guard let self else { return }
