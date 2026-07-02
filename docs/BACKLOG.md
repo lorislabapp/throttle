@@ -71,11 +71,16 @@ Current shipped version: **3.2.16** (build 116).
       headers/hints/ANSI from `git status` etc., logs realized savings to
       `savings.jsonl` via `TokoptHook`). Any doc claiming "CCR shipped, ~53% proven"
       means that trimming, NOT this array→TOON transpile, which is unbuilt.
-- [ ] **Read-Firewall / local-RAG auto-config** — detect brute-force file reading
-      (≥N sequential reads or >150 KB/turn), attribute the waste per project, and
-      offer a 1-click (preview + revert) inject of `mcp-local-rag` (local LanceDB,
-      no cloud) into the project `.mcp.json`. Watch the lossy-recall golden-rule
-      risk. Design: `docs/design-read-firewall.md`.
+- [~] **Read-Firewall / local-RAG auto-config** — DETECTION HALF DONE 2026-07-02
+      (3.2.34). `ReadFirewallScanner` scans a project's 14d transcripts for the
+      brute-force signature (≥3 `Read`s in one turn; best-effort re-read attribution)
+      → `ReadFirewallReadout` (measure-only strip in the Optimizer tab: heavy turns,
+      file reads, "mostly <file> ×N"). The **auto-inject half is deliberately NOT
+      built**: semantic recall is lossy, so silently rewiring `.mcp.json` changes what
+      the model sees (golden-rule-adjacent) — the readout nudges, the fix stays the
+      user's. `mcp-local-rag` was also removed in the MCP cleanup (0 real calls), so
+      auto-wiring it is moot. Revisit only if a reliable local-RAG + before/after
+      task-success measurement lands. Design: `docs/design-read-firewall.md`.
 - [x] **TOON readout UI** (Phase 1.5, done 2026-06-27) — `TOONPotentialReadout` in the
       Project Optimizer tab folds `toon-potential.jsonl` via `TOONTranspiler.potentialSummary()`
       (≈% / ≈bytes / ≈tokens / sample count, measure-only, hidden when empty). Still
