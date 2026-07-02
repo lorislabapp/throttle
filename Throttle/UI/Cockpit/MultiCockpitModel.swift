@@ -122,7 +122,10 @@ final class CockpitTab: Identifiable {
         term.onTestOutcome = { [weak self] out in
             guard let self else { return }
             let enc = MultiCockpitModel.claudeProjectDirName(self.cwd)
-            Task.detached(priority: .utility) { TestOutcomeStore.record(project: enc, outcome: out) }
+            let sid = self.sessionId, eur = self.eur
+            Task.detached(priority: .utility) {
+                TestOutcomeStore.record(project: enc, sessionId: sid, costEUR: eur, outcome: out)
+            }
         }
         term.isPausedProvider = { [weak self] in self?.isPaused ?? false }
         term.onTogglePause = { [weak self] in

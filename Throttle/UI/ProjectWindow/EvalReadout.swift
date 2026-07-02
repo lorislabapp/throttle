@@ -30,6 +30,9 @@ struct EvalReadout: View {
                         cell("\(Int((s.passRate * 100).rounded()))%", "pass rate")
                         cell("\(s.green)", "green runs")
                         cell("\(s.red)", "red runs")
+                        if let e = s.eurPerGreen, e > 0 {
+                            cell(String(format: "€%.2f", e), "≈ / green run")
+                        }
                         Spacer(minLength: 0)
                     }
                     .padding(.top, 8)
