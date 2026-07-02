@@ -10,6 +10,8 @@ struct CommandRunnerSheet: View {
     @State private var running: UUID?
     @State private var result: CommandRunnerService.RunResult?
     @State private var resultName = ""
+    @State private var pendingDelete: CommandRunnerService.SavedCommand?
+    @State private var copied = false
 
     enum EditTarget: Identifiable {
         case new
@@ -47,13 +49,19 @@ struct CommandRunnerSheet: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 0) {
-                    Text("Run saved shell commands straight from Throttle — no claude session, no `!`, zero tokens. Runs through your login shell (PATH + secrets).")
+                    Text("Run saved shell commands straight from Throttle — no claude session, no ! prefix, zero tokens. Runs through your login shell (PATH + secrets).")
                         .font(.system(size: 11.5)).foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 8)
                     if model.commands.isEmpty {
-                        Text("No saved commands yet. Tap New.")
-                            .font(.system(size: 12)).foregroundStyle(.tertiary).padding(24)
+                        VStack(spacing: 10) {
+                            Image(systemName: "chevron.left.forwardslash.chevron.right")
+                                .font(.system(size: 26, weight: .light)).foregroundStyle(.tertiary)
+                            Text("No saved commands yet — click New to add one.")
+                                .font(.system(size: 12)).foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity).padding(.vertical, 44)
                     }
                     ForEach(model.commands) { c in
                         row(c)
@@ -63,6 +71,15 @@ struct CommandRunnerSheet: View {
             }
             if let result { outputPanel(result) }
         }
+        .confirmationDialog("Delete “\(pendingDelete?.name ?? "")”?",
+                            isPresented: Binding(get: { pendingDelete != nil },
+                                                 set: { if !$0 { pendingDelete = nil } }),
+                            titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                if let c = pendingDelete { model.remove(c.id) }; pendingDelete = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDelete = nil }
+        } message: { Text("This can't be undone.") }
     }
 
     private func row(_ c: CommandRunnerService.SavedCommand) -> some View {
@@ -74,35 +91,57 @@ struct CommandRunnerSheet: View {
             }
             Spacer(minLength: 6)
             if running == c.id {
-                ProgressView().controlSize(.small)
+                ProgressView().controlSize(.small).frame(width: 28, height: 28)
             } else {
-                Button { run(c) } label: { Image(systemName: "play.fill") }
-                    .buttonStyle(.borderless).help("Run")
+                RunButton { run(c) }.disabled(running != nil)
             }
-            Button { editing = .existing(c) } label: { Image(systemName: "pencil") }
-                .buttonStyle(.borderless).help("Edit").foregroundStyle(.secondary)
-            Button { model.remove(c.id) } label: { Image(systemName: "trash") }
-                .buttonStyle(.borderless).help("Delete").foregroundStyle(.secondary)
+            Menu {
+                Button { editing = .existing(c) } label: { Label("Edit", systemImage: "pencil") }
+                Button(role: .destructive) { pendingDelete = c } label: { Label("Delete", systemImage: "trash") }
+            } label: {
+                Image(systemName: "ellipsis.circle").font(.system(size: 14))
+                    .foregroundStyle(.secondary).frame(width: 28, height: 28).contentShape(Rectangle())
+            }
+            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+            .disabled(running != nil)
+            .help("Edit or delete")
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
+        .contentShape(Rectangle())
     }
 
     private func outputPanel(_ r: CommandRunnerService.RunResult) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Divider()
             HStack(spacing: 8) {
-                Circle().fill(r.ok ? Color.green : Color.orange).frame(width: 8, height: 8)
-                Text("\(resultName) — exit \(r.exitCode) · \(r.durationMs) ms\(r.truncated ? " · truncated" : "")")
-                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                Circle().fill(r.ok ? Color.green : Color.red).frame(width: 8, height: 8)
+                HStack(spacing: 0) {
+                    Text(resultName).foregroundStyle(.secondary)
+                    Text(" — exit \(r.exitCode) · \(r.durationMs) ms\(r.truncated ? " · truncated" : "")")
+                        .foregroundStyle(.secondary).monospacedDigit()
+                }
+                .font(.system(size: 11, weight: .medium)).lineLimit(1)
                 Spacer()
-                Button { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(r.output, forType: .string) }
-                    label: { Image(systemName: "doc.on.doc") }.buttonStyle(.borderless).help("Copy output")
-                Button { result = nil } label: { Image(systemName: "xmark") }.buttonStyle(.borderless).help("Dismiss")
+                Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(r.output, forType: .string)
+                    copied = true
+                    Task { try? await Task.sleep(for: .seconds(1)); copied = false }
+                } label: {
+                    Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                        .foregroundStyle(copied ? Color.green : .secondary)
+                        .frame(width: 24, height: 24).contentShape(Rectangle())
+                }.buttonStyle(.plain).help("Copy output")
+                Button { result = nil } label: {
+                    Image(systemName: "xmark").foregroundStyle(.secondary)
+                        .frame(width: 24, height: 24).contentShape(Rectangle())
+                }.buttonStyle(.plain).help("Dismiss")
             }
             .padding(.horizontal, 16).padding(.vertical, 8)
             ScrollView {
                 Text(r.output.isEmpty ? "(no output)" : r.output)
                     .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(r.output.isEmpty ? .tertiary : .primary)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16).padding(.bottom, 12)
@@ -118,6 +157,26 @@ struct CommandRunnerSheet: View {
             let r = await model.run(c)
             running = nil; resultName = c.name; result = r
         }
+    }
+}
+
+// MARK: - Run button (primary action — accent, hover fill, 28×28 hit target)
+
+private struct RunButton: View {
+    let action: () -> Void
+    @State private var hover = false
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "play.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 28, height: 28)
+                .background(RoundedRectangle(cornerRadius: 7)
+                    .fill(hover ? Color.accentColor.opacity(0.12) : .clear))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).help("Run")
+        .onHover { hover = $0 }
     }
 }
 

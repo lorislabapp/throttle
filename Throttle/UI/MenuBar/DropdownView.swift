@@ -674,6 +674,11 @@ struct DropdownView: View {
                         mode = .settings(.pro)   // Pro feature → upsell
                     }
                 }
+                DockTile(icon: "chevron.left.forwardslash.chevron.right", label: "Commands",
+                         badgeText: appState.isPro ? nil : "PRO", badgeStyle: .pro) {
+                    if appState.isPro { CommandRunnerWindowController.shared.show() }
+                    else { mode = .settings(.pro) }
+                }
                 DockTile(icon: "magnifyingglass", label: "Search") {
                     TranscriptSearchWindowController.shared.show()
                 }
