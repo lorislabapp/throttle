@@ -391,10 +391,16 @@ final class MultiCockpitModel {
     /// that isn't the focused one and isn't currently working — reclaim burn from
     /// idle-but-live sessions without touching what you're actively using.
     func pauseIdleSessions() {
-        for s in sessions where s.isLive && s.id != activeID && s.state != .working && !s.isPaused {
-            s.pauseProcess()
+        let targets = sessions.filter { $0.isLive && $0.id != activeID && $0.state != .working && !$0.isPaused }
+        guard !targets.isEmpty else { return }
+        // State-aware: route through the same quiescent-window drain as auto-pause so a
+        // bare SIGSTOP never lands mid-flight (NotebookLM Q2). Idle sessions are already
+        // non-working, so this almost always fires immediately — but it's correct.
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            for s in targets { await self.drainThenPause(s) }
+            self.recomputeSortOrder(); self.persist()
         }
-        recomputeSortOrder(); persist()
     }
 
     /// Seconds left in the cancelable arming window (nil = not armed). Drives the banner.
