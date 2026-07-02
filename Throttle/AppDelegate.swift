@@ -149,7 +149,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Semantic auto-index (opt-in, OFF by default): keep each project's corpus
         // fresh for throttle_semantic_search without manual --index-repo. Skipped
         // under memory pressure (16 GB Mac). Gate read on main, heavy work off-main.
-        if SemanticAutoIndexer.isEnabled, !MemoryPressureMonitor.shared.isQuiet {
+        // Consult a SYNCHRONOUS snapshot too: at cold start on an already-swapping
+        // Mac the kernel hasn't posted a pressure event yet, so `isQuiet` reads a
+        // stale `.normal` — the false negative that let the heavy embedding pass
+        // start precisely when the machine was worst (MEM-M01).
+        if SemanticAutoIndexer.isEnabled, !MemoryPressureMonitor.shared.isQuiet,
+           !SystemMemoryService.sample().underPressure {
             Task.detached(priority: .utility) {
                 let roots = ProjectsService.listProjects().compactMap { $0.projectPath }
                 _ = SemanticAutoIndexer.run(roots: roots, enabled: true, memoryQuiet: false,
@@ -263,7 +268,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         try FileManager.default.createDirectory(
             at: url.deletingLastPathComponent(),
             withIntermediateDirectories: true)
-        let pool = try DatabasePool(path: url.path)
+        // Bound per-connection memory on the 16 GB constraint (MEM-M02): a
+        // menu-bar app's reads are bursty, not parallel-heavy, so 2 readers is
+        // plenty, and each SQLite connection's page cache is capped (~2 MB) via
+        // a negative cache_size (KiB). Writer keeps its own connection.
+        var config = Configuration()
+        config.maximumReaderCount = 2
+        config.prepareDatabase { db in
+            try db.execute(sql: "PRAGMA cache_size = -2000")
+        }
+        let pool = try DatabasePool(path: url.path, configuration: config)
         try Migrations.register(on: pool)
         return pool
     }

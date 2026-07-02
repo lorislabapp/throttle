@@ -420,6 +420,42 @@ final class MultiCockpitModel {
     /// Opening another session would push the Mac past saturation.
     var gated: Bool { machine.critical }
 
+    // MARK: - Auto-hibernate under memory pressure (MEM-H01)
+
+    /// Default-ON, reversible: under critical memory pressure, hibernate sessions
+    /// that have been idle a while to reclaim their ~300 MB–1 GB subtree RSS —
+    /// the single biggest RAM lever on a 16 GB Mac deep in swap. Unlike SIGSTOP
+    /// pause (freezes token burn but keeps resident pages), hibernate KILLS the
+    /// subtree and frees the pages; the tab wakes via `claude --resume` with full
+    /// context. Never touches the active/working/waiting/paused/rate-limited tab.
+    var autoHibernateEnabled: Bool {
+        UserDefaults.standard.object(forKey: "throttleAutoHibernateEnabled") as? Bool ?? true
+    }
+    private let autoHibIdleSeconds: TimeInterval = 15 * 60
+    private var lastAutoHibernateAt = Date.distantPast
+    private var pressureObserverRegistered = false
+
+    func autoHibernateIfPressured() {
+        guard autoHibernateEnabled, machine.critical else { return }
+        // Debounce: at most once every 2 min so a sustained-critical machine
+        // doesn't churn hibernate attempts every tick.
+        guard Date().timeIntervalSince(lastAutoHibernateAt) > 120 else { return }
+        let now = Date()
+        let victims = sessions.filter {
+            $0.isSpawned && !$0.isPaused && !$0.isHibernated && !$0.isRateLimited
+            && $0.id != activeID                       // never the focused tab
+            && $0.state == .idle                       // excludes working/waiting/dormant
+            && now.timeIntervalSince($0.lastActivityAt) >= autoHibIdleSeconds
+        }
+        guard !victims.isEmpty else { return }
+        lastAutoHibernateAt = now
+        let freed = victims.reduce(UInt64(0)) { $0 + $1.ramBytes }   // best-effort; RSS may be stale under quiet mode
+        for v in victims { v.hibernate() }
+        recomputeSortOrder()
+        persist()
+        CockpitNotifier.shared.notifyAutoHibernate(count: victims.count, freedBytes: freed)
+    }
+
     func start(appState: AppState) {
         self.appState = appState
         CockpitNotifier.shared.activate(appState: appState)
@@ -448,6 +484,12 @@ final class MultiCockpitModel {
         }
         if sessions.isEmpty { restore() }   // bring back the working set (lazy)
         sessionsLoaded = true               // cockpit opened → `sessions` is canonical, safe to persist
+        // React the instant pressure worsens to critical, not just on the next
+        // 10–30 s tick (MEM-H01 / MEM-M03). Registered once.
+        if !pressureObserverRegistered {
+            pressureObserverRegistered = true
+            MemoryPressureMonitor.shared.onPressureRise { [weak self] _ in self?.autoHibernateIfPressured() }
+        }
         sampleMachine()
         tick?.cancel()
         tick = Task { [weak self] in
@@ -461,6 +503,7 @@ final class MultiCockpitModel {
                 self?.sampleMachine()
                 self?.refreshStats()
                 self?.evaluateAutoPause()
+                self?.autoHibernateIfPressured()   // MEM-H01: reclaim idle-session RAM under critical pressure
                 if !quiet { self?.sampleSessionRAM() }
             }
         }

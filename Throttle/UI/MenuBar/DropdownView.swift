@@ -1321,6 +1321,7 @@ private struct InlineGeneralPane: View {
     @State private var conciseClaudeCode: Bool =
         FileManager.default.fileExists(atPath: InlineGeneralPane.conciseFlagPath)
     @AppStorage("throttleAutoPauseEnabled") private var autoPauseEnabled = false
+    @AppStorage("throttleAutoHibernateEnabled") private var autoHibernateEnabled = true
     @State private var autopilotOn: Bool = AutopilotService.isEnabled
     @State private var apMemory: Bool = AutopilotService.archiveStaleMemory
     @State private var apSkills: Bool = AutopilotService.archiveDeadSkills
@@ -1392,6 +1393,11 @@ private struct InlineGeneralPane: View {
             SettingsRow(title: "Auto-pause near the cap",
                         sub: "Off by default. At 95% with the wall under 5 min away, Throttle shows a 10-second cancelable countdown, then waits for a quiet moment in the transcript (no stream/write in flight) before freezing (SIGSTOP) the runaway session — or all live ones if none is looping. Reversible: resume anytime, nothing lost.") {
                 Toggle("", isOn: $autoPauseEnabled).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+            }
+            SettingsHair()
+            SettingsRow(title: "Auto-hibernate idle sessions under memory pressure",
+                        sub: "On by default. When the Mac hits critical memory pressure, Throttle hibernates cockpit sessions idle 15+ min — kills the ~300 MB–1 GB subtree, keeps the resume-id — to free real RAM (SIGSTOP pause only freezes tokens, not memory). Never the active/working/waiting session. Reversible: reopen the tab to resume with full context via --resume.") {
+                Toggle("", isOn: $autoHibernateEnabled).labelsHidden().toggleStyle(.switch).tint(.accentColor)
             }
             SettingsHair()
             SettingsRow(title: "Concise Claude Code replies",

@@ -88,6 +88,30 @@ final class CockpitNotifier: NSObject {
         }
     }
 
+    /// Throttle auto-hibernated idle sessions to reclaim RAM under memory
+    /// pressure. One aggregate banner (never one per session) so the user knows
+    /// what happened and that it's reversible (tabs wake via `--resume`).
+    func notifyAutoHibernate(count: Int, freedBytes: UInt64) {
+        guard count > 0 else { return }
+        let freed = ByteCountFormatter.string(fromByteCount: Int64(freedBytes), countStyle: .memory)
+        let body = freedBytes > 0
+            ? "Freed ~\(freed) — reopen a tab to resume it with full context."
+            : "Reopen a tab to resume it with full context."
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let status = settings.authorizationStatus
+            Task { @MainActor in
+                guard status == .authorized || status == .provisional else { return }
+                let content = UNMutableNotificationContent()
+                content.title = "Hibernated \(count) idle session\(count == 1 ? "" : "s")"
+                content.body = body
+                content.sound = nil   // silent — this is a background reclaim, not an alert
+                let req = UNNotificationRequest(identifier: "cockpit-autohibernate",
+                                                content: content, trigger: nil)
+                UNUserNotificationCenter.current().add(req)
+            }
+        }
+    }
+
     /// Notifications are off but a hidden session needs the user — tell the UI to
     /// show an in-cockpit "turn on notifications" banner (debounced ~2h) so the
     /// feature degrades visibly instead of silently (C02).
