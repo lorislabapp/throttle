@@ -24,9 +24,13 @@ struct MultiCockpitRoot: View {
     @State private var showActivity = false                // Work activity panel
     @State private var showSetup = false                   // Claude Code setup panel
     @State private var showWhatsNew = false                // What's-new / optimizations tour
+    @State private var showUtilityRow = false              // Dir C reveal row (chevron)
+    @State private var barWidth: CGFloat = 980             // drives narrow/icon-only collapse
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let hair = Color.primary.opacity(0.10)
     private let track = Color.primary.opacity(0.08)
+    private var zsep: some View { Rectangle().fill(hair).frame(width: 1, height: 18) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -69,80 +73,103 @@ struct MultiCockpitRoot: View {
 
     // MARK: - Top bar (switcher + pills)
 
+    /// Dir C — "The Reveal Row" (Claude Design 683dc5a2 · Toolbar.html). Two rows:
+    /// a calm 40pt primary row (identity · view switcher · stateful toggles · status)
+    /// and a 36pt utility shelf (timeline + occasional utilities) that the chevron
+    /// reveals. See docs/UI-SPEC-cockpit-toolbar.md.
     private var topBar: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "gauge.with.dots.needle.50percent")
-                .font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
-            Text("Throttle Cockpit").font(.system(size: 12.5, weight: .semibold))
-            Spacer(minLength: 12)
-            viewSwitcher
-            Spacer(minLength: 12)
-            if !model.sessions.isEmpty { timelineNav }
-            // H08: hairline separator + tighter spacing groups the session-tools
-            // cluster so 8+ adjacent glyphs don't read as one undifferentiated row.
-            Rectangle().fill(hair).frame(width: 1, height: 16)
-            HStack(spacing: 8) {
-                caffeineToggle
-                themeMenu
-                Button { showActivity = true } label: {
-                    Image(systemName: "chart.bar.xaxis")
-                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain).help("Work activity — hours/day, projects this week")
-                .accessibilityLabel("Work activity")
-                Button { showSetup = true } label: {
-                    Image(systemName: "puzzlepiece.extension")
-                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain).help("Claude Code setup — MCP servers, skills, plugins")
-                .accessibilityLabel("Claude Code setup")
-                Button { showWhatsNew = true } label: {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain).help("What's new — optimization features")
-                .accessibilityLabel("What's new")
-                Button { showHealth = true } label: {
-                    Image(systemName: "stethoscope")
-                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain).help("Throttle Health — operational self-checks")
-                .accessibilityLabel("Throttle Health")
-                Button { showInspector.toggle() } label: {
-                    Image(systemName: "sidebar.trailing")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(showInspector ? Color.accentColor : Color.secondary)
-                }
-                .buttonStyle(.plain).help("Audit inspector").accessibilityLabel("Audit inspector")
-                Button { model.toggleShell() } label: {
-                    Image(systemName: "terminal")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(model.showShell ? Color.accentColor : Color.secondary)
-                }
-                .buttonStyle(.plain).keyboardShortcut("t", modifiers: [.command, .shift])
-                .help("Side shell (⌘⇧T) — a zsh in this project's folder, beside claude")
-                .accessibilityLabel("Toggle side shell")
-                .disabled(model.active == nil)
+        let narrow = barWidth < 860
+        return VStack(spacing: 0) {
+            primaryRow(narrow: narrow)
+            utilityRow(narrow: narrow)
+        }
+        .background(GeometryReader { g in
+            Color.clear.preference(key: BarWidthKey.self, value: g.size.width)
+        })
+        .onPreferenceChange(BarWidthKey.self) { barWidth = $0 }
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: showUtilityRow)
+    }
+
+    private func primaryRow(narrow: Bool) -> some View {
+        HStack(spacing: 6) {
+            identity(compact: narrow)
+            zsep
+            viewSwitcher(iconsOnly: narrow)
+            Spacer(minLength: 6)
+            ToolbarToggle(icon: "sidebar.trailing", label: "Audit", isOn: showInspector,
+                          iconOnly: narrow, help: "Audit inspector") { showInspector.toggle() }
+            ToolbarToggle(icon: "terminal", label: "Shell", isOn: model.showShell,
+                          iconOnly: narrow,
+                          help: "Side shell (⌘⇧T) — a zsh in this project's folder, beside claude") {
+                model.toggleShell()
             }
-            styleIndicator
+            .keyboardShortcut("t", modifiers: [.command, .shift])
+            .disabled(model.active == nil)
+            zsep
+            RevealChevron(isOpen: showUtilityRow) { showUtilityRow.toggle() }
+            statusCluster(narrow: narrow)
+        }
+        .padding(.horizontal, 10).frame(height: 40)
+    }
+
+    /// The revealed utility shelf: contextual timeline (or an empty note) on the
+    /// left, the occasional utilities on the right. Height collapses to 0 when hidden.
+    private func utilityRow(narrow: Bool) -> some View {
+        HStack(spacing: 6) {
+            if model.sessions.isEmpty {
+                Text("No session open").font(.system(size: 11)).foregroundStyle(.tertiary)
+            } else {
+                timelineNav
+            }
+            Spacer(minLength: 6)
+            caffeineToggle
+            themeMenu
+            ToolbarUtil(icon: "chart.bar.xaxis", help: "Work activity — hours/day, projects this week") { showActivity = true }
+            ToolbarUtil(icon: "puzzlepiece.extension", help: "Claude Code setup — MCP servers, skills, plugins") { showSetup = true }
+            ToolbarUtil(icon: "sparkles", help: "What's new — optimization features") { showWhatsNew = true }
+            ToolbarUtil(icon: "stethoscope", help: "Throttle Health — operational self-checks") { showHealth = true }
+        }
+        .padding(.horizontal, 10)
+        .frame(height: showUtilityRow ? 36 : 0)
+        .background(Color.primary.opacity(0.03))
+        .opacity(showUtilityRow ? 1 : 0)
+        .clipped()
+        .allowsHitTesting(showUtilityRow)
+    }
+
+    private func identity(compact: Bool) -> some View {
+        HStack(spacing: 7) {
+            Image(systemName: "gauge.with.dots.needle.50percent")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.primary).opacity(0.88)
+            if !compact {
+                (Text("Throttle ").fontWeight(.semibold)
+                 + Text("Cockpit").fontWeight(.medium).foregroundColor(.secondary))
+                    .font(.system(size: 12.5)).fixedSize()
+            }
+        }
+        .padding(.horizontal, 5)
+    }
+
+    private func statusCluster(narrow: Bool) -> some View {
+        HStack(spacing: 7) {
+            if !narrow { styleIndicator }
             if appState.isPro { pill("PRO", soft: true) }
             if appState.exactSnapshot != nil { pill("EXACT", solid: true) }
         }
-        .padding(.horizontal, 14).frame(height: 40)
+        .padding(.trailing, 3)
     }
 
     /// Active output-style at a glance — click to open the manager (the same
     /// styles drive this Cockpit's `claude` and the terminal).
+    /// Quiet, read-only status text (Dir C demotes the old capsule): the active
+    /// output style as tabular mono, clickable to open the manager.
     private var styleIndicator: some View {
         Button { OutputStyleWindowController.shared.show() } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "text.alignleft").font(.system(size: 9, weight: .semibold))
-                Text(styleShort(activeStyle)).font(.system(size: 10, weight: .semibold))
-            }
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 7).padding(.vertical, 3)
-            .background(Color.primary.opacity(0.06), in: Capsule())
-            .contentShape(Capsule())
+            Text(styleShort(activeStyle))
+                .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                .foregroundStyle(.tertiary)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain).help("Output style: \(activeStyle) — click to change")
     }
@@ -205,21 +232,27 @@ struct MultiCockpitRoot: View {
         .accessibilityLabel("Terminal theme").accessibilityValue(themePreset.label)
     }
 
-    private var viewSwitcher: some View {
-        HStack(spacing: 2) {
+    /// The dominant control: a segmented view switcher on a recessed track, icon +
+    /// label (icon-only when narrow), active item raised onto an elevated surface.
+    private func viewSwitcher(iconsOnly: Bool) -> some View {
+        HStack(spacing: 1) {
             ForEach(MultiCockpitModel.ViewMode.allCases) { mode in
-                let on = model.viewMode == mode
-                Button { model.viewMode = mode } label: {
-                    Text(mode.label)
-                        .font(.system(size: 11.5, weight: on ? .semibold : .medium))
-                        .foregroundStyle(on ? Color.accentColor : Color.secondary)
-                        .padding(.horizontal, 11).padding(.vertical, 5)
-                        .background(on ? Color.accentColor.opacity(0.12) : .clear,
-                                   in: RoundedRectangle(cornerRadius: 7))
-                        .contentShape(Rectangle())
+                SwitcherItem(icon: viewIcon(mode), label: mode.label,
+                             isOn: model.viewMode == mode, iconOnly: iconsOnly) {
+                    model.viewMode = mode
                 }
-                .buttonStyle(.plain)
             }
+        }
+        .padding(2)
+        .background(track, in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func viewIcon(_ m: MultiCockpitModel.ViewMode) -> String {
+        switch m {
+        case .dashboard: return "square.grid.2x2"
+        case .tabs:      return "macwindow"
+        case .rail:      return "sidebar.left"
+        case .mission:   return "rectangle.3.group"
         }
     }
 
@@ -1009,5 +1042,125 @@ struct MultiCockpitRoot: View {
         if s < 60 { return "\(s)s" }
         if s < 3600 { return "\(s / 60)m" }
         return "\(s / 3600)h \(s % 3600 / 60)m"
+    }
+}
+
+// MARK: - Toolbar primitives (Dir C · Claude Design 683dc5a2 · Toolbar.html)
+
+/// Reads the toolbar's live width so the primary row can collapse to icon-only
+/// below 860pt (mirrors the mock's container query without hard-coding a layout).
+private struct BarWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat { 980 }
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+}
+
+/// One segment of the view switcher — the dominant control. Active item is raised
+/// onto an elevated surface with the accent; inactive is quiet, brightening on hover.
+private struct SwitcherItem: View {
+    let icon: String
+    let label: String
+    let isOn: Bool
+    let iconOnly: Bool
+    let action: () -> Void
+    @State private var hover = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.system(size: 12, weight: .medium))
+                if !iconOnly {
+                    Text(label).font(.system(size: 11.5, weight: isOn ? .semibold : .medium))
+                }
+            }
+            .foregroundStyle(isOn ? Color.accentColor : (hover ? Color.primary : Color.secondary))
+            .padding(.horizontal, iconOnly ? 9 : 11).frame(height: 26)
+            .background(isOn ? AnyShapeStyle(Color(nsColor: .controlBackgroundColor))
+                             : AnyShapeStyle(Color.clear),
+                        in: RoundedRectangle(cornerRadius: 6))
+            .overlay {
+                if isOn {
+                    RoundedRectangle(cornerRadius: 6).stroke(Color.primary.opacity(0.05), lineWidth: 0.5)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).onHover { hover = $0 }.help(label)
+    }
+}
+
+/// A stateful toolbar toggle (Audit, Shell): a bordered chip whose ON state fills
+/// with a tinted accent + accent ring so it reads unmistakably as on, not momentary.
+private struct ToolbarToggle: View {
+    let icon: String
+    var label: String
+    let isOn: Bool
+    let iconOnly: Bool
+    let help: String
+    let action: () -> Void
+    @State private var hover = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.system(size: 12.5, weight: .medium))
+                if !iconOnly { Text(label).font(.system(size: 11, weight: .medium)) }
+            }
+            .foregroundStyle(isOn ? Color.accentColor : (hover ? Color.primary : Color.secondary))
+            .padding(.horizontal, iconOnly ? 7 : 9).frame(height: 26)
+            .background(isOn ? Color.accentColor.opacity(0.14)
+                             : (hover ? Color.primary.opacity(0.06) : Color.clear),
+                        in: RoundedRectangle(cornerRadius: 7))
+            .overlay {
+                RoundedRectangle(cornerRadius: 7)
+                    .stroke(isOn ? Color.accentColor.opacity(0.5) : Color.primary.opacity(0.10), lineWidth: 1)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).onHover { hover = $0 }
+        .help(help).accessibilityValue(isOn ? "On" : "Off")
+    }
+}
+
+/// A quiet momentary utility glyph (26×26) for the revealed shelf. Optional `tint`
+/// lets a stateful one (caffeine) show an accent without changing the footprint.
+private struct ToolbarUtil: View {
+    let icon: String
+    let help: String
+    var tint: Color? = nil
+    let action: () -> Void
+    @State private var hover = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon).font(.system(size: 13, weight: .medium))
+                .foregroundStyle(tint ?? (hover ? Color.primary : Color.secondary.opacity(0.85)))
+                .frame(width: 26, height: 26)
+                .background(hover ? Color.primary.opacity(0.06) : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 6))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).onHover { hover = $0 }.help(help)
+    }
+}
+
+/// The reveal affordance: rotates 180° and turns accent when the utility shelf is open.
+private struct RevealChevron: View {
+    let isOpen: Bool
+    let action: () -> Void
+    @State private var hover = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(isOpen ? Color.accentColor : (hover ? Color.primary : Color.secondary))
+                .rotationEffect(.degrees(isOpen ? 180 : 0))
+                .frame(width: 26, height: 26)
+                .background(hover ? Color.primary.opacity(0.06) : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 6))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).onHover { hover = $0 }
+        .help(isOpen ? "Hide utilities" : "More controls — timeline, theme, activity, setup, health")
+        .accessibilityLabel("More controls")
     }
 }
