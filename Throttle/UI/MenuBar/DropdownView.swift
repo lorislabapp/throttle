@@ -1325,6 +1325,7 @@ private struct InlineGeneralPane: View {
     @State private var calendarStatus: String = ""
     @State private var conciseClaudeCode: Bool =
         FileManager.default.fileExists(atPath: InlineGeneralPane.conciseFlagPath)
+    @AppStorage("throttleLowMemoryMode") private var lowMemoryMode = false
     @AppStorage("throttleAutoPauseEnabled") private var autoPauseEnabled = false
     @AppStorage("throttleAutoTrimEnabled") private var autoTrimEnabled = false
     @AppStorage("throttleAutoHibernateEnabled") private var autoHibernateEnabled = true
@@ -1396,6 +1397,11 @@ private struct InlineGeneralPane: View {
                         await MainActor.run { handleCalendarResult(result) }
                     }
                 }
+            }
+            SettingsHair()
+            SettingsRow(title: "Low-memory mode",
+                        sub: "Off by default. One switch for a RAM-constrained Mac (16 GB) — tightens every reclaim lever at once so you don't tune four settings: forces auto-hibernate on, reclaims idle sessions after 5 min (not 15), caps concurrent live sessions at 3, defaults the Node heap to 3072 MB when unset, and trims the terminal scrollback to 150 rows to cut per-scroll redraw. Reversible; never overwrites your individual settings, just shadows them while on.") {
+                Toggle("", isOn: $lowMemoryMode).labelsHidden().toggleStyle(.switch).tint(.orange)
             }
             SettingsHair()
             SettingsRow(title: "Auto-pause near the cap",

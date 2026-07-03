@@ -137,6 +137,11 @@ final class CockpitTab: Identifiable {
         let env = Terminal.getEnvironmentVariables(termName: "xterm-256color", trueColor: true)
         term.startProcess(executable: shell, args: [], environment: env, execName: "-\(shellName)")
         CockpitTerminalTheme.apply(to: term)   // after spawn so the engine is live + a redraw is queued
+        // Low-memory mode: trim the scrollback (default 500) to 150 rows. A small
+        // win on its own — the buffer is tiny next to the Node subtree — but it cuts
+        // per-scroll redraw work, which is what actually stutters on the beta.
+        let lowMem = UserDefaults.standard.bool(forKey: "throttleLowMemoryMode")
+        if lowMem { term.changeScrollback(150) }
         self.terminal = term
         self.spawnedAt = Date()                // real process start → honest uptime
 
@@ -148,7 +153,11 @@ final class CockpitTab: Identifiable {
         // ships OFF (0). --max-agents is likewise opt-in (verify your Claude Code
         // version supports the flag before enabling).
         let d = UserDefaults.standard
-        let heapMB = d.integer(forKey: "throttleNodeHeapCapMB")
+        // Low-memory mode supplies a safe default cap (3072 MB) when the user hasn't
+        // set one — high enough not to OOM claude on a big context, low enough to
+        // stop one runaway session eating the whole 16 GB.
+        var heapMB = d.integer(forKey: "throttleNodeHeapCapMB")
+        if heapMB <= 0, d.bool(forKey: "throttleLowMemoryMode") { heapMB = 3072 }
         if heapMB > 0 { cmd += "export NODE_OPTIONS='--max-old-space-size=\(heapMB)' && " }
         let maxAgents = d.integer(forKey: "throttleMaxAgents")
         let agentsFlag = maxAgents > 0 ? " --max-agents \(maxAgents)" : ""
@@ -510,17 +519,31 @@ final class MultiCockpitModel {
     /// subtree and frees the pages; the tab wakes via `claude --resume` with full
     /// context. Never touches the active/working/waiting/paused/rate-limited tab.
     var autoHibernateEnabled: Bool {
-        UserDefaults.standard.object(forKey: "throttleAutoHibernateEnabled") as? Bool ?? true
+        // Low-memory mode forces reclaim on regardless of the individual toggle —
+        // it's the single biggest anti-swap lever, so the master switch owns it.
+        if lowMemoryMode { return true }
+        return UserDefaults.standard.object(forKey: "throttleAutoHibernateEnabled") as? Bool ?? true
     }
-    private let autoHibIdleSeconds: TimeInterval = 15 * 60
+    /// How long a tab must sit idle before it's a hibernation candidate. Low-memory
+    /// mode reclaims 3× sooner (5 min vs 15) to keep resident pages — and swap — low.
+    private var autoHibIdleSeconds: TimeInterval { lowMemoryMode ? 5 * 60 : 15 * 60 }
     private var lastAutoHibernateAt = Date.distantPast
     private var pressureObserverRegistered = false
 
+    /// Master switch for the 16 GB Mac (see [[kevin-mac-memory-constraint]]): tightens
+    /// every reclaim threshold at once instead of making the user tune four settings.
+    /// Reversible, reads-through — never overwrites the individual prefs it shadows.
+    var lowMemoryMode: Bool {
+        UserDefaults.standard.bool(forKey: "throttleLowMemoryMode")
+    }
+
     /// Also reclaim proactively when too many sessions are spawned at once —
     /// macOS memory compression masks pressure until it's extreme, so waiting for
-    /// `machine.critical` reclaims too late. 0 = off. Default 6.
+    /// `machine.critical` reclaims too late. 0 = off. Default 6; low-memory caps at 3.
     var maxLiveSessions: Int {
-        UserDefaults.standard.object(forKey: "throttleMaxLiveSessions") as? Int ?? 6
+        let stored = UserDefaults.standard.object(forKey: "throttleMaxLiveSessions") as? Int ?? 6
+        if lowMemoryMode { return stored > 0 ? min(stored, 3) : 3 }
+        return stored
     }
 
     func autoHibernateIfPressured() {
