@@ -496,17 +496,17 @@ struct MultiCockpitRoot: View {
     }
 
     private var terminal: some View {
-        Group {
+        // MultiTerminalStack stays the STABLE first child of a single HSplitView in
+        // both states — never swapped between view-tree branches. Toggling the shell
+        // only adds/removes the second pane, so the claude terminals' NSView container
+        // is never destroyed/recreated (which produced the black screen on toggle-off).
+        HSplitView {
+            MultiTerminalStack(sessions: model.sessions, activeID: model.activeID)
+                .frame(minWidth: 340)
             if model.showShell, let active = model.active {
-                HSplitView {
-                    MultiTerminalStack(sessions: model.sessions, activeID: model.activeID)
-                        .frame(minWidth: 340)
-                    ShellPane(tab: active)
-                        .frame(minWidth: 280)
-                        .id(active.id)   // re-mount the shell host when the active tab changes
-                }
-            } else {
-                MultiTerminalStack(sessions: model.sessions, activeID: model.activeID)
+                ShellPane(tab: active)
+                    .frame(minWidth: 280)
+                    .id(active.id)   // re-mount the shell host when the active tab changes
             }
         }
         .background(Color(nsColor: CockpitTerminalTheme.backgroundColor))
