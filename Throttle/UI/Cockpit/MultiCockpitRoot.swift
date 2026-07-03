@@ -114,6 +114,15 @@ struct MultiCockpitRoot: View {
                         .foregroundStyle(showInspector ? Color.accentColor : Color.secondary)
                 }
                 .buttonStyle(.plain).help("Audit inspector").accessibilityLabel("Audit inspector")
+                Button { model.toggleShell() } label: {
+                    Image(systemName: "terminal")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(model.showShell ? Color.accentColor : Color.secondary)
+                }
+                .buttonStyle(.plain).keyboardShortcut("t", modifiers: [.command, .shift])
+                .help("Side shell (⌘⇧T) — a zsh in this project's folder, beside claude")
+                .accessibilityLabel("Toggle side shell")
+                .disabled(model.active == nil)
             }
             styleIndicator
             if appState.isPro { pill("PRO", soft: true) }
@@ -454,8 +463,20 @@ struct MultiCockpitRoot: View {
     }
 
     private var terminal: some View {
-        MultiTerminalStack(sessions: model.sessions, activeID: model.activeID)
-            .background(Color(nsColor: CockpitTerminalTheme.backgroundColor))
+        Group {
+            if model.showShell, let active = model.active {
+                HSplitView {
+                    MultiTerminalStack(sessions: model.sessions, activeID: model.activeID)
+                        .frame(minWidth: 340)
+                    ShellPane(tab: active)
+                        .frame(minWidth: 280)
+                        .id(active.id)   // re-mount the shell host when the active tab changes
+                }
+            } else {
+                MultiTerminalStack(sessions: model.sessions, activeID: model.activeID)
+            }
+        }
+        .background(Color(nsColor: CockpitTerminalTheme.backgroundColor))
     }
 
     // MARK: A — Tab bar

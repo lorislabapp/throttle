@@ -24,6 +24,10 @@ final class CockpitTab: Identifiable {
     /// LAZY: nil until the tab is first activated (memory-safe restore — a
     /// dormant restored tab costs nothing until you open it).
     private(set) var terminal: LocalProcessTerminalView?
+    /// LAZY side shell: a plain login zsh in the project's cwd, hosted in the
+    /// split pane beside claude. nil until the user first opens the shell on this
+    /// tab. NOT a claude subtree — just a shell (~10 MB), so cheap to keep.
+    private(set) var shellTerminal: DroppableTerminalView?
     /// When restoring, resume the exact prior claude session.
     private let resumeSessionId: String?
 
@@ -174,6 +178,32 @@ final class CockpitTab: Identifiable {
         term.send(txt: cmd + "\n")
     }
 
+    /// Spawn the side shell on first open: a login shell cd'd into the project —
+    /// no claude, just an interactive zsh for ad-hoc CLI beside the conversation.
+    func ensureShellSpawned() {
+        guard shellTerminal == nil else { return }
+        let term = DroppableTerminalView(frame: NSRect(x: 0, y: 0, width: 480, height: 480))
+        let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        let shellName = (shell as NSString).lastPathComponent
+        let env = Terminal.getEnvironmentVariables(termName: "xterm-256color", trueColor: true)
+        term.startProcess(executable: shell, args: [], environment: env, execName: "-\(shellName)")
+        CockpitTerminalTheme.apply(to: term)
+        if UserDefaults.standard.bool(forKey: "throttleLowMemoryMode") { term.changeScrollback(150) }
+        shellTerminal = term
+        // Drop the user straight into the project dir, matching the claude session's cwd.
+        let quoted = "'" + cwd.replacingOccurrences(of: "'", with: "'\\''") + "'"
+        term.send(txt: "cd \(quoted) && clear\n")
+    }
+
+    /// Kill the side shell's process subtree and drop the terminal. Called on
+    /// hibernate/close so it never leaks; reopening respawns fresh in the cwd.
+    func terminateShell() {
+        let pid = shellTerminal?.process?.shellPid
+        shellTerminal?.send(txt: "\nexit\n")
+        if let pid, pid > 0 { SystemMemoryService.killSubtree(rootPid: pid) }
+        shellTerminal = nil
+    }
+
     /// Exit claude (Ctrl-D) then the shell, then GUARANTEE the process subtree
     /// is gone. Cooperative exit alone can't kill a busy claude TUI (it ignores
     /// Ctrl-D mid-task), which orphaned shell→claude→node and leaked the RAM
@@ -193,6 +223,7 @@ final class CockpitTab: Identifiable {
             sessionId = MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
         }
         terminate()
+        terminateShell()   // the side shell is per-tab RAM too; free it with the session
         terminal = nil
         ramBytes = 0
         isLive = false
@@ -324,10 +355,23 @@ final class MultiCockpitModel {
     // Don't auto-spawn a HIBERNATED tab (that's the hibernate→instant-respawn
     // loop, LR-H04). wake() clears isHibernated first, so explicit wakes still spawn.
     var activeID: UUID? { didSet {
-        if let a = active, !a.isHibernated { a.ensureSpawned() }
+        if let a = active, !a.isHibernated {
+            a.ensureSpawned()
+            if showShell { a.ensureShellSpawned() }   // keep the split's shell live for the new tab
+        }
         active?.clearAttention()
     } }
     var viewMode: ViewMode = .dashboard   // the cover page is the landing view
+    /// Split-pane side shell visible? Per-tab shell (each session's own zsh in its
+    /// cwd), toggled with ⌘⇧T or the toolbar button. Off by default.
+    var showShell = false
+    /// Toggle the side shell; when opening, spawn the active tab's shell so the
+    /// pane isn't blank. Spawning here (not in the view's updateNSView) keeps the
+    /// @Observable mutation out of the render pass.
+    func toggleShell() {
+        showShell.toggle()
+        if showShell, let a = active, !a.isHibernated { a.ensureShellSpawned() }
+    }
     private(set) var machine: MemoryHealth = .unknown
     /// Count of sessions currently waiting on a question (for the header badge).
     var waitingCount: Int { sessions.filter { $0.needsInput }.count }
@@ -861,6 +905,7 @@ final class MultiCockpitModel {
     func close(_ id: UUID) {
         guard let idx = sessions.firstIndex(where: { $0.id == id }) else { return }
         sessions[idx].terminate()
+        sessions[idx].terminateShell()   // don't orphan the side shell's process
         sessions.remove(at: idx)
         recomputeSortOrder()
         if activeID == id { activeID = sessions.first?.id }
