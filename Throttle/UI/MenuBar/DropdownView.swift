@@ -1344,6 +1344,8 @@ private struct InlineGeneralPane: View {
     @State private var tokoptNote = ""
     @State private var memoryOn = TranscriptMemoryInstaller.isInstalled()
     @State private var memoryNote = ""
+    @State private var traycerOn = UserDefaults.standard.bool(forKey: "throttleTraycerEnabled")
+    @State private var traycerNote = ""
 
     /// Flag file the SessionStart hook reads to inject a terse-output directive
     /// into every Claude Code session. App writes it (non-sandboxed); hook reads it.
@@ -1534,6 +1536,38 @@ private struct InlineGeneralPane: View {
                             }
                             memoryNote = on
                                 ? "Installed — restart Claude Code, then ask it your budget headroom, cost, dead tools, or to search past sessions."
+                                : "Removed — restart Claude Code."
+                        }
+                }
+            }
+            SettingsHair()
+            SettingsRow(title: "Attribute cost per skill (Traycer)",
+                        sub: traycerNote.isEmpty
+                            ? "Turns on Claude Code's local OpenTelemetry export to a receiver inside Throttle, so the Project window can show € per skill. Full shell command lines are logged to the local usage.db (never leaves your Mac; prompt text is never captured). Reversible; restart Claude Code after."
+                            : traycerNote) {
+                HStack(spacing: 6) {
+                    if !appState.isPro {
+                        Text("PRO").font(.system(size: 9, weight: .heavy)).tracking(0.3)
+                            .padding(.horizontal, 5).padding(.vertical, 2)
+                            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 4))
+                            .foregroundStyle(.secondary)
+                    }
+                    Toggle("", isOn: appState.isPro ? $traycerOn : .constant(false))
+                        .labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                        .disabled(!appState.isPro)
+                        .onChange(of: traycerOn) { _, on in
+                            guard appState.isPro else { return }
+                            UserDefaults.standard.set(on, forKey: "throttleTraycerEnabled")
+                            let writer = appState.database
+                            if on {
+                                Task.detached(priority: .utility) { _ = try? TraycerEnvInstaller.install() }
+                                TraycerReceiver.shared.start(writer: writer)   // live now for new sessions
+                            } else {
+                                Task.detached(priority: .utility) { try? TraycerEnvInstaller.remove() }
+                                TraycerReceiver.shared.stop()
+                            }
+                            traycerNote = on
+                                ? "Installed — restart Claude Code to start exporting; € per skill appears in the Project window."
                                 : "Removed — restart Claude Code."
                         }
                 }

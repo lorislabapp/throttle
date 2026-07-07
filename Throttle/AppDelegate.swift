@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let database: any DatabaseWriter  // Accept both DatabasePool and DatabaseQueue
     private let coordinator: DataLayerCoordinator
     private let savingsIngester: SavingsIngester
+    private let traycer = TraycerReceiver.shared   // local OTLP receiver (opt-in; started below)
     private let updater = UpdaterService.shared
     private let logger = AppLogger.app
 
@@ -80,6 +81,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // update). No-op if the hook isn't installed or is already current.
         TokoptHookInstaller.reconcile()
         TranscriptMemoryInstaller.reconcile()   // heal a stale throttle-memory --mcp-server path (e.g. dev build → /Applications)
+        TraycerEnvInstaller.reconcile()          // heal drifted OTLP env keys — only if the user opted the export in
+
+        // Traycer: local OTLP receiver for €-per-skill attribution. Opt-in
+        // (Settings → the export writes full command lines to the local usage.db).
+        // Fail-open: a bind conflict on 4318 disables it silently.
+        if UserDefaults.standard.bool(forKey: "throttleTraycerEnabled") {
+            traycer.start(writer: database)
+        }
         OutputStyleManager.resyncManagedTemplates()   // heal stale managed output-style files after an app upgrade changed a template body
 
         var rlim = rlimit()
@@ -204,6 +213,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         CaffeineService.shared.setActive(false) // release the power assertion (M04)
         coordinator.stop()
         savingsIngester.stop()
+        traycer.stop()
         logger.notice("Throttle quitting")
     }
 

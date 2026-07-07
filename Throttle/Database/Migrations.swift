@@ -168,6 +168,30 @@ enum Migrations {
                 """)
         }
 
+        // v7: traycer_events — Claude Code OTel log records (skill_activated,
+        // tool_result, tool_decision) captured by the local OTLP receiver, keyed
+        // by session_id so cost/token data in usage_events joins by equality.
+        // UNIQUE(session_id, sequence) makes replayed OTLP batches (the exporter
+        // retries on transient failure) idempotent via INSERT OR IGNORE.
+        migrator.registerMigration("v7_traycer_events") { db in
+            try db.create(table: "traycer_events") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("session_id", .text).notNull()
+                t.column("sequence", .integer).notNull().defaults(to: 0)
+                t.column("ts", .integer).notNull()
+                t.column("event_type", .text).notNull()
+                t.column("tool_name", .text)
+                t.column("skill_name", .text)
+                t.column("full_command", .text)
+                t.column("decision", .text)
+                t.column("success", .boolean)
+            }
+            try db.create(index: "idx_traycer_session", on: "traycer_events", columns: ["session_id"])
+            try db.create(index: "idx_traycer_ts", on: "traycer_events", columns: ["ts"])
+            try db.create(index: "idx_traycer_natural", on: "traycer_events",
+                          columns: ["session_id", "sequence"], unique: true)
+        }
+
         try migrator.migrate(writer)
     }
 }

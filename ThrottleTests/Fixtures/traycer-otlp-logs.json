@@ -1,0 +1,2413 @@
+{
+ "resourceLogs": [
+  {
+   "resource": {
+    "attributes": [
+     {
+      "key": "host.arch",
+      "value": {
+       "stringValue": "arm64"
+      }
+     },
+     {
+      "key": "os.type",
+      "value": {
+       "stringValue": "darwin"
+      }
+     },
+     {
+      "key": "os.version",
+      "value": {
+       "stringValue": "27.0.0"
+      }
+     },
+     {
+      "key": "service.name",
+      "value": {
+       "stringValue": "claude-code"
+      }
+     },
+     {
+      "key": "service.version",
+      "value": {
+       "stringValue": "2.1.202"
+      }
+     }
+    ],
+    "droppedAttributesCount": 0
+   },
+   "scopeLogs": [
+    {
+     "scope": {
+      "name": "com.anthropic.claude_code.events",
+      "version": "2.1.202"
+     },
+     "logRecords": [
+      {
+       "timeUnixNano": "1783442460584000000",
+       "observedTimeUnixNano": "1783442460584000000",
+       "body": {
+        "stringValue": "claude_code.hook_execution_start"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "hook_execution_start"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.584Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "hook_event",
+         "value": {
+          "stringValue": "SessionStart"
+         }
+        },
+        {
+         "key": "hook_name",
+         "value": {
+          "stringValue": "SessionStart:startup"
+         }
+        },
+        {
+         "key": "num_hooks",
+         "value": {
+          "stringValue": "2"
+         }
+        },
+        {
+         "key": "managed_only",
+         "value": {
+          "stringValue": "false"
+         }
+        },
+        {
+         "key": "hook_source",
+         "value": {
+          "stringValue": "merged"
+         }
+        },
+        {
+         "key": "safe_mode",
+         "value": {
+          "stringValue": "false"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442460588000000",
+       "observedTimeUnixNano": "1783442460588000000",
+       "body": {
+        "stringValue": "claude_code.permission_mode_changed"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "permission_mode_changed"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.588Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 1
+         }
+        },
+        {
+         "key": "from_mode",
+         "value": {
+          "stringValue": "auto"
+         }
+        },
+        {
+         "key": "to_mode",
+         "value": {
+          "stringValue": "default"
+         }
+        },
+        {
+         "key": "trigger",
+         "value": {
+          "stringValue": "auto_gate_denied"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442460603000000",
+       "observedTimeUnixNano": "1783442460603000000",
+       "body": {
+        "stringValue": "claude_code.hook_registered"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "hook_registered"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.603Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 2
+         }
+        },
+        {
+         "key": "hook_event",
+         "value": {
+          "stringValue": "PostToolUse"
+         }
+        },
+        {
+         "key": "hook_type",
+         "value": {
+          "stringValue": "command"
+         }
+        },
+        {
+         "key": "hook_source",
+         "value": {
+          "stringValue": "userSettings"
+         }
+        },
+        {
+         "key": "safe_mode",
+         "value": {
+          "stringValue": "false"
+         }
+        },
+        {
+         "key": "hook_matcher",
+         "value": {
+          "stringValue": "Bash"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442460603000000",
+       "observedTimeUnixNano": "1783442460603000000",
+       "body": {
+        "stringValue": "claude_code.hook_registered"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "hook_registered"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.603Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 3
+         }
+        },
+        {
+         "key": "hook_event",
+         "value": {
+          "stringValue": "PreCompact"
+         }
+        },
+        {
+         "key": "hook_type",
+         "value": {
+          "stringValue": "command"
+         }
+        },
+        {
+         "key": "hook_source",
+         "value": {
+          "stringValue": "userSettings"
+         }
+        },
+        {
+         "key": "safe_mode",
+         "value": {
+          "stringValue": "false"
+         }
+        },
+        {
+         "key": "hook_matcher",
+         "value": {
+          "stringValue": "auto|manual"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442460603000000",
+       "observedTimeUnixNano": "1783442460603000000",
+       "body": {
+        "stringValue": "claude_code.hook_registered"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "hook_registered"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.603Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 4
+         }
+        },
+        {
+         "key": "hook_event",
+         "value": {
+          "stringValue": "PreToolUse"
+         }
+        },
+        {
+         "key": "hook_type",
+         "value": {
+          "stringValue": "command"
+         }
+        },
+        {
+         "key": "hook_source",
+         "value": {
+          "stringValue": "userSettings"
+         }
+        },
+        {
+         "key": "safe_mode",
+         "value": {
+          "stringValue": "false"
+         }
+        },
+        {
+         "key": "hook_matcher",
+         "value": {
+          "stringValue": "Bash"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442460603000000",
+       "observedTimeUnixNano": "1783442460603000000",
+       "body": {
+        "stringValue": "claude_code.hook_registered"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "hook_registered"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.603Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 5
+         }
+        },
+        {
+         "key": "hook_event",
+         "value": {
+          "stringValue": "SessionStart"
+         }
+        },
+        {
+         "key": "hook_type",
+         "value": {
+          "stringValue": "command"
+         }
+        },
+        {
+         "key": "hook_source",
+         "value": {
+          "stringValue": "userSettings"
+         }
+        },
+        {
+         "key": "safe_mode",
+         "value": {
+          "stringValue": "false"
+         }
+        },
+        {
+         "key": "hook_matcher",
+         "value": {
+          "stringValue": "startup|resume"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442460603000000",
+       "observedTimeUnixNano": "1783442460603000000",
+       "body": {
+        "stringValue": "claude_code.hook_registered"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "hook_registered"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.603Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 6
+         }
+        },
+        {
+         "key": "hook_event",
+         "value": {
+          "stringValue": "SessionStart"
+         }
+        },
+        {
+         "key": "hook_type",
+         "value": {
+          "stringValue": "command"
+         }
+        },
+        {
+         "key": "hook_source",
+         "value": {
+          "stringValue": "userSettings"
+         }
+        },
+        {
+         "key": "safe_mode",
+         "value": {
+          "stringValue": "false"
+         }
+        },
+        {
+         "key": "hook_matcher",
+         "value": {
+          "stringValue": "startup|resume"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442460632000000",
+       "observedTimeUnixNano": "1783442460632000000",
+       "body": {
+        "stringValue": "claude_code.mcp_server_connection"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "mcp_server_connection"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.632Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 7
+         }
+        },
+        {
+         "key": "status",
+         "value": {
+          "stringValue": "connected"
+         }
+        },
+        {
+         "key": "transport_type",
+         "value": {
+          "stringValue": "claudeai-proxy"
+         }
+        },
+        {
+         "key": "server_scope",
+         "value": {
+          "stringValue": "claudeai"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "stringValue": "4"
+         }
+        },
+        {
+         "key": "is_plugin",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "server_name",
+         "value": {
+          "stringValue": "claude.ai Google Drive"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442460634000000",
+       "observedTimeUnixNano": "1783442460634000000",
+       "body": {
+        "stringValue": "claude_code.mcp_server_connection"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "mcp_server_connection"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.634Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 8
+         }
+        },
+        {
+         "key": "status",
+         "value": {
+          "stringValue": "connected"
+         }
+        },
+        {
+         "key": "transport_type",
+         "value": {
+          "stringValue": "claudeai-proxy"
+         }
+        },
+        {
+         "key": "server_scope",
+         "value": {
+          "stringValue": "claudeai"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "stringValue": "3"
+         }
+        },
+        {
+         "key": "is_plugin",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "server_name",
+         "value": {
+          "stringValue": "claude.ai Gmail"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442460636000000",
+       "observedTimeUnixNano": "1783442460636000000",
+       "body": {
+        "stringValue": "claude_code.mcp_server_connection"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "mcp_server_connection"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.636Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 9
+         }
+        },
+        {
+         "key": "status",
+         "value": {
+          "stringValue": "connected"
+         }
+        },
+        {
+         "key": "transport_type",
+         "value": {
+          "stringValue": "stdio"
+         }
+        },
+        {
+         "key": "server_scope",
+         "value": {
+          "stringValue": "user"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "stringValue": "63"
+         }
+        },
+        {
+         "key": "is_plugin",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "server_name",
+         "value": {
+          "stringValue": "notebooklm-native"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442460639000000",
+       "observedTimeUnixNano": "1783442460639000000",
+       "body": {
+        "stringValue": "claude_code.mcp_server_connection"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "mcp_server_connection"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.639Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 10
+         }
+        },
+        {
+         "key": "status",
+         "value": {
+          "stringValue": "connected"
+         }
+        },
+        {
+         "key": "transport_type",
+         "value": {
+          "stringValue": "stdio"
+         }
+        },
+        {
+         "key": "server_scope",
+         "value": {
+          "stringValue": "user"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "stringValue": "56"
+         }
+        },
+        {
+         "key": "is_plugin",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "server_name",
+         "value": {
+          "stringValue": "throttle-memory"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442460879000000",
+       "observedTimeUnixNano": "1783442460879000000",
+       "body": {
+        "stringValue": "claude_code.mcp_server_connection"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "mcp_server_connection"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.879Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 11
+         }
+        },
+        {
+         "key": "status",
+         "value": {
+          "stringValue": "connected"
+         }
+        },
+        {
+         "key": "transport_type",
+         "value": {
+          "stringValue": "stdio"
+         }
+        },
+        {
+         "key": "server_scope",
+         "value": {
+          "stringValue": "user"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "stringValue": "242"
+         }
+        },
+        {
+         "key": "is_plugin",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "server_name",
+         "value": {
+          "stringValue": "audit-mcp"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442460909000000",
+       "observedTimeUnixNano": "1783442460909000000",
+       "body": {
+        "stringValue": "claude_code.hook_execution_complete"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "hook_execution_complete"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.909Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 12
+         }
+        },
+        {
+         "key": "hook_event",
+         "value": {
+          "stringValue": "SessionStart"
+         }
+        },
+        {
+         "key": "hook_name",
+         "value": {
+          "stringValue": "SessionStart:startup"
+         }
+        },
+        {
+         "key": "num_hooks",
+         "value": {
+          "stringValue": "2"
+         }
+        },
+        {
+         "key": "num_success",
+         "value": {
+          "stringValue": "2"
+         }
+        },
+        {
+         "key": "num_blocking",
+         "value": {
+          "stringValue": "0"
+         }
+        },
+        {
+         "key": "num_non_blocking_error",
+         "value": {
+          "stringValue": "0"
+         }
+        },
+        {
+         "key": "num_cancelled",
+         "value": {
+          "stringValue": "0"
+         }
+        },
+        {
+         "key": "total_duration_ms",
+         "value": {
+          "stringValue": "303"
+         }
+        },
+        {
+         "key": "managed_only",
+         "value": {
+          "stringValue": "false"
+         }
+        },
+        {
+         "key": "hook_source",
+         "value": {
+          "stringValue": "merged"
+         }
+        },
+        {
+         "key": "safe_mode",
+         "value": {
+          "stringValue": "false"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442460921000000",
+       "observedTimeUnixNano": "1783442460921000000",
+       "body": {
+        "stringValue": "claude_code.user_prompt"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "user_prompt"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.921Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 13
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "dbd61163-5339-4af3-b363-26fda2268386"
+         }
+        },
+        {
+         "key": "prompt_length",
+         "value": {
+          "stringValue": "87"
+         }
+        },
+        {
+         "key": "prompt",
+         "value": {
+          "stringValue": "<REDACTED>"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442460936000000",
+       "observedTimeUnixNano": "1783442460936000000",
+       "body": {
+        "stringValue": "claude_code.mcp_server_connection"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "mcp_server_connection"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:00.936Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 14
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "dbd61163-5339-4af3-b363-26fda2268386"
+         }
+        },
+        {
+         "key": "status",
+         "value": {
+          "stringValue": "connected"
+         }
+        },
+        {
+         "key": "transport_type",
+         "value": {
+          "stringValue": "stdio"
+         }
+        },
+        {
+         "key": "server_scope",
+         "value": {
+          "stringValue": "user"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "stringValue": "295"
+         }
+        },
+        {
+         "key": "is_plugin",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "server_name",
+         "value": {
+          "stringValue": "app-store-connect"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442461392000000",
+       "observedTimeUnixNano": "1783442461392000000",
+       "body": {
+        "stringValue": "claude_code.mcp_server_connection"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "mcp_server_connection"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:01.392Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 15
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "dbd61163-5339-4af3-b363-26fda2268386"
+         }
+        },
+        {
+         "key": "status",
+         "value": {
+          "stringValue": "connected"
+         }
+        },
+        {
+         "key": "transport_type",
+         "value": {
+          "stringValue": "claudeai-proxy"
+         }
+        },
+        {
+         "key": "server_scope",
+         "value": {
+          "stringValue": "claudeai"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "stringValue": "766"
+         }
+        },
+        {
+         "key": "is_plugin",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "server_name",
+         "value": {
+          "stringValue": "claude.ai Slack"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442462218000000",
+       "observedTimeUnixNano": "1783442462218000000",
+       "body": {
+        "stringValue": "claude_code.mcp_server_connection"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "mcp_server_connection"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:02.218Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 16
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "dbd61163-5339-4af3-b363-26fda2268386"
+         }
+        },
+        {
+         "key": "status",
+         "value": {
+          "stringValue": "connected"
+         }
+        },
+        {
+         "key": "transport_type",
+         "value": {
+          "stringValue": "stdio"
+         }
+        },
+        {
+         "key": "server_scope",
+         "value": {
+          "stringValue": "user"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "stringValue": "1633"
+         }
+        },
+        {
+         "key": "is_plugin",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "server_name",
+         "value": {
+          "stringValue": "mcp-local-rag"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442462420000000",
+       "observedTimeUnixNano": "1783442462420000000",
+       "body": {
+        "stringValue": "claude_code.mcp_server_connection"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "mcp_server_connection"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:02.420Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 17
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "dbd61163-5339-4af3-b363-26fda2268386"
+         }
+        },
+        {
+         "key": "status",
+         "value": {
+          "stringValue": "connected"
+         }
+        },
+        {
+         "key": "transport_type",
+         "value": {
+          "stringValue": "http"
+         }
+        },
+        {
+         "key": "server_scope",
+         "value": {
+          "stringValue": "user"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "stringValue": "1811"
+         }
+        },
+        {
+         "key": "is_plugin",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "server_name",
+         "value": {
+          "stringValue": "opnsense-mcp"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442463219000000",
+       "observedTimeUnixNano": "1783442463219000000",
+       "body": {
+        "stringValue": "claude_code.tool_decision"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "tool_decision"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:03.219Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 18
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "dbd61163-5339-4af3-b363-26fda2268386"
+         }
+        },
+        {
+         "key": "decision",
+         "value": {
+          "stringValue": "accept"
+         }
+        },
+        {
+         "key": "source",
+         "value": {
+          "stringValue": "config"
+         }
+        },
+        {
+         "key": "tool_name",
+         "value": {
+          "stringValue": "Skill"
+         }
+        },
+        {
+         "key": "tool_use_id",
+         "value": {
+          "stringValue": "toolu_01RfpQZMybnZuaA7i2wvnDqJ"
+         }
+        },
+        {
+         "key": "tool_parameters",
+         "value": {
+          "stringValue": "{\"skill_name\":\"session-tag\"}"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442463235000000",
+       "observedTimeUnixNano": "1783442463235000000",
+       "body": {
+        "stringValue": "claude_code.skill_activated"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "skill_activated"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:03.235Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 19
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "dbd61163-5339-4af3-b363-26fda2268386"
+         }
+        },
+        {
+         "key": "skill.name",
+         "value": {
+          "stringValue": "session-tag"
+         }
+        },
+        {
+         "key": "invocation_trigger",
+         "value": {
+          "stringValue": "claude-proactive"
+         }
+        },
+        {
+         "key": "skill.source",
+         "value": {
+          "stringValue": "userSettings"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442463237000000",
+       "observedTimeUnixNano": "1783442463237000000",
+       "body": {
+        "stringValue": "claude_code.tool_result"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "tool_result"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:03.237Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 20
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "dbd61163-5339-4af3-b363-26fda2268386"
+         }
+        },
+        {
+         "key": "tool_name",
+         "value": {
+          "stringValue": "Skill"
+         }
+        },
+        {
+         "key": "tool_use_id",
+         "value": {
+          "stringValue": "toolu_01RfpQZMybnZuaA7i2wvnDqJ"
+         }
+        },
+        {
+         "key": "success",
+         "value": {
+          "stringValue": "true"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "stringValue": "18"
+         }
+        },
+        {
+         "key": "tool_parameters",
+         "value": {
+          "stringValue": "{\"skill_name\":\"session-tag\"}"
+         }
+        },
+        {
+         "key": "tool_input",
+         "value": {
+          "stringValue": "{\"skill\":\"session-tag\",\"args\":\"list\"}"
+         }
+        },
+        {
+         "key": "tool_input_size_bytes",
+         "value": {
+          "stringValue": "37"
+         }
+        },
+        {
+         "key": "tool_result_size_bytes",
+         "value": {
+          "stringValue": "28"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1783442463254000000",
+       "observedTimeUnixNano": "1783442463254000000",
+       "body": {
+        "stringValue": "claude_code.api_request"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "1ac5f2e9168643d3fbe5521c9a8949e526db1529ada0073f8f4d66b641e945a5"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "65ceba2a-4ba7-4764-93b1-2926d560aa20"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "e2f71fae-e723-486c-9fc3-2373776a28fc"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "claude.nqqoo@simplelogin.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "60c7022c-69a9-4e49-93ad-befac9d1ae11"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01Cx8Rf34n1nCzckRbqbu5k4"
+         }
+        },
+        {
+         "key": "terminal.type",
+         "value": {
+          "stringValue": "xterm-256color"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "api_request"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-07-07T16:41:03.254Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 21
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "dbd61163-5339-4af3-b363-26fda2268386"
+         }
+        },
+        {
+         "key": "model",
+         "value": {
+          "stringValue": "claude-haiku-4-5-20251001"
+         }
+        },
+        {
+         "key": "input_tokens",
+         "value": {
+          "intValue": 10
+         }
+        },
+        {
+         "key": "output_tokens",
+         "value": {
+          "intValue": 135
+         }
+        },
+        {
+         "key": "cache_read_tokens",
+         "value": {
+          "intValue": 21866
+         }
+        },
+        {
+         "key": "cache_creation_tokens",
+         "value": {
+          "intValue": 13378
+         }
+        },
+        {
+         "key": "cost_usd",
+         "value": {
+          "doubleValue": 0.029627599999999997
+         }
+        },
+        {
+         "key": "cost_usd_micros",
+         "value": {
+          "intValue": 29628
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "intValue": 2322
+         }
+        },
+        {
+         "key": "request_id",
+         "value": {
+          "stringValue": "req_011Cco2ejygFBwusUQp8oBVs"
+         }
+        },
+        {
+         "key": "speed",
+         "value": {
+          "stringValue": "normal"
+         }
+        },
+        {
+         "key": "query_source",
+         "value": {
+          "stringValue": "sdk"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
