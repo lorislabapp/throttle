@@ -1,18 +1,38 @@
 import Foundation
 
 /// Installs / removes Throttle's PostToolUse(Bash) tokopt hook in
-/// `~/.claude/settings.json`. The hook command points at Throttle's own binary
-/// (`<exec> --tokopt-hook`), so there is no separate helper to ship. Reversible
-/// (backs up settings.json, splices out only OUR entry), idempotent. The user
-/// must restart Claude Code afterwards (hooks snapshot at session start).
+/// `~/.claude/settings.json`.
+///
+/// The hook command points at a thin shell **trampoline** we ship to
+/// `~/.claude/throttle-hook.sh`, which in turn `exec`s the signed binary
+/// (`<exec> --tokopt-hook`). The trampoline exists for ONE reason the direct
+/// binary wiring can't cover: if the user deletes/moves Throttle.app (drag to
+/// trash — no cleanup runs), the settings.json entry would keep invoking a
+/// missing binary and inject a shell error into every Bash result. The
+/// trampoline checks the binary exists first and otherwise no-ops (exit 0, no
+/// output), so Claude Code keeps the original output untouched — fail-open even
+/// when the app is gone. `reconcile()` can't help there; it lives in the app.
+///
+/// Reversible (backs up settings.json, splices out only OUR entry, deletes the
+/// script), idempotent, and self-heals the binary path in the script on launch.
+/// The user must restart Claude Code afterwards (hooks snapshot at session start).
 enum TokoptHookInstaller {
 
-    /// Stable marker that identifies our hook entry inside settings.json.
-    static let marker = "--tokopt-hook"
+    /// Stable marker identifying our (current) hook entry inside settings.json.
+    static let marker = "throttle-hook.sh"
+    /// Pre-3.2.45 entries wired the binary directly; used to migrate them.
+    static let legacyMarker = "--tokopt-hook"
 
     private static var home: URL { FileManager.default.homeDirectoryForCurrentUser }
     private static var settingsFile: URL { home.appendingPathComponent(".claude/settings.json") }
+    private static var scriptFile: URL { home.appendingPathComponent(".claude/throttle-hook.sh") }
     private static var backupsDir: URL { home.appendingPathComponent(".claude/throttle-backups", isDirectory: true) }
+
+    /// settings.json command — a STABLE path (tilde-expanded by the shell that
+    /// runs the hook, matching the proven statusline wiring). Because it never
+    /// embeds the binary path, the settings entry itself never needs healing;
+    /// only the script's `BIN=` line does.
+    private static let hookCommand = "~/.claude/throttle-hook.sh"
 
     /// Absolute path to the currently-running Throttle binary (so the hook keeps
     /// working from /Applications, or DerivedData during development).
@@ -24,18 +44,19 @@ enum TokoptHookInstaller {
 
     @discardableResult
     static func install() throws -> Bool {
+        try writeScript()
         var dict = readSettings() ?? [:]
         var hooks = dict["hooks"] as? [String: Any] ?? [:]
         var post = hooks["PostToolUse"] as? [[String: Any]] ?? []
-        // Already present → don't duplicate, but DO heal a stale exec path
-        // (e.g. an old DerivedData build path after installing to /Applications).
+        // Already present (current OR legacy) → don't duplicate; let reconcile
+        // migrate a legacy entry and heal the script's binary path.
         guard ourEntryIndices(in: post).isEmpty else { return reconcile() }
         try backupSettings()
         let entry: [String: Any] = [
             "matcher": "Bash",
             "hooks": [[
                 "type": "command",
-                "command": "'\(execPath)' \(marker)",
+                "command": hookCommand,
                 "timeout": 10,
             ]],
         ]
@@ -46,29 +67,31 @@ enum TokoptHookInstaller {
         return true
     }
 
-    /// Heal a stale exec path in our hook entry without requiring the user to
-    /// re-toggle — the running Throttle owns the `--tokopt-hook` path, so when the
-    /// binary moves (DerivedData → /Applications, or a Sparkle update) the next
-    /// launch repoints it. No-op if not installed or already current. Safe to call
-    /// on every launch (writes + backs up only when the path actually changed).
+    /// Launch-time self-heal (safe to call every launch):
+    ///   1. rewrite the trampoline if missing or its `BIN=` path is stale
+    ///      (Sparkle update / DerivedData → /Applications),
+    ///   2. upgrade any legacy direct-binary settings entry to the trampoline.
+    /// Writes/backs up only when something actually changed. No-op if not installed.
     @discardableResult
     static func reconcile() -> Bool {
+        let scriptChanged = (try? writeScript()) ?? false
         guard var dict = readSettings(),
               var hooks = dict["hooks"] as? [String: Any],
-              var post = hooks["PostToolUse"] as? [[String: Any]] else { return false }
-        let want = "'\(execPath)' \(marker)"
+              var post = hooks["PostToolUse"] as? [[String: Any]] else { return scriptChanged }
         var changed = false
         for i in post.indices {
             guard var cmds = post[i]["hooks"] as? [[String: Any]] else { continue }
             var entryChanged = false
             for j in cmds.indices {
-                if let c = cmds[j]["command"] as? String, c.contains(marker), c != want {
-                    cmds[j]["command"] = want; entryChanged = true; changed = true
+                guard let c = cmds[j]["command"] as? String else { continue }
+                // Legacy `<exec> --tokopt-hook` → the stable trampoline command.
+                if c.contains(legacyMarker), !c.contains(marker) {
+                    cmds[j]["command"] = hookCommand; entryChanged = true; changed = true
                 }
             }
             if entryChanged { post[i]["hooks"] = cmds }
         }
-        guard changed else { return false }
+        guard changed else { return scriptChanged }
         try? backupSettings()
         hooks["PostToolUse"] = post
         dict["hooks"] = hooks
@@ -77,6 +100,7 @@ enum TokoptHookInstaller {
     }
 
     static func remove() throws {
+        try? FileManager.default.removeItem(at: scriptFile)
         guard var dict = readSettings(),
               var hooks = dict["hooks"] as? [String: Any],
               var post = hooks["PostToolUse"] as? [[String: Any]] else { return }
@@ -89,18 +113,55 @@ enum TokoptHookInstaller {
         try writeSettings(dict)
     }
 
+    // MARK: - Trampoline script
+
+    /// The trampoline body for a given binary path. Pure bash, clean-env safe
+    /// (no `jq`, no PATH deps). Fail-open on every branch: disabled kill-switch,
+    /// missing/non-executable binary → exit 0 with no stdout so Claude Code keeps
+    /// the original Bash output. When the binary IS present, `exec` hands stdin
+    /// straight through; `TokoptHook` then self-fail-opens on any internal doubt.
+    static func scriptContents(execPath: String) -> String {
+        """
+        #!/bin/bash
+        # Throttle tokopt trampoline — fail-open. On ANY doubt emit nothing and
+        # exit 0 so Claude Code keeps the original Bash output unaltered. BIN is
+        # rewritten by Throttle on launch (reconcile) when the app moves/updates.
+        [ "${CLAUDE_DISABLE_TOKOPT_HOOKS:-}" = "1" ] && exit 0
+        BIN='\(execPath)'
+        [ -x "$BIN" ] || exit 0
+        exec "$BIN" --tokopt-hook
+
+        """
+    }
+
+    /// Write (or refresh) the trampoline. Returns true only when the on-disk
+    /// content actually changed, so `reconcile()` stays a cheap no-op at rest.
+    @discardableResult
+    private static func writeScript() throws -> Bool {
+        let desired = scriptContents(execPath: execPath)
+        if let existing = try? String(contentsOf: scriptFile, encoding: .utf8), existing == desired {
+            return false
+        }
+        let fm = FileManager.default
+        try fm.createDirectory(at: scriptFile.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try desired.write(to: scriptFile, atomically: true, encoding: .utf8)
+        try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptFile.path)
+        return true
+    }
+
     // MARK: - Helpers
 
     private static func postToolUseArray(_ dict: [String: Any]?) -> [[String: Any]] {
         (dict?["hooks"] as? [String: Any])?["PostToolUse"] as? [[String: Any]] ?? []
     }
 
-    /// Indices of PostToolUse entries whose command carries our marker.
+    /// Indices of PostToolUse entries whose command carries our marker (current
+    /// trampoline OR a legacy direct-binary entry awaiting migration).
     private static func ourEntryIndices(in post: [[String: Any]]) -> [Int] {
         var idxs: [Int] = []
         for (i, entry) in post.enumerated() {
             let cmds = (entry["hooks"] as? [[String: Any]])?.compactMap { $0["command"] as? String } ?? []
-            if cmds.contains(where: { $0.contains(marker) }) { idxs.append(i) }
+            if cmds.contains(where: { $0.contains(marker) || $0.contains(legacyMarker) }) { idxs.append(i) }
         }
         return idxs
     }
