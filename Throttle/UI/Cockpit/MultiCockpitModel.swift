@@ -75,6 +75,11 @@ final class CockpitTab: Identifiable {
     /// Frozen via SIGSTOP (reversible) to stop token burn without killing state —
     /// the circuit-breaker's safe, user-triggered half.
     var isPaused = false
+    /// True when the freeze was applied by the crowding tier of auto-reclaim, NOT by
+    /// the user. Auto-paused tabs resume instantly (SIGCONT) the moment they're
+    /// focused, and may be escalated to hibernate under real memory pressure — neither
+    /// happens to a tab the user paused by hand (explicit intent is preserved).
+    var autoPaused = false
 
     enum SessionState { case dormant, hibernated, rateLimited, paused, working, waiting, idle }
     var state: SessionState {
@@ -97,6 +102,7 @@ final class CockpitTab: Identifiable {
         guard let pid = shellPid, isPaused else { return }
         SystemMemoryService.signalSubtree(rootPid: pid, signal: SIGCONT)
         isPaused = false
+        autoPaused = false
     }
 
     /// PID of the session's login shell (root of its process subtree), if spawned.
@@ -228,6 +234,8 @@ final class CockpitTab: Identifiable {
         ramBytes = 0
         isLive = false
         needsInput = false
+        isPaused = false       // the SIGSTOP is moot once the subtree is killed; don't
+        autoPaused = false     // leave a stale freeze flag on the hibernated (or woken) tab
         isHibernated = true
     }
 
@@ -357,6 +365,9 @@ final class MultiCockpitModel {
     var activeID: UUID? { didSet {
         if let a = active, !a.isHibernated {
             a.ensureSpawned()
+            // An auto-paused tab wakes the instant you focus it: SIGCONT, zero tokens,
+            // no --resume. A tab the USER paused stays frozen (their explicit intent).
+            if a.autoPaused { a.resumeProcess() }
             if showShell { a.ensureShellSpawned() }   // keep the split's shell live for the new tab
         }
         active?.clearAttention()
@@ -590,27 +601,69 @@ final class MultiCockpitModel {
         return stored
     }
 
+    // Two-tier reclaim. Crowding (many spawned tabs) is a PROACTIVE proxy for
+    // impending pressure, not pressure itself — so crowding-only reclaim FREEZES
+    // (SIGSTOP): token burn stops, resident pages go cold (the compressor swaps
+    // them cheaply), and waking is instant with NO `claude --resume` — no transcript
+    // re-send, no "resuming will consume your limits" prompt, zero tokens. Only real
+    // `machine.critical` pressure escalates to hibernate (kill subtree → hard-free
+    // RAM), where the wake-time token cost is justified by genuinely scarce memory.
+    // This is the fix for "my tabs keep dying and resuming costs tokens" when the
+    // Mac is merely crowded, not actually starved (see [[kevin-mac-memory-constraint]]).
     func autoHibernateIfPressured() {
         let spawnedCount = sessions.filter { $0.isSpawned && !$0.isHibernated }.count
         let crowded = maxLiveSessions > 0 && spawnedCount > maxLiveSessions
         guard autoHibernateEnabled, machine.critical || crowded else { return }
         // Debounce: at most once every 2 min so a sustained trigger doesn't churn
-        // hibernate attempts every tick.
+        // reclaim attempts every tick.
         guard Date().timeIntervalSince(lastAutoHibernateAt) > 120 else { return }
         let now = Date()
-        let victims = sessions.filter {
-            $0.isSpawned && !$0.isPaused && !$0.isHibernated && !$0.isRateLimited
-            && $0.id != activeID                       // never the focused tab
-            && $0.state == .idle                       // excludes working/waiting/dormant
-            && now.timeIntervalSince($0.lastActivityAt) >= autoHibIdleSeconds
+        let idleLongEnough: (CockpitTab) -> Bool = { [autoHibIdleSeconds] in
+            now.timeIntervalSince($0.lastActivityAt) >= autoHibIdleSeconds
         }
-        guard !victims.isEmpty else { return }
-        lastAutoHibernateAt = now
-        let freed = victims.reduce(UInt64(0)) { $0 + $1.ramBytes }   // best-effort; RSS may be stale under quiet mode
-        for v in victims { v.hibernate() }
-        recomputeSortOrder()
-        persist()
-        CockpitNotifier.shared.notifyAutoHibernate(count: victims.count, freedBytes: freed)
+
+        if machine.critical {
+            // Real pressure → hard-free RAM. Kill idle live tabs, AND escalate our own
+            // auto-paused tabs (pages cold but still resident); never a USER-paused tab
+            // (explicit intent) or the focused one. Wakes via --resume (token cost is
+            // justified when memory is genuinely scarce).
+            let victims = sessions.filter {
+                $0.isSpawned && !$0.isHibernated && !$0.isRateLimited && $0.id != activeID
+                && ($0.state == .idle || ($0.state == .paused && $0.autoPaused))
+                && idleLongEnough($0)
+            }
+            guard !victims.isEmpty else { return }
+            lastAutoHibernateAt = now
+            let freed = victims.reduce(UInt64(0)) { $0 + $1.ramBytes }   // best-effort; RSS may be stale under quiet mode
+            for v in victims { v.hibernate() }
+            recomputeSortOrder()
+            persist()
+            CockpitNotifier.shared.notifyAutoHibernate(count: victims.count, freedBytes: freed)
+        } else {
+            // Crowded but RAM fine → freeze instead of kill. Route through the same
+            // quiescent-window drain as manual/auto pause so a bare SIGSTOP never lands
+            // mid-flight; idle victims are already non-working so it almost always fires
+            // at once. Wake is instant on focus — no --resume, no tokens, no prompt.
+            let victims = sessions.filter {
+                $0.isSpawned && !$0.isPaused && !$0.isHibernated && !$0.isRateLimited
+                && $0.id != activeID                   // never the focused tab
+                && $0.state == .idle                   // excludes working/waiting/dormant
+                && idleLongEnough($0)
+            }
+            guard !victims.isEmpty else { return }
+            lastAutoHibernateAt = now
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                for v in victims {
+                    await self.drainThenPause(v)
+                    if v.isPaused { v.autoPaused = true }   // mark so focus auto-resumes it
+                }
+                let paused = victims.filter(\.autoPaused).count
+                self.recomputeSortOrder()
+                self.persist()
+                CockpitNotifier.shared.notifyAutoPause(count: paused)
+            }
+        }
     }
 
     func start(appState: AppState) {

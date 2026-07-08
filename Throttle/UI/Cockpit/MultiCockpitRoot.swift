@@ -906,7 +906,9 @@ struct MultiCockpitRoot: View {
     private func stateDotHelp(_ s: CockpitTab) -> String {
         switch s.state {
         case .working:    return "Working"
-        case .paused:     return "Paused (frozen) — click ▶ to resume"
+        case .paused:     return s.autoPaused
+            ? "Auto-paused (crowded) — focus this tab to resume instantly, 0 tokens"
+            : "Paused (frozen) — click ▶ to resume"
         case .rateLimited:
             let when = s.rateLimitedUntil.map { " — frees up in \(MultiCockpitModel.countdown(Int64($0.timeIntervalSinceNow)))" } ?? ""
             return "Rate-limited\(when)"

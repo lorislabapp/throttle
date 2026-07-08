@@ -112,6 +112,27 @@ final class CockpitNotifier: NSObject {
         }
     }
 
+    /// Froze idle sessions under crowding (not real RAM pressure): SIGSTOP keeps
+    /// resident pages but stops token burn, and waking is instant with NO
+    /// `claude --resume` — so, unlike hibernate, zero re-send and no "resuming will
+    /// consume your limits" prompt. Silent; the tab wakes the moment you focus it.
+    func notifyAutoPause(count: Int) {
+        guard count > 0 else { return }
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let status = settings.authorizationStatus
+            Task { @MainActor in
+                guard status == .authorized || status == .provisional else { return }
+                let content = UNMutableNotificationContent()
+                content.title = "Paused \(count) idle session\(count == 1 ? "" : "s")"
+                content.body = "Frozen to stop burn — focus a tab to resume instantly (no tokens, no reload)."
+                content.sound = nil   // silent — background reclaim, fully reversible
+                let req = UNNotificationRequest(identifier: "cockpit-autopause",
+                                                content: content, trigger: nil)
+                UNUserNotificationCenter.current().add(req)
+            }
+        }
+    }
+
     /// Throttle auto-trimmed idle transcripts (opt-in). One aggregate, silent
     /// banner — the trim is lossless + reversible (whole-file backups in
     /// ~/.claude/throttle-backups; pointers rehydrate via throttle_expand_pointer).
