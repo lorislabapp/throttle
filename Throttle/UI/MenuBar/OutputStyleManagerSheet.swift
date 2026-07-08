@@ -8,6 +8,11 @@ struct OutputStyleManagerSheet: View {
     var onDone: () -> Void = {}
     @State private var styles: [OutputStyleManager.Style] = []
     @State private var editing: EditTarget?
+    /// Name of the style just activated this session — drives the "how to apply
+    /// it now" banner. Claude Code reads the output style once at session start,
+    /// so a freshly activated style is silent in any session already open; users
+    /// who miss this conclude the feature is broken.
+    @State private var justActivated: String?
 
     enum EditTarget: Identifiable {
         case new
@@ -57,6 +62,7 @@ struct OutputStyleManagerSheet: View {
                     .font(.system(size: 11.5)).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 8)
+                if let name = justActivated { activationBanner(name) }
                 ForEach(styles) { style in
                     styleRow(style)
                     Rectangle().fill(Color.primary.opacity(0.06)).frame(height: 1)
@@ -91,6 +97,29 @@ struct OutputStyleManagerSheet: View {
         .onTapGesture { activate(style) }
     }
 
+    /// Shown right after a tap-to-activate. The style is written immediately but
+    /// only binds at session start — this tells the user how to apply it to a
+    /// session they already have open (the #1 "it doesn't work" report).
+    private func activationBanner(_ name: String) -> some View {
+        HStack(alignment: .top, spacing: 9) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 14)).foregroundStyle(.green)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("“\(name)” is set — live in any new Claude Code session.")
+                    .font(.system(size: 12, weight: .semibold))
+                Text("Output style loads once at session start. In a session that's already open, run  /output-style  or  /clear  to apply it now.")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(Color.green.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.green.opacity(0.25), lineWidth: 1))
+        .padding(.horizontal, 12).padding(.bottom, 6)
+        .transition(.opacity)
+    }
+
     private func tag(_ text: String) -> some View {
         Text(text).font(.system(size: 8.5, weight: .heavy)).tracking(0.3)
             .padding(.horizontal, 4).padding(.vertical, 1.5)
@@ -115,6 +144,7 @@ struct OutputStyleManagerSheet: View {
     private func activate(_ style: OutputStyleManager.Style) {
         guard !style.isActive else { return }
         try? OutputStyleManager.activate(style)   // installs a curated template's file if needed
+        withAnimation(.easeInOut(duration: 0.15)) { justActivated = style.name }
         reload()
     }
 
