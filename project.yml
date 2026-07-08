@@ -114,4 +114,10 @@ targets:
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/Throttle.app/Contents/MacOS/Throttle
     dependencies:
       - target: Throttle
+      # GRDB is linked by the host app (Throttle) and resolved at runtime via
+      # BUNDLE_LOADER/TEST_HOST. `link: false` keeps `import GRDB` compiling in the
+      # tests WITHOUT embedding a second copy into the .xctest bundle — a duplicate
+      # link makes GRDB's thread watchdog spuriously trap "Database was not used on
+      # the correct thread" and crashes every DB test suite.
       - package: GRDB
+        link: false

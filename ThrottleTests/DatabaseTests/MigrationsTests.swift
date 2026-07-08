@@ -20,6 +20,7 @@ final class MigrationsTests: XCTestCase {
             "file_state",
             "settings",
             "tokopt_savings",
+            "traycer_events",
             "usage_events",
             "usage_snapshots"
         ])
