@@ -31,6 +31,8 @@ settings:
       ENABLE_HARDENED_RUNTIME: YES
 
 packages:
+  ThrottleShared:
+    path: ThrottleShared
   GRDB:
     url: https://github.com/groue/GRDB.swift
     from: "6.29.0"
@@ -78,6 +80,7 @@ targets:
       - package: GRDB
       - package: Sparkle
       - package: SwiftTerm
+      - package: ThrottleShared
       - target: ThrottleWidget
 
   ThrottleWidget:
@@ -99,6 +102,60 @@ targets:
         PRODUCT_NAME: ThrottleWidget
         CODE_SIGN_ENTITLEMENTS: ThrottleWidget/ThrottleWidget.entitlements
         SKIP_INSTALL: YES
+
+  # ─── iOS companion (App Store) ───────────────────────────────────────────
+  # Read-only mirror of the Mac's live usage/cockpit state via the user's
+  # private CloudKit DB. Min iOS 17. Doctrine: measure-only, no remote control.
+  ThrottleiOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: ThrottleiOS
+    info:
+      path: ThrottleiOS/Info.plist
+      properties:
+        CFBundleDisplayName: Throttle
+        LSApplicationCategoryType: public.app-category.developer-tools
+        ITSAppUsesNonExemptEncryption: false
+        UIBackgroundModes:
+          - remote-notification
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lorislab.throttle.ios
+        PRODUCT_NAME: Throttle
+        CODE_SIGN_ENTITLEMENTS: ThrottleiOS/ThrottleiOS.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+    dependencies:
+      - package: ThrottleShared
+      - target: ThrottleiOSWidget
+
+  ThrottleiOSWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: ThrottleiOSWidget
+    info:
+      path: ThrottleiOSWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Throttle
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lorislab.throttle.ios.widget
+        PRODUCT_NAME: ThrottleiOSWidget
+        CODE_SIGN_ENTITLEMENTS: ThrottleiOSWidget/ThrottleiOSWidget.entitlements
+        SKIP_INSTALL: YES
+    dependencies:
+      - package: ThrottleShared
 
   ThrottleTests:
     type: bundle.unit-test

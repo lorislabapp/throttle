@@ -220,6 +220,13 @@ final class AppState {
                     savedTokensThisWeek: savedTokens,
                     computedAt: computed.computedAt
                 ))
+                // Mirror the same values to the iOS companion via the user's
+                // private CloudKit DB (opt-in; no-op/fail-open if disabled or
+                // signed out of iCloud). Debounced inside the publisher.
+                CloudKitPublisher.shared.publish(self.mirrorSnapshot(
+                    weeklyTokens: computed.weeklyAll.usedTokens,
+                    weeklyCostEUR: weeklyCost,
+                    savedTokensThisWeek: savedTokens))
             }
         }
     }

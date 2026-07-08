@@ -112,6 +112,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             WebRenderBridge.shared.start(writer: database)
         }
         FileHandle.standardError.write(Data("[applicationDidFinishLaunching] after WebRenderBridge\n".utf8))
+
+        // iOS companion mirror: publish live usage/cockpit state to the user's
+        // private CloudKit DB. Opt-in; fail-open (no iCloud / no entitlement →
+        // silently disabled, meter unaffected). Publisher is fed from AppState.refresh().
+        if UserDefaults.standard.bool(forKey: "throttleiCloudMirrorEnabled") {
+            CloudKitPublisher.shared.start()
+        }
+
         FileHandle.standardError.write(Data("[applicationDidFinishLaunching] before OutputStyleManager\n".utf8))
         OutputStyleManager.resyncManagedTemplates()   // heal stale managed output-style files after an app upgrade changed a template body
         FileHandle.standardError.write(Data("[applicationDidFinishLaunching] after OutputStyleManager\n".utf8))

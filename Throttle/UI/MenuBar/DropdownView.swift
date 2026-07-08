@@ -1348,6 +1348,8 @@ private struct InlineGeneralPane: View {
     @State private var traycerNote = ""
     @State private var webOn = UserDefaults.standard.bool(forKey: "throttleWebEnabled")
     @State private var webNote = ""
+    @State private var mirrorOn = UserDefaults.standard.bool(forKey: "throttleiCloudMirrorEnabled")
+    @State private var mirrorNote = ""
 
     /// Flag file the SessionStart hook reads to inject a terse-output directive
     /// into every Claude Code session. App writes it (non-sandboxed); hook reads it.
@@ -1598,6 +1600,34 @@ private struct InlineGeneralPane: View {
                             } else {
                                 WebRenderBridge.shared.stop()
                                 webNote = "Off — restart Claude Code to drop the web_render tool."
+                            }
+                        }
+                }
+            }
+            SettingsHair()
+            SettingsRow(title: "iOS companion mirror (iCloud)",
+                        sub: mirrorNote.isEmpty
+                            ? "Publishes your live usage + cockpit state to your private iCloud so the Throttle iOS app can mirror it anywhere. Read-only, your iCloud only — no LorisLabs server, no data leaves your account."
+                            : mirrorNote) {
+                HStack(spacing: 6) {
+                    if !appState.isPro {
+                        Text("PRO").font(.system(size: 9, weight: .heavy)).tracking(0.3)
+                            .padding(.horizontal, 5).padding(.vertical, 2)
+                            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 4))
+                            .foregroundStyle(.secondary)
+                    }
+                    Toggle("", isOn: appState.isPro ? $mirrorOn : .constant(false))
+                        .labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                        .disabled(!appState.isPro)
+                        .onChange(of: mirrorOn) { _, on in
+                            guard appState.isPro else { return }
+                            UserDefaults.standard.set(on, forKey: "throttleiCloudMirrorEnabled")
+                            if on {
+                                CloudKitPublisher.shared.start()
+                                mirrorNote = "On — open the Throttle app on your iPhone (same iCloud account) to see the mirror."
+                            } else {
+                                CloudKitPublisher.shared.stop()
+                                mirrorNote = "Off — the iPhone keeps its last synced snapshot."
                             }
                         }
                 }
