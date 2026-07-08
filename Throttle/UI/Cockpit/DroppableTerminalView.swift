@@ -391,7 +391,15 @@ final class DroppableTerminalView: LocalProcessTerminalView {
             ctxItem(menu, paused ? "Resume session" : "Pause session  (freeze, no token burn)", enabled: true) {
                 [weak self] in self?.onTogglePause?() }
         }
-        ctxItem(menu, "Clear", enabled: true) { [weak self] in self?.send(txt: "\u{0c}") }
+        // A REAL clear: Ctrl-L redraws the shell's prompt at the top, then CSI 3J
+        // erases the scrollback so Ctrl-A / Select All shows nothing above the current
+        // command. (claude runs on the alternate buffer, which has no scrollback, so
+        // 3J is a harmless no-op there — it only bites the side shell / plain output.)
+        ctxItem(menu, "Clear  (wipe scrollback)", enabled: true) { [weak self] in
+            guard let self else { return }
+            self.send(txt: "\u{0c}")
+            self.feed(text: "\u{1b}[3J")
+        }
         return menu
     }
 

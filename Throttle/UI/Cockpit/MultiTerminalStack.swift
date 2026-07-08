@@ -85,12 +85,21 @@ struct ShellPane: NSViewRepresentable {
         }
         // Drop any stale shell view (previous tab) before mounting the current one.
         for sub in container.subviews where sub !== shell { sub.removeFromSuperview() }
-        if shell.superview !== container {
+        let justMounted = shell.superview !== container
+        if justMounted {
             shell.translatesAutoresizingMaskIntoConstraints = true
             shell.autoresizingMask = [.width, .height]
             container.addSubview(shell)
         }
         shell.frame = container.bounds
         shell.isHidden = false
+        // Opening the shell (or switching to a tab whose shell just mounted) means the
+        // user wants to type in it — focus it ONCE, on first mount. Async so it lands
+        // after MultiTerminalStack's synchronous claude-focus pass on the same render,
+        // and only on mount so we never thrash focus every re-render (which historically
+        // auto-confirmed claude prompts). Default focus otherwise stays on claude.
+        if justMounted {
+            DispatchQueue.main.async { shell.window?.makeFirstResponder(shell) }
+        }
     }
 }
