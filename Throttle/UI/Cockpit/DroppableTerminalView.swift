@@ -69,12 +69,25 @@ final class DroppableTerminalView: LocalProcessTerminalView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+        disableMouseReporting()
         enableFileDrops()
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
+        disableMouseReporting()
         enableFileDrops()
+    }
+
+    /// Never forward mouse events to the PTY. When a TUI (claude, or anything on the
+    /// alt-buffer) turns on any-event mouse tracking (`ESC[?1003h`) and exits without
+    /// resetting it, SwiftTerm keeps `mouseMode` on and every mouse MOVE over the pane
+    /// emits an SGR motion report to the shell — which echoes it as garbage and rings
+    /// the bell on each one ("it types letters by itself + makes a system sound").
+    /// SwiftTerm's own docs say set `allowMouseReporting = false` to stop this; our
+    /// text selection runs off a separate NSEvent monitor, so nothing is lost.
+    private func disableMouseReporting() {
+        allowMouseReporting = false
     }
 
     // MARK: - Input activity
