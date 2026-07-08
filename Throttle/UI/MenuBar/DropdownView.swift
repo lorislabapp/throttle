@@ -1346,6 +1346,8 @@ private struct InlineGeneralPane: View {
     @State private var memoryNote = ""
     @State private var traycerOn = UserDefaults.standard.bool(forKey: "throttleTraycerEnabled")
     @State private var traycerNote = ""
+    @State private var webOn = UserDefaults.standard.bool(forKey: "throttleWebEnabled")
+    @State private var webNote = ""
 
     /// Flag file the SessionStart hook reads to inject a terse-output directive
     /// into every Claude Code session. App writes it (non-sandboxed); hook reads it.
@@ -1569,6 +1571,34 @@ private struct InlineGeneralPane: View {
                             traycerNote = on
                                 ? "Installed — restart Claude Code to start exporting; € per skill appears in the Project window."
                                 : "Removed — restart Claude Code."
+                        }
+                }
+            }
+            SettingsHair()
+            SettingsRow(title: "Web research (local render)",
+                        sub: webNote.isEmpty
+                            ? "Adds a web_render tool to Claude Code that renders a page's JavaScript in a private on-device WebKit engine and returns the fully-rendered text — content plain fetches miss (SPAs, client-rendered pages). 100% local, cookie-less, public URLs only. Restart Claude Code after enabling."
+                            : webNote) {
+                HStack(spacing: 6) {
+                    if !appState.isPro {
+                        Text("PRO").font(.system(size: 9, weight: .heavy)).tracking(0.3)
+                            .padding(.horizontal, 5).padding(.vertical, 2)
+                            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 4))
+                            .foregroundStyle(.secondary)
+                    }
+                    Toggle("", isOn: appState.isPro ? $webOn : .constant(false))
+                        .labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                        .disabled(!appState.isPro)
+                        .onChange(of: webOn) { _, on in
+                            guard appState.isPro else { return }
+                            UserDefaults.standard.set(on, forKey: "throttleWebEnabled")
+                            if on {
+                                WebRenderBridge.shared.start()   // live now; web_render appears in new sessions
+                                webNote = "On — restart Claude Code so it picks up the web_render tool."
+                            } else {
+                                WebRenderBridge.shared.stop()
+                                webNote = "Off — restart Claude Code to drop the web_render tool."
+                            }
                         }
                 }
             }
