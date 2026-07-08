@@ -1,7 +1,27 @@
 # Throttle — backlog (deferred, as of 2026-06-27, post-3.2.16)
 
 Nothing here is broken or urgent. These are deferred-on-purpose or on-demand.
-Current shipped version: **3.2.16** (build 116).
+Current shipped version: **3.2.47** (build 147) — released + live on lorislab.fr 2026-07-08.
+
+## Shipped 2026-07-08 (3.2.47, build 147) — RELEASED (notarized, appcast live, deployed)
+- [x] **Two-tier auto-reclaim** — crowded-but-RAM-fine idle tabs now SIGSTOP-freeze
+      (`autoPaused`, instant SIGCONT on focus, zero tokens, no `--resume` prompt)
+      instead of hibernating; hibernate (kill → free RAM) only under real
+      `machine.critical` pressure, and it escalates our own auto-paused tabs but never
+      a user's manual pause. Fixes "my tabs keep dying and resuming costs tokens" when
+      the Mac is merely crowded. `MultiCockpitModel.autoHibernateIfPressured` split by
+      trigger; `notifyAutoPause`; rail tooltip.
+- [x] **Output-style activation nudge** — `OutputStyleManagerSheet` green banner after
+      tap-to-activate: the style only binds at session start, so run `/output-style`
+      or `/clear` to apply it to an already-open session. Root cause of the months-old
+      "caveman doesn't work" reports (it worked; it just needed a fresh session).
+- [x] **Traycer** (opt-in) — local OTLP receiver (127.0.0.1:4318, http/json) →
+      `traycer_events` (migration v7) joined on `session.id` to `usage_events` for true
+      €-per-skill / €-per-command. E2e-verified against real Claude Code 2.1.204 OTLP
+      (decoder 5/5, store 3/5, migration green). Env installer merges the OTLP keys
+      into settings.json (reversible, no prompt logging).
+- [x] **Test-infra fix** — stopped double-linking GRDB into ThrottleTests (`link: false`),
+      which had been fatal-trapping every DB test suite. Full suite now 157/0.
 
 ## Built 2026-06-30 — v3.0 chantiers (3.2.21, COMMITTED, NOT yet released — deploy blocked on notarization)
 - [x] **C1 tokopt test-runner recipe** — cargo/go/swift/pytest/jest green-run collapse, self-safe verbatim on failure.
