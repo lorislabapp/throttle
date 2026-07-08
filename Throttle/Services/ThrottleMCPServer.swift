@@ -33,7 +33,11 @@ enum ThrottleMCPServer {
                 "serverInfo": ["name": "throttle-memory", "version": "1.0.0"],
             ])
         case "tools/list":
-            respond(id: id, result: ["tools": [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema(), mcpHealthSchema(), expandPointerSchema(), recallSchema(), semanticSearchSchema()]])
+            var tools = [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema(), mcpHealthSchema(), expandPointerSchema(), recallSchema(), semanticSearchSchema()]
+            // web_render is opt-in: only advertised when the user enabled Web
+            // research, so a disabled capability costs zero schema tokens.
+            if UserDefaults.standard.bool(forKey: "throttleWebEnabled") { tools.append(webRenderSchema()) }
+            respond(id: id, result: ["tools": tools])
         case "tools/call":
             let params = req["params"] as? [String: Any]
             let args = params?["arguments"] as? [String: Any]
@@ -70,6 +74,14 @@ enum ThrottleMCPServer {
                     respond(id: id, result: textResult(semanticSearchText(query: query, repo: args?["repo"] as? String, k: (args?["k"] as? Int) ?? 6)))
                 } else {
                     respond(id: id, error: [-32602, "Missing query"])
+                }
+            case "web_render":
+                if let url = args?["url"] as? String {
+                    respond(id: id, result: textResult(WebRenderClient.render(
+                        url: url, wait: args?["wait"] as? String, waitSelector: args?["waitSelector"] as? String,
+                        maxChars: args?["maxChars"] as? Int, timeoutMs: args?["timeoutMs"] as? Int)))
+                } else {
+                    respond(id: id, error: [-32602, "Missing url"])
                 }
             default:
                 respond(id: id, error: [-32602, "Unknown tool: \(name)"])
@@ -271,6 +283,24 @@ enum ThrottleMCPServer {
             let snippet = h.text.replacingOccurrences(of: "\n", with: " ").prefix(200)
             return "• \(path)\(loc) (\(String(format: "%.2f", h.score))) — \(snippet)"
         }.joined(separator: "\n")
+    }
+
+    private static func webRenderSchema() -> [String: Any] {
+        [
+            "name": "web_render",
+            "description": "Fetch a web page the way a BROWSER sees it: Throttle renders the URL in a real (headless, on-device) WebKit engine, runs its JavaScript, and returns the readable text of the fully-rendered page. Unlike a plain HTTP fetch (which only sees the static server HTML), this captures content that appears only after the page's JS runs — single-page apps, client-rendered articles, lazy-loaded bodies. 100% local + private; nothing leaves the machine, and it uses an isolated cookie-less session. Requires the Throttle app to be running with Web research enabled (it returns a note if not).",
+            "inputSchema": [
+                "type": "object",
+                "properties": [
+                    "url": ["type": "string", "description": "Public http(s) URL to render. Internal/loopback hosts are refused."],
+                    "wait": ["type": "string", "description": "'networkIdle' (default — wait for the DOM to settle, best for SPAs), 'load' (fire as soon as the document loads), or 'selector' (wait for waitSelector)."],
+                    "waitSelector": ["type": "string", "description": "CSS selector to wait for when wait='selector'."],
+                    "maxChars": ["type": "integer", "description": "Cap on returned text length (default 12000)."],
+                    "timeoutMs": ["type": "integer", "description": "Max render time in ms (default 15000, hard-capped at 30000)."],
+                ],
+                "required": ["url"],
+            ],
+        ]
     }
 
     private static func textResult(_ text: String) -> [String: Any] {

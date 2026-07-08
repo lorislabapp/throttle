@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 
 // Tokopt hook mode: Claude Code invokes `Throttle --tokopt-hook` as a
 // PostToolUse(Bash) hook. Handle it BEFORE any AppKit/SwiftUI initialization so
@@ -71,6 +72,25 @@ if let i = CommandLine.arguments.firstIndex(of: "--index-search"), i + 1 < Comma
     for h in TranscriptIndex.search(CommandLine.arguments[i + 1]).prefix(10) {
         print("[\(h.project) · \(h.role)] \(h.snippet)")
     }
+    exit(0)
+}
+
+// Standalone verification for the WKWebView render engine
+// (`Throttle --web-render-inproc <url>`): boots a minimal accessory NSApplication
+// — the run loop + on-screen host window WKWebView requires — drives one render,
+// prints the extracted text, exits. Validates WebRenderer WITHOUT the menu-bar app
+// or the loopback bridge (so it never disturbs a running Throttle instance).
+if let i = CommandLine.arguments.firstIndex(of: "--web-render-inproc"), i + 1 < CommandLine.arguments.count {
+    let target = CommandLine.arguments[i + 1]
+    let app = NSApplication.shared
+    app.setActivationPolicy(.accessory)
+    Task { @MainActor in
+        let r = await WebRenderer.shared.render(url: target, timeoutMs: 20_000)
+        FileHandle.standardError.write(Data("ok=\(r.ok) title=\(r.title.prefix(80)) finalURL=\(r.finalURL) ms=\(r.renderMs) settle=\(r.waitReason) truncated=\(r.truncated) chars=\(r.text.count) err=\(r.error ?? "-")\n".utf8))
+        print(String(r.text.prefix(2000)))
+        NSApp.terminate(nil)
+    }
+    app.run()
     exit(0)
 }
 

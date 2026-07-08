@@ -89,6 +89,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if UserDefaults.standard.bool(forKey: "throttleTraycerEnabled") {
             traycer.start(writer: database)
         }
+
+        // Web research: local WKWebView render bridge for the `web_render` MCP tool.
+        // Opt-in; fail-open (a bind conflict on 4319 disables it silently). The CLI
+        // MCP process reaches it over loopback; the renderer must live here because
+        // the GUI-less --mcp-server can't host a WKWebView.
+        if UserDefaults.standard.bool(forKey: "throttleWebEnabled") {
+            WebRenderBridge.shared.start()
+        }
         OutputStyleManager.resyncManagedTemplates()   // heal stale managed output-style files after an app upgrade changed a template body
 
         var rlim = rlimit()
