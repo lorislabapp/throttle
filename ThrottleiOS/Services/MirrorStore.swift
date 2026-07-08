@@ -38,6 +38,7 @@ final class MirrorStore {
         }
         persist(snap)
         WidgetCenter.shared.reloadAllTimelines()
+        ThresholdNotifier.shared.evaluate(snap)
     }
 
     private func persist(_ snap: ThrottleMirrorSnapshot) {

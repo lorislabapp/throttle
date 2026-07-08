@@ -2,6 +2,8 @@ import SwiftUI
 
 /// Three tabs: live mirror (hero), sessions, history/trends.
 struct RootTabView: View {
+    @State private var showOnboarding = !UserDefaults.standard.bool(forKey: OnboardingView.doneKey)
+
     var body: some View {
         TabView {
             LiveUsageView()
@@ -12,5 +14,9 @@ struct RootTabView: View {
                 .tabItem { Label("History", systemImage: "chart.xyaxis.line") }
         }
         .tint(MirrorUI.accent)
+        .sheet(isPresented: $showOnboarding) {
+            OnboardingView()
+                .presentationDragIndicator(.visible)
+        }
     }
 }
