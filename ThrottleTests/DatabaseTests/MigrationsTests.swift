@@ -22,7 +22,8 @@ final class MigrationsTests: XCTestCase {
             "tokopt_savings",
             "traycer_events",
             "usage_events",
-            "usage_snapshots"
+            "usage_snapshots",
+            "web_fetches"
         ])
     }
 

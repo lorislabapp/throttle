@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import GRDB
 
 // Tokopt hook mode: Claude Code invokes `Throttle --tokopt-hook` as a
 // PostToolUse(Bash) hook. Handle it BEFORE any AppKit/SwiftUI initialization so
@@ -105,13 +106,20 @@ if let i = CommandLine.arguments.firstIndex(of: "--web-bridge-selftest"), i + 1 
     let target = CommandLine.arguments[i + 1]
     let app = NSApplication.shared
     app.setActivationPolicy(.accessory)
-    WebRenderBridge.shared.start()
+    // Temp DB so the render cache (web_fetches) is exercised — the 2nd identical
+    // render must come back from cache (no WKWebView).
+    let dbq = try? DatabaseQueue()
+    if let dbq { try? Migrations.register(on: dbq) }
+    WebRenderBridge.shared.start(writer: dbq)
     DispatchQueue.global(qos: .userInitiated).async {
         var tries = 0
         while !WebRenderBridge.shared.isListening, tries < 50 { usleep(100_000); tries += 1 }
-        let out = WebRenderClient.render(url: target, wait: nil, waitSelector: nil, maxChars: 2_000, timeoutMs: nil)
         FileHandle.standardError.write(Data("bridge listening=\(WebRenderBridge.shared.isListening)\n".utf8))
-        print(out)
+        let first = WebRenderClient.render(url: target, wait: nil, waitSelector: nil, maxChars: 2_000, timeoutMs: nil)
+        usleep(500_000)   // let the async cache-record land
+        let second = WebRenderClient.render(url: target, wait: nil, waitSelector: nil, maxChars: 2_000, timeoutMs: nil)
+        print("=== FIRST ===\n" + String(first.prefix(200)))
+        print("\n=== SECOND (expect cache) ===\n" + String(second.prefix(200)))
         DispatchQueue.main.async { NSApp.terminate(nil) }
     }
     app.run()

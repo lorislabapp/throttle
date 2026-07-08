@@ -192,6 +192,25 @@ enum Migrations {
                           columns: ["session_id", "sequence"], unique: true)
         }
 
+        // v8: web_fetches — one row per web_render, so a repeat render of the same
+        // URL within a TTL can be served from the cached extracted text (stored in
+        // ContentStore by content_hash) instead of spinning up WKWebView again.
+        // session_id is nullable (the render request doesn't currently carry one);
+        // when populated later it joins to usage_events for €-per-render, Traycer-style.
+        migrator.registerMigration("v8_web_fetches") { db in
+            try db.create(table: "web_fetches") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("url_normalized", .text).notNull()
+                t.column("content_hash", .text).notNull()   // SHA-256 of extracted text → ContentStore key
+                t.column("fetched_at", .integer).notNull()
+                t.column("render_ms", .integer)
+                t.column("text_bytes", .integer)
+                t.column("session_id", .text)
+            }
+            try db.create(index: "idx_web_fetches_url", on: "web_fetches", columns: ["url_normalized"])
+            try db.create(index: "idx_web_fetches_at", on: "web_fetches", columns: ["fetched_at"])
+        }
+
         try migrator.migrate(writer)
     }
 }

@@ -79,7 +79,8 @@ enum ThrottleMCPServer {
                 if let url = args?["url"] as? String {
                     respond(id: id, result: textResult(WebRenderClient.render(
                         url: url, wait: args?["wait"] as? String, waitSelector: args?["waitSelector"] as? String,
-                        maxChars: args?["maxChars"] as? Int, timeoutMs: args?["timeoutMs"] as? Int)))
+                        maxChars: args?["maxChars"] as? Int, timeoutMs: args?["timeoutMs"] as? Int,
+                        useCache: args?["useCache"] as? Bool)))
                 } else {
                     respond(id: id, error: [-32602, "Missing url"])
                 }
@@ -305,6 +306,7 @@ enum ThrottleMCPServer {
                     "waitSelector": ["type": "string", "description": "CSS selector to wait for when wait='selector'."],
                     "maxChars": ["type": "integer", "description": "Cap on returned text length (default 12000)."],
                     "timeoutMs": ["type": "integer", "description": "Max render time in ms (default 15000, hard-capped at 30000)."],
+                    "useCache": ["type": "boolean", "description": "Reuse a recent identical render (default true; within ~1h) instead of re-rendering. Set false to force a fresh render."],
                 ],
                 "required": ["url"],
             ],

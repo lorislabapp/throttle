@@ -1,5 +1,6 @@
 import Foundation
 import Network
+import GRDB
 
 /// In-app loopback HTTP bridge (127.0.0.1:4319) that lets the GUI-less
 /// `--mcp-server` CLI drive the in-app `WebRenderer`. The CLI can't host a
@@ -20,12 +21,16 @@ final class WebRenderBridge: @unchecked Sendable {
     private let port: UInt16
     private let q = DispatchQueue(label: "throttle.web.bridge")
     private var listener: NWListener?
+    private var writer: (any DatabaseWriter)?   // nil → cache disabled (e.g. CLI selftest)
     private(set) var isListening = false
 
     init(port: UInt16 = 4319) { self.port = port }
 
-    func start() {
+    /// `writer` enables the render cache (web_fetches + ContentStore). Pass the app's
+    /// shared DB from AppDelegate; omit it (CLI selftest) to run cache-less.
+    func start(writer: (any DatabaseWriter)? = nil) {
         guard listener == nil else { return }
+        self.writer = writer
         let params = NWParameters.tcp
         params.allowLocalEndpointReuse = true
         guard let nwPort = NWEndpoint.Port(rawValue: port),
@@ -94,6 +99,19 @@ final class WebRenderBridge: @unchecked Sendable {
         let waitSelector = obj["waitSelector"] as? String
         let maxChars = (obj["maxChars"] as? Int) ?? 12_000
         let timeoutMs = (obj["timeoutMs"] as? Int) ?? 15_000
+        let useCache = (obj["useCache"] as? Bool) ?? true
+        let ttl = TimeInterval((obj["ttlSeconds"] as? Int) ?? 3_600)
+
+        // Cache short-circuit: a recent identical render skips WKWebView entirely.
+        if useCache, let writer, let hit = WebResearchCache.lookup(url, ttl: ttl, reader: writer) {
+            let text = hit.text.count > maxChars ? String(hit.text.prefix(maxChars)) : hit.text
+            send(conn, status: "200 OK", json: [
+                "ok": true, "text": text, "title": "", "finalURL": url,
+                "renderMs": 0, "truncated": hit.text.count > maxChars, "waitReason": "cache",
+                "cacheHit": true, "cacheAgeSec": hit.ageSeconds, "error": NSNull(),
+            ])
+            return
+        }
 
         Task { @MainActor in
             let r = await WebRenderer.shared.render(url: url, wait: wait, waitSelector: waitSelector,
@@ -101,9 +119,16 @@ final class WebRenderBridge: @unchecked Sendable {
             let payload: [String: Any] = [
                 "ok": r.ok, "text": r.text, "title": r.title, "finalURL": r.finalURL,
                 "renderMs": r.renderMs, "truncated": r.truncated, "waitReason": r.waitReason,
-                "error": r.error as Any,
+                "cacheHit": false, "error": r.error as Any,
             ]
             self.q.async { self.send(conn, status: "200 OK", json: payload) }
+            // Record for future cache hits, off the response path so it never adds latency.
+            if r.ok, let writer = self.writer {
+                let text = r.text
+                DispatchQueue.global(qos: .utility).async {
+                    WebResearchCache.record(url: url, text: text, renderMs: r.renderMs, sessionId: nil, writer: writer)
+                }
+            }
         }
     }
 

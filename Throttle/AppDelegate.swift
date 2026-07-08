@@ -95,7 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // MCP process reaches it over loopback; the renderer must live here because
         // the GUI-less --mcp-server can't host a WKWebView.
         if UserDefaults.standard.bool(forKey: "throttleWebEnabled") {
-            WebRenderBridge.shared.start()
+            WebRenderBridge.shared.start(writer: database)
         }
         OutputStyleManager.resyncManagedTemplates()   // heal stale managed output-style files after an app upgrade changed a template body
 

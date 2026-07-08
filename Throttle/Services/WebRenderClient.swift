@@ -9,12 +9,13 @@ import Foundation
 enum WebRenderClient {
 
     /// Returns the MCP `content`-ready text for a `web_render` call.
-    static func render(url: String, wait: String?, waitSelector: String?, maxChars: Int?, timeoutMs: Int?) -> String {
+    static func render(url: String, wait: String?, waitSelector: String?, maxChars: Int?, timeoutMs: Int?, useCache: Bool? = nil) -> String {
         var req: [String: Any] = ["url": url]
         if let wait { req["wait"] = wait }
         if let waitSelector { req["waitSelector"] = waitSelector }
         if let maxChars { req["maxChars"] = maxChars }
         if let timeoutMs { req["timeoutMs"] = timeoutMs }
+        if let useCache { req["useCache"] = useCache }
 
         // Client timeout must outlast the render's hard 30 s ceiling.
         guard let resp = post(path: "/render", body: req, timeout: 35) else {
@@ -29,8 +30,16 @@ enum WebRenderClient {
         let ms = resp["renderMs"] as? Int ?? 0
         let reason = resp["waitReason"] as? String ?? ""
         let truncated = (resp["truncated"] as? Bool) ?? false
+        let cacheHit = (resp["cacheHit"] as? Bool) ?? false
         let text = resp["text"] as? String ?? ""
-        var head = "# \(title.isEmpty ? finalURL : title)\n\(finalURL)  ·  rendered in \(ms)ms (settle: \(reason))"
+        var head: String
+        if cacheHit {
+            let age = resp["cacheAgeSec"] as? Int ?? 0
+            let ago = age < 60 ? "\(age)s" : "\(age / 60)m"
+            head = "# \(title.isEmpty ? finalURL : title)\n\(finalURL)  ·  served from cache (rendered \(ago) ago, no re-render)"
+        } else {
+            head = "# \(title.isEmpty ? finalURL : title)\n\(finalURL)  ·  rendered in \(ms)ms (settle: \(reason))"
+        }
         if truncated { head += "  ·  [truncated]" }
         return head + "\n\n" + (text.isEmpty ? "(no readable text extracted)" : text)
     }

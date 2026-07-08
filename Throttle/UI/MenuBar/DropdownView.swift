@@ -1593,7 +1593,7 @@ private struct InlineGeneralPane: View {
                             guard appState.isPro else { return }
                             UserDefaults.standard.set(on, forKey: "throttleWebEnabled")
                             if on {
-                                WebRenderBridge.shared.start()   // live now; web_render appears in new sessions
+                                WebRenderBridge.shared.start(writer: appState.database)   // live now; web_render appears in new sessions
                                 webNote = "On — restart Claude Code so it picks up the web_render tool."
                             } else {
                                 WebRenderBridge.shared.stop()
