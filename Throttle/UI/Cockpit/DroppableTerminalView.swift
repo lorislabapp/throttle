@@ -348,6 +348,15 @@ final class DroppableTerminalView: LocalProcessTerminalView {
 
         // 1) Essentials.
         ctxItem(menu, "Copy", enabled: hasSel) { [weak self] in self?.copy(NSNull()) }
+        // Copy the selection trimmed for Claude — strips ANSI, trailing whitespace,
+        // blank-line runs, and consecutive dupes so pasted CLI output wastes no tokens.
+        ctxItem(menu, "Copy for Claude  (trimmed)", enabled: hasSel) { [weak self] in
+            guard let s = self?.getSelection(), !s.isEmpty else { return }
+            let t = TokoptHook.trimForCopy(s)
+            let pb = NSPasteboard.general
+            pb.clearContents()
+            pb.setString(t.isEmpty ? s : t, forType: .string)
+        }
         ctxItem(menu, "Paste", enabled: true) { [weak self] in self?.paste(NSNull()) }
         // Vision tokens are expensive: if the clipboard holds an image, offer to
         // paste it as locally-OCR'd TEXT instead — same lever as the drag-drop path.

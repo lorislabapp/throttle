@@ -1,7 +1,36 @@
 # Throttle — backlog (deferred, as of 2026-06-27, post-3.2.16)
 
 Nothing here is broken or urgent. These are deferred-on-purpose or on-demand.
-Current shipped version: **3.2.47** (build 147) — released + live on lorislab.fr 2026-07-08.
+Current shipped version: **3.2.49** (build 149) — released + live on lorislab.fr 2026-07-08.
+
+## Shipped 2026-07-08 (3.2.48 + 3.2.49) — web research MCP (local WebKit render + private grounding)
+- [x] **Rank-1 `web_render`** (3.2.48) — renders a page's JS in an offscreen private WKWebView and
+      returns the fully-rendered readable text (SPAs / client-rendered content native WebFetch misses).
+      In-app `WebRenderer` + loopback bridge (:4319, loopback-only) + `--mcp-server` client; opt-in
+      `throttleWebEnabled` + Settings toggle. SSRF guard, ephemeral cookie-less store, dialog-deadlock-safe.
+- [x] **Rank-2 `research_grounded`** (3.2.48) — renders URLs AND cross-references the query against the
+      user's locally-indexed repo corpus; retrieval+grounding only (synthesis stays the model's).
+- [x] **Rank-3 render cache** (3.2.49) — `web_fetches` (migration v8) + ContentStore text cache; a repeat
+      render within TTL is served from cache (no WKWebView). `useCache` param.
+- [x] **`__web__` semantic recall** (3.2.49) — every rendered page is indexed into a synthetic semantic
+      corpus, so research_grounded resurfaces prior research by meaning. Loopback-only bridge hardening.
+- [ ] NOT built (deferred, low value): populate `web_fetches.session_id` for €-per-render join · screenshot
+      in web_render (`takeSnapshot` → ContentStore) · a11y-tree snapshot (thin edge — claude-in-chrome's lane).
+
+## Cockpit terminal — requested 2026-07-08 (Kevin) — NOT built; needs his live test (session runs IN the Cockpit)
+- [ ] **Focus routing bug** — opening the side shell leaves keyboard focus ambiguous: typing lands in the
+      wrong pane until you click the intended one. Code: `MultiTerminalStack.updateNSView` reclaims focus for
+      claude only when the first responder is nil or in-stack; `ShellPane` deliberately never steals focus.
+      RISKY to change — the focus code has scars (a past thrash auto-confirmed Ink prompts). Needs Kevin's
+      intended-behaviour spec + live test.
+- [ ] **Claude drives the terminal (plugin/add-on)** — let Claude/Throttle operate the terminal directly.
+      Big design + doctrine call (agent-control vs measure-only cockpit); overlaps the side shell + Command
+      Runner. Scope before building.
+- [ ] **A REAL Clear** — the current context-menu "Clear" sends Ctrl-L (soft; scrollback survives, Ctrl-A
+      still selects old output). Want a hard scrollback wipe. SwiftTerm exposes `Buffer.clear()` /
+      `Terminal.resetToInitialState()`; risk = desyncing a running claude TUI. Needs live test.
+- [ ] **Copy CLI output optimized for Claude** — a menu item / button that copies terminal text trimmed for
+      token efficiency (reuse `TokoptHook.compress`). Low risk; the safe one to build first.
 
 ## Shipped 2026-07-08 (3.2.47, build 147) — RELEASED (notarized, appcast live, deployed)
 - [x] **Two-tier auto-reclaim** — crowded-but-RAM-fine idle tabs now SIGSTOP-freeze

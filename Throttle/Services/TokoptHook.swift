@@ -77,6 +77,18 @@ enum TokoptHook {
         return s
     }
 
+    /// Trim terminal text for pasting into Claude: strip ANSI, drop trailing
+    /// whitespace, collapse blank-line runs, dedup consecutive identical lines —
+    /// but WITHOUT `compress`'s head/tail truncation, so nothing the user selected
+    /// is dropped. Cuts the low-signal characters that waste tokens, keeps content.
+    static func trimForCopy(_ text: String) -> String {
+        var s = stripANSI(text)
+        s = s.replacingOccurrences(of: "[ \\t]+\\n", with: "\n", options: .regularExpression)
+        s = collapseBlankRuns(s)
+        s = dedupConsecutive(s)
+        return s.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     // MARK: - Per-command recipes (conservative; nil = fall back to generic)
 
     /// The base executable, ignoring leading `VAR=val`, `cd … &&`, `sudo`, `time`.
