@@ -15,7 +15,7 @@ enum TokoptBenchmark {
         let compressedBytes: Int
         let compressed: Bool           // did the live gate actually apply a trim?
         var reductionPct: Double { baselineBytes == 0 ? 0 : Double(baselineBytes - compressedBytes) / Double(baselineBytes) * 100 }
-        var estTokensSaved: Int { max(0, (baselineBytes - compressedBytes)) / 4 }
+        var estTokensSaved: Int { TokenEstimate.fromBytes(max(0, baselineBytes - compressedBytes), kind: .dense) }   // CLI output → dense ratio
     }
 
     struct Report: Sendable, Equatable {

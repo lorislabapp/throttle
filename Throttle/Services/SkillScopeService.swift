@@ -150,6 +150,6 @@ enum SkillScopeService {
             .appendingPathComponent("SKILL.md")
         guard let attrs = try? FileManager.default.attributesOfItem(atPath: md.path),
               let bytes = attrs[.size] as? Int else { return 0 }
-        return max(1, bytes / 4)
+        return max(1, TokenEstimate.fromBytes(bytes, kind: .dense))
     }
 }

@@ -58,7 +58,7 @@ enum ContextBloatService {
                 trimmableChars += line.count - stub
             }
         }
-        return trimmableChars / 4   // ≈ 4 chars/token
+        return TokenEstimate.fromBytes(trimmableChars, kind: .dense)   // context is code/logs → dense ratio
     }
 
     /// Run grep and return the number of output lines.

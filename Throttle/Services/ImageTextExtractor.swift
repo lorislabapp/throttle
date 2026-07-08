@@ -41,7 +41,7 @@ enum ImageTextExtractor {
 
     /// Token estimate for OCR'd text: ~4 characters per token.
     static func textTokenEstimate(_ text: String) -> Int {
-        max(1, Int((Double(text.count) / 4).rounded()))
+        max(1, TokenEstimate.fromBytes(text.count, kind: .prose))   // OCR'd text is prose → ~4 bytes/token
     }
 
     /// Recognized text (lines joined), or nil if the image has none / can't load.

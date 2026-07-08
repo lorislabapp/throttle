@@ -112,7 +112,7 @@ enum TOONTranspiler {
         /// Fraction of the measured JSON bytes TOON would shed (0…1).
         var savedFraction: Double { jsonBytes > 0 ? Double(savedBytes) / Double(jsonBytes) : 0 }
         /// Rough token equivalent of the saved bytes (~4 bytes/token, English-ish).
-        var savedTokensApprox: Int { savedBytes / 4 }
+        var savedTokensApprox: Int { TokenEstimate.fromBytes(savedBytes, kind: .dense) }   // structured data → dense ratio
         var hasData: Bool { samples > 0 && savedBytes > 0 }
     }
 

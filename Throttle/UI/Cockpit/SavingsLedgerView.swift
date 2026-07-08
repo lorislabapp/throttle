@@ -78,7 +78,7 @@ struct SavingsLedgerView: View {
                             .help("Reversible move of every unused skill out of the load path, then rescan")
                         VStack(alignment: .trailing, spacing: 1) {
                             Text("≈\(byteStr(deadSkillTokens))").font(.system(size: 12, weight: .semibold).monospacedDigit())
-                            Text("≈\(tokenStr(deadSkillTokens / 4)) tok").font(.system(size: 9.5).monospacedDigit()).foregroundStyle(.tertiary)
+                            Text("≈\(tokenStr(TokenEstimate.fromBytes(deadSkillTokens, kind: .dense))) tok").font(.system(size: 9.5).monospacedDigit()).foregroundStyle(.tertiary)
                         }
                     }
                     .padding(.horizontal, 14).padding(.vertical, 7)
@@ -155,7 +155,7 @@ struct SavingsLedgerView: View {
             VStack(alignment: .trailing, spacing: 1) {
                 Text("\(exact ? "" : "≈")\(byteStr(bytes))")
                     .font(.system(size: 12, weight: .semibold).monospacedDigit())
-                Text("≈\(tokenStr(bytes / 4)) tok").font(.system(size: 9.5).monospacedDigit()).foregroundStyle(.tertiary)
+                Text("≈\(tokenStr(TokenEstimate.fromBytes(bytes, kind: .dense))) tok").font(.system(size: 9.5).monospacedDigit()).foregroundStyle(.tertiary)
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 7)
@@ -165,7 +165,7 @@ struct SavingsLedgerView: View {
         HStack {
             Text(label).font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
             Spacer()
-            Text("\(byteStr(bytes)) · ≈\(tokenStr(bytes / 4)) tok")
+            Text("\(byteStr(bytes)) · ≈\(tokenStr(TokenEstimate.fromBytes(bytes, kind: .dense))) tok")
                 .font(.system(size: 11, weight: .semibold).monospacedDigit())
         }
         .padding(.horizontal, 14).padding(.top, 2).padding(.bottom, 8)

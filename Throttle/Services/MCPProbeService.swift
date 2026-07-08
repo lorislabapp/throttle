@@ -20,7 +20,7 @@ struct MCPProbeResult: Sendable, Identifiable {
     let status: Status
     let toolCount: Int?
     let schemaBytes: Int?     // size of the tools/list JSON → ~token cost
-    var schemaTokensEst: Int? { schemaBytes.map { $0 / 4 } }   // ~4 chars/token (estimate)
+    var schemaTokensEst: Int? { schemaBytes.map { TokenEstimate.fromBytes($0, kind: .dense) } }   // JSON tool schemas → dense ratio
 }
 
 enum MCPProbeService {

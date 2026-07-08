@@ -54,7 +54,7 @@ enum ConfigDedupService {
             .map { kv -> DuplicatedBlock in
                 let projects = kv.value.paths.map { (($0 as NSString).deletingLastPathComponent as NSString).lastPathComponent }.sorted()
                 return DuplicatedBlock(id: kv.key, text: kv.value.text, projects: projects,
-                                       paths: kv.value.paths.sorted(), tokensPerLoad: max(1, kv.value.text.count / 4))
+                                       paths: kv.value.paths.sorted(), tokensPerLoad: max(1, TokenEstimate.fromBytes(kv.value.text.utf8.count, kind: .dense)))
             }
             .sorted { $0.wasteTokens > $1.wasteTokens }
 

@@ -746,10 +746,11 @@ enum StatsDataService {
         return row?["saved"] ?? 0
     }
 
-    /// Approximate token savings (4 bytes per token average for English-heavy logs).
+    /// Approximate token savings. Trimmed content is code / tool-output, so it uses
+    /// the dense (Opus 4.7+ tokenizer) ratio — a flat /4 undercut it ~30%.
     static func savedTokensThisWeek(in db: Database, now: Date = Date()) throws -> Int {
         let bytes = try savedBytesThisWeek(in: db, now: now)
-        return bytes / 4
+        return TokenEstimate.fromBytes(bytes, kind: .dense)
     }
 
     /// Per-day token savings for the last `days` days, oldest-first. Days
@@ -784,7 +785,7 @@ enum StatsDataService {
         for r in rows {
             let key: Int64 = r["day_start"] ?? 0
             let saved: Int = r["saved"] ?? 0
-            byDayStart[key] = saved / 4
+            byDayStart[key] = TokenEstimate.fromBytes(saved, kind: .dense)
         }
         return (0..<days).compactMap { offset -> Int? in
             guard let day = cal.date(byAdding: .day, value: offset - (days - 1), to: startOfToday) else { return nil }

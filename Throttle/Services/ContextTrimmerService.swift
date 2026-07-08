@@ -57,7 +57,7 @@ enum ContextTrimmerService {
         var isEmpty: Bool { imagesTrimmed == 0 && toolResultsStubbed == 0 && toolInputsStubbed == 0 }
         /// Rough re-charge estimate: images cost image-tokens (~1500 each on the
         /// Opus/Fable scale, not chars/4), tool payload costs ≈ chars/4.
-        var estTokensSaved: Int { imagesTrimmed * 1_500 + (toolResultBytesSaved + toolInputBytesSaved) / 4 }
+        var estTokensSaved: Int { imagesTrimmed * 1_500 + TokenEstimate.fromBytes(toolResultBytesSaved + toolInputBytesSaved, kind: .dense) }
 
         /// First 8 chars of the session UUID — enough to recognise a session.
         var sessionShort: String {
