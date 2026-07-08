@@ -35,10 +35,14 @@ enum MirrorSnapshotReader {
 struct ThrottleiOSWidgetEntryView: View {
     var entry: Entry
 
-    private var accent: Color { Color(red: 0.0, green: 0.443, blue: 0.890) }
+    private var accent: Color { Color(red: 0.0, green: 0.443, blue: 0.890) }   // #0071E3
 
     private func color(_ pct: Int) -> Color {
-        switch pct { case 95...: .red; case 80..<95: .orange; default: accent }
+        switch pct {
+        case 95...:   Color(red: 1.0, green: 0.231, blue: 0.188)   // #FF3B30
+        case 80..<95: Color(red: 1.0, green: 0.624, blue: 0.039)   // #FF9F0A
+        default:      accent
+        }
     }
 
     var body: some View {

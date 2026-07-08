@@ -4,23 +4,27 @@ import ThrottleShared
 /// Shared presentation helpers so every screen + the widget agree on colors,
 /// glyphs, and formatting.
 enum MirrorUI {
-    static let accent = Color(red: 0.0, green: 0.443, blue: 0.890)   // #0071E3
+    // Exact palette from the approved design pitch (LorisLabs cockpit language).
+    static let accent = Color(red: 0.0,   green: 0.443, blue: 0.890)  // #0071E3
+    static let warn   = Color(red: 1.0,   green: 0.624, blue: 0.039)  // #FF9F0A
+    static let crit   = Color(red: 1.0,   green: 0.231, blue: 0.188)  // #FF3B30
+    static let ok     = Color(red: 0.204, green: 0.780, blue: 0.349)  // #34C759
 
     /// Meter color by utilization, matching the Mac widget's 80/95 thresholds.
     static func color(forUtilization pct: Int) -> Color {
         switch pct {
-        case 95...: return .red
-        case 80..<95: return .orange
+        case 95...: return crit
+        case 80..<95: return warn
         default: return accent
         }
     }
 
     static func stateColor(_ s: SessionStateMirror?) -> Color {
         switch s {
-        case .working:     return .green
-        case .waiting:     return .orange
-        case .rateLimited: return .red
-        case .paused:      return .yellow
+        case .working:     return ok
+        case .waiting:     return warn
+        case .rateLimited: return crit
+        case .paused:      return warn
         case .idle:        return .secondary
         case .hibernated, .dormant, .none: return Color.secondary.opacity(0.5)
         }
