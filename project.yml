@@ -20,7 +20,7 @@ settings:
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
     MARKETING_VERSION: "3.2.47"
-    CURRENT_PROJECT_VERSION: "145"
+    CURRENT_PROJECT_VERSION: "147"
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
   configs:
     # Hardened runtime is required for notarized Release distribution but
