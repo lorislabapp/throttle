@@ -94,4 +94,28 @@ if let i = CommandLine.arguments.firstIndex(of: "--web-render-inproc"), i + 1 < 
     exit(0)
 }
 
+// Full loopback round-trip verification for the web bridge
+// (`Throttle --web-bridge-selftest <url>`): boots a minimal accessory
+// NSApplication, starts WebRenderBridge (:4319), then acts as the CLI client
+// (WebRenderClient) POSTing to it — exercising the exact bind + framing +
+// @MainActor render hop + JSON response path the real app↔--mcp-server pair uses,
+// in ONE isolated process (so it never has to restart the menu-bar app). The
+// client runs off-main so the main run loop stays free to service the render.
+if let i = CommandLine.arguments.firstIndex(of: "--web-bridge-selftest"), i + 1 < CommandLine.arguments.count {
+    let target = CommandLine.arguments[i + 1]
+    let app = NSApplication.shared
+    app.setActivationPolicy(.accessory)
+    WebRenderBridge.shared.start()
+    DispatchQueue.global(qos: .userInitiated).async {
+        var tries = 0
+        while !WebRenderBridge.shared.isListening, tries < 50 { usleep(100_000); tries += 1 }
+        let out = WebRenderClient.render(url: target, wait: nil, waitSelector: nil, maxChars: 2_000, timeoutMs: nil)
+        FileHandle.standardError.write(Data("bridge listening=\(WebRenderBridge.shared.isListening)\n".utf8))
+        print(out)
+        DispatchQueue.main.async { NSApp.terminate(nil) }
+    }
+    app.run()
+    exit(0)
+}
+
 ThrottleApp.main()

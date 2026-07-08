@@ -28,7 +28,6 @@ final class WebRenderBridge: @unchecked Sendable {
         guard listener == nil else { return }
         let params = NWParameters.tcp
         params.allowLocalEndpointReuse = true
-        params.requiredLocalEndpoint = NWEndpoint.hostPort(host: "127.0.0.1", port: NWEndpoint.Port(rawValue: port)!)
         guard let nwPort = NWEndpoint.Port(rawValue: port),
               let listener = try? NWListener(using: params, on: nwPort) else {
             log("bind failed on \(port) — web bridge disabled (port taken?)")
