@@ -48,6 +48,14 @@ final class WebRenderBridge: @unchecked Sendable {
         }
         listener.newConnectionHandler = { [weak self] conn in
             guard let self else { conn.cancel(); return }
+            // Loopback-only: reject any peer that isn't 127.0.0.1 / ::1. (Binding the
+            // listener itself to loopback via requiredLocalEndpoint breaks the bind on
+            // this stack, so we filter at accept time — this tool renders arbitrary
+            // URLs and must not be reachable from the LAN.)
+            guard Self.isLoopback(conn.endpoint) else {
+                self.log("rejected non-loopback connection")
+                conn.cancel(); return
+            }
             conn.start(queue: self.q)
             self.serve(conn)
         }
@@ -140,6 +148,17 @@ final class WebRenderBridge: @unchecked Sendable {
     }
 
     // MARK: - HTTP helpers (shared shape with TraycerReceiver)
+
+    /// True iff the connection's remote peer is the loopback interface.
+    private static func isLoopback(_ endpoint: NWEndpoint) -> Bool {
+        guard case let .hostPort(host, _) = endpoint else { return false }
+        switch host {
+        case .ipv4(let a): return "\(a)".hasPrefix("127.")
+        case .ipv6(let a): let s = "\(a)"; return s == "::1" || s.hasPrefix("::1%") || s.hasSuffix(":127.0.0.1")
+        case .name(let n, _): return n == "localhost"
+        @unknown default: return false
+        }
+    }
 
     private static func headerValue(_ name: String, in header: String) -> String? {
         for line in header.split(separator: "\r\n") {
