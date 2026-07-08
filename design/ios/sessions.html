@@ -1,0 +1,60 @@
+<!-- @dsCard group="Screens" -->
+<style>
+  :root{--bg:#FBFBFD;--ink:#1D1D1F;--sec:#6E6E73;--ter:#A1A1A6;--accent:#0071E3;--warn:#FF9F0A;--crit:#FF3B30;--ok:#34C759;--hair:rgba(0,0,0,.08);--mono:ui-monospace,"SF Mono",Menlo,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif}
+  body{margin:0;background:#EDEDF0;font-family:var(--sans);padding:28px;display:flex;justify-content:center}
+  .phone{width:390px;height:844px;background:var(--bg);border-radius:46px;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden;position:relative;border:1px solid rgba(0,0,0,.06)}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:118px;height:34px;background:#000;border-radius:20px;z-index:5}
+  .status{display:flex;justify-content:space-between;padding:16px 26px 0;font-size:13px;font-weight:600}
+  .nav{font-size:28px;font-weight:700;padding:6px 22px 10px;letter-spacing:-.02em}
+  .row{display:flex;align-items:center;gap:13px;padding:14px 22px;border-top:1px solid var(--hair)}
+  .dot{width:11px;height:11px;border-radius:50%;flex:none}
+  .glyph{font-size:15px;width:20px;text-align:center;flex:none}
+  .who{flex:1;min-width:0}
+  .who b{font-size:16px;font-weight:500;display:block}
+  .who .meta{font-size:12px;color:var(--sec);margin-top:2px}
+  .right{text-align:right}
+  .right .eur{font-family:var(--mono);font-size:15px;font-variant-numeric:tabular-nums}
+  .right .tok{font-size:12px;color:var(--sec);font-family:var(--mono)}
+  .wait{width:8px;height:8px;border-radius:50%;background:var(--warn);margin-left:8px;flex:none}
+  .tabbar{position:absolute;bottom:0;left:0;right:0;height:82px;background:rgba(255,255,255,.86);backdrop-filter:blur(20px);border-top:1px solid var(--hair);display:flex;padding-top:10px}
+  .tab{flex:1;text-align:center;font-size:10px;color:var(--ter)}.tab.on{color:var(--accent)}.tab .ic{font-size:20px;display:block;margin-bottom:3px}
+</style>
+
+<div class="phone">
+  <div class="island"></div>
+  <div class="status"><span>9:41</span><span>5G&nbsp;&nbsp;100% 🔋</span></div>
+  <div class="nav">Sessions</div>
+
+  <div class="row">
+    <span class="glyph" style="color:var(--ok)">⚡</span>
+    <div class="who"><b>Throttle</b><div class="meta">opus · working</div></div>
+    <div class="right"><div class="eur">€1.12</div><div class="tok">5.0k</div></div>
+  </div>
+  <div class="row">
+    <span class="glyph" style="color:var(--warn)">?</span>
+    <div class="who"><b>Lumen&nbsp;Cam</b><div class="meta">sonnet · waiting</div></div>
+    <div class="right"><div class="eur">€0.21</div><div class="tok">900</div></div>
+    <span class="wait"></span>
+  </div>
+  <div class="row">
+    <span class="glyph" style="color:var(--ter)">○</span>
+    <div class="who"><b>Éclair</b><div class="meta">opus · idle</div></div>
+    <div class="right"><div class="eur">€3.40</div><div class="tok">18k</div></div>
+  </div>
+  <div class="row">
+    <span class="glyph" style="color:var(--crit)">▲</span>
+    <div class="who"><b>404</b><div class="meta">rate-limited · resets 14:00</div></div>
+    <div class="right"><div class="eur">€0.88</div><div class="tok">4.1k</div></div>
+  </div>
+  <div class="row">
+    <span class="glyph" style="color:rgba(0,0,0,.25)">☾</span>
+    <div class="who"><b>Inkwell</b><div class="meta">hibernated · 0 tokens</div></div>
+    <div class="right"><div class="eur">—</div><div class="tok">—</div></div>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab"><span class="ic">◔</span>Usage</div>
+    <div class="tab on"><span class="ic">▤</span>Sessions</div>
+    <div class="tab"><span class="ic">📈</span>History</div>
+  </div>
+</div>

@@ -1,0 +1,52 @@
+<!-- @dsCard group="Foundations" -->
+<style>
+  :root{
+    --bg:#FBFBFD; --surface:#FFFFFF; --hair:rgba(0,0,0,.08);
+    --ink:#1D1D1F; --sec:#6E6E73; --ter:#A1A1A6;
+    --accent:#0071E3; --warn:#FF9F0A; --crit:#FF3B30; --ok:#34C759;
+    --r-card:16px; --r-cell:12px;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
+    --serif:ui-serif,"Newsreader",Georgia,serif;
+  }
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding:32px}
+  h1{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--sec);font-weight:600;margin:0 0 18px}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;max-width:760px}
+  .sw{width:120px}
+  .chip{height:64px;border-radius:12px;border:1px solid var(--hair)}
+  .sw code{font-family:var(--mono);font-size:11px;color:var(--sec);display:block;margin-top:6px}
+  .sw b{font-size:12px;display:block;margin-top:8px}
+  .type div{margin-bottom:14px}
+  .num{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums}
+  .flourish{font-family:var(--serif);font-style:italic;font-size:26px;color:var(--ink)}
+  .sect{margin:40px 0 14px}
+</style>
+
+<h1>Throttle iOS · Foundations</h1>
+
+<div class="sect"><h1>Palette</h1></div>
+<div class="grid">
+  <div class="sw"><div class="chip" style="background:#FBFBFD"></div><code>#FBFBFD</code><b>Background</b></div>
+  <div class="sw"><div class="chip" style="background:#FFFFFF"></div><code>#FFFFFF</code><b>Surface</b></div>
+  <div class="sw"><div class="chip" style="background:#0071E3"></div><code>#0071E3</code><b>Accent</b></div>
+  <div class="sw"><div class="chip" style="background:#FF9F0A"></div><code>#FF9F0A</code><b>Warn ≥80%</b></div>
+  <div class="sw"><div class="chip" style="background:#FF3B30"></div><code>#FF3B30</code><b>Crit ≥95%</b></div>
+  <div class="sw"><div class="chip" style="background:#34C759"></div><code>#34C759</code><b>Working</b></div>
+  <div class="sw"><div class="chip" style="background:#1D1D1F"></div><code>#1D1D1F</code><b>Ink</b></div>
+</div>
+
+<div class="sect"><h1>Type</h1></div>
+<div class="type">
+  <div class="num" style="font-size:64px">42</div>
+  <div style="font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--sec);font-weight:600">USED · SECTION LABEL</div>
+  <div style="font-size:17px">Body — SF Pro, the working text of every screen.</div>
+  <div class="flourish">Precise by design.</div>
+  <div style="font-size:13px;color:var(--ter)">Caption / tertiary — timestamps, reset countdowns.</div>
+</div>
+
+<div class="sect"><h1>Principles</h1></div>
+<div style="max-width:620px;font-size:15px;line-height:1.6;color:var(--sec)">
+  Monospaced tabular digits everywhere a number can change. One accent, used only
+  for the binding value and primary action. Thin hairlines, generous negative space.
+  Numbers are never invented — a missing value shows “—”, never a zero.
+</div>

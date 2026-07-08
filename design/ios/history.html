@@ -1,0 +1,55 @@
+<!-- @dsCard group="Screens" -->
+<style>
+  :root{--bg:#FBFBFD;--ink:#1D1D1F;--sec:#6E6E73;--ter:#A1A1A6;--accent:#0071E3;--warn:#FF9F0A;--hair:rgba(0,0,0,.08);--mono:ui-monospace,"SF Mono",Menlo,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif}
+  body{margin:0;background:#EDEDF0;font-family:var(--sans);padding:28px;display:flex;justify-content:center}
+  .phone{width:390px;height:844px;background:var(--bg);border-radius:46px;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden;position:relative;border:1px solid rgba(0,0,0,.06)}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:118px;height:34px;background:#000;border-radius:20px;z-index:5}
+  .status{display:flex;justify-content:space-between;padding:16px 26px 0;font-size:13px;font-weight:600}
+  .nav{font-size:28px;font-weight:700;padding:6px 22px 4px;letter-spacing:-.02em}
+  .seg{display:flex;margin:8px 22px 4px;background:rgba(0,0,0,.05);border-radius:9px;padding:2px}
+  .seg div{flex:1;text-align:center;font-size:13px;font-weight:600;padding:6px;border-radius:7px;color:var(--sec)}
+  .seg .on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .ch{padding:20px 22px 6px}
+  .ch h3{font-size:17px;margin:0 0 2px}
+  .ch .sub{font-size:12px;color:var(--sec);margin-bottom:10px;font-family:var(--mono)}
+  .tabbar{position:absolute;bottom:0;left:0;right:0;height:82px;background:rgba(255,255,255,.86);backdrop-filter:blur(20px);border-top:1px solid var(--hair);display:flex;padding-top:10px}
+  .tab{flex:1;text-align:center;font-size:10px;color:var(--ter)}.tab.on{color:var(--accent)}.tab .ic{font-size:20px;display:block;margin-bottom:3px}
+</style>
+
+<div class="phone">
+  <div class="island"></div>
+  <div class="status"><span>9:41</span><span>5G&nbsp;&nbsp;100% 🔋</span></div>
+  <div class="nav">History</div>
+  <div class="seg"><div class="on">24h</div><div>7d</div><div>30d</div></div>
+
+  <div class="ch">
+    <h3>Binding utilization</h3>
+    <div class="sub">peak 91% · avg 54%</div>
+    <svg width="346" height="150" viewBox="0 0 346 150">
+      <line x1="0" y1="20" x2="346" y2="20" stroke="var(--hair)"/>
+      <line x1="0" y1="75" x2="346" y2="75" stroke="var(--hair)"/>
+      <line x1="0" y1="130" x2="346" y2="130" stroke="var(--hair)"/>
+      <polyline fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"
+        points="0,110 40,96 80,102 120,60 160,72 200,34 240,50 280,26 320,44 346,30"/>
+      <polygon fill="var(--accent)" opacity=".08"
+        points="0,110 40,96 80,102 120,60 160,72 200,34 240,50 280,26 320,44 346,30 346,150 0,150"/>
+    </svg>
+  </div>
+
+  <div class="ch">
+    <h3>Cost</h3>
+    <div class="sub">€12.34 this week · +8% wow</div>
+    <svg width="346" height="120" viewBox="0 0 346 120">
+      <line x1="0" y1="20" x2="346" y2="20" stroke="var(--hair)"/>
+      <line x1="0" y1="100" x2="346" y2="100" stroke="var(--hair)"/>
+      <polyline fill="none" stroke="#34C759" stroke-width="2.5" stroke-linejoin="round"
+        points="0,92 43,80 86,84 129,66 172,70 215,52 258,58 301,40 346,46"/>
+    </svg>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab"><span class="ic">◔</span>Usage</div>
+    <div class="tab"><span class="ic">▤</span>Sessions</div>
+    <div class="tab on"><span class="ic">📈</span>History</div>
+  </div>
+</div>

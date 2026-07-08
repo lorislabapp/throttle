@@ -1,0 +1,50 @@
+<!-- @dsCard group="Widgets" -->
+<style>
+  :root{--ink:#1D1D1F;--sec:#6E6E73;--accent:#0071E3;--warn:#FF9F0A;--mono:ui-monospace,"SF Mono",Menlo,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif}
+  body{margin:0;font-family:var(--sans);padding:34px;display:flex;gap:34px;flex-wrap:wrap;align-items:flex-start;
+       background:linear-gradient(160deg,#3a4a63,#1f2a3d)}
+  .cap{color:#fff;opacity:.85;font-size:12px;letter-spacing:.14em;text-transform:uppercase;width:100%;font-weight:600}
+  .w{background:rgba(255,255,255,.96);border-radius:22px;box-shadow:0 12px 30px rgba(0,0,0,.28);padding:16px}
+  .small{width:158px;height:158px}
+  .medium{width:338px;height:158px}
+  .whead{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;color:var(--sec)}
+  .big{font-family:var(--mono);font-weight:700;font-size:44px;font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-top:10px}
+  .track{height:6px;border-radius:4px;background:rgba(0,0,0,.08);overflow:hidden;margin-top:8px}
+  .fill{height:100%;border-radius:4px}
+  .foot{font-size:12px;color:var(--sec);margin-top:8px;font-family:var(--mono)}
+  .medium .row{display:flex;height:100%;gap:18px}
+  .medium .col{flex:1;display:flex;flex-direction:column;justify-content:center}
+  .lock{width:100%;margin-top:10px;display:flex;gap:18px;align-items:center;color:#fff}
+  .lockpill{background:rgba(255,255,255,.16);border-radius:16px;padding:10px 16px;display:flex;gap:12px;align-items:center;backdrop-filter:blur(10px)}
+  .lockpill .n{font-family:var(--mono);font-weight:700;font-size:26px}
+</style>
+
+<div class="cap">Home Screen · Small &amp; Medium</div>
+
+<div class="w small">
+  <div class="whead"><span>Throttle</span><span>◔</span></div>
+  <div class="big" style="color:var(--accent)">58%</div>
+  <div class="track"><div class="fill" style="width:58%;background:var(--accent)"></div></div>
+  <div class="foot">5h 58% · 7d 83%</div>
+</div>
+
+<div class="w medium">
+  <div class="row">
+    <div class="col">
+      <div class="whead"><span>Throttle</span></div>
+      <div class="big" style="color:var(--accent)">58%</div>
+      <div class="foot">5-hour · resets 2h 14m</div>
+    </div>
+    <div class="col">
+      <div class="whead"><span>7-day</span></div>
+      <div class="big" style="color:var(--warn);font-size:34px">83%</div>
+      <div class="track"><div class="fill" style="width:83%;background:var(--warn)"></div></div>
+      <div class="foot">€12.34 · 1.2M tok</div>
+    </div>
+  </div>
+</div>
+
+<div class="cap">Lock Screen · Live Activity</div>
+<div class="lock">
+  <div class="lockpill"><span>◔</span><span class="n">58%</span><span style="opacity:.8;font-size:13px">5h&nbsp;·&nbsp;2h14m</span></div>
+</div>

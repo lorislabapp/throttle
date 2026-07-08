@@ -1,0 +1,70 @@
+<!-- @dsCard group="Screens" -->
+<style>
+  :root{--bg:#FBFBFD;--ink:#1D1D1F;--sec:#6E6E73;--ter:#A1A1A6;--accent:#0071E3;--warn:#FF9F0A;--hair:rgba(0,0,0,.08);--mono:ui-monospace,"SF Mono",Menlo,monospace;--sans:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif}
+  body{margin:0;background:#EDEDF0;font-family:var(--sans);padding:28px;display:flex;justify-content:center}
+  .phone{width:390px;height:844px;background:var(--bg);border-radius:46px;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden;position:relative;border:1px solid rgba(0,0,0,.06)}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:118px;height:34px;background:#000;border-radius:20px;z-index:5}
+  .status{display:flex;justify-content:space-between;padding:16px 26px 0;font-size:13px;font-weight:600;color:var(--ink)}
+  .nav{text-align:center;font-size:17px;font-weight:600;margin-top:8px}
+  .content{padding:8px 22px 0;text-align:center}
+  .ring{margin:22px auto 4px;display:block}
+  .big{font-family:var(--mono);font-weight:700;font-size:66px;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.02em}
+  .lbl{font-size:12px;letter-spacing:.16em;color:var(--sec);font-weight:600;margin-top:2px}
+  .reset{font-size:12px;color:var(--ter);margin-top:4px}
+  .bars{margin:26px 4px 0;text-align:left}
+  .barrow{margin-bottom:16px}
+  .barhead{display:flex;justify-content:space-between;font-size:14px;font-weight:500;margin-bottom:6px}
+  .barhead .pct{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .track{height:6px;border-radius:4px;background:rgba(0,0,0,.08);overflow:hidden}
+  .fill{height:100%;border-radius:4px}
+  .stats{display:flex;gap:10px;margin:26px 4px 0}
+  .cell{flex:1;background:#fff;border:1px solid var(--hair);border-radius:12px;padding:13px 8px;text-align:center}
+  .cell .v{font-family:var(--mono);font-weight:600;font-size:17px;font-variant-numeric:tabular-nums}
+  .cell .t{font-size:11px;color:var(--sec);margin-top:3px}
+  .fresh{font-size:12px;color:var(--sec);margin-top:22px}
+  .tabbar{position:absolute;bottom:0;left:0;right:0;height:82px;background:rgba(255,255,255,.86);backdrop-filter:blur(20px);border-top:1px solid var(--hair);display:flex;padding-top:10px}
+  .tab{flex:1;text-align:center;font-size:10px;color:var(--ter)}
+  .tab.on{color:var(--accent)}
+  .tab .ic{font-size:20px;display:block;margin-bottom:3px}
+</style>
+
+<div class="phone">
+  <div class="island"></div>
+  <div class="status"><span>9:41</span><span>5G&nbsp;&nbsp;100% 🔋</span></div>
+  <div class="nav">Throttle</div>
+  <div class="content">
+    <svg class="ring" width="220" height="220" viewBox="0 0 220 220">
+      <circle cx="110" cy="110" r="96" fill="none" stroke="rgba(0,0,0,.09)" stroke-width="14"/>
+      <circle cx="110" cy="110" r="96" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="603" stroke-dashoffset="253" transform="rotate(-90 110 110)"/>
+      <text x="110" y="104" text-anchor="middle" class="big" fill="var(--accent)" font-family="var(--mono)" font-weight="700" font-size="66">58</text>
+      <text x="110" y="128" text-anchor="middle" class="lbl" fill="var(--sec)" font-size="12" letter-spacing="2">USED</text>
+      <text x="110" y="150" text-anchor="middle" fill="var(--ter)" font-size="12">resets in 2h 14m</text>
+    </svg>
+
+    <div class="bars">
+      <div class="barrow">
+        <div class="barhead"><span>5-hour session</span><span class="pct" style="color:var(--accent)">58%</span></div>
+        <div class="track"><div class="fill" style="width:58%;background:var(--accent)"></div></div>
+      </div>
+      <div class="barrow">
+        <div class="barhead"><span>7-day</span><span class="pct" style="color:var(--warn)">83%</span></div>
+        <div class="track"><div class="fill" style="width:83%;background:var(--warn)"></div></div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="cell"><div class="v">€12.34</div><div class="t">Cost 7d</div></div>
+      <div class="cell"><div class="v">1.2M</div><div class="t">Tokens 7d</div></div>
+      <div class="cell"><div class="v">89k</div><div class="t">Saved</div></div>
+    </div>
+
+    <div class="fresh">Kevin’s Mac · updated 12s ago</div>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab on"><span class="ic">◔</span>Usage</div>
+    <div class="tab"><span class="ic">▤</span>Sessions</div>
+    <div class="tab"><span class="ic">📈</span>History</div>
+  </div>
+</div>
