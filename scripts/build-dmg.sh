@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 # Build a notarized DMG for Throttle.
-# Requires: xcodebuild, create-dmg (brew install create-dmg), notarytool credentials in keychain
-# under profile name "throttle-notary" (configured once via:
+# Requires: xcodebuild, notarytool credentials in keychain under profile name
+# "throttle-notary" (configured once via:
 #   xcrun notarytool store-credentials throttle-notary --apple-id you@example --team-id TDV6D5L785)
+#
+# Manual Developer ID signing: the CloudKit entitlement forces embedded provisioning
+# profiles. Mint/install them once (and after any cert rotation) via:
+#   node scripts/provision-devid-profiles.mjs
+# project.yml pins the profile names; this script's ExportOptions maps bundle→profile.
 
 set -Eeuo pipefail
 trap 'rc=$?; echo "✘ build-dmg.sh failed at line $LINENO (exit $rc)" >&2; exit $rc' ERR
@@ -20,7 +25,6 @@ xcodebuild -project Throttle.xcodeproj -scheme Throttle \
     -configuration Release \
     -archivePath "$ARCHIVE_PATH" \
     -destination 'generic/platform=macOS' \
-    -allowProvisioningUpdates \
     archive
 
 EXPORT_DIR="$PROJECT_DIR/build/export"
@@ -38,7 +42,16 @@ cat > "$EXPORT_PLIST" <<PLIST
     <key>teamID</key>
     <string>TDV6D5L785</string>
     <key>signingStyle</key>
-    <string>automatic</string>
+    <string>manual</string>
+    <key>signingCertificate</key>
+    <string>Developer ID Application</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.lorislab.throttle</key>
+        <string>Throttle DevID iCloud</string>
+        <key>com.lorislab.throttle.widget</key>
+        <string>Throttle Widget DevID</string>
+    </dict>
 </dict>
 </plist>
 PLIST
@@ -47,8 +60,7 @@ echo "→ Exporting signed app"
 xcodebuild -exportArchive \
     -archivePath "$ARCHIVE_PATH" \
     -exportPath "$EXPORT_DIR" \
-    -exportOptionsPlist "$EXPORT_PLIST" \
-    -allowProvisioningUpdates
+    -exportOptionsPlist "$EXPORT_PLIST"
 
 APP_PATH="$EXPORT_DIR/Throttle.app"
 

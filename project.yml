@@ -19,8 +19,8 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
-    MARKETING_VERSION: "3.2.51"
-    CURRENT_PROJECT_VERSION: "151"
+    MARKETING_VERSION: "3.2.52"
+    CURRENT_PROJECT_VERSION: "152"
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
   configs:
     # Hardened runtime is required for notarized Release distribution but
@@ -76,6 +76,13 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.lorislab.throttle
         PRODUCT_NAME: Throttle
         CODE_SIGN_ENTITLEMENTS: Throttle/Throttle.entitlements
+        # Manual Developer ID signing: the CloudKit entitlement forces an embedded
+        # provisioning profile, which automatic signing can't mint without an Apple
+        # ID in Xcode. We provision the profile out-of-band via the ASC API and pin
+        # it here. Profile: "Throttle DevID iCloud" (bundle com.lorislab.throttle).
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "Developer ID Application"
+        PROVISIONING_PROFILE_SPECIFIER: "Throttle DevID iCloud"
     dependencies:
       - package: GRDB
       - package: Sparkle
@@ -102,6 +109,11 @@ targets:
         PRODUCT_NAME: ThrottleWidget
         CODE_SIGN_ENTITLEMENTS: ThrottleWidget/ThrottleWidget.entitlements
         SKIP_INSTALL: YES
+        # Manual signing (see Throttle target). The parent app is manually signed
+        # for CloudKit, so the embedded widget must be too — same Developer ID cert.
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "Developer ID Application"
+        PROVISIONING_PROFILE_SPECIFIER: "Throttle Widget DevID"
 
   # ─── iOS companion (App Store) ───────────────────────────────────────────
   # Read-only mirror of the Mac's live usage/cockpit state via the user's

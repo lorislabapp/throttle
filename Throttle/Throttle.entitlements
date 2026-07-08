@@ -36,5 +36,21 @@
     <array>
         <string>group.com.lorislab.throttle</string>
     </array>
+    <!--
+        CloudKit: publish the read-only usage/cockpit mirror to the user's
+        PRIVATE iCloud DB so the Throttle iOS companion can mirror it. Write-only
+        from the Mac (no aps-environment / push needed here). Requires the Mac
+        App ID (com.lorislab.throttle) to have iCloud+CloudKit enabled with the
+        container below, and an embedded Developer ID provisioning profile
+        (Xcode mints it via -allowProvisioningUpdates at archive time).
+    -->
+    <key>com.apple.developer.icloud-container-identifiers</key>
+    <array>
+        <string>iCloud.com.lorislab.throttle</string>
+    </array>
+    <key>com.apple.developer.icloud-services</key>
+    <array>
+        <string>CloudKit</string>
+    </array>
 </dict>
 </plist>
