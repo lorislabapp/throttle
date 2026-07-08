@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let logger = AppLogger.app
 
     override init() {
+        FileHandle.standardError.write(Data("[AppDelegate.init] start\n".utf8))
         // Check for -demo launch argument for screen recordings & screenshots
         let isDemoMode = CommandLine.arguments.contains("-demo")
 
@@ -34,8 +35,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 #endif
             } else {
                 // Normal mode: real database
+                FileHandle.standardError.write(Data("[AppDelegate.init] before openDatabaseSync\n".utf8))
                 self.database = try Self.openDatabaseSync()
+                FileHandle.standardError.write(Data("[AppDelegate.init] after openDatabaseSync\n".utf8))
                 self.appState = AppState(database: database)
+                FileHandle.standardError.write(Data("[AppDelegate.init] after AppState init\n".utf8))
                 self.coordinator = DataLayerCoordinator(database: database)
                 self.savingsIngester = SavingsIngester(database: database)
                 super.init()
@@ -43,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.coordinator.onUsageChanged = { [weak self] in
                     self?.appState.refresh()
                 }
+                FileHandle.standardError.write(Data("[AppDelegate.init] done\n".utf8))
             }
         } catch {
             // Fail-fast: if we can't open the DB, the app is non-functional.
@@ -59,6 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] start\n".utf8))
         let isDemoMode = CommandLine.arguments.contains("-demo")
 
         // In demo mode, skip all background services and just show the UI with fake data
@@ -66,10 +72,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             logger.notice("🎬 DEMO MODE: Skipping all background services")
             return
         }
+        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] past demo check\n".utf8))
 
         // Listen for cross-process commands from App Intents / Shortcuts / Focus
         // Filters (pause/resume/quiet) and apply anything queued before launch.
+        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] before ThrottleCommandChannel\n".utf8))
         ThrottleCommandChannel.startObserving()
+        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] after ThrottleCommandChannel\n".utf8))
 
         // Raise the per-process FD limit. macOS defaults to ~256 soft;
         // LiveFileWatcher used to open one descriptor per session JSONL,
@@ -79,25 +88,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Heal the tokopt hook's exec path if it points at a stale build (e.g. an
         // old DerivedData path after installing to /Applications or a Sparkle
         // update). No-op if the hook isn't installed or is already current.
+        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] before installers\n".utf8))
         TokoptHookInstaller.reconcile()
         TranscriptMemoryInstaller.reconcile()   // heal a stale throttle-memory --mcp-server path (e.g. dev build → /Applications)
         TraycerEnvInstaller.reconcile()          // heal drifted OTLP env keys — only if the user opted the export in
+        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] after installers\n".utf8))
 
         // Traycer: local OTLP receiver for €-per-skill attribution. Opt-in
         // (Settings → the export writes full command lines to the local usage.db).
         // Fail-open: a bind conflict on 4318 disables it silently.
+        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] before Traycer\n".utf8))
         if UserDefaults.standard.bool(forKey: "throttleTraycerEnabled") {
             traycer.start(writer: database)
         }
+        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] after Traycer\n".utf8))
 
         // Web research: local WKWebView render bridge for the `web_render` MCP tool.
         // Opt-in; fail-open (a bind conflict on 4319 disables it silently). The CLI
         // MCP process reaches it over loopback; the renderer must live here because
         // the GUI-less --mcp-server can't host a WKWebView.
+        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] before WebRenderBridge\n".utf8))
         if UserDefaults.standard.bool(forKey: "throttleWebEnabled") {
             WebRenderBridge.shared.start(writer: database)
         }
+        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] after WebRenderBridge\n".utf8))
+        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] before OutputStyleManager\n".utf8))
         OutputStyleManager.resyncManagedTemplates()   // heal stale managed output-style files after an app upgrade changed a template body
+        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] after OutputStyleManager\n".utf8))
 
         var rlim = rlimit()
         if getrlimit(RLIMIT_NOFILE, &rlim) == 0 {
