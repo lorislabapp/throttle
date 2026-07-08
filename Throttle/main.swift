@@ -120,6 +120,7 @@ if let i = CommandLine.arguments.firstIndex(of: "--web-bridge-selftest"), i + 1 
         let second = WebRenderClient.render(url: target, wait: nil, waitSelector: nil, maxChars: 2_000, timeoutMs: nil)
         print("=== FIRST ===\n" + String(first.prefix(200)))
         print("\n=== SECOND (expect cache) ===\n" + String(second.prefix(200)))
+        usleep(2_000_000)   // let the async __web__ corpus indexing land before exit
         DispatchQueue.main.async { NSApp.terminate(nil) }
     }
     app.run()

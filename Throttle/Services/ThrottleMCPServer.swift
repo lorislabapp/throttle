@@ -365,6 +365,23 @@ enum ThrottleMCPServer {
                 parts.append("## Related in your local corpus (\(root.lastPathComponent))\n\(lines)")
             }
         }
+
+        // Recall prior research: pages rendered before, retrieved by meaning from the
+        // __web__ corpus — so a follow-up question surfaces what you've already read
+        // without re-fetching.
+        let webIndex = SemanticCorpusStore.loadIndex(repo: WebResearchCache.webCorpusKey)
+        if webIndex.chunkCount > 0 {
+            let whits = webIndex.searchHybrid(query, k: 4)
+            if !whits.isEmpty {
+                let lines = whits.map { h -> String in
+                    let u = h.metadata["url"] ?? h.id
+                    let t = h.metadata["title"].flatMap { $0.isEmpty ? nil : $0 }.map { "\($0) — " } ?? ""
+                    let snippet = h.text.replacingOccurrences(of: "\n", with: " ").prefix(160)
+                    return "• \(t)\(u) (\(String(format: "%.2f", h.score))) — \(snippet)"
+                }.joined(separator: "\n")
+                parts.append("## From pages you've already rendered\n\(lines)")
+            }
+        }
         return parts.joined(separator: "\n\n---\n\n")
     }
 

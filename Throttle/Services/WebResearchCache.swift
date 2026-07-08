@@ -13,6 +13,14 @@ enum WebResearchCache {
 
     struct Hit { let text: String; let ageSeconds: Int }
 
+    /// Synthetic "repo" key for the semantic corpus of rendered pages, so
+    /// research_grounded can retrieve prior research by MEANING (not just by exact
+    /// URL). Keyed like any repo corpus — `SemanticCorpusStore` hashes the path.
+    static let webCorpusKey = "__throttle_web_corpus__"
+    /// Only the app writes this corpus (during a render); serialize its
+    /// load→modify→save so two concurrent records never clobber each other.
+    private static let corpusQ = DispatchQueue(label: "throttle.web.corpus")
+
     /// Canonical key: drop fragment, lowercase host, strip tracking params, sort the
     /// rest, trim a trailing slash. Over-normalizing collapses distinct pages, so we
     /// only strip well-known tracking params — meaningful query params are kept.
@@ -47,8 +55,9 @@ enum WebResearchCache {
         return Hit(text: text, ageSeconds: max(0, Int(Date().timeIntervalSince1970) - at))
     }
 
-    /// Store extracted text + record the fetch. Best-effort / fail-open.
-    static func record(url: String, text: String, renderMs: Int, sessionId: String?, writer: any DatabaseWriter) {
+    /// Store extracted text + record the fetch, then index the page into the `__web__`
+    /// semantic corpus for later meaning-based recall. Best-effort / fail-open.
+    static func record(url: String, text: String, title: String, renderMs: Int, sessionId: String?, writer: any DatabaseWriter) {
         guard !text.isEmpty else { return }
         let hash = ContentStore.put(Data(text.utf8))   // content-addressed; identical pages dedupe to one blob
         let norm = normalize(url)
@@ -58,6 +67,20 @@ enum WebResearchCache {
                 INSERT INTO web_fetches (url_normalized, content_hash, fetched_at, render_ms, text_bytes, session_id)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """, arguments: [norm, hash, now, renderMs, text.utf8.count, sessionId])
+        }
+        indexPage(url: url, norm: norm, title: title, text: text)
+    }
+
+    /// Add/replace the page in the `__web__` semantic corpus (on-device embeddings,
+    /// free). Serialized on `corpusQ` so concurrent renders don't clobber the store.
+    private static func indexPage(url: String, norm: String, title: String, text: String) {
+        corpusQ.async {
+            var index = SemanticCorpusStore.loadIndex(repo: webCorpusKey)
+            var manifest = SemanticCorpusStore.loadManifest(repo: webCorpusKey)
+            index.removeDoc(norm)   // replace any prior copy of this URL
+            _ = index.index(docId: norm, text: text, metadata: ["url": url, "title": title])
+            manifest[norm] = ContentStore.sha256Hex(Data(text.utf8))
+            try? SemanticCorpusStore.save(repo: webCorpusKey, index: index, manifest: manifest)
         }
     }
 }

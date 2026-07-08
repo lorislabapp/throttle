@@ -124,9 +124,9 @@ final class WebRenderBridge: @unchecked Sendable {
             self.q.async { self.send(conn, status: "200 OK", json: payload) }
             // Record for future cache hits, off the response path so it never adds latency.
             if r.ok, let writer = self.writer {
-                let text = r.text
+                let text = r.text, title = r.title
                 DispatchQueue.global(qos: .utility).async {
-                    WebResearchCache.record(url: url, text: text, renderMs: r.renderMs, sessionId: nil, writer: writer)
+                    WebResearchCache.record(url: url, text: text, title: title, renderMs: r.renderMs, sessionId: nil, writer: writer)
                 }
             }
         }
