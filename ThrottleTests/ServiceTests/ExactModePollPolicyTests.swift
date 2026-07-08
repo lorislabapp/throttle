@@ -24,6 +24,18 @@ final class ExactModePollPolicyTests: XCTestCase {
         XCTAssertEqual(ExactModeService.pollPolicy(now: Date(), snapshot: nil, consecutiveFailures: 0), .seconds(5 * 60))
     }
 
+    // Anti-flap: while a FRESH snapshot is on the meter, a failure retries fast (60 s)
+    // to refresh before the 10-min freshness window expires — not a long backoff that
+    // would let the number blank then reappear. Backoff resumes once it's stale.
+    func test_failure_withFreshSnapshot_retriesFastNotBackoff() {
+        let now = Date()
+        let fresh = snap(five: 40, fiveReset: nil, at: now)                       // fetched now → fresh
+        XCTAssertEqual(ExactModeService.pollPolicy(now: now, snapshot: fresh, consecutiveFailures: 1), .seconds(60))
+        XCTAssertEqual(ExactModeService.pollPolicy(now: now, snapshot: fresh, consecutiveFailures: 6), .seconds(60))
+        let stale = snap(five: 40, fiveReset: nil, at: now.addingTimeInterval(-11 * 60))  // >10 min → stale
+        XCTAssertEqual(ExactModeService.pollPolicy(now: now, snapshot: stale, consecutiveFailures: 3), .seconds(120))
+    }
+
     func test_cappedWindow_backsOffUntilReset() {
         let now = Date()
         let s = snap(five: 100, fiveReset: now.addingTimeInterval(8 * 60), at: now)

@@ -102,6 +102,14 @@ final class ExactModeService {
     /// 3. ≥80% util → 60 s; otherwise 5 min (also 5 min when no fresh snapshot).
     nonisolated static func pollPolicy(now: Date, snapshot: ExactSnapshot?, consecutiveFailures: Int) -> Duration {
         if consecutiveFailures > 0 {
+            // While a fresh snapshot is still on the meter, a transient failure must
+            // NOT trigger a long backoff: the freshness window (10 min) would expire
+            // before the next attempt and the number would visibly blank then reappear
+            // (the "live metrics keep disconnecting randomly" flap). Keep retrying
+            // quickly to refresh it before it goes stale. Only once the snapshot is
+            // already stale/absent — nothing left to preserve, claude.ai likely down —
+            // do we back off exponentially so we don't hammer a dead endpoint.
+            if let snap = snapshot, snap.isFresh(now: now) { return .seconds(60) }
             return .seconds(min(30 * (1 << min(consecutiveFailures - 1, 5)), 15 * 60))   // 30,60,…,cap 15min
         }
         guard let snap = snapshot, snap.isFresh(now: now) else { return .seconds(5 * 60) }
