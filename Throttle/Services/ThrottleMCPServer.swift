@@ -36,7 +36,7 @@ enum ThrottleMCPServer {
             var tools = [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema(), mcpHealthSchema(), expandPointerSchema(), recallSchema(), semanticSearchSchema()]
             // web_render is opt-in: only advertised when the user enabled Web
             // research, so a disabled capability costs zero schema tokens.
-            if UserDefaults.standard.bool(forKey: "throttleWebEnabled") { tools.append(webRenderSchema()) }
+            if UserDefaults.standard.bool(forKey: "throttleWebEnabled") { tools.append(webRenderSchema()); tools.append(researchGroundedSchema()) }
             respond(id: id, result: ["tools": tools])
         case "tools/call":
             let params = req["params"] as? [String: Any]
@@ -82,6 +82,14 @@ enum ThrottleMCPServer {
                         maxChars: args?["maxChars"] as? Int, timeoutMs: args?["timeoutMs"] as? Int)))
                 } else {
                     respond(id: id, error: [-32602, "Missing url"])
+                }
+            case "research_grounded":
+                if let query = args?["query"] as? String {
+                    respond(id: id, result: textResult(researchGroundedText(
+                        query: query, urls: args?["urls"] as? [String] ?? [],
+                        repo: args?["repo"] as? String, k: (args?["groundingK"] as? Int) ?? 6)))
+                } else {
+                    respond(id: id, error: [-32602, "Missing query"])
                 }
             default:
                 respond(id: id, error: [-32602, "Unknown tool: \(name)"])
@@ -301,6 +309,61 @@ enum ThrottleMCPServer {
                 "required": ["url"],
             ],
         ]
+    }
+
+    private static func researchGroundedSchema() -> [String: Any] {
+        [
+            "name": "research_grounded",
+            "description": "Research a question with BOTH the live web AND the user's own local context — the private edge no cloud assistant has. Give it the question and the page URLs to consult (find them with WebSearch first — this tool does NOT search, it renders + grounds). It renders each URL in Throttle's local WebKit engine (JS-rendered text, like web_render) and then cross-references your query against the user's LOCALLY-indexed code + docs, returning the related local chunks alongside the web material — so you can reason over public sources and the user's private codebase together, with the private context never leaving the machine. It RETRIEVES and grounds; it does not synthesize — that's your job. Requires the Throttle app running with Web research enabled, and the repo indexed (Throttle --index-repo).",
+            "inputSchema": [
+                "type": "object",
+                "properties": [
+                    "query": ["type": "string", "description": "The research question, in natural language — used to retrieve the related local chunks."],
+                    "urls": ["type": "array", "items": ["type": "string"], "description": "Public http(s) page URLs to render and consult. Find them with WebSearch first."],
+                    "repo": ["type": "string", "description": "Optional absolute repo path to ground against; defaults to the current working directory's repo."],
+                    "groundingK": ["type": "integer", "description": "Max local chunks to return (default 6)."],
+                ],
+                "required": ["query"],
+            ],
+        ]
+    }
+
+    /// Composes web_render (per URL) with local semantic grounding. The grounding
+    /// half is the defensible edge: the user's private corpus is retrieved locally
+    /// and never leaves the machine. Retrieval only — synthesis is the model's job.
+    private static func researchGroundedText(query: String, urls: [String], repo: String?, k: Int) -> String {
+        var parts: [String] = []
+
+        if urls.isEmpty {
+            parts.append("No URLs given. Use WebSearch to find relevant pages for “\(query)”, then call research_grounded again with the urls[] — this tool renders + grounds, it does not search.")
+        } else {
+            for u in urls.prefix(5) {
+                parts.append("## Web source\n" + WebRenderClient.render(url: u, wait: nil, waitSelector: nil, maxChars: 4_000, timeoutMs: nil))
+            }
+        }
+
+        // Local grounding — top-K semantically related chunks from the user's own
+        // indexed repo (same engine as throttle_semantic_search).
+        let root = repo.map { URL(fileURLWithPath: $0) }
+            ?? SemanticCorpusStore.repoRoot(from: URL(fileURLWithPath: FileManager.default.currentDirectoryPath))
+        let index = SemanticCorpusStore.loadIndex(repo: root.standardizedFileURL.path)
+        if index.chunkCount == 0 {
+            parts.append("## Related in your local corpus\n(\(root.lastPathComponent) isn't indexed yet — run `Throttle --index-repo \(root.path)` to ground research against it.)")
+        } else {
+            let hits = index.searchHybrid(query, k: k)
+            if hits.isEmpty {
+                parts.append("## Related in your local corpus\n(no semantically related chunks in \(root.lastPathComponent) for this query.)")
+            } else {
+                let lines = hits.map { h -> String in
+                    let path = h.metadata["path"] ?? h.id
+                    let loc = h.metadata["line"].map { ":\($0)" } ?? ""
+                    let snippet = h.text.replacingOccurrences(of: "\n", with: " ").prefix(200)
+                    return "• \(path)\(loc) (\(String(format: "%.2f", h.score))) — \(snippet)"
+                }.joined(separator: "\n")
+                parts.append("## Related in your local corpus (\(root.lastPathComponent))\n\(lines)")
+            }
+        }
+        return parts.joined(separator: "\n\n---\n\n")
     }
 
     private static func textResult(_ text: String) -> [String: Any] {
