@@ -1,0 +1,31 @@
+// CloudKit schema for the Throttle iOS-companion mirror.
+// Container: iCloud.com.lorislab.throttle   (Private Database, default zone)
+//
+// Single record type. The whole ThrottleMirrorSnapshot rides as one JSON blob in
+// the encrypted `payload` field; only publishedAt + schemaVersion are in the clear
+// so the server can sort/query without decrypting. Keeping the payload opaque means
+// this schema is FROZEN — new snapshot fields never need a Production redeploy
+// (see ThrottleShared/CloudKitRecordMapping.swift).
+//
+// Deploy path (Production is human-gated by Apple):
+//   1. Import to DEVELOPMENT — cloudkit-mcp `cloudkit_import_schema` (env DEVELOPMENT),
+//      or CloudKit Console → this container → Schema → import this file.
+//   2. Promote DEVELOPMENT → PRODUCTION — Console "Deploy Schema Changes"
+//      (API-blocked; one human click). cloudkit-mcp `cloudkit_promote_to_prod_url`
+//      returns the deep-link.
+// Both ends must match environment: Developer-ID/release Mac + TestFlight/App Store
+// iPhone = PRODUCTION; Debug builds = DEVELOPMENT.
+
+DEFINE SCHEMA
+
+RECORD TYPE ThrottleSnapshot (
+    payload         ENCRYPTED BYTES,
+    publishedAt     TIMESTAMP QUERYABLE SORTABLE,
+    schemaVersion   INT64 QUERYABLE,
+    "___recordID"   REFERENCE QUERYABLE,
+    "___createTime" TIMESTAMP QUERYABLE,
+    "___modTime"    TIMESTAMP QUERYABLE SORTABLE,
+    GRANT WRITE TO "_creator",
+    GRANT CREATE TO "_creator",
+    GRANT READ TO "_creator"
+);
