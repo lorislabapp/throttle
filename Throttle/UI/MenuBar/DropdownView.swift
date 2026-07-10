@@ -1336,6 +1336,7 @@ private struct InlineGeneralPane: View {
     @State private var apSkills: Bool = AutopilotService.archiveDeadSkills
     @State private var semanticAutoIndex: Bool = SemanticAutoIndexer.isEnabled
     @State private var showingLedger = false
+    @State private var showSessionOffload = false
     @State private var ledger: [AutopilotService.Entry] = []
     @State private var autopilotBusy = false
     @State private var activeStyle = OutputStyleManager.activeName()
@@ -1657,12 +1658,27 @@ private struct InlineGeneralPane: View {
                 }
             }
             SettingsHair()
+            SettingsRow(title: "Run sessions on your server",
+                        sub: "Offload Claude Code sessions to a Throttle Edge Agent on your own box (e.g. a Proxmox LXC) to free the Mac's RAM. Throttle generates the deploy + verifies the agent; you run the SSH. Measure + start/stop/pause — never a data-path proxy.") {
+                HStack(spacing: 6) {
+                    if !appState.isPro {
+                        Text("PRO").font(.system(size: 9, weight: .heavy)).tracking(0.3)
+                            .padding(.horizontal, 5).padding(.vertical, 2)
+                            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 4))
+                            .foregroundStyle(.secondary)
+                    }
+                    SettingsButton(title: "Configure…") { if appState.isPro { showSessionOffload = true } }
+                        .disabled(!appState.isPro)
+                }
+            }
+            SettingsHair()
             SettingsRow(title: "Software updates", sub: updatesSubtitle) {
                 SettingsButton(title: "Check now") { UpdaterService.shared.checkForUpdates() }
             }
             SettingsNote(text: "Throttle \(currentVersionLabel) · updates are signed and verified before install.")
         }
         .sheet(isPresented: $showingLedger) { autopilotLedgerSheet }
+        .sheet(isPresented: $showSessionOffload) { SessionOffloadSheet(onClose: { showSessionOffload = false }) }
         .onReceive(NotificationCenter.default.publisher(for: .outputStyleChanged)) { _ in
             activeStyle = OutputStyleManager.activeName()
         }

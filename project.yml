@@ -51,6 +51,7 @@ targets:
       - path: Throttle
     resources:
       - path: Throttle/Resources
+      - path: edge-agent/throttle-agent.mjs   # bundled so SessionOffloadSheet can emit a self-contained deploy
     info:
       path: Throttle/Info.plist
       properties:

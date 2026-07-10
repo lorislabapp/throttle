@@ -34,19 +34,21 @@ enum EdgeAgentService {
 
     static func remoteURL(host: String, port: Int) -> String { "http://\(host):\(port)/" }
 
-    /// A `#!/usr/bin/env bash` script that installs Node + tmux, copies the agent
-    /// from the local repo (`localAgentDir`) to `/opt/throttle-agent`, installs a
-    /// systemd unit carrying the bearer token via an EnvironmentFile, and starts it.
-    static func deployScript(target: SSHTarget, token: String, httpPort: Int, localAgentDir: String) -> String {
+    /// A self-contained `#!/usr/bin/env bash` script: installs Node + tmux, writes
+    /// the agent (embedded here as base64 so the script needs nothing from the repo),
+    /// installs a systemd unit carrying the bearer token via an EnvironmentFile, and
+    /// starts it. The user runs this — the app never SSHes.
+    static func deployScript(target: SSHTarget, token: String, httpPort: Int, agentSource: String) -> String {
         let keyOpt = target.keyPath.map { " -i \($0)" } ?? ""
         let ssh = "ssh\(keyOpt) -o BatchMode=yes -p \(target.port) \(target.user)@\(target.host)"
+        let agentB64 = Data(agentSource.utf8).base64EncodedString()
         var s = "#!/usr/bin/env bash\nset -euo pipefail\n\n"
         s += "# Deploy the Throttle Edge Agent on \(target.host):\(httpPort).\n"
         s += "# 1) Node >=18 + tmux (once):\n"
         s += "\(ssh) 'command -v node >/dev/null || (curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs); command -v tmux >/dev/null || apt-get install -y tmux'\n\n"
-        s += "# 2) copy the agent code to /opt/throttle-agent:\n"
+        s += "# 2) write the agent (embedded, no repo dependency):\n"
         s += "\(ssh) 'mkdir -p /opt/throttle-agent'\n"
-        s += "tar -C \(shq(localAgentDir)) -czf - throttle-agent.mjs package.json README.md | \(ssh) 'tar -C /opt/throttle-agent -xzf -'\n\n"
+        s += "printf %s \(shq(agentB64)) | \(ssh) 'base64 -d > /opt/throttle-agent/throttle-agent.mjs'\n\n"
         s += "# 3) token via EnvironmentFile (kept out of the unit + process list):\n"
         s += "\(ssh) 'umask 077; printf \"THROTTLE_AGENT_TOKEN=%s\\nTHROTTLE_AGENT_PORT=%s\\n\" \(shq(token)) \(httpPort) > /etc/throttle-agent.env'\n\n"
         s += "# 4) systemd unit + start:\n"
@@ -56,6 +58,21 @@ enum EdgeAgentService {
         s += "\(ssh) 'systemctl daemon-reload && systemctl enable --now throttle-agent && sleep 3 && systemctl is-active throttle-agent'\n\n"
         s += "# 5) back in Throttle: click Verify, then the sessions appear in the cockpit.\n"
         return s
+    }
+
+    /// The bundled agent source (`throttle-agent.mjs` in the app bundle), or nil if
+    /// missing (dev builds that didn't copy the resource).
+    static func bundledAgentSource() -> String? {
+        guard let url = Bundle.main.url(forResource: "throttle-agent", withExtension: "mjs"),
+              let s = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+        return s
+    }
+
+    /// A fresh bearer token for a new agent.
+    static func generateToken() -> String {
+        var bytes = [UInt8](repeating: 0, count: 24)
+        _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        return Data(bytes).base64EncodedString().replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "=", with: "")
     }
 
     private static func unitText() -> String {
