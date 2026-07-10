@@ -57,7 +57,7 @@ public struct TabMirror: Codable, Sendable, Equatable, Identifiable {
 /// in an encrypted CKRecord field so adding fields never forces a CloudKit
 /// schema redeploy (only a `schemaVersion` bump the phone tolerates).
 public struct ThrottleMirrorSnapshot: Codable, Sendable, Equatable {
-    public static let currentSchemaVersion = 1
+    public static let currentSchemaVersion = 2
 
     public let schemaVersion: Int
     public let publishedAt: Date
@@ -73,10 +73,17 @@ public struct ThrottleMirrorSnapshot: Codable, Sendable, Equatable {
     public let sessionCount: Int
     public let tabs: [TabMirror]
 
+    /// Base64 of the 32-byte LAN peer pairing secret. Rides inside this encrypted
+    /// blob so the phone can bootstrap the P2P fast path from the first CloudKit
+    /// sync — no separate CloudKit record, no schema redeploy. Optional/nil when the
+    /// peer mirror is off or the publisher is an older build.
+    public let peerPairingSecret: String?
+
     public init(publishedAt: Date, deviceName: String,
                 fiveHour: WindowMirror, sevenDay: WindowMirror, sevenDaySonnet: WindowMirror,
                 weeklyTokens: Int, weeklyCostEUR: Double, savedTokensThisWeek: Int,
                 sessionCount: Int, tabs: [TabMirror],
+                peerPairingSecret: String? = nil,
                 schemaVersion: Int = ThrottleMirrorSnapshot.currentSchemaVersion) {
         self.schemaVersion = schemaVersion
         self.publishedAt = publishedAt
@@ -89,6 +96,7 @@ public struct ThrottleMirrorSnapshot: Codable, Sendable, Equatable {
         self.savedTokensThisWeek = savedTokensThisWeek
         self.sessionCount = sessionCount
         self.tabs = tabs
+        self.peerPairingSecret = peerPairingSecret
     }
 
     // MARK: Binding window (the "worst" of 5h/7d) — mirrors the Mac's rule.

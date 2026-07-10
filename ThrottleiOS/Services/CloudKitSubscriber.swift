@@ -24,6 +24,8 @@ final class CloudKitSubscriber {
             let record = try await database.record(for: id)
             let snap = try CloudKitRecordMapping.snapshot(from: record)
             MirrorStore.shared.ingest(snap)
+            // Bootstrap the LAN fast path: learn the pairing secret from the snapshot.
+            PeerClient.shared.syncPairing(from: snap)
             MirrorStore.shared.lastError = nil
         } catch let ck as CKError where ck.code == .unknownItem {
             // Mac hasn't published a snapshot yet — not an error.

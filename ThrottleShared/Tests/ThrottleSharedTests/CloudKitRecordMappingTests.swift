@@ -34,7 +34,7 @@ final class CloudKitRecordMappingTests: XCTestCase {
         let record = try CloudKitRecordMapping.record(from: snap)
         XCTAssertEqual(record.recordType, CloudKitSchema.recordType)
         XCTAssertEqual(record.recordID.recordName, "current-default")
-        XCTAssertEqual(record[CloudKitSchema.Field.schemaVersion] as? Int, 1)
+        XCTAssertEqual(record[CloudKitSchema.Field.schemaVersion] as? Int, ThrottleMirrorSnapshot.currentSchemaVersion)
         let back = try CloudKitRecordMapping.snapshot(from: record)
         XCTAssertEqual(snap, back)
         XCTAssertEqual(back.tabs.count, 2)

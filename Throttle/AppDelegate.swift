@@ -119,8 +119,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // MirrorFanout — register the transport always (so it holds the freshest
         // snapshot), but only arm the network side when the user opted in.
         MirrorFanout.shared.register(CloudKitPublisher.shared)
+        MirrorFanout.shared.register(PeerTransport.shared)   // LAN fast path (Bonjour+TLS-PSK)
         if UserDefaults.standard.bool(forKey: "throttleiCloudMirrorEnabled") {
             CloudKitPublisher.shared.start()
+            PeerTransport.shared.start()
         }
 
         FileHandle.standardError.write(Data("[applicationDidFinishLaunching] before OutputStyleManager\n".utf8))

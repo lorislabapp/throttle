@@ -52,6 +52,10 @@ extension AppState {
             weeklyCostEUR: weeklyCostEUR,
             savedTokensThisWeek: savedTokensThisWeek,
             sessionCount: sessions.count,
-            tabs: Array(tabs))
+            tabs: Array(tabs),
+            // Ride the LAN peer secret inside the encrypted blob so the phone can
+            // bootstrap the P2P fast path from its first CloudKit sync (no separate
+            // record, no schema redeploy).
+            peerPairingSecret: PeerTransport.shared.pairingSecretBase64)
     }
 }

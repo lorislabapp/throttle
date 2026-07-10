@@ -1624,9 +1624,11 @@ private struct InlineGeneralPane: View {
                             UserDefaults.standard.set(on, forKey: "throttleiCloudMirrorEnabled")
                             if on {
                                 CloudKitPublisher.shared.start()
+                                PeerTransport.shared.start()   // LAN fast path (sub-second when same Wi-Fi)
                                 mirrorNote = "On — open the Throttle app on your iPhone (same iCloud account) to see the mirror."
                             } else {
                                 CloudKitPublisher.shared.stop()
+                                PeerTransport.shared.stop()
                                 mirrorNote = "Off — the iPhone keeps its last synced snapshot."
                             }
                         }

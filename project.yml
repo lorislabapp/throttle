@@ -88,6 +88,8 @@ targets:
       - package: Sparkle
       - package: SwiftTerm
       - package: ThrottleShared
+      - package: ThrottleShared
+        product: ThrottlePeer
       - target: ThrottleWidget
 
   ThrottleWidget:
@@ -132,6 +134,11 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         UIBackgroundModes:
           - remote-notification
+        # LAN mirror fast path: discover + connect to the Mac over Bonjour. Without
+        # both keys iOS silently blocks local-network discovery.
+        NSLocalNetworkUsageDescription: "Throttle mirrors your Mac's live Claude Code usage over your local network for instant updates when both devices are on the same Wi-Fi. It falls back to iCloud otherwise."
+        NSBonjourServices:
+          - _throttle._tcp
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -154,6 +161,8 @@ targets:
         PROVISIONING_PROFILE_SPECIFIER: "Throttle iOS App Store"
     dependencies:
       - package: ThrottleShared
+      - package: ThrottleShared
+        product: ThrottlePeer
       - target: ThrottleiOSWidget
 
   ThrottleiOSWidget:

@@ -7,6 +7,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         application.registerForRemoteNotifications()
         Task { await CloudKitSubscriber.shared.bootstrap() }
+        // Cover an offline cold launch: if a prior snapshot (with the pairing secret)
+        // is already persisted, start the LAN link now without waiting for CloudKit.
+        Task { @MainActor in
+            if let latest = MirrorStore.shared.latest { PeerClient.shared.syncPairing(from: latest) }
+        }
         return true
     }
 
