@@ -25,8 +25,32 @@ public final class PeerConnector: @unchecked Sendable {
     public var onSnapshot: (@Sendable (Data) -> Void)?
     /// Fired when the peer connection comes up / goes down.
     public var onConnected: (@Sendable (Bool) -> Void)?
+    /// Remote terminal: raw PTY output bytes for the attached session (`termOut`).
+    public var onTermOut: (@Sendable ([UInt8]) -> Void)?
+    /// Remote terminal: the Mac's authoritative geometry, sent on attach (`termResize`).
+    public var onTermResize: (@Sendable (Int, Int) -> Void)?
 
     public init(secret: PeerPairingSecret) { self.secret = secret }
+
+    // MARK: - remote terminal (phone→Mac sends)
+
+    /// Attach to a Mac session's live terminal (payload = its cockpit-tab UUID string).
+    public func attachTerminal(sessionId: String) { sendControl(.termAttach, Data(sessionId.utf8)) }
+    /// Inject keystroke bytes into the attached session's PTY.
+    public func sendInput(_ bytes: [UInt8]) { sendControl(.termIn, Data(bytes)) }
+    /// Report the phone's terminal geometry (advisory; Mac stays authoritative).
+    public func sendResize(cols: Int, rows: Int) { sendControl(.termResize, PeerTerminal.resizePayload(cols: cols, rows: rows)) }
+    /// Detach from the current session.
+    public func detachTerminal() { sendControl(.termDetach, Data()) }
+
+    private func sendControl(_ kind: PeerMessage.Kind, _ payload: Data) {
+        q.async { [self] in
+            guard let c = conn else { return }
+            seq &+= 1
+            let frame = PeerMessage(kind: kind, seq: seq, timestampMillis: PeerTLS.nowMillis(), payload: payload).encoded()
+            c.send(content: frame, completion: .contentProcessed { _ in })
+        }
+    }
 
     /// Start browsing. Never throws — no peer found just means the fallback is used.
     public func start() {
@@ -102,7 +126,12 @@ public final class PeerConnector: @unchecked Sendable {
             do {
                 guard let (msg, consumed) = try PeerMessage.decode(from: buffer) else { return }
                 buffer.removeFirst(consumed)
-                if msg.kind == .snapshot { onSnapshot?(msg.payload) }
+                switch msg.kind {
+                case .snapshot:   onSnapshot?(msg.payload)
+                case .termOut:    onTermOut?([UInt8](msg.payload))
+                case .termResize: if let r = PeerTerminal.decodeResize(msg.payload) { onTermResize?(r.cols, r.rows) }
+                default:          break
+                }
             } catch {
                 // Corrupt stream — drop the buffer and let the connection reset.
                 buffer.removeAll()

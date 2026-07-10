@@ -1,8 +1,9 @@
 import SwiftUI
 import ThrottleShared
 
-/// Read-only list of the Mac's cockpit sessions/tabs. No controls — mirrors
-/// state only (doctrine: cockpit-not-engine, no remote command execution).
+/// List of the Mac's cockpit sessions/tabs. Tapping a row opens its live terminal
+/// and drives it over the paired LAN link (spawned sessions only; the Mac rejects
+/// attach otherwise). Off-LAN this stays a read-only mirror.
 struct SessionListView: View {
     @State private var store = MirrorStore.shared
 
@@ -10,8 +11,14 @@ struct SessionListView: View {
         NavigationStack {
             Group {
                 if let tabs = store.latest?.tabs, !tabs.isEmpty {
-                    List(tabs) { SessionRow(tab: $0) }
-                        .listStyle(.plain)
+                    List(tabs) { tab in
+                        NavigationLink {
+                            RemoteTerminalScreen(sessionId: tab.id, title: tab.projectName)
+                        } label: {
+                            SessionRow(tab: tab)
+                        }
+                    }
+                    .listStyle(.plain)
                 } else {
                     ContentUnavailableView("No sessions",
                         systemImage: "terminal",

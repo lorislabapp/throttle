@@ -34,6 +34,32 @@ final class PeerClient {
         currentSecretB64 = nil
     }
 
+    /// True once a LAN peer link exists (pairing secret learned + connector up).
+    var hasLink: Bool { connector != nil }
+
+    // MARK: - Remote terminal passthrough
+
+    /// Attach to a Mac session's live terminal. `onOutput`/`onResize` fire on the
+    /// connector queue (hop to the main actor before touching UIKit). No-op if the
+    /// LAN link isn't up yet (the phone must have paired via a snapshot first).
+    func attachTerminal(tabID: String,
+                        onOutput: @escaping @Sendable ([UInt8]) -> Void,
+                        onResize: @escaping @Sendable (Int, Int) -> Void) {
+        guard let c = connector else { return }
+        c.onTermOut = onOutput
+        c.onTermResize = onResize
+        c.attachTerminal(sessionId: tabID)
+    }
+
+    func sendTerminalInput(_ bytes: [UInt8]) { connector?.sendInput(bytes) }
+    func sendTerminalResize(cols: Int, rows: Int) { connector?.sendResize(cols: cols, rows: rows) }
+
+    func detachTerminal() {
+        connector?.detachTerminal()
+        connector?.onTermOut = nil
+        connector?.onTermResize = nil
+    }
+
     private func restart(with secret: PeerPairingSecret) {
         connector?.stop()
         let c = PeerConnector(secret: secret)

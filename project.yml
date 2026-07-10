@@ -119,8 +119,10 @@ targets:
         PROVISIONING_PROFILE_SPECIFIER: "Throttle Widget DevID"
 
   # ─── iOS companion (App Store) ───────────────────────────────────────────
-  # Read-only mirror of the Mac's live usage/cockpit state via the user's
-  # private CloudKit DB. Min iOS 17. Doctrine: measure-only, no remote control.
+  # Live mirror of the Mac's usage/cockpit state via the user's private CloudKit
+  # DB + a LAN fast path. Min iOS 17. Deliberate, gated pivot beyond measure-only:
+  # a PAIRED phone can drive a session already running on the Mac (remote terminal)
+  # over the authenticated TLS-PSK peer link — never an unauthenticated control path.
   ThrottleiOS:
     type: application
     platform: iOS
@@ -164,6 +166,7 @@ targets:
       - package: ThrottleShared
       - package: ThrottleShared
         product: ThrottlePeer
+      - package: SwiftTerm            # remote terminal: render the Mac PTY stream on-device
       - target: ThrottleiOSWidget
 
   ThrottleiOSWidget:
