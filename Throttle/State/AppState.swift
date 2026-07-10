@@ -220,10 +220,11 @@ final class AppState {
                     savedTokensThisWeek: savedTokens,
                     computedAt: computed.computedAt
                 ))
-                // Mirror the same values to the iOS companion via the user's
-                // private CloudKit DB (opt-in; no-op/fail-open if disabled or
-                // signed out of iCloud). Debounced inside the publisher.
-                CloudKitPublisher.shared.publish(self.mirrorSnapshot(
+                // Mirror the same values to the iOS companion. MirrorFanout ships
+                // the snapshot to every enabled transport (private CloudKit DB today,
+                // a LAN peer link next); each is opt-in and debounces internally, so
+                // this stays cheap and fail-open on every refresh.
+                MirrorFanout.shared.publish(self.mirrorSnapshot(
                     weeklyTokens: computed.weeklyAll.usedTokens,
                     weeklyCostEUR: weeklyCost,
                     savedTokensThisWeek: savedTokens))

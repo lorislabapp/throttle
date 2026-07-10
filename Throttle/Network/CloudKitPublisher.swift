@@ -16,7 +16,7 @@ import ThrottleShared
 /// Debounced to ≤1 write / 25 s (integer-percent changes below that are noise
 /// and CloudKit throttles aggressive writers).
 @MainActor
-final class CloudKitPublisher {
+final class CloudKitPublisher: MirrorTransport {
     static let shared = CloudKitPublisher()
     private init() {}
 

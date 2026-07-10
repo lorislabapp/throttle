@@ -115,7 +115,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // iOS companion mirror: publish live usage/cockpit state to the user's
         // private CloudKit DB. Opt-in; fail-open (no iCloud / no entitlement →
-        // silently disabled, meter unaffected). Publisher is fed from AppState.refresh().
+        // silently disabled, meter unaffected). Fed from AppState.refresh via
+        // MirrorFanout — register the transport always (so it holds the freshest
+        // snapshot), but only arm the network side when the user opted in.
+        MirrorFanout.shared.register(CloudKitPublisher.shared)
         if UserDefaults.standard.bool(forKey: "throttleiCloudMirrorEnabled") {
             CloudKitPublisher.shared.start()
         }
