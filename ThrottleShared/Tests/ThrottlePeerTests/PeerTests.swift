@@ -55,6 +55,22 @@ final class PeerMessageTests: XCTestCase {
         }
     }
 
+    func testTerminalFramesRoundTrip() throws {
+        let out = PeerMessage(kind: .termOut, seq: 5, timestampMillis: 1, payload: Data([0x1b, 0x5b, 0x41]))
+        XCTAssertEqual(try PeerMessage.decode(from: out.encoded())?.message, out)
+        let attach = PeerMessage(kind: .termAttach, seq: 1, timestampMillis: 0, payload: Data("abc123".utf8))
+        XCTAssertEqual(try PeerMessage.decode(from: attach.encoded())?.message.kind, .termAttach)
+    }
+
+    func testResizePayloadRoundTrip() {
+        let p = PeerTerminal.resizePayload(cols: 120, rows: 40)
+        XCTAssertEqual(p.count, 4)
+        let d = PeerTerminal.decodeResize(p)
+        XCTAssertEqual(d?.cols, 120)
+        XCTAssertEqual(d?.rows, 40)
+        XCTAssertNil(PeerTerminal.decodeResize(Data([1, 2, 3])))
+    }
+
     func testDecodeFromSliceWithOffset() throws {
         // A buffer whose startIndex != 0 (common after removeFirst) must still decode.
         let msg = PeerMessage(kind: .snapshot, seq: 9, timestampMillis: 5, payload: Data("abc".utf8))

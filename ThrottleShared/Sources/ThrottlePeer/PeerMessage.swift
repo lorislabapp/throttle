@@ -19,6 +19,18 @@ public struct PeerMessage: Equatable, Sendable {
         case snapshot = 2
         /// Presence keepalive (empty payload).
         case heartbeat = 3
+
+        // ── Remote terminal (LAN/Tailscale only — bytes, not for CloudKit) ──
+        /// phone→Mac: attach to a session's live terminal (payload = session id UTF-8).
+        case termAttach = 4
+        /// Mac→phone: raw PTY output bytes for the attached session.
+        case termOut = 5
+        /// phone→Mac: keystroke bytes to inject into the attached session's PTY.
+        case termIn = 6
+        /// phone→Mac: terminal resize — payload = cols(UInt16 BE) ++ rows(UInt16 BE).
+        case termResize = 7
+        /// phone→Mac: detach from the current session (payload empty).
+        case termDetach = 8
     }
 
     public var kind: Kind
