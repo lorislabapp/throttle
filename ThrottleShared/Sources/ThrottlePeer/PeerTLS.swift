@@ -17,7 +17,9 @@ enum PeerTLS {
         let keyDD = psk.withUnsafeBytes { DispatchData(bytes: $0) }
         let hintDD = Data(PeerPairing.pskIdentity.utf8).withUnsafeBytes { DispatchData(bytes: $0) }
         sec_protocol_options_add_pre_shared_key(sec, keyDD as __DispatchData, hintDD as __DispatchData)
-        sec_protocol_options_append_tls_ciphersuite(sec, tls_ciphersuite_t(rawValue: TLS_PSK_WITH_AES_128_GCM_SHA256)!)
+        // TLS_PSK_WITH_AES_128_GCM_SHA256 is an SSLCipherSuite (UInt32); the enum
+        // raw value is UInt16 — narrow explicitly (value 0x00A8 fits).
+        sec_protocol_options_append_tls_ciphersuite(sec, tls_ciphersuite_t(rawValue: UInt16(TLS_PSK_WITH_AES_128_GCM_SHA256))!)
         sec_protocol_options_set_min_tls_protocol_version(sec, .TLSv12)
         sec_protocol_options_set_max_tls_protocol_version(sec, .TLSv12)
 
