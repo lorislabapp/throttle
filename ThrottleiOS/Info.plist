@@ -24,6 +24,12 @@
 	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.developer-tools</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_throttle._tcp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Throttle mirrors your Mac's live Claude Code usage over your local network for instant updates when both devices are on the same Wi-Fi. It falls back to iCloud otherwise.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
