@@ -62,6 +62,27 @@ final class PeerMessageTests: XCTestCase {
         XCTAssertEqual(try PeerMessage.decode(from: attach.encoded())?.message.kind, .termAttach)
     }
 
+    func testControlFromFrame() {
+        let attach = PeerMessage(kind: .termAttach, seq: 1, timestampMillis: 0, payload: Data("tab-uuid".utf8))
+        XCTAssertEqual(PeerTerminal.control(from: attach), .attach(sessionId: "tab-uuid"))
+
+        let input = PeerMessage(kind: .termIn, seq: 2, timestampMillis: 0, payload: Data([0x1b, 0x41]))
+        XCTAssertEqual(PeerTerminal.control(from: input), .input([0x1b, 0x41]))
+
+        let resize = PeerMessage(kind: .termResize, seq: 3, timestampMillis: 0, payload: PeerTerminal.resizePayload(cols: 100, rows: 30))
+        XCTAssertEqual(PeerTerminal.control(from: resize), .resize(cols: 100, rows: 30))
+
+        let detach = PeerMessage(kind: .termDetach, seq: 4, timestampMillis: 0)
+        XCTAssertEqual(PeerTerminal.control(from: detach), .detach)
+
+        // Non-control frames map to nil (mirror path is untouched).
+        for k in [PeerMessage.Kind.hello, .snapshot, .heartbeat] {
+            XCTAssertNil(PeerTerminal.control(from: PeerMessage(kind: k, seq: 0, timestampMillis: 0)))
+        }
+        // Malformed resize → nil, not a crash.
+        XCTAssertNil(PeerTerminal.control(from: PeerMessage(kind: .termResize, seq: 5, timestampMillis: 0, payload: Data([1, 2]))))
+    }
+
     func testResizePayloadRoundTrip() {
         let p = PeerTerminal.resizePayload(cols: 120, rows: 40)
         XCTAssertEqual(p.count, 4)

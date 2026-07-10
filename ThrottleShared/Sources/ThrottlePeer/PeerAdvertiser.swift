@@ -19,10 +19,29 @@ public final class PeerAdvertiser: @unchecked Sendable {
     private let serviceName: String
     private let q = DispatchQueue(label: "throttle.peer.advertiser")
 
+    /// Per-connection state confined to `q`: the socket, a stream buffer for frame
+    /// reassembly, and a stable `PeerClientID` the app layer uses to address it.
+    /// `@unchecked Sendable`: like the enclosing advertiser, every access is confined
+    /// to the serial queue `q`, so the mutable `buffer` is never touched concurrently.
+    private final class Conn: @unchecked Sendable {
+        let nw: NWConnection
+        let id: PeerClientID
+        var buffer = Data()
+        init(nw: NWConnection, id: PeerClientID) { self.nw = nw; self.id = id }
+    }
+
     private var listener: NWListener?
-    private var conns: [ObjectIdentifier: NWConnection] = [:]
+    private var conns: [ObjectIdentifier: Conn] = [:]
+    private var byClient: [PeerClientID: ObjectIdentifier] = [:]
+    private var nextClientRaw: UInt64 = 0
     private var latest: Data?
     private var seq: UInt32 = 0
+
+    /// Fired on `q` when a peer sends a terminal control frame (attach/input/resize/
+    /// detach), and once with `.detach` when a peer disconnects. The app-layer
+    /// `PeerTerminalBridge` sets this and hops to `@MainActor` to touch the cockpit.
+    /// Unset by default → pure measure-only mirror, no control path (back-compat).
+    public var onTerminalControl: (@Sendable (PeerTerminalControl, PeerClientID) -> Void)?
 
     /// - Parameters:
     ///   - secret: the CloudKit-shared pairing secret (derives the TLS-PSK).
@@ -60,7 +79,29 @@ public final class PeerAdvertiser: @unchecked Sendable {
         q.async { [self] in
             latest = snapshotData
             let frame = nextFrame(kind: .snapshot, payload: snapshotData)
-            for c in conns.values { c.send(content: frame, completion: .contentProcessed { _ in }) }
+            for c in conns.values { c.nw.send(content: frame, completion: .contentProcessed { _ in }) }
+        }
+    }
+
+    // MARK: - remote terminal (Mac→peer sends)
+
+    /// Send raw PTY output to a specific attached peer. No-op if it has disconnected.
+    public func sendTerminalOutput(_ bytes: [UInt8], to client: PeerClientID) {
+        guard !bytes.isEmpty else { return }
+        q.async { [self] in
+            guard let oid = byClient[client], let c = conns[oid] else { return }
+            c.nw.send(content: nextFrame(kind: .termOut, payload: Data(bytes)),
+                      completion: .contentProcessed { _ in })
+        }
+    }
+
+    /// Tell a peer the Mac terminal's authoritative geometry (Mac→phone `termResize`),
+    /// so the phone can size its emulator to match on attach.
+    public func sendTerminalResize(cols: Int, rows: Int, to client: PeerClientID) {
+        q.async { [self] in
+            guard let oid = byClient[client], let c = conns[oid] else { return }
+            c.nw.send(content: nextFrame(kind: .termResize, payload: PeerTerminal.resizePayload(cols: cols, rows: rows)),
+                      completion: .contentProcessed { _ in })
         }
     }
 
@@ -68,8 +109,9 @@ public final class PeerAdvertiser: @unchecked Sendable {
 
     private func teardown() {
         listener?.cancel(); listener = nil
-        for c in conns.values { c.cancel() }
+        for c in conns.values { c.nw.cancel() }
         conns.removeAll()
+        byClient.removeAll()
     }
 
     private func nextFrame(kind: PeerMessage.Kind, payload: Data) -> Data {
@@ -79,6 +121,9 @@ public final class PeerAdvertiser: @unchecked Sendable {
 
     private func accept(_ conn: NWConnection) {
         let oid = ObjectIdentifier(conn)
+        nextClientRaw &+= 1
+        let client = PeerClientID(raw: nextClientRaw)
+        let entry = Conn(nw: conn, id: client)
         conn.stateUpdateHandler = { [weak self] state in
             guard let self else { return }
             switch state {
@@ -91,23 +136,48 @@ public final class PeerAdvertiser: @unchecked Sendable {
                     conn.send(content: self.nextFrame(kind: .snapshot, payload: snap),
                               completion: .contentProcessed { _ in })
                 }
-                self.drain(conn)   // consume peer heartbeats/hello, keep the socket live
+                self.receiveLoop(entry)   // parse frames; route terminal control, keep alive
             case .failed, .cancelled:
+                // Tell the bridge to drop this peer's terminal tap, then forget it.
+                self.onTerminalControl?(.detach, client)
+                self.byClient[client] = nil
                 self.conns[oid] = nil
             default: break
             }
         }
-        conns[oid] = conn
+        conns[oid] = entry
+        byClient[client] = oid
         conn.start(queue: q)
     }
 
-    /// Read and discard whatever the peer sends (hello/heartbeat). We don't act on
-    /// it — there's no control channel — but draining keeps the connection healthy.
-    private func drain(_ conn: NWConnection) {
-        conn.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] _, _, isComplete, error in
+    /// Read from a peer, reassembling frames across TCP segments (same stream-buffer
+    /// idiom as `PeerConnector`). Snapshot/hello/heartbeat are ignored; terminal
+    /// control frames are decoded and forwarded to `onTerminalControl`.
+    private func receiveLoop(_ entry: Conn) {
+        entry.nw.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
             guard let self else { return }
-            if isComplete || error != nil { conn.cancel(); return }
-            self.drain(conn)
+            if let data, !data.isEmpty {
+                entry.buffer.append(data)
+                self.drainFrames(entry)
+            }
+            if isComplete || error != nil { entry.nw.cancel(); return }
+            self.receiveLoop(entry)
+        }
+    }
+
+    private func drainFrames(_ entry: Conn) {
+        while true {
+            do {
+                guard let (msg, consumed) = try PeerMessage.decode(from: entry.buffer) else { return }
+                entry.buffer.removeFirst(consumed)
+                if let control = PeerTerminal.control(from: msg) {
+                    onTerminalControl?(control, entry.id)
+                }
+            } catch {
+                entry.buffer.removeAll()   // corrupt stream — reset the connection
+                entry.nw.cancel()
+                return
+            }
         }
     }
 }
