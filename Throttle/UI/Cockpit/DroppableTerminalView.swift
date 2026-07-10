@@ -36,6 +36,18 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// Toggle SIGSTOP/SIGCONT on the session's process subtree (the circuit-breaker
     /// pause). Wired to the owning CockpitTab; nil until spawned.
     var onTogglePause: (@MainActor () -> Void)?
+
+    /// Raw PTY output tap for the remote terminal (a peer mirrors this session).
+    /// nil by default — set only while a phone is attached, so there is zero cost
+    /// when nobody is watching. Called on the main actor with each output chunk.
+    var onOutputBytes: (@MainActor ([UInt8]) -> Void)?
+
+    /// Inject remote keystroke bytes (from an attached peer) into the PTY, exactly
+    /// as if typed locally. esc/ctrl/tab/arrows all ride as their raw byte sequences.
+    @MainActor func injectRemoteInput(_ bytes: [UInt8]) {
+        guard !bytes.isEmpty else { return }
+        send(data: bytes[...])
+    }
     /// Current paused state, so the context menu shows Pause vs Resume. nil = not spawned.
     var isPausedProvider: (@MainActor () -> Bool)?
     nonisolated(unsafe) private var lastRateLimitFire = Date.distantPast
@@ -163,6 +175,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     @MainActor private func renderAndSniff(_ bytes: [UInt8]) {
         super.dataReceived(slice: bytes[...])
         appendStripped(bytes[...])
+        onOutputBytes?(bytes)   // mirror raw PTY output to an attached peer (nil = no-op)
         onActivity?()
         scheduleDetect()
     }
