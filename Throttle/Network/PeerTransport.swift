@@ -36,6 +36,10 @@ final class PeerTransport: MirrorTransport {
     func start() {
         guard !started else { return }
         let adv = PeerAdvertiser(secret: secret, serviceName: Host.current().localizedName ?? "Mac")
+        // Route peer terminal control frames to the cockpit bridge (main actor).
+        adv.onTerminalControl = { control, client in
+            Task { @MainActor in PeerTerminalBridge.shared.handle(control, from: client) }
+        }
         adv.start()
         advertiser = adv
         started = true
@@ -45,6 +49,19 @@ final class PeerTransport: MirrorTransport {
         advertiser?.stop()
         advertiser = nil
         started = false
+        PeerTerminalBridge.shared.reset()
+    }
+
+    // MARK: Remote terminal (bridge → peer)
+
+    /// Forward raw PTY output to a specific attached peer.
+    func sendTerminalOutput(_ bytes: [UInt8], to client: PeerClientID) {
+        advertiser?.sendTerminalOutput(bytes, to: client)
+    }
+
+    /// Tell a peer the Mac terminal's authoritative geometry.
+    func sendTerminalResize(cols: Int, rows: Int, to client: PeerClientID) {
+        advertiser?.sendTerminalResize(cols: cols, rows: rows, to: client)
     }
 
     // MARK: MirrorTransport
