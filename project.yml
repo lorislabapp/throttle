@@ -19,8 +19,8 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
-    MARKETING_VERSION: "3.2.54"
-    CURRENT_PROJECT_VERSION: "154"
+    MARKETING_VERSION: "3.2.55"
+    CURRENT_PROJECT_VERSION: "155"
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
   configs:
     # Hardened runtime is required for notarized Release distribution but
@@ -41,7 +41,7 @@ packages:
     from: "2.6.0"
   SwiftTerm:
     url: https://github.com/migueldeicaza/SwiftTerm
-    from: "1.2.0"
+    from: "1.14.0"   # 1.14 parser fixes; bumped chasing macOS 27 beta ANSI mis-render
 
 targets:
   Throttle:
