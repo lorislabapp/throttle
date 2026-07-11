@@ -141,6 +141,36 @@ final class PredictiveEchoTests: XCTestCase {
     }
 }
 
+final class CatchupBufferTests: XCTestCase {
+
+    func testSeqIncrementsAndBackfills() {
+        let b = CatchupBuffer()
+        XCTAssertEqual(b.append([1]), 1)
+        XCTAssertEqual(b.append([2]), 2)
+        XCTAssertEqual(b.append([3]), 3)
+        // A peer that acked seq 1 is missing 2 and 3.
+        XCTAssertEqual(b.framesSince(1).map(\.seq), [2, 3])
+        XCTAssertTrue(b.framesSince(3).isEmpty)          // up to date
+    }
+
+    func testEvictionBoundsBytesButKeepsRecent() {
+        let b = CatchupBuffer(maxBytes: 10)
+        for _ in 0..<100 { b.append([UInt8](repeating: 0, count: 4)) }  // 4 bytes each
+        XCTAssertEqual(b.lastSeq, 100)
+        // Oldest evicted; only the recent tail survives (≤ ~ maxBytes worth).
+        XCTAssertGreaterThan(b.earliestSeq!, 1)
+        XCTAssertLessThanOrEqual(b.framesSince(0).reduce(0) { $0 + $1.bytes.count }, 12)
+    }
+
+    func testCanBackfillFalseWhenAckedTooOld() {
+        let b = CatchupBuffer(maxBytes: 8)
+        for _ in 0..<50 { b.append([0, 0, 0, 0]) }       // forces eviction
+        XCTAssertFalse(b.canBackfill(from: 1))            // seq 1 long gone → must resync
+        XCTAssertTrue(b.canBackfill(from: b.lastSeq))     // current peer is fine
+        XCTAssertTrue(b.canBackfill(from: b.earliestSeq! - 1))
+    }
+}
+
 final class PeerPairingTests: XCTestCase {
 
     func testPSKIsDeterministicForSameSecret() {
