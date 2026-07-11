@@ -37,6 +37,11 @@ public enum PeerPairing {
     /// Bonjour service type advertised by the Mac for the iOS mirror.
     public static let serviceType = "_throttle._tcp"
 
+    /// Fixed port for the off-LAN Tailscale fallback (Bonjour handles the LAN port).
+    /// Both ends agree on it: the Mac pins its listener here, the phone dials it on
+    /// the configured tailnet host when Bonjour finds no peer.
+    public static let fallbackPort: UInt16 = 47828
+
     /// Non-secret PSK identity hint so both ends select the same key slot.
     public static let pskIdentity = "throttle-peer-v1"
 

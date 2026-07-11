@@ -43,12 +43,19 @@ public final class PeerAdvertiser: @unchecked Sendable {
     /// Unset by default → pure measure-only mirror, no control path (back-compat).
     public var onTerminalControl: (@Sendable (PeerTerminalControl, PeerClientID) -> Void)?
 
+    /// Optional fixed listen port. On the LAN, Bonjour resolves whatever port we
+    /// bind, so nil (ephemeral) is fine. For the off-LAN Tailscale fallback the phone
+    /// must reach a KNOWN port, so pass `PeerPairing.fallbackPort` to pin it.
+    private let fixedPort: UInt16?
+
     /// - Parameters:
     ///   - secret: the CloudKit-shared pairing secret (derives the TLS-PSK).
     ///   - serviceName: Bonjour instance name (e.g. the Mac's `Host` name).
-    public init(secret: PeerPairingSecret, serviceName: String) {
+    ///   - fixedPort: pin the listen port (for the Tailscale fallback); nil = ephemeral.
+    public init(secret: PeerPairingSecret, serviceName: String, fixedPort: UInt16? = nil) {
         self.secret = secret
         self.serviceName = serviceName
+        self.fixedPort = fixedPort
     }
 
     /// Bind + advertise. Never throws — a failure just leaves the link disabled.
@@ -56,7 +63,13 @@ public final class PeerAdvertiser: @unchecked Sendable {
         q.async { [self] in
             guard listener == nil else { return }
             let params = PeerTLS.parameters(secret: secret)
-            guard let l = try? NWListener(using: params) else {
+            let made: NWListener? = {
+                if let p = fixedPort, let port = NWEndpoint.Port(rawValue: p) {
+                    return try? NWListener(using: params, on: port)
+                }
+                return try? NWListener(using: params)
+            }()
+            guard let l = made else {
                 NSLog("[PeerAdvertiser] bind failed — LAN mirror disabled (CloudKit still active)")
                 return
             }

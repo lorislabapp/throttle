@@ -21,6 +21,12 @@ public final class PeerConnector: @unchecked Sendable {
     private var buffer = Data()
     private var seq: UInt32 = 0
 
+    /// Off-LAN fallback: a tailnet host (IP or MagicDNS name) the Mac is reachable at.
+    /// No VPN entitlement involved — the user's own Tailscale owns the tunnel; we just
+    /// open a normal `NWConnection` to it if Bonjour finds nothing on the LAN.
+    private var fallbackHost: String?
+    public func setFallbackHost(_ host: String?) { q.async { [self] in fallbackHost = host } }
+
     /// Fired with each received snapshot payload (already `encoded()`).
     public var onSnapshot: (@Sendable (Data) -> Void)?
     /// Fired when the peer connection comes up / goes down.
@@ -68,6 +74,15 @@ public final class PeerConnector: @unchecked Sendable {
             }
             b.start(queue: q)
             browser = b
+
+            // If Bonjour turns up no peer on the LAN within a short window, try the
+            // configured tailnet host (off-LAN path). Same TLS-PSK either way.
+            q.asyncAfter(deadline: .now() + 3) { [weak self] in
+                guard let self, self.conn == nil, let host = self.fallbackHost else { return }
+                let ep = NWEndpoint.hostPort(host: NWEndpoint.Host(host),
+                                             port: NWEndpoint.Port(rawValue: PeerPairing.fallbackPort)!)
+                self.connect(to: ep)
+            }
         }
     }
 
