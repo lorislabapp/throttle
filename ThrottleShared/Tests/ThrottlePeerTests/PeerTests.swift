@@ -102,6 +102,45 @@ final class PeerMessageTests: XCTestCase {
     }
 }
 
+final class PredictiveEchoTests: XCTestCase {
+
+    func testSRTTConvergesAndSmooths() {
+        var e = SRTTEstimator()
+        XCTAssertNil(e.srtt)
+        e.sample(100)
+        XCTAssertEqual(e.srtt!, 100, accuracy: 0.001)   // first sample seeds directly
+        for _ in 0..<50 { e.sample(50) }                 // steady 50ms → converges down
+        XCTAssertEqual(e.srtt!, 50, accuracy: 1.0)
+    }
+
+    func testHysteresisDoesNotFlap() {
+        let p = PredictiveEcho(engageAboveMs: 30, disengageBelowMs: 20)
+        XCTAssertFalse(p.engaged)
+        for _ in 0..<20 { p.observeRTT(80) }             // high RTT → engage
+        XCTAssertTrue(p.engaged)
+        p.observeRTT(25)                                 // in the band → stays engaged
+        XCTAssertTrue(p.engaged)
+        for _ in 0..<20 { p.observeRTT(5) }              // well below → disengage
+        XCTAssertFalse(p.engaged)
+    }
+
+    func testOnlyPrintablePredictedWhenEngaged() {
+        let p = PredictiveEcho(engageAboveMs: 30, disengageBelowMs: 20)
+        for _ in 0..<20 { p.observeRTT(80) }
+        XCTAssertTrue(p.shouldPredict(UInt8(ascii: "a")))
+        XCTAssertFalse(p.shouldPredict(0x1b))            // ESC never predicted
+        XCTAssertFalse(p.shouldPredict(0x03))            // ctrl-C never predicted
+        XCTAssertFalse(p.shouldPredict(0xC3))            // UTF-8 lead byte never predicted
+    }
+
+    func testFastLANNeverEngages() {
+        let p = PredictiveEcho()
+        for _ in 0..<50 { p.observeRTT(3) }              // LAN: nothing speculative
+        XCTAssertFalse(p.engaged)
+        XCTAssertFalse(p.shouldPredict(UInt8(ascii: "x")))
+    }
+}
+
 final class PeerPairingTests: XCTestCase {
 
     func testPSKIsDeterministicForSameSecret() {
