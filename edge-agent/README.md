@@ -13,6 +13,13 @@ deliberately overrides the earlier measure-only-forever stance for this one path
 exchange for the client-side write-unlock gate documented below. Node built-ins only
 for the base agent (keep the LXC light); `ttyd` is the one external binary dependency.
 
+**Installing `ttyd`:** Debian and Ubuntu do **not** package it (`apt-cache policy ttyd`
+returns no candidate — verified against a real Debian 12 LXC) — the deploy script Kevin's
+Mac generates (`EdgeAgentService.deployScript`) downloads the pinned, checksummed
+[tsl0922/ttyd](https://github.com/tsl0922/ttyd) v1.7.7 release binary for `uname -m`
+straight to `/usr/local/bin/ttyd` instead. If you're setting this up by hand, do the
+same rather than reaching for `apt-get install ttyd` — it won't find anything.
+
 ## Run
 ```bash
 export THROTTLE_AGENT_TOKEN="$(openssl rand -hex 24)"   # share this with the Mac
@@ -39,6 +46,10 @@ Env: `THROTTLE_AGENT_TOKEN` (required), `THROTTLE_AGENT_HOST` (default `0.0.0.0`
   token already sitting in UserDefaults today.
 - The Throttle Mac generates the systemd deploy + verifies the endpoint before use; it
   never SSHes for you.
+- **NAT/firewall**: if the box sits behind a host doing Tailscale DNAT (e.g. a Proxmox
+  LXC), forward **both** `THROTTLE_AGENT_PORT` and `THROTTLE_AGENT_TTYD_PORT` — the
+  deploy script only writes files on the box itself, it doesn't touch host firewall
+  rules. Easy to forget the second port since the HTTP API keeps working without it.
 
 ## API
 | Method | Path | Auth | Body / Result |

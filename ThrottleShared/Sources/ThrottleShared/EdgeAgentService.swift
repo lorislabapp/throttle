@@ -42,29 +42,57 @@ public enum EdgeAgentService {
 
     public static func remoteURL(host: String, port: Int) -> String { "http://\(host):\(port)/" }
 
-    /// A self-contained `#!/usr/bin/env bash` script: installs Node + tmux, writes
-    /// the agent (embedded here as base64 so the script needs nothing from the repo),
-    /// installs a systemd unit carrying the bearer token via an EnvironmentFile, and
-    /// starts it. The user runs this — the app never SSHes.
-    public static func deployScript(target: SSHTarget, token: String, httpPort: Int, agentSource: String) -> String {
+    /// Pinned ttyd 1.7.7 release checksums (github.com/tsl0922/ttyd) — Debian/Ubuntu
+    /// don't package ttyd at all (verified against a real Debian 12 LXC: no apt
+    /// candidate), so the only sane install path is the official release binary,
+    /// checksummed before it's ever executed. Covers the two arches PVE actually runs.
+    private static let ttydSHA256: [String: String] = [
+        "x86_64": "8a217c968aba172e0dbf3f34447218dc015bc4d5e59bf51db2f2cd12b7be4f55",
+        "aarch64": "b38acadd89d1d396a0f5649aa52c539edbad07f4bc7348b27b4f4b7219dd4165",
+    ]
+
+    /// A self-contained `#!/usr/bin/env bash` script: installs Node + tmux + ttyd,
+    /// writes the agent (embedded here as base64 so the script needs nothing from the
+    /// repo), installs a systemd unit carrying the bearer token via an
+    /// EnvironmentFile, and starts it. The user runs this — the app never SSHes.
+    public static func deployScript(target: SSHTarget, token: String, httpPort: Int,
+                                     ttydPort: Int = 8788, agentSource: String) -> String {
         let keyOpt = target.keyPath.map { " -i \($0)" } ?? ""
         let ssh = "ssh\(keyOpt) -o BatchMode=yes -p \(target.port) \(target.user)@\(target.host)"
         let agentB64 = Data(agentSource.utf8).base64EncodedString()
+        let ttydChecksums = ttydSHA256.map { "\($0.value)  ttyd.\($0.key)" }.sorted().joined(separator: "\n")
         var s = "#!/usr/bin/env bash\nset -euo pipefail\n\n"
-        s += "# Deploy the Throttle Edge Agent on \(target.host):\(httpPort).\n"
-        s += "# 1) Node >=18 + tmux + ttyd (once):\n"
-        s += "\(ssh) 'command -v node >/dev/null || (curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs); command -v tmux >/dev/null || apt-get install -y tmux; command -v ttyd >/dev/null || apt-get install -y ttyd'\n\n"
+        s += "# Deploy the Throttle Edge Agent on \(target.host):\(httpPort) (ttyd on \(ttydPort)).\n"
+        s += "# 1) Node >=18 + tmux (apt) + ttyd (pinned 1.7.7 release binary, checksummed before running —\n"
+        s += "#    Debian/Ubuntu don't package ttyd at all, verified against a real Debian 12 LXC):\n"
+        s += "\(ssh) 'command -v node >/dev/null || (curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs); command -v tmux >/dev/null || apt-get install -y tmux'\n"
+        s += "\(ssh) 'bash -s' <<'INSTALL_TTYD'\n"
+        s += "set -euo pipefail\n"
+        s += "command -v ttyd >/dev/null && exit 0\n"
+        s += "ARCH=$(uname -m)\n"
+        s += "curl -fsSL -o /tmp/ttyd.$ARCH https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.$ARCH\n"
+        s += "cat <<'SUMS' > /tmp/ttyd.sha256\n"
+        s += ttydChecksums + "\n"
+        s += "SUMS\n"
+        s += "( cd /tmp && grep \"ttyd.$ARCH\\$\" ttyd.sha256 | sha256sum -c - )\n"
+        s += "install -m 755 /tmp/ttyd.$ARCH /usr/local/bin/ttyd\n"
+        s += "rm -f /tmp/ttyd.$ARCH /tmp/ttyd.sha256\n"
+        s += "INSTALL_TTYD\n\n"
         s += "# 2) write the agent (embedded, no repo dependency):\n"
         s += "\(ssh) 'mkdir -p /opt/throttle-agent'\n"
         s += "printf %s \(shq(agentB64)) | \(ssh) 'base64 -d > /opt/throttle-agent/throttle-agent.mjs'\n\n"
         s += "# 3) token via EnvironmentFile (kept out of the unit + process list):\n"
-        s += "\(ssh) 'umask 077; printf \"THROTTLE_AGENT_TOKEN=%s\\nTHROTTLE_AGENT_PORT=%s\\n\" \(shq(token)) \(httpPort) > /etc/throttle-agent.env'\n\n"
+        s += "\(ssh) 'umask 077; printf \"THROTTLE_AGENT_TOKEN=%s\\nTHROTTLE_AGENT_PORT=%s\\nTHROTTLE_AGENT_TTYD_PORT=%s\\n\" \(shq(token)) \(httpPort) \(ttydPort) > /etc/throttle-agent.env'\n\n"
         s += "# 4) systemd unit + start:\n"
         s += "\(ssh) 'cat > /etc/systemd/system/throttle-agent.service' <<'UNIT'\n"
         s += unitText()
         s += "UNIT\n"
         s += "\(ssh) 'systemctl daemon-reload && systemctl enable --now throttle-agent && sleep 3 && systemctl is-active throttle-agent'\n\n"
-        s += "# 5) back in Throttle: click Verify, then the sessions appear in the cockpit.\n"
+        s += "# 5) if this box sits behind a NAT/firewall (e.g. a Proxmox LXC reached over\n"
+        s += "#    Tailscale via host DNAT), make sure BOTH \(httpPort) (HTTP API) and \(ttydPort)\n"
+        s += "#    (ttyd) are forwarded — not just the API port. This script does not touch\n"
+        s += "#    firewall/NAT rules on the host; that's a one-time manual step outside the box.\n"
+        s += "# 6) back in Throttle: click Verify, then the sessions appear in the cockpit.\n"
         return s
     }
 
