@@ -50,10 +50,13 @@ async function sh(cmd, args) {
 const hasTmux = async () => (await sh('which', ['tmux'])) !== null;
 
 async function tmuxList() {
-  const out = await sh('tmux', ['list-sessions', '-F', '#{session_name}\t#{session_created}\t#{session_activity}']);
+  // Use a literal '|' separator, not '\t': some tmux builds don't emit a real tab
+  // for the format escape, which collapsed the fields into one and produced a
+  // composite id ("hex_created_activity") that the stop route then rejected.
+  const out = await sh('tmux', ['list-sessions', '-F', '#{session_name}|#{session_created}|#{session_activity}']);
   if (!out) return [];
   return out.split('\n').filter(l => l.startsWith(PREFIX)).map(l => {
-    const [name, created, activity] = l.split('\t');
+    const [name, created, activity] = l.split('|');
     return { name, id: name.slice(PREFIX.length), created: Number(created), activity: Number(activity) };
   });
 }
@@ -145,7 +148,7 @@ const server = http.createServer(async (req, res) => {
   try {
     if (p === '/sessions' && req.method === 'GET') return send(res, 200, { sessions: await listSessions() });
     if (p === '/sessions' && req.method === 'POST') { const r = await startSession(await body(req)); return send(res, 201, r); }
-    const m = p.match(/^\/sessions\/([a-f0-9]+)\/(stop|pause|resume)$/);
+    const m = p.match(/^\/sessions\/([A-Za-z0-9_-]+)\/(stop|pause|resume)$/);
     if (m && req.method === 'POST') {
       const [, id, action] = m;
       if (action === 'stop') await stopSession(id);
