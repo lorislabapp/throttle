@@ -9,43 +9,51 @@ import Foundation
 /// stays side-effect-free + testable and the app never SSHes. The runtime API calls
 /// below talk only to an already-deployed agent over its token-gated HTTP API; the
 /// agent is NOT a data-path proxy (claude on the box reaches Anthropic directly).
-enum EdgeAgentService {
+///
+/// Lives in `ThrottleShared` (moved from the Mac target) so both the Mac cockpit and
+/// the iOS companion drive the identical networking code — it was already pure
+/// Foundation, no AppKit dependency.
+public enum EdgeAgentService {
 
-    struct SSHTarget {
-        var host: String
-        var user: String = "root"
+    public struct SSHTarget {
+        public var host: String
+        public var user: String = "root"
         /// ssh identity file; nil → default agent/key. Never the key itself.
-        var keyPath: String?
-        var port: Int = 22
+        public var keyPath: String?
+        public var port: Int = 22
+
+        public init(host: String, user: String = "root", keyPath: String? = nil, port: Int = 22) {
+            self.host = host; self.user = user; self.keyPath = keyPath; self.port = port
+        }
     }
 
     /// One remote session as reported by the agent's `/sessions`.
-    struct RemoteSession: Codable, Sendable, Identifiable, Equatable {
-        let id: String
-        let project: String
-        let cwd: String?
-        let state: String
-        let model: String?
-        let tokens: Int?
-        let startedAt: Double?
+    public struct RemoteSession: Codable, Sendable, Identifiable, Equatable {
+        public let id: String
+        public let project: String
+        public let cwd: String?
+        public let state: String
+        public let model: String?
+        public let tokens: Int?
+        public let startedAt: Double?
     }
 
     // MARK: Deploy script (emitted as text; the user runs it — the app never SSHes)
 
-    static func remoteURL(host: String, port: Int) -> String { "http://\(host):\(port)/" }
+    public static func remoteURL(host: String, port: Int) -> String { "http://\(host):\(port)/" }
 
     /// A self-contained `#!/usr/bin/env bash` script: installs Node + tmux, writes
     /// the agent (embedded here as base64 so the script needs nothing from the repo),
     /// installs a systemd unit carrying the bearer token via an EnvironmentFile, and
     /// starts it. The user runs this — the app never SSHes.
-    static func deployScript(target: SSHTarget, token: String, httpPort: Int, agentSource: String) -> String {
+    public static func deployScript(target: SSHTarget, token: String, httpPort: Int, agentSource: String) -> String {
         let keyOpt = target.keyPath.map { " -i \($0)" } ?? ""
         let ssh = "ssh\(keyOpt) -o BatchMode=yes -p \(target.port) \(target.user)@\(target.host)"
         let agentB64 = Data(agentSource.utf8).base64EncodedString()
         var s = "#!/usr/bin/env bash\nset -euo pipefail\n\n"
         s += "# Deploy the Throttle Edge Agent on \(target.host):\(httpPort).\n"
-        s += "# 1) Node >=18 + tmux (once):\n"
-        s += "\(ssh) 'command -v node >/dev/null || (curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs); command -v tmux >/dev/null || apt-get install -y tmux'\n\n"
+        s += "# 1) Node >=18 + tmux + ttyd (once):\n"
+        s += "\(ssh) 'command -v node >/dev/null || (curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs); command -v tmux >/dev/null || apt-get install -y tmux; command -v ttyd >/dev/null || apt-get install -y ttyd'\n\n"
         s += "# 2) write the agent (embedded, no repo dependency):\n"
         s += "\(ssh) 'mkdir -p /opt/throttle-agent'\n"
         s += "printf %s \(shq(agentB64)) | \(ssh) 'base64 -d > /opt/throttle-agent/throttle-agent.mjs'\n\n"
@@ -62,14 +70,14 @@ enum EdgeAgentService {
 
     /// The bundled agent source (`throttle-agent.mjs` in the app bundle), or nil if
     /// missing (dev builds that didn't copy the resource).
-    static func bundledAgentSource() -> String? {
+    public static func bundledAgentSource() -> String? {
         guard let url = Bundle.main.url(forResource: "throttle-agent", withExtension: "mjs"),
               let s = try? String(contentsOf: url, encoding: .utf8) else { return nil }
         return s
     }
 
     /// A fresh bearer token for a new agent.
-    static func generateToken() -> String {
+    public static func generateToken() -> String {
         var bytes = [UInt8](repeating: 0, count: 24)
         _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
         return Data(bytes).base64EncodedString().replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "=", with: "")
@@ -100,9 +108,16 @@ enum EdgeAgentService {
 
     // MARK: Verify (health → authed sessions/list) — gate before wiring the cockpit
 
-    struct VerifyResult { let ok: Bool; let sessionCount: Int?; let detail: String }
+    public struct VerifyResult {
+        public let ok: Bool
+        public let sessionCount: Int?
+        public let detail: String
+        public init(ok: Bool, sessionCount: Int?, detail: String) {
+            self.ok = ok; self.sessionCount = sessionCount; self.detail = detail
+        }
+    }
 
-    static func verify(baseURL: String, token: String, timeout: TimeInterval = 15) async -> VerifyResult {
+    public static func verify(baseURL: String, token: String, timeout: TimeInterval = 15) async -> VerifyResult {
         guard let base = URL(string: baseURL) else { return VerifyResult(ok: false, sessionCount: nil, detail: "Bad URL") }
         let cfg = URLSessionConfiguration.ephemeral
         cfg.timeoutIntervalForRequest = timeout
@@ -129,9 +144,9 @@ enum EdgeAgentService {
 
     // MARK: Runtime API client (talks to an already-deployed agent)
 
-    enum APIError: Error { case badURL, http(Int), decode }
+    public enum APIError: Error { case badURL, http(Int), decode }
 
-    static func sessions(baseURL: String, token: String, timeout: TimeInterval = 15) async throws -> [RemoteSession] {
+    public static func sessions(baseURL: String, token: String, timeout: TimeInterval = 15) async throws -> [RemoteSession] {
         let (data, _) = try await request(baseURL, "sessions", method: "GET", token: token, timeout: timeout)
         struct Wrap: Decodable { let sessions: [RemoteSession] }
         guard let wrap = try? JSONDecoder().decode(Wrap.self, from: data) else { throw APIError.decode }
@@ -139,7 +154,7 @@ enum EdgeAgentService {
     }
 
     @discardableResult
-    static func start(baseURL: String, token: String, project: String?, cwd: String, resume: String? = nil) async throws -> String {
+    public static func start(baseURL: String, token: String, project: String?, cwd: String, resume: String? = nil) async throws -> String {
         var body: [String: Any] = ["cwd": cwd]
         if let project { body["project"] = project }
         if let resume { body["resume"] = resume }
@@ -150,8 +165,18 @@ enum EdgeAgentService {
         return id
     }
 
-    static func action(baseURL: String, token: String, id: String, action: String) async throws {
+    public static func action(baseURL: String, token: String, id: String, action: String) async throws {
         _ = try await request(baseURL, "sessions/\(id)/\(action)", method: "POST", token: token)
+    }
+
+    /// Attach a keystroke-streaming ttyd instance to session `id`. Returns the ttyd
+    /// port + WS path — retargeting kills any previously attached session on the
+    /// agent side (see `throttle-agent.mjs`'s single-attach model).
+    public static func attach(baseURL: String, token: String, id: String) async throws -> (port: Int, path: String) {
+        let (data, _) = try await request(baseURL, "sessions/\(id)/attach", method: "POST", token: token)
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let port = obj["port"] as? Int, let path = obj["path"] as? String else { throw APIError.decode }
+        return (port, path)
     }
 
     private static func request(_ baseURL: String, _ path: String, method: String, token: String,

@@ -1,29 +1,22 @@
 import Foundation
-import SwiftUI
 import ThrottleShared
 
-/// Holds the connection to a deployed Throttle Edge Agent and its live session list.
-///
-/// Deliberately SEPARATE from `MultiCockpitModel` (the local cockpit): remote
-/// sessions are surfaced in their own panel rather than merged into the local
-/// `sessions` array, so this feature can't destabilise the core cockpit. Lifecycle
-/// (start/stop/pause/resume) via `EdgeAgentService`; keystroke streaming (the
-/// `attach` route) is the iOS companion's job — see `EdgeTerminalView` — not wired
-/// into this Mac-side panel.
+/// iOS counterpart to the Mac's `RemoteSessionsService`: holds the connection to a
+/// Throttle Edge Agent (deployed from the Mac — this app never deploys or SSHes)
+/// and polls its live session list. Deliberately separate from `MirrorStore` (the
+/// CloudKit mirror of the Mac's own cockpit) — an edge-agent session is a different
+/// thing entirely, hosted on whatever box the agent runs on.
 @MainActor
 @Observable
-final class RemoteSessionsService {
-    static let shared = RemoteSessionsService()
+final class EdgeSessionsService {
+    static let shared = EdgeSessionsService()
 
-    // Config (persisted). The token is a personal-homelab bearer secret; stored in
-    // UserDefaults like the LAN peer secret — the agent should sit behind Tailscale.
     var host: String { didSet { UserDefaults.standard.set(host, forKey: "throttleEdgeHost") } }
     var port: Int { didSet { UserDefaults.standard.set(port, forKey: "throttleEdgePort") } }
     var token: String { didSet { UserDefaults.standard.set(token, forKey: "throttleEdgeToken") } }
 
     private(set) var sessions: [EdgeAgentService.RemoteSession] = []
     private(set) var lastVerify: EdgeAgentService.VerifyResult?
-    private(set) var polling = false
 
     private var pollTask: Task<Void, Never>?
 
@@ -49,10 +42,9 @@ final class RemoteSessionsService {
         }
     }
 
-    /// Poll every 10 s while the panel is visible / feature is on.
+    /// Poll every 10s while the panel is visible.
     func startPolling() {
-        guard isConfigured, !polling else { return }
-        polling = true
+        guard isConfigured, pollTask == nil else { return }
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.refresh()
@@ -61,17 +53,11 @@ final class RemoteSessionsService {
         }
     }
 
-    func stopPolling() { pollTask?.cancel(); pollTask = nil; polling = false }
+    func stopPolling() { pollTask?.cancel(); pollTask = nil }
 
-    func start(project: String?, cwd: String) async {
-        guard isConfigured else { return }
-        _ = try? await EdgeAgentService.start(baseURL: baseURL, token: token, project: project, cwd: cwd)
-        await refresh()
-    }
-
-    func act(_ id: String, _ action: String) async {
-        guard isConfigured else { return }
-        try? await EdgeAgentService.action(baseURL: baseURL, token: token, id: id, action: action)
-        await refresh()
+    /// Ask the agent to (re)attach a keystroke-streaming ttyd for this session, and
+    /// return where to reach it. Retargets away from any previously attached session.
+    func attach(id: String) async throws -> (port: Int, path: String) {
+        try await EdgeAgentService.attach(baseURL: baseURL, token: token, id: id)
     }
 }

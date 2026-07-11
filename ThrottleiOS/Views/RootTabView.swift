@@ -10,6 +10,8 @@ struct RootTabView: View {
                 .tabItem { Label("Usage", systemImage: "gauge.with.needle") }
             SessionListView()
                 .tabItem { Label("Sessions", systemImage: "terminal") }
+            EdgeSessionListView()
+                .tabItem { Label("Edge", systemImage: "server.rack") }
             HistoryChartsView()
                 .tabItem { Label("History", systemImage: "chart.xyaxis.line") }
         }

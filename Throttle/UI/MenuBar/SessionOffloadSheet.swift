@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import ThrottleShared
 
 /// "Run sessions on your server" — configure a Throttle Edge Agent on a Proxmox LXC,
 /// generate its deploy script, verify the endpoint, and control the remote sessions.

@@ -3,23 +3,29 @@
 // Claude Code sessions off a RAM-constrained Mac. It SPAWNS + MEASURES sessions and
 // exposes a token-gated HTTP API the Mac cockpit talks to. It is NOT a data-path
 // proxy: `claude` on this host reaches Anthropic directly; the agent never sees the
-// request/response bodies. Coarse lifecycle only (start/stop/pause/resume) — no
-// keystroke streaming (preserves Throttle's measure-only / cockpit-not-engine
-// doctrine).
+// request/response bodies. Lifecycle (start/stop/pause/resume) plus, on explicit
+// attach, a keystroke-streaming PTY bridge (ttyd wrapping tmux) — Kevin's 2026-07-11
+// full-control pivot deliberately overrides the earlier measure-only doctrine for
+// this path. The octet stream only exists while a client is attached; `claude`
+// itself is still never proxied.
 //
-// Deps: Node built-ins only (keep the LXC light). Transport security: bind to a
-// Tailscale/LAN address and gate every request on a bearer token; put the host
-// behind Tailscale for an encrypted path (mTLS is a future hardening).
+// Deps: Node built-ins only (keep the LXC light) + the `ttyd` binary on PATH.
+// Transport security: bind to a Tailscale/LAN address and gate every request on a
+// bearer token; put the host behind Tailscale for an encrypted path (mTLS is a
+// future hardening). ttyd reuses the same shared token as HTTP Basic credentials —
+// no separate secret to manage.
 //
 // Config via env:
 //   THROTTLE_AGENT_TOKEN   required — shared bearer token (Mac sends it)
 //   THROTTLE_AGENT_HOST    bind address (default 0.0.0.0)
 //   THROTTLE_AGENT_PORT    default 8787
+//   THROTTLE_AGENT_TTYD_PORT   default 8788 — port for the on-demand ttyd attach
 //   THROTTLE_AGENT_CLAUDE_CMD  the launch command (default "claude"); tests set
 //                              this to e.g. "sleep 3600" to exercise plumbing.
 //   CLAUDE_PROJECTS_DIR    default ~/.claude/projects (for usage readout)
 
 import http from 'node:http';
+import net from 'node:net';
 import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import fs from 'node:fs';
@@ -32,9 +38,10 @@ const execFileP = promisify(execFile);
 const TOKEN = process.env.THROTTLE_AGENT_TOKEN;
 const HOST = process.env.THROTTLE_AGENT_HOST || '0.0.0.0';
 const PORT = parseInt(process.env.THROTTLE_AGENT_PORT || '8787', 10);
+const TTYD_PORT = parseInt(process.env.THROTTLE_AGENT_TTYD_PORT || '8788', 10);
 const CLAUDE_CMD = process.env.THROTTLE_AGENT_CLAUDE_CMD || 'claude';
 const PROJECTS_DIR = process.env.CLAUDE_PROJECTS_DIR || path.join(os.homedir(), '.claude', 'projects');
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 
 if (!TOKEN) { console.error('FATAL: set THROTTLE_AGENT_TOKEN'); process.exit(1); }
 
@@ -48,6 +55,42 @@ async function sh(cmd, args) {
   catch (e) { return null; }
 }
 const hasTmux = async () => (await sh('which', ['tmux'])) !== null;
+const hasTtyd = async () => (await sh('which', ['ttyd'])) !== null;
+
+// ---- ttyd attach (single active client — personal/homelab scale, not multi-tenant) ----
+// Only one interactive attach at a time: attaching to a different session id kills
+// and respawns ttyd retargeted at the new tmux session. Lifecycle (start/stop/pause/
+// resume) above is untouched and works independently of any attach.
+let ttydProc = null;
+let ttydSessionId = null;
+
+async function portOpen(port, host = '127.0.0.1') {
+  return new Promise((resolve) => {
+    const sock = net.createConnection({ port, host });
+    sock.once('connect', () => { sock.destroy(); resolve(true); });
+    sock.once('error', () => resolve(false));
+  });
+}
+
+function killTtyd() {
+  if (ttydProc) { try { ttydProc.kill('SIGTERM'); } catch {} }
+  ttydProc = null;
+  ttydSessionId = null;
+}
+
+async function attachTtyd(id) {
+  if (ttydSessionId === id && ttydProc && !ttydProc.killed) return; // already attached
+  killTtyd();
+  ttydProc = spawn('ttyd', ['-p', String(TTYD_PORT), '-W', '-c', `throttle:${TOKEN}`,
+    'tmux', 'attach-session', '-t', PREFIX + id], { stdio: 'ignore' });
+  ttydSessionId = id;
+  ttydProc.once('exit', () => { if (ttydSessionId === id) { ttydProc = null; ttydSessionId = null; } });
+  for (let i = 0; i < 50; i++) { // ~5s max
+    if (await portOpen(TTYD_PORT)) return;
+    await new Promise(r => setTimeout(r, 100));
+  }
+  throw new Error('ttyd did not come up in time');
+}
 
 async function tmuxList() {
   // Use a literal '|' separator, not '\t': some tmux builds don't emit a real tab
@@ -142,18 +185,26 @@ const server = http.createServer(async (req, res) => {
   const p = url.pathname;
   // health is unauthenticated (liveness only, no data)
   if (p === '/health' && req.method === 'GET') {
-    return send(res, 200, { ok: true, version: VERSION, tmux: await hasTmux(), sessions: (await tmuxList()).length });
+    return send(res, 200, {
+      ok: true, version: VERSION, tmux: await hasTmux(), ttyd: await hasTtyd(),
+      sessions: (await tmuxList()).length, attached: ttydSessionId,
+    });
   }
   if (!authed(req)) return send(res, 401, { error: 'unauthorized' });
   try {
     if (p === '/sessions' && req.method === 'GET') return send(res, 200, { sessions: await listSessions() });
     if (p === '/sessions' && req.method === 'POST') { const r = await startSession(await body(req)); return send(res, 201, r); }
-    const m = p.match(/^\/sessions\/([A-Za-z0-9_-]+)\/(stop|pause|resume)$/);
+    const m = p.match(/^\/sessions\/([A-Za-z0-9_-]+)\/(stop|pause|resume|attach)$/);
     if (m && req.method === 'POST') {
       const [, id, action] = m;
-      if (action === 'stop') await stopSession(id);
+      if (action === 'stop') { if (ttydSessionId === id) killTtyd(); await stopSession(id); }
       if (action === 'pause') await paneSignal(id, 'STOP');
       if (action === 'resume') await paneSignal(id, 'CONT');
+      if (action === 'attach') {
+        if (!(await hasTtyd())) return send(res, 500, { error: 'ttyd not installed' });
+        await attachTtyd(id);
+        return send(res, 200, { ok: true, id, port: TTYD_PORT, path: '/ws' });
+      }
       return send(res, 200, { ok: true, id, action });
     }
     return send(res, 404, { error: 'not found' });
@@ -161,3 +212,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => console.error(`[throttle-agent] ${VERSION} listening on ${HOST}:${PORT} (tmux sessions prefix "${PREFIX}")`));
+
+for (const sig of ['SIGTERM', 'SIGINT']) {
+  process.on(sig, () => { killTtyd(); process.exit(0); });
+}
