@@ -361,7 +361,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private static func acquireSingletonLock() -> Bool {
         let path = (NSTemporaryDirectory() as NSString)
             .appendingPathComponent("com.lorislab.throttle.singleton.lock")
-        let fd = open(path, O_CREAT | O_RDWR, 0o644)
+        // O_CLOEXEC: without it, any child process forked off this one (e.g. the
+        // Cockpit's embedded shell) inherits this fd. A long-lived terminal session
+        // then holds the flock forever, even after Throttle itself has quit —
+        // blocking every future launch with a false "already running".
+        let fd = open(path, O_CREAT | O_RDWR | O_CLOEXEC, 0o644)
         guard fd >= 0 else { return true }   // fail-open: never block launch on a lock error
         if flock(fd, LOCK_EX | LOCK_NB) != 0 {
             close(fd)
