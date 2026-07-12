@@ -33,6 +33,7 @@ enum MirrorSnapshotReader {
 }
 
 struct ThrottleiOSWidgetEntryView: View {
+    @Environment(\.widgetFamily) private var family
     var entry: Entry
 
     private var accent: Color { Color(red: 0.0, green: 0.443, blue: 0.890) }   // #0071E3
@@ -46,6 +47,17 @@ struct ThrottleiOSWidgetEntryView: View {
     }
 
     var body: some View {
+        switch family {
+        case .accessoryCircular:   accessoryCircular
+        case .accessoryRectangular: accessoryRectangular
+        case .accessoryInline:     accessoryInline
+        default:                    home
+        }
+    }
+
+    // MARK: Home-screen (small / medium)
+
+    @ViewBuilder private var home: some View {
         if let snap = entry.snapshot {
             let w = snap.bindingWindow
             VStack(alignment: .leading, spacing: 6) {
@@ -73,6 +85,36 @@ struct ThrottleiOSWidgetEntryView: View {
             .containerBackground(.fill.tertiary, for: .widget)
         }
     }
+
+    // MARK: Lock-screen accessories
+
+    private var util: Int { entry.snapshot?.bindingWindow.utilization ?? 0 }
+
+    private var accessoryCircular: some View {
+        Gauge(value: min(1, Double(util) / 100)) {
+            Image(systemName: "gauge.with.needle")
+        } currentValueLabel: {
+            Text("\(util)").monospacedDigit()
+        }
+        .gaugeStyle(.accessoryCircular)
+        .containerBackground(.clear, for: .widget)
+    }
+
+    private var accessoryRectangular: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Claude usage").font(.caption2.weight(.semibold))
+            Text("\(util)%").font(.title3.weight(.bold)).monospacedDigit()
+            if let snap = entry.snapshot {
+                Text("5h \(snap.fiveHour.utilization)% · 7d \(snap.sevenDay.utilization)%")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+        }
+        .containerBackground(.clear, for: .widget)
+    }
+
+    private var accessoryInline: some View {
+        Label("Claude \(util)%", systemImage: "gauge.with.needle")
+    }
 }
 
 struct ThrottleiOSWidget: Widget {
@@ -83,7 +125,8 @@ struct ThrottleiOSWidget: Widget {
         }
         .configurationDisplayName("Claude Usage")
         .description("Your Claude Code 5-hour and 7-day usage at a glance.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium,
+                            .accessoryCircular, .accessoryRectangular, .accessoryInline])
     }
 }
 

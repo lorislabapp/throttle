@@ -10,6 +10,7 @@ import ThrottleShared
 struct EdgeTerminalView: UIViewRepresentable {
     let session: EdgeAgentService.RemoteSession
     let lockState: TerminalLockState
+    var keySender: TerminalKeySender? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator(lockState: lockState) }
 
@@ -28,6 +29,12 @@ struct EdgeTerminalView: UIViewRepresentable {
                 Task { @MainActor in coord?.terminal?.feed(byteArray: bytes[...]) }
             }
             context.coordinator.client = client
+            // Accessory-bar keys go through the SAME lock gate as typed input.
+            keySender?.send = { [weak client, lockState] bytes in
+                guard lockState.unlocked else { return }
+                lockState.noteActivity()
+                client?.sendInput(bytes)
+            }
             client.connect(host: svc.host, port: port, path: path, token: svc.token,
                           cols: geometry.cols, rows: geometry.rows)
         }
@@ -77,23 +84,59 @@ struct EdgeTerminalView: UIViewRepresentable {
 struct EdgeTerminalScreen: View {
     let session: EdgeAgentService.RemoteSession
     @State private var lockState = TerminalLockState()
+    @State private var keySender = TerminalKeySender()
     @State private var unlocking = false
 
     var body: some View {
-        EdgeTerminalView(session: session, lockState: lockState)
-            .ignoresSafeArea(.container, edges: .bottom)
-            .navigationTitle(session.project)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        unlocking = true
-                        Task { await lockState.unlock(); unlocking = false }
-                    } label: {
-                        Image(systemName: lockState.unlocked ? "lock.open.fill" : "lock.fill")
-                    }
-                    .disabled(unlocking || lockState.unlocked)
-                }
+        VStack(spacing: 0) {
+            if !lockState.unlocked {
+                lockBanner
             }
+            EdgeTerminalView(session: session, lockState: lockState, keySender: keySender)
+                .ignoresSafeArea(.container, edges: .bottom)
+            TerminalAccessoryBar(sender: keySender)
+        }
+        .navigationTitle(session.project)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    unlock()
+                } label: {
+                    Image(systemName: lockState.unlocked ? "lock.open.fill" : "lock.fill")
+                        .foregroundStyle(lockState.unlocked ? MirrorUI.ok : MirrorUI.warn)
+                }
+                .disabled(unlocking || lockState.unlocked)
+            }
+        }
+        .onChange(of: lockState.unlocked) { _, unlocked in keySender.enabled = unlocked }
+    }
+
+    private var lockBanner: some View {
+        Button { unlock() } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "lock.fill")
+                Text("Read-only — tap to unlock typing with Face ID")
+                    .font(.footnote.weight(.medium))
+                Spacer()
+                if unlocking { ProgressView() }
+            }
+            .padding(.horizontal, 14).padding(.vertical, 9)
+            .frame(maxWidth: .infinity)
+            .background(MirrorUI.warn.opacity(0.15))
+            .foregroundStyle(MirrorUI.warn)
+        }
+        .buttonStyle(.plain)
+        .disabled(unlocking)
+    }
+
+    private func unlock() {
+        guard !lockState.unlocked, !unlocking else { return }
+        unlocking = true
+        Task {
+            let ok = await lockState.unlock()
+            unlocking = false
+            Haptics.tap(ok ? .success : .error)
+        }
     }
 }

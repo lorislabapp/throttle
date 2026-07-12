@@ -55,13 +55,27 @@ struct LiveUsageView: View {
     }
 
     private func freshness(_ snap: ThrottleMirrorSnapshot) -> some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 6) {
+            sourceBadge
             Text("\(snap.deviceName) · updated \(MirrorUI.ago(snap.publishedAt, now: now))")
                 .font(.caption).foregroundStyle(.secondary)
             if let err = store.lastError {
                 Text(err).font(.caption2).foregroundStyle(.red)
             }
         }
+    }
+
+    /// Which transport delivered the current data — the LAN peer link (sub-second,
+    /// same Wi-Fi) or the iCloud fallback. Reassures the user sync is live.
+    private var sourceBadge: some View {
+        let lan = PeerClient.shared.hasLink
+        return Label(lan ? "LAN · live" : "iCloud",
+                     systemImage: lan ? "wifi" : "icloud.fill")
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(lan ? MirrorUI.ok : MirrorUI.accent)
+            .padding(.horizontal, 10).padding(.vertical, 4)
+            .background((lan ? MirrorUI.ok : MirrorUI.accent).opacity(0.12), in: Capsule())
+            .accessibilityLabel(lan ? "Syncing over local network" : "Syncing over iCloud")
     }
 }
 
@@ -76,6 +90,8 @@ struct StatCell: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 14)
         .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title): \(value)")
     }
 }
 

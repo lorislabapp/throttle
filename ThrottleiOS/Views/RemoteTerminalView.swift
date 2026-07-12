@@ -12,6 +12,7 @@ import SwiftTerm
 struct RemoteTerminalView: UIViewRepresentable {
     /// The Mac cockpit tab id (`TabMirror.id`, a `CockpitTab` UUID string).
     let sessionId: String
+    var keySender: TerminalKeySender? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -20,6 +21,8 @@ struct RemoteTerminalView: UIViewRepresentable {
                               font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular))
         tv.terminalDelegate = context.coordinator
         context.coordinator.terminal = tv
+
+        keySender?.send = { bytes in PeerClient.shared.sendTerminalInput(bytes) }
 
         PeerClient.shared.attachTerminal(
             tabID: sessionId,
@@ -73,11 +76,15 @@ struct RemoteTerminalView: UIViewRepresentable {
 struct RemoteTerminalScreen: View {
     let sessionId: String
     let title: String
+    @State private var keySender = TerminalKeySender()
 
     var body: some View {
-        RemoteTerminalView(sessionId: sessionId)
-            .ignoresSafeArea(.container, edges: .bottom)
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
+        VStack(spacing: 0) {
+            RemoteTerminalView(sessionId: sessionId, keySender: keySender)
+                .ignoresSafeArea(.container, edges: .bottom)
+            TerminalAccessoryBar(sender: keySender)
+        }
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

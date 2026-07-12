@@ -60,8 +60,11 @@ struct SessionRow: View {
             }
             if tab.needsInput {
                 Circle().fill(.orange).frame(width: 8, height: 8)
+                    .accessibilityLabel("Needs input")
             }
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(tab.projectName), \(tab.state)\(tab.needsInput ? ", needs input" : "")")
     }
 }
