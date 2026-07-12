@@ -140,10 +140,14 @@ public enum EdgeAgentService {
         [Service]
         Type=simple
         EnvironmentFile=/etc/throttle-agent.env
+        Environment=HOME=/root
         WorkingDirectory=/opt/throttle-agent
         ExecStart=/usr/bin/node /opt/throttle-agent/throttle-agent.mjs
         Restart=on-failure
         User=root
+        # Only kill the node process on stop/restart — NOT the whole cgroup — so
+        # tmux-hosted claude sessions survive an agent restart/upgrade.
+        KillMode=process
 
         [Install]
         WantedBy=multi-user.target

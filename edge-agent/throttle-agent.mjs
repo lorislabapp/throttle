@@ -151,13 +151,51 @@ async function listSessions() {
   });
 }
 
+// Pre-accept Claude Code's per-folder trust prompt for `cwd` in ~/.claude.json.
+// Without this, an offloaded session launches into the interactive "Is this a
+// project you trust?" gate with no client ever attaching, and hangs (or the tmux
+// session dies) — claude never resumes. This is NOT a permissions bypass: it's the
+// equivalent of the user answering "yes, I trust this folder" for a folder they
+// explicitly chose to offload to. Best-effort; a failure here never blocks start.
+function trustCwd(cwd) {
+  try {
+    const p = path.join(os.homedir(), '.claude.json');
+    const d = JSON.parse(fs.readFileSync(p, 'utf8'));
+    d.projects = d.projects || {};
+    d.projects[cwd] = Object.assign({}, d.projects[cwd], { hasTrustDialogAccepted: true });
+    fs.writeFileSync(p, JSON.stringify(d, null, 2));
+  } catch {}
+}
+
 async function startSession({ project, cwd, resume }) {
   if (!cwd) throw new Error('cwd required');
+  trustCwd(cwd);
   const id = crypto.randomBytes(4).toString('hex');
   const name = PREFIX + id;
   const launch = resume ? `${CLAUDE_CMD} --resume ${JSON.stringify(resume)}` : CLAUDE_CMD;
-  const inner = `cd ${JSON.stringify(cwd)} && ${launch}`;
-  await execFileP('tmux', ['new-session', '-d', '-s', name, 'bash', '-lc', inner]);
+  // mkdir -p the cwd first: an offloaded session names a project dir that may not
+  // exist yet on this box (the Mac had it, we don't). Without this `cd` fails and
+  // the tmux session dies on launch — the transcript was uploaded but claude never
+  // starts. Creating it is the sane "run a session here" behaviour.
+  const inner = `mkdir -p ${JSON.stringify(cwd)} && cd ${JSON.stringify(cwd)} && ${launch}`;
+  // Spawn the tmux server in its OWN transient systemd scope, NOT in this agent's
+  // service cgroup. Under systemd, a tmux server forked directly by the agent lives
+  // in throttle-agent.service's control group and gets reaped almost immediately
+  // (verified: identical spawn dies <2.5s under the service but survives from a
+  // plain shell). `systemd-run --scope` moves it to an independent scope so the
+  // session outlives the request — and a later `systemctl restart` of the agent no
+  // longer kills running sessions either. Falls back to a bare tmux spawn where
+  // systemd-run isn't available (non-systemd hosts / macOS dev).
+  // Spawn with HOME explicitly set. Under systemd the service env has NO HOME
+  // (verified live: the agent process environ lacked HOME entirely), so the
+  // session's `bash -lc` couldn't source ~/.profile — no CLAUDE_CODE_OAUTH_TOKEN,
+  // no ~/.local/bin PATH — and claude exited within ~2s. os.homedir() resolves the
+  // home from /etc/passwd even when $HOME is unset, so this is correct for root and
+  // any other service user without hardcoding a path. (The unit also sets
+  // KillMode=process so `systemctl restart` no longer reaps live sessions.)
+  const spawnEnv = { ...process.env, HOME: process.env.HOME || os.homedir() };
+  await execFileP('tmux', ['new-session', '-d', '-s', name, 'bash', '-lc', inner],
+    { env: spawnEnv });
   sessions.set(id, { id, project: project || path.basename(cwd), cwd, startedAt: Date.now() });
   return { id, name };
 }
