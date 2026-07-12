@@ -17,20 +17,20 @@ Current shipped version: **3.2.49** (build 149) — released + live on lorislab.
 - [ ] NOT built (deferred, low value): populate `web_fetches.session_id` for €-per-render join · screenshot
       in web_render (`takeSnapshot` → ContentStore) · a11y-tree snapshot (thin edge — claude-in-chrome's lane).
 
-## Cockpit terminal — requested 2026-07-08 (Kevin) — NOT built; needs his live test (session runs IN the Cockpit)
-- [ ] **Focus routing bug** — opening the side shell leaves keyboard focus ambiguous: typing lands in the
-      wrong pane until you click the intended one. Code: `MultiTerminalStack.updateNSView` reclaims focus for
-      claude only when the first responder is nil or in-stack; `ShellPane` deliberately never steals focus.
-      RISKY to change — the focus code has scars (a past thrash auto-confirmed Ink prompts). Needs Kevin's
-      intended-behaviour spec + live test.
+## Cockpit terminal — requested 2026-07-08 (Kevin)
+- [x] **Focus routing on shell-open** (`6b69273`) — opening the side shell (or a tab whose shell just
+      mounted) now focuses it once, async, on first mount only — never on later re-renders (that's what
+      historically thrashed and auto-confirmed claude prompts). `MultiTerminalStack.updateNSView`.
+      Build-verified; **still needs Kevin's live install+test** (this session runs IN the Cockpit — can't
+      restart it to self-test, see [[dont-restart-throttle]]).
+- [x] **A REAL Clear** (`6b69273`) — context-menu "Clear" now sends Ctrl-L *and* CSI 3J to wipe scrollback,
+      so Ctrl-A/Select All shows nothing above the current command. No-op on claude's alt-buffer (no
+      scrollback there); only bites the side shell / plain output. Build-verified; **needs Kevin's live test**.
+- [x] **Copy CLI output optimized for Claude** (`70e7a5e`) — "Copy for Claude (trimmed)" context-menu item,
+      reuses `TokoptHook.trimForCopy`.
 - [ ] **Claude drives the terminal (plugin/add-on)** — let Claude/Throttle operate the terminal directly.
       Big design + doctrine call (agent-control vs measure-only cockpit); overlaps the side shell + Command
       Runner. Scope before building.
-- [ ] **A REAL Clear** — the current context-menu "Clear" sends Ctrl-L (soft; scrollback survives, Ctrl-A
-      still selects old output). Want a hard scrollback wipe. SwiftTerm exposes `Buffer.clear()` /
-      `Terminal.resetToInitialState()`; risk = desyncing a running claude TUI. Needs live test.
-- [ ] **Copy CLI output optimized for Claude** — a menu item / button that copies terminal text trimmed for
-      token efficiency (reuse `TokoptHook.compress`). Low risk; the safe one to build first.
 
 ## Shipped 2026-07-08 (3.2.47, build 147) — RELEASED (notarized, appcast live, deployed)
 - [x] **Two-tier auto-reclaim** — crowded-but-RAM-fine idle tabs now SIGSTOP-freeze
