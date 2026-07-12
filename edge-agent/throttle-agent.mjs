@@ -151,16 +151,22 @@ async function listSessions() {
   });
 }
 
-// Pre-accept Claude Code's per-folder trust prompt for `cwd` in ~/.claude.json.
-// Without this, an offloaded session launches into the interactive "Is this a
-// project you trust?" gate with no client ever attaching, and hangs (or the tmux
-// session dies) — claude never resumes. This is NOT a permissions bypass: it's the
-// equivalent of the user answering "yes, I trust this folder" for a folder they
-// explicitly chose to offload to. Best-effort; a failure here never blocks start.
-function trustCwd(cwd) {
+// Make ~/.claude.json non-interactive for a headless offload session, so a freshly
+// deployed box doesn't hang a spawned session on claude's first-run gates:
+//   - theme picker + onboarding: a brand-new box has never run claude interactively,
+//     so without these flags the session sits at "choose a theme" and dies.
+//   - per-folder trust: an offloaded cwd is new to the box → "Is this a project you
+//     trust?" gate. Pre-accepting it is the user answering yes for a folder THEY
+//     chose to offload to — NOT a permissions bypass.
+// Best-effort; a failure here never blocks start.
+function seedClaudeConfig(cwd) {
   try {
     const p = path.join(os.homedir(), '.claude.json');
-    const d = JSON.parse(fs.readFileSync(p, 'utf8'));
+    const d = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : {};
+    if (!d.theme) d.theme = 'dark';
+    d.hasCompletedOnboarding = true;
+    if (!d.lastOnboardingVersion) d.lastOnboardingVersion = '2.1.0';
+    d.hasUsedBackslashReturn = true;
     d.projects = d.projects || {};
     d.projects[cwd] = Object.assign({}, d.projects[cwd], { hasTrustDialogAccepted: true });
     fs.writeFileSync(p, JSON.stringify(d, null, 2));
@@ -169,7 +175,7 @@ function trustCwd(cwd) {
 
 async function startSession({ project, cwd, resume }) {
   if (!cwd) throw new Error('cwd required');
-  trustCwd(cwd);
+  seedClaudeConfig(cwd);
   const id = crypto.randomBytes(4).toString('hex');
   const name = PREFIX + id;
   const launch = resume ? `${CLAUDE_CMD} --resume ${JSON.stringify(resume)}` : CLAUDE_CMD;

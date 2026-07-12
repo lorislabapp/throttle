@@ -109,9 +109,18 @@ public enum EdgeAgentService {
         s += "#    Tailscale via host DNAT), make sure BOTH \(httpPort) (HTTP API) and \(ttydPort)\n"
         s += "#    (ttyd) are forwarded — not just the API port. This script does not touch\n"
         s += "#    firewall/NAT rules on the host; that's a one-time manual step outside the box.\n"
-        s += "# 7) back in Throttle: click Verify. Then run `\(ssh) claude login` once by hand —\n"
-        s += "#    that's the one step that genuinely can't be scripted (it's your own OAuth\n"
-        s += "#    login) — and real sessions start appearing in the cockpit instead of the dummy.\n"
+        s += "# 7) One manual step that genuinely can't be scripted — your own OAuth login.\n"
+        s += "#    Mint a long-lived token IN A REAL TERMINAL (needs a TTY; -tt forces one\n"
+        s += "#    through `pct exec`/ssh):\n"
+        s += "#      ssh\(keyOpt) -tt -p \(target.port) \(target.user)@\(target.host) 'claude setup-token'\n"
+        s += "#    open the URL it prints, authorize, paste the code back. Then wire the printed\n"
+        s += "#    token so the agent's spawned sessions inherit it (the agent runs `claude` via\n"
+        s += "#    a login shell, so ~/.profile is the reliable place — systemd's own env has no\n"
+        s += "#    HOME/PATH for it):\n"
+        s += "#      \(ssh) 'umask 077; echo export CLAUDE_CODE_OAUTH_TOKEN=PASTE_TOKEN >> ~/.profile'\n"
+        s += "#      \(ssh) 'systemctl restart throttle-agent'\n"
+        s += "# 8) back in Throttle: click Verify, then Offload with context — real sessions\n"
+        s += "#    (with your Mac's transcript resumed) appear instead of the dummy.\n"
         return s
     }
 
