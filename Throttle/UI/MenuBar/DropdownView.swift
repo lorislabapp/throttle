@@ -1336,7 +1336,6 @@ private struct InlineGeneralPane: View {
     @State private var apSkills: Bool = AutopilotService.archiveDeadSkills
     @State private var semanticAutoIndex: Bool = SemanticAutoIndexer.isEnabled
     @State private var showingLedger = false
-    @State private var showSessionOffload = false
     @State private var ledger: [AutopilotService.Entry] = []
     @State private var autopilotBusy = false
     @State private var activeStyle = OutputStyleManager.activeName()
@@ -1667,7 +1666,7 @@ private struct InlineGeneralPane: View {
                             .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 4))
                             .foregroundStyle(.secondary)
                     }
-                    SettingsButton(title: "Configure…") { if appState.isPro { showSessionOffload = true } }
+                    SettingsButton(title: "Configure…") { if appState.isPro { SessionOffloadWindowController.shared.show() } }
                         .disabled(!appState.isPro)
                 }
             }
@@ -1678,7 +1677,6 @@ private struct InlineGeneralPane: View {
             SettingsNote(text: "Throttle \(currentVersionLabel) · updates are signed and verified before install.")
         }
         .sheet(isPresented: $showingLedger) { autopilotLedgerSheet }
-        .sheet(isPresented: $showSessionOffload) { SessionOffloadSheet(onClose: { showSessionOffload = false }) }
         .onReceive(NotificationCenter.default.publisher(for: .outputStyleChanged)) { _ in
             activeStyle = OutputStyleManager.activeName()
         }
