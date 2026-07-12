@@ -47,7 +47,7 @@ enum ThrottleCommandChannel {
     @MainActor static func startObserving() {
         let callback: CFNotificationCallback = { _, _, _, _, _ in
             // C trampoline → hop to main and drain. (No captured context allowed here.)
-            DispatchQueue.main.async { MainActor.assumeIsolated { ThrottleCommandChannel.drain() } }
+            Task { @MainActor in ThrottleCommandChannel.drain() }
         }
         CFNotificationCenterAddObserver(
             CFNotificationCenterGetDarwinNotifyCenter(), nil, callback,

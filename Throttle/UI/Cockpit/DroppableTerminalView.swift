@@ -155,7 +155,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         // detection-state mutation happens inside the main-confined block, so
         // `tail`/`escState`/`selecting` are only ever touched on the main thread.
         let bytes = Array(slice)
-        let handle: @MainActor () -> Void = { [weak self] in
+        DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             // Hold output while the user is dragging a selection OR has scrolled up
             // to read — either way, rendering would yank the viewport. Bounded —
@@ -167,8 +167,6 @@ final class DroppableTerminalView: LocalProcessTerminalView {
             }
             self.renderAndSniff(bytes)
         }
-        if Thread.isMainThread { MainActor.assumeIsolated(handle) }
-        else { DispatchQueue.main.async { MainActor.assumeIsolated(handle) } }
     }
 
     /// Render bytes to the terminal and run the prompt/rate-limit sniffer.
