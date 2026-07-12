@@ -61,6 +61,7 @@ Env: `THROTTLE_AGENT_TOKEN` (required), `THROTTLE_AGENT_HOST` (default `0.0.0.0`
 | POST | `/sessions/:id/pause` | yes | SIGSTOP the session's process (freeze tokens) |
 | POST | `/sessions/:id/resume` | yes | SIGCONT |
 | POST | `/sessions/:id/attach` | yes | `{ok, id, port, path}` — (re)spawns ttyd on `THROTTLE_AGENT_TTYD_PORT` attached to this session's tmux pane; retargeting kills any previous attach |
+| PUT | `/transcripts?cwd=<abs>&session=<id>` | yes | raw JSONL body → `{ok, sessionId, bytes}` — context transfer: writes the FULL session transcript to `~/.claude/projects/<encoded cwd>/<id>.jsonl` so a follow-up `POST /sessions {cwd, resume: id}` resumes with the Mac session's context (verified live 2026-07-12: `claude --resume` accepts a transcript copied from another machine/cwd). 512 MB cap, streamed to disk |
 
 Sessions are hosted in `tmux` (name prefix `throttle-`) so a crashed agent doesn't kill
 them; on restart the agent re-discovers live sessions by that prefix. Only one ttyd

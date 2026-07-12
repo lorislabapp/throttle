@@ -216,6 +216,32 @@ public enum EdgeAgentService {
         _ = try await request(baseURL, "sessions/\(id)/\(action)", method: "POST", token: token)
     }
 
+    /// Context transfer: stream a FULL local session JSONL to the agent, which places
+    /// it at `~/.claude/projects/<encoded remoteCwd>/<sessionId>.jsonl` so a follow-up
+    /// `start(resume: sessionId)` resumes with the Mac session's context instead of
+    /// rebuilding it (verified live 2026-07-12: `claude --resume` accepts a transcript
+    /// copied from another machine/cwd). Never truncate the file — a partial JSONL
+    /// corrupts the session chain.
+    @discardableResult
+    public static func uploadTranscript(baseURL: String, token: String, remoteCwd: String,
+                                        sessionId: String, fileURL: URL,
+                                        timeout: TimeInterval = 120) async throws -> Int {
+        var comps = URLComponents(string: baseURL)
+        comps?.path = "/transcripts"
+        comps?.queryItems = [URLQueryItem(name: "cwd", value: remoteCwd),
+                             URLQueryItem(name: "session", value: sessionId)]
+        guard let url = comps?.url else { throw APIError.badURL }
+        var r = URLRequest(url: url); r.httpMethod = "PUT"; r.timeoutInterval = timeout
+        r.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        r.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+        let (data, resp) = try await URLSession.shared.upload(for: r, fromFile: fileURL)
+        guard let http = resp as? HTTPURLResponse else { throw APIError.http(-1) }
+        guard (200..<300).contains(http.statusCode) else { throw APIError.http(http.statusCode) }
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let bytes = obj["bytes"] as? Int else { throw APIError.decode }
+        return bytes
+    }
+
     /// Attach a keystroke-streaming ttyd instance to session `id`. Returns the ttyd
     /// port + WS path — retargeting kills any previously attached session on the
     /// agent side (see `throttle-agent.mjs`'s single-attach model).

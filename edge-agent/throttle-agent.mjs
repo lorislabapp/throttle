@@ -41,7 +41,7 @@ const PORT = parseInt(process.env.THROTTLE_AGENT_PORT || '8787', 10);
 const TTYD_PORT = parseInt(process.env.THROTTLE_AGENT_TTYD_PORT || '8788', 10);
 const CLAUDE_CMD = process.env.THROTTLE_AGENT_CLAUDE_CMD || 'claude';
 const PROJECTS_DIR = process.env.CLAUDE_PROJECTS_DIR || path.join(os.homedir(), '.claude', 'projects');
-const VERSION = '0.2.0';
+const VERSION = '0.3.0';
 
 if (!TOKEN) { console.error('FATAL: set THROTTLE_AGENT_TOKEN'); process.exit(1); }
 
@@ -179,6 +179,41 @@ function authed(req) {
 function body(req) {
   return new Promise((resolve) => { let d = ''; req.on('data', c => d += c); req.on('end', () => { try { resolve(d ? JSON.parse(d) : {}); } catch { resolve({}); } }); });
 }
+// Raw octet-stream body for transcript upload. Session JSONLs run to tens of MB;
+// cap at 512 MB as a runaway guard, stream straight to disk (no buffering the
+// whole file in memory on a small LXC).
+const MAX_TRANSCRIPT_BYTES = 512 * 1024 * 1024;
+function streamToFile(req, dest) {
+  return new Promise((resolve, reject) => {
+    let n = 0;
+    const out = fs.createWriteStream(dest, { mode: 0o600 });
+    req.on('data', (c) => {
+      n += c.length;
+      if (n > MAX_TRANSCRIPT_BYTES) { out.destroy(); fs.rmSync(dest, { force: true }); req.destroy(); reject(new Error('transcript too large')); }
+    });
+    req.pipe(out);
+    out.on('finish', () => resolve(n));
+    out.on('error', (e) => { fs.rmSync(dest, { force: true }); reject(e); });
+  });
+}
+
+// Context transfer (Mac -> this box): receive a FULL session JSONL and place it at
+// ~/.claude/projects/<encoded cwd>/<sessionId>.jsonl so a follow-up
+// POST /sessions {cwd, resume: sessionId} resumes with the Mac session's context
+// instead of burning 10-20 turns rebuilding it. Full copy only — the Mac side never
+// truncates (truncation corrupts the session chain).
+async function receiveTranscript(req, url) {
+  const cwd = url.searchParams.get('cwd');
+  const sessionId = url.searchParams.get('session');
+  if (!cwd || !cwd.startsWith('/')) throw new Error('cwd (absolute) required');
+  if (!sessionId || !/^[A-Za-z0-9-]{8,64}$/.test(sessionId)) throw new Error('bad session id');
+  const dir = path.join(PROJECTS_DIR, encodedProjectDir(cwd));
+  fs.mkdirSync(dir, { recursive: true });
+  const dest = path.join(dir, `${sessionId}.jsonl`);
+  const bytes = await streamToFile(req, dest);
+  if (bytes === 0) { fs.rmSync(dest, { force: true }); throw new Error('empty transcript'); }
+  return { ok: true, sessionId, bytes, dest };
+}
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
@@ -194,6 +229,7 @@ const server = http.createServer(async (req, res) => {
   try {
     if (p === '/sessions' && req.method === 'GET') return send(res, 200, { sessions: await listSessions() });
     if (p === '/sessions' && req.method === 'POST') { const r = await startSession(await body(req)); return send(res, 201, r); }
+    if (p === '/transcripts' && req.method === 'PUT') { const r = await receiveTranscript(req, url); return send(res, 201, r); }
     const m = p.match(/^\/sessions\/([A-Za-z0-9_-]+)\/(stop|pause|resume|attach)$/);
     if (m && req.method === 'POST') {
       const [, id, action] = m;

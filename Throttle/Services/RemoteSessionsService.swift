@@ -74,4 +74,63 @@ final class RemoteSessionsService {
         try? await EdgeAgentService.action(baseURL: baseURL, token: token, id: id, action: action)
         await refresh()
     }
+
+    // MARK: Context transfer (offload a local session WITH its transcript)
+
+    /// A local Claude Code session eligible for offload: the JSONL transcript on
+    /// this Mac, identified by its filename stem.
+    struct LocalSession: Identifiable, Equatable {
+        let id: String          // session id = JSONL filename stem
+        let project: String     // decoded-ish project dir name (display only)
+        let path: URL
+        let sizeBytes: Int
+        let modified: Date
+    }
+
+    private(set) var offloadStatus: String?
+
+    /// Newest local transcripts across `~/.claude/projects/` (display picker feed).
+    /// Pure filesystem scan — no DB dependency, safe to call from the sheet.
+    static func recentLocalSessions(limit: Int = 12) -> [LocalSession] {
+        let root = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/projects")
+        guard let projects = try? FileManager.default.contentsOfDirectory(
+            at: root, includingPropertiesForKeys: nil) else { return [] }
+        var all: [LocalSession] = []
+        for proj in projects {
+            guard let files = try? FileManager.default.contentsOfDirectory(
+                at: proj, includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey]) else { continue }
+            for f in files where f.pathExtension == "jsonl" {
+                let vals = try? f.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
+                all.append(LocalSession(
+                    id: f.deletingPathExtension().lastPathComponent,
+                    project: proj.lastPathComponent,
+                    path: f,
+                    sizeBytes: vals?.fileSize ?? 0,
+                    modified: vals?.contentModificationDate ?? .distantPast))
+            }
+        }
+        return Array(all.sorted { $0.modified > $1.modified }.prefix(limit))
+    }
+
+    /// Upload the FULL transcript of `session` to the agent for `remoteCwd`, then
+    /// start a remote session resuming it — the whole point: no 10–20-turn context
+    /// rebuild on the box. Full copy only; the file is streamed as-is, never trimmed.
+    func offload(_ session: LocalSession, remoteCwd: String) async {
+        guard isConfigured, !remoteCwd.isEmpty else { return }
+        offloadStatus = "Uploading \(session.id.prefix(8))… (\(session.sizeBytes / 1024) KB)"
+        do {
+            let bytes = try await EdgeAgentService.uploadTranscript(
+                baseURL: baseURL, token: token, remoteCwd: remoteCwd,
+                sessionId: session.id, fileURL: session.path)
+            offloadStatus = "Uploaded \(bytes / 1024) KB — starting remote session…"
+            _ = try await EdgeAgentService.start(
+                baseURL: baseURL, token: token, project: session.project,
+                cwd: remoteCwd, resume: session.id)
+            offloadStatus = "Offloaded with context — resumed \(session.id.prefix(8)) on the box"
+            await refresh()
+        } catch {
+            offloadStatus = "Offload failed: \(error.localizedDescription)"
+        }
+    }
 }

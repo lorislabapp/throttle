@@ -170,7 +170,7 @@ Current shipped version: **3.2.49** (build 149) — released + live on lorislab.
       `MultiCockpitModel.countdown`; cockpit binding already had it).
 
 ## Verified 2026-07-12 — ready to scope, not yet built
-- [ ] **MEMORY.md 200-line cap audit / segmentation** — premise CONFIRMED true
+- [x] **MEMORY.md 200-line cap audit / segmentation** — premise CONFIRMED true
       (docs.claude.com/memory, "How it works"): `MEMORY.md` auto-load silently
       truncates at 200 lines / 25 KB; content past that never reaches context.
       `CLAUDE.md` is NOT truncated — loaded in full regardless of length (200 lines
@@ -179,8 +179,11 @@ Current shipped version: **3.2.49** (build 149) — released + live on lorislab.
       pushes `MEMORY.md` past 200 lines, distinct from any softer CLAUDE.md nudge.
       Autopilot already archives stale/orphaned memory — this would be the sibling
       check for "memory that's still live but the index itself overflowed."
-      Needs scoping before building (UI: warn vs. auto-segment into topic files).
-- [ ] **Session Offload with context transfer (full-copy + resume)** — premise
+      BUILT 3.2.57 (warn half): `HealthCheckService.memoryIndexCap()` scans every
+      project's `memory/MEMORY.md` for >200 lines / >25 KB and warns in Throttle
+      Health with the offending projects. Auto-segmentation deliberately NOT built
+      (rewrites live memory content — user's call per doctrine).
+- [x] **Session Offload with context transfer (full-copy + resume)** — premise
       VERIFIED live 2026-07-12: copied a session JSONL into
       `~/.claude/projects/<encoded-new-cwd>/` and `claude --resume <id>` from that
       different cwd recovered the full context (old internal cwd fields don't
@@ -195,6 +198,11 @@ Current shipped version: **3.2.49** (build 149) — released + live on lorislab.
       `throttle-dag-fork-deferred`: FULL copy of the JSONL only, never truncate —
       truncation corrupts the session chain. Single-session offload stays; no
       mass offload (complexity, doesn't serve the wedge).
+      BUILT 3.2.57: agent 0.3.0 `PUT /transcripts` (streamed to disk, 512 MB cap,
+      session-id regex + encoded-cwd guard, route-tested live with curl);
+      `EdgeAgentService.uploadTranscript`; `RemoteSessionsService.offload` +
+      `recentLocalSessions()` (pure FS scan); SessionOffloadSheet picker +
+      "Offload with context" button + status line.
 
 ## Designed → verdict NO / defer (don't build unless asked)
 - **Keep-alive cache pings** — verdict: don't ship (spend + ToS + cap pressure).

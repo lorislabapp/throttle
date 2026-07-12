@@ -14,6 +14,9 @@ struct SessionOffloadSheet: View {
     @State private var keyPath = "~/.ssh/id_ed25519"
     @State private var verifying = false
     @State private var newCwd = ""
+    @State private var localSessions: [RemoteSessionsService.LocalSession] = []
+    @State private var selectedLocalId: String?
+    @State private var offloading = false
 
     private var target: EdgeAgentService.SSHTarget {
         EdgeAgentService.SSHTarget(host: svc.host, user: user, keyPath: keyPath.isEmpty ? nil : keyPath, port: 22)
@@ -87,6 +90,29 @@ struct SessionOffloadSheet: View {
                                 svc.polling ? svc.stopPolling() : svc.startPolling()
                             }.controlSize(.small)
                         }
+                        // Context transfer: pick a local session, ship its FULL
+                        // transcript, resume it on the box (no context rebuild).
+                        HStack {
+                            Picker("", selection: $selectedLocalId) {
+                                Text("Local session…").tag(String?.none)
+                                ForEach(localSessions) { s in
+                                    Text("\(s.id.prefix(8)) · \(s.project.split(separator: "-").suffix(2).joined(separator: "-")) · \(s.sizeBytes / 1024) KB")
+                                        .tag(String?.some(s.id))
+                                }
+                            }
+                            .labelsHidden().controlSize(.small).frame(maxWidth: 260)
+                            Button(offloading ? "Offloading…" : "Offload with context") {
+                                guard let s = localSessions.first(where: { $0.id == selectedLocalId }) else { return }
+                                let cwd = newCwd
+                                offloading = true
+                                Task { await svc.offload(s, remoteCwd: cwd); offloading = false }
+                            }
+                            .controlSize(.small)
+                            .disabled(offloading || selectedLocalId == nil || newCwd.isEmpty || !svc.isConfigured)
+                        }
+                        if let status = svc.offloadStatus {
+                            Text(status).font(.system(size: 10)).foregroundStyle(.secondary)
+                        }
                         if svc.sessions.isEmpty {
                             Text("No remote sessions.").font(.system(size: 11)).foregroundStyle(.tertiary)
                         } else {
@@ -99,7 +125,10 @@ struct SessionOffloadSheet: View {
         }
         .padding(16)
         .frame(width: 520, height: 560)
-        .onAppear { svc.startPolling() }
+        .onAppear {
+            svc.startPolling()
+            localSessions = RemoteSessionsService.recentLocalSessions()
+        }
         .onDisappear { svc.stopPolling() }
     }
 

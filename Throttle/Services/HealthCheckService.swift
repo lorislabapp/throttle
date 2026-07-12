@@ -40,6 +40,7 @@ enum HealthCheckService {
             items.append(disk())
             items.append(exactMode(exact: exact, isPro: isPro))
             items.append(cacheHygiene())
+            items.append(memoryIndexCap())
             return items
         }.value
     }
@@ -143,6 +144,36 @@ enum HealthCheckService {
         return exact.isFresh()
             ? HealthItem(title: "Exact mode", status: .ok, detail: "Fresh claude.ai snapshot.")
             : HealthItem(title: "Exact mode", status: .warn, detail: "Snapshot is stale — falling back to the local estimate.")
+    }
+
+    /// MEMORY.md hard-cap audit (verified 2026-07-12 against docs.claude.com/memory):
+    /// the auto-loaded memory index silently truncates at 200 lines / 25 KB — content
+    /// past that never reaches context, so memories the user thinks are live are
+    /// silently dead. CLAUDE.md is NOT truncated (200 lines is only a soft guideline
+    /// there), so this check scopes to MEMORY.md files only. Warn-only per doctrine:
+    /// segmentation rewrites live memory content, that stays the user's call.
+    static func memoryIndexCap() -> HealthItem {
+        let maxLines = 200, maxBytes = 25 * 1024
+        let root = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/projects")
+        var over: [String] = []
+        let projects = (try? FileManager.default.contentsOfDirectory(
+            at: root, includingPropertiesForKeys: nil)) ?? []
+        for proj in projects {
+            let index = proj.appendingPathComponent("memory/MEMORY.md")
+            guard let text = try? String(contentsOf: index, encoding: .utf8) else { continue }
+            let lines = text.split(separator: "\n", omittingEmptySubsequences: false).count
+            let bytes = text.utf8.count
+            if lines > maxLines || bytes > maxBytes {
+                over.append("\(proj.lastPathComponent) (\(lines) lines, \(bytes / 1024) KB)")
+            }
+        }
+        if over.isEmpty {
+            return HealthItem(title: "Memory index size", status: .ok,
+                              detail: "All MEMORY.md indexes under the 200-line / 25 KB auto-load cap.")
+        }
+        return HealthItem(title: "Memory index size", status: .warn,
+                          detail: "\(over.count) MEMORY.md over the 200-line/25 KB cap — content past it is silently truncated and never reaches context: \(over.joined(separator: " · "))")
     }
 
     private static func cacheHygiene() -> HealthItem {
