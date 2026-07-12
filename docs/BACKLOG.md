@@ -169,12 +169,17 @@ Current shipped version: **3.2.49** (build 149) — released + live on lorislab.
       (3.2.21: "resets 9pm (in 2h 14m)" on hero + secondary rows, via
       `MultiCockpitModel.countdown`; cockpit binding already had it).
 
-## Parked — premise unverified
-- [ ] **MEMORY.md 200-line cap audit / segmentation** — the claim "Claude Code
-      silently truncates CLAUDE.md/MEMORY.md autoload at ~200 lines" was NEVER
-      verified (the claude-code-guide check failed). Do NOT build a "your config is
-      truncated" feature until confirmed real (golden rule: don't render a claim we
-      can't stand behind). Autopilot already archives stale/orphaned memory.
+## Verified 2026-07-12 — ready to scope, not yet built
+- [ ] **MEMORY.md 200-line cap audit / segmentation** — premise CONFIRMED true
+      (docs.claude.com/memory, "How it works"): `MEMORY.md` auto-load silently
+      truncates at 200 lines / 25 KB; content past that never reaches context.
+      `CLAUDE.md` is NOT truncated — loaded in full regardless of length (200 lines
+      is only a soft readability guideline there). So the feature should scope to
+      `MEMORY.md` only: a hard-cap warning/segmentation when a user's memory dir
+      pushes `MEMORY.md` past 200 lines, distinct from any softer CLAUDE.md nudge.
+      Autopilot already archives stale/orphaned memory — this would be the sibling
+      check for "memory that's still live but the index itself overflowed."
+      Needs scoping before building (UI: warn vs. auto-segment into topic files).
 
 ## Designed → verdict NO / defer (don't build unless asked)
 - **Keep-alive cache pings** — verdict: don't ship (spend + ToS + cap pressure).
