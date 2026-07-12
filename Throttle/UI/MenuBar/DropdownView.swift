@@ -1348,6 +1348,7 @@ private struct InlineGeneralPane: View {
     @State private var traycerNote = ""
     @State private var webOn = UserDefaults.standard.bool(forKey: "throttleWebEnabled")
     @State private var webNote = ""
+    @State private var peerFallbackHost = PeerTransport.shared.fallbackHost ?? ""
     @State private var mirrorOn = UserDefaults.standard.bool(forKey: "throttleiCloudMirrorEnabled")
     @State private var mirrorNote = ""
 
@@ -1631,6 +1632,17 @@ private struct InlineGeneralPane: View {
                                 PeerTransport.shared.stop()
                                 mirrorNote = "Off — the iPhone keeps its last synced snapshot."
                             }
+                        }
+                }
+            }
+            if mirrorOn && appState.isPro {
+                SettingsHair()
+                SettingsRow(title: "Off-Wi-Fi control (Tailscale)",
+                            sub: "This Mac's tailnet IP or MagicDNS name, so the iPhone can still reach it off your home Wi-Fi (e.g. on cellular). Leave blank to stay LAN-only.") {
+                    TextField("100.x.x.x or mac.tailxxxx.ts.net", text: $peerFallbackHost)
+                        .textFieldStyle(.roundedBorder).font(.system(size: 11)).frame(width: 200)
+                        .onChange(of: peerFallbackHost) { _, host in
+                            PeerTransport.shared.fallbackHost = host
                         }
                 }
             }

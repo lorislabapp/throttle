@@ -79,11 +79,19 @@ public struct ThrottleMirrorSnapshot: Codable, Sendable, Equatable {
     /// peer mirror is off or the publisher is an older build.
     public let peerPairingSecret: String?
 
+    /// Off-LAN fallback: a tailnet host (IP or MagicDNS name) the Mac is reachable
+    /// at on `PeerPairing.fallbackPort`, so the phone can still reach the peer link
+    /// off Wi-Fi (e.g. on cellular via Tailscale). User-entered on the Mac side
+    /// (Settings); nil when unset — the phone then has no off-LAN path and falls
+    /// back to the CloudKit-only (read-only-cadence) mirror.
+    public let peerFallbackHost: String?
+
     public init(publishedAt: Date, deviceName: String,
                 fiveHour: WindowMirror, sevenDay: WindowMirror, sevenDaySonnet: WindowMirror,
                 weeklyTokens: Int, weeklyCostEUR: Double, savedTokensThisWeek: Int,
                 sessionCount: Int, tabs: [TabMirror],
                 peerPairingSecret: String? = nil,
+                peerFallbackHost: String? = nil,
                 schemaVersion: Int = ThrottleMirrorSnapshot.currentSchemaVersion) {
         self.schemaVersion = schemaVersion
         self.publishedAt = publishedAt
@@ -97,6 +105,7 @@ public struct ThrottleMirrorSnapshot: Codable, Sendable, Equatable {
         self.sessionCount = sessionCount
         self.tabs = tabs
         self.peerPairingSecret = peerPairingSecret
+        self.peerFallbackHost = peerFallbackHost
     }
 
     // MARK: Binding window (the "worst" of 5h/7d) — mirrors the Mac's rule.
