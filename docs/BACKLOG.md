@@ -180,6 +180,21 @@ Current shipped version: **3.2.49** (build 149) — released + live on lorislab.
       Autopilot already archives stale/orphaned memory — this would be the sibling
       check for "memory that's still live but the index itself overflowed."
       Needs scoping before building (UI: warn vs. auto-segment into topic files).
+- [ ] **Session Offload with context transfer (full-copy + resume)** — premise
+      VERIFIED live 2026-07-12: copied a session JSONL into
+      `~/.claude/projects/<encoded-new-cwd>/` and `claude --resume <id>` from that
+      different cwd recovered the full context (old internal cwd fields don't
+      break resume). Closes the offload design gap: today "send to server" spawns
+      a FRESH claude (context rebuild = 10–20 turns / 15–30 min of token burn,
+      contradicting the wedge). Recipe: Mac copies the session JSONL to the box
+      at `~/.claude/projects/<encoding of remote cwd>/` (scp emitted-script style,
+      app never SSHes → emit the copy command for the user, or do it via the
+      agent's HTTP API with an upload route), then `POST /sessions` with the
+      existing `resume` param (`EdgeAgentService.start` already passes it;
+      `throttle-agent.mjs` already launches `claude --resume`). Constraint per
+      `throttle-dag-fork-deferred`: FULL copy of the JSONL only, never truncate —
+      truncation corrupts the session chain. Single-session offload stays; no
+      mass offload (complexity, doesn't serve the wedge).
 
 ## Designed → verdict NO / defer (don't build unless asked)
 - **Keep-alive cache pings** — verdict: don't ship (spend + ToS + cap pressure).
