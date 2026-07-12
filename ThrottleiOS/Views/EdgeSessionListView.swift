@@ -8,6 +8,7 @@ import ThrottleShared
 struct EdgeSessionListView: View {
     @State private var svc = EdgeSessionsService.shared
     @State private var showSettings = false
+    @State private var showNewSession = false
 
     var body: some View {
         NavigationStack {
@@ -19,17 +20,48 @@ struct EdgeSessionListView: View {
                         Text("Enter the host and token from your Mac's Edge Agent sheet.")
                     } actions: {
                         Button("Configure") { showSettings = true }
+                            .buttonStyle(.borderedProminent)
                     }
                 } else if svc.sessions.isEmpty {
-                    ContentUnavailableView("No remote sessions",
-                        systemImage: "terminal",
-                        description: Text("Start a session from the Mac cockpit to see it here."))
+                    ContentUnavailableView {
+                        Label("No remote sessions", systemImage: "terminal")
+                    } description: {
+                        Text("Start one here, or offload a session from the Mac cockpit.")
+                    } actions: {
+                        Button("New session") { showNewSession = true }
+                            .buttonStyle(.borderedProminent)
+                    }
                 } else {
-                    List(svc.sessions) { s in
-                        NavigationLink {
-                            EdgeTerminalScreen(session: s)
-                        } label: {
-                            EdgeSessionRow(session: s)
+                    List {
+                        if let status = svc.actionStatus {
+                            Text(status).font(.caption).foregroundStyle(.secondary)
+                                .listRowSeparator(.hidden)
+                        }
+                        ForEach(svc.sessions) { s in
+                            NavigationLink {
+                                EdgeTerminalScreen(session: s)
+                            } label: {
+                                EdgeSessionRow(session: s)
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    Haptics.tap(.warning)
+                                    Task { await svc.act(s.id, "stop") }
+                                } label: { Label("Stop", systemImage: "stop.fill") }
+                                if s.state == "paused" {
+                                    Button {
+                                        Haptics.tap(.success)
+                                        Task { await svc.act(s.id, "resume") }
+                                    } label: { Label("Resume", systemImage: "play.fill") }
+                                        .tint(MirrorUI.ok)
+                                } else {
+                                    Button {
+                                        Haptics.tap(.success)
+                                        Task { await svc.act(s.id, "pause") }
+                                    } label: { Label("Pause", systemImage: "pause.fill") }
+                                        .tint(MirrorUI.warn)
+                                }
+                            }
                         }
                     }
                     .listStyle(.plain)
@@ -37,14 +69,77 @@ struct EdgeSessionListView: View {
             }
             .navigationTitle("Edge Sessions")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button { showSettings = true } label: { Image(systemName: "gearshape") }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showNewSession = true } label: { Image(systemName: "plus") }
+                        .disabled(!svc.isConfigured)
                 }
             }
             .refreshable { await svc.refresh() }
             .task { svc.startPolling() }
             .onDisappear { svc.stopPolling() }
             .sheet(isPresented: $showSettings) { EdgeAgentSettingsSheet(svc: svc) }
+            .sheet(isPresented: $showNewSession) { NewEdgeSessionSheet(svc: svc) }
+        }
+    }
+}
+
+/// Start (or resume) a remote session. The optional resume id is the iOS half of
+/// "offload with context" — resume a transcript the box already has (e.g. one the
+/// Mac uploaded) rather than starting cold.
+private struct NewEdgeSessionSheet: View {
+    @Bindable var svc: EdgeSessionsService
+    @Environment(\.dismiss) private var dismiss
+    @State private var cwd = ""
+    @State private var resumeId = ""
+    @State private var busy = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Working directory (e.g. /root/projects/app)", text: $cwd)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                } header: {
+                    Text("Where")
+                } footer: {
+                    Text("A path on the box. It's created if it doesn't exist yet.")
+                }
+                Section {
+                    TextField("Session id to resume (optional)", text: $resumeId)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .font(.system(.body, design: .monospaced))
+                } header: {
+                    Text("Resume with context")
+                } footer: {
+                    Text("Leave empty for a fresh session. Paste an id already offloaded to the box to resume its full conversation.")
+                }
+            }
+            .navigationTitle("New session")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(busy ? "Starting…" : "Start") {
+                        busy = true
+                        let r = resumeId.trimmingCharacters(in: .whitespaces)
+                        Task {
+                            let ok = await svc.start(cwd: cwd.trimmingCharacters(in: .whitespaces),
+                                                     resume: r.isEmpty ? nil : r)
+                            busy = false
+                            Haptics.tap(ok ? .success : .error)
+                            if ok { dismiss() }
+                        }
+                    }
+                    .disabled(busy || cwd.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
         }
     }
 }
@@ -52,12 +147,15 @@ struct EdgeSessionListView: View {
 private struct EdgeSessionRow: View {
     let session: EdgeAgentService.RemoteSession
 
+    private var working: Bool { session.state == "working" }
+
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: session.state == "idle" ? "moon.zzz" : "bolt.fill")
-                .foregroundStyle(session.state == "idle" ? Color.secondary : Color.orange)
+            Image(systemName: glyph)
+                .foregroundStyle(tint)
                 .font(.title3)
                 .frame(width: 28)
+                .symbolEffect(.pulse, isActive: working)
             VStack(alignment: .leading, spacing: 2) {
                 Text(session.project).font(.body.weight(.medium))
                 HStack(spacing: 6) {
@@ -69,10 +167,28 @@ private struct EdgeSessionRow: View {
             }
             Spacer()
             if let tokens = session.tokens {
-                Text(MirrorUI.compactTokens(tokens)).font(.caption).foregroundStyle(.secondary)
+                Text(MirrorUI.compactTokens(tokens))
+                    .font(.caption).monospacedDigit().foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(session.project), \(session.state)")
+    }
+
+    private var glyph: String {
+        switch session.state {
+        case "idle":   return "moon.zzz"
+        case "paused": return "pause.circle.fill"
+        default:        return "bolt.fill"
+        }
+    }
+    private var tint: Color {
+        switch session.state {
+        case "idle":   return .secondary
+        case "paused": return MirrorUI.warn
+        default:        return MirrorUI.ok
+        }
     }
 }
 

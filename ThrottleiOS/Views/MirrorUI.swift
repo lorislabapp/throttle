@@ -65,3 +65,16 @@ enum MirrorUI {
         }
     }
 }
+
+import UIKit
+
+/// Tiny haptics wrapper so action taps feel native without repeating generator
+/// boilerplate at every call site.
+enum Haptics {
+    static func tap(_ type: UINotificationFeedbackGenerator.FeedbackType) {
+        UINotificationFeedbackGenerator().notificationOccurred(type)
+    }
+    static func light() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+}

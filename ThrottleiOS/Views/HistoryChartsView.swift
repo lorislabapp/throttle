@@ -36,10 +36,13 @@ struct HistoryChartsView: View {
                             }
                             .pickerStyle(.segmented)
 
-                            chartSection("Binding utilization", unit: "%") { p in
+                            chartSection("Binding utilization", unit: "%",
+                                         tint: MirrorUI.accent, filled: true) { p in
                                 Double(p.bindingWindow.utilization)
                             }
-                            chartSection("Cost", unit: "€") { $0.weeklyCostEUR }
+                            chartSection("Cost", unit: "€", tint: MirrorUI.ok) { $0.weeklyCostEUR }
+                            chartSection("Tokens saved", unit: "",
+                                         tint: MirrorUI.warn) { Double($0.savedTokensThisWeek) }
                         }
                         .padding()
                     }
@@ -49,17 +52,45 @@ struct HistoryChartsView: View {
         }
     }
 
-    private func chartSection(_ title: String, unit: String,
+    private func chartSection(_ title: String, unit: String, tint: Color,
+                              filled: Bool = false,
                               _ value: @escaping (ThrottleMirrorSnapshot) -> Double) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.headline)
-            Chart(points, id: \.publishedAt) { p in
-                LineMark(x: .value("Time", p.publishedAt),
-                         y: .value(unit, value(p)))
-                .foregroundStyle(MirrorUI.accent)
-                .interpolationMethod(.monotone)
+        let vals = points.map(value)
+        let peak = vals.max() ?? 0
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title).font(.headline)
+                Spacer()
+                Text(unit.isEmpty ? MirrorUI.compactTokens(Int(peak))
+                                  : "\(unit)\(String(format: "%.0f", peak)) peak")
+                    .font(.caption).foregroundStyle(.secondary).monospacedDigit()
             }
-            .frame(height: 180)
+            Chart(points, id: \.publishedAt) { p in
+                if filled {
+                    AreaMark(x: .value("Time", p.publishedAt), y: .value(unit, value(p)))
+                        .foregroundStyle(.linearGradient(
+                            colors: [tint.opacity(0.28), tint.opacity(0.02)],
+                            startPoint: .top, endPoint: .bottom))
+                        .interpolationMethod(.monotone)
+                }
+                LineMark(x: .value("Time", p.publishedAt), y: .value(unit, value(p)))
+                    .foregroundStyle(tint)
+                    .interpolationMethod(.monotone)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+            }
+            .chartXAxis {
+                AxisMarks(preset: .aligned, values: .automatic(desiredCount: 4)) {
+                    AxisGridLine().foregroundStyle(.secondary.opacity(0.12))
+                    AxisValueLabel(format: .dateTime.hour().minute())
+                }
+            }
+            .chartYAxis {
+                AxisMarks(values: .automatic(desiredCount: 3)) {
+                    AxisGridLine().foregroundStyle(.secondary.opacity(0.12))
+                    AxisValueLabel()
+                }
+            }
+            .frame(height: 170)
         }
     }
 }

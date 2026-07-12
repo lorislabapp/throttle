@@ -60,4 +60,39 @@ final class EdgeSessionsService {
     func attach(id: String) async throws -> (port: Int, path: String) {
         try await EdgeAgentService.attach(baseURL: baseURL, token: token, id: id)
     }
+
+    /// Transient status line surfaced by the Edge UI after an action.
+    private(set) var actionStatus: String?
+
+    /// Start a remote session on the agent. `resume` (a session id already present on
+    /// the box — e.g. one the Mac offloaded with its transcript) resumes that
+    /// conversation instead of a fresh one: the iOS half of "offload with context".
+    /// The transcript UPLOAD itself stays Mac-origin (that's where the JSONL lives);
+    /// here we only ask the box to resume an id it already has.
+    @discardableResult
+    func start(cwd: String, resume: String? = nil) async -> Bool {
+        guard isConfigured, !cwd.isEmpty else { return false }
+        actionStatus = resume == nil ? "Starting session…" : "Resuming \(resume!.prefix(8))…"
+        do {
+            _ = try await EdgeAgentService.start(baseURL: baseURL, token: token,
+                                                 project: nil, cwd: cwd, resume: resume)
+            actionStatus = nil
+            await refresh()
+            return true
+        } catch {
+            actionStatus = "Start failed: \(error.localizedDescription)"
+            return false
+        }
+    }
+
+    /// Coarse lifecycle: pause / resume / stop a running session.
+    func act(_ id: String, _ action: String) async {
+        guard isConfigured else { return }
+        do {
+            try await EdgeAgentService.action(baseURL: baseURL, token: token, id: id, action: action)
+            await refresh()
+        } catch {
+            actionStatus = "\(action.capitalized) failed: \(error.localizedDescription)"
+        }
+    }
 }

@@ -31,6 +31,8 @@ struct MeterView: View {
                 .font(.system(size: 64, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(color)
+                .contentTransition(.numericText(value: Double(window.utilization)))
+                .animation(.snappy, value: window.utilization)
             Text(label.uppercased())
                 .font(.caption).fontWeight(.semibold)
                 .foregroundStyle(.secondary)
@@ -41,6 +43,9 @@ struct MeterView: View {
                     .foregroundStyle(.tertiary)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label)")
+        .accessibilityValue("\(window.utilization) percent")
     }
 }
 
