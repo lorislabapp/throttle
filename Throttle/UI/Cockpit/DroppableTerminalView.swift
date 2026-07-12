@@ -116,13 +116,13 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         // Lets us prove what byte sequence auto-confirms a claude question prompt on
         // tab-switch / first keypress (the "auto-validate first answer" bug).
         Self.logPtyInput(data)
-        MainActor.assumeIsolated {
-            onActivity?()
+        DispatchQueue.main.async {
+            self.onActivity?()
             // Typing means the user wants the live prompt — drop any output hold so
             // the echoed input isn't swallowed and the session looks frozen.
-            if selecting || holdForSelection || scrolledUpByUser {
-                selecting = false; holdForSelection = false; scrolledUpByUser = false
-                flushPending()
+            if self.selecting || self.holdForSelection || self.scrolledUpByUser {
+                self.selecting = false; self.holdForSelection = false; self.scrolledUpByUser = false
+                self.flushPending()
             }
         }
         super.send(source: source, data: data)
@@ -205,7 +205,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     private func installSelectionMonitor() {
         selectionMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp, .scrollWheel]) { [weak self] event in
             guard let self else { return event }
-            MainActor.assumeIsolated {
+            DispatchQueue.main.async {
                 switch event.type {
                 case .leftMouseDown:
                     // A fresh click abandons any prior selection → stop holding for
@@ -224,9 +224,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
                     // After SwiftTerm applies the scroll, re-evaluate: back at the
                     // bottom → stop holding and flush what streamed while reading.
                     DispatchQueue.main.async {
-                        MainActor.assumeIsolated {
-                            if self.atLiveBottom { self.scrolledUpByUser = false; self.flushIfReady() }
-                        }
+                        if self.atLiveBottom { self.scrolledUpByUser = false; self.flushIfReady() }
                     }
                 default: break
                 }
@@ -276,7 +274,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     private func scheduleDetect() {
         detectWork?.cancel()
         let work = DispatchWorkItem { [weak self] in
-            MainActor.assumeIsolated { self?.detect() }
+            self?.detect()
         }
         detectWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.55, execute: work)
