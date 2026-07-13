@@ -804,7 +804,7 @@ struct MultiCockpitRoot: View {
 
     private func missionCard(_ s: CockpitTab) -> some View {
         let active = s.id == model.active?.id
-        return Button { model.wake(s.id); model.viewMode = .tabs } label: {
+        return Button { model.wake(s.id); model.viewMode = .rail } label: {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
                     stateDot(s).help(stateDotHelp(s))
@@ -910,7 +910,7 @@ struct MultiCockpitRoot: View {
     private func open(_ name: String, _ cwd: String) {
         if model.gated, !confirmOpenUnderPressure() { return }
         model.newSession(projectName: name, cwd: cwd)
-        if model.viewMode == .mission { model.viewMode = .tabs }
+        if model.viewMode == .mission { model.viewMode = .rail }
     }
 
     /// Saturation is advisory, not a hard block — it's the user's Mac. Warn

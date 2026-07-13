@@ -294,7 +294,7 @@ final class MultiCockpitModel {
     static let shared = MultiCockpitModel()
 
     enum ViewMode: String, CaseIterable, Identifiable {
-        case dashboard, tabs, rail, mission
+        case dashboard, rail, tabs, mission
         var id: String { rawValue }
         var label: String {
             switch self {
@@ -676,7 +676,7 @@ final class MultiCockpitModel {
                 Task { @MainActor in
                     guard let self, self.sessions.contains(where: { $0.id == id }) else { return }
                     self.activeID = id
-                    if self.viewMode == .mission { self.viewMode = .tabs }
+                    if self.viewMode == .mission { self.viewMode = .rail }
                 }
             }
         }
