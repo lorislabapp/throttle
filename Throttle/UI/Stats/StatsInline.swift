@@ -46,6 +46,8 @@ struct StatsInline: View {
                     }
                     hairline
                     periodStrip
+                    hairline
+                    WeekComparisonView().padding(.horizontal, 14).padding(.vertical, 10)
                     if appState.isPro {
                         hairline
                         secLabel("Activity · last 7 days")

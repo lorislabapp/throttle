@@ -586,6 +586,97 @@ enum StatsDataService {
         return totalUsd * usdToEur
     }
 
+    /// Same model-weighted EUR cost as `extrapolatedCostEUR`, but for an arbitrary
+    /// hours-ago window (`from` newer, `to` older) — lets us compare this week vs the
+    /// week before with real numbers, never a fabricated delta.
+    static func extrapolatedCostEURBetween(in db: Database, from hoursAgoStart: Int,
+                                           to hoursAgoEnd: Int, now: Date = Date()) throws -> Double {
+        precondition(hoursAgoEnd > hoursAgoStart, "end must be older than start")
+        let nowEpoch = Int64(now.timeIntervalSince1970)
+        let endTs = nowEpoch - Int64(hoursAgoStart) * 3600
+        let startTs = nowEpoch - Int64(hoursAgoEnd) * 3600
+        let sql = """
+            SELECT
+                CASE
+                    WHEN lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%' THEN 'fable'
+                    WHEN lower(model) LIKE '%opus%'   THEN 'opus'
+                    WHEN lower(model) LIKE '%sonnet%' THEN 'sonnet'
+                    WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
+                    ELSE 'other'
+                END AS bucket,
+                SUM(input_tokens) AS i, SUM(output_tokens) AS o,
+                SUM(cache_create) AS cc, SUM(cache_read) AS cr
+            FROM usage_events
+            WHERE timestamp >= ? AND timestamp < ?
+            GROUP BY bucket
+            """
+        let rows = try Row.fetchAll(db, sql: sql, arguments: [startTs, endTs])
+        var totalUsd = 0.0
+        for row in rows {
+            let bucket: String = row["bucket"] ?? ""
+            let i: Int = row["i"] ?? 0, o: Int = row["o"] ?? 0
+            let cc: Int = row["cc"] ?? 0, cr: Int = row["cr"] ?? 0
+            let (inRate, outRate): (Double, Double)
+            switch bucket {
+            case "fable":  (inRate, outRate) = (10, 50)
+            case "opus":   (inRate, outRate) = (5, 25)
+            case "sonnet": (inRate, outRate) = (3, 15)
+            case "haiku":  (inRate, outRate) = (1, 5)
+            default:       (inRate, outRate) = (3, 15)
+            }
+            let m = 1_000_000.0
+            totalUsd += Double(i)/m*inRate + Double(o)/m*outRate
+                      + Double(cc)/m*inRate*1.25 + Double(cr)/m*inRate*0.10
+        }
+        return totalUsd * 0.93
+    }
+
+    /// This-week-vs-last-week comparison: exact weighted tokens + model-weighted EUR
+    /// for the last 7 days and the 7 days before. Feeds the dashboard's WoW strip.
+    struct WeekOverWeek: Sendable {
+        let tokensThis: Int, tokensLast: Int
+        let costThis: Double, costLast: Double
+        /// Time from the weekly window start until the weekly cap first hit 100%,
+        /// this week / last week (nil = cap not reached in that window — headroom left).
+        let capReachSecondsThis: Int64?
+        let capReachSecondsLast: Int64?
+    }
+
+    static func weekOverWeek(in db: Database, now: Date = Date()) throws -> WeekOverWeek {
+        WeekOverWeek(
+            tokensThis: try tokensBetween(in: db, from: 0, to: 168, now: now),
+            tokensLast: try tokensBetween(in: db, from: 168, to: 336, now: now),
+            costThis: try extrapolatedCostEURBetween(in: db, from: 0, to: 168, now: now),
+            costLast: try extrapolatedCostEURBetween(in: db, from: 168, to: 336, now: now),
+            capReachSecondsThis: try capReachSeconds(in: db, windowStartHoursAgo: 168, windowEndHoursAgo: 0, now: now),
+            capReachSecondsLast: try capReachSeconds(in: db, windowStartHoursAgo: 336, windowEndHoursAgo: 168, now: now))
+    }
+
+    /// Seconds from a weekly window's start until the `weekly_all` window first hit
+    /// 100% (used ≥ cap), or nil if it never reached the cap in that window. Reads the
+    /// recorded snapshot time series — no extrapolation.
+    static func capReachSeconds(in db: Database, windowStartHoursAgo: Int,
+                                windowEndHoursAgo: Int, now: Date = Date()) throws -> Int64? {
+        let nowEpoch = Int64(now.timeIntervalSince1970)
+        let startTs = nowEpoch - Int64(windowStartHoursAgo) * 3600
+        let endTs = nowEpoch - Int64(windowEndHoursAgo) * 3600
+        let sql = """
+            SELECT MIN(timestamp_bucket) AS t
+            FROM usage_snapshots
+            WHERE window_kind = 'weekly_all' AND timestamp_bucket >= ? AND timestamp_bucket < ?
+              AND cap_tokens IS NOT NULL AND cap_tokens > 0 AND used_tokens >= cap_tokens
+            """
+        guard let row = try Row.fetchOne(db, sql: sql, arguments: [startTs, endTs]),
+              let hit: Int64 = row["t"] else { return nil }
+        return max(0, hit - startTs)
+    }
+
+    /// The single busiest (day-of-week, hour) slot in a range and its weighted tokens,
+    /// for the "when you burn" highlight. nil if there's no usage.
+    static func peakSlot(in db: Database, range: Range, now: Date = Date()) throws -> HeatCell? {
+        try heatmap(in: db, range: range, now: now).max { $0.weightedTokens < $1.weightedTokens }
+    }
+
     /// Recoverable Miss Cost — EUR you burned re-writing a prompt cache that SHOULD
     /// have still been warm. Within a session, a large `cache_create` <5 min after
     /// the previous turn means the cached prefix got busted (a changing prefix, a

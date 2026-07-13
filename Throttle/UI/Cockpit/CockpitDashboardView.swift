@@ -30,6 +30,7 @@ struct CockpitDashboardView: View {
             VStack(spacing: 14) {
                 OSIssueBanner()
                 claudePanel
+                WeekComparisonView()
                 machinePanel
                 SavingsLedgerView()
                     .background(Color.primary.opacity(0.025), in: RoundedRectangle(cornerRadius: 12))
