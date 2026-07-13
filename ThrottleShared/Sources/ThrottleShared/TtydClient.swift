@@ -21,12 +21,25 @@ public final class TtydClient: @unchecked Sendable {
 
     /// Fired with each decoded output chunk (PTY bytes, ready to feed a terminal emulator).
     public var onOutput: (@Sendable ([UInt8]) -> Void)?
-    /// Fired when the socket opens/closes.
+    /// Fired when the socket opens/closes. A `false` while `reconnecting` is true
+    /// means "dropped, retrying" rather than "closed for good".
     public var onConnected: (@Sendable (Bool) -> Void)?
+    /// Fired when an auto-reconnect attempt begins (UI can show "reconnecting…").
+    public var onReconnecting: (@Sendable () -> Void)?
+
+    // Stored so a dropped socket can be re-established without the caller re-driving
+    // the attach handshake.
+    private struct Params { let host: String; let port: Int; let path: String; let token: String; let cols: Int; let rows: Int; let secure: Bool }
+    private var params: Params?
+    private var closedByUser = false
+    private var retry = 0
+    private var pingItem: DispatchWorkItem?
 
     public init() {
         session = URLSession(configuration: .ephemeral)
     }
+
+    deinit { task?.cancel(with: .goingAway, reason: nil) }
 
     /// The edge agent always spawns ttyd with `-c throttle:<token>` (see
     /// `throttle-agent.mjs`) — this is ttyd's fixed HTTP Basic Auth username.
@@ -45,6 +58,8 @@ public final class TtydClient: @unchecked Sendable {
     public func connect(host: String, port: Int, path: String = "/ws", token: String,
                         cols: Int, rows: Int, secure: Bool = false) {
         q.async { [self] in
+            closedByUser = false
+            params = Params(host: host, port: port, path: path, token: token, cols: cols, rows: rows, secure: secure)
             guard task == nil else { return }
             var comps = URLComponents()
             comps.scheme = secure ? "wss" : "ws"
@@ -67,11 +82,46 @@ public final class TtydClient: @unchecked Sendable {
             t.send(.data(data)) { [weak self] error in
                 guard let self else { return }
                 self.q.async {
-                    if error != nil { self.teardown(); return }
+                    if error != nil { self.dropped(); return }
+                    self.retry = 0
                     self.onConnected?(true)
+                    self.schedulePing()
                     self.receiveLoop()
                 }
             }
+        }
+    }
+
+    /// 20s app-level ping so a half-open socket (NAT drop, sleep) is detected
+    /// promptly instead of hanging until the next read fails.
+    private func schedulePing() {
+        pingItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            guard let self, let t = self.task else { return }
+            t.sendPing { [weak self] err in
+                guard let self else { return }
+                self.q.async { if err != nil { self.dropped() } else { self.schedulePing() } }
+            }
+        }
+        pingItem = item
+        q.asyncAfter(deadline: .now() + 20, execute: item)
+    }
+
+    /// Socket died unexpectedly → notify (still "not connected") and, unless the
+    /// caller closed it, reconnect with capped exponential backoff.
+    private func dropped() {
+        pingItem?.cancel(); pingItem = nil
+        task?.cancel(with: .goingAway, reason: nil)
+        task = nil
+        onConnected?(false)
+        guard !closedByUser, let p = params else { return }
+        retry = min(retry + 1, 6)
+        let delay = min(pow(2.0, Double(retry)), 30) // 2,4,8,16,30,30…
+        onReconnecting?()
+        q.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, !self.closedByUser else { return }
+            self.connect(host: p.host, port: p.port, path: p.path, token: p.token,
+                         cols: p.cols, rows: p.rows, secure: p.secure)
         }
     }
 
@@ -95,11 +145,12 @@ public final class TtydClient: @unchecked Sendable {
         }
     }
 
-    public func disconnect() { q.async { [self] in teardown() } }
+    public func disconnect() { q.async { [self] in closedByUser = true; teardown() } }
 
     // MARK: - private (all on q)
 
     private func teardown() {
+        pingItem?.cancel(); pingItem = nil
         task?.cancel(with: .goingAway, reason: nil)
         task = nil
         onConnected?(false)
@@ -111,7 +162,7 @@ public final class TtydClient: @unchecked Sendable {
             self.q.async {
                 switch result {
                 case .failure:
-                    self.teardown()
+                    self.dropped()
                 case .success(let message):
                     if case .data(let d) = message { self.handle(d) }
                     // ttyd's output/title/prefs frames are always binary; a stray

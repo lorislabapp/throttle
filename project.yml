@@ -154,6 +154,17 @@ targets:
         NSLocalNetworkUsageDescription: "Throttle mirrors your Mac's live Claude Code usage over your local network for instant updates when both devices are on the same Wi-Fi. It falls back to iCloud otherwise."
         NSBonjourServices:
           - _throttle._tcp
+        # Face ID gates typing into a remote session. Without this key
+        # LAContext.evaluatePolicy is a deterministic crash on Face ID devices.
+        NSFaceIDUsageDescription: "Throttle uses Face ID to unlock typing into a remote session, so the write path stays behind your device's biometrics."
+        # The edge agent is plain HTTP/ws at a user-configured LAN/Tailscale address
+        # (bearer token + Tailscale is the boundary, not TLS). Tailscale's 100.64/10
+        # CGNAT range is NOT covered by NSAllowsLocalNetworking, so the whole Edge tab
+        # is dead on device without this. Not App Store's favourite, but this app talks
+        # only to the user's own box on their own tailnet.
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+          NSAllowsLocalNetworking: true
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -166,7 +177,7 @@ targets:
         # all-4 orientations + iPad layouts not designed. Bump to "1,2" later.
         TARGETED_DEVICE_FAMILY: "1"
         MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "10"
+        CURRENT_PROJECT_VERSION: "11"
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         # Manual signing — no Apple ID in Xcode on the build machine; profiles
         # minted via ASC API (scripts/provision-ios-appstore.mjs), App Store type.
@@ -202,7 +213,7 @@ targets:
         # Pin to the iOS app's version — else the appex inherits the project-level
         # Mac version (3.2.52/152) and Apple rejects with ITMS-90473 mismatch.
         MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "10"
+        CURRENT_PROJECT_VERSION: "11"
         CODE_SIGN_STYLE: Manual
         DEVELOPMENT_TEAM: TDV6D5L785
         CODE_SIGN_IDENTITY: "Apple Distribution"

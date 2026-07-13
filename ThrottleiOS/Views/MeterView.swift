@@ -7,6 +7,7 @@ struct MeterView: View {
     let window: WindowMirror
     let label: String
     var now: Date = Date()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var fraction: Double { min(1, Double(window.utilization) / 100) }
     private var color: Color { MirrorUI.color(forUtilization: window.utilization) }
@@ -19,10 +20,11 @@ struct MeterView: View {
                 .trim(from: 0, to: fraction)
                 .stroke(color, style: StrokeStyle(lineWidth: 14, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .animation(.easeInOut(duration: 0.3), value: fraction)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: fraction)
             centerLabel
         }
-        .frame(width: 220, height: 220)
+        .frame(maxWidth: 220)
+        .aspectRatio(1, contentMode: .fit)
     }
 
     private var centerLabel: some View {
@@ -31,8 +33,9 @@ struct MeterView: View {
                 .font(.system(size: 64, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(color)
-                .contentTransition(.numericText(value: Double(window.utilization)))
-                .animation(.snappy, value: window.utilization)
+                .contentTransition(reduceMotion ? .identity : .numericText(value: Double(window.utilization)))
+                .animation(reduceMotion ? nil : .snappy, value: window.utilization)
+                .minimumScaleFactor(0.6)
             Text(label.uppercased())
                 .font(.caption).fontWeight(.semibold)
                 .foregroundStyle(.secondary)

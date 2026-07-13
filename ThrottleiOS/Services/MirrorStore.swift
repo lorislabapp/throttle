@@ -29,6 +29,8 @@ final class MirrorStore {
 
     /// Accept a freshly fetched snapshot. Ignores stale/duplicate (older or same
     /// publish time), appends to history, updates the widget.
+    private var historyFlush: Task<Void, Never>?
+
     func ingest(_ snap: ThrottleMirrorSnapshot) {
         if let cur = latest, snap.publishedAt <= cur.publishedAt { return }
         latest = snap
@@ -36,20 +38,45 @@ final class MirrorStore {
         if history.count > Self.historyCap {
             history.removeFirst(history.count - Self.historyCap)
         }
-        persist(snap)
+        persistLatest(snap)          // tiny blob, hot path — the widget needs it now
+        scheduleHistoryFlush()       // large array — off-main, debounced
         WidgetCenter.shared.reloadAllTimelines()
         ThresholdNotifier.shared.evaluate(snap)
     }
 
-    private func persist(_ snap: ThrottleMirrorSnapshot) {
-        // Latest snapshot for the widget (single small blob).
+    /// Latest snapshot only — a single small blob, cheap enough to write synchronously
+    /// so the widget always sees the freshest value.
+    private func persistLatest(_ snap: ThrottleMirrorSnapshot) {
         if let data = try? snap.encoded() {
             defaults.set(data, forKey: MirrorStorage.latestSnapshotKey)
         }
-        // History (capped) for on-device charts.
-        if let data = try? JSONEncoder.iso.encode(history) {
-            defaults.set(data, forKey: Self.historyKey)
+    }
+
+    /// Encoding the whole ≤1500-item history to JSON on every snapshot, on the main
+    /// actor, was an O(n) write per network event (the LAN path delivers sub-second).
+    /// Debounce to 3s and encode off-main; the on-device charts don't need it instant.
+    private func scheduleHistoryFlush() {
+        historyFlush?.cancel()
+        let snapshot = history
+        historyFlush = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard !Task.isCancelled else { return }
+            let data = await Task.detached { try? JSONEncoder.iso.encode(snapshot) }.value
+            guard let data, let self else { return }
+            self.defaults.set(data, forKey: Self.historyKey)
         }
+    }
+
+    /// Wipe all mirrored data — called when the iCloud identity changes so one
+    /// person's usage + 1500-entry history (also read by the widget) never lingers
+    /// in the shared App Group for a different iCloud user on the same device.
+    func scrub() {
+        historyFlush?.cancel()
+        latest = nil
+        history = []
+        defaults.removeObject(forKey: MirrorStorage.latestSnapshotKey)
+        defaults.removeObject(forKey: Self.historyKey)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private func loadHistory() -> [ThrottleMirrorSnapshot] {

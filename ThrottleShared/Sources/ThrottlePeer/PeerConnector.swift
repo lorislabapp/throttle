@@ -27,6 +27,9 @@ public final class PeerConnector: @unchecked Sendable {
     private var fallbackHost: String?
     public func setFallbackHost(_ host: String?) { q.async { [self] in fallbackHost = host } }
 
+    private var stopped = false
+    private var retry = 0
+
     /// Fired with each received snapshot payload (already `encoded()`).
     public var onSnapshot: (@Sendable (Data) -> Void)?
     /// Fired when the peer connection comes up / goes down.
@@ -61,33 +64,56 @@ public final class PeerConnector: @unchecked Sendable {
     /// Start browsing. Never throws — no peer found just means the fallback is used.
     public func start() {
         q.async { [self] in
-            guard browser == nil else { return }
-            let params = NWParameters()
-            params.includePeerToPeer = true
-            let b = NWBrowser(for: .bonjour(type: PeerPairing.serviceType, domain: nil), using: params)
-            b.browseResultsChangedHandler = { [weak self] results, _ in
-                guard let self else { return }
-                // Connect to the first advertised Mac we see (single-Mac v1).
-                if self.conn == nil, let first = results.first {
-                    self.connect(to: first.endpoint)
-                }
-            }
-            b.start(queue: q)
-            browser = b
+            stopped = false
+            retry = 0
+            beginDiscovery()
+        }
+    }
 
-            // If Bonjour turns up no peer on the LAN within a short window, try the
-            // configured tailnet host (off-LAN path). Same TLS-PSK either way.
-            q.asyncAfter(deadline: .now() + 3) { [weak self] in
-                guard let self, self.conn == nil, let host = self.fallbackHost else { return }
-                let ep = NWEndpoint.hostPort(host: NWEndpoint.Host(host),
-                                             port: NWEndpoint.Port(rawValue: PeerPairing.fallbackPort)!)
-                self.connect(to: ep)
+    /// (Re)start Bonjour discovery + the off-LAN fallback probe. Idempotent on the
+    /// browser; safe to call on every reconnect.
+    private func beginDiscovery() {
+        guard !stopped else { return }
+        browser?.cancel()
+        let params = NWParameters()
+        params.includePeerToPeer = true
+        let b = NWBrowser(for: .bonjour(type: PeerPairing.serviceType, domain: nil), using: params)
+        b.browseResultsChangedHandler = { [weak self] results, _ in
+            guard let self else { return }
+            // Connect to the first advertised Mac we see (single-Mac v1).
+            if self.conn == nil, let first = results.first {
+                self.connect(to: first.endpoint)
             }
+        }
+        b.start(queue: q)
+        browser = b
+
+        // If Bonjour turns up no peer on the LAN within a short window, try the
+        // configured tailnet host (off-LAN path). Same TLS-PSK either way.
+        q.asyncAfter(deadline: .now() + 3) { [weak self] in
+            guard let self, self.conn == nil, let host = self.fallbackHost else { return }
+            let ep = NWEndpoint.hostPort(host: NWEndpoint.Host(host),
+                                         port: NWEndpoint.Port(rawValue: PeerPairing.fallbackPort)!)
+            self.connect(to: ep)
+        }
+    }
+
+    /// The link dropped (not an explicit stop) → reconnect with capped backoff. A
+    /// still-advertised Mac won't re-fire the browse handler, so this re-arms
+    /// discovery + the fallback probe itself rather than waiting forever.
+    private func scheduleReconnect() {
+        guard !stopped, conn == nil else { return }
+        retry = min(retry + 1, 5)
+        let delay = min(pow(2.0, Double(retry)), 20) // 2,4,8,16,20…
+        q.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, !self.stopped, self.conn == nil else { return }
+            self.beginDiscovery()
         }
     }
 
     public func stop() {
         q.async { [self] in
+            stopped = true
             browser?.cancel(); browser = nil
             conn?.cancel(); conn = nil
             buffer.removeAll()
@@ -102,6 +128,7 @@ public final class PeerConnector: @unchecked Sendable {
             guard let self else { return }
             switch state {
             case .ready:
+                self.retry = 0
                 self.onConnected?(true)
                 self.seq &+= 1
                 let hello = PeerMessage(kind: .hello, seq: self.seq,
@@ -113,6 +140,7 @@ public final class PeerConnector: @unchecked Sendable {
                 self.onConnected?(false)
                 self.conn = nil
                 self.buffer.removeAll()
+                self.scheduleReconnect()
             default: break
             }
         }
@@ -129,6 +157,7 @@ public final class PeerConnector: @unchecked Sendable {
             }
             if isComplete || error != nil {
                 self.conn?.cancel(); self.conn = nil; self.onConnected?(false)
+                self.scheduleReconnect()
                 return
             }
             self.receiveLoop()

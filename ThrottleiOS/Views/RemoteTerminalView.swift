@@ -12,9 +12,10 @@ import SwiftTerm
 struct RemoteTerminalView: UIViewRepresentable {
     /// The Mac cockpit tab id (`TabMirror.id`, a `CockpitTab` UUID string).
     let sessionId: String
-    var keySender: TerminalKeySender? = nil
+    let lockState: TerminalLockState
+    let keySender: TerminalKeySender
 
-    func makeCoordinator() -> Coordinator { Coordinator() }
+    func makeCoordinator() -> Coordinator { Coordinator(lockState: lockState) }
 
     func makeUIView(context: Context) -> TerminalView {
         let tv = TerminalView(frame: .zero,
@@ -22,7 +23,13 @@ struct RemoteTerminalView: UIViewRepresentable {
         tv.terminalDelegate = context.coordinator
         context.coordinator.terminal = tv
 
-        keySender?.send = { bytes in PeerClient.shared.sendTerminalInput(bytes) }
+        // Accessory-bar keys go through the same lock gate as typed input — the LAN
+        // terminal types straight into the live Mac session, the most sensitive path.
+        keySender.send = { [lockState] bytes in
+            guard lockState.unlocked else { return }
+            lockState.noteActivity()
+            PeerClient.shared.sendTerminalInput(bytes)
+        }
 
         PeerClient.shared.attachTerminal(
             tabID: sessionId,
@@ -34,11 +41,17 @@ struct RemoteTerminalView: UIViewRepresentable {
                 Task { @MainActor in coord?.terminal?.getTerminal().resize(cols: cols, rows: rows) }
             })
 
-        DispatchQueue.main.async { _ = tv.becomeFirstResponder() }
         return tv
     }
 
-    func updateUIView(_ uiView: TerminalView, context: Context) {}
+    // Focus (raise the keyboard) only once the write path is unlocked.
+    func updateUIView(_ uiView: TerminalView, context: Context) {
+        if lockState.unlocked, !uiView.isFirstResponder {
+            DispatchQueue.main.async { _ = uiView.becomeFirstResponder() }
+        } else if !lockState.unlocked, uiView.isFirstResponder {
+            DispatchQueue.main.async { _ = uiView.resignFirstResponder() }
+        }
+    }
 
     static func dismantleUIView(_ uiView: TerminalView, coordinator: Coordinator) {
         PeerClient.shared.detachTerminal()
@@ -50,9 +63,14 @@ struct RemoteTerminalView: UIViewRepresentable {
     @MainActor
     final class Coordinator: NSObject, @preconcurrency TerminalViewDelegate {
         weak var terminal: TerminalView?
+        private let lockState: TerminalLockState
 
-        // User typed → ship the bytes to the Mac PTY.
+        init(lockState: TerminalLockState) { self.lockState = lockState }
+
+        // User typed → ship the bytes to the Mac PTY, but only while unlocked.
         func send(source: TerminalView, data: ArraySlice<UInt8>) {
+            guard lockState.unlocked else { return }
+            lockState.noteActivity()
             PeerClient.shared.sendTerminalInput(Array(data))
         }
         // Local geometry change (rotation / keyboard) → advise the Mac.
@@ -72,19 +90,25 @@ struct RemoteTerminalView: UIViewRepresentable {
     }
 }
 
-/// Full-screen host for a remote session terminal.
+/// Full-screen host for a remote session terminal. Uses the shared TerminalHost
+/// chrome (Face ID lock gate + connection overlay + key bar). The LAN terminal is
+/// read-only unless the peer link is actually connected — off-Wi-Fi it says so
+/// instead of silently swallowing keystrokes.
 struct RemoteTerminalScreen: View {
     let sessionId: String
     let title: String
+    @State private var lockState = TerminalLockState()
     @State private var keySender = TerminalKeySender()
+    @State private var connection = TerminalConnection()
+    private var peer = PeerClient.shared
 
     var body: some View {
-        VStack(spacing: 0) {
-            RemoteTerminalView(sessionId: sessionId, keySender: keySender)
-                .ignoresSafeArea(.container, edges: .bottom)
-            TerminalAccessoryBar(sender: keySender)
+        TerminalHost(title: title, lockState: lockState, keySender: keySender,
+                     connection: connection) {
+            RemoteTerminalView(sessionId: sessionId, lockState: lockState, keySender: keySender)
         }
-        .navigationTitle(title)
-        .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: peer.connected, initial: true) { _, up in
+            connection.state = up ? .live : .readOnly("Off your local network — viewing only. Open this on the same Wi-Fi as your Mac to type.")
+        }
     }
 }

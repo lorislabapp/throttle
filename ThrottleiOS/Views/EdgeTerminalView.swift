@@ -6,11 +6,16 @@ import ThrottleShared
 /// (`TtydClient`) rather than the LAN peer link `RemoteTerminalView` uses — a
 /// different wire protocol, same rendering approach. Output always flows; input is
 /// gated by `TerminalLockState` (starts locked, Face ID to unlock, auto re-lock
-/// after 5 min idle) per the non-negotiable write-unlock default.
+/// after 5 min idle) per the non-negotiable write-unlock default. Connection state
+/// is surfaced through `TerminalConnection` so a failed attach never leaves a blank
+/// terminal with no explanation.
 struct EdgeTerminalView: UIViewRepresentable {
     let session: EdgeAgentService.RemoteSession
     let lockState: TerminalLockState
-    var keySender: TerminalKeySender? = nil
+    let keySender: TerminalKeySender
+    let connection: TerminalConnection
+    /// Bumped by the screen to force a fresh attach on Retry.
+    var attempt: Int = 0
 
     func makeCoordinator() -> Coordinator { Coordinator(lockState: lockState) }
 
@@ -19,33 +24,61 @@ struct EdgeTerminalView: UIViewRepresentable {
                               font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular))
         tv.terminalDelegate = context.coordinator
         context.coordinator.terminal = tv
-
-        let svc = EdgeSessionsService.shared
-        let geometry = tv.getTerminal()
-        Task {
-            guard let (port, path) = try? await svc.attach(id: session.id) else { return }
-            let client = TtydClient()
-            client.onOutput = { [weak coord = context.coordinator] bytes in
-                Task { @MainActor in coord?.terminal?.feed(byteArray: bytes[...]) }
-            }
-            context.coordinator.client = client
-            // Accessory-bar keys go through the SAME lock gate as typed input.
-            keySender?.send = { [weak client, lockState] bytes in
-                guard lockState.unlocked else { return }
-                lockState.noteActivity()
-                client?.sendInput(bytes)
-            }
-            client.connect(host: svc.host, port: port, path: path, token: svc.token,
-                          cols: geometry.cols, rows: geometry.rows)
-        }
-
-        DispatchQueue.main.async { _ = tv.becomeFirstResponder() }
+        startAttach(context.coordinator, geometry: tv.getTerminal())
         return tv
     }
 
-    func updateUIView(_ uiView: TerminalView, context: Context) {}
+    private func startAttach(_ coord: Coordinator, geometry: Terminal) {
+        connection.state = .connecting
+        let svc = EdgeSessionsService.shared
+        let session = session, keySender = keySender, lockState = lockState, connection = connection
+        coord.attachTask?.cancel()
+        coord.attachTask = Task {
+            do {
+                let (port, path) = try await svc.attach(id: session.id)
+                if Task.isCancelled { return }
+                let client = TtydClient()
+                client.onOutput = { [weak coord] bytes in
+                    Task { @MainActor in coord?.terminal?.feed(byteArray: bytes[...]) }
+                }
+                client.onConnected = { ok in
+                    Task { @MainActor in connection.state = ok ? .live : connection.state }
+                }
+                client.onReconnecting = {
+                    Task { @MainActor in connection.state = .reconnecting }
+                }
+                coord.client = client
+                keySender.send = { [weak client] bytes in
+                    guard lockState.unlocked else { return }
+                    lockState.noteActivity()
+                    client?.sendInput(bytes)
+                }
+                client.connect(host: svc.host, port: port, path: path, token: svc.token,
+                               cols: geometry.cols, rows: geometry.rows)
+            } catch {
+                await MainActor.run {
+                    connection.state = .failed("Couldn't reach the session — check the box and your Tailscale connection.")
+                }
+            }
+        }
+    }
+
+    // Focus only after unlock; also re-drive the attach when `attempt` changes (Retry).
+    func updateUIView(_ uiView: TerminalView, context: Context) {
+        if context.coordinator.lastAttempt != attempt {
+            context.coordinator.lastAttempt = attempt
+            context.coordinator.client?.disconnect()
+            startAttach(context.coordinator, geometry: uiView.getTerminal())
+        }
+        if lockState.unlocked, !uiView.isFirstResponder {
+            DispatchQueue.main.async { _ = uiView.becomeFirstResponder() }
+        } else if !lockState.unlocked, uiView.isFirstResponder {
+            DispatchQueue.main.async { _ = uiView.resignFirstResponder() }
+        }
+    }
 
     static func dismantleUIView(_ uiView: TerminalView, coordinator: Coordinator) {
+        coordinator.attachTask?.cancel()
         coordinator.client?.disconnect()
     }
 
@@ -53,6 +86,8 @@ struct EdgeTerminalView: UIViewRepresentable {
     final class Coordinator: NSObject, @preconcurrency TerminalViewDelegate {
         weak var terminal: TerminalView?
         var client: TtydClient?
+        var attachTask: Task<Void, Never>?
+        var lastAttempt = 0
         private let lockState: TerminalLockState
 
         init(lockState: TerminalLockState) { self.lockState = lockState }
@@ -80,63 +115,19 @@ struct EdgeTerminalView: UIViewRepresentable {
     }
 }
 
-/// Full-screen host for an edge-agent session terminal, with the lock/unlock control.
+/// Full-screen host for an edge-agent session terminal.
 struct EdgeTerminalScreen: View {
     let session: EdgeAgentService.RemoteSession
     @State private var lockState = TerminalLockState()
     @State private var keySender = TerminalKeySender()
-    @State private var unlocking = false
+    @State private var connection = TerminalConnection()
+    @State private var attempt = 0
 
     var body: some View {
-        VStack(spacing: 0) {
-            if !lockState.unlocked {
-                lockBanner
-            }
-            EdgeTerminalView(session: session, lockState: lockState, keySender: keySender)
-                .ignoresSafeArea(.container, edges: .bottom)
-            TerminalAccessoryBar(sender: keySender)
-        }
-        .navigationTitle(session.project)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    unlock()
-                } label: {
-                    Image(systemName: lockState.unlocked ? "lock.open.fill" : "lock.fill")
-                        .foregroundStyle(lockState.unlocked ? MirrorUI.ok : MirrorUI.warn)
-                }
-                .disabled(unlocking || lockState.unlocked)
-            }
-        }
-        .onChange(of: lockState.unlocked) { _, unlocked in keySender.enabled = unlocked }
-    }
-
-    private var lockBanner: some View {
-        Button { unlock() } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "lock.fill")
-                Text("Read-only — tap to unlock typing with Face ID")
-                    .font(.footnote.weight(.medium))
-                Spacer()
-                if unlocking { ProgressView() }
-            }
-            .padding(.horizontal, 14).padding(.vertical, 9)
-            .frame(maxWidth: .infinity)
-            .background(MirrorUI.warn.opacity(0.15))
-            .foregroundStyle(MirrorUI.warn)
-        }
-        .buttonStyle(.plain)
-        .disabled(unlocking)
-    }
-
-    private func unlock() {
-        guard !lockState.unlocked, !unlocking else { return }
-        unlocking = true
-        Task {
-            let ok = await lockState.unlock()
-            unlocking = false
-            Haptics.tap(ok ? .success : .error)
+        TerminalHost(title: session.project, lockState: lockState, keySender: keySender,
+                     connection: connection, onRetry: { attempt += 1 }) {
+            EdgeTerminalView(session: session, lockState: lockState, keySender: keySender,
+                             connection: connection, attempt: attempt)
         }
     }
 }

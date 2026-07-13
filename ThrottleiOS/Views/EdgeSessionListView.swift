@@ -9,6 +9,7 @@ struct EdgeSessionListView: View {
     @State private var svc = EdgeSessionsService.shared
     @State private var showSettings = false
     @State private var showNewSession = false
+    @State private var stopTarget: EdgeAgentService.RemoteSession?
 
     var body: some View {
         NavigationStack {
@@ -33,6 +34,11 @@ struct EdgeSessionListView: View {
                     }
                 } else {
                     List {
+                        if svc.reachability == .unreachable {
+                            Label("Agent unreachable — showing last known state", systemImage: "wifi.exclamationmark")
+                                .font(.caption).foregroundStyle(MirrorUI.warn)
+                                .listRowSeparator(.hidden)
+                        }
                         if let status = svc.actionStatus {
                             Text(status).font(.caption).foregroundStyle(.secondary)
                                 .listRowSeparator(.hidden)
@@ -45,8 +51,14 @@ struct EdgeSessionListView: View {
                             }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
-                                    Haptics.tap(.warning)
-                                    Task { await svc.act(s.id, "stop") }
+                                    // A working session has an in-flight turn — confirm
+                                    // before killing it. Idle/paused stop silently.
+                                    if s.state == "working" {
+                                        stopTarget = s
+                                    } else {
+                                        Haptics.tap(.warning)
+                                        Task { await svc.act(s.id, "stop") }
+                                    }
                                 } label: { Label("Stop", systemImage: "stop.fill") }
                                 if s.state == "paused" {
                                     Button {
@@ -71,10 +83,12 @@ struct EdgeSessionListView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button { showSettings = true } label: { Image(systemName: "gearshape") }
+                        .accessibilityLabel("Edge agent settings")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showNewSession = true } label: { Image(systemName: "plus") }
                         .disabled(!svc.isConfigured)
+                        .accessibilityLabel("New session")
                 }
             }
             .refreshable { await svc.refresh() }
@@ -82,6 +96,19 @@ struct EdgeSessionListView: View {
             .onDisappear { svc.stopPolling() }
             .sheet(isPresented: $showSettings) { EdgeAgentSettingsSheet(svc: svc) }
             .sheet(isPresented: $showNewSession) { NewEdgeSessionSheet(svc: svc) }
+            .confirmationDialog("Stop this session?",
+                                isPresented: Binding(get: { stopTarget != nil },
+                                                     set: { if !$0 { stopTarget = nil } }),
+                                presenting: stopTarget) { s in
+                Button("Stop \(s.project)", role: .destructive) {
+                    Haptics.tap(.warning)
+                    Task { await svc.act(s.id, "stop") }
+                    stopTarget = nil
+                }
+                Button("Cancel", role: .cancel) { stopTarget = nil }
+            } message: { s in
+                Text("claude is still working in \(s.project). Stopping ends its current turn.")
+            }
         }
     }
 }
@@ -147,6 +174,7 @@ private struct NewEdgeSessionSheet: View {
 private struct EdgeSessionRow: View {
     let session: EdgeAgentService.RemoteSession
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var working: Bool { session.state == "working" }
 
     var body: some View {
@@ -155,7 +183,7 @@ private struct EdgeSessionRow: View {
                 .foregroundStyle(tint)
                 .font(.title3)
                 .frame(width: 28)
-                .symbolEffect(.pulse, isActive: working)
+                .symbolEffect(.pulse, isActive: working && !reduceMotion)
             VStack(alignment: .leading, spacing: 2) {
                 Text(session.project).font(.body.weight(.medium))
                 HStack(spacing: 6) {

@@ -204,7 +204,19 @@ public enum EdgeAgentService {
 
     // MARK: Runtime API client (talks to an already-deployed agent)
 
-    public enum APIError: Error { case badURL, http(Int), decode }
+    public enum APIError: Error, LocalizedError {
+        case badURL, http(Int), decode
+        public var errorDescription: String? {
+            switch self {
+            case .badURL: return "That host or port doesn't look right."
+            case .http(401), .http(403): return "The agent rejected the token — re-copy it from the Mac's Edge sheet."
+            case .http(404): return "The agent is up but that session no longer exists."
+            case .http(let code) where code >= 500: return "The agent hit an error (HTTP \(code)). Check it on the box."
+            case .http(let code): return "The agent returned HTTP \(code)."
+            case .decode: return "The agent replied in a form Throttle couldn't read — version mismatch?"
+            }
+        }
+    }
 
     public static func sessions(baseURL: String, token: String, timeout: TimeInterval = 15) async throws -> [RemoteSession] {
         let (data, _) = try await request(baseURL, "sessions", method: "GET", token: token, timeout: timeout)

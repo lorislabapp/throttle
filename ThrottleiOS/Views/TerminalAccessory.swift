@@ -58,7 +58,7 @@ struct TerminalAccessoryBar: View {
         } label: {
             Text(label)
                 .font(.system(.footnote, design: .monospaced).weight(.medium))
-                .frame(minWidth: 40, minHeight: 30)
+                .frame(minWidth: 44, minHeight: 44)
                 .background(Color.secondary.opacity(0.14), in: RoundedRectangle(cornerRadius: 7))
         }
         .buttonStyle(.plain)
@@ -72,7 +72,7 @@ struct TerminalAccessoryBar: View {
         } label: {
             Image(systemName: system)
                 .font(.footnote.weight(.semibold))
-                .frame(minWidth: 40, minHeight: 30)
+                .frame(minWidth: 44, minHeight: 44)
                 .background(Color.secondary.opacity(0.14), in: RoundedRectangle(cornerRadius: 7))
         }
         .buttonStyle(.plain)

@@ -61,9 +61,11 @@ struct HistoryChartsView: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(title).font(.headline)
                 Spacer()
-                Text(unit.isEmpty ? MirrorUI.compactTokens(Int(peak))
-                                  : "\(unit)\(String(format: "%.0f", peak)) peak")
-                    .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                if peak > 0 {
+                    Text(unit.isEmpty ? "\(MirrorUI.compactTokens(Int(peak))) peak"
+                                      : "\(unit)\(String(format: "%.0f", peak)) peak")
+                        .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                }
             }
             Chart(points, id: \.publishedAt) { p in
                 if filled {
@@ -81,7 +83,15 @@ struct HistoryChartsView: View {
             .chartXAxis {
                 AxisMarks(preset: .aligned, values: .automatic(desiredCount: 4)) {
                     AxisGridLine().foregroundStyle(.secondary.opacity(0.12))
-                    AxisValueLabel(format: .dateTime.hour().minute())
+                    // Hours make sense on 24h; on 7d/30d show weekday/date instead of
+                    // meaningless repeating clock times.
+                    if range == .day {
+                        AxisValueLabel(format: .dateTime.hour())
+                    } else if range == .week {
+                        AxisValueLabel(format: .dateTime.weekday(.abbreviated))
+                    } else {
+                        AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+                    }
                 }
             }
             .chartYAxis {

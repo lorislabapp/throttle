@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import ThrottleShared
 
 /// iOS counterpart to the Mac's `RemoteSessionsService`: holds the connection to a
@@ -13,12 +14,25 @@ final class EdgeSessionsService {
 
     var host: String { didSet { UserDefaults.standard.set(host, forKey: "throttleEdgeHost") } }
     var port: Int { didSet { UserDefaults.standard.set(port, forKey: "throttleEdgePort") } }
-    var token: String { didSet { UserDefaults.standard.set(token, forKey: "throttleEdgeToken") } }
+    // The bearer token can control a remote session → Keychain, not UserDefaults.
+    var token: String { didSet { KeychainStore.set(token, account: Self.tokenAccount) } }
+    private static let tokenAccount = "edgeAgentToken"
 
     private(set) var sessions: [EdgeAgentService.RemoteSession] = []
     private(set) var lastVerify: EdgeAgentService.VerifyResult?
 
+    /// Whether the agent is currently reachable, so the list can show a truthful
+    /// staleness badge instead of rendering the last-good sessions as if live.
+    enum Reachability { case unknown, live, unreachable }
+    private(set) var reachability: Reachability = .unknown
+
     private var pollTask: Task<Void, Never>?
+    private var backoff: UInt64 = 10  // seconds, grows to a cap on repeated failure
+
+    // Reachability gate: skip polling a dead endpoint while the device is offline
+    // (saves radio wakeups), and re-poll immediately on the offline→online edge.
+    private let pathMonitor = NWPathMonitor()
+    private var online = true
 
     var baseURL: String { EdgeAgentService.remoteURL(host: host, port: port) }
     var isConfigured: Bool { !host.isEmpty && !token.isEmpty }
@@ -27,7 +41,27 @@ final class EdgeSessionsService {
         host = UserDefaults.standard.string(forKey: "throttleEdgeHost") ?? ""
         let p = UserDefaults.standard.integer(forKey: "throttleEdgePort")
         port = p == 0 ? 8787 : p
-        token = UserDefaults.standard.string(forKey: "throttleEdgeToken") ?? ""
+        // Prefer Keychain; one-time migrate any legacy plaintext token out of
+        // UserDefaults so it isn't left behind on disk.
+        if let k = KeychainStore.get(account: Self.tokenAccount) {
+            token = k
+        } else if let legacy = UserDefaults.standard.string(forKey: "throttleEdgeToken"), !legacy.isEmpty {
+            token = legacy
+            KeychainStore.set(legacy, account: Self.tokenAccount)
+            UserDefaults.standard.removeObject(forKey: "throttleEdgeToken")
+        } else {
+            token = ""
+        }
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            Task { @MainActor in
+                guard let self else { return }
+                let up = path.status == .satisfied
+                let cameOnline = up && !self.online
+                self.online = up
+                if cameOnline { await self.refresh() }
+            }
+        }
+        pathMonitor.start(queue: DispatchQueue(label: "throttle.edge.path"))
     }
 
     func verify() async {
@@ -35,20 +69,32 @@ final class EdgeSessionsService {
         lastVerify = await EdgeAgentService.verify(baseURL: baseURL, token: token)
     }
 
-    func refresh() async {
-        guard isConfigured else { return }
-        if let list = try? await EdgeAgentService.sessions(baseURL: baseURL, token: token) {
-            sessions = list
+    @discardableResult
+    func refresh() async -> Bool {
+        guard isConfigured else { return false }
+        do {
+            sessions = try await EdgeAgentService.sessions(baseURL: baseURL, token: token)
+            reachability = .live
+            return true
+        } catch {
+            reachability = .unreachable
+            return false
         }
     }
 
-    /// Poll every 10s while the panel is visible.
+    /// Poll while visible. On success poll every 10s; on failure back off
+    /// (10→20→40→…→120s cap) so a dead/unreachable agent doesn't wake the radio
+    /// every 10s and drain the battery. Resets to 10s the moment it recovers.
     func startPolling() {
         guard isConfigured, pollTask == nil else { return }
+        backoff = 10
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
-                await self?.refresh()
-                try? await Task.sleep(nanoseconds: 10_000_000_000)
+                if self?.online ?? true {
+                    let ok = await self?.refresh() ?? false
+                    if let self { self.backoff = ok ? 10 : min(self.backoff * 2, 120) }
+                }
+                try? await Task.sleep(nanoseconds: (self?.backoff ?? 10) * 1_000_000_000)
             }
         }
     }

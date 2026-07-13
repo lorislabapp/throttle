@@ -19,7 +19,9 @@ final class RemoteSessionsService {
     // UserDefaults like the LAN peer secret — the agent should sit behind Tailscale.
     var host: String { didSet { UserDefaults.standard.set(host, forKey: "throttleEdgeHost") } }
     var port: Int { didSet { UserDefaults.standard.set(port, forKey: "throttleEdgePort") } }
-    var token: String { didSet { UserDefaults.standard.set(token, forKey: "throttleEdgeToken") } }
+    // Bearer token controls a remote session → Keychain, not UserDefaults.
+    var token: String { didSet { KeychainStore.set(token, account: Self.tokenAccount) } }
+    private static let tokenAccount = "edgeAgentToken"
 
     private(set) var sessions: [EdgeAgentService.RemoteSession] = []
     private(set) var lastVerify: EdgeAgentService.VerifyResult?
@@ -34,7 +36,15 @@ final class RemoteSessionsService {
         host = UserDefaults.standard.string(forKey: "throttleEdgeHost") ?? ""
         let p = UserDefaults.standard.integer(forKey: "throttleEdgePort")
         port = p == 0 ? 8787 : p
-        token = UserDefaults.standard.string(forKey: "throttleEdgeToken") ?? ""
+        if let k = KeychainStore.get(account: Self.tokenAccount) {
+            token = k
+        } else if let legacy = UserDefaults.standard.string(forKey: "throttleEdgeToken"), !legacy.isEmpty {
+            token = legacy
+            KeychainStore.set(legacy, account: Self.tokenAccount)
+            UserDefaults.standard.removeObject(forKey: "throttleEdgeToken")
+        } else {
+            token = ""
+        }
     }
 
     func verify() async {

@@ -6,23 +6,47 @@ import ThrottleShared
 /// snapshot even when the Mac is offline.
 struct LiveUsageView: View {
     @State private var store = MirrorStore.shared
+    @State private var subscriber = CloudKitSubscriber.shared
     @State private var now = Date()
-    private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @State private var loading = true
+    @State private var showSettings = false
+    // 30s tick is plenty for a minute-granularity countdown; gated on .active so it
+    // doesn't spin in the background.
+    private let tick = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
 
     var body: some View {
         NavigationStack {
             Group {
                 if let snap = store.latest {
                     content(snap)
+                } else if loading && store.lastError == nil {
+                    ProgressView("Syncing…").frame(maxHeight: .infinity)
+                } else if subscriber.account == .signedOut {
+                    ContentUnavailableView("Sign in to iCloud",
+                        systemImage: "icloud.slash",
+                        description: Text("Use the same Apple Account as your Mac to receive the usage mirror."))
                 } else {
                     EmptyMirrorView(error: store.lastError)
                 }
             }
             .navigationTitle("Throttle")
             .navigationBarTitleDisplayMode(.inline)
-            .refreshable { await CloudKitSubscriber.shared.fetchLatest() }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showSettings = true } label: { Image(systemName: "gearshape") }
+                        .accessibilityLabel("Settings")
+                }
+            }
+            .refreshable { _ = await CloudKitSubscriber.shared.fetchLatest(); loading = false }
+            .sheet(isPresented: $showSettings) { SettingsView() }
         }
         .onReceive(tick) { now = $0 }
+        .task {
+            // First render finishes the loading state after the initial fetch lands
+            // (or fails), so cold launch shows a spinner rather than "No data yet".
+            _ = await CloudKitSubscriber.shared.fetchLatest()
+            loading = false
+        }
     }
 
     private func content(_ snap: ThrottleMirrorSnapshot) -> some View {

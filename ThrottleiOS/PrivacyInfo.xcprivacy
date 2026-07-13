@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        Throttle iOS companion privacy manifest.
+
+        We do not collect, track, or share user data. The app is a read-only
+        mirror of the user's own Mac usage over their PRIVATE CloudKit database,
+        plus a user-initiated remote-terminal control path to the user's own
+        machines (LAN peer link and a self-hosted edge agent). No analytics or
+        crash SDKs. No data leaves the user's own iCloud / devices.
+
+        Required-reason API use is limited to UserDefaults for local preferences
+        and the shared App Group blob the widget reads.
+    -->
+
+    <key>NSPrivacyTracking</key>
+    <false/>
+
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array/>
+
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <!-- UserDefaults: local preferences + the App Group snapshot blob the
+             widget renders. On-device only. -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>CA92.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

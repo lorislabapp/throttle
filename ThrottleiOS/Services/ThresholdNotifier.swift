@@ -11,11 +11,19 @@ final class ThresholdNotifier {
     static let shared = ThresholdNotifier()
     private init() {}
 
-    private static let firedKey = "ThrottleThresholdFiredV1"
+    private static let firedKey = "ThrottleThresholdFiredV2"
+    private static let iso = ISO8601DateFormatter()
 
-    func requestAuthorization() async {
-        _ = try? await UNUserNotificationCenter.current()
-            .requestAuthorization(options: [.alert, .sound])
+    @discardableResult
+    func requestAuthorization() async -> Bool {
+        (try? await UNUserNotificationCenter.current()
+            .requestAuthorization(options: [.alert, .sound])) ?? false
+    }
+
+    /// Current authorization, so a Settings screen can show the real state and offer
+    /// re-request (or a jump to system Settings if the user previously denied).
+    func authorizationStatus() async -> UNAuthorizationStatus {
+        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
     }
 
     func evaluate(_ snap: ThrottleMirrorSnapshot) {
@@ -23,12 +31,16 @@ final class ThresholdNotifier {
         let level = w.utilization >= 95 ? 95 : (w.utilization >= 80 ? 80 : 0)
         guard level > 0 else { return }
 
-        let resetKey = w.resetsAt.map { ISO8601DateFormatter().string(from: $0) } ?? "none"
+        let resetKey = w.resetsAt.map { Self.iso.string(from: $0) } ?? "none"
         let key = "\(level)@\(resetKey)"
-        // Persist the last-fired key so we don't re-alert across launches.
+        // Track every fired (level, reset-window) key in a small capped set so
+        // crossing 80 then 95 both fire once, and neither re-fires within the window.
         let store = UserDefaults(suiteName: MirrorStorage.appGroupID) ?? .standard
-        guard store.string(forKey: Self.firedKey) != key else { return }
-        store.set(key, forKey: Self.firedKey)
+        var fired = Set(store.stringArray(forKey: Self.firedKey) ?? [])
+        guard !fired.contains(key) else { return }
+        fired.insert(key)
+        if fired.count > 8 { fired = Set(fired.suffix(8)) }
+        store.set(Array(fired), forKey: Self.firedKey)
 
         let content = UNMutableNotificationContent()
         content.title = level >= 95 ? "Claude usage critical" : "Claude usage high"

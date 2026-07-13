@@ -18,11 +18,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didReceiveRemoteNotification userInfo: [AnyHashable: Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-        // Silent push → refresh the mirror, then report new data.
+        // Silent push → refresh the mirror, then report the ACCURATE result. Always
+        // reporting .newData risks APNs throttling the app's background pushes.
         let handler = SendableBox(completionHandler)
         Task {
-            await CloudKitSubscriber.shared.fetchLatest()
-            handler.value(.newData)
+            let gotNew = await CloudKitSubscriber.shared.fetchLatest()
+            handler.value(gotNew ? .newData : .noData)
         }
     }
 

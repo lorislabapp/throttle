@@ -15,15 +15,31 @@ final class TerminalLockState {
     private var idleTask: Task<Void, Never>?
     private let idleInterval: UInt64 = 300 * 1_000_000_000 // 5 min, in nanoseconds
 
-    /// Prompt for biometrics; on success, unlock and start the idle countdown.
+    /// Why the last unlock attempt failed, for the UI to surface a recovery hint.
+    private(set) var lastError: String?
+
+    /// Prompt for biometrics **with device-passcode fallback**, so a user with no
+    /// enrolled Face ID / Touch ID (or one that's hit biometry lockout) can still
+    /// unlock — `.deviceOwnerAuthentication` falls back to the passcode automatically.
+    /// On success, unlock and start the idle countdown.
     @discardableResult
     func unlock() async -> Bool {
         let ctx = LAContext()
         var err: NSError?
-        guard ctx.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &err) else { return false }
-        guard let ok = try? await ctx.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,
-                                                     localizedReason: "Unlock to type into this remote session"),
-              ok else { return false }
+        guard ctx.canEvaluatePolicy(.deviceOwnerAuthentication, error: &err) else {
+            lastError = "This device has no passcode or biometrics set up."
+            return false
+        }
+        do {
+            let ok = try await ctx.evaluatePolicy(.deviceOwnerAuthentication,
+                                                  localizedReason: "Unlock to type into this remote session")
+            guard ok else { lastError = "Authentication was not confirmed."; return false }
+        } catch {
+            // User cancel / system cancel are not errors worth shouting about.
+            lastError = (error as? LAError)?.code == .userCancel ? nil : error.localizedDescription
+            return false
+        }
+        lastError = nil
         unlocked = true
         scheduleRelock()
         return true
