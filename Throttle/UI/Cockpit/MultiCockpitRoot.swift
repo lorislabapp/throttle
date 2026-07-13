@@ -17,6 +17,7 @@ struct MultiCockpitRoot: View {
     @State private var activeStyle = OutputStyleManager.activeName()
     @State private var hoveredSession: UUID?
     @State private var expandedFeed: UUID?
+    @State private var railFilter = ""            // rail search — shown only when crowded
     @State private var themePreset = CockpitTerminalTheme.current
     @State private var caffeine = CaffeineService.shared   // @Observable → body tracks .active (H05)
     @State private var showNotifBanner = false             // C02: notifications-denied banner
@@ -576,9 +577,17 @@ struct MultiCockpitRoot: View {
                     if model.waitingCount > 0 { waitingChip(model.waitingCount) }
                     sortMenu
                 }.padding(.horizontal, 13).padding(.vertical, 9)
+                // Search only appears once the rail is crowded — no permanent chrome
+                // for the common few-session case.
+                if model.sessions.count > 6 { railSearchField }
                 ScrollView {
                     VStack(spacing: 2) {
-                        ForEach(model.displaySessions) { s in railRow(s) }
+                        ForEach(filteredSessions) { s in railRow(s) }
+                        if filteredSessions.isEmpty, !railFilter.isEmpty {
+                            Text("No session matches “\(railFilter)”.")
+                                .font(.system(size: 11)).foregroundStyle(.tertiary)
+                                .padding(.vertical, 12)
+                        }
                     }.padding(.horizontal, 8).padding(.vertical, 4)
                 }
                 Spacer(minLength: 0)
@@ -617,6 +626,54 @@ struct MultiCockpitRoot: View {
         .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
         .help("Sort sessions: \(model.sortMode.label)")
         .accessibilityLabel("Sort sessions").accessibilityValue(model.sortMode.label)
+    }
+
+    /// Sessions after the rail filter — case-insensitive substring on project name.
+    private var filteredSessions: [CockpitTab] {
+        let q = railFilter.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return model.displaySessions }
+        return model.displaySessions.filter { $0.projectName.lowercased().contains(q) }
+    }
+
+    private var railSearchField: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+            TextField("Filter sessions", text: $railFilter)
+                .textFieldStyle(.plain).font(.system(size: 12))
+            if !railFilter.isEmpty {
+                Button { railFilter = "" } label: {
+                    Image(systemName: "xmark.circle.fill").font(.system(size: 11)).foregroundStyle(.tertiary)
+                }.buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 9).padding(.vertical, 6)
+        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 7))
+        .padding(.horizontal, 10).padding(.bottom, 4)
+    }
+
+    /// The per-session action menu — the "decision layer" surfaced as one right-click:
+    /// switch model (cheap task → Haiku), offload to the server, freeze/close. Shared
+    /// by the row's right-click context menu AND the ⋯ hover button so the actions are
+    /// discoverable, not hidden behind a right-click only power users try.
+    @ViewBuilder private func sessionMenu(_ s: CockpitTab) -> some View {
+        if s.isSpawned {
+            Menu("Switch model") {
+                Button("Opus")   { s.terminal?.send(txt: "/model opus\n") }
+                Button("Sonnet") { s.terminal?.send(txt: "/model sonnet\n") }
+                Button("Haiku")  { s.terminal?.send(txt: "/model haiku\n") }
+            }
+        }
+        Button("Offload to server…") { SessionOffloadWindowController.shared.show() }
+        Divider()
+        if s.isSpawned {
+            Button(s.isPaused ? "Resume" : "Pause") { s.isPaused ? s.resumeProcess() : s.pauseProcess() }
+            Button("Hibernate — free RAM, keep context") { model.hibernate(s.id) }
+        }
+        Button("Project stats + optimizer") {
+            ProjectWindowController.shared.show(appState: appState, projectID: MultiCockpitModel.claudeProjectDirName(s.cwd))
+        }
+        Divider()
+        Button("Close session", role: .destructive) { model.close(s.id) }
     }
 
     /// One icon button in the rail-row hover cluster.
@@ -683,6 +740,7 @@ struct MultiCockpitRoot: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(railRowA11yLabel(s))
         .accessibilityAddTraits(s.id == model.active?.id ? [.isButton, .isSelected] : .isButton)
+        .contextMenu { sessionMenu(s) }
         .overlay(alignment: .topTrailing) {
             if hoveredSession == s.id {
                 // Solid floating cluster so it OCCLUDES the model badge underneath
@@ -699,6 +757,16 @@ struct MultiCockpitRoot: View {
                         railAction("moon.zzz.fill", 12, .secondary, "Hibernate — free RAM, keep context") { model.hibernate(s.id) }
                     }
                     railAction("xmark.circle.fill", 13, .secondary, "Close session") { model.close(s.id) }
+                    // ⋯ opens the full decision menu — makes the right-click actions
+                    // (model switch, offload) discoverable to non-power users.
+                    Menu {
+                        sessionMenu(s)
+                    } label: {
+                        Image(systemName: "ellipsis").font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.secondary).frame(width: 18, height: 18).contentShape(Rectangle())
+                    }
+                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                    .help("More actions — switch model, offload to server…")
                 }
                 .padding(.horizontal, 8).padding(.vertical, 5)
                 .background(.regularMaterial, in: Capsule())
