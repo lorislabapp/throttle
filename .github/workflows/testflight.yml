@@ -51,8 +51,9 @@ jobs:
             -archivePath build/ThrottleiOS.xcarchive \
             -destination "generic/platform=iOS" \
             CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
+            CODE_SIGN_IDENTITY= \
+            DEVELOPMENT_TEAM=TDV6D5L785 \
+            PROVISIONING_PROFILE_SPECIFIER= \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$HOME/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8" \
             -authenticationKeyID "${{ secrets.ASC_API_KEY_ID }}" \
