@@ -109,6 +109,13 @@ struct RemoteTerminalScreen: View {
     @State private var connection = TerminalConnection()
     private var peer = PeerClient.shared
 
+    // The private `peer` property drags the synthesized memberwise init down to
+    // private (broke the Release archive; Debug never built this scheme locally).
+    init(sessionId: String, title: String) {
+        self.sessionId = sessionId
+        self.title = title
+    }
+
     var body: some View {
         TerminalHost(title: title, lockState: lockState, keySender: keySender,
                      connection: connection) {
