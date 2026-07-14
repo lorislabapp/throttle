@@ -97,7 +97,9 @@ final class RemoteSessionsService {
         let modified: Date
     }
 
-    private(set) var offloadStatus: String?
+    /// Offload progress/result line — shown in the sheet AND the cockpit rail.
+    /// Settable by the rail's direct-offload path for its guard messages.
+    var offloadStatus: String?
 
     /// Newest local transcripts across `~/.claude/projects/` (display picker feed).
     /// Pure filesystem scan — no DB dependency, safe to call from the sheet.
@@ -126,21 +128,42 @@ final class RemoteSessionsService {
     /// Upload the FULL transcript of `session` to the agent for `remoteCwd`, then
     /// start a remote session resuming it — the whole point: no 10–20-turn context
     /// rebuild on the box. Full copy only; the file is streamed as-is, never trimmed.
-    func offload(_ session: LocalSession, remoteCwd: String) async {
-        guard isConfigured, !remoteCwd.isEmpty else { return }
+    /// Returns the new remote session id, nil on failure (status carries the why).
+    @discardableResult
+    func offload(_ session: LocalSession, remoteCwd: String) async -> String? {
+        guard isConfigured, !remoteCwd.isEmpty else { return nil }
         offloadStatus = "Uploading \(session.id.prefix(8))… (\(session.sizeBytes / 1024) KB)"
         do {
             let bytes = try await EdgeAgentService.uploadTranscript(
                 baseURL: baseURL, token: token, remoteCwd: remoteCwd,
                 sessionId: session.id, fileURL: session.path)
             offloadStatus = "Uploaded \(bytes / 1024) KB — starting remote session…"
-            _ = try await EdgeAgentService.start(
+            let remoteID = try await EdgeAgentService.start(
                 baseURL: baseURL, token: token, project: session.project,
                 cwd: remoteCwd, resume: session.id)
-            offloadStatus = "Offloaded with context — resumed \(session.id.prefix(8)) on the box"
+            offloadStatus = "Offloaded — resumed \(session.id.prefix(8)) on the box. It's in the cockpit rail with a REMOTE badge (click to attach)."
             await refresh()
+            return remoteID
         } catch {
             offloadStatus = "Offload failed: \(error.localizedDescription)"
+            return nil
         }
+    }
+
+    /// One-click offload of a COCKPIT TAB: resolves the tab's transcript on disk
+    /// and ships it, defaulting the remote cwd to /root/offload/<project>. This is
+    /// the rail decision-menu path — no sheet, no picker.
+    @discardableResult
+    func offloadTab(sessionId: String, localCwd: String, projectName: String) async -> String? {
+        let enc = MultiCockpitModel.claudeProjectDirName(localCwd)
+        let path = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/projects/\(enc)/\(sessionId).jsonl")
+        guard let size = try? path.resourceValues(forKeys: [.fileSizeKey]).fileSize else {
+            offloadStatus = "No transcript found for this session yet — say something to claude first."
+            return nil
+        }
+        let local = LocalSession(id: sessionId, project: projectName, path: path,
+                                 sizeBytes: size, modified: Date())
+        return await offload(local, remoteCwd: "/root/offload/\(projectName)")
     }
 }

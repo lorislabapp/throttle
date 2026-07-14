@@ -88,7 +88,9 @@ enum CockpitTerminalTheme {
 
     /// `setFont: false` on a live re-style (theme switch) so it doesn't clobber a
     /// font size the user has zoomed (L07); the initial spawn sets it once.
-    static func apply(to term: LocalProcessTerminalView, setFont: Bool = true) {
+    /// Takes the base `TerminalView` so the ttyd-backed remote terminal (no local
+    /// process) gets the identical cockpit look.
+    static func apply(to term: TerminalView, setFont: Bool = true) {
         let p = palette(current)
         term.installColors(p.ansi.map(c))
         term.nativeBackgroundColor = ns(p.bg)

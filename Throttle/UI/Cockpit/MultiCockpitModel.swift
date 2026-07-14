@@ -67,6 +67,10 @@ final class CockpitTab: Identifiable {
     var ramBytes: UInt64 = 0
     /// The running claude session id, discovered at runtime — used for persistence.
     var sessionId: String?
+    /// Set when this session's transcript was offloaded to the edge box — the
+    /// remote session id it resumed as. Lets the decision menu say "already
+    /// offloaded" instead of silently re-uploading.
+    var offloadedRemoteID: String?
 
     /// Rich session state for the rail dot — replaces the binary live/gray flicker.
     /// `working` covers BOTH claude streaming AND the user typing (lastActivityAt

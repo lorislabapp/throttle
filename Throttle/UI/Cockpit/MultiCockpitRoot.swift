@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import ThrottleShared
 
 /// The multi-session Cockpit: several real `claude` sessions (one per project)
 /// under ONE shared decision layer. The binding window + machine memory are
@@ -17,6 +18,8 @@ struct MultiCockpitRoot: View {
     @State private var activeStyle = OutputStyleManager.activeName()
     @State private var hoveredSession: UUID?
     @State private var expandedFeed: UUID?
+    @State private var remoteSvc = RemoteSessionsService.shared   // edge-agent sessions in the rail
+    @State private var selectedRemoteID: String?  // remote session shown over the terminal area
     @State private var railFilter = ""            // rail search — shown only when crowded
     @State private var themePreset = CockpitTerminalTheme.current
     @State private var caffeine = CaffeineService.shared   // @Observable → body tracks .active (H05)
@@ -511,6 +514,18 @@ struct MultiCockpitRoot: View {
             }
         }
         .background(Color(nsColor: CockpitTerminalTheme.backgroundColor))
+        // A selected remote session OVERLAYS the local terminals (same stability
+        // rule: the local NSViews underneath are never torn down). Waking any
+        // local session drops back to it.
+        .overlay {
+            if let rid = selectedRemoteID,
+               let rs = remoteSvc.sessions.first(where: { $0.id == rid }) {
+                RemoteSessionPane(session: rs, onClose: { selectedRemoteID = nil })
+                    .id(rid)   // fresh attach when switching between remote sessions
+            }
+        }
+        .onChange(of: model.activeID) { selectedRemoteID = nil }
+        .onAppear { if remoteSvc.isConfigured { remoteSvc.startPolling() } }
     }
 
     // MARK: A — Tab bar
@@ -588,6 +603,22 @@ struct MultiCockpitRoot: View {
                                 .font(.system(size: 11)).foregroundStyle(.tertiary)
                                 .padding(.vertical, 12)
                         }
+                        // Edge-agent sessions live on the user's box, not this Mac —
+                        // same rail, explicit REMOTE badge so there's never a doubt
+                        // about where a session runs.
+                        if remoteSvc.isConfigured,
+                           !remoteSvc.sessions.isEmpty || remoteSvc.offloadStatus != nil {
+                            HStack {
+                                gLabel("REMOTE · \(remoteSvc.sessions.count)")
+                                Spacer()
+                            }.padding(.horizontal, 5).padding(.top, 10).padding(.bottom, 2)
+                            if let st = remoteSvc.offloadStatus {
+                                Text(st).font(.system(size: 10.5)).foregroundStyle(.secondary)
+                                    .padding(.horizontal, 5).padding(.bottom, 4)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            ForEach(remoteSvc.sessions) { rs in remoteRailRow(rs) }
+                        }
                     }.padding(.horizontal, 8).padding(.vertical, 4)
                 }
                 Spacer(minLength: 0)
@@ -663,7 +694,17 @@ struct MultiCockpitRoot: View {
                 Button("Haiku")  { s.terminal?.send(txt: "/model haiku\n") }
             }
         }
-        Button("Offload to server…") { SessionOffloadWindowController.shared.show() }
+        // One-click offload of THIS session. Three states so the menu always says
+        // what will actually happen: not configured → open setup; already offloaded
+        // (remote still alive) → jump to it; otherwise → upload + resume, no sheet.
+        if !remoteSvc.isConfigured {
+            Button("Offload to server — set up…") { SessionOffloadWindowController.shared.show() }
+        } else if let rid = s.offloadedRemoteID, remoteSvc.sessions.contains(where: { $0.id == rid }) {
+            Button("Already offloaded — show remote session") { selectedRemoteID = rid }
+        } else {
+            Button("Offload to server (with context)") { offloadTab(s) }
+        }
+        Button("Server settings…") { SessionOffloadWindowController.shared.show() }
         Divider()
         if s.isSpawned {
             Button(s.isPaused ? "Resume" : "Pause") { s.isPaused ? s.resumeProcess() : s.pauseProcess() }
@@ -683,6 +724,77 @@ struct MultiCockpitRoot: View {
                 .frame(width: 18, height: 18).contentShape(Rectangle())
         }
         .buttonStyle(.plain).help(help).accessibilityLabel(help)
+    }
+
+    /// Direct offload from the decision menu: resolve the tab's transcript, ship
+    /// it, resume on the box, then select the new remote session so the user SEES
+    /// where it went (rail REMOTE badge + attached terminal).
+    private func offloadTab(_ s: CockpitTab) {
+        // The tab may not know its claude session id until claude writes the
+        // transcript — fall back to the newest JSONL for the cwd.
+        let sid = s.sessionId ?? MultiCockpitModel.newestSession(cwd: s.cwd, since: .distantPast)?.id
+        guard let sid else {
+            remoteSvc.offloadStatus = "No transcript yet for \(s.projectName) — say something to claude first."
+            return
+        }
+        let cwd = s.cwd, project = s.projectName
+        Task {
+            if let rid = await remoteSvc.offloadTab(sessionId: sid, localCwd: cwd, projectName: project) {
+                s.offloadedRemoteID = rid
+                selectedRemoteID = rid
+            }
+        }
+    }
+
+    /// Rail row for a session running on the edge box. Deliberately lighter than
+    /// the local rows (no RAM bar, no question feed — the box owns those), with an
+    /// unmissable REMOTE badge answering "is this on my Mac or the server?".
+    private func remoteRailRow(_ rs: EdgeAgentService.RemoteSession) -> some View {
+        let on = rs.id == selectedRemoteID
+        return Button { selectedRemoteID = rs.id } label: {
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 8) {
+                    Circle().fill(rs.state == "working" ? Color.green : Color.secondary.opacity(0.5))
+                        .frame(width: 7, height: 7)
+                    Text(rs.project).font(.system(size: 12.5, weight: .medium))
+                        .foregroundStyle(on ? .primary : .secondary).lineLimit(1)
+                    Spacer(minLength: 0)
+                    remoteChip
+                }
+                HStack(spacing: 8) {
+                    if let m = rs.model { modelChip(m) }
+                    if let t = rs.tokens, t > 0 {
+                        Text(fmtTok(t)).font(.system(size: 10, design: .monospaced)).foregroundStyle(.tertiary)
+                    }
+                    Spacer(minLength: 0)
+                    Text(rs.state).font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                }
+            }
+            .padding(.horizontal, 10).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
+            .background(on ? Color.primary.opacity(0.06) : .clear, in: RoundedRectangle(cornerRadius: 9))
+            .overlay { if on { RoundedRectangle(cornerRadius: 9).stroke(hair, lineWidth: 1) } }
+            .contentShape(Rectangle())
+        }.buttonStyle(.plain)
+        .accessibilityLabel("Remote session \(rs.project), \(rs.state)")
+        .contextMenu {
+            Button("Pause") { Task { await remoteSvc.act(rs.id, "pause") } }
+            Button("Resume") { Task { await remoteSvc.act(rs.id, "resume") } }
+            Divider()
+            Button("Stop session") {
+                Task {
+                    await remoteSvc.act(rs.id, "stop")
+                    if selectedRemoteID == rs.id { selectedRemoteID = nil }
+                }
+            }
+        }
+    }
+
+    private var remoteChip: some View {
+        Text("REMOTE")
+            .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+            .padding(.horizontal, 4.5).padding(.vertical, 1)
+            .background(Color.accentColor.opacity(0.18), in: RoundedRectangle(cornerRadius: 4))
+            .foregroundStyle(Color.accentColor)
     }
 
     private func railRow(_ s: CockpitTab) -> some View {
