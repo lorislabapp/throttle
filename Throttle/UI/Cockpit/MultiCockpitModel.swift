@@ -74,6 +74,9 @@ final class CockpitTab: Identifiable {
     /// Opus-token-cap rule latch: true after the rule paused (or the user resumed
     /// past) this session, cleared when it drops back under the cap.
     var ruleCapAcknowledged = false
+    /// Previous dominant model, for the mid-session swap detector (a swap
+    /// orphans the per-model prompt cache — usually costs MORE, not less).
+    var lastSeenModel: String?
 
     /// Rich session state for the rail dot — replaces the binary live/gray flicker.
     /// `working` covers BOTH claude streaming AND the user typing (lastActivityAt
@@ -517,6 +520,31 @@ final class MultiCockpitModel {
         return (v > 0 ? v : 200) * 1_000    // default 200k
     }
 
+    /// Cache-efficiency drop detector (hourly, notified at most once/24h): when
+    /// today's prompt-cache hit rate falls ≥20 points under the 7-day baseline,
+    /// something started busting the cache (hook churn, config edit, model swaps)
+    /// and the plan is burning measurably faster. Complements CacheBustAnalyzer
+    /// (which explains WHY) with a proactive "it's happening NOW" signal.
+    private var lastEffCheck = Date.distantPast
+    func evaluateCacheEfficiencyDrop() {
+        guard Date().timeIntervalSince(lastEffCheck) > 3600 else { return }
+        lastEffCheck = Date()
+        guard let db = appState?.database else { return }
+        Task.detached(priority: .utility) {
+            guard let e24 = try? await db.read({ try StatsDataService.cacheEfficiency(in: $0, range: .last24h) }) ?? nil,
+                  let e7 = try? await db.read({ try StatsDataService.cacheEfficiency(in: $0, range: .last7d) }) ?? nil,
+                  e7 > 0.3, e24 < e7 - 0.2 else { return }
+            let last = UserDefaults.standard.double(forKey: "throttleCacheEffDropNotifiedAt")
+            guard Date().timeIntervalSince1970 - last > 24 * 3600 else { return }
+            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "throttleCacheEffDropNotifiedAt")
+            await MainActor.run {
+                CockpitNotifier.shared.notifyRule(
+                    title: "Cache efficiency dropped",
+                    body: String(format: "Hit rate today %.0f%% vs %.0f%% this week — something is busting the prompt cache and the plan burns faster. Dashboard → cache waste says why.", e24 * 100, e7 * 100))
+            }
+        }
+    }
+
     /// Called each tick after `refreshStats` lands. Pauses any LIVE premium-model
     /// (Opus/Fable) session whose token count crossed the cap. Fires once per
     /// crossing: a manual Resume sets `ruleCapAcknowledged`, so it won't re-pause
@@ -766,6 +794,7 @@ final class MultiCockpitModel {
                 self?.refreshStats()
                 self?.evaluateAutoPause()
                 self?.evaluateOpusTokenCap()
+                self?.evaluateCacheEfficiencyDrop()
                 self?.evaluatePacing()             // soft cross-session pacing tier below auto-pause
                 self?.autoHibernateIfPressured()   // MEM-H01: reclaim idle-session RAM under critical pressure
                 if !quiet { self?.sampleSessionRAM() }
@@ -808,6 +837,18 @@ final class MultiCockpitModel {
             var changed = false
             for (id, eur, tok, model, live, sid, loop) in results {
                 if let tab = self.sessions.first(where: { $0.id == id }) {
+                    // Mid-session model swap = orphaned prompt cache (caches are
+                    // per-model). On a big context this makes the swap COSTLIER
+                    // than staying — verified against Anthropic's cache docs
+                    // (deep research 2026-07-14). Warn once per swap; ≥30k tokens
+                    // so a fresh session picking its model doesn't false-fire.
+                    if let old = tab.lastSeenModel, let new = model, old != new,
+                       live, (tok ?? 0) > 30_000 {
+                        CockpitNotifier.shared.notifyRule(
+                            title: "Model swap mid-session — \(tab.projectName)",
+                            body: "\(old) → \(new) with \((tok ?? 0) / 1_000)k tokens of context: the prompt cache is per-model, so this rebuilds it from scratch (often pricier than staying). Prefer finishing the task, or offload to the box.")
+                    }
+                    if model != nil { tab.lastSeenModel = model }
                     tab.eur = eur; tab.tokens = tok; tab.model = model; tab.isLive = live; tab.loopSignal = loop
                     // Only adopt a freshly-discovered id — NEVER clear to nil.
                     // A dormant restored tab has an old transcript mtime, so
