@@ -46,12 +46,15 @@ jobs:
 
       - name: Archive
         run: |
+          # CODE_SIGN_IDENTITY must NOT be blanked: an unsigned archive carries no
+          # entitlements, export then re-signs without iCloud/aps/app-groups and
+          # CKContainer SIGTRAPs at launch (TestFlight builds 1-12). Cloud signing
+          # mints a managed cert via the ASC API key instead.
           xcodebuild archive \
             -scheme ThrottleiOS -project Throttle.xcodeproj \
             -archivePath build/ThrottleiOS.xcarchive \
             -destination "generic/platform=iOS" \
             CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY= \
             DEVELOPMENT_TEAM=TDV6D5L785 \
             PROVISIONING_PROFILE_SPECIFIER= \
             -allowProvisioningUpdates \
@@ -67,6 +70,13 @@ jobs:
             -authenticationKeyPath "$HOME/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8" \
             -authenticationKeyID "${{ secrets.ASC_API_KEY_ID }}" \
             -authenticationKeyIssuerID "${{ secrets.ASC_API_ISSUER_ID }}"
+
+      - name: Verify entitlements in IPA
+        run: |
+          unzip -q build/export-ios/*.ipa -d build/ipa-check
+          codesign -d --entitlements :- build/ipa-check/Payload/*.app | tee /tmp/ents.plist
+          grep -q "iCloud.com.lorislab.throttle" /tmp/ents.plist || { echo "::error::iCloud entitlement missing from signed IPA"; exit 1; }
+          grep -q "aps-environment" /tmp/ents.plist || { echo "::error::aps-environment missing from signed IPA"; exit 1; }
 
       - name: Upload to TestFlight
         run: |
