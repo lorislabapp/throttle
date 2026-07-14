@@ -1,5 +1,6 @@
 import Foundation
 import ThrottlePeer
+import ThrottleShared
 
 /// App-layer glue for the remote terminal: routes peer control frames
 /// (`termAttach`/`termIn`/`termResize`/`termDetach`) between the Mac's
@@ -22,6 +23,12 @@ final class PeerTerminalBridge {
     private var clientTab: [PeerClientID: UUID] = [:]
     /// tab → the set of clients tapping its output (fan-out target).
     private var tabClients: [UUID: Set<PeerClientID>] = [:]
+    /// Per-client streaming mouse-report filter: an old phone build (or any client
+    /// still forwarding mouse events into a stuck `ESC[?1003h` session) floods the
+    /// PTY with SGR reports that echo as `35;150;30M…` garbage in claude's input.
+    /// A remote KEYBOARD never produces these, so stripping is lossless. Stateful
+    /// per client — a report can split across peer frames.
+    private var inputFilters: [PeerClientID: MouseReportFilter] = [:]
 
     /// Entry point wired from `PeerTransport` (hops here on the main actor).
     func handle(_ control: PeerTerminalControl, from client: PeerClientID) {
@@ -38,6 +45,7 @@ final class PeerTerminalBridge {
         for tabID in tabClients.keys { terminal(for: tabID)?.onOutputBytes = nil }
         clientTab.removeAll()
         tabClients.removeAll()
+        inputFilters.removeAll()
     }
 
     // MARK: - private
@@ -60,10 +68,14 @@ final class PeerTerminalBridge {
 
     private func inject(_ bytes: [UInt8], from client: PeerClientID) {
         guard let uuid = clientTab[client], let term = terminal(for: uuid) else { return }
-        term.injectRemoteInput(bytes)
+        var filter = inputFilters[client] ?? MouseReportFilter()
+        let clean = filter.filter(bytes)
+        inputFilters[client] = filter
+        term.injectRemoteInput(clean)
     }
 
     private func detach(_ client: PeerClientID) {
+        inputFilters[client] = nil
         guard let uuid = clientTab.removeValue(forKey: client) else { return }
         tabClients[uuid]?.remove(client)
         if tabClients[uuid]?.isEmpty ?? true {

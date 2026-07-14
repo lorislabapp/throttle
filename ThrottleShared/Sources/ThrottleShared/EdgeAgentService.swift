@@ -2,13 +2,15 @@ import Foundation
 
 /// Engine for "Run sessions on your server" (BYO-server session delegation), the
 /// sibling of `MCPOffloadService`. Throttle ORCHESTRATES; the user owns the box
-/// (local-first / no-hosting doctrine). It GENERATES the deploy script + the systemd
-/// unit and VERIFIES the agent endpoint (health → authed sessions/list) before use.
+/// (local-first / no-hosting doctrine). It GENERATES the deploy step scripts + the
+/// systemd unit and VERIFIES the agent endpoint (health → authed sessions/list).
 ///
-/// SSH execution stays the caller's job (the user runs the emitted script) — this
-/// stays side-effect-free + testable and the app never SSHes. The runtime API calls
-/// below talk only to an already-deployed agent over its token-gated HTTP API; the
-/// agent is NOT a data-path proxy (claude on the box reaches Anthropic directly).
+/// This type stays side-effect-free + testable: it never SSHes itself. Since
+/// 2026-07-14 the Mac app's `EdgeDeployService` DOES run these steps over SSH
+/// (one-click deploy — Kevin: "je clique offload, Throttle gère tout"); the
+/// emitted full script remains as a manual fallback. The runtime API calls below
+/// talk only to a deployed agent over its token-gated HTTP API; the agent is NOT
+/// a data-path proxy (claude on the box reaches Anthropic directly).
 ///
 /// Lives in `ThrottleShared` (moved from the Mac target) so both the Mac cockpit and
 /// the iOS companion drive the identical networking code — it was already pure
@@ -124,6 +126,75 @@ public enum EdgeAgentService {
         return s
     }
 
+    // MARK: One-click deploy — remote step bodies
+    //
+    // Each step is a self-contained bash script meant to be piped to
+    // `ssh <target> 'bash -s'` STDIN by `EdgeDeployService`. stdin-piping (never
+    // pasting into an interactive shell) sidesteps zsh history expansion — a pasted
+    // `#!/usr/bin/env` line explodes as `zsh: event not found: /usr/bin/env`, which
+    // is exactly how the manual copy-script path failed in the field. All steps are
+    // idempotent so "Deploy" doubles as "repair".
+
+    public struct DeployStep {
+        public let label: String
+        public let script: String
+    }
+
+    public static func deploySteps(token: String, httpPort: Int, ttydPort: Int = 8788,
+                                   agentSource: String) -> [DeployStep] {
+        let agentB64 = Data(agentSource.utf8).base64EncodedString()
+        let ttydChecksums = ttydSHA256.map { "\($0.value)  ttyd.\($0.key)" }.sorted().joined(separator: "\n")
+        return [
+            DeployStep(label: "SSH connection", script: "set -e; echo ok-$(hostname)"),
+            DeployStep(label: "Node + tmux", script: """
+                set -euo pipefail
+                command -v node >/dev/null || (curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs)
+                command -v tmux >/dev/null || (apt-get update -qq && apt-get install -y tmux)
+                """),
+            DeployStep(label: "ttyd 1.7.7 (checksummed)", script: """
+                set -euo pipefail
+                command -v ttyd >/dev/null && exit 0
+                ARCH=$(uname -m)
+                curl -fsSL -o /tmp/ttyd.$ARCH https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.$ARCH
+                cat <<'SUMS' > /tmp/ttyd.sha256
+                \(ttydChecksums)
+                SUMS
+                ( cd /tmp && grep "ttyd.$ARCH$" ttyd.sha256 | sha256sum -c - )
+                install -m 755 /tmp/ttyd.$ARCH /usr/local/bin/ttyd
+                rm -f /tmp/ttyd.$ARCH /tmp/ttyd.sha256
+                """),
+            DeployStep(label: "claude CLI", script: """
+                set -euo pipefail
+                export PATH="$HOME/.local/bin:$PATH"
+                command -v claude >/dev/null || curl -fsSL https://claude.ai/install.sh | bash
+                grep -q "local/bin" ~/.profile 2>/dev/null || printf '\\nif [ -d "$HOME/.local/bin" ] ; then\\n    PATH="$HOME/.local/bin:$PATH"\\nfi\\n' >> ~/.profile
+                """),
+            DeployStep(label: "Agent \(agentVersionHint)", script: """
+                set -euo pipefail
+                mkdir -p /opt/throttle-agent
+                base64 -d > /opt/throttle-agent/throttle-agent.mjs <<'B64'
+                \(agentB64)
+                B64
+                """),
+            DeployStep(label: "Token + systemd unit", script: """
+                set -euo pipefail
+                umask 077
+                printf 'THROTTLE_AGENT_TOKEN=%s\\nTHROTTLE_AGENT_PORT=%s\\nTHROTTLE_AGENT_TTYD_PORT=%s\\n' \(shq(token)) \(httpPort) \(ttydPort) > /etc/throttle-agent.env
+                cat > /etc/systemd/system/throttle-agent.service <<'UNIT'
+                \(unitText())UNIT
+                systemctl daemon-reload
+                systemctl enable --now throttle-agent
+                systemctl restart throttle-agent
+                sleep 2
+                systemctl is-active throttle-agent
+                """),
+        ]
+    }
+
+    /// Displayed in the deploy step label; parsed from the bundled agent at call
+    /// sites is overkill — keep in sync with `throttle-agent.mjs` VERSION.
+    public static let agentVersionHint = "0.4.0"
+
     /// The bundled agent source (`throttle-agent.mjs` in the app bundle), or nil if
     /// missing (dev builds that didn't copy the resource).
     public static func bundledAgentSource() -> String? {
@@ -216,6 +287,44 @@ public enum EdgeAgentService {
             case .decode: return "The agent replied in a form Throttle couldn't read — version mismatch?"
             }
         }
+    }
+
+    // MARK: In-app Claude OAuth on the box (agent ≥0.4.0)
+
+    public struct HealthInfo: Decodable, Sendable {
+        public let ok: Bool
+        public let version: String?
+        public let claudeAuth: Bool?
+        public let sessions: Int?
+    }
+
+    public static func health(baseURL: String, timeout: TimeInterval = 10) async throws -> HealthInfo {
+        guard let url = URL(string: baseURL)?.appendingPathComponent("health") else { throw APIError.badURL }
+        var r = URLRequest(url: url); r.timeoutInterval = timeout
+        let (data, _) = try await URLSession.shared.data(for: r)
+        guard let h = try? JSONDecoder().decode(HealthInfo.self, from: data) else { throw APIError.decode }
+        return h
+    }
+
+    public struct AuthPeek: Decodable, Sendable {
+        public let running: Bool
+        public let url: String?
+        public let done: Bool
+    }
+
+    public static func authStart(baseURL: String, token: String) async throws {
+        _ = try await request(baseURL, "auth/start", method: "POST", token: token)
+    }
+
+    public static func authPeek(baseURL: String, token: String) async throws -> AuthPeek {
+        let (data, _) = try await request(baseURL, "auth/peek", method: "GET", token: token)
+        guard let p = try? JSONDecoder().decode(AuthPeek.self, from: data) else { throw APIError.decode }
+        return p
+    }
+
+    public static func authSubmit(baseURL: String, token: String, code: String) async throws {
+        let body = try JSONSerialization.data(withJSONObject: ["code": code])
+        _ = try await request(baseURL, "auth/submit", method: "POST", token: token, json: body)
     }
 
     public static func sessions(baseURL: String, token: String, timeout: TimeInterval = 15) async throws -> [RemoteSession] {

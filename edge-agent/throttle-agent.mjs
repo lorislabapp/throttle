@@ -41,7 +41,7 @@ const PORT = parseInt(process.env.THROTTLE_AGENT_PORT || '8787', 10);
 const TTYD_PORT = parseInt(process.env.THROTTLE_AGENT_TTYD_PORT || '8788', 10);
 const CLAUDE_CMD = process.env.THROTTLE_AGENT_CLAUDE_CMD || 'claude';
 const PROJECTS_DIR = process.env.CLAUDE_PROJECTS_DIR || path.join(os.homedir(), '.claude', 'projects');
-const VERSION = '0.3.0';
+const VERSION = '0.4.0';
 
 if (!TOKEN) { console.error('FATAL: set THROTTLE_AGENT_TOKEN'); process.exit(1); }
 
@@ -90,6 +90,62 @@ async function attachTtyd(id) {
     await new Promise(r => setTimeout(r, 100));
   }
   throw new Error('ttyd did not come up in time');
+}
+
+// ---- In-app Claude OAuth (`claude setup-token` driven through tmux) ----
+// `setup-token` insists on a TTY, which used to force a manual `ssh -tt` step.
+// Instead we run it inside a throwaway tmux session and screen-scrape: the Mac
+// app fetches the login URL from /auth/peek, the user authorizes in their
+// browser, pastes the code into Throttle, /auth/submit types it back in, and
+// the agent persists the minted token to ~/.profile itself. Zero terminal.
+const AUTH_SESSION = 'throttle-auth';
+const HOME_DIR = process.env.HOME || os.homedir();
+
+function claudeAuthReady() {
+  try {
+    if (fs.readFileSync(path.join(HOME_DIR, '.profile'), 'utf8').includes('CLAUDE_CODE_OAUTH_TOKEN')) return true;
+  } catch {}
+  try { fs.accessSync(path.join(HOME_DIR, '.claude', '.credentials.json')); return true; } catch {}
+  return false;
+}
+
+async function authStart() {
+  await sh('tmux', ['kill-session', '-t', AUTH_SESSION]); // stale run, if any
+  const spawnEnv = { ...process.env, HOME: HOME_DIR };
+  await execFileP('tmux', ['new-session', '-d', '-s', AUTH_SESSION, '-x', '220', '-y', '50',
+    'bash', '-lc', `${CLAUDE_CMD} setup-token`], { env: spawnEnv });
+  return { ok: true };
+}
+
+async function authPeek() {
+  const pane = await sh('tmux', ['capture-pane', '-t', AUTH_SESSION, '-p', '-J', '-S', '-200']);
+  if (pane === null) return { running: false, url: null, done: claudeAuthReady() };
+  const url = (pane.match(/https:\/\/\S+/g) || []).pop() || null;
+  // setup-token prints the minted token on success — persist it and clean up.
+  const tok = (pane.match(/sk-ant-oat[0-9A-Za-z_-]+/g) || []).pop() || null;
+  if (tok) {
+    persistOAuthToken(tok);
+    await sh('tmux', ['kill-session', '-t', AUTH_SESSION]);
+    return { running: false, url: null, done: true };
+  }
+  return { running: true, url, done: false };
+}
+
+async function authSubmit(code) {
+  if (!code || !/^[0-9A-Za-z#_%|.-]{4,600}$/.test(code)) throw new Error('bad code');
+  await execFileP('tmux', ['send-keys', '-t', AUTH_SESSION, code, 'Enter']);
+  return { ok: true };
+}
+
+function persistOAuthToken(tok) {
+  const profile = path.join(HOME_DIR, '.profile');
+  let cur = '';
+  try { cur = fs.readFileSync(profile, 'utf8'); } catch {}
+  const line = `export CLAUDE_CODE_OAUTH_TOKEN=${tok}`;
+  const next = cur.includes('CLAUDE_CODE_OAUTH_TOKEN')
+    ? cur.replace(/export CLAUDE_CODE_OAUTH_TOKEN=\S+/, line)
+    : cur + (cur.endsWith('\n') || cur === '' ? '' : '\n') + line + '\n';
+  fs.writeFileSync(profile, next, { mode: 0o600 });
 }
 
 async function tmuxList() {
@@ -267,10 +323,14 @@ const server = http.createServer(async (req, res) => {
     return send(res, 200, {
       ok: true, version: VERSION, tmux: await hasTmux(), ttyd: await hasTtyd(),
       sessions: (await tmuxList()).length, attached: ttydSessionId,
+      claudeAuth: claudeAuthReady(),
     });
   }
   if (!authed(req)) return send(res, 401, { error: 'unauthorized' });
   try {
+    if (p === '/auth/start' && req.method === 'POST') return send(res, 200, await authStart());
+    if (p === '/auth/peek' && req.method === 'GET') return send(res, 200, await authPeek());
+    if (p === '/auth/submit' && req.method === 'POST') { const { code } = await body(req); return send(res, 200, await authSubmit(code)); }
     if (p === '/sessions' && req.method === 'GET') return send(res, 200, { sessions: await listSessions() });
     if (p === '/sessions' && req.method === 'POST') { const r = await startSession(await body(req)); return send(res, 201, r); }
     if (p === '/transcripts' && req.method === 'PUT') { const r = await receiveTranscript(req, url); return send(res, 201, r); }
