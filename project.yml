@@ -19,8 +19,8 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
-    MARKETING_VERSION: "3.2.61"
-    CURRENT_PROJECT_VERSION: "161"
+    MARKETING_VERSION: "3.2.62"
+    CURRENT_PROJECT_VERSION: "162"
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
   configs:
     # Hardened runtime is required for notarized Release distribution but
@@ -73,9 +73,11 @@ targets:
         # why Verify failed with "requires a secure connection". Allow it — the host
         # is arbitrary user input so a domain exception can't be pinned; Throttle is
         # Developer-ID (not App Store), so NSAllowsArbitraryLoads is acceptable here.
+        # ⚠️ Do NOT add NSAllowsLocalNetworking alongside: when both are present the
+        # OS IGNORES NSAllowsArbitraryLoads (documented ATS precedence), and Tailscale
+        # 100.64/10 CGNAT is not "local" — that combo re-broke Verify in 3.2.61.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
-          NSAllowsLocalNetworking: true
         NSAppleEventsUsageDescription: "Throttle uses Safari to fetch your claude.ai usage page so it can show the same numbers Anthropic shows you. It only reads /api/organizations/.../usage — never your messages."
         NSCalendarsFullAccessUsageDescription: "Throttle adds a one-time reminder to your default calendar when your weekly Claude limit is about to reset. Optional — only when you tap the Calendar button."
         NSCalendarsUsageDescription: "Throttle adds a one-time reminder to your default calendar when your weekly Claude limit is about to reset. Optional — only when you tap the Calendar button."
@@ -162,9 +164,10 @@ targets:
         # CGNAT range is NOT covered by NSAllowsLocalNetworking, so the whole Edge tab
         # is dead on device without this. Not App Store's favourite, but this app talks
         # only to the user's own box on their own tailnet.
+        # ⚠️ NSAllowsLocalNetworking must NOT sit alongside NSAllowsArbitraryLoads —
+        # their combo makes the OS ignore ArbitraryLoads (ATS precedence rule).
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
-          NSAllowsLocalNetworking: true
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait

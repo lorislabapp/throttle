@@ -1,5 +1,6 @@
 import AppKit
 import SwiftTerm
+import ThrottleShared
 
 /// A SwiftTerm terminal that (1) accepts file drops like Terminal.app — turning
 /// dropped images into inline `[Image #N]` (or OCR'd text) for `claude` — and
@@ -51,6 +52,17 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// Current paused state, so the context menu shows Pause vs Resume. nil = not spawned.
     var isPausedProvider: (@MainActor () -> Bool)?
     nonisolated(unsafe) private var lastRateLimitFire = Date.distantPast
+
+    // Outgoing PTY filter — strips mouse reports at the single terminal→process
+    // chokepoint. `allowMouseReporting = false` is NOT airtight: SwiftTerm's
+    // `mouseMoved` (MacTerminalView.swift:2651, checked against the pinned
+    // checkout) gates on `terminal.mouseMode.sendMotionEvent()` ONLY — it never
+    // consults `allowMouseReporting`. So once a TUI arms any-event tracking
+    // (`ESC[?1003h`, claude does), every local hover still emitted an SGR motion
+    // report (`ESC[<35;x;yM`) into the PTY — the `35;97;40M` garbage typed into
+    // claude's input. Filtering here closes that hole for every sender: local
+    // handlers, menu actions, and injected peer input alike.
+    nonisolated(unsafe) private var ptyOutFilter = MouseReportFilter()
 
     // Detection state — main-thread-confined (LocalProcess posts on .main).
     nonisolated(unsafe) private var tail = ""
@@ -109,6 +121,11 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// pre-first-token think gap — instead of flickering to idle. `send(source:)`
     /// is SwiftTerm's open hook for terminal→process bytes.
     override func send(source: TerminalView, data: ArraySlice<UInt8>) {
+        // Drop mouse reports before they ever reach the PTY (see ptyOutFilter).
+        // A pure-mouse chunk filters to empty → no send, no activity blip.
+        let clean = ptyOutFilter.filter(Array(data))
+        guard !clean.isEmpty else { return }
+        let data = clean[...]
         // DIAGNOSTIC (opt-in via `defaults write com.lorislab.throttle throttlePtyInputLog
         // -bool YES`): record EVERY byte that reaches the PTY. This is SwiftTerm's
         // single chokepoint for terminal→process bytes — keystrokes, mouse reports,

@@ -144,7 +144,7 @@ final class CockpitTab: Identifiable {
         }
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let shellName = (shell as NSString).lastPathComponent
-        let env = Terminal.getEnvironmentVariables(termName: "xterm-256color", trueColor: true)
+        let env = Self.terminalEnvironment()
         term.startProcess(executable: shell, args: [], environment: env, execName: "-\(shellName)")
         CockpitTerminalTheme.apply(to: term)   // after spawn so the engine is live + a redraw is queued
         // Low-memory mode: trim the scrollback (default 500) to 150 rows. A small
@@ -184,6 +184,20 @@ final class CockpitTab: Identifiable {
         term.send(txt: cmd + "\n")
     }
 
+    /// SwiftTerm's `getEnvironmentVariables` is a fixed whitelist (TERM/LANG/…)
+    /// that drops `SSH_AUTH_SOCK` — so any `ssh` inside a cockpit session (e.g. an
+    /// MCP server launched as `ssh root@…`, like lorislab-comms) couldn't reach the
+    /// agent and prompted "Enter passphrase for key …" straight into claude's
+    /// terminal on every session start. Forward the socket so keychain-loaded keys
+    /// work exactly like they do in Terminal.app.
+    static func terminalEnvironment() -> [String] {
+        var env = Terminal.getEnvironmentVariables(termName: "xterm-256color", trueColor: true)
+        if let sock = ProcessInfo.processInfo.environment["SSH_AUTH_SOCK"] {
+            env.append("SSH_AUTH_SOCK=\(sock)")
+        }
+        return env
+    }
+
     /// Spawn the side shell on first open: a login shell cd'd into the project —
     /// no claude, just an interactive zsh for ad-hoc CLI beside the conversation.
     func ensureShellSpawned() {
@@ -191,7 +205,7 @@ final class CockpitTab: Identifiable {
         let term = DroppableTerminalView(frame: NSRect(x: 0, y: 0, width: 480, height: 480))
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let shellName = (shell as NSString).lastPathComponent
-        let env = Terminal.getEnvironmentVariables(termName: "xterm-256color", trueColor: true)
+        let env = Self.terminalEnvironment()
         term.startProcess(executable: shell, args: [], environment: env, execName: "-\(shellName)")
         CockpitTerminalTheme.apply(to: term)
         if UserDefaults.standard.bool(forKey: "throttleLowMemoryMode") { term.changeScrollback(150) }
