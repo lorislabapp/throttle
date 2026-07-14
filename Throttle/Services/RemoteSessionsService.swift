@@ -166,4 +166,28 @@ final class RemoteSessionsService {
                                  sizeBytes: size, modified: Date())
         return await offload(local, remoteCwd: "/root/offload/\(projectName)")
     }
+
+    /// Reverse offload: pull the box's current transcript for `remoteID`, drop it
+    /// into the LOCAL project dir for `localCwd`, stop the remote session, and
+    /// return the new session id to `--resume` locally. Full copy, never trimmed —
+    /// the same rule as the outbound direction.
+    func bringBack(remoteID: String, localCwd: String) async -> String? {
+        guard isConfigured else { return nil }
+        offloadStatus = "Bringing session back from the box…"
+        do {
+            let (sid, data) = try await EdgeAgentService.downloadTranscript(
+                baseURL: baseURL, token: token, id: remoteID)
+            let dir = FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(".claude/projects/\(MultiCockpitModel.claudeProjectDirName(localCwd))")
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            try data.write(to: dir.appendingPathComponent("\(sid).jsonl"), options: .atomic)
+            try await EdgeAgentService.action(baseURL: baseURL, token: token, id: remoteID, action: "stop")
+            offloadStatus = "Back on the Mac — resuming \(sid.prefix(8)) locally."
+            await refresh()
+            return sid
+        } catch {
+            offloadStatus = "Bring back failed: \(error.localizedDescription)"
+            return nil
+        }
+    }
 }

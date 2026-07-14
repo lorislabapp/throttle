@@ -41,14 +41,24 @@ const PORT = parseInt(process.env.THROTTLE_AGENT_PORT || '8787', 10);
 const TTYD_PORT = parseInt(process.env.THROTTLE_AGENT_TTYD_PORT || '8788', 10);
 const CLAUDE_CMD = process.env.THROTTLE_AGENT_CLAUDE_CMD || 'claude';
 const PROJECTS_DIR = process.env.CLAUDE_PROJECTS_DIR || path.join(os.homedir(), '.claude', 'projects');
-const VERSION = '0.4.0';
+const VERSION = '0.5.0';
 
 if (!TOKEN) { console.error('FATAL: set THROTTLE_AGENT_TOKEN'); process.exit(1); }
 
-// In-memory registry of sessions this agent spawned. tmux is the process host so a
-// crashed agent doesn't kill sessions; on restart we re-discover by tmux name prefix.
+// Registry of sessions this agent spawned. tmux is the process host so a crashed
+// agent doesn't kill sessions; on restart we re-discover by tmux name prefix.
+// Metadata (project/cwd) is PERSISTED next to the agent: without it a restart
+// forgot every session's cwd, which broke usage readout and the bring-back
+// transcript route for sessions that were still alive in tmux.
 const PREFIX = 'throttle-';
+const META_PATH = '/opt/throttle-agent/sessions.json';
 const sessions = new Map(); // id -> { id, project, cwd, startedAt }
+try {
+  for (const [k, v] of Object.entries(JSON.parse(fs.readFileSync(META_PATH, 'utf8')))) sessions.set(k, v);
+} catch {}
+function persistSessions() {
+  try { fs.writeFileSync(META_PATH, JSON.stringify(Object.fromEntries(sessions)), { mode: 0o600 }); } catch {}
+}
 
 async function sh(cmd, args) {
   try { const { stdout } = await execFileP(cmd, args); return stdout.trim(); }
@@ -82,7 +92,8 @@ async function attachTtyd(id) {
   if (ttydSessionId === id && ttydProc && !ttydProc.killed) return; // already attached
   killTtyd();
   ttydProc = spawn('ttyd', ['-p', String(TTYD_PORT), '-W', '-c', `throttle:${TOKEN}`,
-    'tmux', 'attach-session', '-t', PREFIX + id], { stdio: 'ignore' });
+    'tmux', '-u', 'attach-session', '-t', PREFIX + id],
+    { stdio: 'ignore', env: { ...process.env, LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8' } });
   ttydSessionId = id;
   ttydProc.once('exit', () => { if (ttydSessionId === id) { ttydProc = null; ttydSessionId = null; } });
   for (let i = 0; i < 50; i++) { // ~5s max
@@ -255,13 +266,19 @@ async function startSession({ project, cwd, resume }) {
   // home from /etc/passwd even when $HOME is unset, so this is correct for root and
   // any other service user without hardcoding a path. (The unit also sets
   // KillMode=process so `systemctl restart` no longer reaps live sessions.)
-  const spawnEnv = { ...process.env, HOME: process.env.HOME || os.homedir() };
-  await execFileP('tmux', ['new-session', '-d', '-s', name, 'bash', '-lc', inner],
+  // LANG/LC_ALL: a minimal Debian LXC defaults to the C locale, and tmux then
+  // renders every non-ASCII glyph as "_" — the Mac cockpit's attached view showed
+  // accented French (and claude's box-drawing UI) as underscores. C.UTF-8 always
+  // exists on glibc ≥2.13, no locale-gen needed. `-u` forces tmux UTF-8 too.
+  const spawnEnv = { ...process.env, HOME: process.env.HOME || os.homedir(),
+                     LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8' };
+  await execFileP('tmux', ['-u', 'new-session', '-d', '-s', name, 'bash', '-lc', inner],
     { env: spawnEnv });
   sessions.set(id, { id, project: project || path.basename(cwd), cwd, startedAt: Date.now() });
+  persistSessions();
   return { id, name };
 }
-async function stopSession(id) { await sh('tmux', ['kill-session', '-t', PREFIX + id]); sessions.delete(id); }
+async function stopSession(id) { await sh('tmux', ['kill-session', '-t', PREFIX + id]); sessions.delete(id); persistSessions(); }
 async function paneSignal(id, sig) {
   const pid = await sh('tmux', ['list-panes', '-t', PREFIX + id, '-F', '#{pane_pid}']);
   if (pid) await sh('bash', ['-lc', `pkill -${sig} -P ${pid.split('\n')[0]} || kill -${sig} ${pid.split('\n')[0]}`]);
@@ -334,6 +351,23 @@ const server = http.createServer(async (req, res) => {
     if (p === '/sessions' && req.method === 'GET') return send(res, 200, { sessions: await listSessions() });
     if (p === '/sessions' && req.method === 'POST') { const r = await startSession(await body(req)); return send(res, 201, r); }
     if (p === '/transcripts' && req.method === 'PUT') { const r = await receiveTranscript(req, url); return send(res, 201, r); }
+    // Bring-back: stream the NEWEST transcript for a session's cwd so the Mac can
+    // resume it locally. `claude --resume` writes a NEW jsonl (new session id) on
+    // the box, so "newest for the cwd" — not the original id — is the right file.
+    const tm = p.match(/^\/sessions\/([A-Za-z0-9_-]+)\/transcript$/);
+    if (tm && req.method === 'GET') {
+      const meta = sessions.get(tm[1]);
+      if (!meta?.cwd) return send(res, 404, { error: 'unknown session cwd (agent restarted?)' });
+      const t = newestTranscript(meta.cwd);
+      if (!t) return send(res, 404, { error: 'no transcript on the box yet' });
+      res.writeHead(200, {
+        'Content-Type': 'application/octet-stream',
+        'X-Session-Id': path.basename(t, '.jsonl'),
+        'Content-Length': fs.statSync(t).size,
+      });
+      fs.createReadStream(t).pipe(res);
+      return;
+    }
     const m = p.match(/^\/sessions\/([A-Za-z0-9_-]+)\/(stop|pause|resume|attach)$/);
     if (m && req.method === 'POST') {
       const [, id, action] = m;

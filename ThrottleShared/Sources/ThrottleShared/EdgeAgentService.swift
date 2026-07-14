@@ -376,6 +376,19 @@ public enum EdgeAgentService {
         return bytes
     }
 
+    /// Bring-back: download the NEWEST transcript for remote session `id` (the box
+    /// writes a fresh jsonl per resume, so the current one — not the originally
+    /// uploaded id — is returned). Returns (sessionId, jsonl bytes).
+    public static func downloadTranscript(baseURL: String, token: String, id: String,
+                                          timeout: TimeInterval = 120) async throws -> (sessionId: String, data: Data) {
+        let (data, http) = try await request(baseURL, "sessions/\(id)/transcript",
+                                             method: "GET", token: token, timeout: timeout)
+        guard let sid = http.value(forHTTPHeaderField: "X-Session-Id"), !sid.isEmpty else {
+            throw APIError.decode
+        }
+        return (sid, data)
+    }
+
     /// Attach a keystroke-streaming ttyd instance to session `id`. Returns the ttyd
     /// port + WS path — retargeting kills any previously attached session on the
     /// agent side (see `throttle-agent.mjs`'s single-attach model).

@@ -603,13 +603,16 @@ struct MultiCockpitRoot: View {
                                 .font(.system(size: 11)).foregroundStyle(.tertiary)
                                 .padding(.vertical, 12)
                         }
-                        // Edge-agent sessions live on the user's box, not this Mac —
-                        // same rail, explicit REMOTE badge so there's never a doubt
-                        // about where a session runs.
+                        // Edge-agent sessions live on the user's box, not this Mac.
+                        // A remote OWNED by a local tab (offloaded from it) is NOT
+                        // listed here — its local row wears the REMOTE badge
+                        // instead, so one session never shows as two rows. Only
+                        // orphan remotes (started from the sheet / another device)
+                        // appear in this section.
                         if remoteSvc.isConfigured,
-                           !remoteSvc.sessions.isEmpty || remoteSvc.offloadStatus != nil {
+                           !orphanRemotes.isEmpty || remoteSvc.offloadStatus != nil {
                             HStack {
-                                gLabel("REMOTE · \(remoteSvc.sessions.count)")
+                                gLabel("REMOTE · \(orphanRemotes.count)")
                                 Spacer()
                             }.padding(.horizontal, 5).padding(.top, 10).padding(.bottom, 2)
                             if let st = remoteSvc.offloadStatus {
@@ -617,7 +620,7 @@ struct MultiCockpitRoot: View {
                                     .padding(.horizontal, 5).padding(.bottom, 4)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            ForEach(remoteSvc.sessions) { rs in remoteRailRow(rs) }
+                            ForEach(orphanRemotes) { rs in remoteRailRow(rs) }
                         }
                     }.padding(.horizontal, 8).padding(.vertical, 4)
                 }
@@ -694,13 +697,21 @@ struct MultiCockpitRoot: View {
                 Button("Haiku")  { s.terminal?.send(txt: "/model haiku\n") }
             }
         }
-        // One-click offload of THIS session. Three states so the menu always says
-        // what will actually happen: not configured → open setup; already offloaded
-        // (remote still alive) → jump to it; otherwise → upload + resume, no sheet.
+        // One-click offload of THIS session. The menu always says what will
+        // actually happen: not configured → open setup; already on the box → show
+        // it / bring it back / stop it; otherwise → upload + resume, no sheet.
         if !remoteSvc.isConfigured {
             Button("Offload to server — set up…") { SessionOffloadWindowController.shared.show() }
         } else if let rid = s.offloadedRemoteID, remoteSvc.sessions.contains(where: { $0.id == rid }) {
-            Button("Already offloaded — show remote session") { selectedRemoteID = rid }
+            Button("Show remote session") { selectedRemoteID = rid }
+            Button("Bring back to Mac") { bringBack(s) }
+            Button("Stop remote session") {
+                Task {
+                    await remoteSvc.act(rid, "stop")
+                    s.offloadedRemoteID = nil
+                    if selectedRemoteID == rid { selectedRemoteID = nil }
+                }
+            }
         } else {
             Button("Offload to server (with context)") { offloadTab(s) }
         }
@@ -741,8 +752,36 @@ struct MultiCockpitRoot: View {
         Task {
             if let rid = await remoteSvc.offloadTab(sessionId: sid, localCwd: cwd, projectName: project) {
                 s.offloadedRemoteID = rid
+                // MOVE semantics, not copy: hibernate the local twin (context kept,
+                // RAM freed — the whole point of offloading on a 16 GB Mac). The
+                // local row stays in the rail wearing the REMOTE badge; "Bring back
+                // to Mac" reverses the whole thing.
+                model.hibernate(s.id)
                 selectedRemoteID = rid
             }
+        }
+    }
+
+    /// Reverse offload: transcript comes home, remote stops, the hibernated local
+    /// tab respawns with `--resume` on the freshest context.
+    private func bringBack(_ s: CockpitTab) {
+        guard let rid = s.offloadedRemoteID else { return }
+        Task {
+            if let sid = await remoteSvc.bringBack(remoteID: rid, localCwd: s.cwd) {
+                s.offloadedRemoteID = nil
+                if !s.isHibernated && s.isSpawned { model.hibernate(s.id) }  // force a respawn on the new id
+                s.sessionId = sid
+                selectedRemoteID = nil
+                model.wake(s.id)
+            }
+        }
+    }
+
+    /// Remote sessions NOT owned by any local tab (started from the sheet or
+    /// another device). Owned ones are represented by their local row's badge.
+    private var orphanRemotes: [EdgeAgentService.RemoteSession] {
+        remoteSvc.sessions.filter { rs in
+            !model.sessions.contains { $0.offloadedRemoteID == rs.id }
         }
     }
 
@@ -799,14 +838,22 @@ struct MultiCockpitRoot: View {
 
     private func railRow(_ s: CockpitTab) -> some View {
         let on = s.id == model.active?.id
-        return Button { model.wake(s.id) } label: {
+        // Offloaded-and-alive tabs open their REMOTE terminal, not the (hibernated)
+        // local one — one row, one session, wherever it currently runs.
+        let liveRemoteID = s.offloadedRemoteID.flatMap { rid in
+            remoteSvc.sessions.contains(where: { $0.id == rid }) ? rid : nil
+        }
+        return Button {
+            if let rid = liveRemoteID { selectedRemoteID = rid } else { model.wake(s.id) }
+        } label: {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     stateDot(s).help(stateDotHelp(s))
                     Text(s.projectName).font(.system(size: 12.5, weight: .medium))
                         .foregroundStyle(on ? .primary : .secondary).lineLimit(1)
                     Spacer(minLength: 0)
-                    if s.isHibernated { hibernatedChip }
+                    if liveRemoteID != nil { remoteChip }
+                    else if s.isHibernated { hibernatedChip }
                     else if s.needsInput { waitingChip() }
                     if let model = s.model { modelChip(model) }
                 }
