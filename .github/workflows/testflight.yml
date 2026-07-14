@@ -55,6 +55,7 @@ jobs:
             -archivePath build/ThrottleiOS.xcarchive \
             -destination "generic/platform=iOS" \
             CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="Apple Development" \
             DEVELOPMENT_TEAM=TDV6D5L785 \
             PROVISIONING_PROFILE_SPECIFIER= \
             -allowProvisioningUpdates \
