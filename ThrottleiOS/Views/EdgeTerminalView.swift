@@ -22,6 +22,9 @@ struct EdgeTerminalView: UIViewRepresentable {
     func makeUIView(context: Context) -> TerminalView {
         let tv = TerminalView(frame: .zero,
                               font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular))
+        // See RemoteTerminalView: stop SGR mouse-motion reports flooding the shell when
+        // a TUI leaves `ESC[?1003h` set on exit. Matches the Mac fix (c6ae798).
+        tv.allowMouseReporting = false
         tv.terminalDelegate = context.coordinator
         context.coordinator.terminal = tv
         startAttach(context.coordinator, geometry: tv.getTerminal())

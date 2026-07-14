@@ -20,6 +20,13 @@ struct RemoteTerminalView: UIViewRepresentable {
     func makeUIView(context: Context) -> TerminalView {
         let tv = TerminalView(frame: .zero,
                               font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular))
+        // Never forward mouse events to the remote PTY. When a TUI (claude) turns on
+        // any-event mouse tracking (`ESC[?1003h`) and exits without resetting it,
+        // SwiftTerm keeps mouseMode on and every touch/scroll emits an SGR motion
+        // report into the shared session — echoed as `<btn>;<col>;<row>M` garbage that
+        // shows here AND on the Mac cockpit mirroring the same tmux session. Matches the
+        // Mac fix in DroppableTerminalView (c6ae798).
+        tv.allowMouseReporting = false
         tv.terminalDelegate = context.coordinator
         context.coordinator.terminal = tv
 
