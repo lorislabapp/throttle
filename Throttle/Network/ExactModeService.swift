@@ -160,6 +160,14 @@ final class ExactModeService {
     }
 
     private func pollOnceImpl() async -> Result<ExactSnapshot, ExactModeError> {
+        // 0) OAuth endpoint first (3.2.65): server-truth across ALL machines,
+        // headless, no Safari/WKWebView — the token Claude Code already keeps
+        // in the keychain. Any failure quietly falls through to the scrapes.
+        if let snap = try? await OAuthUsageProvider.fetch() {
+            return .success(snap)
+        }
+        logger.info("OAuth usage path unavailable — falling back to embedded/Safari")
+
         // Always try the embedded session first. The embedded path's
         // own JS reports `_throttle_status: 401` when the cookie store
         // doesn't have a usable session, which we map to .notSignedIn —

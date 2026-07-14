@@ -41,7 +41,7 @@ const PORT = parseInt(process.env.THROTTLE_AGENT_PORT || '8787', 10);
 const TTYD_PORT = parseInt(process.env.THROTTLE_AGENT_TTYD_PORT || '8788', 10);
 const CLAUDE_CMD = process.env.THROTTLE_AGENT_CLAUDE_CMD || 'claude';
 const PROJECTS_DIR = process.env.CLAUDE_PROJECTS_DIR || path.join(os.homedir(), '.claude', 'projects');
-const VERSION = '0.5.0';
+const VERSION = '0.6.0';
 
 if (!TOKEN) { console.error('FATAL: set THROTTLE_AGENT_TOKEN'); process.exit(1); }
 
@@ -332,6 +332,30 @@ async function receiveTranscript(req, url) {
   return { ok: true, sessionId, bytes, dest };
 }
 
+// Repo transfer (Mac -> box): receive a `git bundle` (full history, single file)
+// and clone it at `cwd`, so an offloaded session lands next to the actual CODE —
+// not an empty directory. Bundle > tarball: it carries .git history compactly and
+// `git clone <bundle>` is atomic. Only into an ABSENT or EMPTY cwd (409 otherwise:
+// never clobber a directory that already has content).
+async function receiveRepo(req, url) {
+  const cwd = url.searchParams.get('cwd');
+  const branch = url.searchParams.get('branch') || 'HEAD';
+  if (!cwd || !cwd.startsWith('/')) throw new Error('cwd (absolute) required');
+  if (!/^[A-Za-z0-9._\/-]{4,300}$/.test(branch)) throw new Error('bad branch');
+  if (fs.existsSync(cwd) && fs.readdirSync(cwd).length > 0) {
+    const err = new Error('cwd not empty — refusing to clobber'); err.code = 409; throw err;
+  }
+  const tmp = path.join(os.tmpdir(), `throttle-repo-${crypto.randomBytes(4).toString('hex')}.bundle`);
+  await streamToFile(req, tmp);
+  try {
+    const args = branch === 'HEAD' ? ['clone', tmp, cwd] : ['clone', '-b', branch, tmp, cwd];
+    await execFileP('git', args);
+    return { ok: true, cwd, branch };
+  } finally {
+    fs.rmSync(tmp, { force: true });
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
@@ -351,6 +375,10 @@ const server = http.createServer(async (req, res) => {
     if (p === '/sessions' && req.method === 'GET') return send(res, 200, { sessions: await listSessions() });
     if (p === '/sessions' && req.method === 'POST') { const r = await startSession(await body(req)); return send(res, 201, r); }
     if (p === '/transcripts' && req.method === 'PUT') { const r = await receiveTranscript(req, url); return send(res, 201, r); }
+    if (p === '/repos' && req.method === 'PUT') {
+      try { const r = await receiveRepo(req, url); return send(res, 201, r); }
+      catch (e) { return send(res, e.code === 409 ? 409 : 500, { error: String(e.message || e) }); }
+    }
     // Bring-back: stream the NEWEST transcript for a session's cwd so the Mac can
     // resume it locally. `claude --resume` writes a NEW jsonl (new session id) on
     // the box, so "newest for the cwd" — not the original id — is the right file.

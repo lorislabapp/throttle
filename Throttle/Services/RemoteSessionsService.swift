@@ -152,7 +152,9 @@ final class RemoteSessionsService {
 
     /// One-click offload of a COCKPIT TAB: resolves the tab's transcript on disk
     /// and ships it, defaulting the remote cwd to /root/offload/<project>. This is
-    /// the rail decision-menu path — no sheet, no picker.
+    /// the rail decision-menu path — no sheet, no picker. When the local cwd is a
+    /// git repo, the CODE goes too (git bundle → clone on the box), so the remote
+    /// claude wakes up next to the files it was working on — not an empty dir.
     @discardableResult
     func offloadTab(sessionId: String, localCwd: String, projectName: String) async -> String? {
         let enc = MultiCockpitModel.claudeProjectDirName(localCwd)
@@ -162,9 +164,55 @@ final class RemoteSessionsService {
             offloadStatus = "No transcript found for this session yet — say something to claude first."
             return nil
         }
+        let remoteCwd = "/root/offload/\(projectName)"
+        await uploadRepoIfGit(localCwd: localCwd, remoteCwd: remoteCwd)
         let local = LocalSession(id: sessionId, project: projectName, path: path,
                                  sizeBytes: size, modified: Date())
-        return await offload(local, remoteCwd: "/root/offload/\(projectName)")
+        return await offload(local, remoteCwd: remoteCwd)
+    }
+
+    /// Best-effort repo transfer: bundle the local git history (full clone, no
+    /// untracked files) and let the agent clone it at `remoteCwd`. Every failure
+    /// is non-fatal — the transcript offload still proceeds without code.
+    private func uploadRepoIfGit(localCwd: String, remoteCwd: String) async {
+        let git = URL(fileURLWithPath: localCwd).appendingPathComponent(".git")
+        guard FileManager.default.fileExists(atPath: git.path) else { return }
+        offloadStatus = "Bundling the repo…"
+        let bundle = FileManager.default.temporaryDirectory
+            .appendingPathComponent("throttle-\(UUID().uuidString).bundle")
+        defer { try? FileManager.default.removeItem(at: bundle) }
+        guard let branch = await Self.runGit(["-C", localCwd, "rev-parse", "--abbrev-ref", "HEAD"]),
+              await Self.runGit(["-C", localCwd, "bundle", "create", bundle.path, "--all"]) != nil else {
+            offloadStatus = "Repo bundling failed — offloading transcript only."
+            return
+        }
+        do {
+            offloadStatus = "Uploading the repo bundle…"
+            let cloned = try await EdgeAgentService.uploadRepoBundle(
+                baseURL: baseURL, token: token, remoteCwd: remoteCwd,
+                branch: branch == "HEAD" ? "HEAD" : branch, fileURL: bundle)
+            offloadStatus = cloned ? "Repo cloned on the box." : "Box already has files there — kept them."
+        } catch {
+            offloadStatus = "Repo upload failed (\(error.localizedDescription)) — transcript only."
+        }
+    }
+
+    /// Run git off-main; returns trimmed stdout, nil on any failure.
+    private nonisolated static func runGit(_ args: [String]) async -> String? {
+        await withCheckedContinuation { cont in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let p = Process()
+                p.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+                p.arguments = args
+                let out = Pipe(); p.standardOutput = out; p.standardError = Pipe()
+                do { try p.run() } catch { cont.resume(returning: nil); return }
+                p.waitUntilExit()
+                guard p.terminationStatus == 0 else { cont.resume(returning: nil); return }
+                let s = String(decoding: out.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                cont.resume(returning: s)
+            }
+        }
     }
 
     /// Reverse offload: pull the box's current transcript for `remoteID`, drop it

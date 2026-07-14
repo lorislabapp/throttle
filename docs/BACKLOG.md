@@ -1,7 +1,32 @@
 # Throttle — backlog (deferred, as of 2026-06-27, post-3.2.16)
 
 Nothing here is broken or urgent. These are deferred-on-purpose or on-demand.
-Current shipped version: **3.2.49** (build 149) — released + live on lorislab.fr 2026-07-08.
+Current shipped version: **3.2.65** (build 165) — SOTA sprint, 2026-07-14.
+
+## Shipped 2026-07-14 (3.2.61→3.2.65) — offload one-click + SOTA sprint
+Grounded in the adversarially-verified deep research `docs/research/sota-companions-2026-07-14.md`
+(also NotebookLM source #220). Strategic memory: `anthropic-remote-control-threat.md`.
+- [x] One-click SSH deploy of the edge agent (EdgeDeployService, pct-exec routing, zero paste)
+- [x] In-app Claude login on the box (agent /auth/* drives `claude setup-token` through tmux)
+- [x] Remote sessions in the rail w/ REMOTE badge; move semantics (local hibernates); bring-back
+- [x] Mouse-report filter at the PTY chokepoint (SwiftTerm mouseMoved ignores allowMouseReporting)
+- [x] ATS fix (NSAllowsLocalNetworking alongside ArbitraryLoads = ArbitraryLoads IGNORED) — Mac + iOS
+- [x] SSH_AUTH_SOCK forwarded into cockpit PTYs (ssh-launched MCPs no longer prompt passphrase)
+- [x] OAuth server-truth usage (api.anthropic.com/api/oauth/usage, keychain token) — primary Exact path
+- [x] Cache-efficiency score (plan-yield %) on the Dashboard — the niche nobody occupies
+- [x] Rules engine v1: pause Opus/Fable sessions past a token cap (default 200k)
+- [x] Repo-on-the-box: offload ships a git bundle, agent clones it at the remote cwd (agent 0.6.0)
+
+## SOTA gaps — decided NOT now / needs a decision (2026-07-14 research)
+- [ ] **Multi-provider metering** (ClaudeBar does 11, CodexBar ~59): strategic dilution vs market — decide
+      after offload traction. Observability-only if ever (doctrine: never a data-path proxy).
+- [ ] **Review-and-merge layer** (Conductor's lane, $22M funded): out of scope — cockpit, not IDE.
+- [ ] OAuth endpoint extras: per-model weekly (limits[].weekly_scoped), extra-usage spend surface.
+- [ ] ❗Mid-session model right-size nudge is COUNTERPRODUCTIVE (per-model prompt caches) — only nudge
+      at NEW-session/task boundaries. Corrects the earlier missed-opps list.
+- [ ] Anthropic first-party Remote Control (research preview) erodes the iOS remote-control lane for
+      subscription users; Throttle's residual niches: local→remote handoff (shipped), arbitrary-session
+      observability, API-key/Bedrock users, cache-aware ops.
 
 ## Shipped 2026-07-08 (3.2.48 + 3.2.49) — web research MCP (local WebKit render + private grounding)
 - [x] **Rank-1 `web_render`** (3.2.48) — renders a page's JS in an offscreen private WKWebView and

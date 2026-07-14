@@ -19,6 +19,7 @@ struct CockpitDashboardView: View {
     struct DashData: Equatable {
         var cap5h: Double = 0, cap7d: Double = 0
         var costEUR: Double = 0, rmcEUR: Double = 0
+    var cacheEff: Double? = nil   // prompt-cache hit rate 0…1 (plan-yield score)
         var activeWeekHours: Double = 0
         var projects: [Proj] = []          // top by active time this week
         var spark: [Double] = []           // daily active seconds, last 7d
@@ -58,6 +59,12 @@ struct CockpitDashboardView: View {
                 gauge("7-DAY", data.cap7d)
                 VStack(alignment: .leading, spacing: 7) {
                     stat("spend", String(format: "€%.2f", data.costEUR), "/ 7d")
+                    // The plan-yield number: Anthropic ties cache hit rate to how
+                    // far plan rate-limits stretch. <60% = plan burning hot.
+                    if let eff = data.cacheEff {
+                        stat("cache eff", String(format: "%.0f%%", eff * 100), "/ 7d",
+                             warn: eff < 0.6)
+                    }
                     if data.rmcEUR >= 0.01 {
                         stat("cache waste", String(format: "≈€%.2f", data.rmcEUR), "recoverable", warn: true)
                     }
@@ -188,11 +195,12 @@ struct CockpitDashboardView: View {
         Task.detached(priority: .utility) {
             let cost = (try? await db.read { try StatsDataService.extrapolatedCostEUR(in: $0, range: .last7d) }) ?? 0
             let rmc = (try? await db.read { try StatsDataService.recoverableMissCostEUR(in: $0).eur }) ?? 0
+            let eff = (try? await db.read { try StatsDataService.cacheEfficiency(in: $0, range: .last7d) }) ?? nil
             let wa = (try? await db.read { try StatsDataService.workActivity(in: $0) }) ?? .init()
             let projects = wa.topProjects.prefix(5).map { DashData.Proj(name: $0.name, hours: $0.seconds / 3600) }
             let spark = wa.daily.map { $0.seconds }
             await MainActor.run {
-                data.costEUR = cost; data.rmcEUR = rmc
+                data.costEUR = cost; data.rmcEUR = rmc; data.cacheEff = eff
                 data.activeWeekHours = wa.activeWeek / 3600
                 data.projects = Array(projects); data.spark = spark
             }

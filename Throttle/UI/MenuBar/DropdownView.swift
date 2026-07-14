@@ -1327,6 +1327,8 @@ private struct InlineGeneralPane: View {
         FileManager.default.fileExists(atPath: InlineGeneralPane.conciseFlagPath)
     @AppStorage("throttleLowMemoryMode") private var lowMemoryMode = false
     @AppStorage("throttleAutoPauseEnabled") private var autoPauseEnabled = false
+    @AppStorage("throttleOpusTokenCapEnabled") private var opusCapEnabled = false
+    @AppStorage("throttleOpusTokenCapK") private var opusCapK = 200
     @AppStorage("throttleAutoTrimEnabled") private var autoTrimEnabled = false
     @AppStorage("throttleAutoHibernateEnabled") private var autoHibernateEnabled = true
     @AppStorage("throttleNodeHeapCapMB") private var nodeHeapCapMB = 0
@@ -1414,6 +1416,18 @@ private struct InlineGeneralPane: View {
             SettingsRow(title: "Auto-pause near the cap",
                         sub: "Off by default. At 95% with the wall under 5 min away, Throttle shows a 10-second cancelable countdown, then waits for a quiet moment in the transcript (no stream/write in flight) before freezing (SIGSTOP) the runaway session — or all live ones if none is looping. Reversible: resume anytime, nothing lost.") {
                 Toggle("", isOn: $autoPauseEnabled).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+            }
+            SettingsHair()
+            SettingsRow(title: "Pause Opus/Fable sessions past a token cap",
+                        sub: "Off by default. A per-session rule: when a premium-model session (Opus, Fable) crosses the cap below, Throttle freezes it (SIGSTOP) and notifies you — big-model sessions that balloon are the #1 silent spend. Resume anytime from the rail; it won't re-pause until the session drops back under the cap.") {
+                HStack(spacing: 8) {
+                    if opusCapEnabled {
+                        Stepper(value: $opusCapK, in: 50...1000, step: 50) {
+                            Text("\(opusCapK)k").font(.system(size: 11, design: .monospaced))
+                        }.controlSize(.small)
+                    }
+                    Toggle("", isOn: $opusCapEnabled).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                }
             }
             SettingsHair()
             SettingsRow(title: "Auto-hibernate idle sessions under memory pressure",

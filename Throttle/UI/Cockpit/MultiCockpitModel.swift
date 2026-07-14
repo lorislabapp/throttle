@@ -71,6 +71,9 @@ final class CockpitTab: Identifiable {
     /// remote session id it resumed as. Lets the decision menu say "already
     /// offloaded" instead of silently re-uploading.
     var offloadedRemoteID: String?
+    /// Opus-token-cap rule latch: true after the rule paused (or the user resumed
+    /// past) this session, cleared when it drops back under the cap.
+    var ruleCapAcknowledged = false
 
     /// Rich session state for the rail dot — replaces the binary live/gray flicker.
     /// `working` covers BOTH claude streaming AND the user typing (lastActivityAt
@@ -504,6 +507,37 @@ final class MultiCockpitModel {
 
     private var autoPauseEnabled: Bool { UserDefaults.standard.bool(forKey: "throttleAutoPauseEnabled") }
 
+    // Rules engine v1 — the concrete rule the planning docs kept asking for:
+    // "auto-pause an Opus/Fable session past N tokens". Per-SESSION cap (not the
+    // plan wall above): premium-model sessions that balloon are the #1 silent
+    // spend, and pausing is reversible (SIGSTOP — resume keeps full context).
+    private var opusCapEnabled: Bool { UserDefaults.standard.bool(forKey: "throttleOpusTokenCapEnabled") }
+    private var opusCapTokens: Int {
+        let v = UserDefaults.standard.integer(forKey: "throttleOpusTokenCapK")
+        return (v > 0 ? v : 200) * 1_000    // default 200k
+    }
+
+    /// Called each tick after `refreshStats` lands. Pauses any LIVE premium-model
+    /// (Opus/Fable) session whose token count crossed the cap. Fires once per
+    /// crossing: a manual Resume sets `ruleCapAcknowledged`, so it won't re-pause
+    /// until the session drops under the cap again (fresh /compact or new id).
+    func evaluateOpusTokenCap() {
+        guard opusCapEnabled else { return }
+        let cap = opusCapTokens
+        for s in sessions {
+            guard let model = s.model?.lowercased(),
+                  model.contains("opus") || model.contains("fable") || model.contains("mythos"),
+                  let tok = s.tokens else { continue }
+            if tok < cap { s.ruleCapAcknowledged = false; continue }
+            guard s.isSpawned, !s.isPaused, !s.ruleCapAcknowledged else { continue }
+            s.ruleCapAcknowledged = true
+            s.pauseProcess()
+            CockpitNotifier.shared.notifyRule(
+                title: "Session paused — \(s.projectName)",
+                body: "\(model.capitalized) crossed \(cap / 1_000)k tokens (Opus-cap rule). Resume from the rail when you've checked it.")
+        }
+    }
+
     /// Called each tick. Derives ETA-to-100% from the binding-pct rise (same method as
     /// `ThresholdNotifier`, so no token-cap math needed) and arms the countdown when all
     /// guards pass. Cheap + synchronous; `binding` reads `AppState.snapshot` directly.
@@ -731,6 +765,7 @@ final class MultiCockpitModel {
                 self?.sampleMachine()
                 self?.refreshStats()
                 self?.evaluateAutoPause()
+                self?.evaluateOpusTokenCap()
                 self?.evaluatePacing()             // soft cross-session pacing tier below auto-pause
                 self?.autoHibernateIfPressured()   // MEM-H01: reclaim idle-session RAM under critical pressure
                 if !quiet { self?.sampleSessionRAM() }

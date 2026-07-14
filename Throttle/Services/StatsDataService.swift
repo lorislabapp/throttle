@@ -528,6 +528,32 @@ enum StatsDataService {
         return totalUsd * usdToEur
     }
 
+    // MARK: - Cache efficiency (plan-yield lever)
+
+    /// Prompt-cache hit rate over the range: cache_read / (cache_read +
+    /// cache_create + input). Anthropic bills cache reads at ~10% of input AND
+    /// explicitly ties cache hit rate to how far a subscription's rate limits
+    /// stretch — so this single percentage is the closest thing to a "plan
+    /// yield" score. nil when the range has no input activity.
+    static func cacheEfficiency(in db: Database, range: Range = .last7d, now: Date = Date()) throws -> Double? {
+        let cutoff = range.cutoff(now: now)
+        let where_ = cutoff > 0 ? "WHERE timestamp >= ?" : ""
+        let sql = """
+            SELECT COALESCE(SUM(cache_read),0) AS cr,
+                   COALESCE(SUM(cache_create),0) AS cc,
+                   COALESCE(SUM(input_tokens),0) AS i
+            FROM usage_events \(where_)
+            """
+        let row = cutoff > 0
+            ? try Row.fetchOne(db, sql: sql, arguments: [cutoff])
+            : try Row.fetchOne(db, sql: sql)
+        guard let row else { return nil }
+        let cr: Int = row["cr"] ?? 0, cc: Int = row["cc"] ?? 0, i: Int = row["i"] ?? 0
+        let denom = cr + cc + i
+        guard denom > 0 else { return nil }
+        return Double(cr) / Double(denom)
+    }
+
     // MARK: - Cost extrapolation
 
     /// Approximate API cost for the given range, in EUR.

@@ -61,6 +61,22 @@ final class CockpitNotifier: NSObject {
         }
     }
 
+    /// Generic rules-engine notification (e.g. the Opus token-cap auto-pause).
+    /// Same live-status gating as notifyWaiting; no tab deep-link payload.
+    func notifyRule(title: String, body: String) {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            guard settings.authorizationStatus == .authorized
+                || settings.authorizationStatus == .provisional else { return }
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = .default
+            UNUserNotificationCenter.current().add(
+                UNNotificationRequest(identifier: "throttle-rule-\(UUID().uuidString)",
+                                      content: content, trigger: nil))
+        }
+    }
+
     /// claude hit the usage cap on a session — notify so you know WHICH project is
     /// blocked and when it frees up, even from another window. Same live-status
     /// gating as notifyWaiting (never trust an in-memory latch).

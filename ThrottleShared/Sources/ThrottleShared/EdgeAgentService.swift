@@ -146,10 +146,11 @@ public enum EdgeAgentService {
         let ttydChecksums = ttydSHA256.map { "\($0.value)  ttyd.\($0.key)" }.sorted().joined(separator: "\n")
         return [
             DeployStep(label: "SSH connection", script: "set -e; echo ok-$(hostname)"),
-            DeployStep(label: "Node + tmux", script: """
+            DeployStep(label: "Node + tmux + git", script: """
                 set -euo pipefail
                 command -v node >/dev/null || (curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs)
                 command -v tmux >/dev/null || (apt-get update -qq && apt-get install -y tmux)
+                command -v git >/dev/null || (apt-get update -qq && apt-get install -y git)
                 """),
             DeployStep(label: "ttyd 1.7.7 (checksummed)", script: """
                 set -euo pipefail
@@ -374,6 +375,27 @@ public enum EdgeAgentService {
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let bytes = obj["bytes"] as? Int else { throw APIError.decode }
         return bytes
+    }
+
+    /// Repo transfer: upload a `git bundle` for the agent to clone at `remoteCwd`
+    /// (409 = cwd already has content; caller treats that as non-fatal).
+    @discardableResult
+    public static func uploadRepoBundle(baseURL: String, token: String, remoteCwd: String,
+                                        branch: String, fileURL: URL,
+                                        timeout: TimeInterval = 300) async throws -> Bool {
+        var comps = URLComponents(string: baseURL)
+        comps?.path = "/repos"
+        comps?.queryItems = [URLQueryItem(name: "cwd", value: remoteCwd),
+                             URLQueryItem(name: "branch", value: branch)]
+        guard let url = comps?.url else { throw APIError.badURL }
+        var r = URLRequest(url: url); r.httpMethod = "PUT"; r.timeoutInterval = timeout
+        r.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        r.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+        let (_, resp) = try await URLSession.shared.upload(for: r, fromFile: fileURL)
+        guard let http = resp as? HTTPURLResponse else { throw APIError.http(-1) }
+        if http.statusCode == 409 { return false }   // cwd not empty — repo already there
+        guard (200..<300).contains(http.statusCode) else { throw APIError.http(http.statusCode) }
+        return true
     }
 
     /// Bring-back: download the NEWEST transcript for remote session `id` (the box
