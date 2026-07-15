@@ -9,6 +9,17 @@ import ThrottleShared
 /// after 5 min idle) per the non-negotiable write-unlock default. Connection state
 /// is surfaced through `TerminalConnection` so a failed attach never leaves a blank
 /// terminal with no explanation.
+/// TerminalView that drops first-responder when it leaves the window. SwiftUI's
+/// TabView keeps non-selected tabs' hierarchies alive, so without this the
+/// terminal stays firstResponder after a bottom-tab switch and SwiftTerm's
+/// keyboard accessory bar (esc/ctrl/arrows) sticks over EVERY tab.
+final class ResigningTerminalView: TerminalView {
+    override func willMove(toWindow newWindow: UIWindow?) {
+        super.willMove(toWindow: newWindow)
+        if newWindow == nil, isFirstResponder { _ = resignFirstResponder() }
+    }
+}
+
 struct EdgeTerminalView: UIViewRepresentable {
     let session: EdgeAgentService.RemoteSession
     let lockState: TerminalLockState
@@ -25,8 +36,8 @@ struct EdgeTerminalView: UIViewRepresentable {
         // churn, and recreating the emulator would drop the screen AND re-attach
         // the socket mid-session.
         if let existing = context.coordinator.cachedView { return existing }
-        let tv = TerminalView(frame: .zero,
-                              font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular))
+        let tv = ResigningTerminalView(frame: .zero,
+                                       font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular))
         // See RemoteTerminalView: stop SGR mouse-motion reports flooding the shell when
         // a TUI leaves `ESC[?1003h` set on exit. Matches the Mac fix (c6ae798).
         tv.allowMouseReporting = false
@@ -102,8 +113,10 @@ struct EdgeTerminalView: UIViewRepresentable {
     }
 
     static func dismantleUIView(_ uiView: TerminalView, coordinator: Coordinator) {
+        if uiView.isFirstResponder { _ = uiView.resignFirstResponder() }
         coordinator.attachTask?.cancel()
         coordinator.client?.disconnect()
+        coordinator.cachedView = nil
     }
 
     @MainActor

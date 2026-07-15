@@ -21,8 +21,10 @@ struct RemoteTerminalView: UIViewRepresentable {
         // Reuse the live view across makeUIView calls (404 engine pattern) —
         // recreating it would re-run PeerClient.attachTerminal and blank the screen.
         if let existing = context.coordinator.cachedView { return existing }
-        let tv = TerminalView(frame: .zero,
-                              font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular))
+        // ResigningTerminalView: see EdgeTerminalView — drops firstResponder when
+        // leaving the window so the keyboard bar can't stick across bottom tabs.
+        let tv = ResigningTerminalView(frame: .zero,
+                                       font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular))
         // Never forward mouse events to the remote PTY. When a TUI (claude) turns on
         // any-event mouse tracking (`ESC[?1003h`) and exits without resetting it,
         // SwiftTerm keeps mouseMode on and every touch/scroll emits an SGR motion
@@ -69,7 +71,9 @@ struct RemoteTerminalView: UIViewRepresentable {
     }
 
     static func dismantleUIView(_ uiView: TerminalView, coordinator: Coordinator) {
+        if uiView.isFirstResponder { _ = uiView.resignFirstResponder() }
         PeerClient.shared.detachTerminal()
+        coordinator.cachedView = nil
     }
 
     // SwiftTerm invokes the delegate on the main thread (it's a UIView), so a
