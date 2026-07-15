@@ -58,6 +58,11 @@ extension AppState {
             // record, no schema redeploy).
             peerPairingSecret: PeerTransport.shared.pairingSecretBase64,
             // Off-LAN fallback host (nil unless the user entered one in Settings).
-            peerFallbackHost: PeerTransport.shared.fallbackHost)
+            peerFallbackHost: PeerTransport.shared.fallbackHost,
+            // Edge-agent auto-config: the phone's Edge tab configures itself from
+            // these instead of asking the user to retype host + 32-char token.
+            edgeHost: RemoteSessionsService.shared.isConfigured ? RemoteSessionsService.shared.host : nil,
+            edgePort: RemoteSessionsService.shared.isConfigured ? RemoteSessionsService.shared.port : nil,
+            edgeToken: RemoteSessionsService.shared.isConfigured ? RemoteSessionsService.shared.token : nil)
     }
 }

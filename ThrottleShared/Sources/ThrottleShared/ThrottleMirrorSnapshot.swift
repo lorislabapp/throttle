@@ -86,12 +86,21 @@ public struct ThrottleMirrorSnapshot: Codable, Sendable, Equatable {
     /// back to the CloudKit-only (read-only-cadence) mirror.
     public let peerFallbackHost: String?
 
+    /// Edge-agent auto-config: the Mac's configured agent endpoint + bearer token,
+    /// riding the same encrypted blob as `peerPairingSecret` so the iPhone's Edge
+    /// tab configures itself on first CloudKit sync — nobody should have to
+    /// retype a 32-char token on a phone keyboard. nil when the Mac has no agent.
+    public let edgeHost: String?
+    public let edgePort: Int?
+    public let edgeToken: String?
+
     public init(publishedAt: Date, deviceName: String,
                 fiveHour: WindowMirror, sevenDay: WindowMirror, sevenDaySonnet: WindowMirror,
                 weeklyTokens: Int, weeklyCostEUR: Double, savedTokensThisWeek: Int,
                 sessionCount: Int, tabs: [TabMirror],
                 peerPairingSecret: String? = nil,
                 peerFallbackHost: String? = nil,
+                edgeHost: String? = nil, edgePort: Int? = nil, edgeToken: String? = nil,
                 schemaVersion: Int = ThrottleMirrorSnapshot.currentSchemaVersion) {
         self.schemaVersion = schemaVersion
         self.publishedAt = publishedAt
@@ -106,6 +115,9 @@ public struct ThrottleMirrorSnapshot: Codable, Sendable, Equatable {
         self.tabs = tabs
         self.peerPairingSecret = peerPairingSecret
         self.peerFallbackHost = peerFallbackHost
+        self.edgeHost = edgeHost
+        self.edgePort = edgePort
+        self.edgeToken = edgeToken
     }
 
     // MARK: Binding window (the "worst" of 5h/7d) — mirrors the Mac's rule.

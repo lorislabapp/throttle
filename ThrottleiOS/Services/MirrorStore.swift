@@ -42,6 +42,18 @@ final class MirrorStore {
         scheduleHistoryFlush()       // large array — off-main, debounced
         WidgetCenter.shared.reloadAllTimelines()
         ThresholdNotifier.shared.evaluate(snap)
+        // Edge auto-config: adopt the Mac's agent endpoint from the encrypted
+        // blob. Mac is the source of truth — a changed token/host on the Mac
+        // propagates here on the next sync; manual phone entry only matters
+        // until the first snapshot with edge config arrives.
+        if let h = snap.edgeHost, let t = snap.edgeToken, !h.isEmpty, !t.isEmpty {
+            let svc = EdgeSessionsService.shared
+            let p = snap.edgePort ?? 8787
+            if svc.host != h || svc.port != p || svc.token != t {
+                svc.host = h; svc.port = p; svc.token = t
+                Task { await svc.refresh() }
+            }
+        }
     }
 
     /// Latest snapshot only — a single small blob, cheap enough to write synchronously
