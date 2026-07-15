@@ -20,15 +20,31 @@ struct EdgeTerminalView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(lockState: lockState) }
 
     func makeUIView(context: Context) -> TerminalView {
+        // Reuse the live view across makeUIView calls (404's SwiftTermSSHView
+        // pattern): SwiftUI can rebuild the representable on keyboard/rotation
+        // churn, and recreating the emulator would drop the screen AND re-attach
+        // the socket mid-session.
+        if let existing = context.coordinator.cachedView { return existing }
         let tv = TerminalView(frame: .zero,
                               font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular))
         // See RemoteTerminalView: stop SGR mouse-motion reports flooding the shell when
         // a TUI leaves `ESC[?1003h` set on exit. Matches the Mac fix (c6ae798).
         tv.allowMouseReporting = false
+        Self.applyOpaqueBackground(tv)
         tv.terminalDelegate = context.coordinator
         context.coordinator.terminal = tv
+        context.coordinator.cachedView = tv
         startAttach(context.coordinator, geometry: tv.getTerminal())
         return tv
+    }
+
+    /// Opaque black background so keyboard-driven reflows don't leave transparent
+    /// gaps where the previous (wider) rendering bleeds through — ported from 404's
+    /// terminal engine, where this fixed the "can't see anything" rendering bugs.
+    static func applyOpaqueBackground(_ tv: TerminalView) {
+        tv.isOpaque = true
+        tv.backgroundColor = .black
+        tv.clearsContextBeforeDrawing = true
     }
 
     private func startAttach(_ coord: Coordinator, geometry: Terminal) {
@@ -68,6 +84,11 @@ struct EdgeTerminalView: UIViewRepresentable {
 
     // Focus only after unlock; also re-drive the attach when `attempt` changes (Retry).
     func updateUIView(_ uiView: TerminalView, context: Context) {
+        // Keyboard show/hide reflows the buffer but can leave stale cell rects
+        // painted (ghost text from the previous, wider layout). Force a full
+        // redraw on every update — same fix as 404's terminal engine.
+        uiView.setNeedsLayout()
+        uiView.setNeedsDisplay()
         if context.coordinator.lastAttempt != attempt {
             context.coordinator.lastAttempt = attempt
             context.coordinator.client?.disconnect()
@@ -88,6 +109,9 @@ struct EdgeTerminalView: UIViewRepresentable {
     @MainActor
     final class Coordinator: NSObject, @preconcurrency TerminalViewDelegate {
         weak var terminal: TerminalView?
+        /// Strong cache so makeUIView returns the same emulator instance for the
+        /// coordinator's whole lifetime (see makeUIView).
+        var cachedView: TerminalView?
         var client: TtydClient?
         var attachTask: Task<Void, Never>?
         var lastAttempt = 0

@@ -18,6 +18,9 @@ struct RemoteTerminalView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(lockState: lockState) }
 
     func makeUIView(context: Context) -> TerminalView {
+        // Reuse the live view across makeUIView calls (404 engine pattern) —
+        // recreating it would re-run PeerClient.attachTerminal and blank the screen.
+        if let existing = context.coordinator.cachedView { return existing }
         let tv = TerminalView(frame: .zero,
                               font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular))
         // Never forward mouse events to the remote PTY. When a TUI (claude) turns on
@@ -27,8 +30,10 @@ struct RemoteTerminalView: UIViewRepresentable {
         // shows here AND on the Mac cockpit mirroring the same tmux session. Matches the
         // Mac fix in DroppableTerminalView (c6ae798).
         tv.allowMouseReporting = false
+        EdgeTerminalView.applyOpaqueBackground(tv)   // same keyboard-reflow fix
         tv.terminalDelegate = context.coordinator
         context.coordinator.terminal = tv
+        context.coordinator.cachedView = tv
 
         // Accessory-bar keys go through the same lock gate as typed input — the LAN
         // terminal types straight into the live Mac session, the most sensitive path.
@@ -53,6 +58,9 @@ struct RemoteTerminalView: UIViewRepresentable {
 
     // Focus (raise the keyboard) only once the write path is unlocked.
     func updateUIView(_ uiView: TerminalView, context: Context) {
+        // Anti-ghost-text redraw on keyboard reflow (404 engine fix).
+        uiView.setNeedsLayout()
+        uiView.setNeedsDisplay()
         if lockState.unlocked, !uiView.isFirstResponder {
             DispatchQueue.main.async { _ = uiView.becomeFirstResponder() }
         } else if !lockState.unlocked, uiView.isFirstResponder {
@@ -70,6 +78,8 @@ struct RemoteTerminalView: UIViewRepresentable {
     @MainActor
     final class Coordinator: NSObject, @preconcurrency TerminalViewDelegate {
         weak var terminal: TerminalView?
+        /// Strong cache so makeUIView returns the same emulator instance (see makeUIView).
+        var cachedView: TerminalView?
         private let lockState: TerminalLockState
 
         init(lockState: TerminalLockState) { self.lockState = lockState }
