@@ -174,6 +174,11 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         let bytes = Array(slice)
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+            // PTY output = activity even while rendering is held below: the held
+            // path used to skip onActivity, so a session left scrolled-up (or with
+            // a live selection) while claude streamed read as .idle after the
+            // auto-reclaim window and got frozen/hibernated MID-WORK.
+            self.onActivity?()
             // Hold output while the user is dragging a selection OR has scrolled up
             // to read — either way, rendering would yank the viewport. Bounded —
             // past the cap we render live (output must never be starved forever).
@@ -191,7 +196,9 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         super.dataReceived(slice: bytes[...])
         appendStripped(bytes[...])
         onOutputBytes?(bytes)   // mirror raw PTY output to an attached peer (nil = no-op)
-        onActivity?()
+        // No onActivity here: activity is counted once at receive time in
+        // dataReceived (covers the held path), and a flushPending replay of
+        // old buffered bytes must not read as fresh activity.
         scheduleDetect()
     }
 
