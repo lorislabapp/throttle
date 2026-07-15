@@ -83,3 +83,13 @@ jobs:
         run: |
           xcrun altool --upload-app --type ios --file build/export-ios/*.ipa \
             --apiKey "${{ secrets.ASC_API_KEY_ID }}" --apiIssuer "${{ secrets.ASC_API_ISSUER_ID }}"
+
+      - name: Assign build to Internal beta group
+        # The Internal group has hasAccessToAllBuilds=false (create-only flag,
+        # not PATCHable) — without this step uploads never appear in TestFlight.
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+        run: |
+          BUILD_NUM=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" build/ipa-check/Payload/*.app/Info.plist)
+          node .github/scripts/assign-build-to-group.mjs "$BUILD_NUM"
