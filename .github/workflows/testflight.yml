@@ -1,9 +1,12 @@
 name: TestFlight
 # iOS builds must be archived with STABLE Xcode (Apple rejects beta-built
 # binaries) — this Mac only has Xcode-beta, so CI does the archive+upload.
-# Signing: cloud-managed via the ASC API key (CODE_SIGN_STYLE overridden to
-# Automatic on the command line; the project's manual iOS profiles are for
-# local device runs, and the runner has no Apple Distribution cert).
+# Signing: MANUAL with the static Apple Distribution cert (DIST_CERT_P12
+# secret) + IOS_APP_STORE profiles minted at run time via the ASC API —
+# matching project.yml's manual iOS settings. Cloud-managed signing is banned
+# here: every ephemeral runner minted a fresh Apple Development cert until the
+# team hit Apple's certificate quota and archives started failing with
+# "Choose a certificate to revoke" (2026-07-15).
 on:
   workflow_dispatch:
 jobs:
@@ -30,6 +33,35 @@ jobs:
           mkdir -p ~/private_keys
           echo "$ASC_API_KEY_P8" > ~/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8
 
+      - name: Import Apple Distribution certificate
+        env:
+          DIST_CERT_P12: ${{ secrets.DIST_CERT_P12 }}
+          DIST_CERT_PASSWORD: ${{ secrets.DIST_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN_PASS=$(uuidgen)
+          echo "$DIST_CERT_P12" | base64 --decode > /tmp/signing.p12
+          security create-keychain -p "$KEYCHAIN_PASS" build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASS" build.keychain
+          security import /tmp/signing.p12 -k build.keychain -P "$DIST_CERT_PASSWORD" -T /usr/bin/codesign
+          security list-keychains -d user -s build.keychain login.keychain
+          # Let codesign use the key headlessly (no UI to click "Allow" on a runner).
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASS" build.keychain > /dev/null
+          rm /tmp/signing.p12
+          security find-identity -v -p codesigning build.keychain
+
+      - name: Mint App Store provisioning profiles
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+        run: |
+          ASC_KEY_P8_PATH="$HOME/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8" \
+            node scripts/provision-ios-appstore.mjs
+          # Xcode 16+ also reads the new profiles location; mirror there.
+          mkdir -p "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+          cp "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision \
+             "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/"
+
       - name: Write ExportOptions.plist
         run: |
           mkdir -p build
@@ -39,38 +71,32 @@ jobs:
           <plist version="1.0"><dict>
               <key>method</key><string>app-store-connect</string>
               <key>teamID</key><string>TDV6D5L785</string>
-              <key>signingStyle</key><string>automatic</string>
+              <key>signingStyle</key><string>manual</string>
+              <key>signingCertificate</key><string>Apple Distribution</string>
+              <key>provisioningProfiles</key><dict>
+                  <key>com.lorislab.throttle.ios</key><string>Throttle iOS App Store</string>
+                  <key>com.lorislab.throttle.ios.widget</key><string>Throttle iOS Widget App Store</string>
+              </dict>
               <key>uploadSymbols</key><true/>
           </dict></plist>
           EOF
 
       - name: Archive
         run: |
-          # CODE_SIGN_IDENTITY must NOT be blanked: an unsigned archive carries no
-          # entitlements, export then re-signs without iCloud/aps/app-groups and
-          # CKContainer SIGTRAPs at launch (TestFlight builds 1-12). Cloud signing
-          # mints a managed cert via the ASC API key instead.
+          # Manual signing straight from project.yml (Apple Distribution + the two
+          # App Store profiles minted above). CODE_SIGN_IDENTITY must NOT be blanked:
+          # an unsigned archive carries no entitlements, export then re-signs without
+          # iCloud/aps/app-groups and CKContainer SIGTRAPs at launch (builds 1-12).
           xcodebuild archive \
             -scheme ThrottleiOS -project Throttle.xcodeproj \
             -archivePath build/ThrottleiOS.xcarchive \
-            -destination "generic/platform=iOS" \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Development" \
-            DEVELOPMENT_TEAM=TDV6D5L785 \
-            PROVISIONING_PROFILE_SPECIFIER= \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$HOME/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8" \
-            -authenticationKeyID "${{ secrets.ASC_API_KEY_ID }}" \
-            -authenticationKeyIssuerID "${{ secrets.ASC_API_ISSUER_ID }}"
+            -destination "generic/platform=iOS"
 
       - name: Export IPA
         run: |
           xcodebuild -exportArchive \
             -archivePath build/ThrottleiOS.xcarchive -exportPath build/export-ios \
-            -exportOptionsPlist build/ExportOptions-iOS-CI.plist -allowProvisioningUpdates \
-            -authenticationKeyPath "$HOME/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8" \
-            -authenticationKeyID "${{ secrets.ASC_API_KEY_ID }}" \
-            -authenticationKeyIssuerID "${{ secrets.ASC_API_ISSUER_ID }}"
+            -exportOptionsPlist build/ExportOptions-iOS-CI.plist
 
       - name: Verify entitlements in IPA
         run: |

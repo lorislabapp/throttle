@@ -15,6 +15,8 @@
 //
 // Credentials (never hardcoded): ASC issuer_id + key_id from Bitwarden item
 // "App Store Connect"; the .p8 from ~/Downloads/AuthKey_<key_id>.p8.
+// CI override: set ASC_KEY_ID + ASC_ISSUER_ID + ASC_KEY_P8_PATH env vars and
+// Bitwarden is skipped entirely (GitHub runners have no vault).
 //
 //   node scripts/provision-ios-appstore.mjs
 //
@@ -33,9 +35,9 @@ function bw(field) {
     ['--get', 'App Store Connect', '--field', field], { encoding: 'utf8' }).trim();
 }
 
-const ISS = bw('issuer_id');
-const KID = bw('key_id');
-const KEY = fs.readFileSync(os.homedir() + `/Downloads/AuthKey_${KID}.p8`, 'utf8');
+const ISS = process.env.ASC_ISSUER_ID || bw('issuer_id');
+const KID = process.env.ASC_KEY_ID || bw('key_id');
+const KEY = fs.readFileSync(process.env.ASC_KEY_P8_PATH || os.homedir() + `/Downloads/AuthKey_${KID}.p8`, 'utf8');
 
 const b64url = (b) => Buffer.from(b).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 function jwt() {
