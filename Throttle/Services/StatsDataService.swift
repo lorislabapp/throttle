@@ -554,6 +554,61 @@ enum StatsDataService {
         return Double(cr) / Double(denom)
     }
 
+    // MARK: - Output cost share (honesty metric)
+
+    /// Fraction of the range's API-equivalent cost that OUTPUT tokens represent
+    /// (0…1), using the same per-model rates as `extrapolatedCostEUR`. This is
+    /// the ceiling any output-style/brevity saving can act on — cache reads
+    /// dominate a typical Claude Code bill, so this is usually ~0.07–0.16.
+    /// nil when the range has no events.
+    static func outputCostShare(in db: Database, range: Range, now: Date = Date()) throws -> Double? {
+        let cutoff = range.cutoff(now: now)
+        let where_ = cutoff > 0 ? "WHERE timestamp >= ?" : ""
+        let sql = """
+            SELECT
+                CASE
+                    WHEN lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%' THEN 'fable'
+                    WHEN lower(model) LIKE '%opus%'   THEN 'opus'
+                    WHEN lower(model) LIKE '%sonnet%' THEN 'sonnet'
+                    WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
+                    ELSE 'other'
+                END AS bucket,
+                SUM(input_tokens) AS i,
+                SUM(output_tokens) AS o,
+                SUM(cache_create) AS cc,
+                SUM(cache_read) AS cr
+            FROM usage_events
+            \(where_)
+            GROUP BY bucket
+            """
+        let rows = cutoff > 0
+            ? try Row.fetchAll(db, sql: sql, arguments: [cutoff])
+            : try Row.fetchAll(db, sql: sql)
+        var outputUsd: Double = 0
+        var totalUsd: Double = 0
+        for row in rows {
+            let bucket: String = row["bucket"] ?? ""
+            let i: Int = row["i"] ?? 0
+            let o: Int = row["o"] ?? 0
+            let cc: Int = row["cc"] ?? 0
+            let cr: Int = row["cr"] ?? 0
+            let (inRate, outRate): (Double, Double)
+            switch bucket {
+            case "fable":  (inRate, outRate) = (10, 50)
+            case "opus":   (inRate, outRate) = (5, 25)
+            case "sonnet": (inRate, outRate) = (3, 15)
+            case "haiku":  (inRate, outRate) = (1, 5)
+            default:       (inRate, outRate) = (3, 15)
+            }
+            let m = 1_000_000.0
+            let out = Double(o) / m * outRate
+            outputUsd += out
+            totalUsd += Double(i)/m*inRate + out + Double(cc)/m*inRate*1.25 + Double(cr)/m*inRate*0.10
+        }
+        guard totalUsd > 0 else { return nil }
+        return outputUsd / totalUsd
+    }
+
     // MARK: - Cost extrapolation
 
     /// Approximate API cost for the given range, in EUR.

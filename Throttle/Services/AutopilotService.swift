@@ -24,7 +24,7 @@ enum AutopilotService {
     // MARK: - Ledger model
 
     struct Entry: Codable, Identifiable, Sendable {
-        enum Kind: String, Codable, Sendable { case outputStyle, statusline, memory, skills }
+        enum Kind: String, Codable, Sendable { case outputStyle, statusline, memory, skills, brevityHook }
         let id: String
         let timestamp: Date
         let kind: Kind
@@ -35,6 +35,7 @@ enum AutopilotService {
         var previousOutputStyle: String?       // .outputStyle (nil = key was unset)
         var previousStatusLineJSON: String?    // .statusline
         var moves: [FileMove]?                 // .memory / .skills
+        var flagWasPresent: Bool?              // .brevityHook (throttle-concise flag pre-existed)
     }
 
     // MARK: - Prefs
@@ -104,6 +105,25 @@ enum AutopilotService {
                                   summary: "Installed concise output-style — claude is terse system-wide",
                                   detail: "Every session stays terse without losing Claude Code's engineering prompt — cuts repeated verbosity, never reduces reasoning or code quality.",
                                   previousOutputStyle: res.previousStyle))
+            }
+        }
+
+        // 1a-bis) Brevity hooks — the reliable carrier for terseness. The style
+        // above only binds at session start (fixed since Claude Code v2.1.73);
+        // these hooks inject a one-line be-brief directive beside every prompt
+        // and re-inject it after compaction, reaching sessions already open.
+        // Self-muting when the user picks a non-Concise style, so installing is
+        // safe even alongside Caveman etc.
+        if !OutputStyleManager.userOverride, !BrevityHookService.isInstalled() {
+            let flagPath = FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(".claude/throttle-concise").path
+            let hadFlag = FileManager.default.fileExists(atPath: flagPath)
+            if (try? BrevityHookService.install()) != nil {
+                if !hadFlag { FileManager.default.createFile(atPath: flagPath, contents: Data()) }
+                made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .brevityHook,
+                                  summary: "Installed brevity hooks — a one-line be-brief directive per prompt",
+                                  detail: "Carries terseness into sessions that are already open and re-injects it after compaction — the output style alone only reaches sessions started after it was set. Honest ceiling: output tokens are typically 7–16% of total spend.",
+                                  flagWasPresent: hadFlag))
             }
         }
 
@@ -203,6 +223,13 @@ enum AutopilotService {
             try? OutputStyleService.remove(restorePreviousStyle: e.previousOutputStyle)
         case .statusline:
             try? StatuslineService.remove(restorePreviousJSON: e.previousStatusLineJSON)
+        case .brevityHook:
+            try? BrevityHookService.remove()
+            if e.flagWasPresent != true {   // only delete a flag WE created
+                let flagPath = FileManager.default.homeDirectoryForCurrentUser
+                    .appendingPathComponent(".claude/throttle-concise").path
+                try? FileManager.default.removeItem(atPath: flagPath)
+            }
         case .memory, .skills:
             let fm = FileManager.default
             for m in (e.moves ?? []) {

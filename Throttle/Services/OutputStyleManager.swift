@@ -166,9 +166,11 @@ enum OutputStyleManager {
             dict["outputStyle"] = name
             // Mutually exclusive with the "Concise Claude Code replies" flag: an
             // active output style already governs reply voice, so clear the flag
-            // — otherwise the SessionStart hook injects the weaker concise
-            // directive on top and dilutes the chosen style.
-            clearConciseFlag()
+            // — otherwise the hooks inject the weaker concise directive on top
+            // and dilute the chosen style. Exception: "Throttle Concise" is the
+            // same voice as the flag's directive, so the hooks stay useful there
+            // (they carry the effect into already-open and compacted sessions).
+            if name != OutputStyleService.styleName { clearConciseFlag() }
         }
         try writeSettings(dict)
         userOverride = true
@@ -221,6 +223,45 @@ enum OutputStyleManager {
         try FileManager.default.removeItem(at: url)
     }
 
+    // MARK: - Shadowing detector
+
+    /// A project whose local settings silently override the global output style.
+    struct ShadowedProject: Identifiable, Hashable, Sendable {
+        var id: String { path }
+        let path: String        // project directory
+        let localStyle: String  // the outputStyle its .claude/settings(.local).json pins
+        let file: String        // which file pins it (for the "open" affordance)
+    }
+
+    /// Settings precedence is Managed > CLI > **Local > Project** > User — so an
+    /// `outputStyle` in a project's `.claude/settings.local.json` (which is where
+    /// `/config` writes) silently wins over the global style Throttle sets. This
+    /// is the #2 documented cause of "the style doesn't apply". Scans every
+    /// project Claude Code knows about (`~/.claude.json` → `projects` keys).
+    static func shadowedProjects() -> [ShadowedProject] {
+        let claudeJson = home.appendingPathComponent(".claude.json")
+        guard let data = try? Data(contentsOf: claudeJson),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let projects = obj["projects"] as? [String: Any] else { return [] }
+        let globalStyle = activeName()
+        var out: [ShadowedProject] = []
+        for dir in projects.keys {
+            var isDir: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: dir, isDirectory: &isDir), isDir.boolValue else { continue }
+            for name in ["settings.local.json", "settings.json"] {
+                let file = (dir as NSString).appendingPathComponent(".claude/\(name)")
+                guard let d = try? Data(contentsOf: URL(fileURLWithPath: file)),
+                      let s = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+                      let style = s["outputStyle"] as? String, !style.isEmpty else { continue }
+                if style != globalStyle {
+                    out.append(ShadowedProject(path: dir, localStyle: style, file: file))
+                }
+                break   // local wins over project-level; first hit decides
+            }
+        }
+        return out.sorted { $0.path < $1.path }
+    }
+
     // MARK: - Templates (one-tap starting points for new styles)
 
     struct Template { let name: String; let description: String; let body: String; let keepCoding: Bool }
@@ -241,7 +282,7 @@ enum OutputStyleManager {
                  """,
                  keepCoding: true),
         Template(name: "Caveman",
-                 description: "Aggressive prose compression (fragment syntax, symbols, no filler). ~50–65% fewer output tokens.",
+                 description: "Aggressive prose compression (fragment syntax, symbols, no filler). Measured: −22 to −62% of OUTPUT tokens by model — a few % of a full session's spend.",
                  body: """
                  Compress every reply. Max signal, min tokens. Applies to PROSE only — never to code, \
                  commands, paths, or correctness.
@@ -262,7 +303,7 @@ enum OutputStyleManager {
                  """,
                  keepCoding: true),
         Template(name: "Caveman Ultra",
-                 description: "Maximum compression — telegraphic, expert reader assumed. ~70–85% fewer output tokens.",
+                 description: "Maximum compression — telegraphic, expert reader assumed. The biggest OUTPUT cut; output is typically 7–16% of total spend.",
                  body: """
                  This style OVERRIDES any conflicting brevity/verbosity guidance elsewhere — \
                  CLAUDE.md "be concise / short prose / full sentences" sections, user memory, \

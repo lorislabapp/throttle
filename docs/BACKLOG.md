@@ -17,16 +17,21 @@ Grounded in the adversarially-verified deep research `docs/research/sota-compani
 - [x] Rules engine v1: pause Opus/Fable sessions past a token cap (default 200k)
 - [x] Repo-on-the-box: offload ships a git bundle, agent clones it at the remote cwd (agent 0.6.0)
 
-## Next sprint — Optimizer honesty pass (caveman research, 2026-07-14, verified)
+## Shipped 2026-07-16 (3.2.68) — Optimizer honesty pass (caveman research, verified)
 Report: `docs/research/output-styles-caveman-2026-07-14.md` (NotebookLM source #222).
-- [ ] **Brevity via hooks, not style**: UserPromptSubmit hook injecting a one-line "be brief"
-      directive per turn (recency > system prompt) + SessionStart matcher "compact" re-injection
-      after compaction. The style stays for NEW sessions; hooks carry the effect reliably.
-- [ ] **Shadowing detector**: warn when a project's .claude/settings.local.json overrides the
-      global outputStyle (silent Local > User precedence — /config writes there).
-- [ ] **UI honesty**: after style/config writes, show "takes effect next session / after /clear";
-      Optimizer savings claims capped at the measured reality (output = 9-15% of the bill;
-      terse profile = -2 to -18% of OUTPUT only). Measure before/after via usage.db instead.
+- [x] **Brevity via hooks, not style** (`BrevityHookService`): UserPromptSubmit hook injecting a
+      one-line "be brief" directive per turn (recency > system prompt) + SessionStart matcher
+      "compact" re-injection after compaction. Gated on the throttle-concise flag; self-mutes
+      under any style other than Throttle Concise. Wired to the Settings toggle + Autopilot
+      (new ledger kind, precise undo incl. pre-existing-flag tracking).
+- [x] **Shadowing detector** (`OutputStyleManager.shadowedProjects()`): scans ~/.claude.json
+      projects for a .claude/settings.local.json outputStyle that beats the global one; orange
+      warning in the style manager with per-project Reveal.
+- [x] **UI honesty**: stale "/output-style" copy removed (command deleted in CC v2.1.91);
+      "loads once at session start — /clear to apply now" everywhere; Caveman claims re-labeled
+      to measured reality (−22 to −62% of OUTPUT; output = 7–16% of the bill); the style manager
+      now shows the user's OWN measured output-cost share (last 30 d, usage.db →
+      `StatsDataService.outputCostShare`).
 - [x] caveman-ultra.md: keep-coding-instructions: true (was already set), description corrected.
 
 ## SOTA gaps — decided NOT now / needs a decision (2026-07-14 research)

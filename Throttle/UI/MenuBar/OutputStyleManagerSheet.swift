@@ -8,6 +8,13 @@ struct OutputStyleManagerSheet: View {
     var onDone: () -> Void = {}
     @State private var styles: [OutputStyleManager.Style] = []
     @State private var editing: EditTarget?
+    /// Projects whose .claude/settings(.local).json pins a DIFFERENT outputStyle —
+    /// local silently beats the global key (settings precedence), the #2 cause of
+    /// "the style doesn't apply".
+    @State private var shadowed: [OutputStyleManager.ShadowedProject] = []
+    /// Measured share of the last-30-day spend that output tokens represent —
+    /// the honest ceiling for any style's saving. nil until loaded / no data.
+    @State private var outputShare: Double?
     /// Name of the style just activated this session — drives the "how to apply
     /// it now" banner. Claude Code reads the output style once at session start,
     /// so a freshly activated style is silent in any session already open; users
@@ -63,14 +70,20 @@ struct OutputStyleManagerSheet: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 8)
                 if let name = justActivated { activationBanner(name) }
+                if !shadowed.isEmpty { shadowingWarning }
                 ForEach(styles) { style in
                     styleRow(style)
                     Rectangle().fill(Color.primary.opacity(0.06)).frame(height: 1)
                 }
-                Label("Applies to new Claude Code sessions. In an open session, run /output-style to switch it live.", systemImage: "info.circle")
-                    .font(.system(size: 10.5)).foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16).padding(.vertical, 10)
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("A style is read once, at session start — it applies to new sessions, or after /clear in an open one.", systemImage: "info.circle")
+                    if let share = outputShare {
+                        Label("Measured on your last 30 days: output tokens are \(Int((share * 100).rounded()))% of your spend — the only slice a reply style can shrink.", systemImage: "scalemass")
+                    }
+                }
+                .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16).padding(.vertical, 10)
             }
         }
     }
@@ -107,7 +120,7 @@ struct OutputStyleManagerSheet: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("“\(name)” is set — live in any new Claude Code session.")
                     .font(.system(size: 12, weight: .semibold))
-                Text("Output style loads once at session start. In a session that's already open, run  /output-style  or  /clear  to apply it now.")
+                Text("Output style loads once at session start. In a session that's already open, run  /clear  (or start a new session) to apply it now.")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -118,6 +131,41 @@ struct OutputStyleManagerSheet: View {
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.green.opacity(0.25), lineWidth: 1))
         .padding(.horizontal, 12).padding(.bottom, 6)
         .transition(.opacity)
+    }
+
+    /// Projects that pin their own outputStyle locally — the local file silently
+    /// wins over the global choice made here, so the user must be told or they
+    /// conclude the feature is broken.
+    private var shadowingWarning: some View {
+        HStack(alignment: .top, spacing: 9) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 13)).foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(shadowed.count) project\(shadowed.count == 1 ? "" : "s") override\(shadowed.count == 1 ? "s" : "") this style locally")
+                    .font(.system(size: 12, weight: .semibold))
+                Text("A .claude/settings.local.json in these projects pins its own style — it silently beats the global choice (that's where /config saves).")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(shadowed) { p in
+                    HStack(spacing: 5) {
+                        Text((p.path as NSString).abbreviatingWithTildeInPath)
+                            .font(.system(size: 10.5, design: .monospaced)).lineLimit(1).truncationMode(.head)
+                        Text("→ \(p.localStyle)").font(.system(size: 10.5, weight: .medium))
+                        Spacer(minLength: 4)
+                        Button("Reveal") {
+                            NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: p.file)])
+                        }
+                        .buttonStyle(.borderless).font(.system(size: 10.5))
+                    }
+                    .foregroundStyle(.secondary)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.orange.opacity(0.22), lineWidth: 1))
+        .padding(.horizontal, 12).padding(.bottom, 6)
     }
 
     private func tag(_ text: String) -> some View {
@@ -139,7 +187,17 @@ struct OutputStyleManagerSheet: View {
 
     // MARK: - Actions
 
-    private func reload() { styles = OutputStyleManager.allStyles() }
+    private func reload() {
+        styles = OutputStyleManager.allStyles()
+        shadowed = OutputStyleManager.shadowedProjects()
+        if outputShare == nil {
+            Task {
+                let share = try? await DatabaseManager.shared.open()
+                    .read { db in try StatsDataService.outputCostShare(in: db, range: .last30d) }
+                await MainActor.run { outputShare = share ?? nil }
+            }
+        }
+    }
 
     private func activate(_ style: OutputStyleManager.Style) {
         guard !style.isActive else { return }

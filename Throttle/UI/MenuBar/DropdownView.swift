@@ -1361,8 +1361,16 @@ private struct InlineGeneralPane: View {
             .appendingPathComponent(".claude/throttle-concise").path
     }
     private func setConciseFlag(_ on: Bool) {
-        if on { FileManager.default.createFile(atPath: Self.conciseFlagPath, contents: Data()) }
-        else { try? FileManager.default.removeItem(atPath: Self.conciseFlagPath) }
+        if on {
+            FileManager.default.createFile(atPath: Self.conciseFlagPath, contents: Data())
+            // The hooks are the reliable carrier: a one-line directive per prompt
+            // + re-injection after compaction. The SessionStart router alone only
+            // reaches sessions started AFTER the toggle.
+            try? BrevityHookService.install()
+        } else {
+            try? FileManager.default.removeItem(atPath: Self.conciseFlagPath)
+            try? BrevityHookService.remove()
+        }
     }
 
     /// Save the generated team hardening policy as managed-settings.json.
@@ -1453,7 +1461,7 @@ private struct InlineGeneralPane: View {
             }
             SettingsHair()
             SettingsRow(title: "Concise Claude Code replies",
-                        sub: "Inject a terse-output directive into every Claude Code session via the hook.") {
+                        sub: "Injects a one-line be-brief directive beside every prompt and after compaction (hooks) — reaches sessions already open, where an output style can't. Honest ceiling: output tokens are typically 7–16% of total spend.") {
                 Toggle("", isOn: $conciseClaudeCode).labelsHidden().toggleStyle(.switch).tint(.accentColor)
                     .onChange(of: conciseClaudeCode) { _, on in setConciseFlag(on) }
             }
@@ -1851,6 +1859,7 @@ private struct InlineGeneralPane: View {
         case .statusline:  return "menubar.rectangle"
         case .memory:      return "clock.badge.xmark"
         case .skills:      return "wrench.adjustable"
+        case .brevityHook: return "scissors"
         }
     }
 
