@@ -692,6 +692,7 @@ struct MultiCockpitRoot: View {
     @ViewBuilder private func sessionMenu(_ s: CockpitTab) -> some View {
         if s.isSpawned {
             Menu("Switch model") {
+                Button("Fable")  { s.terminal?.send(txt: "/model fable\n") }
                 Button("Opus")   { s.terminal?.send(txt: "/model opus\n") }
                 Button("Sonnet") { s.terminal?.send(txt: "/model sonnet\n") }
                 Button("Haiku")  { s.terminal?.send(txt: "/model haiku\n") }
