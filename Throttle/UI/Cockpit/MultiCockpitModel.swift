@@ -703,6 +703,48 @@ final class MultiCockpitModel {
     /// idle one costs some RAM until the next tick.
     private static let busyCPUPercent = 5.0
 
+    /// A tool call still open after this long is presumed abandoned (claude crashed
+    /// mid-tool, leaving a dangling tool_use as the transcript's last word). Without
+    /// the bound, that tab would read as busy forever and never yield its RAM — worse
+    /// than the bug this signal fixes, on a Mac already deep in swap.
+    nonisolated static let maxToolCallProtection: TimeInterval = 30 * 60
+
+    /// True when the tab's claude is executing a tool right now: the transcript's last
+    /// tool event is a `tool_use` with no `tool_result` after it. Covers the case CPU
+    /// can't see — a tool that is silent AND burns nothing while it waits on the
+    /// network. Any parse failure returns false: fall back to the other signals rather
+    /// than protect a tab on a guess.
+    nonisolated static func isMidToolCall(cwd: String, sessionId: String, now: Date) -> Bool {
+        let url = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/projects/\(claudeProjectDirName(cwd))/\(sessionId).jsonl")
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return false }
+        defer { try? handle.close() }
+        guard let end = try? handle.seekToEnd() else { return false }
+        let window: UInt64 = 64 * 1024
+        let start = end > window ? end - window : 0
+        guard (try? handle.seek(toOffset: start)) != nil,
+              let data = try? handle.readToEnd(),
+              let text = String(data: data, encoding: .utf8) else { return false }
+
+        var lines = text.split(separator: "\n").map(String.init)
+        if start > 0, !lines.isEmpty { lines.removeFirst() }   // partial line at the window edge
+
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        for line in lines.reversed() {
+            guard let obj = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
+                  let message = obj["message"] as? [String: Any],
+                  let content = message["content"] as? [[String: Any]] else { continue }
+            let kinds = content.compactMap { $0["type"] as? String }
+            // Whichever comes last wins: a tool_result closes the call, a tool_use opens one.
+            if kinds.contains("tool_result") { return false }
+            guard kinds.contains("tool_use") else { continue }
+            guard let stamp = obj["timestamp"] as? String, let at = iso.date(from: stamp) else { return false }
+            return now.timeIntervalSince(at) < maxToolCallProtection
+        }
+        return false
+    }
+
     /// Promote silent-but-working sessions to `.working` before any reclaim decision.
     /// Without this, "no terminal output for 5 minutes" is the entire definition of
     /// idle — and that is exactly what a session running a long build looks like.
@@ -713,6 +755,12 @@ final class MultiCockpitModel {
         let cpu = SystemMemoryService.subtreeCPUSeconds(rootPids: pids)
         let now = Date()
         for tab in live {
+            // Mid-tool beats every other signal: claude is working by definition, even
+            // if the tool prints nothing and burns no CPU while it waits.
+            if let sid = tab.sessionId,
+               Self.isMidToolCall(cwd: tab.cwd, sessionId: sid, now: now) {
+                tab.lastActivityAt = now
+            }
             guard let pid = tab.shellPid, let total = cpu[pid] else { continue }
             // No baseline yet (first tick after spawn/wake): treat as active. The next
             // tick has a real delta; until then, never reclaim on a guess.
