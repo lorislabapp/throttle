@@ -108,6 +108,66 @@ enum SystemMemoryService {
         return out
     }
 
+    /// Cumulative CPU-seconds burned by each subtree (root + descendants), one ps sweep.
+    ///
+    /// Sample twice and diff to learn whether a subtree is working RIGHT NOW. Do not
+    /// reach for `ps %cpu` instead: on macOS that is an average over the process's
+    /// whole lifetime, so it stays high long after a process goes quiet and reads low
+    /// for a compile that just started.
+    static func subtreeCPUSeconds(rootPids: [pid_t]) -> [pid_t: Double] {
+        guard !rootPids.isEmpty else { return [:] }
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/ps")
+        p.arguments = ["-axo", "pid=,ppid=,time="]
+        let pipe = Pipe()
+        p.standardOutput = pipe
+        p.standardError = FileHandle.nullDevice
+        do { try p.run() } catch { return [:] }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        guard let text = String(data: data, encoding: .utf8) else { return [:] }
+
+        var children: [pid_t: [pid_t]] = [:]
+        var cpu: [pid_t: Double] = [:]
+        for line in text.split(separator: "\n") {
+            let f = line.split(separator: " ", omittingEmptySubsequences: true)
+            guard f.count == 3, let pid = pid_t(f[0]), let ppid = pid_t(f[1]),
+                  let secs = parseCPUTime(String(f[2])) else { continue }
+            children[ppid, default: []].append(pid)
+            cpu[pid] = secs
+        }
+        var out: [pid_t: Double] = [:]
+        for root in rootPids {
+            var total = 0.0
+            var stack = [root]
+            while let cur = stack.popLast() {
+                total += (cpu[cur] ?? 0)
+                if let kids = children[cur] { stack.append(contentsOf: kids) }
+            }
+            out[root] = total
+        }
+        return out
+    }
+
+    /// ps TIME: `[DD-]HH:MM:SS.ss`, `MM:SS.ss`, or `SS.ss`. Returns seconds.
+    static func parseCPUTime(_ raw: String) -> Double? {
+        var rest = raw
+        var days = 0.0
+        if let dash = rest.firstIndex(of: "-") {
+            guard let d = Double(rest[rest.startIndex..<dash]) else { return nil }
+            days = d
+            rest = String(rest[rest.index(after: dash)...])
+        }
+        let parts = rest.split(separator: ":")
+        guard !parts.isEmpty, parts.count <= 3 else { return nil }
+        var secs = 0.0
+        for part in parts {
+            guard let v = Double(part) else { return nil }
+            secs = secs * 60 + v
+        }
+        return days * 86_400 + secs
+    }
+
     /// All PIDs in a process subtree (root + every descendant), via one ps sweep.
     static func subtreePids(rootPids: [pid_t]) -> [pid_t] {
         guard !rootPids.isEmpty else { return [] }

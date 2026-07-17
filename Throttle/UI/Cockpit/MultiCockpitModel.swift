@@ -49,6 +49,12 @@ final class CockpitTab: Identifiable {
     var onQuestion: ((CockpitTab, String) -> Void)?
     /// Last time the session emitted output (for live/idle heuristics).
     var lastActivityAt = Date()
+    /// Cumulative CPU-seconds of this tab's subtree at `lastCPUSampleAt`. Compared
+    /// tick-to-tick so a session that is working silently — compiling, running tests,
+    /// waiting on a long `bash` tool call — is not mistaken for an idle one. Terminal
+    /// output alone cannot tell those apart: a 10-minute build prints nothing.
+    var lastCPUSeconds: Double?
+    var lastCPUSampleAt = Date()
     /// Set when claude prints a usage/rate-limit message; cleared once the stated
     /// reset time passes. Drives the `.rateLimited` state + cockpit banner.
     var rateLimitedUntil: Date?
@@ -690,10 +696,52 @@ final class MultiCockpitModel {
     // RAM), where the wake-time token cost is justified by genuinely scarce memory.
     // This is the fix for "my tabs keep dying and resuming costs tokens" when the
     // Mac is merely crowded, not actually starved (see [[kevin-mac-memory-constraint]]).
+    /// CPU share of a subtree, over the sampling window, above which the session is
+    /// doing real work. An idle `claude` TUI and its MCP children sit near zero; a
+    /// compile, a test run or an install sit far above. Deliberately low: wrongly
+    /// reclaiming a working session costs the user their work, wrongly keeping an
+    /// idle one costs some RAM until the next tick.
+    private static let busyCPUPercent = 5.0
+
+    /// Promote silent-but-working sessions to `.working` before any reclaim decision.
+    /// Without this, "no terminal output for 5 minutes" is the entire definition of
+    /// idle — and that is exactly what a session running a long build looks like.
+    func refreshActivityFromCPU() {
+        let live = sessions.filter { $0.isSpawned && !$0.isHibernated && !$0.isPaused }
+        let pids = live.compactMap { $0.shellPid }
+        guard !pids.isEmpty else { return }
+        let cpu = SystemMemoryService.subtreeCPUSeconds(rootPids: pids)
+        let now = Date()
+        for tab in live {
+            guard let pid = tab.shellPid, let total = cpu[pid] else { continue }
+            // No baseline yet (first tick after spawn/wake): treat as active. The next
+            // tick has a real delta; until then, never reclaim on a guess.
+            guard let previous = tab.lastCPUSeconds else {
+                tab.lastCPUSeconds = total
+                tab.lastCPUSampleAt = now
+                tab.lastActivityAt = now
+                continue
+            }
+            let wall = now.timeIntervalSince(tab.lastCPUSampleAt)
+            // Too soon to measure — keep the old baseline rather than sliding it, or
+            // a burst of pressure-rise callbacks would reset the window every time and
+            // no session would ever register as busy.
+            guard wall >= 1 else { continue }
+            if total >= previous, (total - previous) / wall * 100 >= Self.busyCPUPercent {
+                tab.lastActivityAt = now
+            }
+            tab.lastCPUSeconds = total
+            tab.lastCPUSampleAt = now
+        }
+    }
+
     func autoHibernateIfPressured() {
         let spawnedCount = sessions.filter { $0.isSpawned && !$0.isHibernated }.count
         let crowded = maxLiveSessions > 0 && spawnedCount > maxLiveSessions
         guard autoHibernateEnabled, machine.critical || crowded else { return }
+        // Must run before victim selection, including on the out-of-band pressure-rise
+        // path — otherwise a build that has been silent for 5 minutes is a victim.
+        refreshActivityFromCPU()
         // Debounce: at most once every 2 min so a sustained trigger doesn't churn
         // reclaim attempts every tick.
         guard Date().timeIntervalSince(lastAutoHibernateAt) > 120 else { return }
