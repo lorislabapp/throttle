@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import IOKit
 import OSLog
 import Security
 
@@ -97,11 +98,17 @@ final class LicenseService {
     /// Activate a license key. On success, stores the JWT in Keychain.
     func activate(key: String) async -> Result<Void, ActivationError> {
         let machineId = MachineFingerprint.id
-        let payload: [String: String] = [
+        var payload: [String: String] = [
             "licenseKey": key,
             "machineId": machineId,
             "appVersion": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
         ]
+        // Lets the server recognise a Mac already registered under the old drifting
+        // `kern.uuid` and swap it for the stable one, instead of treating this as a
+        // brand-new machine and rejecting the owner at the 3-machine limit.
+        if let legacy = MachineFingerprint.legacyId, legacy != machineId {
+            payload["legacyMachineId"] = legacy
+        }
         var req = URLRequest(url: activateURL)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -143,22 +150,46 @@ final class LicenseService {
         }
     }
 
-    /// Deactivate this Mac. Removes the machineId from the server's active list,
-    /// then clears local Keychain. Frees up a slot for another Mac.
-    func deactivate() async {
-        if let stored = LicenseKeychain.load() {
-            let payload: [String: String] = [
-                "licenseKey": stored.licenseKey,
-                "machineId": MachineFingerprint.id
-            ]
-            var req = URLRequest(url: deactivateURL)
-            req.timeoutInterval = 15   // M21
-            req.httpMethod = "POST"
-            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            req.httpBody = try? JSONSerialization.data(withJSONObject: payload)
-            _ = try? await URLSession.shared.data(for: req)
+    /// Deactivate this Mac: free the server-side slot, then drop the local Keychain
+    /// entry. Returns false when the server never confirmed — in that case the key
+    /// stays put.
+    ///
+    /// The key is only shown masked in Settings, so clearing it on a failed call
+    /// would leave a user with no slot freed AND no key to retry with; their only
+    /// copy is a months-old purchase email.
+    @discardableResult
+    func deactivate() async -> Bool {
+        guard let stored = LicenseKeychain.load() else { return true }
+        var payload: [String: String] = [
+            "licenseKey": stored.licenseKey,
+            "machineId": MachineFingerprint.id
+        ]
+        // This Mac's slot may still be filed under the old kern.uuid — free that
+        // one too, or "Deactivate" would leave a ghost occupying a slot forever.
+        if let legacy = MachineFingerprint.legacyId, legacy != MachineFingerprint.id {
+            payload["legacyMachineId"] = legacy
+        }
+        var req = URLRequest(url: deactivateURL)
+        req.timeoutInterval = 15   // M21
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: payload)
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: req)
+            guard let http = response as? HTTPURLResponse else { return false }
+            // 404 = the server has no such license; nothing to free, so clearing the
+            // local copy is still the right end state.
+            guard (200..<300).contains(http.statusCode) || http.statusCode == 404 else {
+                logger.notice("Deactivation refused with \(http.statusCode, privacy: .public); keeping the key")
+                return false
+            }
+        } catch {
+            logger.notice("Deactivation failed: \(error.localizedDescription, privacy: .public); keeping the key")
+            return false
         }
         LicenseKeychain.clear()
+        return true
     }
 
     // MARK: - JWT verification
@@ -352,16 +383,49 @@ private enum LicensePublicKey {
 // MARK: - Machine fingerprint
 
 enum MachineFingerprint {
-    /// Stable per-Mac identifier from IOPlatformUUID. Doesn't change across
-    /// reinstalls or updates; resets if user replaces the logic board.
+    /// Stable per-Mac identifier: IOPlatformExpertDevice's IOPlatformUUID. Survives
+    /// reinstalls, OS upgrades and network changes; resets only if the logic board
+    /// is replaced.
+    ///
+    /// Until 3.2.69 this read `kern.uuid`, which derives from the primary MAC and is
+    /// NOT stable: one Mac burned all three license slots with four distinct values
+    /// (E0B4A1A8…, 4FEB3A7D…, 9E45D69F…, then FE82AB17…). `legacyId` exists so the
+    /// server can migrate those records in place — see `LicenseService.activate`.
     static let id: String = {
-        // sysctl -n kern.uuid is the cleanest path.
-        // Fallback: read IOPlatformExpertDevice's IOPlatformUUID via IOKit.
-        if let viaSysctl = sysctlString("kern.uuid"), !viaSysctl.isEmpty {
+        if let viaIOKit = ioPlatformUUID(), !viaIOKit.isEmpty {
+            return viaIOKit
+        }
+        // IOKit is the contract; these only cover a registry we can't read at all.
+        if let viaSysctl = legacyId, !viaSysctl.isEmpty {
             return viaSysctl
         }
-        return "unknown-\(ProcessInfo.processInfo.globallyUniqueString)"
+        return persistedFallbackId()
     }()
+
+    /// The pre-3.2.70 fingerprint. Sent alongside `id` at activation so the server
+    /// can swap it for the stable one without spending another machine slot.
+    static let legacyId: String? = sysctlString("kern.uuid")
+
+    private static func ioPlatformUUID() -> String? {
+        let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("IOPlatformExpertDevice"))
+        guard service != 0 else { return nil }
+        defer { IOObjectRelease(service) }
+        guard let prop = IORegistryEntryCreateCFProperty(
+            service, kIOPlatformUUIDKey as CFString, kCFAllocatorDefault, 0
+        ) else { return nil }
+        return prop.takeRetainedValue() as? String
+    }
+
+    /// Last resort when the IO registry is unreadable. Persisted, because the old
+    /// `globallyUniqueString` fallback minted a fresh ID on every launch — each one
+    /// eating a machine slot until the license locked its owner out.
+    private static func persistedFallbackId() -> String {
+        let key = "throttleMachineFallbackId"
+        if let existing = UserDefaults.standard.string(forKey: key) { return existing }
+        let fresh = "fallback-\(UUID().uuidString)"
+        UserDefaults.standard.set(fresh, forKey: key)
+        return fresh
+    }
 
     private static func sysctlString(_ name: String) -> String? {
         var size = 0

@@ -1940,9 +1940,11 @@ private struct InlineProPane: View {
                 Spacer(minLength: 0)
                 SettingsButton(title: "Deactivate this Mac", role: .destructive) {
                     Task {
-                        await LicenseService.shared.deactivate()
+                        let freed = await LicenseService.shared.deactivate()
                         appState.refreshProStatus()
-                        licenseStatus = String(localized: "Deactivated.")
+                        licenseStatus = freed
+                            ? String(localized: "Deactivated.")
+                            : String(localized: "Couldn't reach the license server — this Mac still holds its slot. Your key is untouched; try again later.")
                     }
                 }
             }
