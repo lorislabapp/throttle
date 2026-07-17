@@ -79,8 +79,7 @@ struct EdgeTerminalView: UIViewRepresentable {
                 }
                 coord.client = client
                 keySender.send = { [weak client] bytes in
-                    guard lockState.unlocked else { return }
-                    lockState.noteActivity()
+                    guard lockState.unlocked else { lockState.requestUnlockForTyping(); return }
                     client?.sendInput(bytes)
                 }
                 client.connect(host: svc.host, port: port, path: path, token: svc.token,
@@ -93,7 +92,10 @@ struct EdgeTerminalView: UIViewRepresentable {
         }
     }
 
-    // Focus only after unlock; also re-drive the attach when `attempt` changes (Retry).
+    // Re-drive the attach when `attempt` changes (Retry). Focus is left to SwiftTerm's
+    // own tap-to-focus, exactly as 404 does it — the previous code only raised the
+    // keyboard once `lockState.unlocked` flipped, which with a locked default meant
+    // the keyboard never appeared at all.
     func updateUIView(_ uiView: TerminalView, context: Context) {
         // Keyboard show/hide reflows the buffer but can leave stale cell rects
         // painted (ghost text from the previous, wider layout). Force a full
@@ -104,11 +106,6 @@ struct EdgeTerminalView: UIViewRepresentable {
             context.coordinator.lastAttempt = attempt
             context.coordinator.client?.disconnect()
             startAttach(context.coordinator, geometry: uiView.getTerminal())
-        }
-        if lockState.unlocked, !uiView.isFirstResponder {
-            DispatchQueue.main.async { _ = uiView.becomeFirstResponder() }
-        } else if !lockState.unlocked, uiView.isFirstResponder {
-            DispatchQueue.main.async { _ = uiView.resignFirstResponder() }
         }
     }
 
@@ -132,11 +129,11 @@ struct EdgeTerminalView: UIViewRepresentable {
 
         init(lockState: TerminalLockState) { self.lockState = lockState }
 
-        // User typed → forward only while unlocked; the socket stays connected
-        // either way, only input is gated (output/read path is never gated).
+        // User typed → forward. If the session was deliberately locked, ask to unlock
+        // rather than eat the keystroke: silent-drop is exactly what made this look
+        // broken on iOS.
         func send(source: TerminalView, data: ArraySlice<UInt8>) {
-            guard lockState.unlocked else { return }
-            lockState.noteActivity()
+            guard lockState.unlocked else { lockState.requestUnlockForTyping(); return }
             client?.sendInput(Array(data))
         }
         func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {

@@ -9,12 +9,12 @@ import SwiftUI
 final class TerminalKeySender {
     /// Wired by the terminal view once its client is live. No-op until then.
     var send: ([UInt8]) -> Void = { _ in }
-    /// When false the bar is dimmed and taps are swallowed (edge terminals start
-    /// locked; the LAN terminal leaves this true).
+    /// Dims the bar while the session is deliberately locked. It no longer swallows
+    /// the tap: `send` routes to the lock gate, which prompts to unlock. Dropping the
+    /// key here would resurrect the silent no-op this whole change exists to kill.
     var enabled: Bool = true
 
     func emit(_ bytes: [UInt8]) {
-        guard enabled else { return }
         send(bytes)
     }
 }

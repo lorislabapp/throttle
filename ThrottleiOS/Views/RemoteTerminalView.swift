@@ -40,8 +40,7 @@ struct RemoteTerminalView: UIViewRepresentable {
         // Accessory-bar keys go through the same lock gate as typed input — the LAN
         // terminal types straight into the live Mac session, the most sensitive path.
         keySender.send = { [lockState] bytes in
-            guard lockState.unlocked else { return }
-            lockState.noteActivity()
+            guard lockState.unlocked else { lockState.requestUnlockForTyping(); return }
             PeerClient.shared.sendTerminalInput(bytes)
         }
 
@@ -58,16 +57,12 @@ struct RemoteTerminalView: UIViewRepresentable {
         return tv
     }
 
-    // Focus (raise the keyboard) only once the write path is unlocked.
+    // Focus is SwiftTerm's tap-to-focus, as in 404. Raising it ourselves only when
+    // `unlocked` flipped is what left the keyboard unreachable behind a locked default.
     func updateUIView(_ uiView: TerminalView, context: Context) {
         // Anti-ghost-text redraw on keyboard reflow (404 engine fix).
         uiView.setNeedsLayout()
         uiView.setNeedsDisplay()
-        if lockState.unlocked, !uiView.isFirstResponder {
-            DispatchQueue.main.async { _ = uiView.becomeFirstResponder() }
-        } else if !lockState.unlocked, uiView.isFirstResponder {
-            DispatchQueue.main.async { _ = uiView.resignFirstResponder() }
-        }
     }
 
     static func dismantleUIView(_ uiView: TerminalView, coordinator: Coordinator) {
@@ -88,10 +83,10 @@ struct RemoteTerminalView: UIViewRepresentable {
 
         init(lockState: TerminalLockState) { self.lockState = lockState }
 
-        // User typed → ship the bytes to the Mac PTY, but only while unlocked.
+        // User typed → ship the bytes to the Mac PTY. A deliberately locked session
+        // asks to unlock instead of eating the keystroke.
         func send(source: TerminalView, data: ArraySlice<UInt8>) {
-            guard lockState.unlocked else { return }
-            lockState.noteActivity()
+            guard lockState.unlocked else { lockState.requestUnlockForTyping(); return }
             PeerClient.shared.sendTerminalInput(Array(data))
         }
         // Local geometry change (rotation / keyboard) → advise the Mac.

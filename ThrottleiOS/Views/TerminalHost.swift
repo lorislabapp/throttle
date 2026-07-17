@@ -47,12 +47,14 @@ struct TerminalHost<Terminal: View>: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button { unlock() } label: {
+                // A toggle, not a one-way door: typing is on by default, and locking a
+                // session is a deliberate act you can take and undo.
+                Button { lockState.unlocked ? lockState.lock() : unlock() } label: {
                     Image(systemName: lockState.unlocked ? "lock.open.fill" : "lock.fill")
                         .foregroundStyle(lockState.unlocked ? MirrorUI.ok : MirrorUI.warn)
                 }
-                .disabled(unlocking || lockState.unlocked)
-                .accessibilityLabel(lockState.unlocked ? "Typing unlocked" : "Locked — tap to unlock typing")
+                .disabled(unlocking)
+                .accessibilityLabel(lockState.unlocked ? "Typing unlocked — tap to lock" : "Locked — tap to unlock typing")
             }
         }
         .onChange(of: lockState.unlocked) { _, unlocked in keySender.enabled = unlocked }
@@ -90,7 +92,7 @@ struct TerminalHost<Terminal: View>: View {
         Button { unlock() } label: {
             HStack(spacing: 8) {
                 Image(systemName: "lock.fill")
-                Text(lockState.lastError ?? "Read-only — tap to unlock typing with Face ID")
+                Text(lockState.lastError ?? "Locked for typing — tap to unlock with Face ID")
                     .font(.footnote.weight(.medium))
                 Spacer()
                 if unlocking { ProgressView() }

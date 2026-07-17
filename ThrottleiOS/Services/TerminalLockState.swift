@@ -1,19 +1,24 @@
 import Foundation
 import LocalAuthentication
 
-/// The non-negotiable write-unlock gate for edge-agent terminals (Kevin's
-/// architecture verdict, 2026-07-11): the terminal is read-only until a local
-/// Face ID/Touch ID unlock, and auto re-locks after 5 min of no keystrokes. This is
-/// a UX safety net enforced client-side, not a hard security boundary — ttyd itself
-/// accepts input the moment a socket is attached; a compromised/jailbroken device
-/// could bypass this the same way it could exfiltrate the token already sitting in
-/// UserDefaults. One `TerminalLockState` per attached terminal (not shared/global).
+/// Opt-in write lock for remote terminals. **Unlocked by default** (2026-07-17):
+/// the original read-only-until-Face-ID default (verdict of 2026-07-11) made the
+/// terminal look broken — the keyboard never took focus and keystrokes were dropped
+/// without a word, so "I can't type on iOS" was the whole experience.
+///
+/// It was never a security boundary anyway: ttyd accepts input the moment a socket
+/// attaches, and the token already sits in UserDefaults, so a compromised device
+/// bypasses this trivially. It only ever bought protection against *your own* stray
+/// taps — which is worth a button, not a wall.
+///
+/// Now: type immediately; tap the lock to make a session read-only on purpose;
+/// typing into a locked session prompts to unlock instead of silently swallowing it.
+/// No idle auto-relock — that would silently re-arm the same trap mid-session.
+/// One `TerminalLockState` per attached terminal (not shared/global).
 @MainActor
 @Observable
 final class TerminalLockState {
-    private(set) var unlocked = false
-    private var idleTask: Task<Void, Never>?
-    private let idleInterval: UInt64 = 300 * 1_000_000_000 // 5 min, in nanoseconds
+    private(set) var unlocked = true
 
     /// Why the last unlock attempt failed, for the UI to surface a recovery hint.
     private(set) var lastError: String?
@@ -41,24 +46,21 @@ final class TerminalLockState {
         }
         lastError = nil
         unlocked = true
-        scheduleRelock()
         return true
     }
 
-    /// Call on every keystroke sent — resets the idle countdown. No-op while locked.
-    func noteActivity() {
-        guard unlocked else { return }
-        scheduleRelock()
-    }
+    func lock() { unlocked = false }
 
-    func lock() { idleTask?.cancel(); idleTask = nil; unlocked = false }
-
-    private func scheduleRelock() {
-        idleTask?.cancel()
-        idleTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: self?.idleInterval ?? 0)
-            guard let self, !Task.isCancelled else { return }
-            self.unlocked = false
+    /// A keystroke arrived while locked. Raise the unlock prompt once rather than
+    /// dropping the key in silence — a terminal that ignores your typing with no
+    /// explanation is the bug we're fixing, not a safety feature.
+    private var prompting = false
+    func requestUnlockForTyping() {
+        guard !unlocked, !prompting else { return }
+        prompting = true
+        Task { [weak self] in
+            await self?.unlock()
+            self?.prompting = false
         }
     }
 }
