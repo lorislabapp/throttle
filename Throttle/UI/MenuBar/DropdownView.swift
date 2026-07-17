@@ -1919,17 +1919,24 @@ private struct InlineProPane: View {
     @ViewBuilder
     private var licenseBlock: some View {
         let trial = TrialService.shared
-        let hasKey = LicenseService.shared.currentKey != nil
-        let trialActive = trial.isActive && !hasKey
+        let licenseState = LicenseService.shared.state
+        let trialActive = trial.isActive && licenseState == .none
         SettingsGroupHeader(label: "License")
-        if let key = LicenseService.shared.currentKey {
-            SettingsRow(title: "Throttle Pro", sub: licenseSubtitle(key: key)) {
-                Text("PRO").font(.system(size: 9.5, weight: .heavy))
+        if let key = LicenseService.shared.currentKey, licenseState != .none {
+            let expired = licenseState == .expired
+            SettingsRow(title: "Throttle Pro", sub: licenseSubtitle(key: key, expired: expired)) {
+                Text(expired ? "EXPIRED" : "PRO").font(.system(size: 9.5, weight: .heavy))
                     .padding(.horizontal, 6).padding(.vertical, 3)
                     .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 5))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(expired ? Color.red : Color.secondary)
             }
-            HStack {
+            HStack(spacing: 9) {
+                if expired {
+                    // The key is still ours — re-activating re-mints the JWT. Never
+                    // send an expired-but-valid customer to the checkout page.
+                    SettingsButton(title: "Reactivate", primary: true) { reactivateStoredKey() }
+                        .disabled(activating)
+                }
                 Spacer(minLength: 0)
                 SettingsButton(title: "Deactivate this Mac", role: .destructive) {
                     Task {
@@ -1956,12 +1963,37 @@ private struct InlineProPane: View {
         }
     }
 
-    private func licenseSubtitle(key: String) -> String {
+    private func licenseSubtitle(key: String, expired: Bool) -> String {
         let masked = String(key.prefix(8)) + "····" + String(key.suffix(4))
+        if expired {
+            return String(localized: "Key \(masked) · lapsed on this Mac — reactivate to restore Pro")
+        }
         if let exp = LicenseService.shared.expiresAt {
             return "Key \(masked) · renews \(exp.formatted(date: .abbreviated, time: .omitted))"
         }
         return "Key \(masked)"
+    }
+
+    /// Re-mint the JWT from the key already in Keychain — the fix path for a license
+    /// that lapsed because the Mac was offline (or the app wasn't running) through
+    /// both `exp` and the grace window.
+    private func reactivateStoredKey() {
+        guard let key = LicenseService.shared.currentKey else { return }
+        activating = true
+        licenseStatus = String(localized: "Reactivating…")
+        Task {
+            let result = await LicenseService.shared.activate(key: key)
+            await MainActor.run {
+                activating = false
+                switch result {
+                case .success:
+                    licenseStatus = String(localized: "✓ Pro restored on this Mac.")
+                    appState.refreshProStatus()
+                case .failure(let err):
+                    licenseStatus = describeLicenseError(err)
+                }
+            }
+        }
     }
 
     private var buyRow: some View {
@@ -2039,14 +2071,22 @@ private struct InlineProPane: View {
     private var exactBlock: some View {
         SettingsGroupHeader(label: "Exact mode", desc: "Pro")
         if !appState.isPro {
+            let expired = LicenseService.shared.state == .expired
             VStack(spacing: 6) {
                 Text("Read server-true usage")
                     .font(.system(size: 12.5, weight: .medium))
-                Text("Polls claude.ai so figures aren't local estimates.")
+                Text(expired
+                     ? String(localized: "Your license lapsed on this Mac. Reactivate it above to turn Exact mode back on.")
+                     : String(localized: "Polls claude.ai so figures aren't local estimates."))
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                SettingsButton(title: "Buy Pro · €29", primary: true) {
-                    if let url = URL(string: "https://lorislab.fr/throttle/buy") { NSWorkspace.shared.open(url) }
+                if expired {
+                    SettingsButton(title: "Reactivate", primary: true) { reactivateStoredKey() }
+                        .disabled(activating)
+                } else {
+                    SettingsButton(title: "Buy Pro · €29", primary: true) {
+                        if let url = URL(string: "https://lorislab.fr/throttle/buy") { NSWorkspace.shared.open(url) }
+                    }
                 }
             }
             .frame(maxWidth: .infinity)

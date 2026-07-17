@@ -25,6 +25,7 @@ final class LicenseService {
     private let activateURL = URL(string: "https://license.lorislab.fr/api/activate")!
     private let deactivateURL = URL(string: "https://license.lorislab.fr/api/deactivate")!
     private let offlineGraceDays: TimeInterval = 14 * 24 * 3600
+    private let renewAheadWindow: TimeInterval = 7 * 24 * 3600   // re-mint a week before exp
 
     enum ActivationError: Error, Sendable, Equatable {
         case invalidKey
@@ -36,10 +37,49 @@ final class LicenseService {
         case decode(String)
     }
 
+    /// What the Keychain currently entitles this Mac to.
+    enum State: Equatable, Sendable {
+        case none      // no key stored
+        case active    // verified, in-window JWT
+        case grace     // JWT unusable (expired / other machine) but still inside offline grace
+        case expired   // key stored, JWT dead, grace over — needs a re-activation
+    }
+
+    var state: State {
+        guard let stored = LicenseKeychain.load() else { return .none }
+        if verify(stored.jwt) != nil { return .active }
+        if Date().timeIntervalSince(stored.activatedAt) < offlineGraceDays + 30 * 24 * 3600 { return .grace }
+        return .expired
+    }
+
     /// True when a verified, non-expired (or within grace) JWT is in Keychain.
     var isPro: Bool {
+        switch state {
+        case .active, .grace: return true
+        case .none, .expired: return false
+        }
+    }
+
+    /// Re-mint the JWT while we still hold the key. `activate` is the only endpoint
+    /// that issues one, so without this a license silently decays to Free once the
+    /// JWT's `exp` passes and the grace window runs out.
+    ///
+    /// Runs at launch and daily. Returns true when a fresh JWT landed in Keychain.
+    /// A failure is not surfaced: we keep whatever `state` we already had, so an
+    /// offline Mac rides the grace window instead of losing Pro mid-flight.
+    @discardableResult
+    func refreshIfNeeded() async -> Bool {
         guard let stored = LicenseKeychain.load() else { return false }
-        return verify(stored.jwt) != nil || (Date().timeIntervalSince(stored.activatedAt) < offlineGraceDays + 30 * 24 * 3600)
+        if let claims = verifyClaims(stored.jwt),
+           Date().timeIntervalSince1970 < claims.exp - renewAheadWindow {
+            return false   // still comfortably valid
+        }
+        guard case .success = await activate(key: stored.licenseKey) else {
+            logger.notice("License refresh failed; staying on \(String(describing: self.state), privacy: .public)")
+            return false
+        }
+        logger.info("License JWT refreshed")
+        return true
     }
 
     /// The license key currently activated, if any (for display in Settings).

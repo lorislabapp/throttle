@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let traycer = TraycerReceiver.shared   // local OTLP receiver (opt-in; started below)
     private let updater = UpdaterService.shared
     private let logger = AppLogger.app
+    private var licenseRenewalTimer: Timer?
 
     override init() {
         FileHandle.standardError.write(Data("[AppDelegate.init] start\n".utf8))
@@ -52,6 +53,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } catch {
             // Fail-fast: if we can't open the DB, the app is non-functional.
             fatalError("Failed to initialize database: \(error)")
+        }
+    }
+
+    /// Keep the Pro JWT alive. `activate` is the only endpoint that mints one, so a
+    /// license that isn't re-minted decays to Free the moment `exp` + grace passes —
+    /// with the key still sitting in Keychain. Fires at launch, daily, and on wake
+    /// (a Mac asleep for weeks would otherwise miss every tick).
+    private func startLicenseRenewal() {
+        Task { @MainActor in
+            await LicenseService.shared.refreshIfNeeded()
+            appState.refreshProStatus()
+        }
+        licenseRenewalTimer = Timer.scheduledTimer(withTimeInterval: 24 * 3600, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                await LicenseService.shared.refreshIfNeeded()
+                self.appState.refreshProStatus()
+            }
+        }
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                await LicenseService.shared.refreshIfNeeded()
+                self.appState.refreshProStatus()
+            }
         }
     }
 
@@ -152,6 +180,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         logger.notice("Throttle launched (\(Bundle.main.shortVersion, privacy: .public))")
         AppLogger.appendToFile("Throttle launched (\(Bundle.main.shortVersion))")
+
+        startLicenseRenewal()
 
         // Wire ExactModeService → AppState. The service runs whenever the user
         // has enabled exact mode AND is signed in to claude.ai. When polling
