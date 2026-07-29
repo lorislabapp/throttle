@@ -146,6 +146,74 @@ enum StatsDataService {
         }
     }
 
+    // MARK: - True model-cost breakdown (price-adjusted) + Sonnet what-if
+
+    /// One tier's share of the TRUE weighted cost — unlike `modelSplit`, this applies
+    /// the per-token price ratios (output 5× input, cache-read 0.1×, cache-write 1.25×)
+    /// AND the model price multiplier (Opus 5× Sonnet, Haiku ~0.27×). `modelSplit`
+    /// counts every model's token equally, which hides the fact that an Opus token
+    /// costs 5× a Sonnet token against the plan — the single biggest usage lever.
+    struct ModelCostSlice: Hashable, Sendable, Identifiable {
+        let tier: ModelTier
+        let cost: Double            // arbitrary units, relative to Sonnet input = 1
+        let cacheReadTokens: Int64  // the dominant driver, exposed for the readout
+        var id: ModelTier { tier }
+    }
+
+    struct ModelCostBreakdown: Sendable {
+        let slices: [ModelCostSlice]   // sorted by cost, desc
+        let total: Double
+        var opusShare: Double {
+            guard total > 0 else { return 0 }
+            return (slices.first { $0.tier == .opus }?.cost ?? 0) / total
+        }
+        /// Honest what-if, NOT a claim: the share of the TOTAL bill you'd save by
+        /// running `movable` of Opus's work on Sonnet instead — the Opus cost on that
+        /// fraction drops by the 5× price ratio. Caller supplies `movable`; the UI
+        /// labels it as an estimate that depends on how much is genuinely routine.
+        func sonnetSavingsFraction(opusMovable: Double) -> Double {
+            guard total > 0 else { return 0 }
+            let opus = slices.first { $0.tier == .opus }?.cost ?? 0
+            return (opus * opusMovable * (1.0 - 1.0 / 5.0)) / total
+        }
+    }
+
+    static func modelCostBreakdown(in db: Database, range: Range, now: Date = Date()) throws -> ModelCostBreakdown {
+        let cutoff = range.cutoff(now: now)
+        let where_ = cutoff > 0 ? "WHERE timestamp >= ?" : ""
+        // Per-token weights are relative to Sonnet input price; the outer multiplier
+        // is the model's input price relative to Sonnet ($15 Opus / $3 Sonnet = 5,
+        // $0.80 Haiku / $3 ≈ 0.27). Fable/other default to 1 (conservative).
+        let sql = """
+            SELECT bucket, SUM(cost) AS cost, SUM(cache_read) AS cr FROM (
+              SELECT
+                CASE WHEN lower(model) LIKE '%opus%'   THEN 'opus'
+                     WHEN lower(model) LIKE '%sonnet%' THEN 'sonnet'
+                     WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
+                     ELSE 'other' END AS bucket,
+                cache_read,
+                (input_tokens + output_tokens * 5.0 + cache_read * 0.1 + cache_create * 1.25)
+                  * (CASE WHEN lower(model) LIKE '%opus%'  THEN 5.0
+                          WHEN lower(model) LIKE '%haiku%' THEN 0.27
+                          ELSE 1.0 END) AS cost
+              FROM usage_events
+              \(where_)
+            ) GROUP BY bucket
+            """
+        let rows = cutoff > 0
+            ? try Row.fetchAll(db, sql: sql, arguments: [cutoff])
+            : try Row.fetchAll(db, sql: sql)
+        var slices: [ModelCostSlice] = rows.compactMap {
+            guard let b: String = $0["bucket"] else { return nil }
+            let cost: Double = $0["cost"] ?? 0
+            let cr: Int64 = $0["cr"] ?? 0
+            let tier: ModelTier = b == "opus" ? .opus : b == "sonnet" ? .sonnet : b == "haiku" ? .haiku : .other
+            return ModelCostSlice(tier: tier, cost: cost, cacheReadTokens: cr)
+        }
+        slices.sort { $0.cost > $1.cost }
+        return ModelCostBreakdown(slices: slices, total: slices.reduce(0) { $0 + $1.cost })
+    }
+
     // MARK: - Range comparison (Today / Yesterday / This week / Last week)
 
     /// Sum of weighted tokens between two hour offsets (inclusive of `from`,

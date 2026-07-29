@@ -24,6 +24,12 @@ struct CockpitDashboardView: View {
         var projects: [Proj] = []          // top by active time this week
         var spark: [Double] = []           // daily active seconds, last 7d
         struct Proj: Equatable, Identifiable { let id = UUID(); let name: String; let hours: Double }
+        // True price-adjusted model mix: (tier label, share 0…1). Opus's share here
+        // reflects its 5× price, unlike the equal-token modelSplit elsewhere.
+        var modelMix: [ModelBar] = []
+        var opusShare: Double = 0
+        var sonnetSaving: Double = 0       // est. total-bill fraction if half of Opus → Sonnet
+        struct ModelBar: Equatable, Identifiable { let id = UUID(); let label: String; let share: Double; let isOpus: Bool }
     }
 
     var body: some View {
@@ -31,6 +37,7 @@ struct CockpitDashboardView: View {
             VStack(spacing: 14) {
                 OSIssueBanner()
                 claudePanel
+                if !data.modelMix.isEmpty { modelMixPanel }
                 WeekComparisonView()
                 machinePanel
                 SavingsLedgerView()
@@ -94,6 +101,44 @@ struct CockpitDashboardView: View {
                 }
             }.frame(height: 5)
             Text(String(format: "%.1fh", p.hours)).font(.system(size: 10.5, design: .monospaced)).foregroundStyle(.secondary).frame(width: 42, alignment: .trailing)
+        }
+    }
+
+    // MARK: - MODEL MIX (the real cost lever)
+
+    /// Where the plan actually goes, priced honestly. Unlike the token-count split,
+    /// this weights each model by its real price (Opus 5× Sonnet), so a user running
+    /// Opus for everything sees the truth: it's the dominant line, and moving routine
+    /// work to Sonnet is a far bigger lever than trimming output.
+    private var modelMixPanel: some View {
+        panel("MODEL MIX · 7d") {
+            let colorFor: (DashData.ModelBar) -> Color = { $0.isOpus ? .orange : ($0.label == "sonnet" ? .accentColor : .secondary) }
+            VStack(spacing: 6) {
+                ForEach(data.modelMix) { bar in
+                    HStack(spacing: 8) {
+                        Text(bar.label.capitalized).font(.system(size: 11, weight: .medium))
+                            .frame(width: 64, alignment: .leading)
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(hair)
+                                Capsule().fill(colorFor(bar).opacity(0.6))
+                                    .frame(width: geo.size.width * max(0.01, bar.share))
+                            }
+                        }.frame(height: 6)
+                        Text(String(format: "%.0f%%", bar.share * 100))
+                            .font(.system(size: 10.5, design: .monospaced)).foregroundStyle(.secondary)
+                            .frame(width: 40, alignment: .trailing)
+                    }
+                }
+            }
+            // The honest nudge — a what-if, not a claim. Only worth showing when Opus
+            // dominates AND the estimated saving is material.
+            if data.opusShare >= 0.6 && data.sonnetSaving >= 0.05 {
+                Text("Opus is \(Int(data.opusShare * 100))% of your cost — it bills the same context at 5× Sonnet. Starting routine work (edits, builds, greps) in a Sonnet session could cut ≈\(Int(data.sonnetSaving * 100))% of your plan usage. Switch at a new session, not mid-task (per-model caches).")
+                    .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 4)
+            }
         }
     }
 
@@ -199,10 +244,17 @@ struct CockpitDashboardView: View {
             let wa = (try? await db.read { try StatsDataService.workActivity(in: $0) }) ?? .init()
             let projects = wa.topProjects.prefix(5).map { DashData.Proj(name: $0.name, hours: $0.seconds / 3600) }
             let spark = wa.daily.map { $0.seconds }
+            let breakdown = try? await db.read { try StatsDataService.modelCostBreakdown(in: $0, range: .last7d) }
+            let bars: [DashData.ModelBar] = (breakdown?.total ?? 0) > 0
+                ? breakdown!.slices.map { .init(label: $0.tier.rawValue, share: $0.cost / breakdown!.total, isOpus: $0.tier == .opus) }
+                : []
+            let opusShare = breakdown?.opusShare ?? 0
+            let saving = breakdown?.sonnetSavingsFraction(opusMovable: 0.5) ?? 0
             await MainActor.run {
                 data.costEUR = cost; data.rmcEUR = rmc; data.cacheEff = eff
                 data.activeWeekHours = wa.activeWeek / 3600
                 data.projects = Array(projects); data.spark = spark
+                data.modelMix = bars; data.opusShare = opusShare; data.sonnetSaving = saving
             }
         }
     }
