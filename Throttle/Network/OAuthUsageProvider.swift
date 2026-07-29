@@ -54,16 +54,45 @@ enum OAuthUsageProvider {
 
     private struct Credentials { let accessToken: String; let expiresAt: Date }
 
+    /// In-memory token cache. Exact mode polls every ~60s and each poll used to
+    /// call `SecItemCopyMatching` on "Claude Code-credentials". That item is owned
+    /// by Claude Code, which rewrites it on every token refresh — and rewriting a
+    /// keychain item RESETS its ACL, so the "Always Allow" grant is wiped and the
+    /// NEXT read re-prompts. Polling every 60s therefore produced the "Throttle
+    /// wants to access… (plusieurs fois au démarrage)" storm. Caching the parsed
+    /// token until it nears expiry collapses keychain reads from ~once/60s to
+    /// ~once per 8h token lifetime — at most one prompt per refresh cycle.
+    private final class TokenCache: @unchecked Sendable {
+        static let shared = TokenCache()
+        private let lock = NSLock()
+        private var creds: Credentials?
+        func get() -> Credentials? { lock.lock(); defer { lock.unlock() }; return creds }
+        func set(_ c: Credentials?) { lock.lock(); defer { lock.unlock() }; creds = c }
+    }
+
     private static func loadCredentials() -> Credentials? {
-        if let d = keychainJSON(), let c = parse(d) { return c }
+        // Serve a still-valid cached token WITHOUT touching the keychain. The 60s
+        // margin means we re-read slightly before expiry so a poll never fails on a
+        // just-expired token.
+        if let c = TokenCache.shared.get(), c.expiresAt > Date().addingTimeInterval(60) {
+            return c
+        }
+        if let d = keychainJSON(), let c = parse(d) { TokenCache.shared.set(c); return c }
         // Legacy/stale mirror — better than nothing on old installs.
         let file = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude/.credentials.json")
-        if let d = try? Data(contentsOf: file), let c = parse(d) { return c }
+        if let d = try? Data(contentsOf: file), let c = parse(d) { TokenCache.shared.set(c); return c }
         return nil
     }
 
+    /// Set when the user dismisses the keychain consent prompt. Until this passes,
+    /// we skip the keychain read entirely so a cancelled prompt isn't re-shown on
+    /// every 60s poll — the user chose "not now", we honour it for a while.
+    nonisolated(unsafe) private static var keychainDenyUntil = Date.distantPast
+    private static let denyBackoff: TimeInterval = 10 * 60
+
     private static func keychainJSON() -> Data? {
+        if Date() < keychainDenyUntil { return nil }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "Claude Code-credentials",
@@ -73,6 +102,11 @@ enum OAuthUsageProvider {
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
         guard status == errSecSuccess, let data = item as? Data else {
+            // -128 = errSecUserCanceled, -25293 = errSecAuthFailed: the user
+            // dismissed the prompt. Back off so we don't re-prompt every poll.
+            if status == errSecUserCanceled || status == errSecAuthFailed {
+                keychainDenyUntil = Date().addingTimeInterval(denyBackoff)
+            }
             if status != errSecItemNotFound {
                 logger.info("keychain read status \(status) — falling back to credentials file")
             }
