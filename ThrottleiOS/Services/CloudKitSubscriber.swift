@@ -1,5 +1,6 @@
 import Foundation
 import CloudKit
+import OSLog
 import ThrottleShared
 
 /// Fetches the latest mirror snapshot from the user's private CloudKit DB and
@@ -17,9 +18,15 @@ final class CloudKitSubscriber {
 
     private static let subscriptionID = "throttle-snapshot-sub"
     private static let userRecordKey = "ThrottleiCloudUserRecordV1"
+    private static let log = Logger(subsystem: "com.lorislab.throttle.ios", category: "CloudKit")
 
     enum Account: Equatable { case unknown, available, signedOut, restricted, error(String) }
     private(set) var account: Account = .unknown
+
+    /// Whether the silent-push subscription is live. false only means background
+    /// pushes are off (schema not promoted to Production, etc.) — foreground and
+    /// pull-to-refresh still update the mirror, so this is NOT surfaced as an error.
+    private(set) var pushAvailable = false
 
     /// One-shot at launch: verify the account, pull the current snapshot, ensure the
     /// push subscription, and start observing account changes.
@@ -107,12 +114,21 @@ final class CloudKitSubscriber {
         sub.notificationInfo = info
         do {
             _ = try await database.save(sub)
+            pushAvailable = true
         } catch let ck as CKError where ck.code == .serverRejectedRequest {
             // Already registered — the expected idempotent case, ignore.
+            pushAvailable = true
         } catch {
-            // Genuinely couldn't register (e.g. record type not Queryable in
-            // Production, or quota): surface it so silent push isn't silently dead.
-            MirrorStore.shared.lastError = "Live updates unavailable: \(error.localizedDescription)"
+            // Silent push is a background-refresh OPTIMISATION, not the data path:
+            // the mirror still refreshes on foreground, pull-to-refresh and every
+            // received push. So a failed subscription must NOT raise the red
+            // `lastError` banner over a screen that is showing fresh data — that
+            // read as "broken" when nothing was. Most common cause here is the
+            // CloudKit schema not being promoted to Production (ThrottleSnapshot
+            // not Queryable in prod); the fix is a one-time Console deploy, not
+            // anything the user can act on from the phone. Log it, flag it quietly.
+            pushAvailable = false
+            Self.log.info("silent-push subscription unavailable: \(error.localizedDescription, privacy: .public)")
         }
     }
 }
