@@ -25,22 +25,39 @@ function token() {
 
 const sleep = (s) => new Promise((r) => setTimeout(r, s * 1000));
 
-// altool returns before ASC processing finishes; the build record can take
-// many minutes to appear. Poll up to 30 min.
+// altool returns before ASC processing finishes; the build record can take many
+// minutes to appear AND several more to become assignable. Poll until the build is
+// not just visible but PROCESSED (processingState VALID) — assigning a build that's
+// still PROCESSING returns 404 on the relationships endpoint, which used to fail the
+// job even though the upload was fine (build 18). Up to 30 min.
 let build = null;
-for (let i = 0; i < 30 && !build; i++) {
+for (let i = 0; i < 30; i++) {
   const r = await fetch(
     `https://api.appstoreconnect.apple.com/v1/builds?filter[app]=${APP_ID}&filter[version]=${VERSION}&limit=1`,
     { headers: { Authorization: 'Bearer ' + token() } });
-  build = (await r.json()).data?.[0] ?? null;
-  if (!build) { console.log(`build ${VERSION} not visible yet (attempt ${i + 1}/30)`); await sleep(60); }
+  const b = (await r.json()).data?.[0] ?? null;
+  const state = b?.attributes?.processingState;
+  if (b && state === 'VALID') { build = b; break; }
+  console.log(`build ${VERSION} ${b ? `still ${state}` : 'not visible yet'} (attempt ${i + 1}/30)`);
+  await sleep(60);
 }
-if (!build) { console.error(`build ${VERSION} never appeared in ASC`); process.exit(1); }
+if (!build) { console.error(`build ${VERSION} never became assignable (VALID) in ASC`); process.exit(1); }
 
-const r = await fetch(`https://api.appstoreconnect.apple.com/v1/betaGroups/${GROUP_ID}/relationships/builds`, {
-  method: 'POST',
-  headers: { Authorization: 'Bearer ' + token(), 'Content-Type': 'application/json' },
-  body: JSON.stringify({ data: [{ type: 'builds', id: build.id }] }),
-});
-if (r.status !== 204) { console.error(`assign failed: ${r.status} ${await r.text()}`); process.exit(1); }
+// The relationships POST can still 404/409 in the moments right after VALID —
+// retry a few times before giving up, so a tight race doesn't strand the build.
+let assigned = false;
+for (let i = 0; i < 8 && !assigned; i++) {
+  const r = await fetch(`https://api.appstoreconnect.apple.com/v1/betaGroups/${GROUP_ID}/relationships/builds`, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: [{ type: 'builds', id: build.id }] }),
+  });
+  if (r.status === 204) { assigned = true; break; }
+  const body = await r.text();
+  // A build already in the group comes back as 409 — that's success, not failure.
+  if (r.status === 409) { assigned = true; break; }
+  console.log(`assign attempt ${i + 1}/8 got ${r.status} ${body.slice(0, 120)}`);
+  await sleep(20);
+}
+if (!assigned) { console.error(`build ${VERSION} (${build.id}) could not be assigned to Internal group`); process.exit(1); }
 console.log(`build ${VERSION} (${build.id}) assigned to Internal group`);
