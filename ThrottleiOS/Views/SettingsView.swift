@@ -10,6 +10,9 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var subscriber = CloudKitSubscriber.shared
     @State private var notifStatus: UNAuthorizationStatus = .notDetermined
+    #if os(iOS)
+    @State private var liveActivityOn = ThrottleLiveActivity.isEnabled
+    #endif
 
     var body: some View {
         NavigationStack {
@@ -32,6 +35,19 @@ struct SettingsView: View {
                 } footer: {
                     Text("Throttle warns you at 80% and 95% of your binding window, computed on-device from the last synced snapshot — even when the app is closed.")
                 }
+
+                #if os(iOS)
+                Section {
+                    Toggle(isOn: $liveActivityOn) {
+                        Label("Live Activity", systemImage: "gauge.with.needle")
+                    }
+                    .onChange(of: liveActivityOn) { _, on in ThrottleLiveActivity.setEnabled(on) }
+                } header: {
+                    Text("Lock Screen & Dynamic Island")
+                } footer: {
+                    Text("Show your Mac's live Claude usage and a countdown to the cap on the Lock Screen and in the Dynamic Island. Updates as new snapshots arrive.")
+                }
+                #endif
 
                 Section {
                     HStack {

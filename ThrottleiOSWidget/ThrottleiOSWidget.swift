@@ -130,7 +130,112 @@ struct ThrottleiOSWidget: Widget {
     }
 }
 
+// MARK: - Live Activity (lock screen + Dynamic Island)
+
+#if os(iOS)
+import ActivityKit
+
+/// Shared colour ramp so the Live Activity matches the widget + the app meter.
+private func liveColor(_ pct: Int) -> Color {
+    switch pct {
+    case 95...:   Color(red: 1.0, green: 0.231, blue: 0.188)   // #FF3B30
+    case 80..<95: Color(red: 1.0, green: 0.624, blue: 0.039)   // #FF9F0A
+    default:      Color(red: 0.0, green: 0.443, blue: 0.890)   // #0071E3
+    }
+}
+
+/// Live, self-updating countdown to the window reset — `Text(timerInterval:)` ticks
+/// on its own, so the Dynamic Island stays honest between the app's snapshot pushes.
+@ViewBuilder private func resetCountdown(_ date: Date?, font: Font) -> some View {
+    if let date, date > Date() {
+        Text(timerInterval: Date()...date, countsDown: true)
+            .font(font).monospacedDigit()
+    } else {
+        Text("—").font(font)
+    }
+}
+
+struct ThrottleLiveActivityWidget: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: ThrottleActivityAttributes.self) { context in
+            // Lock-screen / banner presentation.
+            let s = context.state
+            HStack(spacing: 14) {
+                Gauge(value: min(1, Double(s.binding) / 100)) {
+                    Image(systemName: "gauge.with.needle")
+                } currentValueLabel: {
+                    Text("\(s.binding)").monospacedDigit()
+                }
+                .gaugeStyle(.accessoryCircular)
+                .tint(liveColor(s.binding))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Claude usage").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                    Text("5h \(s.fiveHour)% · 7d \(s.sevenDay)%").font(.callout.weight(.medium))
+                    Text(context.attributes.deviceName).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("resets in").font(.caption2).foregroundStyle(.secondary)
+                    resetCountdown(s.bindingResetsAt, font: .callout.weight(.semibold))
+                        .foregroundStyle(liveColor(s.binding))
+                }
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .activityBackgroundTint(Color.black.opacity(0.35))
+            .activitySystemActionForegroundColor(.white)
+
+        } dynamicIsland: { context in
+            let s = context.state
+            return DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("\(s.binding)%")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .monospacedDigit().foregroundStyle(liveColor(s.binding))
+                        Text("used").font(.caption2).foregroundStyle(.secondary)
+                    }
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text("resets in").font(.caption2).foregroundStyle(.secondary)
+                        resetCountdown(s.bindingResetsAt, font: .title3.weight(.semibold))
+                            .foregroundStyle(liveColor(s.binding))
+                    }
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    VStack(spacing: 4) {
+                        miniBar(label: "5h", pct: s.fiveHour)
+                        miniBar(label: "7d", pct: s.sevenDay)
+                    }
+                }
+            } compactLeading: {
+                Image(systemName: "gauge.with.needle").foregroundStyle(liveColor(s.binding))
+            } compactTrailing: {
+                Text("\(s.binding)%").monospacedDigit().foregroundStyle(liveColor(s.binding))
+            } minimal: {
+                Text("\(s.binding)").monospacedDigit().foregroundStyle(liveColor(s.binding))
+            }
+            .keylineTint(liveColor(s.binding))
+        }
+    }
+
+    @ViewBuilder private func miniBar(label: String, pct: Int) -> some View {
+        HStack(spacing: 8) {
+            Text(label).font(.caption2.weight(.semibold)).foregroundStyle(.secondary).frame(width: 20, alignment: .leading)
+            ProgressView(value: min(1, Double(pct) / 100)).tint(liveColor(pct))
+            Text("\(pct)%").font(.caption2).monospacedDigit().foregroundStyle(.secondary).frame(width: 34, alignment: .trailing)
+        }
+    }
+}
+#endif
+
 @main
 struct ThrottleiOSWidgetBundle: WidgetBundle {
-    var body: some Widget { ThrottleiOSWidget() }
+    var body: some Widget {
+        ThrottleiOSWidget()
+        #if os(iOS)
+        ThrottleLiveActivityWidget()
+        #endif
+    }
 }

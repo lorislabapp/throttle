@@ -70,11 +70,28 @@ import UIKit
 
 /// Tiny haptics wrapper so action taps feel native without repeating generator
 /// boilerplate at every call site.
+///
+/// The public API is a platform-neutral `Notice` enum, not
+/// `UINotificationFeedbackGenerator.FeedbackType` — that type is unavailable on
+/// visionOS (which shares this file via ThrottleiOS/Services), so referencing it
+/// even in a signature broke the visionOS build. UIKit haptics are a no-op there.
 enum Haptics {
-    static func tap(_ type: UINotificationFeedbackGenerator.FeedbackType) {
+    enum Notice { case success, warning, error }
+
+    static func tap(_ notice: Notice) {
+        #if os(iOS)
+        let type: UINotificationFeedbackGenerator.FeedbackType = switch notice {
+        case .success: .success
+        case .warning: .warning
+        case .error:   .error
+        }
         UINotificationFeedbackGenerator().notificationOccurred(type)
+        #endif
     }
+
     static func light() {
+        #if os(iOS)
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
     }
 }

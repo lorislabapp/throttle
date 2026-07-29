@@ -42,6 +42,9 @@ final class MirrorStore {
         scheduleHistoryFlush()       // large array — off-main, debounced
         WidgetCenter.shared.reloadAllTimelines()
         ThresholdNotifier.shared.evaluate(snap)
+        #if os(iOS)
+        ThrottleLiveActivity.sync(snap)   // keep the Dynamic Island / lock-screen banner in step
+        #endif
         // Edge auto-config: adopt the Mac's agent endpoint from the encrypted
         // blob. Mac is the source of truth — a changed token/host on the Mac
         // propagates here on the next sync; manual phone entry only matters
