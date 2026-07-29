@@ -135,7 +135,7 @@ struct ThrottleiOSWidget: Widget {
 #if os(iOS)
 import ActivityKit
 
-/// Shared colour ramp so the Live Activity matches the widget + the app meter.
+/// Colour ramp shared with the widget + app meter. #0071E3 normal, amber, red.
 private func liveColor(_ pct: Int) -> Color {
     switch pct {
     case 95...:   Color(red: 1.0, green: 0.231, blue: 0.188)   // #FF3B30
@@ -144,15 +144,37 @@ private func liveColor(_ pct: Int) -> Color {
     }
 }
 
-/// Live, self-updating countdown to the window reset — `Text(timerInterval:)` ticks
-/// on its own, so the Dynamic Island stays honest between the app's snapshot pushes.
+/// Non-colour urgency cue (LA-M01): the "about to be capped" state must survive
+/// colour-blind vision and the monochrome minimal presentation, so swap the glyph
+/// at the critical threshold rather than relying on hue alone.
+private func liveGlyph(_ pct: Int) -> String {
+    pct >= 95 ? "exclamationmark.triangle.fill" : "gauge.with.needle"
+}
+
+/// Countdown to the window reset. A live `Text(timerInterval:)` is a stopwatch with
+/// no day field, so a multi-day reset (the 7-day window binding) renders as
+/// "71:24:07" under a "resets in" label — semantically wrong and too wide to fit.
+/// Tick live only under 6h, where the second-by-second count earns its place; above
+/// that show a coarse relative string ("in 3 days"). (LA-H01)
 @ViewBuilder private func resetCountdown(_ date: Date?, font: Font) -> some View {
     if let date, date > Date() {
-        Text(timerInterval: Date()...date, countsDown: true)
-            .font(font).monospacedDigit()
+        if date.timeIntervalSinceNow > 6 * 3600 {
+            Text(date, format: .relative(presentation: .named))
+                .font(font).lineLimit(1).minimumScaleFactor(0.8)
+        } else {
+            Text(timerInterval: Date()...date, countsDown: true)
+                .font(font).monospacedDigit().lineLimit(1)
+                .accessibilityHidden(true)   // ticking text spams VoiceOver; reset is in the combined label
+        }
     } else {
         Text("—").font(font)
     }
+}
+
+/// One glanceable spoken label for the whole banner (LA-H03) — otherwise VoiceOver
+/// reads ~6 disjoint fragments, one of which (the live timer) keeps re-firing.
+private func a11yLabel(_ s: ThrottleActivityAttributes.ContentState) -> String {
+    "Claude usage \(s.binding) percent. 5-hour \(s.fiveHour) percent, 7-day \(s.sevenDay) percent."
 }
 
 struct ThrottleLiveActivityWidget: Widget {
@@ -162,28 +184,33 @@ struct ThrottleLiveActivityWidget: Widget {
             let s = context.state
             HStack(spacing: 14) {
                 Gauge(value: min(1, Double(s.binding) / 100)) {
-                    Image(systemName: "gauge.with.needle")
+                    Image(systemName: liveGlyph(s.binding))
                 } currentValueLabel: {
-                    Text("\(s.binding)").monospacedDigit()
+                    Text("\(s.binding)").monospacedDigit().minimumScaleFactor(0.7)
                 }
                 .gaugeStyle(.accessoryCircular)
                 .tint(liveColor(s.binding))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Claude usage").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                    Text("Claude usage").font(.caption2.weight(.semibold)).foregroundStyle(.white.opacity(0.7))
                     Text("5h \(s.fiveHour)% · 7d \(s.sevenDay)%").font(.callout.weight(.medium))
-                    Text(context.attributes.deviceName).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                    Text(context.attributes.deviceName).font(.caption2).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("resets in").font(.caption2).foregroundStyle(.secondary)
+                    Text("resets in").font(.caption2).foregroundStyle(.white.opacity(0.7))
                     resetCountdown(s.bindingResetsAt, font: .callout.weight(.semibold))
                         .foregroundStyle(liveColor(s.binding))
                 }
             }
             .padding(.horizontal, 16).padding(.vertical, 12)
-            .activityBackgroundTint(Color.black.opacity(0.35))
+            // Near-opaque tint so wallpaper doesn't bleed under the text and drop it
+            // below AA contrast (LA-H02).
+            .activityBackgroundTint(Color(white: 0.09).opacity(0.92))
             .activitySystemActionForegroundColor(.white)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(a11yLabel(s))
 
         } dynamicIsland: { context in
             let s = context.state
@@ -192,9 +219,11 @@ struct ThrottleLiveActivityWidget: Widget {
                     VStack(alignment: .leading, spacing: 1) {
                         Text("\(s.binding)%")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .monospacedDigit().foregroundStyle(liveColor(s.binding))
+                            .monospacedDigit().minimumScaleFactor(0.6).foregroundStyle(liveColor(s.binding))
                         Text("used").font(.caption2).foregroundStyle(.secondary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(s.binding) percent used")
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack(alignment: .trailing, spacing: 1) {
@@ -210,11 +239,13 @@ struct ThrottleLiveActivityWidget: Widget {
                     }
                 }
             } compactLeading: {
-                Image(systemName: "gauge.with.needle").foregroundStyle(liveColor(s.binding))
+                Image(systemName: liveGlyph(s.binding)).foregroundStyle(liveColor(s.binding))
+                    .accessibilityLabel("Claude usage \(s.binding) percent")
             } compactTrailing: {
-                Text("\(s.binding)%").monospacedDigit().foregroundStyle(liveColor(s.binding))
+                Text("\(s.binding)%").monospacedDigit().minimumScaleFactor(0.7).foregroundStyle(liveColor(s.binding))
             } minimal: {
-                Text("\(s.binding)").monospacedDigit().foregroundStyle(liveColor(s.binding))
+                Text("\(s.binding)").monospacedDigit().minimumScaleFactor(0.7).foregroundStyle(liveColor(s.binding))
+                    .accessibilityLabel("Claude usage \(s.binding) percent")
             }
             .keylineTint(liveColor(s.binding))
         }
@@ -226,6 +257,8 @@ struct ThrottleLiveActivityWidget: Widget {
             ProgressView(value: min(1, Double(pct) / 100)).tint(liveColor(pct))
             Text("\(pct)%").font(.caption2).monospacedDigit().foregroundStyle(.secondary).frame(width: 34, alignment: .trailing)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label == "5h" ? "5 hour" : "7 day") \(pct) percent")
     }
 }
 #endif
