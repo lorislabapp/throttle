@@ -30,18 +30,29 @@ const sleep = (s) => new Promise((r) => setTimeout(r, s * 1000));
 // not just visible but PROCESSED (processingState VALID) — assigning a build that's
 // still PROCESSING returns 404 on the relationships endpoint, which used to fail the
 // job even though the upload was fine (build 18). Up to 30 min.
+// Apple's processing latency is highly variable — builds 19/20 took well over
+// 30 min just to be INDEXED (2026-07-29). Poll up to 60 min.
+const MAX = 60;
 let build = null;
-for (let i = 0; i < 30; i++) {
+for (let i = 0; i < MAX; i++) {
   const r = await fetch(
     `https://api.appstoreconnect.apple.com/v1/builds?filter[app]=${APP_ID}&filter[version]=${VERSION}&limit=1`,
     { headers: { Authorization: 'Bearer ' + token() } });
   const b = (await r.json()).data?.[0] ?? null;
   const state = b?.attributes?.processingState;
   if (b && state === 'VALID') { build = b; break; }
-  console.log(`build ${VERSION} ${b ? `still ${state}` : 'not visible yet'} (attempt ${i + 1}/30)`);
+  console.log(`build ${VERSION} ${b ? `still ${state}` : 'not visible yet'} (attempt ${i + 1}/${MAX})`);
   await sleep(60);
 }
-if (!build) { console.error(`build ${VERSION} never became assignable (VALID) in ASC`); process.exit(1); }
+if (!build) {
+  // The UPLOAD succeeded — only the (Apple-gated) assignment didn't finish in time.
+  // Do NOT fail the job red over Apple's queue: exit 0 with a loud note so the run
+  // reads as "uploaded, assign later" rather than "build broken". A slow build still
+  // becomes VALID minutes later and can be assigned from ASC's TestFlight tab (or a
+  // re-run of just this step).
+  console.log(`::warning::build ${VERSION} uploaded OK but was not VALID within ${MAX} min — assign it manually in App Store Connect → TestFlight → Internal, or re-run this step later.`);
+  process.exit(0);
+}
 
 // The relationships POST can still 404/409 in the moments right after VALID —
 // retry a few times before giving up, so a tight race doesn't strand the build.
