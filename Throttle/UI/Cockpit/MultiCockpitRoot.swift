@@ -257,6 +257,7 @@ struct MultiCockpitRoot: View {
         case .tabs:      return "macwindow"
         case .rail:      return "sidebar.left"
         case .mission:   return "rectangle.3.group"
+        case .portfolio: return "point.3.filled.connected.trianglepath.dotted"
         }
     }
 
@@ -487,6 +488,10 @@ struct MultiCockpitRoot: View {
         if model.viewMode == .dashboard {
             // The cover page — stats work even with no live session.
             CockpitDashboardView(machine: model.machine).environment(appState)
+        } else if model.viewMode == .portfolio {
+            // Obsidian-style map of the whole ~/GitHub portfolio: what's duplicated
+            // (code) and re-researched (deep-research topics) across apps.
+            PortfolioGraphView()
         } else if model.sessions.isEmpty {
             emptyState
         } else {
@@ -494,7 +499,7 @@ struct MultiCockpitRoot: View {
             case .tabs:    tabsLayout
             case .rail:    railLayout
             case .mission: missionLayout
-            case .dashboard: EmptyView()   // handled above
+            case .dashboard, .portfolio: EmptyView()   // handled above
             }
         }
     }

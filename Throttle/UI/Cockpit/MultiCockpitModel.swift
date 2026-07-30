@@ -324,7 +324,7 @@ final class MultiCockpitModel {
     static let shared = MultiCockpitModel()
 
     enum ViewMode: String, CaseIterable, Identifiable {
-        case dashboard, rail, tabs, mission
+        case dashboard, rail, tabs, mission, portfolio
         var id: String { rawValue }
         var label: String {
             switch self {
@@ -332,6 +332,7 @@ final class MultiCockpitModel {
             case .tabs:      return "Tabs"
             case .rail:      return "Rail"
             case .mission:   return "Overview"
+            case .portfolio: return "Portfolio"
             }
         }
     }
