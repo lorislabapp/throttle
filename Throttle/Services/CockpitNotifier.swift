@@ -17,12 +17,23 @@ extension Notification.Name {
 @MainActor
 final class CockpitNotifier: NSObject {
     static let shared = CockpitNotifier()
+    nonisolated private static let readFirewallCategory = "THROTTLE_READ_FIREWALL"
+    nonisolated private static let deployReadFirewallAction = "THROTTLE_DEPLOY_READ_FIREWALL"
 
     private weak var appState: AppState?
 
     private override init() {
         super.init()
-        UNUserNotificationCenter.current().delegate = self
+        let center = UNUserNotificationCenter.current()
+        center.delegate = self
+        let deploy = UNNotificationAction(
+            identifier: Self.deployReadFirewallAction,
+            title: "Deploy local firewall",
+            options: [.foreground])
+        center.setNotificationCategories([
+            UNNotificationCategory(identifier: Self.readFirewallCategory,
+                                   actions: [deploy], intentIdentifiers: []),
+        ])
     }
 
     /// Called from MultiCockpitModel.start so the tap handler can reopen the
@@ -170,6 +181,30 @@ final class CockpitNotifier: NSObject {
         }
     }
 
+    /// Non-blocking, actionable menu-bar toast for a measured high-waste project.
+    /// The config is only touched from the explicit notification action.
+    func notifyReadFirewall(project: String, projectPath: String, summary: ReadFirewallScanner.Summary) {
+        guard summary.highWaste else { return }
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let status = settings.authorizationStatus
+            Task { @MainActor in
+                guard status == .authorized || status == .provisional else { return }
+                let content = UNMutableNotificationContent()
+                content.title = "\(project) is high-waste"
+                let loaded = ByteCountFormatter.string(fromByteCount: Int64(summary.loadedBytes),
+                                                       countStyle: .file)
+                content.body = "\(summary.heavyTurns) sequential-read turn(s), \(loaded) loaded. Add a 100% local read firewall?"
+                content.sound = nil
+                content.categoryIdentifier = Self.readFirewallCategory
+                content.userInfo = ["readFirewallProjectPath": projectPath]
+                let key = ContentStore.sha256Hex(Data(projectPath.utf8)).prefix(12)
+                let request = UNNotificationRequest(identifier: "read-firewall-\(key)",
+                                                    content: content, trigger: nil)
+                UNUserNotificationCenter.current().add(request)
+            }
+        }
+    }
+
     /// Notifications are off but a hidden session needs the user — tell the UI to
     /// show an in-cockpit "turn on notifications" banner (debounced ~2h) so the
     /// feature degrades visibly instead of silently (C02).
@@ -204,8 +239,22 @@ extension CockpitNotifier: UNUserNotificationCenterDelegate {
                                             didReceive response: UNNotificationResponse,
                                             withCompletionHandler completionHandler: @escaping () -> Void) {
         let tab = response.notification.request.content.userInfo["tab"] as? String
+        let projectPath = response.notification.request.content.userInfo["readFirewallProjectPath"] as? String
+        let deployFirewall = response.actionIdentifier == CockpitNotifier.deployReadFirewallAction
         completionHandler()   // call synchronously; UI work below (non-Sendable handler must not cross actors)
         Task { @MainActor in
+            if deployFirewall, let projectPath {
+                do {
+                    _ = try ReadFirewallInstaller.install(projectPath: projectPath)
+                    CockpitNotifier.shared.notifyRule(
+                        title: "Local read firewall deployed",
+                        body: "mcp-local-rag was added to \(URL(fileURLWithPath: projectPath).lastPathComponent)/.mcp.json. Restart Claude Code to load it.")
+                } catch {
+                    CockpitNotifier.shared.notifyRule(
+                        title: "Read firewall not changed",
+                        body: error.localizedDescription)
+                }
+            }
             if let appState = CockpitNotifier.shared.appState {
                 CockpitWindowController.shared.show(appState: appState)
             }

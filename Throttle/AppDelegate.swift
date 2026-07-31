@@ -216,6 +216,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         TokoptHook.purgeRaw()   // age out raw command-output dumps (M16)
         ContentStore.purge()    // age out trimmed-payload blobs (CMV, ~30d)
 
+        // Read Firewall: inspect only local execution logs and surface one
+        // non-blocking, actionable toast for the most recent high-waste workspace.
+        // No project config is changed until the user accepts the notification.
+        Task.detached(priority: .utility) {
+            let candidates = ProjectsService.listProjects().compactMap { project
+                -> (ProjectInfo, String, ReadFirewallScanner.Summary)? in
+                guard let path = ProjectsService.decodePath(project.encodedName),
+                      FileManager.default.fileExists(atPath: path) else { return nil }
+                let summary = ReadFirewallScanner.scan(encodedName: project.encodedName)
+                return summary.highWaste ? (project, path, summary) : nil
+            }
+            guard let candidate = candidates.first else { return }
+            await MainActor.run {
+                let key = "readFirewallToast.\(candidate.0.encodedName)"
+                let last = UserDefaults.standard.object(forKey: key) as? Date ?? .distantPast
+                guard Date().timeIntervalSince(last) > 7 * 86_400 else { return }
+                UserDefaults.standard.set(Date(), forKey: key)
+                CockpitNotifier.shared.notifyReadFirewall(
+                    project: candidate.0.displayName,
+                    projectPath: candidate.1,
+                    summary: candidate.2)
+            }
+        }
+
         // Auto-trim idle transcripts (opt-in, OFF by default). Reuses the manual
         // trimmer's lossless + reversible apply path (backup + validation + post-write
         // verify + rehydratable pointers); a 10-min idle floor never touches a session

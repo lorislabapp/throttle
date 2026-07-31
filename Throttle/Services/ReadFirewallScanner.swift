@@ -1,70 +1,161 @@
 import Foundation
 
-/// Read-Firewall detector — **measure-only**. Scans a project's recent transcripts
-/// for the brute-force read signature (many whole-file `Read`s packed into a single
-/// turn, or the same file read over and over) and surfaces it so you can scope your
-/// reads or add local semantic retrieval yourself.
+/// Detects brute-force file loading in Claude Code JSONL transcripts.
 ///
-/// Per `docs/design-read-firewall.md`: Throttle does the safe half — detect +
-/// attribute — and deliberately does NOT silently rewire a project's `.mcp.json`
-/// (semantic recall is lossy; changing what the model sees without consent is the
-/// golden-rule-adjacent risk). The nudge is informational; the fix stays the user's.
+/// A "turn" starts with a real user prompt and includes the assistant's tool calls
+/// plus their `tool_result` messages. Tool-result user messages do not start a new
+/// turn. This distinction matters because Claude commonly emits one Read per
+/// assistant event, interleaved with results.
 enum ReadFirewallScanner {
     struct Summary: Sendable, Equatable {
-        var heavyTurns = 0        // assistant turns with ≥ heavyThreshold Reads in one turn
-        var totalReads = 0        // total Read tool_use calls in the window
-        var topFile: String?      // most-re-read file (basename), best-effort
+        var heavyTurns = 0
+        var oversizedTurns = 0
+        var totalReads = 0
+        var loadedBytes = 0
+        var topFile: String?
         var topFileCount = 0
         var since: Date?
-        var hasData: Bool { heavyTurns > 0 }
+
+        var highWaste: Bool { heavyTurns > 0 || oversizedTurns > 0 }
+        var hasData: Bool { highWaste }
     }
 
-    static let heavyThreshold = 3         // ≥3 Reads in one assistant turn = brute-force
+    static let heavyThreshold = 3
+    static let byteThreshold = 150 * 1_024
     private static let windowDays = 14.0
-    private static let reReadFloor = 4    // only call out a file re-read ≥4× as notable
+    private static let reReadFloor = 4
+    private static let readNames: Set<String> = ["Read", "read_file"]
 
-    /// Off-main, best-effort, never throws. `encodedName` is the `~/.claude/projects`
-    /// subdir (== `ProjectInfo.encodedName`).
-    static func scan(encodedName: String) -> Summary {
-        var s = Summary()
-        let dir = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".claude/projects/\(encodedName)", isDirectory: true)
-        guard let files = try? FileManager.default.contentsOfDirectory(
-            at: dir, includingPropertiesForKeys: [.contentModificationDateKey]) else { return s }
+    private struct Turn {
+        var consecutiveReads = 0
+        var maxConsecutiveReads = 0
+        var loadedBytes = 0
+    }
 
-        let cutoff = Date().addingTimeInterval(-windowDays * 86_400)
-        let pathRE = try? NSRegularExpression(pattern: "\"file_path\"\\s*:\\s*\"([^\"]+)\"")
+    /// Pure scanner used by tests and by the file-system scan.
+    static func scan(lines: [String]) -> Summary {
+        var summary = Summary()
+        var turn = Turn()
+        var hasTurnActivity = false
+        var readToolIDs: Set<String> = []
         var fileCounts: [String: Int] = [:]
-        var earliest: Date?
 
-        for f in files where f.pathExtension == "jsonl" {
-            let mt = (try? f.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
-            guard mt >= cutoff else { continue }
-            guard let data = try? Data(contentsOf: f, options: .mappedIfSafe) else { continue }
-            earliest = min(earliest ?? mt, mt)
-            let text = String(decoding: data, as: UTF8.self)
-            for line in text.split(separator: "\n", omittingEmptySubsequences: true) {
-                // Cheap prefilter: only assistant lines that actually name a Read.
-                guard line.contains("\"name\":\"Read\"") else { continue }
-                let reads = line.components(separatedBy: "\"name\":\"Read\"").count - 1
-                guard reads > 0 else { continue }
-                s.totalReads += reads
-                if reads >= heavyThreshold { s.heavyTurns += 1 }
-                // Best-effort re-read attribution: count file_path basenames on Read lines.
-                if let re = pathRE {
-                    let str = String(line)
-                    for m in re.matches(in: str, range: NSRange(str.startIndex..., in: str)) {
-                        guard let r = Range(m.range(at: 1), in: str) else { continue }
-                        let base = (String(str[r]) as NSString).lastPathComponent
-                        fileCounts[base, default: 0] += 1
+        func finishTurn() {
+            guard hasTurnActivity else { return }
+            if turn.maxConsecutiveReads >= heavyThreshold { summary.heavyTurns += 1 }
+            if turn.loadedBytes > byteThreshold { summary.oversizedTurns += 1 }
+            summary.loadedBytes += turn.loadedBytes
+            turn = Turn()
+            hasTurnActivity = false
+            readToolIDs.removeAll(keepingCapacity: true)
+        }
+
+        for raw in lines {
+            guard let data = raw.data(using: .utf8),
+                  let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let message = root["message"] as? [String: Any] else { continue }
+            let role = message["role"] as? String
+            let blocks = contentBlocks(message["content"])
+
+            // Only a genuine human message closes the prior tool loop. Claude
+            // records tool results with role=user too, so inspect their content.
+            if role == "user", !blocks.isEmpty,
+               blocks.contains(where: { ($0["type"] as? String) != "tool_result" }) {
+                finishTurn()
+            } else if role == "user", blocks.isEmpty,
+                      message["content"] is String {
+                finishTurn()
+            }
+
+            var sawToolUse = false
+            for block in blocks where (block["type"] as? String) == "tool_use" {
+                sawToolUse = true
+                hasTurnActivity = true
+                let name = block["name"] as? String ?? ""
+                if readNames.contains(name) {
+                    summary.totalReads += 1
+                    turn.consecutiveReads += 1
+                    turn.maxConsecutiveReads = max(turn.maxConsecutiveReads, turn.consecutiveReads)
+                    if let id = block["id"] as? String { readToolIDs.insert(id) }
+                    if let input = block["input"] as? [String: Any],
+                       let path = (input["file_path"] ?? input["path"]) as? String {
+                        fileCounts[(path as NSString).lastPathComponent, default: 0] += 1
                     }
+                } else {
+                    turn.consecutiveReads = 0
+                }
+            }
+
+            // Attribute bytes only to results of Read/read_file calls. This is an
+            // exact UTF-8 byte count, not a fabricated token estimate.
+            for block in blocks where (block["type"] as? String) == "tool_result" {
+                guard let id = block["tool_use_id"] as? String,
+                      readToolIDs.contains(id) else { continue }
+                hasTurnActivity = true
+                turn.loadedBytes += payloadBytes(block["content"])
+            }
+
+            // An assistant event containing a non-read tool breaks sequentiality.
+            if sawToolUse {
+                let names = blocks.compactMap { block -> String? in
+                    guard (block["type"] as? String) == "tool_use" else { return nil }
+                    return block["name"] as? String
+                }
+                if names.contains(where: { !readNames.contains($0) }) {
+                    turn.consecutiveReads = 0
                 }
             }
         }
+        finishTurn()
+
         if let top = fileCounts.max(by: { $0.value < $1.value }), top.value >= reReadFloor {
-            s.topFile = top.key; s.topFileCount = top.value
+            summary.topFile = top.key
+            summary.topFileCount = top.value
         }
-        s.since = earliest
-        return s
+        return summary
+    }
+
+    /// Best-effort scan of a project's recent local transcripts.
+    static func scan(encodedName: String) -> Summary {
+        var aggregate = Summary()
+        let dir = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/projects/\(encodedName)", isDirectory: true)
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: dir, includingPropertiesForKeys: [.contentModificationDateKey]) else { return aggregate }
+
+        let cutoff = Date().addingTimeInterval(-windowDays * 86_400)
+        var topCounts: [String: Int] = [:]
+        var earliest: Date?
+        for file in files where file.pathExtension == "jsonl" {
+            let modified = (try? file.resourceValues(forKeys: [.contentModificationDateKey])
+                .contentModificationDate) ?? .distantPast
+            guard modified >= cutoff,
+                  let text = try? String(contentsOf: file, encoding: .utf8) else { continue }
+            earliest = min(earliest ?? modified, modified)
+            let part = scan(lines: text.split(separator: "\n").map(String.init))
+            aggregate.heavyTurns += part.heavyTurns
+            aggregate.oversizedTurns += part.oversizedTurns
+            aggregate.totalReads += part.totalReads
+            aggregate.loadedBytes += part.loadedBytes
+            if let file = part.topFile { topCounts[file, default: 0] += part.topFileCount }
+        }
+        if let top = topCounts.max(by: { $0.value < $1.value }) {
+            aggregate.topFile = top.key
+            aggregate.topFileCount = top.value
+        }
+        aggregate.since = earliest
+        return aggregate
+    }
+
+    private static func contentBlocks(_ value: Any?) -> [[String: Any]] {
+        value as? [[String: Any]] ?? []
+    }
+
+    private static func payloadBytes(_ value: Any?) -> Int {
+        if let text = value as? String { return text.utf8.count }
+        guard let value,
+              JSONSerialization.isValidJSONObject(value),
+              let data = try? JSONSerialization.data(withJSONObject: value) else { return 0 }
+        return data.count
     }
 }

@@ -1,16 +1,13 @@
 import SwiftUI
 
-/// Read-Firewall readout — measure-only, per project. Surfaces the brute-force
-/// read signature (`ReadFirewallScanner`) so you can scope reads or add local
-/// semantic retrieval. Detection + attribution only: Throttle never rewires the
-/// project's `.mcp.json` (semantic recall is lossy — that stays your call). Hidden
-/// when there's nothing notable, muted tone, `≈`/"measure-only" per the golden rule.
+/// Read-Firewall readout. Detection is automatic and local; deployment remains an
+/// explicit user action because semantic retrieval changes what reaches the model.
 struct ReadFirewallReadout: View {
     let project: ProjectInfo
 
     @State private var s = ReadFirewallScanner.Summary()
-    @State private var indexOn = SemanticAutoIndexer.isEnabled
-    @State private var indexing = false
+    @State private var installed = false
+    @State private var installError: String?
     private var hair: Color { Color.primary.opacity(0.09) }
 
     var body: some View {
@@ -21,7 +18,7 @@ struct ReadFirewallReadout: View {
                         Text("READ PRESSURE")
                             .font(.system(size: 9.5, weight: .semibold)).tracking(0.8)
                             .foregroundStyle(.tertiary)
-                        Text("measure-only · last 14d")
+                        Text("local logs · last 14d")
                             .font(.system(size: 9.5)).foregroundStyle(.tertiary)
                         Spacer(minLength: 8)
                         if let f = s.topFile {
@@ -33,10 +30,12 @@ struct ReadFirewallReadout: View {
                     HStack(spacing: 18) {
                         cell("\(s.heavyTurns)", "heavy turns")
                         cell("\(s.totalReads)", "file reads")
+                        cell(ByteCountFormatter.string(fromByteCount: Int64(s.loadedBytes),
+                                                       countStyle: .file), "loaded")
                         Spacer(minLength: 0)
                     }
                     .padding(.top, 8)
-                    Text("This project loads whole files in bulk (≥\(ReadFirewallScanner.heavyThreshold) reads/turn). Throttle already ships a 100%-local semantic index — turn it on and Claude can search this repo by meaning via throttle_semantic_search instead of re-reading whole files. No config rewrite; nothing leaves your Mac.")
+                    Text("This workspace crossed the read firewall threshold (≥\(ReadFirewallScanner.heavyThreshold) sequential reads or >150 KB in one turn). Deployment is explicit and reversible; nothing leaves your Mac.")
                         .font(.system(size: 10)).foregroundStyle(.tertiary)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 6)
@@ -49,6 +48,13 @@ struct ReadFirewallReadout: View {
         .task(id: project.encodedName) {
             let enc = project.encodedName
             s = await Task.detached(priority: .utility) { ReadFirewallScanner.scan(encodedName: enc) }.value
+            if let root = ProjectsService.decodePath(enc) {
+                installed = MCPConfigService.list().contains {
+                    $0.name == ReadFirewallInstaller.serverName
+                        && $0.scope == .project(projectPath: root)
+                        && !$0.disabled
+                }
+            }
         }
     }
 
@@ -59,31 +65,29 @@ struct ReadFirewallReadout: View {
     @ViewBuilder
     private var actionRow: some View {
         HStack(spacing: 8) {
-            if indexOn {
+            if installed {
                 Image(systemName: "checkmark.circle.fill").font(.system(size: 11)).foregroundStyle(.green)
-                Text(indexing ? "Indexing this repo…" : "Semantic index on — Claude can search here by meaning.")
+                Text("mcp-local-rag added — restart Claude Code to load it.")
                     .font(.system(size: 10)).foregroundStyle(.secondary)
             } else {
                 Button {
-                    SemanticAutoIndexer.isEnabled = true
-                    indexOn = true; indexing = true
-                    let root = project.projectPath
-                    let quiet = MemoryPressureMonitor.shared.isQuiet   // read on main
-                    Task.detached(priority: .utility) {
-                        if let root, !root.isEmpty {
-                            _ = SemanticAutoIndexer.run(roots: [root], enabled: true,
-                                                        memoryQuiet: quiet,
-                                                        embedder: NLEmbeddingProvider())
-                        }
-                        await MainActor.run { indexing = false }
+                    guard let root = ProjectsService.decodePath(project.encodedName) else { return }
+                    do {
+                        _ = try ReadFirewallInstaller.install(projectPath: root)
+                        installed = true
+                    } catch {
+                        installError = error.localizedDescription
                     }
                 } label: {
-                    Text("Enable semantic index").font(.system(size: 11, weight: .semibold))
+                    Text("Deploy local read firewall").font(.system(size: 11, weight: .semibold))
                 }
                 .buttonStyle(.borderedProminent).controlSize(.small)
-                Text("100% local · opt-in · reversible").font(.system(size: 9.5)).foregroundStyle(.tertiary)
+                Text("MiniLM-L6-v2 · LanceDB · opt-in").font(.system(size: 9.5)).foregroundStyle(.tertiary)
             }
             Spacer(minLength: 0)
+        }
+        if let installError {
+            Text(installError).font(.system(size: 9.5)).foregroundStyle(.orange)
         }
     }
 
