@@ -38,9 +38,17 @@ enum ContextTrimmerService {
         /// already on disk and the whitelist metadata (`file_path`, `command`)
         /// stays, so the model still knows what was written where. Opt-in.
         var stubToolInputsOver: Int? = nil
+        /// Replace text from events superseded by the latest compaction boundary
+        /// while retaining their structural envelope and dependency identifiers.
+        var trimSupersededEvents: Bool = false
 
         static let safe = Options(trimImages: true, stubToolResultsOver: nil)
-        static let aggressive = Options(trimImages: true, stubToolResultsOver: 4_000, stubToolInputsOver: 4_000)
+        /// Full three-pass CMV mode. Raw mechanical tool output is archived once
+        /// it exceeds 500 bytes, matching the context-cost threshold in the CMV
+        /// doctrine; write payloads retain the more conservative 4 KB threshold.
+        static let aggressive = Options(trimImages: true, stubToolResultsOver: 500,
+                                        stubToolInputsOver: 4_000,
+                                        trimSupersededEvents: true)
     }
 
     struct Plan: Sendable {
@@ -52,12 +60,23 @@ enum ContextTrimmerService {
         let toolResultBytesSaved: Int
         var toolInputsStubbed: Int = 0
         var toolInputBytesSaved: Int = 0
+        var supersededEventsTrimmed: Int = 0
+        var supersededBytesSaved: Int = 0
 
-        var bytesSaved: Int { imageBytesSaved + toolResultBytesSaved + toolInputBytesSaved }
-        var isEmpty: Bool { imagesTrimmed == 0 && toolResultsStubbed == 0 && toolInputsStubbed == 0 }
+        var bytesSaved: Int {
+            imageBytesSaved + toolResultBytesSaved + toolInputBytesSaved + supersededBytesSaved
+        }
+        var isEmpty: Bool {
+            imagesTrimmed == 0 && toolResultsStubbed == 0 &&
+            toolInputsStubbed == 0 && supersededEventsTrimmed == 0
+        }
         /// Rough re-charge estimate: images cost image-tokens (~1500 each on the
         /// Opus/Fable scale, not chars/4), tool payload costs ≈ chars/4.
-        var estTokensSaved: Int { imagesTrimmed * 1_500 + TokenEstimate.fromBytes(toolResultBytesSaved + toolInputBytesSaved, kind: .dense) }
+        var estTokensSaved: Int {
+            imagesTrimmed * 1_500 +
+            TokenEstimate.fromBytes(toolResultBytesSaved + toolInputBytesSaved + supersededBytesSaved,
+                                    kind: .dense)
+        }
 
         /// First 8 chars of the session UUID — enough to recognise a session.
         var sessionShort: String {
@@ -106,7 +125,11 @@ enum ContextTrimmerService {
         let projects = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude/projects").path
         var plans: [Plan] = []
-        for path in grepImageBearingFiles(projects) {
+        let paths = options.stubToolResultsOver == nil &&
+            options.stubToolInputsOver == nil && !options.trimSupersededEvents
+            ? grepImageBearingFiles(projects)
+            : transcriptFiles(projects)
+        for path in paths {
             let url = URL(fileURLWithPath: path)
             let stem = url.deletingPathExtension().lastPathComponent
             if let ex = excludingSessionId, ex == stem { continue }
@@ -120,10 +143,7 @@ enum ContextTrimmerService {
 
     /// Read-only. Computes exactly what `apply` would save, writing nothing.
     static func preview(_ url: URL, options: Options = .safe) throws -> Plan {
-        let raw = try readLines(url)
-        var p = Counters()
-        for line in raw { p.add(transform(line, options).counters) }
-        return p.plan(url: url, totalLines: raw.count)
+        try buildTrimmed(url, options).1
     }
 
     /// Write a sidecar trimmed snapshot next to the original for inspection.
@@ -202,17 +222,30 @@ enum ContextTrimmerService {
 
     private struct Counters {
         var images = 0, imageBytes = 0, stubs = 0, stubBytes = 0, inStubs = 0, inBytes = 0
+        var superseded = 0, supersededBytes = 0
         mutating func add(_ o: Counters) {
             images += o.images; imageBytes += o.imageBytes
             stubs += o.stubs; stubBytes += o.stubBytes
             inStubs += o.inStubs; inBytes += o.inBytes
+            superseded += o.superseded; supersededBytes += o.supersededBytes
         }
         func plan(url: URL, totalLines: Int) -> Plan {
             Plan(sessionURL: url, totalLines: totalLines,
                  imagesTrimmed: images, imageBytesSaved: imageBytes,
                  toolResultsStubbed: stubs, toolResultBytesSaved: stubBytes,
-                 toolInputsStubbed: inStubs, toolInputBytesSaved: inBytes)
+                 toolInputsStubbed: inStubs, toolInputBytesSaved: inBytes,
+                 supersededEventsTrimmed: superseded,
+                 supersededBytesSaved: supersededBytes)
         }
+    }
+
+    /// Pass 2 output: a dependency ledger plus the latest compaction boundary.
+    /// The exact ID multisets are validated again after pass 3.
+    private struct DependencyLedger {
+        var toolUseIDs: [String] = []
+        var toolResultIDs: [String] = []
+        var latestBoundaryIndex: Int?
+        var preservedUUIDs: Set<String> = []
     }
 
     /// Write-oriented tools whose bulky string inputs are pure resume bloat — the
@@ -227,24 +260,52 @@ enum ContextTrimmerService {
 
     /// Pure: maps one raw transcript line to its (possibly rewritten) form.
     /// Falls back to the verbatim input on ANY ambiguity — losslessness wins.
-    private static func transform(_ raw: String, _ opt: Options, _ sink: PointerSink? = nil) -> LineOutcome {
+    private static func transform(_ raw: String, _ opt: Options, superseded: Bool = false,
+                                  _ sink: PointerSink? = nil) -> LineOutcome {
         // Cheap byte gate: only parse lines that could carry a trimmable payload.
         let mayImage = opt.trimImages && raw.contains("\"base64\"")
         let mayTR = opt.stubToolResultsOver != nil && raw.contains("\"tool_result\"")
         let mayInput = opt.stubToolInputsOver != nil && raw.contains("\"tool_use\"")
-        guard mayImage || mayTR || mayInput else { return LineOutcome(line: raw) }
+        guard mayImage || mayTR || mayInput || superseded else { return LineOutcome(line: raw) }
 
         guard let data = raw.data(using: .utf8),
               var obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
-              var message = obj["message"] as? [String: Any],
-              var content = message["content"] as? [[String: Any]]
+              var message = obj["message"] as? [String: Any]
         else { return LineOutcome(line: raw) }   // not a shape we touch → verbatim
+
+        if superseded, let text = message["content"] as? String, !text.isEmpty {
+            var c = Counters()
+            c.superseded = 1
+            c.supersededBytes = text.utf8.count
+            message["content"] = pointerText(text, label: "superseded pre-compaction event", sink: sink)
+            obj["message"] = message
+            guard let newData = try? JSONSerialization.data(withJSONObject: obj, options: [.withoutEscapingSlashes]),
+                  let newLine = String(data: newData, encoding: .utf8) else {
+                return LineOutcome(line: raw)
+            }
+            return LineOutcome(line: newLine, counters: c)
+        }
+
+        guard var content = message["content"] as? [[String: Any]]
+        else { return LineOutcome(line: raw) }
 
         var c = Counters()
         var changed = false
 
         for i in content.indices {
             let type = content[i]["type"] as? String
+
+            // A compacted-away prose block is no longer part of Claude's
+            // preserved context. Archive it, but keep tool blocks below intact
+            // so tool_use/tool_result dependency IDs remain structurally valid.
+            if superseded, type == "text", let text = content[i]["text"] as? String,
+               !text.isEmpty {
+                c.superseded += 1; c.supersededBytes += text.utf8.count
+                content[i]["text"] = pointerText(text, label: "superseded pre-compaction event",
+                                                  sink: sink)
+                changed = true
+                continue
+            }
 
             // (a) image block directly in message.content
             if mayImage, type == "image",
@@ -332,11 +393,36 @@ enum ContextTrimmerService {
     /// Throws (writing nothing) if any invariant is violated.
     private static func buildTrimmed(_ url: URL, _ opt: Options, sink: PointerSink? = nil) throws -> ([String], Plan) {
         let original = try readLines(url)
+        // Pass 1 — byte scan. This deliberately does no JSON work and identifies
+        // only lines that can carry mechanical bloat or compaction metadata.
+        let candidates = Set(original.indices.filter { index in
+            let line = original[index]
+            return (opt.trimImages && line.contains("\"base64\"")) ||
+                (opt.stubToolResultsOver != nil && line.contains("\"tool_result\"")) ||
+                (opt.stubToolInputsOver != nil && line.contains("\"tool_use\"")) ||
+                (opt.trimSupersededEvents &&
+                    (line.contains("\"message\"") || line.contains("\"compactMetadata\"")))
+        })
+
+        // Pass 2 — dependency/compaction map.
+        let ledger = dependencyLedger(original)
         var output = [String](); output.reserveCapacity(original.count)
         var counters = Counters()
 
-        for line in original {
-            let o = transform(line, opt, sink)
+        // Pass 3 — payload stripping. Lines outside pass 1 stay byte-verbatim.
+        for (index, line) in original.enumerated() {
+            guard candidates.contains(index) else {
+                output.append(line)
+                continue
+            }
+            let isSuperseded: Bool
+            if opt.trimSupersededEvents, let boundary = ledger.latestBoundaryIndex,
+               index < boundary, let uuid = topLevelUUID(line) {
+                isSuperseded = !ledger.preservedUUIDs.contains(uuid)
+            } else {
+                isSuperseded = false
+            }
+            let o = transform(line, opt, superseded: isSuperseded, sink)
             output.append(o.line)
             counters.add(o.counters)
         }
@@ -361,8 +447,60 @@ enum ContextTrimmerService {
                 throw TrimError.validationFailed("line \(i) type changed")
             }
         }
+        let outputLedger = dependencyLedger(output)
+        guard outputLedger.toolUseIDs == ledger.toolUseIDs else {
+            throw TrimError.validationFailed("tool_use dependency IDs changed")
+        }
+        guard outputLedger.toolResultIDs == ledger.toolResultIDs else {
+            throw TrimError.validationFailed("tool_result dependency IDs changed")
+        }
 
         return (output, counters.plan(url: url, totalLines: original.count))
+    }
+
+    private static func dependencyLedger(_ lines: [String]) -> DependencyLedger {
+        var ledger = DependencyLedger()
+        for (index, line) in lines.enumerated() {
+            guard let data = line.data(using: .utf8),
+                  let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+            else { continue }
+            if let compact = obj["compactMetadata"] as? [String: Any] {
+                ledger.latestBoundaryIndex = index
+                var preserved = Set<String>()
+                if let messages = compact["preservedMessages"] as? [String: Any] {
+                    for key in ["uuids", "allUuids"] {
+                        for uuid in messages[key] as? [String] ?? [] { preserved.insert(uuid) }
+                    }
+                    if let anchor = messages["anchorUuid"] as? String { preserved.insert(anchor) }
+                }
+                if let segment = compact["preservedSegment"] as? [String: Any] {
+                    for key in ["headUuid", "anchorUuid", "tailUuid"] {
+                        if let uuid = segment[key] as? String { preserved.insert(uuid) }
+                    }
+                }
+                ledger.preservedUUIDs = preserved
+            }
+            guard let message = obj["message"] as? [String: Any],
+                  let content = message["content"] as? [[String: Any]] else { continue }
+            for block in content {
+                switch block["type"] as? String {
+                case "tool_use":
+                    if let id = block["id"] as? String { ledger.toolUseIDs.append(id) }
+                case "tool_result":
+                    if let id = block["tool_use_id"] as? String { ledger.toolResultIDs.append(id) }
+                default:
+                    break
+                }
+            }
+        }
+        return ledger
+    }
+
+    private static func topLevelUUID(_ line: String) -> String? {
+        guard let data = line.data(using: .utf8),
+              let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        else { return nil }
+        return obj["uuid"] as? String
     }
 
     // MARK: - Pointer / stub builders
@@ -380,7 +518,7 @@ enum ContextTrimmerService {
         sink?(hash, data)
         let kb = max(1, b64.utf8.count * 3 / 4 / 1024)   // base64 → raw bytes ≈ ×3/4
         return ["type": "text",
-                "text": "[image removed by Throttle — \(mediaType), ≈\(kb) KB. Rehydrate the original with throttle_expand_pointer(hash: \"\(hash)\"), or resume the Throttle backup.]"]
+                "text": "[image removed by Throttle — \(mediaType), ≈\(kb) KB. Rehydrate the original with throttle_expand_pointer(throttle_id: \"\(hash)\"), or resume the Throttle backup.]"]
     }
 
     private static func stubText(_ s: String, sink: PointerSink?) -> String {
@@ -389,7 +527,14 @@ enum ContextTrimmerService {
         sink?(hash, data)
         let head = String(s.prefix(280))
         let kb = max(1, s.utf8.count / 1024)
-        return head + "\n…[trimmed by Throttle — \(kb) KB removed; the assistant’s summary above is retained. Rehydrate the full output with throttle_expand_pointer(hash: \"\(hash)\"), or resume the backup.]"
+        return head + "\n…[trimmed by Throttle — \(kb) KB removed. Rehydrate the full output with throttle_expand_pointer(throttle_id: \"\(hash)\"), or resume the backup.]"
+    }
+
+    private static func pointerText(_ text: String, label: String, sink: PointerSink?) -> String {
+        let data = Data(text.utf8)
+        let hash = ContentStore.sha256Hex(data)
+        sink?(hash, data)
+        return "[\(label) stripped by Throttle; SHA-256 \(hash). Rehydrate exactly with throttle_expand_pointer(throttle_id: \"\(hash)\"), or resume the backup.]"
     }
 
     // MARK: - IO
@@ -425,5 +570,14 @@ enum ContextTrimmerService {
         p.waitUntilExit()
         let text = String(data: data, encoding: .utf8) ?? ""
         return text.split(separator: "\n").map(String.init).filter { $0.hasSuffix(".jsonl") }
+    }
+
+    /// Full CMV scans need transcripts without images too. Enumeration is still
+    /// metadata-only; byte parsing remains deferred to the explicit pass 1.
+    private static func transcriptFiles(_ dir: String) -> [String] {
+        guard let e = FileManager.default.enumerator(at: URL(fileURLWithPath: dir),
+                                                     includingPropertiesForKeys: nil,
+                                                     options: [.skipsHiddenFiles]) else { return [] }
+        return e.compactMap { ($0 as? URL)?.path }.filter { $0.hasSuffix(".jsonl") }
     }
 }

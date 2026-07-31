@@ -58,10 +58,11 @@ enum ThrottleMCPServer {
             case "get_mcp_health_status":
                 respond(id: id, result: textResult(mcpHealthText()))
             case "throttle_expand_pointer":
-                if let hash = args?["hash"] as? String {
-                    respond(id: id, result: textResult(expandPointerText(hash)))
+                // `hash` remains accepted for pointers emitted by Throttle 2.x.
+                if let throttleID = (args?["throttle_id"] as? String) ?? (args?["hash"] as? String) {
+                    respond(id: id, result: textResult(expandPointerText(throttleID)))
                 } else {
-                    respond(id: id, error: [-32602, "Missing hash"])
+                    respond(id: id, error: [-32602, "Missing throttle_id"])
                 }
             case "throttle_recall":
                 if let topic = args?["topic"] as? String {
@@ -211,13 +212,13 @@ enum ThrottleMCPServer {
     private static func expandPointerSchema() -> [String: Any] {
         [
             "name": "throttle_expand_pointer",
-            "description": "Rehydrate a payload that Throttle trimmed from a transcript to save tokens. When you see a marker like '[… trimmed by Throttle … throttle_expand_pointer(hash: \"…\")]' or '[image removed by Throttle …]', call this with that hash to get back the FULL original content (the complete tool output, or the base64 image data). Local content-addressed lookup; returns the exact bytes that were removed, or a not-found note if they have expired.",
+            "description": "Rehydrate an exact payload archived by Throttle's lossless CMV trimmer. Pass the SHA-256 throttle_id from the pointer. Local content-addressed lookup; nothing leaves the machine.",
             "inputSchema": [
                 "type": "object",
                 "properties": [
-                    "hash": ["type": "string", "description": "The 64-char SHA-256 hash from the Throttle pointer."],
+                    "throttle_id": ["type": "string", "description": "The 64-character SHA-256 ID from the Throttle pointer."],
                 ],
-                "required": ["hash"],
+                "required": ["throttle_id"],
             ],
         ]
     }
