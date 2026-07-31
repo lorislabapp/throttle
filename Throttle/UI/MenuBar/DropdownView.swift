@@ -1467,7 +1467,7 @@ private struct InlineGeneralPane: View {
             }
             SettingsHair()
             SettingsRow(title: "Claude Code output style",
-                        sub: "Active: \(activeStyle) — the reply voice for every claude session (terminal + Cockpit). Pick a built-in, or create your own (Caveman, Concise…).") {
+                        sub: "Active: \(activeStyle). Changes take effect next session or after /clear. Pick a built-in, or create your own (Caveman, Concise…).") {
                 HStack(spacing: 6) {
                     if !appState.isPro {
                         Text("PRO").font(.system(size: 9, weight: .heavy)).tracking(0.3)

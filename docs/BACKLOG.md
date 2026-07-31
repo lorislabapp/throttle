@@ -20,18 +20,19 @@ Grounded in the adversarially-verified deep research `docs/research/sota-compani
 ## Shipped 2026-07-16 (3.2.68) — Optimizer honesty pass (caveman research, verified)
 Report: `docs/research/output-styles-caveman-2026-07-14.md` (NotebookLM source #222).
 - [x] **Brevity via hooks, not style** (`BrevityHookService`): UserPromptSubmit hook injecting a
-      one-line "be brief" directive per turn (recency > system prompt) + SessionStart matcher
-      "compact" re-injection after compaction. Gated on the throttle-concise flag; self-mutes
-      under any style other than Throttle Concise. Wired to the Settings toggle + Autopilot
-      (new ledger kind, precise undo incl. pre-existing-flag tracking).
-- [x] **Shadowing detector** (`OutputStyleManager.shadowedProjects()`): scans ~/.claude.json
-      projects for a .claude/settings.local.json outputStyle that beats the global one; orange
-      warning in the style manager with per-project Reveal.
+      one-line "be brief" `additionalContext` per turn (recency > system prompt) + SessionStart
+      matcher "compact" re-injection after compaction. Gated on the throttle-concise flag;
+      self-mutes under any style other than Throttle Concise. Installation is strictly opt-in
+      through the Settings toggle — Autopilot never writes these hooks.
+- [x] **Shadowing detector** (`OutputStyleShadowingDetector`): audits the active project's
+      `.claude/settings.local.json` for an outputStyle that beats/pins the global one; orange
+      warning badge in Cockpit's Config Weight rail. The style manager retains its all-project
+      audit with per-project Reveal.
 - [x] **UI honesty**: stale "/output-style" copy removed (command deleted in CC v2.1.91);
-      "loads once at session start — /clear to apply now" everywhere; Caveman claims re-labeled
-      to measured reality (−22 to −62% of OUTPUT; output = 7–16% of the bill); the style manager
-      now shows the user's OWN measured output-cost share (last 30 d, usage.db →
-      `StatsDataService.outputCostShare`).
+      every style/config write now leaves a persistent green "Takes effect next session or
+      after /clear" banner; Caveman claims re-labeled to measured reality (−22 to −62% of
+      OUTPUT; output = 7–16% of the bill); the style manager now shows the user's OWN measured
+      output-cost share (last 30 d, usage.db → `StatsDataService.outputCostShare`).
 - [x] caveman-ultra.md: keep-coding-instructions: true (was already set), description corrected.
 
 ## SOTA gaps — decided NOT now / needs a decision (2026-07-14 research)
@@ -83,8 +84,8 @@ Report: `docs/research/output-styles-caveman-2026-07-14.md` (NotebookLM source #
       the Mac is merely crowded. `MultiCockpitModel.autoHibernateIfPressured` split by
       trigger; `notifyAutoPause`; rail tooltip.
 - [x] **Output-style activation nudge** — `OutputStyleManagerSheet` green banner after
-      tap-to-activate: the style only binds at session start, so run `/output-style`
-      or `/clear` to apply it to an already-open session. Root cause of the months-old
+      tap-to-activate: the style only binds at session start, so start a new session
+      or run `/clear` to apply it to an already-open session. Root cause of the months-old
       "caveman doesn't work" reports (it worked; it just needed a fresh session).
 - [x] **Traycer** (opt-in) — local OTLP receiver (127.0.0.1:4318, http/json) →
       `traycer_events` (migration v7) joined on `session.id` to `usage_events` for true

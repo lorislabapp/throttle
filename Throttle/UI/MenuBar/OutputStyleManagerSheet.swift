@@ -33,9 +33,14 @@ struct OutputStyleManagerSheet: View {
             Divider()
             Group {
                 if let target = editing {
-                    OutputStyleEditor(target: target) { didSave in
+                    OutputStyleEditor(target: target) { savedName in
                         editing = nil
-                        if didSave { reload() }
+                        if let savedName {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                justActivated = savedName
+                            }
+                            reload()
+                        }
                     }
                 } else {
                     listView
@@ -118,9 +123,9 @@ struct OutputStyleManagerSheet: View {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 14)).foregroundStyle(.green)
             VStack(alignment: .leading, spacing: 3) {
-                Text("“\(name)” is set — live in any new Claude Code session.")
+                Text("“\(name)” was written.")
                     .font(.system(size: 12, weight: .semibold))
-                Text("Output style loads once at session start. In a session that's already open, run  /clear  (or start a new session) to apply it now.")
+                Text("Takes effect next session or after /clear")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -201,7 +206,11 @@ struct OutputStyleManagerSheet: View {
 
     private func activate(_ style: OutputStyleManager.Style) {
         guard !style.isActive else { return }
-        try? OutputStyleManager.activate(style)   // installs a curated template's file if needed
+        do {
+            try OutputStyleManager.activate(style)   // installs a curated template's file if needed
+        } catch {
+            return
+        }
         withAnimation(.easeInOut(duration: 0.15)) { justActivated = style.name }
         reload()
     }
@@ -216,7 +225,7 @@ struct OutputStyleManagerSheet: View {
 
 private struct OutputStyleEditor: View {
     let target: OutputStyleManagerSheet.EditTarget
-    var onClose: (_ didSave: Bool) -> Void
+    var onClose: (_ savedName: String?) -> Void
 
     @State private var name = ""
     @State private var description = ""
@@ -254,7 +263,7 @@ private struct OutputStyleEditor: View {
             }
             Divider()
             HStack {
-                Button("Cancel") { onClose(false) }
+                Button("Cancel") { onClose(nil) }
                 Spacer()
                 Button("Save & activate") { save(activate: true) }.keyboardShortcut(.defaultAction)
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -304,9 +313,13 @@ private struct OutputStyleEditor: View {
         guard !trimmed.isEmpty else { return }
         guard let url = try? OutputStyleManager.saveStyle(
             name: trimmed, description: description, body: body_,
-            keepCoding: keepCoding, fileURL: existingURL) else { onClose(false); return }
+            keepCoding: keepCoding, fileURL: existingURL) else { onClose(nil); return }
         _ = url
         if activate { try? OutputStyleManager.setActive(trimmed) }
-        onClose(true)
+        onClose(trimmed)
     }
+}
+
+#Preview {
+    OutputStyleManagerSheet()
 }

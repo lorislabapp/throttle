@@ -31,11 +31,13 @@ enum BrevityHookService {
     private static var backupsDir: URL { home.appendingPathComponent(".claude/throttle-backups", isDirectory: true) }
 
     /// settings.json hook command — $HOME form like the other Throttle hooks.
-    private static let command = "$HOME/.claude/hooks/throttle-brevity.sh"
+    static let command = "$HOME/.claude/hooks/throttle-brevity.sh"
 
     /// One line ≈ 15 tokens per turn. "be brief" alone captures nearly all of
     /// the measured gain (HN 24×5 benchmark; drona23 SUMMARY.md).
-    private static let script = """
+    static let directive = "Be brief: lead with the answer, no preamble or recap; expand only when the task genuinely needs depth."
+
+    static let scriptContents = """
     #!/usr/bin/env bash
     # Throttle brevity hook — UserPromptSubmit + SessionStart(compact).
     # Injects a one-line terseness directive per turn / after compaction.
@@ -55,17 +57,17 @@ enum BrevityHookService {
       fi
     fi
 
-    DIRECTIVE="Be brief: lead with the answer, no preamble or recap; expand only when the task genuinely needs depth."
+    DIRECTIVE="\(directive)"
 
     INPUT=$(cat 2>/dev/null || true)
     if printf '%s' "$INPUT" | grep -Eq '"hook_event_name"[[:space:]]*:[[:space:]]*"SessionStart"'; then
-      # Compact path (settings.json matcher restricts us to source=compact).
-      # JSON additionalContext is the documented reliable channel here.
-      printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s"}}\\n' "$DIRECTIVE"
+      EVENT="SessionStart"
     else
-      # UserPromptSubmit: bare stdout is added as context beside the prompt.
-      printf '%s\\n' "$DIRECTIVE"
+      EVENT="UserPromptSubmit"
     fi
+    # Use the structured channel for BOTH hooks. Bare stdout works today for
+    # UserPromptSubmit, but additionalContext is explicit and deterministic.
+    printf '{"hookSpecificOutput":{"hookEventName":"%s","additionalContext":"%s"}}\\n' "$EVENT" "$DIRECTIVE"
     exit 0
     """
 
@@ -93,31 +95,48 @@ enum BrevityHookService {
     static func install() throws {
         let fm = FileManager.default
         try fm.createDirectory(at: hooksDir, withIntermediateDirectories: true)
-        try script.write(to: scriptFile, atomically: true, encoding: .utf8)
+        try scriptContents.write(to: scriptFile, atomically: true, encoding: .utf8)
         try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptFile.path)
 
         var dict = readSettings() ?? [:]
+        let updated = settingsByInstallingHooks(in: dict)
+        let changed = !NSDictionary(dictionary: dict).isEqual(to: updated)
+        if changed {
+            _ = try? backupSettings()
+            dict = updated
+            try writeSettings(dict)
+        }
+    }
+
+    /// Pure generator used by the installer and unit tests. It merges Throttle's
+    /// entries without replacing any hook group already owned by the user.
+    static func settingsByInstallingHooks(in settings: [String: Any]) -> [String: Any] {
+        var dict = settings
         var hooks = (dict["hooks"] as? [String: Any]) ?? [:]
-        var changed = false
 
         if !containsOurCommand(hooks["UserPromptSubmit"]) {
             var groups = (hooks["UserPromptSubmit"] as? [[String: Any]]) ?? []
             groups.append(["hooks": [["type": "command", "command": command]]])
             hooks["UserPromptSubmit"] = groups
-            changed = true
         }
         if !containsOurCommand(hooks["SessionStart"]) {
             var groups = (hooks["SessionStart"] as? [[String: Any]]) ?? []
             groups.append(["matcher": "compact",
                            "hooks": [["type": "command", "command": command]]])
             hooks["SessionStart"] = groups
-            changed = true
         }
-        if changed {
-            _ = try? backupSettings()
-            dict["hooks"] = hooks
-            try writeSettings(dict)
-        }
+        dict["hooks"] = hooks
+        return dict
+    }
+
+    /// Structured hook payload for validation and future native hook runners.
+    static func additionalContextJSON(eventName: String) throws -> Data {
+        try JSONSerialization.data(withJSONObject: [
+            "hookSpecificOutput": [
+                "hookEventName": eventName,
+                "additionalContext": directive,
+            ],
+        ], options: [.sortedKeys, .withoutEscapingSlashes])
     }
 
     /// Strip exactly our entries; leave every other hook untouched. Groups left

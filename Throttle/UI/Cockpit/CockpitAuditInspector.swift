@@ -49,6 +49,32 @@ struct CockpitAuditInspector: View {
                 row("CLAUDE.md", "≈\(tok(md)) tok/session")
             }
             if vm.data.config.skillCount > 0 { row("Skills", "\(vm.data.config.skillCount)") }
+            if let warning = vm.data.config.outputStyleShadowing {
+                Button {
+                    NSWorkspace.shared.activateFileViewerSelecting([
+                        URL(fileURLWithPath: warning.settingsPath)
+                    ])
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 10))
+                        Text("OUTPUT STYLE SHADOWED")
+                            .font(.system(size: 9.5, weight: .bold))
+                        Spacer(minLength: 4)
+                        Text(warning.localStyle)
+                            .font(.system(size: 10.5, weight: .medium))
+                            .lineLimit(1)
+                        Image(systemName: "arrow.right.circle")
+                            .font(.system(size: 9))
+                    }
+                    .foregroundStyle(.orange)
+                    .padding(.horizontal, 7).padding(.vertical, 5)
+                    .background(Color.orange.opacity(0.10), in: Capsule())
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("This active project's .claude/settings.local.json overrides the global output style. Click to reveal it; Throttle will never change it silently.")
+            }
             if vm.bloat.totalTokens > 0 {
                 Button { showTrim = true; Task { await vm.scanTrim(aggressive: trimAggressive) } } label: {
                     HStack(spacing: 6) {

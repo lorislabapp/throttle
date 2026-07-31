@@ -89,10 +89,15 @@ struct ConfigWeight: Sendable {
     var claudeMdTokens: Int?   // nil when no CLAUDE.md
     var mcpCount: Int
     var skillCount: Int
+    var outputStyleShadowing: OutputStyleShadowingDetector.Warning?
 
-    static let empty = ConfigWeight(claudeMdTokens: nil, mcpCount: 0, skillCount: 0)
+    static let empty = ConfigWeight(
+        claudeMdTokens: nil, mcpCount: 0, skillCount: 0, outputStyleShadowing: nil
+    )
 
-    var hasAnything: Bool { claudeMdTokens != nil || skillCount > 0 }
+    var hasAnything: Bool {
+        claudeMdTokens != nil || skillCount > 0 || outputStyleShadowing != nil
+    }
 }
 
 @MainActor
@@ -335,6 +340,7 @@ extension CockpitData {
     /// view hides that cell instead of showing a wrong number.
     static func load(db: any DatabaseReader, previousAllTime: Double?) -> CockpitData {
         var out = CockpitData.empty
+        var activeProjectURL: URL?
         out.allTimeCostEUR = previousAllTime
         try? db.read { db in
             let sid = try StatsDataService.cockpitCurrentSessionId(in: db)
@@ -343,8 +349,12 @@ extension CockpitData {
                 out.sessionCostEUR = try? StatsDataService.cockpitSessionCostEUR(in: db, sessionId: sid)
                 out.sessionMsgCount = try? StatsDataService.cockpitSessionMessageCount(in: db, sessionId: sid)
                 out.modelSplit = (try? StatsDataService.cockpitModelSplitForSession(in: db, sessionId: sid)) ?? []
-                out.currentSessionProject = (try? StatsDataService.cockpitSessionPath(in: db, sessionId: sid))
-                    .flatMap { $0 }.flatMap(cockpitProjectName(fromJSONLPath:))
+                let currentPath = (try? StatsDataService.cockpitSessionPath(in: db, sessionId: sid))
+                    .flatMap { $0 }
+                out.currentSessionProject = currentPath.flatMap(cockpitProjectName(fromJSONLPath:))
+                activeProjectURL = currentPath
+                    .flatMap(cockpitProjectPath(fromJSONLPath:))
+                    .map { URL(fileURLWithPath: $0, isDirectory: true) }
             }
             out.burn = try? StatsDataService.cockpitRecentBurn(in: db)
             out.allTimeCostEUR = (try? StatsDataService.extrapolatedCostEUR(in: db, range: .all)) ?? previousAllTime
@@ -370,14 +380,14 @@ extension CockpitData {
                 )
             }
         }
-        out.config = ConfigWeight.read()
+        out.config = ConfigWeight.read(activeProjectURL: activeProjectURL)
         return out
     }
 }
 
 extension ConfigWeight {
     /// Read `~/.claude` for CLAUDE.md size, MCP server count, skill count.
-    static func read() -> ConfigWeight {
+    static func read(activeProjectURL: URL? = nil) -> ConfigWeight {
         let fm = FileManager.default
         let claude = fm.homeDirectoryForCurrentUser.appendingPathComponent(".claude", isDirectory: true)
 
@@ -409,6 +419,11 @@ extension ConfigWeight {
             skillCount = items.filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }.count
         }
 
-        return ConfigWeight(claudeMdTokens: claudeMdTokens, mcpCount: mcpCount, skillCount: skillCount)
+        return ConfigWeight(
+            claudeMdTokens: claudeMdTokens,
+            mcpCount: mcpCount,
+            skillCount: skillCount,
+            outputStyleShadowing: OutputStyleShadowingDetector.detect(projectURL: activeProjectURL)
+        )
     }
 }

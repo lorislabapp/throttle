@@ -108,24 +108,9 @@ enum AutopilotService {
             }
         }
 
-        // 1a-bis) Brevity hooks — the reliable carrier for terseness. The style
-        // above only binds at session start (fixed since Claude Code v2.1.73);
-        // these hooks inject a one-line be-brief directive beside every prompt
-        // and re-inject it after compaction, reaching sessions already open.
-        // Self-muting when the user picks a non-Concise style, so installing is
-        // safe even alongside Caveman etc.
-        if !OutputStyleManager.userOverride, !BrevityHookService.isInstalled() {
-            let flagPath = FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(".claude/throttle-concise").path
-            let hadFlag = FileManager.default.fileExists(atPath: flagPath)
-            if (try? BrevityHookService.install()) != nil {
-                if !hadFlag { FileManager.default.createFile(atPath: flagPath, contents: Data()) }
-                made.append(Entry(id: UUID().uuidString, timestamp: Date(), kind: .brevityHook,
-                                  summary: "Installed brevity hooks — a one-line be-brief directive per prompt",
-                                  detail: "Carries terseness into sessions that are already open and re-injects it after compaction — the output style alone only reaches sessions started after it was set. Honest ceiling: output tokens are typically 7–16% of total spend.",
-                                  flagWasPresent: hadFlag))
-            }
-        }
+        // Brevity hooks are intentionally NOT part of Autopilot. They modify
+        // ~/.claude/settings.json and therefore require the user's explicit
+        // opt-in via the "Concise Claude Code replies" Settings toggle.
 
         // 1b) Usage statusline — live headroom in every terminal session.
         if !StatuslineService.isInstalled() {
