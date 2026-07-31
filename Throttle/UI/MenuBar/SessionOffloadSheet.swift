@@ -13,6 +13,7 @@ struct SessionOffloadSheet: View {
     @Bindable private var deploy = EdgeDeployService.shared
     @State private var user = "root"
     @State private var keyPath = "~/.ssh/id_ed25519"
+    @State private var localRepo = ""
     /// When the SSH host is a Proxmox host fronting the agent's container (DNAT
     /// topology), steps run inside via `pct exec`. Persisted — it's part of the
     /// box identity, like host/port.
@@ -40,6 +41,13 @@ struct SessionOffloadSheet: View {
         return EdgeAgentService.deployScript(target: target, token: svc.token, httpPort: svc.port, agentSource: src)
     }
 
+    private var deploymentRemoteCwd: String {
+        if newCwd.hasPrefix("/") { return newCwd }
+        let name = URL(fileURLWithPath: localRepo).lastPathComponent
+            .replacingOccurrences(of: " ", with: "-")
+        return "/root/offload/\(name.isEmpty ? "project" : name)"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -51,7 +59,7 @@ struct SessionOffloadSheet: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("One click: Throttle SSHes to your box, installs everything (Node, tmux, ttyd, claude, the agent), and verifies it. Sessions run on the box; Throttle measures + controls them.")
+                    Text("One click: Throttle SSHes to your box, deploys the bearer-gated Streamable-HTTP edge agent, clones your git repository, verifies its MCP tools, then backs up and routes ~/.claude.json to it.")
                         .font(.system(size: 11)).foregroundStyle(.secondary)
 
                     group("Agent") {
@@ -64,6 +72,7 @@ struct SessionOffloadSheet: View {
                             field("SSH key", $keyPath, "~/.ssh/id_ed25519")
                             field("Proxmox LXC ID (if host is a PVE node)", $lxcID, "134")
                         }
+                        field("Local git repository", $localRepo, "/Users/me/GitHub/project")
                         HStack {
                             field("Bearer token", $svc.token, "generate →")
                             Button("Generate") { svc.token = EdgeAgentService.generateToken() }.controlSize(.small)
@@ -75,11 +84,14 @@ struct SessionOffloadSheet: View {
                             Button(deploy.running ? "Deploying…" : "Deploy / repair agent") {
                                 Task {
                                     let ok = await deploy.deploy(target: target, token: svc.token,
-                                                                 httpPort: svc.port, lxcID: lxcID)
+                                                                 httpPort: svc.port, lxcID: lxcID,
+                                                                 localRepository: URL(fileURLWithPath: localRepo),
+                                                                 remoteCwd: deploymentRemoteCwd)
                                     if ok { await verifyAndCheckAuth() }
                                 }
                             }
-                            .disabled(deploy.running || svc.host.isEmpty || svc.token.isEmpty)
+                            .disabled(deploy.running || svc.host.isEmpty ||
+                                      svc.token.isEmpty || localRepo.isEmpty)
                             Spacer()
                         }
                         ForEach(deploy.steps) { s in stepRow(s) }
@@ -160,6 +172,17 @@ struct SessionOffloadSheet: View {
         .onAppear {
             svc.startPolling()
             localSessions = RemoteSessionsService.recentLocalSessions()
+            if localRepo.isEmpty {
+                localRepo = ProjectsService.listProjects().compactMap {
+                    ProjectsService.decodePath($0.encodedName)
+                }.first {
+                    FileManager.default.fileExists(
+                        atPath: URL(fileURLWithPath: $0).appendingPathComponent(".git").path)
+                } ?? ""
+            }
+            if newCwd.isEmpty, !localRepo.isEmpty {
+                newCwd = "/root/offload/\(URL(fileURLWithPath: localRepo).lastPathComponent)"
+            }
             if svc.isConfigured { Task { await verifyAndCheckAuth() } }
         }
         .onDisappear { svc.stopPolling() }

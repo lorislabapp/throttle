@@ -41,7 +41,7 @@ const PORT = parseInt(process.env.THROTTLE_AGENT_PORT || '8787', 10);
 const TTYD_PORT = parseInt(process.env.THROTTLE_AGENT_TTYD_PORT || '8788', 10);
 const CLAUDE_CMD = process.env.THROTTLE_AGENT_CLAUDE_CMD || 'claude';
 const PROJECTS_DIR = process.env.CLAUDE_PROJECTS_DIR || path.join(os.homedir(), '.claude', 'projects');
-const VERSION = '0.6.0';
+const VERSION = '0.7.0';
 
 if (!TOKEN) { console.error('FATAL: set THROTTLE_AGENT_TOKEN'); process.exit(1); }
 
@@ -296,6 +296,85 @@ function authed(req) {
 function body(req) {
   return new Promise((resolve) => { let d = ''; req.on('data', c => d += c); req.on('end', () => { try { resolve(d ? JSON.parse(d) : {}); } catch { resolve({}); } }); });
 }
+
+// ---- Streamable-HTTP MCP surface ------------------------------------------------
+// Claude Code can route its edge-session operations through the same bearer-gated
+// endpoint as the Mac app. This is deliberately a control plane: prompts and model
+// responses still flow directly between `claude` on the user's LXC and Anthropic.
+const MCP_TOOLS = [
+  {
+    name: 'throttle_edge_list_sessions',
+    description: 'List Claude Code sessions running on the user-owned Throttle edge server.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'throttle_edge_start_session',
+    description: 'Start a Claude Code session on the user-owned edge server in an absolute remote working directory.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        cwd: { type: 'string', description: 'Absolute working directory on the edge server.' },
+        project: { type: 'string', description: 'Optional display name.' },
+        resume: { type: 'string', description: 'Optional uploaded Claude session ID to resume.' },
+      },
+      required: ['cwd'],
+    },
+  },
+  {
+    name: 'throttle_edge_session_action',
+    description: 'Pause, resume, or stop a Claude Code session running on the edge server.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        action: { type: 'string', enum: ['pause', 'resume', 'stop'] },
+      },
+      required: ['id', 'action'],
+    },
+  },
+];
+
+function mcpText(value) {
+  return { content: [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }] };
+}
+
+async function handleMCP(req, res) {
+  const message = await body(req);
+  const id = message.id;
+  const ok = (result) => send(res, 200, { jsonrpc: '2.0', id, result });
+  const fail = (code, text) => send(res, 200, { jsonrpc: '2.0', id, error: { code, message: text } });
+
+  if (message.method === 'initialize') {
+    res.setHeader('Mcp-Session-Id', crypto.randomUUID());
+    return ok({
+      protocolVersion: '2024-11-05',
+      capabilities: { tools: {} },
+      serverInfo: { name: 'throttle-edge', version: VERSION },
+    });
+  }
+  if (message.method === 'notifications/initialized') {
+    res.writeHead(202); return res.end();
+  }
+  if (message.method === 'tools/list') return ok({ tools: MCP_TOOLS });
+  if (message.method !== 'tools/call') return fail(-32601, `Method not found: ${message.method || ''}`);
+
+  const name = message.params?.name;
+  const args = message.params?.arguments || {};
+  if (name === 'throttle_edge_list_sessions') return ok(mcpText(await listSessions()));
+  if (name === 'throttle_edge_start_session') {
+    if (typeof args.cwd !== 'string' || !args.cwd.startsWith('/')) return fail(-32602, 'cwd must be absolute');
+    return ok(mcpText(await startSession(args)));
+  }
+  if (name === 'throttle_edge_session_action') {
+    if (!/^[A-Za-z0-9_-]+$/.test(args.id || '') ||
+        !['pause', 'resume', 'stop'].includes(args.action)) return fail(-32602, 'bad id or action');
+    if (args.action === 'stop') await stopSession(args.id);
+    if (args.action === 'pause') await paneSignal(args.id, 'STOP');
+    if (args.action === 'resume') await paneSignal(args.id, 'CONT');
+    return ok(mcpText({ ok: true, id: args.id, action: args.action }));
+  }
+  return fail(-32602, `Unknown tool: ${name || ''}`);
+}
 // Raw octet-stream body for transcript upload. Session JSONLs run to tens of MB;
 // cap at 512 MB as a runaway guard, stream straight to disk (no buffering the
 // whole file in memory on a small LXC).
@@ -369,6 +448,7 @@ const server = http.createServer(async (req, res) => {
   }
   if (!authed(req)) return send(res, 401, { error: 'unauthorized' });
   try {
+    if (p === '/mcp' && req.method === 'POST') return await handleMCP(req, res);
     if (p === '/auth/start' && req.method === 'POST') return send(res, 200, await authStart());
     if (p === '/auth/peek' && req.method === 'GET') return send(res, 200, await authPeek());
     if (p === '/auth/submit' && req.method === 'POST') { const { code } = await body(req); return send(res, 200, await authSubmit(code)); }

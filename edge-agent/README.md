@@ -44,8 +44,9 @@ Env: `THROTTLE_AGENT_TOKEN` (required), `THROTTLE_AGENT_HOST` (default `0.0.0.0`
   after 5 min idle. This is a UX safety net enforced by the client, not by ttyd or the
   agent — a compromised/jailbroken device could bypass it, same trust level as the
   token already sitting in UserDefaults today.
-- The Throttle Mac generates the systemd deploy + verifies the endpoint before use; it
-  never SSHes for you.
+- The explicit Deploy button makes Throttle SSH to the selected host (and, when
+  configured, pipes each step through `pct exec <id> -- bash -s`). It verifies the
+  bearer-gated MCP endpoint before backing up and changing local Claude routing.
 - **NAT/firewall**: if the box sits behind a host doing Tailscale DNAT (e.g. a Proxmox
   LXC), forward **both** `THROTTLE_AGENT_PORT` and `THROTTLE_AGENT_TTYD_PORT` — the
   deploy script only writes files on the box itself, it doesn't touch host firewall
@@ -55,6 +56,7 @@ Env: `THROTTLE_AGENT_TOKEN` (required), `THROTTLE_AGENT_HOST` (default `0.0.0.0`
 | Method | Path | Auth | Body / Result |
 |---|---|---|---|
 | GET | `/health` | no | `{ok, version, tmux, ttyd, sessions, attached}` |
+| POST | `/mcp` | yes | MCP Streamable HTTP control plane (`list`, `start`, `pause/resume/stop`) |
 | GET | `/sessions` | yes | `{sessions: [{id, project, cwd, state, model, tokens, startedAt}]}` |
 | POST | `/sessions` | yes | `{project?, cwd, resume?}` → `{id, name}` (spawns `claude` in tmux) |
 | POST | `/sessions/:id/stop` | yes | kill the tmux session (and any attached ttyd) |

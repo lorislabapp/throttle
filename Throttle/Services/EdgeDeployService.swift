@@ -40,15 +40,31 @@ final class EdgeDeployService {
     /// PVE), so the piping model is unchanged.
     @discardableResult
     func deploy(target: EdgeAgentService.SSHTarget, token: String, httpPort: Int,
-                ttydPort: Int = 8788, lxcID: String? = nil) async -> Bool {
+                ttydPort: Int = 8788, lxcID: String? = nil,
+                localRepository: URL, remoteCwd: String) async -> Bool {
         guard !running else { return false }
+        guard FileManager.default.fileExists(
+            atPath: localRepository.appendingPathComponent(".git").path) else {
+            steps = [StepStatus(label: "Local repository",
+                                state: .failed("Choose a local git repository"))]
+            return false
+        }
+        guard remoteCwd.hasPrefix("/"), remoteCwd.count > 1 else {
+            steps = [StepStatus(label: "Remote repository",
+                                state: .failed("Remote working directory must be absolute"))]
+            return false
+        }
         guard let agentSource = EdgeAgentService.bundledAgentSource() else {
             steps = [StepStatus(label: "Agent source", state: .failed("throttle-agent.mjs missing from app bundle"))]
             return false
         }
         let plan = EdgeAgentService.deploySteps(token: token, httpPort: httpPort,
                                                 ttydPort: ttydPort, agentSource: agentSource)
-        steps = plan.map { StepStatus(label: $0.label) }
+        steps = plan.map { StepStatus(label: $0.label) } + [
+            StepStatus(label: "Verify Streamable HTTP"),
+            StepStatus(label: "Bundle + clone repository"),
+            StepStatus(label: "Route Claude to edge"),
+        ]
         running = true
         failureDetail = nil
         defer { running = false }
@@ -78,7 +94,128 @@ final class EdgeDeployService {
                 return false
             }
         }
+
+        var index = plan.count
+        steps[index].state = .running
+        let baseURL = EdgeAgentService.remoteURL(host: target.host, port: httpPort)
+        let mcp = await EdgeAgentService.verifyMCP(baseURL: baseURL, token: token)
+        guard mcp.ok else {
+            steps[index].state = .failed(mcp.detail)
+            failureDetail = mcp.detail
+            return false
+        }
+        steps[index].state = .done
+
+        index += 1
+        steps[index].state = .running
+        do {
+            try await Self.bundleAndUpload(repository: localRepository,
+                                           remoteCwd: remoteCwd,
+                                           baseURL: baseURL, token: token)
+            steps[index].state = .done
+        } catch {
+            let message = "repo transfer failed: \(error.localizedDescription)"
+            steps[index].state = .failed(message)
+            failureDetail = message
+            return false
+        }
+
+        index += 1
+        steps[index].state = .running
+        do {
+            try Self.installClaudeEdgeRoute(baseURL: baseURL, token: token)
+            steps[index].state = .done
+        } catch {
+            let message = "Claude route unchanged: \(error.localizedDescription)"
+            steps[index].state = .failed(message)
+            failureDetail = message
+            return false
+        }
         return true
+    }
+
+    // MARK: - Post-deploy gates
+
+    enum DeployError: LocalizedError {
+        case git(String)
+        case invalidDefinition
+
+        var errorDescription: String? {
+            switch self {
+            case .git(let message): return message
+            case .invalidDefinition: return "could not encode the edge MCP definition"
+            }
+        }
+    }
+
+    /// Definition written only after SSH deploy, MCP verification and repository
+    /// transfer have all succeeded. MCPConfigService performs the backup and
+    /// atomic read-modify-write of ~/.claude.json.
+    nonisolated static func edgeMCPDefinition(baseURL: String, token: String) throws -> Data {
+        guard let base = URL(string: baseURL), base.scheme != nil, base.host != nil
+        else { throw DeployError.invalidDefinition }
+        let url = base.appendingPathComponent("mcp").absoluteString
+        let object: [String: Any] = [
+            "type": "http",
+            "url": url,
+            "headers": ["Authorization": "Bearer \(token)"],
+        ]
+        guard JSONSerialization.isValidJSONObject(object) else {
+            throw DeployError.invalidDefinition
+        }
+        return try JSONSerialization.data(withJSONObject: object,
+                                          options: [.sortedKeys, .withoutEscapingSlashes])
+    }
+
+    private nonisolated static func installClaudeEdgeRoute(baseURL: String,
+                                                           token: String) throws {
+        try MCPConfigService.add(name: "throttle-edge", scope: .user,
+                                 defJSON: edgeMCPDefinition(baseURL: baseURL, token: token))
+    }
+
+    private nonisolated static func bundleAndUpload(repository: URL, remoteCwd: String,
+                                                    baseURL: String, token: String) async throws {
+        let bundle = FileManager.default.temporaryDirectory
+            .appendingPathComponent("throttle-edge-\(UUID().uuidString).bundle")
+        defer { try? FileManager.default.removeItem(at: bundle) }
+        guard let branch = await runGit(["-C", repository.path, "rev-parse",
+                                         "--abbrev-ref", "HEAD"]) else {
+            throw DeployError.git("could not determine the local git branch")
+        }
+        guard await runGit(["-C", repository.path, "bundle", "create",
+                            bundle.path, "--all"]) != nil else {
+            throw DeployError.git("git bundle creation failed")
+        }
+        _ = try await EdgeAgentService.uploadRepoBundle(
+            baseURL: baseURL, token: token, remoteCwd: remoteCwd,
+            branch: branch == "HEAD" ? "HEAD" : branch, fileURL: bundle)
+    }
+
+    private nonisolated static func runGit(_ arguments: [String]) async -> String? {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+                process.arguments = arguments
+                let output = Pipe()
+                process.standardOutput = output
+                process.standardError = Pipe()
+                do { try process.run() } catch {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                process.waitUntilExit()
+                guard process.terminationStatus == 0 else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                let value = String(
+                    decoding: output.fileHandleForReading.readDataToEndOfFile(),
+                    as: UTF8.self)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                continuation.resume(returning: value)
+            }
+        }
     }
 
     // MARK: - ssh plumbing
@@ -96,12 +233,13 @@ final class EdgeDeployService {
                     "-p", String(target.port)]
         if let keyPath { args += ["-i", keyPath] }
         args += ["\(target.user)@\(target.host)", remoteCommand]
+        let sshArguments = args
 
         return await withCheckedContinuation { cont in
             DispatchQueue.global(qos: .userInitiated).async {
                 let p = Process()
                 p.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
-                p.arguments = args
+                p.arguments = sshArguments
                 let stdin = Pipe(), stdout = Pipe(), stderr = Pipe()
                 p.standardInput = stdin; p.standardOutput = stdout; p.standardError = stderr
 
