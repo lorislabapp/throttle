@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:goliath:control-plane:v1",
+  "title": "Goliath Control Plane v1",
+  "oneOf": [
+    { "$ref": "#/$defs/action" },
+    { "$ref": "#/$defs/receipt" }
+  ],
+  "$defs": {
+    "traceparent": {
+      "type": "string",
+      "pattern": "^00-[0-9a-f]{32}-[0-9a-f]{16}-0[01]$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agentId", "role", "workspaceId"],
+      "properties": {
+        "agentId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "role": {
+          "enum": ["architect", "builder", "security", "qa", "researcher"]
+        },
+        "workspaceId": { "type": "string", "minLength": 1, "maxLength": 256 }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind", "contractVersion", "actionId", "traceparent", "sequence",
+        "nonce", "issuedAtUnixMs", "expiresAtUnixMs", "identity", "operation", "auth"
+      ],
+      "properties": {
+        "kind": { "const": "action" },
+        "contractVersion": { "const": "goliath.control-plane.action.v1" },
+        "actionId": { "type": "string", "pattern": "^[0-9a-f-]{36}$" },
+        "traceparent": { "$ref": "#/$defs/traceparent" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "nonce": { "type": "string", "pattern": "^[0-9a-f]{32,128}$" },
+        "issuedAtUnixMs": { "type": "integer", "minimum": 0 },
+        "expiresAtUnixMs": { "type": "integer", "minimum": 0 },
+        "identity": { "$ref": "#/$defs/identity" },
+        "operation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "relativePath"],
+          "properties": {
+            "name": { "const": "workspace.read_file" },
+            "relativePath": { "type": "string", "minLength": 1, "maxLength": 4096 }
+          }
+        },
+        "auth": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["keyId", "macSha256"],
+          "properties": {
+            "keyId": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "macSha256": { "$ref": "#/$defs/sha256" }
+          }
+        }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind", "contractVersion", "actionId", "traceparent", "sequence",
+        "component", "decision", "inputBytes", "outputBytes",
+        "estimatedTokensBefore", "estimatedTokensAfter", "artifactSha256", "eventSha256"
+      ],
+      "properties": {
+        "kind": { "const": "receipt" },
+        "contractVersion": { "const": "goliath.control-plane.receipt.v1" },
+        "actionId": { "type": "string", "pattern": "^[0-9a-f-]{36}$" },
+        "traceparent": { "$ref": "#/$defs/traceparent" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "component": { "enum": ["super-orchestrateur", "supergateway", "throttle"] },
+        "decision": { "enum": ["allowed", "denied", "error"] },
+        "inputBytes": { "type": "integer", "minimum": 0 },
+        "outputBytes": { "type": "integer", "minimum": 0 },
+        "estimatedTokensBefore": { "type": "integer", "minimum": 0 },
+        "estimatedTokensAfter": { "type": "integer", "minimum": 0 },
+        "artifactSha256": { "anyOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "eventSha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}
