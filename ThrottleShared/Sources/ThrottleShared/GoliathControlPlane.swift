@@ -172,7 +172,11 @@ public enum GoliathControlPlane {
                 state.tokensBefore += receipt.estimatedTokensBefore
                 state.tokensAfter += receipt.estimatedTokensAfter
                 let data = try JSONEncoder().encode(state)
-                try data.write(to: fileURL, options: [.atomic, .completeFileProtection])
+                // Receipts contain accounting metadata, not credentials. On macOS 27,
+                // completeFileProtection makes Foundation's atomic temporary-file
+                // creation fail with EPERM outside a data-protection container. Keep
+                // crash-safe replacement and enforce private POSIX permissions below.
+                try data.write(to: fileURL, options: [.atomic])
                 try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
             }
             return DurableConsumeResult(inserted: inserted, snapshot: snapshot(state))
