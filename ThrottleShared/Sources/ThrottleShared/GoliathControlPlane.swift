@@ -1,4 +1,5 @@
 import CryptoKit
+import Darwin
 import Foundation
 
 public enum GoliathControlPlane {
@@ -127,6 +128,66 @@ public enum GoliathControlPlane {
             AccountingSnapshot(
                 acceptedEvents: acceptedEvents, inputBytes: inputBytes, outputBytes: outputBytes,
                 estimatedTokensBefore: tokensBefore, estimatedTokensAfter: tokensAfter)
+        }
+    }
+
+    public struct DurableConsumeResult: Equatable, Sendable {
+        public let inserted: Bool
+        public let snapshot: AccountingSnapshot
+    }
+
+    public struct DurableAccountingStore: Sendable {
+        private struct State: Codable {
+            var eventHashes = Set<String>()
+            var acceptedEvents = 0
+            var inputBytes: UInt64 = 0
+            var outputBytes: UInt64 = 0
+            var tokensBefore: UInt64 = 0
+            var tokensAfter: UInt64 = 0
+        }
+
+        private let fileURL: URL
+
+        public init(fileURL: URL) { self.fileURL = fileURL }
+
+        public func consume(_ receipt: Receipt) throws -> DurableConsumeResult {
+            try receipt.validate()
+            try FileManager.default.createDirectory(
+                at: fileURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700])
+            let lockURL = fileURL.appendingPathExtension("lock")
+            let descriptor = open(lockURL.path, O_CREAT | O_RDWR | O_CLOEXEC, 0o600)
+            guard descriptor >= 0 else { throw CocoaError(.fileWriteUnknown) }
+            defer { close(descriptor) }
+            guard flock(descriptor, LOCK_EX) == 0 else { throw CocoaError(.fileLocking) }
+            defer { flock(descriptor, LOCK_UN) }
+
+            var state = try load()
+            let inserted = state.eventHashes.insert(receipt.eventSha256).inserted
+            if inserted {
+                state.acceptedEvents += 1
+                state.inputBytes += receipt.inputBytes
+                state.outputBytes += receipt.outputBytes
+                state.tokensBefore += receipt.estimatedTokensBefore
+                state.tokensAfter += receipt.estimatedTokensAfter
+                let data = try JSONEncoder().encode(state)
+                try data.write(to: fileURL, options: [.atomic, .completeFileProtection])
+                try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
+            }
+            return DurableConsumeResult(inserted: inserted, snapshot: snapshot(state))
+        }
+
+        private func load() throws -> State {
+            guard FileManager.default.fileExists(atPath: fileURL.path) else { return State() }
+            return try JSONDecoder().decode(State.self, from: Data(contentsOf: fileURL))
+        }
+
+        private func snapshot(_ state: State) -> AccountingSnapshot {
+            AccountingSnapshot(
+                acceptedEvents: state.acceptedEvents, inputBytes: state.inputBytes,
+                outputBytes: state.outputBytes, estimatedTokensBefore: state.tokensBefore,
+                estimatedTokensAfter: state.tokensAfter)
         }
     }
 }

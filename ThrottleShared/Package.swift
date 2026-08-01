@@ -10,6 +10,7 @@ let package = Package(
     platforms: [.macOS(.v14), .iOS(.v17)],
     products: [
         .library(name: "ThrottleShared", targets: ["ThrottleShared"]),
+        .executable(name: "throttle-cfo-ingest", targets: ["ThrottleCFOIngest"]),
         // LAN peer link (Bonjour + TLS-PSK) that mirrors the same snapshot to the
         // iOS companion sub-second on the same network. Separate target so the
         // Network/CryptoKit deps stay out of the pure contract library.
@@ -22,6 +23,11 @@ let package = Package(
         ),
         .target(
             name: "ThrottlePeer",
+            dependencies: ["ThrottleShared"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "ThrottleCFOIngest",
             dependencies: ["ThrottleShared"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),

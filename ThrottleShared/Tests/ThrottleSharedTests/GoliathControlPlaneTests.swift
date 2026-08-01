@@ -41,4 +41,18 @@ final class GoliathControlPlaneTests: XCTestCase {
             XCTAssertEqual($0 as? GoliathControlPlane.ContractError, .hashMismatch)
         }
     }
+
+    func testDurableAccountingSurvivesRestartAndRemainsIdempotent() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let journal = directory.appendingPathComponent("cfo.json")
+        let first = try GoliathControlPlane.DurableAccountingStore(fileURL: journal).consume(receipt())
+        let restarted = try GoliathControlPlane.DurableAccountingStore(fileURL: journal).consume(receipt())
+        XCTAssertTrue(first.inserted)
+        XCTAssertFalse(restarted.inserted)
+        XCTAssertEqual(restarted.snapshot.acceptedEvents, 1)
+        let permissions = try FileManager.default.attributesOfItem(atPath: journal.path)[.posixPermissions] as? NSNumber
+        XCTAssertEqual(permissions?.intValue, 0o600)
+    }
 }
