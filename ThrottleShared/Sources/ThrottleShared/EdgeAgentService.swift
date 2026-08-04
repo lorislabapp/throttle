@@ -108,7 +108,7 @@ public enum EdgeAgentService {
         s += "UNIT\n"
         s += "\(ssh) 'systemctl daemon-reload && systemctl enable --now throttle-agent && sleep 3 && systemctl is-active throttle-agent'\n\n"
         s += "# 6) if this box sits behind a NAT/firewall (e.g. a Proxmox LXC reached over\n"
-        s += "#    Tailscale via host DNAT), make sure BOTH \(httpPort) (HTTP API) and \(ttydPort)\n"
+        s += "#    through a host DNAT rule), make sure BOTH \(httpPort) (HTTP API) and \(ttydPort)\n"
         s += "#    (ttyd) are forwarded — not just the API port. This script does not touch\n"
         s += "#    firewall/NAT rules on the host; that's a one-time manual step outside the box.\n"
         s += "# 7) One manual step that genuinely can't be scripted — your own OAuth login.\n"

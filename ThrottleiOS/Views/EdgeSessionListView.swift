@@ -229,7 +229,7 @@ private struct EdgeAgentSettingsSheet: View {
         NavigationStack {
             Form {
                 Section("Agent") {
-                    TextField("Host (Tailscale IP or hostname)", text: $svc.host)
+                    TextField("Host (IP address or hostname)", text: $svc.host)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                     TextField("Port", text: $portText)

@@ -86,7 +86,7 @@ struct EdgeTerminalView: UIViewRepresentable {
                                cols: geometry.cols, rows: geometry.rows)
             } catch {
                 await MainActor.run {
-                    connection.state = .failed("Couldn't reach the session — check the box and your Tailscale connection.")
+                    connection.state = .failed("Couldn't reach the session — check the host address and that your Mac is reachable on this network.")
                 }
             }
         }

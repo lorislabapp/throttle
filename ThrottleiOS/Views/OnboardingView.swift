@@ -12,7 +12,7 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Precise cockpit,\nin your pocket")
                         .font(.largeTitle.weight(.bold))
-                    Text("A read-only mirror of your Mac’s live Claude Code usage — synced over your own private iCloud. No server, no VPN.")
+                    Text("A read-only mirror of your Mac’s live Claude Code usage — synced over your own private iCloud. No server, no account.")
                         .foregroundStyle(.secondary)
                 }
                 .padding(.top, 8)
