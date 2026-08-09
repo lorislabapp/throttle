@@ -29,7 +29,9 @@ node throttle-agent.mjs
 Env: `THROTTLE_AGENT_TOKEN` (required), `THROTTLE_AGENT_HOST` (default `0.0.0.0`),
 `THROTTLE_AGENT_PORT` (default `8787`), `THROTTLE_AGENT_TTYD_PORT` (default `8788`),
 `THROTTLE_AGENT_CLAUDE_CMD` (default `claude`; tests use `sleep 3600`),
-`CLAUDE_PROJECTS_DIR` (default `~/.claude/projects`).
+`CLAUDE_PROJECTS_DIR` (default `~/.claude/projects`), and bounded mission roots
+`THROTTLE_AGENT_MISSION_ROOT` / `THROTTLE_AGENT_INCOMING_ROOT` (defaults under
+`/opt/throttle-agent`).
 
 Kalystr missions additionally require `git` and `systemd-run`. Each mission runs
 in a detached Git worktree under `/opt/throttle-agent/missions`, inside a transient
@@ -73,6 +75,12 @@ non-interactively with a USD budget and deadline, safe mode, no Bash or web tool
 | GET | `/missions/:id` | yes | bounded state/output tail plus base commit, patch SHA-256 and HMAC result authentication |
 | GET | `/missions/:id/patch` | yes | binary Git patch, maximum 32 MiB, with contract/base/hash/HMAC headers |
 | POST | `/missions/:id/stop` | yes | stops the transient systemd mission unit |
+| DELETE | `/missions/:id` | yes | deletes a terminal mission worktree/result and its exact `/opt/throttle-agent/incoming/:id` clone |
+
+Mission requests and exit status are persisted with mode `0600`. If the Edge Agent
+restarts while a transient mission unit continues, version 0.9.0 reattaches a bounded
+watcher and finalizes the authenticated result. Deletion is refused while a mission
+is running or when its persisted source path does not exactly match the mission ID.
 
 Sessions are hosted in `tmux` (name prefix `throttle-`) so a crashed agent doesn't kill
 them; on restart the agent re-discovers live sessions by that prefix. Only one ttyd

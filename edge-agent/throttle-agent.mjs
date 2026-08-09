@@ -42,8 +42,9 @@ const PORT = parseInt(process.env.THROTTLE_AGENT_PORT || '8787', 10);
 const TTYD_PORT = parseInt(process.env.THROTTLE_AGENT_TTYD_PORT || '8788', 10);
 const CLAUDE_CMD = process.env.THROTTLE_AGENT_CLAUDE_CMD || 'claude';
 const PROJECTS_DIR = process.env.CLAUDE_PROJECTS_DIR || path.join(os.homedir(), '.claude', 'projects');
-const VERSION = '0.8.0';
+const VERSION = '0.9.0';
 const MISSION_ROOT = process.env.THROTTLE_AGENT_MISSION_ROOT || '/opt/throttle-agent/missions';
+const INCOMING_ROOT = process.env.THROTTLE_AGENT_INCOMING_ROOT || '/opt/throttle-agent/incoming';
 const MAX_MISSION_TASK_BYTES = 32 * 1024;
 const MAX_MISSION_PATCH_BYTES = 32 * 1024 * 1024;
 
@@ -59,7 +60,7 @@ function missionRequest(value) {
   if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(missionId)) {
     invalid('missionId must be a lowercase UUID');
   }
-  if (!cwd.startsWith('/') || cwd.length > 500 || cwd.includes('\0')) invalid('cwd must be absolute');
+  if (cwd !== path.join(INCOMING_ROOT, missionId)) invalid('cwd must match the mission incoming directory');
   if (!/^[a-f0-9]{40,64}$/.test(baseCommit)) invalid('baseCommit must be an exact git object id');
   if (!task.trim() || Buffer.byteLength(task) > MAX_MISSION_TASK_BYTES || task.includes('\0')) invalid('task must contain 1-32768 UTF-8 bytes');
   if (!Number.isInteger(maxSeconds) || maxSeconds < 30 || maxSeconds > 3600) invalid('maxSeconds must be 30-3600');
@@ -77,7 +78,8 @@ function missionManifestHmac(token, manifest) {
 
 if (process.argv.includes('--self-test')) {
   const request = missionRequest({
-    missionId: '12345678-1234-1234-1234-123456789abc', cwd: '/srv/repo',
+    missionId: '12345678-1234-1234-1234-123456789abc',
+    cwd: '/opt/throttle-agent/incoming/12345678-1234-1234-1234-123456789abc',
     baseCommit: 'a'.repeat(40), task: 'Fix the bounded fixture.', maxSeconds: 60, maxBudgetUsd: 1,
   });
   assert.equal(request.maxSeconds, 60);
@@ -336,6 +338,7 @@ async function paneSignal(id, sig) {
 function missionPaths(id) {
   const root = path.join(MISSION_ROOT, id);
   return { root, worktree: path.join(root, 'worktree'), state: path.join(root, 'state.json'),
+    request: path.join(root, 'request.json'), exitCode: path.join(root, 'exit-code'),
     output: path.join(root, 'output.log'), patch: path.join(root, 'result.patch') };
 }
 
@@ -349,6 +352,26 @@ function writeMissionState(id, value) {
   const tmp = `${p.state}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify(value), { mode: 0o600 });
   fs.renameSync(tmp, p.state);
+}
+
+function writeMissionRequest(request) {
+  const p = missionPaths(request.missionId);
+  fs.mkdirSync(p.root, { recursive: true, mode: 0o700 });
+  const tmp = `${p.request}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(request), { mode: 0o600 });
+  fs.renameSync(tmp, p.request);
+}
+
+function readMissionRequest(id) {
+  try { return missionRequest(JSON.parse(fs.readFileSync(missionPaths(id).request, 'utf8'))); }
+  catch { return null; }
+}
+
+function readMissionExitCode(id) {
+  try {
+    const value = Number(fs.readFileSync(missionPaths(id).exitCode, 'utf8').trim());
+    return Number.isInteger(value) ? value : null;
+  } catch { return null; }
 }
 
 function outputTail(file, maxBytes = 16 * 1024) {
@@ -399,7 +422,13 @@ async function startMission(raw) {
   }
   await execFileP('git', ['-C', request.cwd, 'cat-file', '-e', `${request.baseCommit}^{commit}`]);
   fs.mkdirSync(p.root, { recursive: true, mode: 0o700 });
-  await execFileP('git', ['-C', request.cwd, 'worktree', 'add', '--detach', p.worktree, request.baseCommit]);
+  writeMissionRequest(request);
+  try {
+    await execFileP('git', ['-C', request.cwd, 'worktree', 'add', '--detach', p.worktree, request.baseCommit]);
+  } catch (error) {
+    fs.rmSync(p.root, { recursive: true, force: true });
+    throw error;
+  }
   const task = [
     'You are executing a bounded Kalystr remote editing mission.',
     'Work only inside the current Git worktree. Do not access secrets, the network, or paths outside it.',
@@ -411,7 +440,14 @@ async function startMission(raw) {
     '--max-budget-usd', String(request.maxBudgetUsd)];
   const output = fs.openSync(p.output, 'a', 0o600);
   const unit = `kalystr-mission-${request.missionId}`;
-  const command = `exec ${CLAUDE_CMD} ${args.map(value => `'${value.replaceAll("'", "'\\''")}'`).join(' ')}`;
+  const quotedExit = `'${p.exitCode.replaceAll("'", "'\\''")}'`;
+  const command = [
+    `${CLAUDE_CMD} ${args.map(value => `'${value.replaceAll("'", "'\\''")}'`).join(' ')}`,
+    'status=$?',
+    `printf '%s\\n' "$status" > ${quotedExit}.tmp`,
+    `mv ${quotedExit}.tmp ${quotedExit}`,
+    'exit "$status"',
+  ].join('; ');
   const child = spawn('systemd-run', [
     '--quiet', '--pipe', '--wait', '--collect', `--unit=${unit}`,
     '--service-type=exec', '--property=MemoryMax=6G', '--property=MemorySwapMax=2G',
@@ -451,6 +487,75 @@ async function stopMission(id) {
   if (!running) throw Object.assign(new Error('mission is not running'), { code: 409 });
   await execFileP('systemctl', ['stop', running.unit]);
   return { ok: true, missionId: id, action: 'stop' };
+}
+
+async function recoverMission(id, state) {
+  const request = readMissionRequest(id);
+  if (!request) {
+    const failed = { ...state, state: 'failed', finishedAt: Date.now(),
+      failure: 'persisted mission request is unavailable after agent restart',
+      terminationReason: 'agent_restart_request_missing' };
+    writeMissionState(id, failed); return;
+  }
+  const unit = `kalystr-mission-${id}`;
+  const finish = async (exitCode, reason) => {
+    const running = missionProcesses.get(id);
+    if (running?.timeout) clearTimeout(running.timeout);
+    if (running?.interval) clearInterval(running.interval);
+    await finalizeMission(request, exitCode, reason);
+  };
+  const completedCode = readMissionExitCode(id);
+  if (completedCode !== null) return finish(completedCode, 'agent_restart_recovered');
+  const active = await sh('systemctl', ['is-active', unit]);
+  if (!['active', 'activating'].includes(active)) return finish(-1, 'agent_restart_unit_inactive');
+
+  const elapsed = Math.max(0, Date.now() - Number(state.startedAt || Date.now()));
+  const remaining = Math.max(0, Number(state.maxSeconds || request.maxSeconds) * 1000 - elapsed);
+  const timeout = setTimeout(() => { void execFileP('systemctl', ['stop', unit]); }, remaining);
+  timeout.unref();
+  let polling = false;
+  const interval = setInterval(async () => {
+    if (polling) return;
+    polling = true;
+    try {
+      const exitCode = readMissionExitCode(id);
+      if (exitCode !== null) return await finish(exitCode, 'agent_restart_recovered');
+      const status = await sh('systemctl', ['is-active', unit]);
+      if (!['active', 'activating'].includes(status)) await finish(-1, 'agent_restart_unit_inactive');
+    } finally { polling = false; }
+  }, 1000);
+  interval.unref();
+  missionProcesses.set(id, { child: null, timeout, interval, request, unit });
+}
+
+async function recoverMissions() {
+  let entries = [];
+  try { entries = fs.readdirSync(MISSION_ROOT, { withFileTypes: true }); } catch { return; }
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !/^[a-f0-9-]{36}$/.test(entry.name)) continue;
+    const state = readMissionState(entry.name);
+    if (state?.state === 'running') await recoverMission(entry.name, state);
+  }
+}
+
+async function cleanupMission(id) {
+  const state = readMissionState(id);
+  if (!state) throw Object.assign(new Error('mission not found'), { code: 404 });
+  if (!['completed', 'failed'].includes(state.state) || missionProcesses.has(id)) {
+    throw Object.assign(new Error('mission is still running'), { code: 409 });
+  }
+  const request = readMissionRequest(id);
+  const expectedCwd = path.join(INCOMING_ROOT, id);
+  if (!request || request.cwd !== expectedCwd) {
+    throw Object.assign(new Error('mission cleanup path contract mismatch'), { code: 409 });
+  }
+  const p = missionPaths(id);
+  try { await execFileP('git', ['-C', request.cwd, 'worktree', 'remove', '--force', p.worktree]); }
+  catch { fs.rmSync(p.worktree, { recursive: true, force: true }); }
+  await sh('git', ['-C', request.cwd, 'worktree', 'prune']);
+  fs.rmSync(request.cwd, { recursive: true, force: true });
+  fs.rmSync(p.root, { recursive: true, force: true });
+  return { ok: true, missionId: id, action: 'deleted' };
 }
 
 // ---- HTTP ----
@@ -642,6 +747,10 @@ const server = http.createServer(async (req, res) => {
       const state = readMissionState(mission[1]);
       return state ? send(res, 200, state) : send(res, 404, { error: 'mission not found' });
     }
+    if (mission && req.method === 'DELETE') {
+      try { return send(res, 200, await cleanupMission(mission[1])); }
+      catch (e) { return send(res, [404, 409].includes(e.code) ? e.code : 500, { error: String(e.message || e) }); }
+    }
     const missionPatch = p.match(/^\/missions\/([a-f0-9-]{36})\/patch$/);
     if (missionPatch && req.method === 'GET') {
       const state = readMissionState(missionPatch[1]);
@@ -701,7 +810,10 @@ const server = http.createServer(async (req, res) => {
   } catch (e) { return send(res, 500, { error: String(e.message || e) }); }
 });
 
-server.listen(PORT, HOST, () => console.error(`[throttle-agent] ${VERSION} listening on ${HOST}:${PORT} (tmux sessions prefix "${PREFIX}")`));
+server.listen(PORT, HOST, () => {
+  console.error(`[throttle-agent] ${VERSION} listening on ${HOST}:${PORT} (tmux sessions prefix "${PREFIX}")`);
+  void recoverMissions().catch(error => console.error(`[throttle-agent] mission recovery failed: ${error.message}`));
+});
 
 for (const sig of ['SIGTERM', 'SIGINT']) {
   process.on(sig, () => { killTtyd(); process.exit(0); });

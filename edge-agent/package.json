@@ -1,6 +1,6 @@
 {
   "name": "throttle-edge-agent",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Throttle Edge Agent — spawns + measures Claude Code sessions on a remote host (Proxmox LXC) to offload a RAM-constrained Mac. Token-gated HTTP API; not a data-path proxy.",
   "type": "module",
   "bin": { "throttle-agent": "throttle-agent.mjs" },
