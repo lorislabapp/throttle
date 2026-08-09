@@ -32,6 +32,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import assert from 'node:assert/strict';
 
 const execFileP = promisify(execFile);
 
@@ -41,7 +42,53 @@ const PORT = parseInt(process.env.THROTTLE_AGENT_PORT || '8787', 10);
 const TTYD_PORT = parseInt(process.env.THROTTLE_AGENT_TTYD_PORT || '8788', 10);
 const CLAUDE_CMD = process.env.THROTTLE_AGENT_CLAUDE_CMD || 'claude';
 const PROJECTS_DIR = process.env.CLAUDE_PROJECTS_DIR || path.join(os.homedir(), '.claude', 'projects');
-const VERSION = '0.7.0';
+const VERSION = '0.8.0';
+const MISSION_ROOT = process.env.THROTTLE_AGENT_MISSION_ROOT || '/opt/throttle-agent/missions';
+const MAX_MISSION_TASK_BYTES = 32 * 1024;
+const MAX_MISSION_PATCH_BYTES = 32 * 1024 * 1024;
+
+function missionRequest(value) {
+  const invalid = message => { throw Object.assign(new Error(message), { code: 400 }); };
+  if (!value || typeof value !== 'object') invalid('mission body required');
+  const missionId = String(value.missionId || '');
+  const cwd = String(value.cwd || '');
+  const baseCommit = String(value.baseCommit || '');
+  const task = String(value.task || '');
+  const maxSeconds = Number(value.maxSeconds ?? 900);
+  const maxBudgetUsd = Number(value.maxBudgetUsd ?? 3);
+  if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(missionId)) {
+    invalid('missionId must be a lowercase UUID');
+  }
+  if (!cwd.startsWith('/') || cwd.length > 500 || cwd.includes('\0')) invalid('cwd must be absolute');
+  if (!/^[a-f0-9]{40,64}$/.test(baseCommit)) invalid('baseCommit must be an exact git object id');
+  if (!task.trim() || Buffer.byteLength(task) > MAX_MISSION_TASK_BYTES || task.includes('\0')) invalid('task must contain 1-32768 UTF-8 bytes');
+  if (!Number.isInteger(maxSeconds) || maxSeconds < 30 || maxSeconds > 3600) invalid('maxSeconds must be 30-3600');
+  if (!Number.isFinite(maxBudgetUsd) || maxBudgetUsd <= 0 || maxBudgetUsd > 20) invalid('maxBudgetUsd must be >0 and <=20');
+  return { missionId, cwd, baseCommit, task, maxSeconds, maxBudgetUsd };
+}
+
+function missionManifestHmac(token, manifest) {
+  const canonical = [
+    'kalystr-edge-result-v1', manifest.missionId, manifest.baseCommit,
+    manifest.patchSha256, String(manifest.patchBytes), String(manifest.exitCode),
+  ].join('\0');
+  return crypto.createHmac('sha256', token).update(canonical).digest('hex');
+}
+
+if (process.argv.includes('--self-test')) {
+  const request = missionRequest({
+    missionId: '12345678-1234-1234-1234-123456789abc', cwd: '/srv/repo',
+    baseCommit: 'a'.repeat(40), task: 'Fix the bounded fixture.', maxSeconds: 60, maxBudgetUsd: 1,
+  });
+  assert.equal(request.maxSeconds, 60);
+  assert.throws(() => missionRequest({ ...request, cwd: 'relative' }));
+  const manifest = { missionId: request.missionId, baseCommit: request.baseCommit,
+    patchSha256: 'b'.repeat(64), patchBytes: 42, exitCode: 0 };
+  assert.equal(missionManifestHmac('secret', manifest), '7f6ae1e531647ec4ee00372443eace7ea35fd7d73e0e1c8214aa3e3ad6b64c2f');
+  assert.notEqual(missionManifestHmac('secret', manifest), missionManifestHmac('other', manifest));
+  console.log('throttle edge mission contract: ok');
+  process.exit(0);
+}
 
 if (!TOKEN) { console.error('FATAL: set THROTTLE_AGENT_TOKEN'); process.exit(1); }
 
@@ -53,6 +100,8 @@ if (!TOKEN) { console.error('FATAL: set THROTTLE_AGENT_TOKEN'); process.exit(1);
 const PREFIX = 'throttle-';
 const META_PATH = '/opt/throttle-agent/sessions.json';
 const sessions = new Map(); // id -> { id, project, cwd, startedAt }
+const missionProcesses = new Map();
+const missionFinalizing = new Set();
 try {
   for (const [k, v] of Object.entries(JSON.parse(fs.readFileSync(META_PATH, 'utf8')))) sessions.set(k, v);
 } catch {}
@@ -284,6 +333,126 @@ async function paneSignal(id, sig) {
   if (pid) await sh('bash', ['-lc', `pkill -${sig} -P ${pid.split('\n')[0]} || kill -${sig} ${pid.split('\n')[0]}`]);
 }
 
+function missionPaths(id) {
+  const root = path.join(MISSION_ROOT, id);
+  return { root, worktree: path.join(root, 'worktree'), state: path.join(root, 'state.json'),
+    output: path.join(root, 'output.log'), patch: path.join(root, 'result.patch') };
+}
+
+function readMissionState(id) {
+  try { return JSON.parse(fs.readFileSync(missionPaths(id).state, 'utf8')); } catch { return null; }
+}
+
+function writeMissionState(id, value) {
+  const p = missionPaths(id);
+  fs.mkdirSync(p.root, { recursive: true, mode: 0o700 });
+  const tmp = `${p.state}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(value), { mode: 0o600 });
+  fs.renameSync(tmp, p.state);
+}
+
+function outputTail(file, maxBytes = 16 * 1024) {
+  try {
+    const size = fs.statSync(file).size;
+    const length = Math.min(size, maxBytes);
+    const fd = fs.openSync(file, 'r');
+    const data = Buffer.alloc(length);
+    fs.readSync(fd, data, 0, length, size - length); fs.closeSync(fd);
+    return data.toString('utf8');
+  } catch { return ''; }
+}
+
+async function finalizeMission(request, exitCode, terminationReason = null) {
+  if (missionFinalizing.has(request.missionId)) return;
+  missionFinalizing.add(request.missionId);
+  const p = missionPaths(request.missionId);
+  let patch = Buffer.alloc(0), failure = null;
+  try {
+    await execFileP('git', ['-C', p.worktree, 'add', '-N', '.']);
+    const result = await execFileP('git', ['-C', p.worktree, 'diff', '--binary', '--full-index', request.baseCommit, '--'],
+      { encoding: 'buffer', maxBuffer: MAX_MISSION_PATCH_BYTES + 1 });
+    patch = Buffer.from(result.stdout);
+    if (patch.length > MAX_MISSION_PATCH_BYTES) throw new Error('patch exceeds 32 MiB');
+    if (patch.length === 0) throw new Error('mission produced no patch');
+    fs.writeFileSync(p.patch, patch, { mode: 0o600 });
+  } catch (error) { failure = String(error.message || error); }
+  const manifest = {
+    contractVersion: 'kalystr-edge-result-v1', missionId: request.missionId,
+    baseCommit: request.baseCommit, patchSha256: crypto.createHash('sha256').update(patch).digest('hex'),
+    patchBytes: patch.length, exitCode: Number.isInteger(exitCode) ? exitCode : -1,
+  };
+  const state = {
+    ...manifest, hmacSha256: missionManifestHmac(TOKEN, manifest),
+    state: failure || manifest.exitCode !== 0 ? 'failed' : 'completed',
+    terminationReason, failure, outputTail: outputTail(p.output), finishedAt: Date.now(),
+  };
+  writeMissionState(request.missionId, state);
+  missionProcesses.delete(request.missionId);
+}
+
+async function startMission(raw) {
+  const request = missionRequest(raw);
+  const p = missionPaths(request.missionId);
+  if (fs.existsSync(p.root)) throw Object.assign(new Error('mission id already exists'), { code: 409 });
+  if ((await sh('which', ['systemd-run'])) === null) {
+    throw Object.assign(new Error('systemd-run is required for kernel CPU/RAM limits'), { code: 503 });
+  }
+  await execFileP('git', ['-C', request.cwd, 'cat-file', '-e', `${request.baseCommit}^{commit}`]);
+  fs.mkdirSync(p.root, { recursive: true, mode: 0o700 });
+  await execFileP('git', ['-C', request.cwd, 'worktree', 'add', '--detach', p.worktree, request.baseCommit]);
+  const task = [
+    'You are executing a bounded Kalystr remote editing mission.',
+    'Work only inside the current Git worktree. Do not access secrets, the network, or paths outside it.',
+    'Bash and web tools are unavailable. Make only the requested source edits; Kalystr will validate and test locally.',
+    '', request.task,
+  ].join('\n');
+  const args = ['-p', '--safe-mode', '--no-session-persistence', '--permission-mode', 'acceptEdits',
+    '--tools', 'Read', 'Edit', 'Write', 'Glob', 'Grep', '--output-format', 'json',
+    '--max-budget-usd', String(request.maxBudgetUsd)];
+  const output = fs.openSync(p.output, 'a', 0o600);
+  const unit = `kalystr-mission-${request.missionId}`;
+  const command = `exec ${CLAUDE_CMD} ${args.map(value => `'${value.replaceAll("'", "'\\''")}'`).join(' ')}`;
+  const child = spawn('systemd-run', [
+    '--quiet', '--pipe', '--wait', '--collect', `--unit=${unit}`,
+    '--service-type=exec', '--property=MemoryMax=6G', '--property=MemorySwapMax=2G',
+    '--property=CPUQuota=250%', '--property=TasksMax=256', `--working-directory=${p.worktree}`,
+    `--setenv=HOME=${HOME_DIR}`, '--setenv=LANG=C.UTF-8', '--setenv=LC_ALL=C.UTF-8',
+    '/bin/bash', '-lc', command,
+  ], {
+    cwd: p.worktree, env: { ...process.env, HOME: HOME_DIR, LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8' },
+    stdio: ['pipe', output, output], detached: true,
+  });
+  fs.closeSync(output);
+  child.stdin.end(task);
+  const started = { contractVersion: 'kalystr-edge-mission-v1', missionId: request.missionId,
+    baseCommit: request.baseCommit, state: 'running', startedAt: Date.now(), maxSeconds: request.maxSeconds,
+    resourceIsolation: { memoryMaxBytes: 6 * 1024 ** 3, memorySwapMaxBytes: 2 * 1024 ** 3,
+      cpuQuotaPercent: 250, tasksMax: 256 } };
+  writeMissionState(request.missionId, started);
+  const timeout = setTimeout(() => {
+    void execFileP('systemctl', ['stop', unit]);
+  }, request.maxSeconds * 1000);
+  timeout.unref();
+  missionProcesses.set(request.missionId, { child, timeout, request, unit });
+  child.once('error', async error => {
+    clearTimeout(timeout);
+    fs.appendFileSync(p.output, `\nspawn failed: ${error.message}\n`);
+    await finalizeMission(request, -1, 'spawn_failed');
+  });
+  child.once('exit', async (code, signal) => {
+    clearTimeout(timeout);
+    await finalizeMission(request, code ?? -1, signal ? `signal:${signal}` : null);
+  });
+  return started;
+}
+
+async function stopMission(id) {
+  const running = missionProcesses.get(id);
+  if (!running) throw Object.assign(new Error('mission is not running'), { code: 409 });
+  await execFileP('systemctl', ['stop', running.unit]);
+  return { ok: true, missionId: id, action: 'stop' };
+}
+
 // ---- HTTP ----
 function send(res, code, obj) { const b = JSON.stringify(obj); res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(b); }
 function authed(req) {
@@ -293,8 +462,16 @@ function authed(req) {
   const a = Buffer.from(t), b = Buffer.from(TOKEN);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
-function body(req) {
-  return new Promise((resolve) => { let d = ''; req.on('data', c => d += c); req.on('end', () => { try { resolve(d ? JSON.parse(d) : {}); } catch { resolve({}); } }); });
+function body(req, maxBytes = 64 * 1024) {
+  return new Promise((resolve, reject) => {
+    let d = '', n = 0;
+    req.on('data', c => {
+      n += c.length;
+      if (n > maxBytes) { reject(Object.assign(new Error('request body too large'), { code: 413 })); req.destroy(); return; }
+      d += c;
+    });
+    req.on('end', () => { try { resolve(d ? JSON.parse(d) : {}); } catch { reject(Object.assign(new Error('invalid JSON'), { code: 400 })); } });
+  });
 }
 
 // ---- Streamable-HTTP MCP surface ------------------------------------------------
@@ -444,6 +621,8 @@ const server = http.createServer(async (req, res) => {
       ok: true, version: VERSION, tmux: await hasTmux(), ttyd: await hasTtyd(),
       sessions: (await tmuxList()).length, attached: ttydSessionId,
       claudeAuth: claudeAuthReady(),
+      missionContract: 'kalystr-edge-mission-v1', git: (await sh('which', ['git'])) !== null,
+      resourceIsolation: (await sh('which', ['systemd-run'])) !== null ? 'systemd-v1' : null,
     });
   }
   if (!authed(req)) return send(res, 401, { error: 'unauthorized' });
@@ -454,6 +633,35 @@ const server = http.createServer(async (req, res) => {
     if (p === '/auth/submit' && req.method === 'POST') { const { code } = await body(req); return send(res, 200, await authSubmit(code)); }
     if (p === '/sessions' && req.method === 'GET') return send(res, 200, { sessions: await listSessions() });
     if (p === '/sessions' && req.method === 'POST') { const r = await startSession(await body(req)); return send(res, 201, r); }
+    if (p === '/missions' && req.method === 'POST') {
+      try { return send(res, 202, await startMission(await body(req))); }
+      catch (e) { return send(res, [400, 409, 413, 503].includes(e.code) ? e.code : 500, { error: String(e.message || e) }); }
+    }
+    const mission = p.match(/^\/missions\/([a-f0-9-]{36})$/);
+    if (mission && req.method === 'GET') {
+      const state = readMissionState(mission[1]);
+      return state ? send(res, 200, state) : send(res, 404, { error: 'mission not found' });
+    }
+    const missionPatch = p.match(/^\/missions\/([a-f0-9-]{36})\/patch$/);
+    if (missionPatch && req.method === 'GET') {
+      const state = readMissionState(missionPatch[1]);
+      const file = missionPaths(missionPatch[1]).patch;
+      if (!state || !['completed', 'failed'].includes(state.state) || !fs.existsSync(file)) {
+        return send(res, 409, { error: 'mission result not ready' });
+      }
+      res.writeHead(200, {
+        'Content-Type': 'application/octet-stream', 'Content-Length': state.patchBytes,
+        'X-Kalystr-Contract': state.contractVersion, 'X-Kalystr-Mission-Id': state.missionId,
+        'X-Kalystr-Base-Commit': state.baseCommit, 'X-Kalystr-Patch-Sha256': state.patchSha256,
+        'X-Kalystr-Hmac-Sha256': state.hmacSha256,
+      });
+      fs.createReadStream(file).pipe(res); return;
+    }
+    const missionStop = p.match(/^\/missions\/([a-f0-9-]{36})\/stop$/);
+    if (missionStop && req.method === 'POST') {
+      try { return send(res, 202, await stopMission(missionStop[1])); }
+      catch (e) { return send(res, e.code === 409 ? 409 : 500, { error: String(e.message || e) }); }
+    }
     if (p === '/transcripts' && req.method === 'PUT') { const r = await receiveTranscript(req, url); return send(res, 201, r); }
     if (p === '/repos' && req.method === 'PUT') {
       try { const r = await receiveRepo(req, url); return send(res, 201, r); }

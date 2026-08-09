@@ -194,7 +194,7 @@ public enum EdgeAgentService {
 
     /// Displayed in the deploy step label; parsed from the bundled agent at call
     /// sites is overkill — keep in sync with `throttle-agent.mjs` VERSION.
-    public static let agentVersionHint = "0.7.0"
+    public static let agentVersionHint = "0.8.0"
 
     /// The bundled agent source (`throttle-agent.mjs` in the app bundle), or nil if
     /// missing (dev builds that didn't copy the resource).

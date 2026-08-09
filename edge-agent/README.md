@@ -31,6 +31,11 @@ Env: `THROTTLE_AGENT_TOKEN` (required), `THROTTLE_AGENT_HOST` (default `0.0.0.0`
 `THROTTLE_AGENT_CLAUDE_CMD` (default `claude`; tests use `sleep 3600`),
 `CLAUDE_PROJECTS_DIR` (default `~/.claude/projects`).
 
+Kalystr missions additionally require `git` and `systemd-run`. Each mission runs
+in a detached Git worktree under `/opt/throttle-agent/missions`, inside a transient
+systemd service capped at 6 GiB RAM, 2 GiB swap, 250% CPU and 256 tasks. Claude runs
+non-interactively with a USD budget and deadline, safe mode, no Bash or web tools.
+
 ## Security
 - **Transport**: bind to a Tailscale/LAN address and keep the host behind Tailscale —
   WireGuard is the encryption boundary for both the HTTP API and the ttyd WebSocket.
@@ -64,6 +69,10 @@ Env: `THROTTLE_AGENT_TOKEN` (required), `THROTTLE_AGENT_HOST` (default `0.0.0.0`
 | POST | `/sessions/:id/resume` | yes | SIGCONT |
 | POST | `/sessions/:id/attach` | yes | `{ok, id, port, path}` — (re)spawns ttyd on `THROTTLE_AGENT_TTYD_PORT` attached to this session's tmux pane; retargeting kills any previous attach |
 | PUT | `/transcripts?cwd=<abs>&session=<id>` | yes | raw JSONL body → `{ok, sessionId, bytes}` — context transfer: writes the FULL session transcript to `~/.claude/projects/<encoded cwd>/<id>.jsonl` so a follow-up `POST /sessions {cwd, resume: id}` resumes with the Mac session's context (verified live 2026-07-12: `claude --resume` accepts a transcript copied from another machine/cwd). 512 MB cap, streamed to disk |
+| POST | `/missions` | yes | bounded `{missionId,cwd,baseCommit,task,maxSeconds,maxBudgetUsd}` → accepted mission in an isolated Git worktree |
+| GET | `/missions/:id` | yes | bounded state/output tail plus base commit, patch SHA-256 and HMAC result authentication |
+| GET | `/missions/:id/patch` | yes | binary Git patch, maximum 32 MiB, with contract/base/hash/HMAC headers |
+| POST | `/missions/:id/stop` | yes | stops the transient systemd mission unit |
 
 Sessions are hosted in `tmux` (name prefix `throttle-`) so a crashed agent doesn't kill
 them; on restart the agent re-discovers live sessions by that prefix. Only one ttyd
