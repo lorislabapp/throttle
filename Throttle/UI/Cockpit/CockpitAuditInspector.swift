@@ -294,7 +294,19 @@ struct CockpitAuditInspector: View {
         return HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(p.projectLabel).font(.system(size: 11.5, weight: .medium)).lineLimit(1)
-                Text("\(p.sessionShort) · \(p.imagesTrimmed) imgs").font(.system(size: 9.5, design: .monospaced)).foregroundStyle(.tertiary)
+                HStack(spacing: 5) {
+                    Text("\(p.sessionShort) · \(p.imagesTrimmed) imgs")
+                        .font(.system(size: 9.5, design: .monospaced)).foregroundStyle(.tertiary)
+                    // Trimming forfeits a warm prefix cache. Say when that costs
+                    // nothing (the usual case for an idle session) and when it doesn't,
+                    // instead of leaving the user to guess.
+                    if let be = p.breakEven() {
+                        Text(be.paysImmediately ? "pays back now" : "pays back after \(be.turns) turns")
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(be.paysImmediately
+                                             ? AnyShapeStyle(.tertiary) : AnyShapeStyle(Color.orange))
+                    }
+                }
             }
             Spacer(minLength: 6)
             Text(String(format: "≈%.1f MB", mb)).font(.system(size: 11, weight: .medium).monospacedDigit()).foregroundStyle(.secondary)

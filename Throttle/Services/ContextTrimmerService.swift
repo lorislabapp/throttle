@@ -62,6 +62,11 @@ enum ContextTrimmerService {
         var toolInputBytesSaved: Int = 0
         var supersededEventsTrimmed: Int = 0
         var supersededBytesSaved: Int = 0
+        /// Whole-transcript size and last write — the two inputs the cache
+        /// break-even needs. Filled in by `scanCandidates`; zero elsewhere, which
+        /// makes `breakEven` return nil rather than a number built on nothing.
+        var transcriptBytes: Int = 0
+        var lastModified: Date?
 
         var bytesSaved: Int {
             imageBytesSaved + toolResultBytesSaved + toolInputBytesSaved + supersededBytesSaved
@@ -76,6 +81,18 @@ enum ContextTrimmerService {
             imagesTrimmed * 1_500 +
             TokenEstimate.fromBytes(toolResultBytesSaved + toolInputBytesSaved + supersededBytesSaved,
                                     kind: .dense)
+        }
+
+        /// How many turns of lighter reads this trim needs before it pays for the
+        /// cache it forfeits. nil when the inputs aren't known (see `transcriptBytes`).
+        func breakEven(now: Date = Date()) -> CacheBreakEven.Verdict? {
+            guard transcriptBytes > 0, let modified = lastModified else { return nil }
+            return CacheBreakEven.evaluate(
+                prefixTokens: TokenEstimate.fromBytes(transcriptBytes),
+                trimmableTokens: estTokensSaved,
+                lastActivity: modified,
+                now: now
+            )
         }
 
         /// First 8 chars of the session UUID — enough to recognise a session.
@@ -133,9 +150,13 @@ enum ContextTrimmerService {
             let url = URL(fileURLWithPath: path)
             let stem = url.deletingPathExtension().lastPathComponent
             if let ex = excludingSessionId, ex == stem { continue }
-            if let mod = try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
+            let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
+            if let mod = values?.contentModificationDate,
                Date().timeIntervalSince(mod) < minIdleSeconds { continue }
-            guard let p = try? preview(url, options: options), !p.isEmpty else { continue }
+            guard var p = try? preview(url, options: options), !p.isEmpty else { continue }
+            // Carry the whole-file facts so the row can say whether trimming pays now.
+            p.transcriptBytes = values?.fileSize ?? 0
+            p.lastModified = values?.contentModificationDate
             plans.append(p)
         }
         return Array(plans.sorted { $0.bytesSaved > $1.bytesSaved }.prefix(limit))
