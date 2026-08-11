@@ -2,34 +2,21 @@ import Foundation
 import GRDB
 import Observation
 
-/// Everything the cockpit shows beyond the live snapshot: the current session's
-/// tokens/cost/model-split, a recent burn sample for the forecast, and the local
-/// config "weight" (CLAUDE.md / MCP / skills). Loaded off the main actor; every
-/// field is optional so the view can hide what isn't real yet.
+/// Everything the cockpit shows beyond the live snapshot: the session model split,
+/// the recent-sessions list, and the local config "weight" (CLAUDE.md / skills /
+/// hooks). Loaded off the main actor; every field is optional so the view can hide
+/// what isn't real yet.
+///
+/// Per-session tokens/cost/model/burn used to live here too. Those moved to
+/// `MultiCockpitModel` (per tab) and nothing ever read them from here again — the
+/// queries kept running on the 10 s loop for nobody, so they were deleted rather
+/// than left as a plausible-looking cell nobody renders.
 struct CockpitData: Sendable {
-    var sessionTokens: Int?
-    var sessionCostEUR: Double?
-    var sessionMsgCount: Int?
-    var allTimeCostEUR: Double?
     var modelSplit: [StatsDataService.ModelSlice]
-    var burn: StatsDataService.BurnSample?
     var config: ConfigWeight
     var sessions: [CockpitSession]
-    var currentModelTier: ModelTier?
-    var currentModelName: String?   // pretty real name, for models outside opus/sonnet/haiku
-    var currentSessionProject: String?  // which project the "latest session" belongs to
 
-    static let empty = CockpitData(
-        sessionTokens: nil, sessionCostEUR: nil, sessionMsgCount: nil,
-        allTimeCostEUR: nil, modelSplit: [], burn: nil, config: .empty,
-        sessions: [], currentModelTier: nil, currentModelName: nil, currentSessionProject: nil
-    )
-
-    /// Average weighted tokens per assistant turn this session (for msgs-left).
-    var avgTokensPerMessage: Double? {
-        guard let t = sessionTokens, let c = sessionMsgCount, c > 0, t > 0 else { return nil }
-        return Double(t) / Double(c)
-    }
+    static let empty = CockpitData(modelSplit: [], config: .empty, sessions: [])
 }
 
 /// One row in the cockpit's Sessions panel — analytics only.
@@ -42,16 +29,6 @@ struct CockpitSession: Sendable, Identifiable {
     let costEUR: Double?
     let topTier: ModelTier?
     let isCurrent: Bool
-}
-
-/// Clean a raw model id into a display name for models outside opus/sonnet/haiku.
-/// `claude-fable-5-20260601` → "Fable 5".
-func prettyModelName(_ raw: String) -> String {
-    var s = raw.lowercased()
-    if s.hasPrefix("claude-") { s.removeFirst("claude-".count) }
-    if let r = s.range(of: "-[0-9]{6,8}$", options: .regularExpression) { s.removeSubrange(r) }
-    let parts = s.split(separator: "-").map { $0.capitalized }
-    return parts.isEmpty ? raw : parts.joined(separator: " ")
 }
 
 /// Real project cwd from a session JSONL path, by decoding the encoded folder.
@@ -340,9 +317,8 @@ final class CockpitViewModel {
     func reload() async {
         guard let appState else { return }
         let db = appState.database
-        let allTime = data.allTimeCostEUR  // keep last good value if query fails
         let loaded = await Task.detached(priority: .utility) {
-            CockpitData.load(db: db, previousAllTime: allTime)
+            CockpitData.load(db: db)
         }.value
         self.data = loaded
     }
@@ -351,30 +327,18 @@ final class CockpitViewModel {
 extension CockpitData {
     /// Off-main loader. Never throws — a failed query degrades to nil so the
     /// view hides that cell instead of showing a wrong number.
-    static func load(db: any DatabaseReader, previousAllTime: Double?) -> CockpitData {
+    static func load(db: any DatabaseReader) -> CockpitData {
         var out = CockpitData.empty
         var activeProjectURL: URL?
-        out.allTimeCostEUR = previousAllTime
         try? db.read { db in
             let sid = try StatsDataService.cockpitCurrentSessionId(in: db)
             if let sid {
-                out.sessionTokens = try? StatsDataService.cockpitSessionTokens(in: db, sessionId: sid)
-                out.sessionCostEUR = try? StatsDataService.cockpitSessionCostEUR(in: db, sessionId: sid)
-                out.sessionMsgCount = try? StatsDataService.cockpitSessionMessageCount(in: db, sessionId: sid)
                 out.modelSplit = (try? StatsDataService.cockpitModelSplitForSession(in: db, sessionId: sid)) ?? []
-                let currentPath = (try? StatsDataService.cockpitSessionPath(in: db, sessionId: sid))
+                // Still needed: the active project scopes the config-weight read.
+                activeProjectURL = (try? StatsDataService.cockpitSessionPath(in: db, sessionId: sid))
                     .flatMap { $0 }
-                out.currentSessionProject = currentPath.flatMap(cockpitProjectName(fromJSONLPath:))
-                activeProjectURL = currentPath
                     .flatMap(cockpitProjectPath(fromJSONLPath:))
                     .map { URL(fileURLWithPath: $0, isDirectory: true) }
-            }
-            out.burn = try? StatsDataService.cockpitRecentBurn(in: db)
-            out.allTimeCostEUR = (try? StatsDataService.extrapolatedCostEUR(in: db, range: .all)) ?? previousAllTime
-
-            if let model = try? StatsDataService.cockpitCurrentModel(in: db) {
-                out.currentModelTier = ModelTier.from(model: model)
-                out.currentModelName = prettyModelName(model)
             }
 
             let recents = (try? StatsDataService.cockpitRecentSessions(in: db, limit: 6)) ?? []
