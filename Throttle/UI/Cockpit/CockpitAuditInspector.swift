@@ -48,7 +48,18 @@ struct CockpitAuditInspector: View {
             if let md = vm.data.config.claudeMdTokens {
                 row("CLAUDE.md", "≈\(tok(md)) tok/session")
             }
-            if vm.data.config.skillCount > 0 { row("Skills", "\(vm.data.config.skillCount)") }
+            // Skills split two ways on purpose: only the frontmatter descriptions ride
+            // on every prompt. A bare count implied the bodies did too — they don't.
+            if vm.data.config.skillCount > 0 {
+                row("Skills", "\(vm.data.config.skillCount) · ≈\(tok(vm.data.config.skillPreloadTokens)) tok/session")
+                if vm.data.config.skillDeferredTokens > 0 {
+                    row("… bodies", "≈\(tok(vm.data.config.skillDeferredTokens)) tok on invoke", muted: true)
+                }
+            }
+            // Hooks are local scripts — zero context. Stated so it isn't guessed at.
+            if vm.data.config.hookCount > 0 {
+                row("Hooks", "\(vm.data.config.hookCount) · 0 tok", muted: true)
+            }
             if let warning = vm.data.config.outputStyleShadowing {
                 Button {
                     NSWorkspace.shared.activateFileViewerSelecting([
@@ -304,11 +315,15 @@ struct CockpitAuditInspector: View {
     private func dl(_ t: String) -> some View {
         Text(LocalizedStringKey(t)).font(.system(size: 8.5, weight: .semibold)).tracking(0.8).foregroundStyle(.tertiary)
     }
-    private func row(_ label: String, _ value: String) -> some View {
+    /// `muted` marks a value that is real but not the headline number — deferred
+    /// weight, or a zero worth stating. Confidence outranks size: it stays legible,
+    /// it just doesn't compete with the always-on figure above it.
+    private func row(_ label: String, _ value: String, muted: Bool = false) -> some View {
         HStack(spacing: 6) {
             Text(LocalizedStringKey(label)).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
             Spacer(minLength: 4)
-            Text(value).font(.system(size: 11).monospacedDigit()).foregroundStyle(.primary)
+            Text(value).font(.system(size: 11).monospacedDigit())
+                .foregroundStyle(muted ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
         }
     }
     private var cacheHelp: String {

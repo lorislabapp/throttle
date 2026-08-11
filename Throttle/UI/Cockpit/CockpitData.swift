@@ -89,14 +89,27 @@ struct ConfigWeight: Sendable {
     var claudeMdTokens: Int?   // nil when no CLAUDE.md
     var mcpCount: Int
     var skillCount: Int
+    /// Skill weight that IS on every prompt: only the frontmatter `description` of each
+    /// skill is preloaded so the model can pick one. Measured, not assumed.
+    var skillPreloadTokens: Int
+    /// Skill weight that is NOT on the prompt until the skill is actually invoked.
+    /// Reported separately so "N skills" stops reading as "N skills' worth of context".
+    var skillDeferredTokens: Int
+    /// Hooks run as local scripts — they cost zero context. Counted to make that visible.
+    var hookCount: Int
     var outputStyleShadowing: OutputStyleShadowingDetector.Warning?
 
     static let empty = ConfigWeight(
-        claudeMdTokens: nil, mcpCount: 0, skillCount: 0, outputStyleShadowing: nil
+        claudeMdTokens: nil, mcpCount: 0, skillCount: 0,
+        skillPreloadTokens: 0, skillDeferredTokens: 0, hookCount: 0,
+        outputStyleShadowing: nil
     )
 
+    /// What the config actually costs on every single prompt of the session.
+    var alwaysOnTokens: Int { (claudeMdTokens ?? 0) + skillPreloadTokens }
+
     var hasAnything: Bool {
-        claudeMdTokens != nil || skillCount > 0 || outputStyleShadowing != nil
+        claudeMdTokens != nil || skillCount > 0 || hookCount > 0 || outputStyleShadowing != nil
     }
 }
 
@@ -412,18 +425,53 @@ extension ConfigWeight {
         }
         let mcpCount = mcpKeys.count
 
-        // Skills: each subdirectory of ~/.claude/skills.
+        // Skills: each subdirectory of ~/.claude/skills. A skill is NOT one lump of
+        // context — only its frontmatter `description` is preloaded (so the model can
+        // choose it); the SKILL.md body lands in the prompt only when it's invoked.
+        // Measure both halves off disk rather than printing a bare count that reads
+        // like the whole thing is always resident.
         var skillCount = 0
+        var skillPreloadTokens = 0
+        var skillDeferredTokens = 0
         let skillsURL = claude.appendingPathComponent("skills", isDirectory: true)
         if let items = try? fm.contentsOfDirectory(at: skillsURL, includingPropertiesForKeys: [.isDirectoryKey]) {
-            skillCount = items.filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }.count
+            for dir in items where (try? dir.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true {
+                skillCount += 1
+                guard let text = try? String(contentsOf: dir.appendingPathComponent("SKILL.md"), encoding: .utf8)
+                else { continue }
+                let (preload, body) = Self.splitSkillFrontmatter(text)
+                skillPreloadTokens += preload.count / 4
+                skillDeferredTokens += body.count / 4
+            }
+        }
+
+        // Hooks are local scripts: they execute on this Mac and cost zero context.
+        var hookCount = 0
+        if let data = try? Data(contentsOf: claude.appendingPathComponent("settings.json")),
+           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let hooks = obj["hooks"] as? [String: Any] {
+            hookCount = hooks.values.compactMap { ($0 as? [Any])?.count }.reduce(0, +)
         }
 
         return ConfigWeight(
             claudeMdTokens: claudeMdTokens,
             mcpCount: mcpCount,
             skillCount: skillCount,
+            skillPreloadTokens: skillPreloadTokens,
+            skillDeferredTokens: skillDeferredTokens,
+            hookCount: hookCount,
             outputStyleShadowing: OutputStyleShadowingDetector.detect(projectURL: activeProjectURL)
         )
+    }
+
+    /// Split a SKILL.md into (always-preloaded discovery text, invoke-only body).
+    /// The preloaded half is the YAML frontmatter — in practice its `description`
+    /// line — delimited by the leading `---` / `---` pair.
+    static func splitSkillFrontmatter(_ text: String) -> (preload: String, body: String) {
+        guard text.hasPrefix("---") else { return ("", text) }
+        let afterOpen = text.dropFirst(3)
+        guard let close = afterOpen.range(of: "\n---") else { return ("", text) }
+        return (String(afterOpen[afterOpen.startIndex..<close.lowerBound]),
+                String(afterOpen[close.upperBound...]))
     }
 }
