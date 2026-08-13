@@ -1088,7 +1088,9 @@ struct MultiCockpitRoot: View {
         alert.addButton(withTitle: "Open Anyway")
         alert.addButton(withTitle: "Cancel")
         NSApp.activate(ignoringOtherApps: true)
-        alert.window.makeKeyAndOrderFront(nil)
+        // No manual makeKeyAndOrderFront here: runModal orders the window itself,
+        // and ordering it early fires windowWillOrderOnScreen into the NSOpenPanel's
+        // still-live NSRemoteView observer, which throws on macOS 27 (SIGABRT).
         return alert.runModal() == .alertFirstButtonReturn
     }
 
@@ -1105,9 +1107,16 @@ struct MultiCockpitRoot: View {
             panel.prompt = "Open Session"
             panel.message = "Choose or create a project folder to start a claude session in."
             NSApp.activate(ignoringOtherApps: true)
-            panel.makeKeyAndOrderFront(nil)
+            // Pas de makeKeyAndOrderFront manuel : runModal ordonne le panel lui-même.
+            // L'ordonner tôt fait poster windowWillOrderOnScreen dans le NSRemoteView
+            // out-of-process du panel → SIGABRT sur macOS 26/27 (même bug que l'alerte).
             if panel.runModal() == .OK, let url = panel.url {
-                open(url.lastPathComponent, url.path)
+                // Next runloop: let the panel's remote view finish tearing down
+                // before any window we order (pressure alert, cockpit) posts
+                // windowWillOrderOnScreen at it — it throws on macOS 27.
+                DispatchQueue.main.async {
+                    open(url.lastPathComponent, url.path)
+                }
             }
         }
     }
