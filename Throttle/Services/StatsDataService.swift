@@ -448,7 +448,7 @@ enum StatsDataService {
     /// is an honest "cost per committed unit / per verify run", not a quality claim.
     struct WorkflowCounts: Sendable { var commits = 0; var verifyRuns = 0 }
 
-    nonisolated(unsafe) private static let verifyRegex = try! NSRegularExpression(
+    private static let verifyRegex = try! NSRegularExpression( // swiftlint:disable:this force_try
         pattern: #"\b(pytest|jest|vitest|mocha|rspec|phpunit|deepeval|(cargo|go|swift|dotnet)\s+test|xcodebuild\s+[^\n]*\btest\b|npm\s+(run\s+)?test|yarn\s+test|pnpm\s+test|make\s+test)\b"#,
         options: [.caseInsensitive])
 

@@ -79,7 +79,7 @@ final class SavingsIngester {
                     for line in text.split(separator: "\n", omittingEmptySubsequences: true) {
                         guard let data = line.data(using: .utf8),
                               let json = try? decoder.decode(WireRow.self, from: data) else { continue }
-                        var row = TokoptSavingsRow(
+                        let row = TokoptSavingsRow(
                             id: nil,
                             timestamp: json.ts,
                             hook: json.hook,

@@ -129,7 +129,7 @@ private struct MacEdgeTerminalView: NSViewRepresentable {
                     baseURL: svc.baseURL, token: svc.token, id: session.id)
                 if Task.isCancelled { return }
                 let client = TtydClient()
-                client.onOutput = { [weak coord] bytes in
+                client.onOutput = { [weak coord = coord] bytes in
                     Task { @MainActor in coord?.terminal?.feed(byteArray: bytes[...]) }
                 }
                 client.onConnected = { ok in
@@ -140,7 +140,8 @@ private struct MacEdgeTerminalView: NSViewRepresentable {
                 }
                 coord.client = client
                 client.connect(host: svc.host, port: port, path: path, token: svc.token,
-                               cols: geometry.cols, rows: geometry.rows)
+                               cols: geometry.cols, rows: geometry.rows,
+                               secure: svc.baseURL.hasPrefix("https://"))
             } catch {
                 await MainActor.run {
                     connection.state = .failed("Couldn't attach — \(error.localizedDescription)")

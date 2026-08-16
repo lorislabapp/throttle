@@ -149,7 +149,7 @@ struct WeekComparisonView: View {
 
     private func load() async {
         let db = appState.database
-        let result = try? await Task.detached(priority: .utility) {
+        let result = await Task.detached(priority: .utility) {
             let wow = try? await db.read { try StatsDataService.weekOverWeek(in: $0) }
             let peak = try? await db.read { try StatsDataService.peakSlot(in: $0, range: .last7d) }
             let top = try? await db.read { try StatsDataService.topProjects(in: $0, range: .last7d, limit: 1).first }
@@ -157,9 +157,9 @@ struct WeekComparisonView: View {
             return (wow, peak, topPair)
         }.value
         await MainActor.run {
-            wow = result?.0 ?? nil
-            peak = result?.1 ?? nil
-            if let t = result?.2 { topProject = (name: t.0, tokens: t.1) }
+            wow = result.0
+            peak = result.1
+            if let top = result.2 { topProject = (name: top.0, tokens: top.1) }
         }
     }
 

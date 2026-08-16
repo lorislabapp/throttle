@@ -54,6 +54,12 @@ final class EdgeDeployService {
                                 state: .failed("Remote working directory must be absolute"))]
             return false
         }
+        let edgeHost = target.host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard edgeHost.hasSuffix(".ts.net") || edgeHost == "localhost" else {
+            steps = [StepStatus(label: "Secure Edge hostname",
+                                state: .failed("Use the node's full *.ts.net MagicDNS name; one-click deploy refuses IP/cleartext endpoints"))]
+            return false
+        }
         guard let agentSource = EdgeAgentService.bundledAgentSource() else {
             steps = [StepStatus(label: "Agent source", state: .failed("throttle-agent.mjs missing from app bundle"))]
             return false
@@ -152,7 +158,7 @@ final class EdgeDeployService {
     /// transfer have all succeeded. MCPConfigService performs the backup and
     /// atomic read-modify-write of ~/.claude.json.
     nonisolated static func edgeMCPDefinition(baseURL: String, token: String) throws -> Data {
-        guard let base = URL(string: baseURL), base.scheme != nil, base.host != nil
+        guard let base = URL(string: baseURL), base.scheme?.lowercased() == "https", base.host != nil
         else { throw DeployError.invalidDefinition }
         let url = base.appendingPathComponent("mcp").absoluteString
         let object: [String: Any] = [

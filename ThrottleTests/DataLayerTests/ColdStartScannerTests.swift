@@ -61,4 +61,51 @@ final class ColdStartScannerTests: XCTestCase {
         }
         XCTAssertEqual(count, 2, "Re-scan must not duplicate events")
     }
+
+    func testWatcherDetectsNewTopLevelTranscriptInsideExistingProjectDirectory() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ThrottleWatcherTest_\(UUID().uuidString)")
+        let project = root.appendingPathComponent("-Users-test-project", isDirectory: true)
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let detected = expectation(description: "new top-level transcript detected")
+        let transcript = project.appendingPathComponent("session.jsonl")
+        let watcher = LiveFileWatcher(rootURL: root) { url in
+            if url.standardizedFileURL == transcript.standardizedFileURL {
+                detected.fulfill()
+            }
+        }
+
+        watcher.start()
+        defer { watcher.stop() }
+
+        // Let the watcher's serial queue attach its root and project sources before
+        // creating the file whose parent-directory event is under test.
+        Thread.sleep(forTimeInterval: 0.2)
+        try Data("{}\n".utf8).write(to: transcript)
+
+        wait(for: [detected], timeout: 3)
+    }
+
+    func testWatcherDoesNotReportSubagentTranscript() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ThrottleWatcherTest_\(UUID().uuidString)")
+        let project = root.appendingPathComponent("-Users-test-project", isDirectory: true)
+        let subagents = project.appendingPathComponent("session/subagents", isDirectory: true)
+        try FileManager.default.createDirectory(at: subagents, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let unexpected = expectation(description: "subagent transcript ignored")
+        unexpected.isInverted = true
+        let watcher = LiveFileWatcher(rootURL: root) { _ in unexpected.fulfill() }
+
+        watcher.start()
+        defer { watcher.stop() }
+
+        Thread.sleep(forTimeInterval: 0.2)
+        try Data("{}\n".utf8).write(to: subagents.appendingPathComponent("agent-1.jsonl"))
+
+        wait(for: [unexpected], timeout: 0.8)
+    }
 }

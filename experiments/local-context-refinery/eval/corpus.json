@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0",
+  "cases": [
+    {
+      "id": "xcode-compile-error",
+      "kind": "xcode",
+      "expected_status": "fail",
+      "must_keep": ["cannot find 'WidgetStore' in scope"],
+      "text": "CompileSwift normal arm64\n/Sources/App.swift:42: error: cannot find 'WidgetStore' in scope\n** BUILD FAILED **"
+    },
+    {
+      "id": "xcode-warning-success",
+      "kind": "xcode",
+      "expected_status": "pass",
+      "must_keep": ["warning: 'oldAPI' is deprecated", "BUILD SUCCEEDED"],
+      "text": "/Sources/App.swift:8: warning: 'oldAPI' is deprecated\n** BUILD SUCCEEDED **"
+    },
+    {
+      "id": "xctest-failure",
+      "kind": "test",
+      "expected_status": "fail",
+      "must_keep": ["Test Suite 'ThrottleTests' failed"],
+      "text": "Test Case '-[ThrottleTests testBudget]' failed (0.2 seconds)\nTest Suite 'ThrottleTests' failed\nExecuted 42 tests, with 1 failure"
+    },
+    {
+      "id": "xctest-success-zero-failure",
+      "kind": "test",
+      "expected_status": "pass",
+      "must_keep": ["Executed 200 tests, with 0 failures"],
+      "forbid_cause": "Test failure present",
+      "text": "Executed 200 tests, with 0 failures\nTest Suite 'All tests' passed"
+    },
+    {
+      "id": "notary-accepted",
+      "kind": "notary",
+      "expected_status": "pass",
+      "must_keep": ["status: Accepted"],
+      "text": "id: 2c20d32d-c65b-4301-9638-418e2b54ec4c\nstatus: Accepted"
+    },
+    {
+      "id": "notary-rejected",
+      "kind": "notary",
+      "expected_status": "fail",
+      "must_keep": ["notarization rejected: invalid signature"],
+      "text": "Uploading artifact\nnotarization rejected: invalid signature"
+    },
+    {
+      "id": "codesign-critical",
+      "kind": "signing",
+      "expected_status": "fail",
+      "must_keep": ["code object is not signed at all"],
+      "text": "Throttle.app: code object is not signed at all\nIn architecture: arm64"
+    },
+    {
+      "id": "disk-blocker",
+      "kind": "xcode",
+      "expected_status": "blocked",
+      "must_keep": ["No space left on device"],
+      "text": "write failed: No space left on device"
+    },
+    {
+      "id": "permission-blocker",
+      "kind": "mcp",
+      "expected_status": "blocked",
+      "must_keep": ["operation not permitted"],
+      "text": "MCP server startup\nopen /private/data: operation not permitted"
+    },
+    {
+      "id": "mcp-protocol-error",
+      "kind": "mcp",
+      "expected_status": "fail",
+      "must_keep": ["\"code\":-32602"],
+      "text": "tools/call refine_log\n{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32602,\"message\":\"Invalid params\"}}"
+    },
+    {
+      "id": "unknown-progress",
+      "kind": "auto",
+      "expected_status": "unknown",
+      "must_keep": [],
+      "text": "CompileSwift normal arm64\nLinking Throttle"
+    },
+    {
+      "id": "secret-redaction",
+      "kind": "mcp",
+      "expected_status": "fail",
+      "must_keep": ["error: remote request failed"],
+      "must_redact": ["super-secret-value", "ghp_abcdefghijklmnopqrstuvwxyz"],
+      "text": "Authorization: Bearer super-secret-value\nerror: remote request failed token=ghp_abcdefghijklmnopqrstuvwxyz"
+    }
+  ]
+}

@@ -30,7 +30,16 @@ struct MultiCockpitRoot: View {
     @State private var showWhatsNew = false                // What's-new / optimizations tour
     @State private var showUtilityRow = false              // Dir C reveal row (chevron)
     @State private var barWidth: CGFloat = 980             // drives narrow/icon-only collapse
+    @State private var pendingModelSwitch: PendingModelSwitch?
+    @State private var pendingHandoff: MissionHandoff?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private struct PendingModelSwitch: Identifiable {
+        let id = UUID()
+        let tabID: UUID
+        let target: String
+        let impact: PromptCacheImpact
+    }
 
     private let hair = Color.primary.opacity(0.10)
     private let track = Color.primary.opacity(0.08)
@@ -73,6 +82,27 @@ struct MultiCockpitRoot: View {
         .sheet(isPresented: $showActivity) { WorkActivityView().environment(appState) }
         .sheet(isPresented: $showSetup) { ClaudeSetupView() }
         .sheet(isPresented: $showWhatsNew) { WhatsNewView() }
+        .sheet(item: $pendingHandoff) { handoff in
+            MissionHandoffSheet(handoff: handoff) { confirmed in
+                _ = model.continueMission(confirmed.sourceTabID, with: confirmed)
+                pendingHandoff = nil
+            } onCancel: {
+                pendingHandoff = nil
+            }
+        }
+        .alert(
+            "Switch model and rebuild cache?",
+            isPresented: Binding(
+                get: { pendingModelSwitch != nil },
+                set: { if !$0 { pendingModelSwitch = nil } }
+            ),
+            presenting: pendingModelSwitch
+        ) { request in
+            Button("Switch to \(request.target.capitalized)") { performModelSwitch(request) }
+            Button("Cancel", role: .cancel) { pendingModelSwitch = nil }
+        } message: { request in
+            Text("This session's latest prompt is ≈\(fmtTok(request.impact.contextTokens)) input tokens. Claude Code caches per model, so switching now may rebuild it for ≈€\(String(format: "%.2f", request.impact.rebuildEUR)) (≈€\(String(format: "%.2f", request.impact.extraEURVersusWarm)) more than a warm read). Prefer switching after /clear or at the next task boundary.")
+        }
     }
 
     // MARK: - Top bar (switcher + pills)
@@ -98,13 +128,15 @@ struct MultiCockpitRoot: View {
         HStack(spacing: 6) {
             identity(compact: narrow)
             zsep
+            routingMenu(compact: narrow)
+            zsep
             viewSwitcher(iconsOnly: narrow)
             Spacer(minLength: 6)
-            ToolbarToggle(icon: "sidebar.trailing", label: "Audit", isOn: showInspector,
-                          iconOnly: narrow, help: "Audit inspector") { showInspector.toggle() }
-            ToolbarToggle(icon: "terminal", label: "Shell", isOn: model.showShell,
+            ToolbarToggle(icon: "sidebar.trailing", label: String(localized: "Audit"), isOn: showInspector,
+                          iconOnly: narrow, help: String(localized: "Audit inspector")) { showInspector.toggle() }
+            ToolbarToggle(icon: "terminal", label: String(localized: "Shell"), isOn: model.showShell,
                           iconOnly: narrow,
-                          help: "Side shell (⌘⇧T) — a zsh in this project's folder, beside claude") {
+                          help: String(localized: "Side shell (⌘⇧T) — a zsh in this project's folder, beside claude")) {
                 model.toggleShell()
             }
             .keyboardShortcut("t", modifiers: [.command, .shift])
@@ -114,6 +146,41 @@ struct MultiCockpitRoot: View {
             statusCluster(narrow: narrow)
         }
         .padding(.horizontal, 10).frame(height: 40)
+    }
+
+    private func routingMenu(compact: Bool) -> some View {
+        Menu {
+            ForEach(MissionRoutingMode.allCases) { mode in
+                Button {
+                    model.routingMode = mode
+                } label: {
+                    if model.routingMode == mode {
+                        Label(mode.label, systemImage: "checkmark")
+                    } else {
+                        Text(mode.label)
+                    }
+                }
+                Text(mode.detail)
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: model.runtimeForNewMission.symbol)
+                if !compact { Text(model.routingMode.label) }
+                Image(systemName: "chevron.down").font(.system(size: 7, weight: .bold))
+            }
+            .font(.system(size: 10.5, weight: .medium))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 7).padding(.vertical, 5)
+            .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 6))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help(String.localizedStringWithFormat(
+            String(localized: "Mission routing: %@ — affects new sessions; live sessions switch through a reviewed handoff"),
+            model.routingMode.label))
+        .accessibilityLabel(String(localized: "Mission runtime"))
+        .accessibilityValue(model.routingMode.label)
     }
 
     /// The revealed utility shelf: contextual timeline (or an empty note) on the
@@ -128,10 +195,10 @@ struct MultiCockpitRoot: View {
             Spacer(minLength: 6)
             caffeineToggle
             themeMenu
-            ToolbarUtil(icon: "chart.bar.xaxis", help: "Work activity — hours/day, projects this week") { showActivity = true }
-            ToolbarUtil(icon: "puzzlepiece.extension", help: "Claude Code setup — MCP servers, skills, plugins") { showSetup = true }
-            ToolbarUtil(icon: "sparkles", help: "What's new — optimization features") { showWhatsNew = true }
-            ToolbarUtil(icon: "stethoscope", help: "Throttle Health — operational self-checks") { showHealth = true }
+            ToolbarUtil(icon: "chart.bar.xaxis", help: String(localized: "Work activity — hours/day, projects this week")) { showActivity = true }
+            ToolbarUtil(icon: "puzzlepiece.extension", help: String(localized: "Claude Code setup — MCP servers, skills, plugins")) { showSetup = true }
+            ToolbarUtil(icon: "sparkles", help: String(localized: "What's new — optimization features")) { showWhatsNew = true }
+            ToolbarUtil(icon: "stethoscope", help: String(localized: "Throttle Health — operational self-checks")) { showHealth = true }
         }
         .padding(.horizontal, 10)
         .frame(height: showUtilityRow ? 36 : 0)
@@ -175,7 +242,8 @@ struct MultiCockpitRoot: View {
                 .foregroundStyle(.tertiary)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain).help("Output style: \(activeStyle) — click to change")
+        .buttonStyle(.plain).help(String.localizedStringWithFormat(
+            String(localized: "Output style: %@ — click to change"), activeStyle))
     }
 
     private func styleShort(_ s: String) -> String {
@@ -186,9 +254,9 @@ struct MultiCockpitRoot: View {
     /// response) and back to live — a timeline for the session.
     private var timelineNav: some View {
         HStack(spacing: 2) {
-            navButton("chevron.up", "Previous turn") { model.jumpTurn(older: true) }
-            navButton("chevron.down", "Next turn") { model.jumpTurn(older: false) }
-            navButton("arrow.down.to.line", "Jump to live") { model.scrollLive() }
+            navButton("chevron.up", String(localized: "Previous turn")) { model.jumpTurn(older: true) }
+            navButton("chevron.down", String(localized: "Next turn")) { model.jumpTurn(older: false) }
+            navButton("arrow.down.to.line", String(localized: "Jump to live")) { model.scrollLive() }
         }
         .padding(.horizontal, 4)
         .overlay(alignment: .leading) { Rectangle().fill(hair).frame(width: 1).padding(.vertical, 6) }
@@ -211,9 +279,10 @@ struct MultiCockpitRoot: View {
                 .foregroundStyle(on ? Color.accentColor : Color.secondary)
         }
         .buttonStyle(.plain)
-        .help(on ? "Caffeine on — Mac won't idle-sleep while sessions run"
-                 : "Keep Mac awake while sessions run (idle only — not lid-closed)")
-        .accessibilityLabel("Keep Mac awake").accessibilityValue(on ? "On" : "Off")
+        .help(on ? String(localized: "Caffeine on — Mac won't idle-sleep while sessions run")
+                 : String(localized: "Keep Mac awake while sessions run (idle only — not lid-closed)"))
+        .accessibilityLabel(String(localized: "Keep Mac awake"))
+        .accessibilityValue(on ? String(localized: "On") : String(localized: "Off"))
     }
 
     /// Curated terminal presets (no full editor — that's a non-goal). Switching
@@ -232,8 +301,9 @@ struct MultiCockpitRoot: View {
         } label: {
             Image(systemName: "paintpalette").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
         }
-        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help("Terminal theme: \(themePreset.label)")
-        .accessibilityLabel("Terminal theme").accessibilityValue(themePreset.label)
+        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+        .help(String.localizedStringWithFormat(String(localized: "Terminal theme: %@"), themePreset.label))
+        .accessibilityLabel(String(localized: "Terminal theme")).accessibilityValue(themePreset.label)
     }
 
     /// The dominant control: a segmented view switcher on a recessed track, icon +
@@ -371,7 +441,7 @@ struct MultiCockpitRoot: View {
     private func leakBanner(_ s: CockpitTab) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "memorychip").font(.system(size: 12)).foregroundStyle(.orange)
-            Text("\(s.projectName): using \(ByteCountFormatter.string(fromByteCount: Int64(s.ramBytes), countStyle: .memory)) — possible memory leak. Restart reclaims it, keeps your context.")
+            Text("\(s.projectName): \(s.resourceReason ?? "sampled resource pressure") at \(ByteCountFormatter.string(fromByteCount: Int64(s.ramBytes), countStyle: .memory)), \(Int(s.cpuPercent.rounded()))% CPU. Restart reclaims RAM, but resume may rebuild \(resumeImpactText(s) ?? "the prompt cache").")
                 .font(.system(size: 11.5)).foregroundStyle(.primary).lineLimit(1)
             Spacer(minLength: 0)
             Button("Restart") { s.restartInPlace() }
@@ -397,6 +467,10 @@ struct MultiCockpitRoot: View {
                 .font(.system(size: 11.5)).foregroundStyle(.primary).lineLimit(1)
             Spacer(minLength: 0)
             if let first = blocked.first {
+                if first.runtime == .claudeCode {
+                    Button("Continue with Codex") { requestHandoff(first, to: .codex) }
+                        .buttonStyle(.plain).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(Color.accentColor)
+                }
                 Button("Show") { model.wake(first.id) }
                     .buttonStyle(.plain).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(Color.accentColor)
             }
@@ -546,6 +620,7 @@ struct MultiCockpitRoot: View {
                                 stateDot(s).help(stateDotHelp(s))
                                 Text(s.projectName).font(.system(size: 12, weight: .medium))
                                     .foregroundStyle(on ? .primary : .secondary)
+                                runtimeTag(s.runtime)
                                 if s.needsInput {
                                     Image(systemName: "bell.badge.fill").font(.system(size: 10))
                                         .foregroundStyle(.orange)
@@ -584,6 +659,15 @@ struct MultiCockpitRoot: View {
         }
         .menuStyle(.borderlessButton).fixedSize()
         .help(model.gated ? "Mac saturated" : "New session")
+    }
+
+    private func runtimeTag(_ runtime: AgentRuntime) -> some View {
+        Text(runtime.shortLabel.uppercased())
+            .font(.system(size: 8, weight: .semibold, design: .monospaced))
+            .foregroundStyle(runtime == .claudeCode ? Color.orange : Color.accentColor)
+            .padding(.horizontal, 4).padding(.vertical, 2)
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 4))
+            .accessibilityLabel(runtime.label)
     }
 
     // MARK: B — Project rail
@@ -663,8 +747,8 @@ struct MultiCockpitRoot: View {
             Image(systemName: "arrow.up.arrow.down").font(.system(size: 9.5, weight: .semibold)).foregroundStyle(.tertiary)
         }
         .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
-        .help("Sort sessions: \(model.sortMode.label)")
-        .accessibilityLabel("Sort sessions").accessibilityValue(model.sortMode.label)
+        .help(String.localizedStringWithFormat(String(localized: "Sort sessions: %@"), model.sortMode.label))
+        .accessibilityLabel(String(localized: "Sort sessions")).accessibilityValue(model.sortMode.label)
     }
 
     /// Sessions after the rail filter — case-insensitive substring on project name.
@@ -695,13 +779,21 @@ struct MultiCockpitRoot: View {
     /// by the row's right-click context menu AND the ⋯ hover button so the actions are
     /// discoverable, not hidden behind a right-click only power users try.
     @ViewBuilder private func sessionMenu(_ s: CockpitTab) -> some View {
+        let target: AgentRuntime = s.runtime == .claudeCode ? .codex : .claudeCode
+        Button {
+            requestHandoff(s, to: target)
+        } label: {
+            Label("Continue mission with \(target.label)", systemImage: "arrow.left.arrow.right")
+        }
+        Divider()
         if s.isSpawned {
-            Menu("Switch model") {
-                Button("Fable")  { s.terminal?.send(txt: "/model fable\n") }
-                Button("Opus")   { s.terminal?.send(txt: "/model opus\n") }
-                Button("Sonnet") { s.terminal?.send(txt: "/model sonnet\n") }
-                Button("Haiku")  { s.terminal?.send(txt: "/model haiku\n") }
+            Menu("Switch Claude model") {
+                Button("Fable")  { requestModelSwitch(s, to: "fable") }
+                Button("Opus")   { requestModelSwitch(s, to: "opus") }
+                Button("Sonnet") { requestModelSwitch(s, to: "sonnet") }
+                Button("Haiku")  { requestModelSwitch(s, to: "haiku") }
             }
+            .disabled(s.runtime != .claudeCode)
         }
         // One-click offload of THIS session. The menu always says what will
         // actually happen: not configured → open setup; already on the box → show
@@ -725,13 +817,74 @@ struct MultiCockpitRoot: View {
         Divider()
         if s.isSpawned {
             Button(s.isPaused ? "Resume" : "Pause") { s.isPaused ? s.resumeProcess() : s.pauseProcess() }
-            Button("Hibernate — free RAM, keep context") { model.hibernate(s.id) }
+            Button(hibernateActionLabel(s)) { model.hibernate(s.id) }
         }
         Button("Project stats + optimizer") {
             ProjectWindowController.shared.show(appState: appState, projectID: MultiCockpitModel.claudeProjectDirName(s.cwd))
         }
         Divider()
         Button("Close session", role: .destructive) { model.close(s.id) }
+    }
+
+    private func requestHandoff(_ session: CockpitTab, to target: AgentRuntime) {
+        let sourceTabID = session.id
+        let missionID = session.missionID
+        let projectName = session.projectName
+        let cwd = session.cwd
+        let source = session.runtime
+        let sourceSessionID = session.sessionId
+        Task {
+            let git = await Task.detached(priority: .utility) {
+                MissionRuntimeService.gitEvidence(at: cwd)
+            }.value
+            pendingHandoff = MissionHandoff(
+                sourceTabID: sourceTabID,
+                missionID: missionID,
+                projectName: projectName,
+                cwd: cwd,
+                source: source,
+                target: target,
+                sourceSessionID: sourceSessionID,
+                objective: "Continue the current work at the next unfinished task.",
+                git: git
+            )
+        }
+    }
+
+    private func requestModelSwitch(_ session: CockpitTab, to target: String) {
+        if session.promptCacheImpact?.model.lowercased().contains(target.lowercased()) == true {
+            return // Already on this model: avoid a no-op command and needless warning.
+        }
+        guard let impact = session.promptCacheImpact, impact.shouldWarn else {
+            session.confirmedModelSwitchTarget = target
+            session.terminal?.send(txt: "/model \(target)\n")
+            return
+        }
+        pendingModelSwitch = PendingModelSwitch(
+            tabID: session.id,
+            target: target,
+            impact: PromptCacheImpactService.repriced(impact, for: target)
+        )
+    }
+
+    private func performModelSwitch(_ request: PendingModelSwitch) {
+        if let session = model.sessions.first(where: { $0.id == request.tabID }) {
+            session.confirmedModelSwitchTarget = request.target
+            session.terminal?.send(txt: "/model \(request.target)\n")
+        }
+        pendingModelSwitch = nil
+    }
+
+    private func hibernateActionLabel(_ session: CockpitTab) -> String {
+        guard let impact = session.promptCacheImpact, impact.shouldWarn else {
+            return "Hibernate — free RAM, keep context"
+        }
+        return "Hibernate — resume may reload ≈\(fmtTok(impact.contextTokens)) input (≈€\(String(format: "%.2f", impact.rebuildEUR)))"
+    }
+
+    private func resumeImpactText(_ session: CockpitTab) -> String? {
+        guard let impact = session.promptCacheImpact, impact.shouldWarn else { return nil }
+        return "≈\(fmtTok(impact.contextTokens)) input · ≈€\(String(format: "%.2f", impact.rebuildEUR))"
     }
 
     /// One icon button in the rail-row hover cluster.
@@ -820,7 +973,8 @@ struct MultiCockpitRoot: View {
             .overlay { if on { RoundedRectangle(cornerRadius: 9).stroke(hair, lineWidth: 1) } }
             .contentShape(Rectangle())
         }.buttonStyle(.plain)
-        .accessibilityLabel("Remote session \(rs.project), \(rs.state)")
+        .accessibilityLabel(String.localizedStringWithFormat(
+            String(localized: "Remote session %@, %@"), rs.project, rs.state))
         .contextMenu {
             Button("Pause") { Task { await remoteSvc.act(rs.id, "pause") } }
             Button("Resume") { Task { await remoteSvc.act(rs.id, "resume") } }
@@ -869,33 +1023,10 @@ struct MultiCockpitRoot: View {
                         Text(q).font(.system(size: 10.5)).lineLimit(2)
                     }.foregroundStyle(.orange)
                 }
+                sessionDiagnostics(s)
                 questionFeed(s)
-                HStack(spacing: 8) {
-                    if let e = s.eur {
-                        Text(String(format: "€%.2f", e)).font(.system(size: 10.5, design: .monospaced)).foregroundStyle(.secondary)
-                    }
-                    if let t = s.tokens, t > 0 {
-                        Text(fmtTok(t)).font(.system(size: 10, design: .monospaced)).foregroundStyle(.tertiary)
-                    }
-                    Spacer(minLength: 0)
-                    if let started = s.spawnedAt {
-                        Text("up \(uptime(started))").font(.system(size: 10.5)).foregroundStyle(.tertiary)
-                    } else {
-                        Text("dormant").font(.system(size: 10.5)).foregroundStyle(.quaternary)
-                    }
-                }
-                if s.ramBytes > 0 {
-                    HStack(spacing: 5) {
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                Capsule().fill(track)
-                                Capsule().fill(Color.secondary.opacity(0.45))
-                                    .frame(width: max(2, geo.size.width * ramFraction(s.ramBytes)))
-                            }
-                        }.frame(height: 3)
-                        Text(gb(s.ramBytes)).font(.system(size: 9, design: .monospaced)).foregroundStyle(.tertiary)
-                    }
-                }
+                sessionMetricsRow(s)
+                sessionResourceRow(s)
             }
             .padding(.horizontal, 10).padding(.vertical, 9).frame(maxWidth: .infinity, alignment: .leading)
             .background(on ? Color.primary.opacity(0.06) : .clear, in: RoundedRectangle(cornerRadius: 9))
@@ -919,7 +1050,7 @@ struct MultiCockpitRoot: View {
                                    s.isPaused ? "Resume — unfreeze this session" : "Pause — freeze this session (keeps state)") {
                             s.isPaused ? s.resumeProcess() : s.pauseProcess()
                         }
-                        railAction("moon.zzz.fill", 12, .secondary, "Hibernate — free RAM, keep context") { model.hibernate(s.id) }
+                        railAction("moon.zzz.fill", 12, .secondary, hibernateActionLabel(s)) { model.hibernate(s.id) }
                     }
                     railAction("xmark.circle.fill", 13, .secondary, "Close session") { model.close(s.id) }
                     // ⋯ opens the full decision menu — makes the right-click actions
@@ -1030,7 +1161,7 @@ struct MultiCockpitRoot: View {
             Spacer()
             Image(systemName: "square.split.2x2").font(.system(size: 34)).foregroundStyle(.tertiary)
             Text("No sessions running").font(.system(size: 15, weight: .semibold)).padding(.top, 16)
-            Text("Start your first claude session — Throttle keeps every project's headroom, cost and machine load in view as you work.")
+            Text("Start your first coding-agent mission — Throttle keeps its runtime, handoffs and machine load in view as you work.")
                 .font(.system(size: 12.5)).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 .frame(maxWidth: 320).padding(.top, 6)
             newSessionMenu(gated: false) {
@@ -1083,7 +1214,7 @@ struct MultiCockpitRoot: View {
     private func confirmOpenUnderPressure() -> Bool {
         let alert = NSAlert()
         alert.messageText = "Your Mac is low on memory"
-        alert.informativeText = "Throttle detects heavy memory pressure (swap is high). Opening another claude session may cause significant swapping and slow everything down.\n\nOpen it anyway?"
+        alert.informativeText = "Throttle detects heavy memory pressure (swap is high). Opening another agent session may cause significant swapping and slow everything down.\n\nOpen it anyway?"
         alert.alertStyle = .warning
         alert.addButton(withTitle: "Open Anyway")
         alert.addButton(withTitle: "Cancel")
@@ -1212,9 +1343,93 @@ struct MultiCockpitRoot: View {
         var parts = [s.projectName]
         if s.needsInput { parts.append("waiting for your input") }
         if s.isHibernated { parts.append("hibernated") }
+        if let issue = s.resumeIssue { parts.append(issue) }
+        if let reason = s.resourceReason { parts.append(reason) }
         if let m = s.model { parts.append(m) }
         if let e = s.eur { parts.append(String(format: "%.2f euros", e)) }
         return parts.joined(separator: ", ")
+    }
+
+    private func resourceColor(_ session: CockpitTab) -> Color {
+        switch session.resourceState {
+        case .healthy: return .secondary
+        case .constrained: return .orange
+        case .critical: return .red
+        }
+    }
+
+    private func codexProgressText(_ progress: CodexProgressSnapshot) -> String {
+        guard progress.commandsCompleted > 0 else { return progress.title }
+        return progress.title + " · " + String(progress.commandsCompleted) + " events"
+    }
+
+    @ViewBuilder
+    private func sessionDiagnostics(_ session: CockpitTab) -> some View {
+        if let issue = session.resumeIssue {
+            Label(issue, systemImage: "exclamationmark.triangle.fill")
+                .font(.system(size: 10.5))
+                .foregroundStyle(.orange)
+                .lineLimit(2)
+        }
+        if let progress = session.codexProgress {
+            Text(codexProgressText(progress))
+                .font(.system(size: 10.5))
+                .foregroundStyle(progress.phase == .failed ? Color.red : Color.secondary)
+                .lineLimit(1)
+        }
+    }
+
+    private func sessionMetricsRow(_ session: CockpitTab) -> some View {
+        HStack(spacing: 8) {
+            if let euros = session.eur {
+                Text(String(format: "€%.2f", euros))
+                    .font(.system(size: 10.5, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
+            if let tokens = session.tokens, tokens > 0 {
+                Text(fmtTok(tokens))
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(.tertiary)
+            }
+            if session.isHibernated, let resume = resumeImpactText(session) {
+                Text("resume \(resume)")
+                    .font(.system(size: 9.5, design: .monospaced))
+                    .foregroundStyle(.orange)
+            }
+            Spacer(minLength: 0)
+            if let started = session.spawnedAt {
+                Text("up \(uptime(started))").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+            } else {
+                Text("dormant").font(.system(size: 10.5)).foregroundStyle(.quaternary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func sessionResourceRow(_ session: CockpitTab) -> some View {
+        if session.ramBytes > 0 {
+            HStack(spacing: 5) {
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(track)
+                        Capsule().fill(resourceColor(session).opacity(0.65))
+                            .frame(width: max(2, geometry.size.width * ramFraction(session.ramBytes)))
+                    }
+                }
+                .frame(height: 3)
+                Text(resourceSummary(session))
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundStyle(resourceTextColor(session))
+            }
+        }
+    }
+
+    private func resourceSummary(_ session: CockpitTab) -> String {
+        gb(session.ramBytes) + " · " + String(Int(session.cpuPercent.rounded())) + "% CPU"
+    }
+
+    private func resourceTextColor(_ session: CockpitTab) -> Color {
+        session.resourceState == .healthy ? Color.secondary.opacity(0.7) : resourceColor(session)
     }
 
     private var hibernatedChip: some View {
@@ -1286,6 +1501,137 @@ struct MultiCockpitRoot: View {
         if s < 60 { return "\(s)s" }
         if s < 3600 { return "\(s / 60)m" }
         return "\(s / 3600)h \(s % 3600 / 60)m"
+    }
+}
+
+/// Review gate between native providers. Throttle never moves transcript content
+/// or changes provider configuration; the user controls the objective sent to the
+/// fresh target session.
+private struct MissionHandoffSheet: View {
+    let handoff: MissionHandoff
+    let onContinue: (MissionHandoff) -> Void
+    let onCancel: () -> Void
+    @State private var objective: String
+    @State private var completed: String
+    @State private var remaining: String
+    @State private var validation: String
+    @State private var blockers: String
+
+    init(
+        handoff: MissionHandoff,
+        onContinue: @escaping (MissionHandoff) -> Void,
+        onCancel: @escaping () -> Void
+    ) {
+        self.handoff = handoff
+        self.onContinue = onContinue
+        self.onCancel = onCancel
+        _objective = State(initialValue: handoff.objective)
+        _completed = State(initialValue: handoff.context.completed)
+        _remaining = State(initialValue: handoff.context.remaining)
+        _validation = State(initialValue: handoff.context.validation)
+        _blockers = State(initialValue: handoff.context.blockers)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                runtime(handoff.source)
+                Image(systemName: "arrow.right").foregroundStyle(.secondary)
+                runtime(handoff.target)
+                Spacer()
+                Text("MISSION \(handoff.missionID.uuidString.prefix(8))")
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.tertiary)
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Continue this mission").font(.title2.weight(.semibold))
+                Text("Throttle will hibernate the source first, then start a fresh \(handoff.target.label) session with the reviewed packet. Only one agent writes in this checkout.")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
+
+            VStack(alignment: .leading, spacing: 7) {
+                Text("NEXT OBJECTIVE").font(.system(size: 10, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                TextEditor(text: $objective)
+                    .font(.system(size: 12.5))
+                    .scrollContentBackground(.hidden)
+                    .padding(8)
+                    .frame(height: 82)
+                    .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8))
+                    .overlay { RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.10)) }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("CONTINUATION LEDGER").font(.system(size: 10, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                ledgerField("Completed", text: $completed, prompt: "What is actually done?")
+                ledgerField("Remaining", text: $remaining, prompt: "What should the target do next?")
+                ledgerField("Validation", text: $validation, prompt: "Tests/builds run and their result")
+                ledgerField("Blockers / risks", text: $blockers, prompt: "Unknowns, external gates, or risks")
+            }
+
+            VStack(alignment: .leading, spacing: 7) {
+                Text("FRESH GIT SNAPSHOT").font(.system(size: 10, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                Text(snapshotText)
+                    .font(.system(size: 11, design: .monospaced))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(10)
+                    .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 8))
+            }
+
+            Text("No Claude or Codex configuration is modified. Transcript content is not copied; the target revalidates the repository from this bounded handoff.")
+                .font(.caption).foregroundStyle(.secondary)
+
+            HStack {
+                Button("Cancel", role: .cancel, action: onCancel)
+                Spacer()
+                Button("Continue with \(handoff.target.label)") {
+                    onContinue(MissionHandoff(
+                        sourceTabID: handoff.sourceTabID,
+                        missionID: handoff.missionID,
+                        projectName: handoff.projectName,
+                        cwd: handoff.cwd,
+                        source: handoff.source,
+                        target: handoff.target,
+                        sourceSessionID: handoff.sourceSessionID,
+                        objective: objective,
+                        context: MissionHandoffContext(
+                            completed: completed,
+                            remaining: remaining,
+                            validation: validation,
+                            blockers: blockers
+                        ),
+                        git: handoff.git
+                    ))
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(objective.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(22)
+        .frame(width: 620)
+    }
+
+    private func ledgerField(_ label: LocalizedStringKey, text: Binding<String>, prompt: LocalizedStringKey) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(label).font(.system(size: 11, weight: .medium)).frame(width: 92, alignment: .leading)
+            TextField(prompt, text: text)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(size: 11.5))
+        }
+    }
+
+    private func runtime(_ value: AgentRuntime) -> some View {
+        Label(value.label, systemImage: value.symbol)
+            .font(.system(size: 12, weight: .semibold))
+            .padding(.horizontal, 9).padding(.vertical, 6)
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 7))
+    }
+
+    private var snapshotText: String {
+        let header = "branch \(handoff.git.branch ?? "unknown") · HEAD \(handoff.git.head ?? "unknown")"
+        let status = handoff.git.statusLines.prefix(12).joined(separator: "\n")
+        return status.isEmpty ? header + "\nworking tree clean or unavailable — target must recheck" : header + "\n" + status
     }
 }
 
@@ -1361,7 +1707,7 @@ private struct ToolbarToggle: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).onHover { hover = $0 }
-        .help(help).accessibilityValue(isOn ? "On" : "Off")
+        .help(help).accessibilityValue(isOn ? String(localized: "On") : String(localized: "Off"))
     }
 }
 
@@ -1404,7 +1750,8 @@ private struct RevealChevron: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain).onHover { hover = $0 }
-        .help(isOpen ? "Hide utilities" : "More controls — timeline, theme, activity, setup, health")
-        .accessibilityLabel("More controls")
+        .help(isOpen ? String(localized: "Hide utilities")
+                     : String(localized: "More controls — timeline, theme, activity, setup, health"))
+        .accessibilityLabel(String(localized: "More controls"))
     }
 }

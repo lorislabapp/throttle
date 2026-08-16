@@ -1,6 +1,338 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%lld failing · %lld warning": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld échec · %lld avertissement" } } }
+    },
+    "%lld hook(s) inject volatile content into the cached prefix — busts the cache.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld hook(s) injectent du contenu volatil dans le préfixe en cache — le cache est invalidé." } } }
+    },
+    "%lld MEMORY.md over the 200-line/25 KB cap — content past it is silently truncated and never reaches context: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld fichier(s) MEMORY.md dépassent la limite de 200 lignes/25 Ko — le contenu au-delà est tronqué silencieusement et n’atteint jamais le contexte : %@" } } }
+    },
+    "%lld warning — otherwise healthy": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld avertissement — le reste est sain" } } }
+    },
+    "%lld%% used, %@ GB swap.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld %% utilisés, %@ Go de swap." } } }
+    },
+    "%.0f GB free (%.0f%%) — tight for archives.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%.0f Go libres (%.0f %%) — marge faible pour les archives." } } }
+    },
+    "%.0f GB free (%.0f%%).": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%.0f Go libres (%.0f %%)." } } }
+    },
+    "All MEMORY.md indexes under the 200-line / 25 KB auto-load cap.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tous les index MEMORY.md respectent la limite de chargement automatique de 200 lignes / 25 Ko." } } }
+    },
+    "All systems healthy": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tous les systèmes sont sains" } } }
+    },
+    "Critical — %lld%% used, %@ GB swap. Hibernate idle sessions.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Critique — %lld %% utilisés, %@ Go de swap. Mettez en veille les sessions inactives." } } }
+    },
+    "Database integrity": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Intégrité de la base" } } }
+    },
+    "Dedup index": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Index de déduplication" } } }
+    },
+    "Disk": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Disque" } } }
+    },
+    "Couldn't read free space.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Impossible de lire l’espace libre." } } }
+    },
+    "Estimate mode (Pro adds exact claude.ai sync).": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Mode estimé (Pro ajoute la synchronisation exacte de claude.ai)." } } }
+    },
+    "Fresh claude.ai snapshot.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Instantané claude.ai récent." } } }
+    },
+    "Memory index size": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Taille de l’index mémoire" } } }
+    },
+    "Missing UNIQUE idx_usage_natural — metrics may inflate on re-scan.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Index UNIQUE idx_usage_natural absent — les métriques peuvent être gonflées lors d’une nouvelle analyse." } } }
+    },
+    "No cache-busting hooks detected.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun hook invalidant le cache détecté." } } }
+    },
+    "No claude.ai snapshot yet.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun instantané claude.ai pour le moment." } } }
+    },
+    "Only %.0f GB free (%.0f%%) — builds/notarize will fail.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Seulement %.0f Go libres (%.0f %%) — les builds et la notarisation échoueront." } } }
+    },
+    "Prompt-cache hooks": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Hooks du cache de prompt" } } }
+    },
+    "quick_check OK · %.0f MB — large, consider a prune.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "quick_check OK · %.0f Mo — base volumineuse, envisagez une purge." } } }
+    },
+    "quick_check OK · %.0f MB.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "quick_check OK · %.0f Mo." } } }
+    },
+    "quick_check: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "quick_check : %@" } } }
+    },
+    "Running checks…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vérifications en cours…" } } }
+    },
+    "Snapshot is stale — falling back to the local estimate.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "L’instantané est obsolète — retour à l’estimation locale." } } }
+    },
+    "Terminated %lld orphaned processes.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld processus orphelins terminés." } } }
+    },
+    "Terminated 1 orphaned process.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "1 processus orphelin terminé." } } }
+    },
+    "Under pressure — %lld%% used, %@ GB swap.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Sous pression — %lld %% utilisés, %@ Go de swap." } } }
+    },
+    "UNIQUE idx_usage_natural present — re-scans can't double-count.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Index UNIQUE idx_usage_natural présent — les nouvelles analyses ne peuvent pas compter deux fois." } } }
+    },
+    "%lld stranded Claude Code processes are holding RAM.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld processus Claude Code orphelins occupent de la mémoire." } } }
+    },
+    "%lld transcripts are still pending after %@ — ingestion is stalled.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld transcriptions sont toujours en attente après %@ — l’ingestion est bloquée." } } }
+    },
+    "1 stranded Claude Code process is holding RAM.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "1 processus Claude Code orphelin occupe de la mémoire." } } }
+    },
+    "1 transcript is still pending after %@ — ingestion is stalled.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "1 transcription est toujours en attente après %@ — l’ingestion est bloquée." } } }
+    },
+    "Audit": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Audit" } } }
+    },
+    "Caught up — last billable event %@ ago.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "À jour — dernier événement facturable il y a %@." } } }
+    },
+    "Caught up — no billable assistant event recorded yet.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "À jour — aucun événement assistant facturable enregistré." } } }
+    },
+    "Claude Code project transcripts were not found.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Les transcriptions des projets Claude Code sont introuvables." } } }
+    },
+    "Claude Code setup": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Configuration de Claude Code" } } }
+    },
+    "Claude Code setup — MCP servers, skills, plugins": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Configuration de Claude Code — serveurs MCP, compétences et extensions" } } }
+    },
+    "Caffeine on — Mac won't idle-sleep while sessions run": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Caféine activée — le Mac ne se mettra pas en veille tant que des sessions sont actives" } } }
+    },
+    "Dashboard": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tableau de bord" } } }
+    },
+    "Ingesting %lld updated transcripts.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ingestion de %lld transcriptions mises à jour." } } }
+    },
+    "Ingesting 1 updated transcript.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ingestion de 1 transcription mise à jour." } } }
+    },
+    "Jump to live": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Revenir au direct" } } }
+    },
+    "Keep Mac awake": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Garder le Mac éveillé" } } }
+    },
+    "Kill": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Terminer" } } }
+    },
+    "More controls": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Plus de commandes" } } }
+    },
+    "More controls — timeline, theme, activity, setup, health": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Plus de commandes — chronologie, thème, activité, configuration et état" } } }
+    },
+    "Mission routing: %@ — affects new sessions; live sessions switch through a reviewed handoff": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Routage de mission : %@ — s’applique aux nouvelles sessions ; les sessions actives basculent via un transfert contrôlé" } } }
+    },
+    "Mission runtime": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Moteur d’exécution de mission" } } }
+    },
+    "Next turn": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tour suivant" } } }
+    },
+    "Off": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Désactivé" } } }
+    },
+    "On": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Activé" } } }
+    },
+    "No stranded Claude Code processes.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun processus Claude Code orphelin." } } }
+    },
+    "No top-level Claude Code transcripts found yet.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune transcription Claude Code principale trouvée." } } }
+    },
+    "Orphaned processes": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Processus orphelins" } } }
+    },
+    "Overview": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vue d’ensemble" } } }
+    },
+    "Portfolio": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Portefeuille" } } }
+    },
+    "Output style: %@ — click to change": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Style de sortie : %@ — cliquer pour le modifier" } } }
+    },
+    "Previous turn": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tour précédent" } } }
+    },
+    "Probe servers": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tester les serveurs" } } }
+    },
+    "Rail": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rail" } } }
+    },
+    "Refresh": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Actualiser" } } }
+    },
+    "Re-run checks": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Relancer les vérifications" } } }
+    },
+    "Shell": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Shell" } } }
+    },
+    "Side shell (⌘⇧T) — a zsh in this project's folder, beside claude": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Shell latéral (⌘⇧T) — un zsh dans le dossier de ce projet, à côté de Claude" } } }
+    },
+    "Sort sessions": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Trier les sessions" } } }
+    },
+    "Sort sessions: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Trier les sessions : %@" } } }
+    },
+    "Tabs": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Onglets" } } }
+    },
+    "Terminal theme": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Thème du terminal" } } }
+    },
+    "Terminal theme: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Thème du terminal : %@" } } }
+    },
+    "Throttle Health": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "État de Throttle" } } }
+    },
+    "Throttle Health — operational self-checks": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "État de Throttle — autodiagnostics opérationnels" } } }
+    },
+    "Keep Mac awake while sessions run (idle only — not lid-closed)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Garder le Mac éveillé pendant les sessions (veille inactive uniquement — pas lorsque l’écran est rabattu)" } } }
+    },
+    "Hide utilities": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Masquer les utilitaires" } } }
+    },
+    "Remote session %@, %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Session distante %@, %@" } } }
+    },
+    "Usage tracking": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Suivi de l’utilisation" } } }
+    },
+    "What's new": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Nouveautés" } } }
+    },
+    "What's new — optimization features": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Nouveautés — fonctions d’optimisation" } } }
+    },
+    "Work activity": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Activité de travail" } } }
+    },
+    "Work activity — hours/day, projects this week": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Activité de travail — heures par jour et projets de la semaine" } } }
+    },
     " headroom left": {
       "localizations": {
         "fr": {
@@ -5153,6 +5485,57 @@
           }
         }
       }
+    },
+    "Auto": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Auto" } } }
+    },
+    "Balance missions; one writer per checkout; structured handoffs": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Répartit les missions ; un seul agent modifie chaque dépôt ; transferts structurés" } } }
+    },
+    "Blockers / risks": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Blocages / risques" } } }
+    },
+    "Claude Code": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Claude Code" } } }
+    },
+    "Claude first; offer Codex after a confirmed limit": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Claude en priorité ; proposer Codex après confirmation de la limite" } } }
+    },
+    "Codex": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Codex" } } }
+    },
+    "Completed": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Terminé" } } }
+    },
+    "CONTINUATION LEDGER": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "JOURNAL DE CONTINUATION" } } }
+    },
+    "Hybrid": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Hybride" } } }
+    },
+    "Remaining": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Restant" } } }
+    },
+    "Start new missions with Claude Code": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Démarrer les nouvelles missions avec Claude Code" } } }
+    },
+    "Start new missions with Codex": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Démarrer les nouvelles missions avec Codex" } } }
+    },
+    "Tests/builds run and their result": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tests/builds exécutés et leur résultat" } } }
+    },
+    "Unknowns, external gates, or risks": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Inconnues, validations externes ou risques" } } }
+    },
+    "Validation": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Validation" } } }
+    },
+    "What is actually done?": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Qu’est-ce qui est réellement terminé ?" } } }
+    },
+    "What should the target do next?": {
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Que doit faire l’agent cible ensuite ?" } } }
     },
     "✓ Event added to your default calendar.": {
       "extractionState": "manual",

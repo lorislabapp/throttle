@@ -6,7 +6,7 @@ import Foundation
 /// resize/title, `'2'`/`'3'` flow control); the very first client→server message is
 /// a JSON auth/geometry handshake. No off-the-shelf Swift implementation of this
 /// protocol exists (checked) — this hand-rolls the minimal subset Throttle needs:
-/// auth handshake, output, input, resize. Flow-control pause/resume is unimplemented
+/// bearer-gated proxy upgrade, output, input and resize. Flow-control pause/resume is unimplemented
 /// (both ends are fast enough for a single interactive session in v1).
 ///
 /// `@unchecked Sendable`: all mutable state is confined to the serial queue `q`,
@@ -41,20 +41,9 @@ public final class TtydClient: @unchecked Sendable {
 
     deinit { task?.cancel(with: .goingAway, reason: nil) }
 
-    /// The edge agent always spawns ttyd with `-c throttle:<token>` (see
-    /// `throttle-agent.mjs`) — this is ttyd's fixed HTTP Basic Auth username.
-    private static let ttydUser = "throttle"
-
-    /// Connect to the agent's ttyd attach endpoint and send the auth handshake.
-    /// `secure` should be false for a plain Tailscale-only deployment (matches the
-    /// edge agent's own no-TLS posture — Tailscale is the encryption boundary).
-    ///
-    /// ttyd auth (verified against ttyd 1.7.7's `src/protocol.c`/`src/http.c` — no
-    /// off-the-shelf client to copy, so this was confirmed by hand against a live
-    /// instance): the WS upgrade itself needs `Authorization: Basic <b64>` where
-    /// `<b64>` is base64("user:pass") (the exact string ttyd was started with via
-    /// `-c`), AND the first JSON_DATA message's `"AuthToken"` field must be that
-    /// *same* base64 string — not the raw token, and not the plaintext "user:pass".
+    /// Connect through the Edge Agent's authenticated WebSocket proxy. The bearer
+    /// token authenticates the encrypted upgrade to the agent; ttyd itself is
+    /// loopback-only and receives no client secret.
     public func connect(host: String, port: Int, path: String = "/ws", token: String,
                         cols: Int, rows: Int, secure: Bool = false) {
         q.async { [self] in
@@ -67,15 +56,14 @@ public final class TtydClient: @unchecked Sendable {
             comps.port = port
             comps.path = path
             guard let url = comps.url else { onConnected?(false); return }
-            let credentialB64 = Data("\(Self.ttydUser):\(token)".utf8).base64EncodedString()
             var req = URLRequest(url: url)
             req.setValue("tty", forHTTPHeaderField: "Sec-WebSocket-Protocol")
-            req.setValue("Basic \(credentialB64)", forHTTPHeaderField: "Authorization")
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             let t = session.webSocketTask(with: req)
             task = t
             t.resume()
 
-            let handshake: [String: Any] = ["AuthToken": credentialB64, "columns": cols, "rows": rows]
+            let handshake: [String: Any] = ["AuthToken": "", "columns": cols, "rows": rows]
             guard let data = try? JSONSerialization.data(withJSONObject: handshake) else {
                 onConnected?(false); return
             }

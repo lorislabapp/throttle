@@ -5,11 +5,10 @@
     <!--
         Throttle iOS companion privacy manifest.
 
-        We do not collect, track, or share user data. The app is a read-only
-        mirror of the user's own Mac usage over their PRIVATE CloudKit database,
-        plus a user-initiated remote-terminal control path to the user's own
-        machines (LAN peer link and a self-hosted edge agent). No analytics or
-        crash SDKs. No data leaves the user's own iCloud / devices.
+        LorisLabs does not collect or track user data through this app. The app
+        can sync through the user's private CloudKit database and can send
+        user-initiated terminal input to a paired Mac or self-hosted edge agent.
+        Those user-controlled transfers are documented in PRIVACY.md.
 
         Required-reason API use is limited to UserDefaults for local preferences
         and the shared App Group blob the widget reads.
@@ -26,14 +25,15 @@
 
     <key>NSPrivacyAccessedAPITypes</key>
     <array>
-        <!-- UserDefaults: local preferences + the App Group snapshot blob the
-             widget renders. On-device only. -->
+        <!-- UserDefaults: CA92.1 covers app-only preferences; 1C8F.1 covers the
+             App Group snapshot and settings shared with the widget. -->
         <dict>
             <key>NSPrivacyAccessedAPIType</key>
             <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
             <key>NSPrivacyAccessedAPITypeReasons</key>
             <array>
                 <string>CA92.1</string>
+                <string>1C8F.1</string>
             </array>
         </dict>
     </array>

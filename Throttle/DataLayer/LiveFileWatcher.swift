@@ -1,10 +1,11 @@
 import Foundation
 import OSLog
 
-/// Watches a directory tree for `.jsonl` writes. On any event, calls the handler
-/// with the URL that changed. Coalesces bursts via a 250ms debounce per path.
+/// Watches Claude Code's project directories for `.jsonl` writes and newly-created
+/// top-level session transcripts. On any event, calls the handler with the URL that
+/// changed. Coalesces bursts via a 250ms debounce per path.
 ///
-/// @unchecked Sendable: All mutable state (`sources`, `fds`, `debouncers`)
+/// @unchecked Sendable: All mutable state (`sources`, `debouncers`)
 /// is confined to the serial `queue`. Every mutation runs via `queue.async`,
 /// so concurrent access is structurally impossible.
 final class LiveFileWatcher: @unchecked Sendable {
@@ -14,7 +15,6 @@ final class LiveFileWatcher: @unchecked Sendable {
 
     private let queue = DispatchQueue(label: "com.lorislab.throttle.watcher", qos: .utility)
     private var sources: [URL: DispatchSourceFileSystemObject] = [:]
-    private var fds: [URL: Int32] = [:]
     private var debouncers: [URL: DispatchWorkItem] = [:]
     private var isRunning = false
 
@@ -28,7 +28,8 @@ final class LiveFileWatcher: @unchecked Sendable {
             guard let self = self else { return }
             self.isRunning = true
             self.attachAllJsonlFiles()
-            self.attachDirectoryWatcher()
+            self.attachDirectoryWatcher(at: self.rootURL, isRoot: true)
+            self.attachProjectDirectoryWatchers()
         }
     }
 
@@ -37,9 +38,7 @@ final class LiveFileWatcher: @unchecked Sendable {
             guard let self = self else { return }
             self.isRunning = false
             for src in self.sources.values { src.cancel() }
-            for fd in self.fds.values { close(fd) }
             self.sources.removeAll()
-            self.fds.removeAll()
             self.debouncers.values.forEach { $0.cancel() }
             self.debouncers.removeAll()
         }
@@ -71,15 +70,35 @@ final class LiveFileWatcher: @unchecked Sendable {
             close(fd)
         }
         sources[url] = src
-        fds[url] = fd
         src.resume()
     }
 
-    private func attachDirectoryWatcher() {
-        guard isRunning else { return }
-        let fd = open(rootURL.path, O_EVTONLY)
+    /// A dispatch source on the root does not receive changes made inside an
+    /// existing project directory. Watch each first-level project directory as
+    /// well, so a newly-created `<session>.jsonl` is discovered immediately.
+    /// We intentionally stop at one level: subagent transcripts live deeper and
+    /// are excluded by `ColdStartScanner.discoverJsonlFiles`.
+    private func attachProjectDirectoryWatchers() {
+        guard isRunning,
+              let entries = try? FileManager.default.contentsOfDirectory(
+                at: rootURL,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles]
+              ) else { return }
+
+        for url in entries {
+            guard (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else {
+                continue
+            }
+            attachDirectoryWatcher(at: url, isRoot: false)
+        }
+    }
+
+    private func attachDirectoryWatcher(at url: URL, isRoot: Bool) {
+        guard isRunning, sources[url] == nil else { return }
+        let fd = open(url.path, O_EVTONLY)
         guard fd >= 0 else {
-            logger.warning("Failed to open root \(self.rootURL.path, privacy: .public) for watching")
+            logger.warning("Failed to open directory \(url.path, privacy: .public) for watching")
             return
         }
         let src = DispatchSource.makeFileSystemObjectSource(
@@ -88,15 +107,14 @@ final class LiveFileWatcher: @unchecked Sendable {
             queue: queue
         )
         src.setEventHandler { [weak self] in
-            self?.directoryChanged()
+            self?.directoryChanged(isRoot: isRoot)
         }
         src.setCancelHandler { close(fd) }
-        sources[rootURL] = src
-        fds[rootURL] = fd
+        sources[url] = src
         src.resume()
     }
 
-    private func directoryChanged() {
+    private func directoryChanged(isRoot: Bool) {
         // Check if root directory still exists (might have been deleted)
         var isDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: rootURL.path, isDirectory: &isDir), isDir.boolValue else {
@@ -105,7 +123,12 @@ final class LiveFileWatcher: @unchecked Sendable {
             return
         }
 
-        // New session files may have appeared. Re-discover and attach any new ones.
+        // The root event may be a newly-created project directory. Existing project
+        // directory events may be newly-created session transcripts.
+        if isRoot { attachProjectDirectoryWatchers() }
+
+        // Re-discover and attach any new top-level session files. Discovery keeps
+        // the existing `/subagents/` exclusion, so this remains bounded.
         let files = ColdStartScanner.discoverJsonlFiles(under: rootURL)
         for file in files where sources[file] == nil {
             attachFile(file)
@@ -117,7 +140,9 @@ final class LiveFileWatcher: @unchecked Sendable {
         // Debounce: coalesce write bursts to one handler call per 250ms.
         debouncers[url]?.cancel()
         let work = DispatchWorkItem { [weak self] in
-            self?.handler(url)
+            guard let self else { return }
+            self.debouncers.removeValue(forKey: url)
+            self.handler(url)
         }
         debouncers[url] = work
         queue.asyncAfter(deadline: .now() + 0.25, execute: work)

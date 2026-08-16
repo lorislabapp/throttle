@@ -1,4 +1,6 @@
-# THROTTLE LAUNCH — Lundi 26 Mai 2026 (Final)
+# ARCHIVED — DO NOT PUBLISH: THROTTLE LAUNCH — Lundi 26 Mai 2026
+
+> This historical launch draft predates CloudKit, licensing, updates, remote terminals, Edge and Claude↔Codex handoff. Its privacy, feature, price, performance and readiness claims are obsolete. Use `README.md` and `PRIVACY.md`; every public claim requires a fresh release-evidence review.
 
 ## 🎯 STRATÉGIE VALIDÉE (NotebookLM + Competitor Research)
 

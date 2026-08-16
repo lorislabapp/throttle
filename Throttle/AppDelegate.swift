@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let updater = UpdaterService.shared
     private let logger = AppLogger.app
     private var licenseRenewalTimer: Timer?
+    private var codexUsageTimer: Timer?
 
     override init() {
         FileHandle.standardError.write(Data("[AppDelegate.init] start\n".utf8))
@@ -279,12 +280,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Task { @MainActor in
             await coordinator.start()
             appState.refresh()
+            appState.refreshCodexUsage()
             if appState.exactModeEnabled {
                 // Safari Bridge handles missing-Safari / not-signed-in via
                 // .failure on each poll — start unconditionally; the UI
                 // surfaces errors when polling fails.
                 exact.start()
             }
+        }
+
+        // Codex has no separate account API integration here: refresh the latest
+        // provider-emitted local token_count event on a modest cadence. The reader
+        // touches only the last three date directories and a bounded file tail.
+        codexUsageTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.appState.refreshCodexUsage() }
         }
 
         // Re-evaluate Pro status whenever the dev-unlock sheet succeeds
@@ -301,6 +310,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        codexUsageTimer?.invalidate()
         MultiCockpitModel.shared.stop()        // hard-kill every cockpit session subtree (C01)
         CaffeineService.shared.setActive(false) // release the power assertion (M04)
         coordinator.stop()

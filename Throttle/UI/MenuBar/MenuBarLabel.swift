@@ -4,9 +4,9 @@ struct MenuBarLabel: View {
     @Environment(AppState.self) private var appState
 
     var body: some View {
-        if !appState.claudeCodeDetected {
+        if !appState.claudeCodeDetected && !appState.codexDetected {
             Image(systemName: "gauge.with.dots.needle.0percent")
-        } else if !appState.snapshot.hasAnyData {
+        } else if !appState.snapshot.hasAnyData && appState.codexUsageSnapshot == nil {
             Image(systemName: "gauge.with.dots.needle.0percent")
         } else if let pct = highestPressurePercent() {
             // Show the window closest to its limit — that's the one that
@@ -33,18 +33,24 @@ struct MenuBarLabel: View {
         // Prefer exact-mode data when fresh — those are the numbers Anthropic
         // is actually rate-limiting against. Fall back to local rolling-window
         // math otherwise.
+        var providerPressures: [Double] = []
         if let ex = appState.exactSnapshot, ex.isFresh() {
             let exactPcts = [
                 Double(ex.fiveHour.utilization),
                 Double(ex.sevenDay.utilization)
             ].max() ?? 0
-            return exactPcts / 100.0
+            providerPressures.append(exactPcts / 100.0)
+        } else {
+            providerPressures.append(contentsOf: [
+                appState.snapshot.session5h.percentUsed,
+                appState.snapshot.weeklyAll.percentUsed
+            ].compactMap { $0 })
         }
-        let pcts = [
-            appState.snapshot.session5h.percentUsed,
-            appState.snapshot.weeklyAll.percentUsed
-        ].compactMap { $0 }
-        return pcts.max()
+        if let codex = appState.codexUsageSnapshot, codex.isFresh(),
+           let pressure = codex.highestPressure {
+            providerPressures.append(pressure)
+        }
+        return providerPressures.max()
     }
 
     private func meterIcon(for percent: Double) -> String {

@@ -32,7 +32,7 @@ struct RemoteTerminalView: UIViewRepresentable {
         // shows here AND on the Mac cockpit mirroring the same tmux session. Matches the
         // Mac fix in DroppableTerminalView (c6ae798).
         tv.allowMouseReporting = false
-        EdgeTerminalView.applyOpaqueBackground(tv)   // same keyboard-reflow fix
+        TerminalRendering.applyOpaqueBackground(tv)
         tv.terminalDelegate = context.coordinator
         context.coordinator.terminal = tv
         context.coordinator.cachedView = tv
@@ -41,6 +41,7 @@ struct RemoteTerminalView: UIViewRepresentable {
         // terminal types straight into the live Mac session, the most sensitive path.
         keySender.send = { [lockState] bytes in
             guard lockState.unlocked else { lockState.requestUnlockForTyping(); return }
+            lockState.registerWriteActivity()
             PeerClient.shared.sendTerminalInput(bytes)
         }
 
@@ -87,6 +88,7 @@ struct RemoteTerminalView: UIViewRepresentable {
         // asks to unlock instead of eating the keystroke.
         func send(source: TerminalView, data: ArraySlice<UInt8>) {
             guard lockState.unlocked else { lockState.requestUnlockForTyping(); return }
+            lockState.registerWriteActivity()
             PeerClient.shared.sendTerminalInput(Array(data))
         }
         // Local geometry change (rotation / keyboard) → advise the Mac.

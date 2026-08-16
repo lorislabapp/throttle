@@ -1,0 +1,16 @@
+{
+  "name": "throttle-local-context-refinery",
+  "version": "0.1.0",
+  "description": "Read-only local MCP sidecar that distills developer logs before optional on-device inference.",
+  "type": "module",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node mcp-server.mjs",
+    "test": "node --test test/*.test.mjs",
+    "eval": "node evaluate.mjs"
+  }
+}

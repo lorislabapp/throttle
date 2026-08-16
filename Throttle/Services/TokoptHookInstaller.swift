@@ -92,7 +92,7 @@ enum TokoptHookInstaller {
             if entryChanged { post[i]["hooks"] = cmds }
         }
         guard changed else { return scriptChanged }
-        try? backupSettings()
+        _ = try? backupSettings()
         hooks["PostToolUse"] = post
         dict["hooks"] = hooks
         try? writeSettings(dict)

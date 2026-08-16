@@ -24,7 +24,7 @@ enum AppLogger {
         let line = "[\(stamp)] \(message)\n"
         if let data = line.data(using: .utf8) {
             if let handle = try? FileHandle(forWritingTo: logFileURL) {
-                try? handle.seekToEnd()
+                _ = try? handle.seekToEnd()
                 try? handle.write(contentsOf: data)
                 try? handle.close()
             } else {

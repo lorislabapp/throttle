@@ -9,7 +9,7 @@ import Foundation
 /// 2026-07-14 the Mac app's `EdgeDeployService` DOES run these steps over SSH
 /// (one-click deploy — Kevin: "je clique offload, Throttle gère tout"); the
 /// emitted full script remains as a manual fallback. The runtime API calls below
-/// talk only to a deployed agent over its token-gated HTTP API; the agent is NOT
+/// talk only to a deployed agent over authenticated private HTTPS; the agent is NOT
 /// a data-path proxy (claude on the box reaches Anthropic directly).
 ///
 /// Lives in `ThrottleShared` (moved from the Mac target) so both the Mac cockpit and
@@ -42,7 +42,23 @@ public enum EdgeAgentService {
 
     // MARK: Deploy script (emitted as text; the user runs it — the app never SSHes)
 
-    public static func remoteURL(host: String, port: Int) -> String { "http://\(host):\(port)/" }
+    /// Remote Edge is HTTPS-only. Plain HTTP is accepted only for an explicit
+    /// loopback development endpoint; the agent itself refuses non-loopback binds.
+    public static func remoteURL(host: String, port: Int) -> String {
+        let trimmed = host.trimmingCharacters(in: .whitespacesAndNewlines)
+        let loopback = ["127.0.0.1", "localhost", "::1"].contains(trimmed.lowercased())
+        let renderedHost = trimmed.contains(":") && !trimmed.hasPrefix("[")
+            ? "[\(trimmed)]" : trimmed
+        return "\(loopback ? "http" : "https")://\(renderedHost):\(port)/"
+    }
+
+    private static func validatedBaseURL(_ value: String) -> URL? {
+        guard let url = URL(string: value), let scheme = url.scheme?.lowercased(),
+              let host = url.host?.lowercased() else { return nil }
+        if scheme == "https" { return url }
+        if scheme == "http", ["127.0.0.1", "localhost", "::1"].contains(host) { return url }
+        return nil
+    }
 
     /// Pinned ttyd 1.7.7 release checksums (github.com/tsl0922/ttyd) — Debian/Ubuntu
     /// don't package ttyd at all (verified against a real Debian 12 LXC: no apt
@@ -100,28 +116,20 @@ public enum EdgeAgentService {
         s += "# 3) write the agent (embedded, no repo dependency):\n"
         s += "\(ssh) 'mkdir -p /opt/throttle-agent'\n"
         s += "printf %s \(shq(agentB64)) | \(ssh) 'base64 -d > /opt/throttle-agent/throttle-agent.mjs'\n\n"
-        s += "# 4) token via EnvironmentFile (kept out of the unit + process list):\n"
-        s += "\(ssh) 'umask 077; printf \"THROTTLE_AGENT_TOKEN=%s\\nTHROTTLE_AGENT_PORT=%s\\nTHROTTLE_AGENT_TTYD_PORT=%s\\n\" \(shq(token)) \(httpPort) \(ttydPort) > /etc/throttle-agent.env'\n\n"
+        s += "# 4) token via a systemd credential file (not argv or process environment):\n"
+        s += "\(ssh) 'umask 077; printf \"%s\\n\" \(shq(token)) > /etc/throttle-agent.token; printf \"THROTTLE_AGENT_PORT=%s\\nTHROTTLE_AGENT_TTYD_PORT=%s\\n\" \(httpPort) \(ttydPort) > /etc/throttle-agent.env'\n\n"
         s += "# 5) systemd unit + start:\n"
         s += "\(ssh) 'cat > /etc/systemd/system/throttle-agent.service' <<'UNIT'\n"
         s += unitText()
         s += "UNIT\n"
         s += "\(ssh) 'systemctl daemon-reload && systemctl enable --now throttle-agent && sleep 3 && systemctl is-active throttle-agent'\n\n"
-        s += "# 6) if this box sits behind a NAT/firewall (e.g. a Proxmox LXC reached over\n"
-        s += "#    through a host DNAT rule), make sure BOTH \(httpPort) (HTTP API) and \(ttydPort)\n"
-        s += "#    (ttyd) are forwarded — not just the API port. This script does not touch\n"
-        s += "#    firewall/NAT rules on the host; that's a one-time manual step outside the box.\n"
-        s += "# 7) One manual step that genuinely can't be scripted — your own OAuth login.\n"
-        s += "#    Mint a long-lived token IN A REAL TERMINAL (needs a TTY; -tt forces one\n"
-        s += "#    through `pct exec`/ssh):\n"
-        s += "#      ssh\(keyOpt) -tt -p \(target.port) \(target.user)@\(target.host) 'claude setup-token'\n"
-        s += "#    open the URL it prints, authorize, paste the code back. Then wire the printed\n"
-        s += "#    token so the agent's spawned sessions inherit it (the agent runs `claude` via\n"
-        s += "#    a login shell, so ~/.profile is the reliable place — systemd's own env has no\n"
-        s += "#    HOME/PATH for it):\n"
-        s += "#      \(ssh) 'umask 077; echo export CLAUDE_CODE_OAUTH_TOKEN=PASTE_TOKEN >> ~/.profile'\n"
-        s += "#      \(ssh) 'systemctl restart throttle-agent'\n"
-        s += "# 8) back in Throttle: click Verify, then Offload with context — real sessions\n"
+        s += "# 6) publish the loopback-only agent through tailnet-only HTTPS. This requires\n"
+        s += "#    Tailscale on the SAME host and HTTPS enabled for the tailnet. Never use Funnel.\n"
+        s += "\(ssh) 'command -v tailscale >/dev/null && tailscale serve --bg --yes --https=\(httpPort) localhost:\(httpPort)'\n"
+        s += "# 7) back in Throttle, use this node's full *.ts.net MagicDNS name, click Verify,\n"
+        s += "#    then complete Claude authorization in the app. The token is stored in a 0600\n"
+        s += "#    purpose-scoped file, never ~/.profile or a process argument.\n"
+        s += "# 8) Offload with context — real sessions\n"
         s += "#    (with your Mac's transcript resumed) appear instead of the dummy.\n"
         return s
     }
@@ -180,7 +188,8 @@ public enum EdgeAgentService {
             DeployStep(label: "Token + systemd unit", script: """
                 set -euo pipefail
                 umask 077
-                printf 'THROTTLE_AGENT_TOKEN=%s\\nTHROTTLE_AGENT_PORT=%s\\nTHROTTLE_AGENT_TTYD_PORT=%s\\n' \(shq(token)) \(httpPort) \(ttydPort) > /etc/throttle-agent.env
+                printf '%s\\n' \(shq(token)) > /etc/throttle-agent.token
+                printf 'THROTTLE_AGENT_PORT=%s\\nTHROTTLE_AGENT_TTYD_PORT=%s\\n' \(httpPort) \(ttydPort) > /etc/throttle-agent.env
                 cat > /etc/systemd/system/throttle-agent.service <<'UNIT'
                 \(unitText())UNIT
                 systemctl daemon-reload
@@ -189,12 +198,19 @@ public enum EdgeAgentService {
                 sleep 2
                 systemctl is-active throttle-agent
                 """),
+            DeployStep(label: "Tailnet HTTPS (Tailscale Serve)", script: """
+                set -euo pipefail
+                command -v tailscale >/dev/null || { echo 'Tailscale is required on the Edge host; refusing insecure exposure' >&2; exit 1; }
+                tailscale status >/dev/null
+                tailscale serve --bg --yes --https=\(httpPort) localhost:\(httpPort)
+                tailscale serve status
+                """),
         ]
     }
 
     /// Displayed in the deploy step label; parsed from the bundled agent at call
     /// sites is overkill — keep in sync with `throttle-agent.mjs` VERSION.
-    public static let agentVersionHint = "0.8.0"
+    public static let agentVersionHint = "1.0.0"
 
     /// The bundled agent source (`throttle-agent.mjs` in the app bundle), or nil if
     /// missing (dev builds that didn't copy the resource).
@@ -221,6 +237,7 @@ public enum EdgeAgentService {
         [Service]
         Type=simple
         EnvironmentFile=/etc/throttle-agent.env
+        LoadCredential=agent-token:/etc/throttle-agent.token
         Environment=HOME=/root
         WorkingDirectory=/opt/throttle-agent
         ExecStart=/usr/bin/node /opt/throttle-agent/throttle-agent.mjs
@@ -229,6 +246,8 @@ public enum EdgeAgentService {
         # Only kill the node process on stop/restart — NOT the whole cgroup — so
         # tmux-hosted claude sessions survive an agent restart/upgrade.
         KillMode=process
+        UMask=0077
+        NoNewPrivileges=true
 
         [Install]
         WantedBy=multi-user.target
@@ -250,7 +269,10 @@ public enum EdgeAgentService {
     }
 
     public static func verify(baseURL: String, token: String, timeout: TimeInterval = 15) async -> VerifyResult {
-        guard let base = URL(string: baseURL) else { return VerifyResult(ok: false, sessionCount: nil, detail: "Bad URL") }
+        guard let base = validatedBaseURL(baseURL) else {
+            return VerifyResult(ok: false, sessionCount: nil,
+                                detail: "Edge requires HTTPS (HTTP is loopback-only)")
+        }
         let cfg = URLSessionConfiguration.ephemeral
         cfg.timeoutIntervalForRequest = timeout
         let session = URLSession(configuration: cfg)
@@ -289,8 +311,8 @@ public enum EdgeAgentService {
     /// local Claude rewire.
     public static func verifyMCP(baseURL: String, token: String,
                                  timeout: TimeInterval = 20) async -> MCPVerifyResult {
-        guard let url = URL(string: baseURL)?.appendingPathComponent("mcp") else {
-            return .init(ok: false, toolCount: nil, detail: "Bad MCP URL")
+        guard let url = validatedBaseURL(baseURL)?.appendingPathComponent("mcp") else {
+            return .init(ok: false, toolCount: nil, detail: "Edge MCP requires HTTPS")
         }
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = timeout
@@ -373,7 +395,7 @@ public enum EdgeAgentService {
     }
 
     public static func health(baseURL: String, timeout: TimeInterval = 10) async throws -> HealthInfo {
-        guard let url = URL(string: baseURL)?.appendingPathComponent("health") else { throw APIError.badURL }
+        guard let url = validatedBaseURL(baseURL)?.appendingPathComponent("health") else { throw APIError.badURL }
         var r = URLRequest(url: url); r.timeoutInterval = timeout
         let (data, _) = try await URLSession.shared.data(for: r)
         guard let h = try? JSONDecoder().decode(HealthInfo.self, from: data) else { throw APIError.decode }
@@ -434,6 +456,7 @@ public enum EdgeAgentService {
     public static func uploadTranscript(baseURL: String, token: String, remoteCwd: String,
                                         sessionId: String, fileURL: URL,
                                         timeout: TimeInterval = 120) async throws -> Int {
+        guard validatedBaseURL(baseURL) != nil else { throw APIError.badURL }
         var comps = URLComponents(string: baseURL)
         comps?.path = "/transcripts"
         comps?.queryItems = [URLQueryItem(name: "cwd", value: remoteCwd),
@@ -456,6 +479,7 @@ public enum EdgeAgentService {
     public static func uploadRepoBundle(baseURL: String, token: String, remoteCwd: String,
                                         branch: String, fileURL: URL,
                                         timeout: TimeInterval = 300) async throws -> Bool {
+        guard validatedBaseURL(baseURL) != nil else { throw APIError.badURL }
         var comps = URLComponents(string: baseURL)
         comps?.path = "/repos"
         comps?.queryItems = [URLQueryItem(name: "cwd", value: remoteCwd),
@@ -496,7 +520,7 @@ public enum EdgeAgentService {
 
     private static func request(_ baseURL: String, _ path: String, method: String, token: String,
                                 json: Data? = nil, timeout: TimeInterval = 15) async throws -> (Data, HTTPURLResponse) {
-        guard let url = URL(string: baseURL)?.appendingPathComponent(path) else { throw APIError.badURL }
+        guard let url = validatedBaseURL(baseURL)?.appendingPathComponent(path) else { throw APIError.badURL }
         var r = URLRequest(url: url); r.httpMethod = method; r.timeoutInterval = timeout
         r.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         if let json { r.httpBody = json; r.setValue("application/json", forHTTPHeaderField: "Content-Type") }

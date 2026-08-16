@@ -3,27 +3,14 @@ import OSLog
 
 enum ExactModeError: Error, Sendable, Equatable {
     case notSignedIn
-    case noClaudeTab
-    case safariNotRunning
-    case automationDenied
     case httpError(Int)
     case invalidResponse
-    case appleScript(String)
+    case session(String)
     case timeout
-    /// Safari discarded the claude.ai tab and the force-navigate
-    /// guard was throttled (already navigated within the last 30 min).
-    /// User-visible: "Safari has the tab discarded — reload manually".
-    case tabZombieRateLimited
 }
 
-/// Polls claude.ai's `/api/organizations/{org}/usage` endpoint by driving
-/// the user's running Safari via AppleScript. See `SafariBridge` for the
-/// rationale and full security model.
-///
-/// The previous implementation used a hidden WKWebView; that crashed on
-/// macOS 26.5 deep inside WebKit's font enumeration. Safari, running in
-/// its own process, has none of those issues — and we don't need to
-/// touch cookies ourselves.
+/// Polls Anthropic's OAuth usage endpoint first, then falls back to Throttle's
+/// own embedded claude.ai session. No Safari automation or Apple Events are used.
 @MainActor
 final class ExactModeService {
     static let shared = ExactModeService()
@@ -45,16 +32,10 @@ final class ExactModeService {
     // MARK: - Sign-in state
 
     /// True when the most recent poll succeeded with a fresh snapshot.
-    /// Different from "is signed in": signed-in state lives in Safari's
-    /// cookie store, which we can only check by attempting a fetch.
+    /// Different from "is signed in": the primary OAuth token and embedded
+    /// session can each expire independently, so freshness requires a fetch.
     var hasFreshSnapshot: Bool {
         lastSnapshot?.isFresh() == true
-    }
-
-    /// Open Safari to claude.ai/settings/usage so the user can sign in
-    /// (or just confirm they're signed in).
-    func openSignInPage() {
-        SafariBridge.openClaudeUsagePage()
     }
 
     // MARK: - Polling lifecycle
@@ -63,11 +44,11 @@ final class ExactModeService {
     ///
     /// Adaptive cadence: 5 min by default, drops to 60 s once any window
     /// crosses 80% utilization. This makes the meter live near the cap
-    /// (where accuracy actually matters) without spamming Safari/AppleScript
+    /// (where accuracy actually matters) without polling Anthropic excessively
     /// during normal sub-80% usage where weekly numbers barely move.
     func start() {
         guard pollTask == nil else { return }
-        logger.info("ExactMode polling started (Safari bridge)")
+        logger.info("ExactMode polling started (OAuth + embedded session)")
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.pollOnce()
@@ -82,9 +63,8 @@ final class ExactModeService {
     }
 
     /// 60 s when any window is hot (>=80%), 5 min otherwise. On consecutive
-    /// failures, exponential backoff with jitter so a dead claude.ai / captive
-    /// portal isn't hammered every 60 s (H10) — each retry also spins the hidden
-    /// WKWebView, which is steady pressure on a saturated Mac.
+    /// failures, exponential backoff with jitter so a dead endpoint / captive
+    /// portal isn't hammered every 60 s (H10).
     private func nextPollInterval() -> Duration {
         let base = Self.pollPolicy(now: Date(), snapshot: lastSnapshot, consecutiveFailures: consecutiveFailures)
         // Jitter only the failure-backoff branch (±20%) so a dead claude.ai /
@@ -166,7 +146,7 @@ final class ExactModeService {
         if let snap = try? await OAuthUsageProvider.fetch() {
             return .success(snap)
         }
-        logger.info("OAuth usage path unavailable — falling back to embedded/Safari")
+        logger.info("OAuth usage path unavailable — falling back to embedded session")
 
         // Always try the embedded session first. The embedded path's
         // own JS reports `_throttle_status: 401` when the cookie store
@@ -180,35 +160,13 @@ final class ExactModeService {
             return .success(snap)
         } catch let err as EmbeddedSessionError {
             logger.error("embedded session error: \(err.localizedDescription, privacy: .public)")
-            // Fall through to Safari Bridge only for `notSignedIn` /
-            // `httpError(401)` — those mean the embedded path has no
-            // usable cookie. For other errors (decode, scriptError,
-            // invalidResponse) the embedded path failed in a way the
-            // Safari Bridge wouldn't fix; surface the embedded error.
-            if case .notSignedIn = err { /* fall through */ }
-            else if case .httpError(let c) = err, c == 401 || c == 403 { /* fall through */ }
-            else { return .failure(mapEmbedded(err)) }
+            return .failure(mapEmbedded(err))
         } catch let decodeErr as DecodingError {
             logger.error("ExactSnapshot decode failed: \(String(describing: decodeErr), privacy: .public)")
             return .failure(.invalidResponse)
         } catch {
             logger.error("exact mode embedded unknown error: \(error.localizedDescription, privacy: .public)")
-            // Fall through to Safari Bridge for unknown errors —
-            // could be transient (page not loaded, navigation hung).
-        }
-
-        // Legacy: Safari Bridge fallback
-        let bridgeResult = await SafariBridge.fetchUsageJSON()
-        switch bridgeResult {
-        case .success(let data):
-            do {
-                let snap = try ExactSnapshot.decode(from: data)
-                return .success(snap)
-            } catch {
-                return .failure(.invalidResponse)
-            }
-        case .failure(let err):
-            return .failure(map(err))
+            return .failure(.session(error.localizedDescription))
         }
     }
 
@@ -217,22 +175,8 @@ final class ExactModeService {
         case .notSignedIn:        return .notSignedIn
         case .httpError(let c):   return .httpError(c)
         case .invalidResponse:    return .invalidResponse
-        case .scriptError(let s): return .appleScript(s)  // reuse existing variant
-        case .decode(let s):      return .appleScript(s)
-        }
-    }
-
-    private func map(_ err: SafariBridge.BridgeError) -> ExactModeError {
-        switch err {
-        case .safariNotRunning:    return .safariNotRunning
-        case .noClaudeTab:         return .noClaudeTab
-        case .automationDenied:    return .automationDenied
-        case .notSignedIn:         return .notSignedIn
-        case .httpError(let c):    return .httpError(c)
-        case .invalidResponse:     return .invalidResponse
-        case .appleScript(let s):  return .appleScript(s)
-        case .scriptError(let s):  return .appleScript(s)  // map to existing variant
-        case .tabZombieRateLimited: return .tabZombieRateLimited
+        case .scriptError(let s): return .session(s)
+        case .decode(let s):      return .session(s)
         }
     }
 }

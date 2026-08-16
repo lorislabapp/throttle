@@ -229,7 +229,7 @@ private struct EdgeAgentSettingsSheet: View {
         NavigationStack {
             Form {
                 Section("Agent") {
-                    TextField("Host (IP address or hostname)", text: $svc.host)
+                    TextField("Full HTTPS hostname (*.ts.net)", text: $svc.host)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                     TextField("Port", text: $portText)
@@ -238,6 +238,10 @@ private struct EdgeAgentSettingsSheet: View {
                     SecureField("Token", text: $svc.token)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                }
+                Section {
+                    Text("Edge is HTTPS-only off-device. Use the full MagicDNS name configured by Tailscale Serve; IP-address and cleartext endpoints are refused.")
+                        .font(.footnote).foregroundStyle(.secondary)
                 }
                 if let v = svc.lastVerify {
                     Section("Status") {

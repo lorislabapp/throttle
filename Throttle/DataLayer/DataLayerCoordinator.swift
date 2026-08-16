@@ -62,7 +62,7 @@ final class DataLayerCoordinator {
 
         // Periodic Claude Code detection refresh (every 5 seconds)
         // Fixes first-run UI stuck on "not detected" even after ~/.claude/projects/ appears
-        claudeCodeDetectionTask = Task { [weak self, weak appState] in
+        claudeCodeDetectionTask = Task { [weak appState] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(5))
                 let detected = ClaudeCodePathProvider.projectsDirectory() != nil

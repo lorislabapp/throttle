@@ -16,6 +16,14 @@ import GRDB
 /// `@unchecked Sendable`: mutable state (`listener`, `isListening`) is confined to
 /// the serial `q`; `WebRenderer` is `@MainActor` and reached only via a hop.
 final class WebRenderBridge: @unchecked Sendable {
+    private final class WriterBox: @unchecked Sendable {
+        let value: any DatabaseWriter
+
+        init(_ value: any DatabaseWriter) {
+            self.value = value
+        }
+    }
+
     static let shared = WebRenderBridge()
 
     private let port: UInt16
@@ -109,6 +117,7 @@ final class WebRenderBridge: @unchecked Sendable {
         let timeoutMs = (obj["timeoutMs"] as? Int) ?? 15_000
         let useCache = (obj["useCache"] as? Bool) ?? true
         let ttl = TimeInterval((obj["ttlSeconds"] as? Int) ?? 3_600)
+        let cacheWriter = writer.map(WriterBox.init)
 
         // Cache short-circuit: a recent identical render skips WKWebView entirely.
         if useCache, let writer, let hit = WebResearchCache.lookup(url, ttl: ttl, reader: writer) {
@@ -129,22 +138,33 @@ final class WebRenderBridge: @unchecked Sendable {
                 "renderMs": r.renderMs, "truncated": r.truncated, "waitReason": r.waitReason,
                 "cacheHit": false, "error": r.error as Any,
             ]
-            self.q.async { self.send(conn, status: "200 OK", json: payload) }
+            let responseBody = Self.encode(payload)
+            self.q.async { self.send(conn, status: "200 OK", body: responseBody) }
             // Record for future cache hits, off the response path so it never adds latency.
-            if r.ok, let writer = self.writer {
+            if r.ok, let cacheWriter {
                 let text = r.text, title = r.title
                 DispatchQueue.global(qos: .utility).async {
-                    WebResearchCache.record(url: url, text: text, title: title, renderMs: r.renderMs, sessionId: nil, writer: writer)
+                    WebResearchCache.record(
+                        url: url, text: text, title: title, renderMs: r.renderMs,
+                        sessionId: nil, writer: cacheWriter.value
+                    )
                 }
             }
         }
     }
 
     private func send(_ conn: NWConnection, status: String, json: [String: Any]) {
-        let body = (try? JSONSerialization.data(withJSONObject: json, options: [.withoutEscapingSlashes])) ?? Data("{}".utf8)
+        send(conn, status: status, body: Self.encode(json))
+    }
+
+    private func send(_ conn: NWConnection, status: String, body: Data) {
         let head = "HTTP/1.1 \(status)\r\nContent-Type: application/json\r\nContent-Length: \(body.count)\r\nConnection: close\r\n\r\n"
         var out = Data(head.utf8); out.append(body)
         conn.send(content: out, completion: .contentProcessed { _ in conn.cancel() })
+    }
+
+    private static func encode(_ json: [String: Any]) -> Data {
+        (try? JSONSerialization.data(withJSONObject: json, options: [.withoutEscapingSlashes])) ?? Data("{}".utf8)
     }
 
     // MARK: - HTTP helpers (shared shape with TraycerReceiver)

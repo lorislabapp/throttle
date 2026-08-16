@@ -8,6 +8,25 @@ import Foundation
 /// posture as the budget/cost tools when their snapshot is missing.
 enum WebRenderClient {
 
+    /// URLSession completion handlers are `@Sendable`. Keep the synchronous
+    /// hand-off behind a lock instead of mutating a captured local variable.
+    private final class ResponseBox: @unchecked Sendable {
+        private let lock = NSLock()
+        private var value: [String: Any]?
+
+        func store(_ value: [String: Any]) {
+            lock.lock()
+            self.value = value
+            lock.unlock()
+        }
+
+        func load() -> [String: Any]? {
+            lock.lock()
+            defer { lock.unlock() }
+            return value
+        }
+    }
+
     /// Returns the MCP `content`-ready text for a `web_render` call.
     static func render(url: String, wait: String?, waitSelector: String?, maxChars: Int?, timeoutMs: Int?, useCache: Bool? = nil) -> String {
         var req: [String: Any] = ["url": url]
@@ -56,16 +75,16 @@ enum WebRenderClient {
         r.timeoutInterval = timeout
 
         let sem = DispatchSemaphore(value: 0)
-        var out: [String: Any]?
+        let response = ResponseBox()
         let cfg = URLSessionConfiguration.ephemeral
         cfg.timeoutIntervalForRequest = timeout
         let task = URLSession(configuration: cfg).dataTask(with: r) { d, _, _ in
             defer { sem.signal() }
             guard let d, let obj = try? JSONSerialization.jsonObject(with: d) as? [String: Any] else { return }
-            out = obj
+            response.store(obj)
         }
         task.resume()
         _ = sem.wait(timeout: .now() + timeout + 2)
-        return out
+        return response.load()
     }
 }

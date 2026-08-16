@@ -27,11 +27,10 @@ actor ClaudeWebSessionStore {
     }
 }
 
-/// AI provider that drives claude.ai's chat endpoint via the user's
-/// logged-in Safari session. No API key, no extra cost — every chat
+/// AI provider that drives claude.ai's chat endpoint via Throttle's embedded,
+/// user-authenticated session. No API key, no extra cost — every chat
 /// counts against the user's existing Claude Pro/Max subscription, the
-/// same way Throttle's Exact Mode reads `/api/organizations/{org}/usage`
-/// through Safari's cookies.
+/// same way the embedded Exact Mode fallback reads usage.
 ///
 /// Reverse-engineered protocol (claude.ai web app, April 2026):
 ///   1. GET  /api/organizations           → list of orgs, take first
@@ -53,53 +52,23 @@ struct ClaudeWebSessionProvider: AIProvider {
 
     var isAvailable: Bool {
         get async {
-            // Prefer the embedded session (no Safari needed). Fall back
-            // to the Safari Bridge if Throttle's own session isn't
-            // signed in yet.
-            if await EmbeddedClaudeSession.shared.isSignedIn() { return true }
-            return await MainActor.run { SafariBridge.isSafariRunning }
+            await EmbeddedClaudeSession.shared.isSignedIn()
         }
     }
 
-    /// Two execution media — Throttle's own embedded WKWebView (no
-    /// Safari needed, signed in once per Mac) or the legacy Safari
-    /// Bridge fallback. Picked once per chat turn so the kickoff +
-    /// poll + retry stays on one medium.
-    private enum ExecMedium {
-        case embedded
-        case safariBridge
-    }
-
-    private func currentMedium() async -> ExecMedium {
-        if await EmbeddedClaudeSession.shared.isSignedIn() { return .embedded }
-        return .safariBridge
-    }
-
-    /// Unified JS executor. Runs `js` against whichever medium is
-    /// active and returns the JSON-decodable result as Data. Maps
-    /// medium-specific errors into a single shape so the streaming
-    /// loop doesn't branch on every poll.
-    private func runScript(_ js: String, medium: ExecMedium) async -> Result<Data, AIProviderError> {
-        switch medium {
-        case .embedded:
-            do {
-                let str = try await EmbeddedClaudeSession.shared.runJS(js)
-                guard let data = str.data(using: .utf8) else {
-                    return .failure(.decode("non-UTF8 from embedded session"))
-                }
-                return .success(data)
-            } catch let err as EmbeddedSessionError {
-                return .failure(.unavailable(reason: err.localizedDescription, recoverable: true))
-            } catch {
-                return .failure(.unavailable(reason: error.localizedDescription, recoverable: true))
+    /// Runs JavaScript only in Throttle's embedded session and returns a
+    /// JSON-decodable payload. Safari automation is intentionally not a fallback.
+    private func runScript(_ js: String) async -> Result<Data, AIProviderError> {
+        do {
+            let str = try await EmbeddedClaudeSession.shared.runJS(js)
+            guard let data = str.data(using: .utf8) else {
+                return .failure(.decode("non-UTF8 from embedded session"))
             }
-        case .safariBridge:
-            let r = await SafariBridge.runClaudeAIScript(js)
-            switch r {
-            case .success(let data): return .success(data)
-            case .failure(let err):
-                return .failure(.unavailable(reason: describe(err), recoverable: true))
-            }
+            return .success(data)
+        } catch let err as EmbeddedSessionError {
+            return .failure(.unavailable(reason: err.localizedDescription, recoverable: true))
+        } catch {
+            return .failure(.unavailable(reason: error.localizedDescription, recoverable: true))
         }
     }
 
@@ -135,17 +104,11 @@ struct ClaudeWebSessionProvider: AIProvider {
             reuse = nil
         }
 
-        // Pick execution medium once per turn — Throttle's embedded
-        // WKWebView session if signed in, Safari Bridge legacy
-        // otherwise. The kickoff + poll + retry stay on the same
-        // medium so we don't fight inconsistent state.
-        let medium = await currentMedium()
-
         // Kickoff: sync-XHR org+conv setup, then fires off an async fetch
         // streaming the SSE response into `window.__throttle_buf`. Returns
         // immediately with `{_throttle_streaming: true, conv, org}` so we
         // can cache the conv ID before the model has finished generating.
-        let kickoff = await runScript(buildStreamingJS(prompt: promptPayload, reuse: reuse), medium: medium)
+        let kickoff = await runScript(buildStreamingJS(prompt: promptPayload, reuse: reuse))
 
         switch kickoff {
         case .failure(let err):
@@ -200,11 +163,11 @@ struct ClaudeWebSessionProvider: AIProvider {
                         totalPolls += 1
                         if totalPolls > maxTotalPolls {
                             streamingDropped = true
-                            streamingError = "stream still running after 3 min"
+                            streamingError = "stream still running after 3 min (\(logSnapshot))"
                             break pollLoop
                         }
                         try? await Task.sleep(nanoseconds: 150_000_000)
-                        let pollResult = await self.runScript(pollJS, medium: medium)
+                        let pollResult = await self.runScript(pollJS)
                         switch pollResult {
                         case .failure(let providerErr):
                             continuation.finish(throwing: providerErr)
@@ -248,7 +211,7 @@ struct ClaudeWebSessionProvider: AIProvider {
                     // one final chunk with the full response.
                     if streamingDropped, emittedLength == 0 {
                         let legacyJS = self.buildJS(prompt: promptPayload, reuse: reuse)
-                        let legacyResult = await self.runScript(legacyJS, medium: medium)
+                        let legacyResult = await self.runScript(legacyJS)
                         switch legacyResult {
                         case .failure(let providerErr):
                             continuation.finish(throwing: providerErr)

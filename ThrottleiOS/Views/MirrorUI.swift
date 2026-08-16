@@ -75,6 +75,7 @@ import UIKit
 /// `UINotificationFeedbackGenerator.FeedbackType` — that type is unavailable on
 /// visionOS (which shares this file via ThrottleiOS/Services), so referencing it
 /// even in a signature broke the visionOS build. UIKit haptics are a no-op there.
+@MainActor
 enum Haptics {
     enum Notice { case success, warning, error }
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Build a notarized DMG for Throttle.
+# Build and validate a signed DMG for Throttle.
+# Notarization is fail-closed: pass --notarize only after explicit approval.
 # Requires: xcodebuild, notarytool credentials in keychain under profile name
 # "throttle-notary" (configured once via:
 #   xcrun notarytool store-credentials throttle-notary --apple-id you@example --team-id TDV6D5L785)
@@ -12,8 +13,23 @@
 set -Eeuo pipefail
 trap 'rc=$?; echo "✘ build-dmg.sh failed at line $LINENO (exit $rc)" >&2; exit $rc' ERR
 
+NOTARIZE=false
+case "${1:-}" in
+    --notarize) NOTARIZE=true ;;
+    --prepare-only|"") ;;
+    *) echo "usage: $0 [--prepare-only|--notarize]" >&2; exit 64 ;;
+esac
+
 PROJECT_DIR="${PROJECT_DIR:-$HOME/GitHub/Throttle}"
 cd "$PROJECT_DIR"
+
+LOGIN_KEYCHAIN="${LOGIN_KEYCHAIN:-$HOME/Library/Keychains/login.keychain-db}"
+SIGNING_IDENTITY="Developer ID Application: Christine Martin (TDV6D5L785)"
+SIGNING_SHA1="8333AB7CD909731530AC62DD28CCA47C8D288225"
+if ! security find-identity -v -p codesigning "$LOGIN_KEYCHAIN" | grep -Fq "$SIGNING_SHA1"; then
+    echo "✘ Required Developer ID identity is unavailable in $LOGIN_KEYCHAIN: $SIGNING_SHA1" >&2
+    exit 78
+fi
 
 echo "→ Generating Xcode project"
 xcodegen generate
@@ -44,7 +60,7 @@ cat > "$EXPORT_PLIST" <<PLIST
     <key>signingStyle</key>
     <string>manual</string>
     <key>signingCertificate</key>
-    <string>Developer ID Application</string>
+    <string>$SIGNING_SHA1</string>
     <key>provisioningProfiles</key>
     <dict>
         <key>com.lorislab.throttle</key>
@@ -64,23 +80,33 @@ xcodebuild -exportArchive \
 
 APP_PATH="$EXPORT_DIR/Throttle.app"
 
+echo "→ Strictly verifying exported app and widget"
+codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+codesign --verify --strict --verbose=2 "$APP_PATH/Contents/PlugIns/ThrottleWidget.appex"
+
 echo "→ Smoke-testing the build"
 "$PROJECT_DIR/scripts/smoke-test.sh" "$APP_PATH"
 
-echo "→ Building DMG (hdiutil — no create-dmg AppleScript, which needs Automation→Finder TCC and fails headless / on macOS betas)"
+echo "→ Building DMG (diskutil — no create-dmg AppleScript, which needs Automation→Finder TCC and fails headless / on macOS betas)"
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist")
 DMG_PATH="$PROJECT_DIR/build/Throttle-${VERSION}.dmg"
 rm -f "$DMG_PATH"
 STAGING=$(mktemp -d)
 cp -R "$APP_PATH" "$STAGING/"
 ln -s /Applications "$STAGING/Applications"   # drag-to-install
-hdiutil create -volname "Throttle" -srcfolder "$STAGING" -ov -format UDZO "$DMG_PATH"
+diskutil image create from --volumeName "Throttle" --format UDZO "$STAGING" "$DMG_PATH"
 rm -rf "$STAGING"
 
 echo "→ Signing DMG itself (Gatekeeper trusts the container too)"
-codesign --force --sign "Developer ID Application: Christine Martin (TDV6D5L785)" \
+codesign --force --sign "$SIGNING_SHA1" --keychain "$LOGIN_KEYCHAIN" \
     --options runtime --timestamp "$DMG_PATH"
-codesign --verify --verbose=2 "$DMG_PATH"
+codesign --verify --strict --verbose=2 "$DMG_PATH"
+
+if [ "$NOTARIZE" != true ]; then
+    echo "→ Prepared locally: $DMG_PATH"
+    echo "→ Notarization NOT RUN. Re-run with --notarize after explicit approval."
+    exit 0
+fi
 
 echo "→ Submitting for notarization"
 xcrun notarytool submit "$DMG_PATH" \

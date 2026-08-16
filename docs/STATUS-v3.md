@@ -1,4 +1,6 @@
-# Throttle v3.0 — STATUS (single source of truth, 2026-06-13)
+# ARCHIVED SNAPSHOT — Throttle v3.0 status (2026-06-13)
+
+> Not a current source of truth. This snapshot predates the multi-provider cockpit, mobile remote input and self-hosted Edge surface. Revalidate every claim against current code, `README.md`, `PRIVACY.md`, tests and release evidence.
 
 Master index after the big build+research session. Build is GREEN, git is clean.
 Throttle is now the **cost & health cockpit FOR a Claude Code AIOS** ("CFO of your

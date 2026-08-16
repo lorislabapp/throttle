@@ -59,11 +59,11 @@ struct SessionOffloadSheet: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("One click: Throttle SSHes to your box, deploys the bearer-gated Streamable-HTTP edge agent, clones your git repository, verifies its MCP tools, then backs up and routes ~/.claude.json to it.")
+                    Text("One click: Throttle SSHes to a Tailscale node, keeps the agent loopback-only, publishes it through tailnet-only HTTPS, clones your repository, verifies MCP, then backs up and routes ~/.claude.json.")
                         .font(.system(size: 11)).foregroundStyle(.secondary)
 
                     group("Agent") {
-                        field("Host (LAN/Tailscale)", $svc.host, "10.9.8.131")
+                        field("Full Tailscale hostname (*.ts.net)", $svc.host, "edge.example.ts.net")
                         HStack {
                             field("Port", Binding(get: { String(svc.port) }, set: { svc.port = Int($0) ?? 8787 }), "8787")
                             field("SSH user", $user, "root")

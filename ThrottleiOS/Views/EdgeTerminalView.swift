@@ -9,17 +9,6 @@ import ThrottleShared
 /// after 5 min idle) per the non-negotiable write-unlock default. Connection state
 /// is surfaced through `TerminalConnection` so a failed attach never leaves a blank
 /// terminal with no explanation.
-/// TerminalView that drops first-responder when it leaves the window. SwiftUI's
-/// TabView keeps non-selected tabs' hierarchies alive, so without this the
-/// terminal stays firstResponder after a bottom-tab switch and SwiftTerm's
-/// keyboard accessory bar (esc/ctrl/arrows) sticks over EVERY tab.
-final class ResigningTerminalView: TerminalView {
-    override func willMove(toWindow newWindow: UIWindow?) {
-        super.willMove(toWindow: newWindow)
-        if newWindow == nil, isFirstResponder { _ = resignFirstResponder() }
-    }
-}
-
 struct EdgeTerminalView: UIViewRepresentable {
     let session: EdgeAgentService.RemoteSession
     let lockState: TerminalLockState
@@ -41,7 +30,7 @@ struct EdgeTerminalView: UIViewRepresentable {
         // See RemoteTerminalView: stop SGR mouse-motion reports flooding the shell when
         // a TUI leaves `ESC[?1003h` set on exit. Matches the Mac fix (c6ae798).
         tv.allowMouseReporting = false
-        Self.applyOpaqueBackground(tv)
+        TerminalRendering.applyOpaqueBackground(tv)
         tv.terminalDelegate = context.coordinator
         context.coordinator.terminal = tv
         context.coordinator.cachedView = tv
@@ -49,21 +38,12 @@ struct EdgeTerminalView: UIViewRepresentable {
         return tv
     }
 
-    /// Opaque black background so keyboard-driven reflows don't leave transparent
-    /// gaps where the previous (wider) rendering bleeds through — ported from 404's
-    /// terminal engine, where this fixed the "can't see anything" rendering bugs.
-    static func applyOpaqueBackground(_ tv: TerminalView) {
-        tv.isOpaque = true
-        tv.backgroundColor = .black
-        tv.clearsContextBeforeDrawing = true
-    }
-
     private func startAttach(_ coord: Coordinator, geometry: Terminal) {
         connection.state = .connecting
         let svc = EdgeSessionsService.shared
         let session = session, keySender = keySender, lockState = lockState, connection = connection
         coord.attachTask?.cancel()
-        coord.attachTask = Task {
+        coord.attachTask = Task { [coord] in
             do {
                 let (port, path) = try await svc.attach(id: session.id)
                 if Task.isCancelled { return }
@@ -80,10 +60,12 @@ struct EdgeTerminalView: UIViewRepresentable {
                 coord.client = client
                 keySender.send = { [weak client] bytes in
                     guard lockState.unlocked else { lockState.requestUnlockForTyping(); return }
+                    lockState.registerWriteActivity()
                     client?.sendInput(bytes)
                 }
                 client.connect(host: svc.host, port: port, path: path, token: svc.token,
-                               cols: geometry.cols, rows: geometry.rows)
+                               cols: geometry.cols, rows: geometry.rows,
+                               secure: svc.baseURL.hasPrefix("https://"))
             } catch {
                 await MainActor.run {
                     connection.state = .failed("Couldn't reach the session — check the host address and that your Mac is reachable on this network.")
@@ -134,6 +116,7 @@ struct EdgeTerminalView: UIViewRepresentable {
         // broken on iOS.
         func send(source: TerminalView, data: ArraySlice<UInt8>) {
             guard lockState.unlocked else { lockState.requestUnlockForTyping(); return }
+            lockState.registerWriteActivity()
             client?.sendInput(Array(data))
         }
         func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {

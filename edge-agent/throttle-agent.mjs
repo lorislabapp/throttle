@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Throttle Edge Agent — runs on a Proxmox LXC (or any Linux/macOS host) to offload
 // Claude Code sessions off a RAM-constrained Mac. It SPAWNS + MEASURES sessions and
-// exposes a token-gated HTTP API the Mac cockpit talks to. It is NOT a data-path
+// exposes a token-gated loopback HTTP API behind an authenticated HTTPS reverse
+// proxy. It is NOT a data-path
 // proxy: `claude` on this host reaches Anthropic directly; the agent never sees the
 // request/response bodies. Lifecycle (start/stop/pause/resume) plus, on explicit
 // attach, a keystroke-streaming PTY bridge (ttyd wrapping tmux) — Kevin's 2026-07-11
@@ -10,14 +11,15 @@
 // itself is still never proxied.
 //
 // Deps: Node built-ins only (keep the LXC light) + the `ttyd` binary on PATH.
-// Transport security: bind to a Tailscale/LAN address and gate every request on a
-// bearer token; put the host behind Tailscale for an encrypted path (mTLS is a
-// future hardening). ttyd reuses the same shared token as HTTP Basic credentials —
-// no separate secret to manage.
+// Transport security: non-loopback binds are refused. Tailscale Serve (default)
+// or an equivalent trusted HTTPS reverse proxy terminates TLS. ttyd also stays on
+// loopback and is reachable only through the authenticated WebSocket proxy below,
+// so no credential appears in ttyd's argv.
 //
 // Config via env:
-//   THROTTLE_AGENT_TOKEN   required — shared bearer token (Mac sends it)
-//   THROTTLE_AGENT_HOST    bind address (default 0.0.0.0)
+//   THROTTLE_AGENT_TOKEN_FILE production bearer-token file (systemd credential)
+//   THROTTLE_AGENT_TOKEN   development-only fallback
+//   THROTTLE_AGENT_HOST    loopback bind address (default 127.0.0.1)
 //   THROTTLE_AGENT_PORT    default 8787
 //   THROTTLE_AGENT_TTYD_PORT   default 8788 — port for the on-demand ttyd attach
 //   THROTTLE_AGENT_CLAUDE_CMD  the launch command (default "claude"); tests set
@@ -36,13 +38,23 @@ import assert from 'node:assert/strict';
 
 const execFileP = promisify(execFile);
 
-const TOKEN = process.env.THROTTLE_AGENT_TOKEN;
-const HOST = process.env.THROTTLE_AGENT_HOST || '0.0.0.0';
+function readAgentToken() {
+  const explicit = process.env.THROTTLE_AGENT_TOKEN_FILE;
+  const credentialDir = process.env.CREDENTIALS_DIRECTORY;
+  const file = explicit || (credentialDir ? path.join(credentialDir, 'agent-token') : null);
+  if (file) {
+    try { return fs.readFileSync(file, 'utf8').trim(); } catch {}
+  }
+  return process.env.THROTTLE_AGENT_TOKEN;
+}
+
+const TOKEN = readAgentToken();
+const HOST = process.env.THROTTLE_AGENT_HOST || '127.0.0.1';
 const PORT = parseInt(process.env.THROTTLE_AGENT_PORT || '8787', 10);
 const TTYD_PORT = parseInt(process.env.THROTTLE_AGENT_TTYD_PORT || '8788', 10);
 const CLAUDE_CMD = process.env.THROTTLE_AGENT_CLAUDE_CMD || 'claude';
 const PROJECTS_DIR = process.env.CLAUDE_PROJECTS_DIR || path.join(os.homedir(), '.claude', 'projects');
-const VERSION = '0.9.0';
+const VERSION = '1.0.0';
 const MISSION_ROOT = process.env.THROTTLE_AGENT_MISSION_ROOT || '/opt/throttle-agent/missions';
 const INCOMING_ROOT = process.env.THROTTLE_AGENT_INCOMING_ROOT || '/opt/throttle-agent/incoming';
 const MAX_MISSION_TASK_BYTES = 32 * 1024;
@@ -88,11 +100,13 @@ if (process.argv.includes('--self-test')) {
     patchSha256: 'b'.repeat(64), patchBytes: 42, exitCode: 0 };
   assert.equal(missionManifestHmac('secret', manifest), '7f6ae1e531647ec4ee00372443eace7ea35fd7d73e0e1c8214aa3e3ad6b64c2f');
   assert.notEqual(missionManifestHmac('secret', manifest), missionManifestHmac('other', manifest));
+  assert.equal(isLoopbackHost('127.0.0.1'), true);
+  assert.equal(isLoopbackHost('0.0.0.0'), false);
   console.log('throttle edge mission contract: ok');
   process.exit(0);
 }
 
-if (!TOKEN) { console.error('FATAL: set THROTTLE_AGENT_TOKEN'); process.exit(1); }
+if (!TOKEN) { console.error('FATAL: provide the bearer token through a protected credential file'); process.exit(1); }
 
 // Registry of sessions this agent spawned. tmux is the process host so a crashed
 // agent doesn't kill sessions; on restart we re-discover by tmux name prefix.
@@ -142,8 +156,8 @@ function killTtyd() {
 async function attachTtyd(id) {
   if (ttydSessionId === id && ttydProc && !ttydProc.killed) return; // already attached
   killTtyd();
-  ttydProc = spawn('ttyd', ['-p', String(TTYD_PORT), '-W', '-c', `throttle:${TOKEN}`,
-    'tmux', '-u', 'attach-session', '-t', PREFIX + id],
+  ttydProc = spawn('ttyd', ['-i', '127.0.0.1', '-p', String(TTYD_PORT), '-W',
+    '-H', 'X-Throttle-Authorized', 'tmux', '-u', 'attach-session', '-t', PREFIX + id],
     { stdio: 'ignore', env: { ...process.env, LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8' } });
   ttydSessionId = id;
   ttydProc.once('exit', () => { if (ttydSessionId === id) { ttydProc = null; ttydSessionId = null; } });
@@ -159,14 +173,23 @@ async function attachTtyd(id) {
 // Instead we run it inside a throwaway tmux session and screen-scrape: the Mac
 // app fetches the login URL from /auth/peek, the user authorizes in their
 // browser, pastes the code into Throttle, /auth/submit types it back in, and
-// the agent persists the minted token to ~/.profile itself. Zero terminal.
+// the agent persists the minted token to a private purpose-scoped file. Zero terminal.
 const AUTH_SESSION = 'throttle-auth';
 const HOME_DIR = process.env.HOME || os.homedir();
+const OAUTH_TOKEN_PATH = process.env.THROTTLE_AGENT_OAUTH_TOKEN_FILE
+  || '/opt/throttle-agent/claude-oauth-token';
+
+function isLoopbackHost(host) {
+  return ['127.0.0.1', '::1', 'localhost'].includes(host);
+}
+
+if (!isLoopbackHost(HOST)) {
+  console.error('FATAL: THROTTLE_AGENT_HOST must be loopback; expose it only through an authenticated HTTPS reverse proxy');
+  process.exit(1);
+}
 
 function claudeAuthReady() {
-  try {
-    if (fs.readFileSync(path.join(HOME_DIR, '.profile'), 'utf8').includes('CLAUDE_CODE_OAUTH_TOKEN')) return true;
-  } catch {}
+  try { if (fs.statSync(OAUTH_TOKEN_PATH).size > 20) return true; } catch {}
   try { fs.accessSync(path.join(HOME_DIR, '.claude', '.credentials.json')); return true; } catch {}
   return false;
 }
@@ -200,14 +223,16 @@ async function authSubmit(code) {
 }
 
 function persistOAuthToken(tok) {
-  const profile = path.join(HOME_DIR, '.profile');
-  let cur = '';
-  try { cur = fs.readFileSync(profile, 'utf8'); } catch {}
-  const line = `export CLAUDE_CODE_OAUTH_TOKEN=${tok}`;
-  const next = cur.includes('CLAUDE_CODE_OAUTH_TOKEN')
-    ? cur.replace(/export CLAUDE_CODE_OAUTH_TOKEN=\S+/, line)
-    : cur + (cur.endsWith('\n') || cur === '' ? '' : '\n') + line + '\n';
-  fs.writeFileSync(profile, next, { mode: 0o600 });
+  fs.mkdirSync(path.dirname(OAUTH_TOKEN_PATH), { recursive: true, mode: 0o700 });
+  const tmp = `${OAUTH_TOKEN_PATH}.tmp`;
+  fs.writeFileSync(tmp, `${tok}\n`, { mode: 0o600 });
+  fs.renameSync(tmp, OAUTH_TOKEN_PATH);
+  fs.chmodSync(OAUTH_TOKEN_PATH, 0o600);
+}
+
+function oauthShellPrefix() {
+  const file = `'${OAUTH_TOKEN_PATH.replaceAll("'", "'\\''")}'`;
+  return `if [ -r ${file} ]; then CLAUDE_CODE_OAUTH_TOKEN="$(cat ${file})"; export CLAUDE_CODE_OAUTH_TOKEN; fi;`;
 }
 
 async function tmuxList() {
@@ -301,7 +326,7 @@ async function startSession({ project, cwd, resume }) {
   // exist yet on this box (the Mac had it, we don't). Without this `cd` fails and
   // the tmux session dies on launch — the transcript was uploaded but claude never
   // starts. Creating it is the sane "run a session here" behaviour.
-  const inner = `mkdir -p ${JSON.stringify(cwd)} && cd ${JSON.stringify(cwd)} && ${launch}`;
+  const inner = `mkdir -p ${JSON.stringify(cwd)} && cd ${JSON.stringify(cwd)} && ${oauthShellPrefix()} exec ${launch}`;
   // Spawn the tmux server in its OWN transient systemd scope, NOT in this agent's
   // service cgroup. Under systemd, a tmux server forked directly by the agent lives
   // in throttle-agent.service's control group and gets reaped almost immediately
@@ -442,7 +467,7 @@ async function startMission(raw) {
   const unit = `kalystr-mission-${request.missionId}`;
   const quotedExit = `'${p.exitCode.replaceAll("'", "'\\''")}'`;
   const command = [
-    `${CLAUDE_CMD} ${args.map(value => `'${value.replaceAll("'", "'\\''")}'`).join(' ')}`,
+    `${oauthShellPrefix()} ${CLAUDE_CMD} ${args.map(value => `'${value.replaceAll("'", "'\\''")}'`).join(' ')}`,
     'status=$?',
     `printf '%s\\n' "$status" > ${quotedExit}.tmp`,
     `mv ${quotedExit}.tmp ${quotedExit}`,
@@ -802,12 +827,43 @@ const server = http.createServer(async (req, res) => {
       if (action === 'attach') {
         if (!(await hasTtyd())) return send(res, 500, { error: 'ttyd not installed' });
         await attachTtyd(id);
-        return send(res, 200, { ok: true, id, port: TTYD_PORT, path: '/ws' });
+        return send(res, 200, { ok: true, id, port: PORT, path: `/terminal/${id}/ws` });
       }
       return send(res, 200, { ok: true, id, action });
     }
     return send(res, 404, { error: 'not found' });
   } catch (e) { return send(res, 500, { error: String(e.message || e) }); }
+});
+
+// Authenticated WS reverse proxy. The public connection reaches this server only
+// after TLS termination; ttyd remains loopback-only and trusts the header injected
+// here after the bearer token and active session have both been verified.
+server.on('upgrade', (req, client, head) => {
+  const match = new URL(req.url, 'http://loopback').pathname
+    .match(/^\/terminal\/([A-Za-z0-9_-]+)\/ws$/);
+  if (!match || !authed(req) || match[1] !== ttydSessionId || !ttydProc || ttydProc.killed) {
+    client.end('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
+    return;
+  }
+  const upstream = net.createConnection({ host: '127.0.0.1', port: TTYD_PORT });
+  upstream.once('connect', () => {
+    const headers = Object.entries(req.headers)
+      .filter(([name]) => !['authorization', 'host', 'x-throttle-authorized'].includes(name.toLowerCase()))
+      .map(([name, value]) => `${name}: ${Array.isArray(value) ? value.join(', ') : value}`);
+    upstream.write([
+      'GET /ws HTTP/1.1',
+      `Host: 127.0.0.1:${TTYD_PORT}`,
+      ...headers,
+      'X-Throttle-Authorized: 1',
+      '',
+      '',
+    ].join('\r\n'));
+    if (head.length) upstream.write(head);
+    client.pipe(upstream);
+    upstream.pipe(client);
+  });
+  upstream.once('error', () => client.destroy());
+  client.once('error', () => upstream.destroy());
 });
 
 server.listen(PORT, HOST, () => {

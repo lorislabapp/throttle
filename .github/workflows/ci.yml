@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  workflow_call:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Select stable Xcode
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install XcodeGen
+        run: brew install xcodegen swiftlint
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Validate privacy manifests
+        run: |
+          plutil -lint ThrottleiOS/PrivacyInfo.xcprivacy
+          plutil -lint ThrottleiOSWidget/PrivacyInfo.xcprivacy
+          plutil -lint ThrottleVision/PrivacyInfo.xcprivacy
+
+      - name: Test edge agent
+        working-directory: edge-agent
+        run: npm test
+
+      - name: Test shared Swift packages
+        run: swift test --package-path ThrottleShared
+
+      - name: Enforce SwiftLint ratchet
+        run: swiftlint lint --strict
+
+      - name: Build macOS app with hardened runtime
+        run: |
+          xcodebuild build \
+            -project Throttle.xcodeproj \
+            -scheme Throttle \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            -disableAutomaticPackageResolution \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Test iOS security state
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          test -n "$DEVICE_ID"
+          xcodebuild test \
+            -project Throttle.xcodeproj \
+            -scheme ThrottleiOS \
+            -destination "platform=iOS Simulator,id=$DEVICE_ID" \
+            -only-testing:ThrottleiOSTests \
+            -disableAutomaticPackageResolution \
+            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY=- \
+            PROVISIONING_PROFILE_SPECIFIER=
+
+      - name: Reject accidental broad transport or runtime exceptions
+        run: |
+          ! rg -n 'NSAllowsArbitraryLoads' project.yml ThrottleiOS/Info.plist
+          ! rg -n 'allow-unsigned-executable-memory|disable-library-validation' Throttle/Throttle.entitlements
+          ! rg -n 'THROTTLE_AGENT_TOKEN=' edge-agent ThrottleShared/Sources/ThrottleShared/EdgeAgentService.swift
+
+      - name: Enforce App Store LAN-only boundary
+        run: |
+          ! rg -n 'EdgeSessionsService.swift|EdgeSessionListView.swift|EdgeTerminalView.swift' Throttle.xcodeproj/project.pbxproj
+          rg -n 'peerFallbackHost: nil' Throttle/State/AppState+Mirror.swift
+          rg -n 'edgeHost: nil' Throttle/State/AppState+Mirror.swift
+          rg -n 'edgePort: nil' Throttle/State/AppState+Mirror.swift
+          rg -n 'edgeToken: nil' Throttle/State/AppState+Mirror.swift
+
+      - name: Enforce fail-closed release scripts
+        run: |
+          bash -n scripts/build-dmg.sh scripts/finalize-dmg.sh scripts/smoke-test.sh
+          rg -n 'NOTARIZE=false' scripts/build-dmg.sh scripts/finalize-dmg.sh
+          rg -n -- '--notarize' scripts/build-dmg.sh scripts/finalize-dmg.sh
+          ! rg -n 'mirrored — read-only|Your data never leaves your iCloud|Vos données ne quittent jamais' \
+            design/appstore/make-screenshots.py design/appstore/listing.md
+          rg -n 'same local network|même réseau local' design/appstore/listing.md
+
+      - name: Check generated and source drift
+        run: git diff --check

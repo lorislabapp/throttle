@@ -15,8 +15,8 @@ import ThrottleShared
 final class RemoteSessionsService {
     static let shared = RemoteSessionsService()
 
-    // Config (persisted). The token is a personal-homelab bearer secret; stored in
-    // UserDefaults like the LAN peer secret — the agent should sit behind Tailscale.
+    // Config (persisted). Non-loopback endpoints resolve to HTTPS and the agent
+    // itself refuses public binds; the bearer secret is stored in Keychain.
     var host: String { didSet { UserDefaults.standard.set(host, forKey: "throttleEdgeHost") } }
     var port: Int { didSet { UserDefaults.standard.set(port, forKey: "throttleEdgePort") } }
     // Bearer token controls a remote session → Keychain, not UserDefaults.

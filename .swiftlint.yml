@@ -1,0 +1,26 @@
+baseline: .swiftlint-baseline.json
+reporter: xcode
+strict: true
+
+excluded:
+  - .build
+  - ThrottleShared/.build
+  - edge-agent/node_modules
+  - build
+  - audit-output
+  - Throttle.xcodeproj
+
+disabled_rules:
+  - todo
+
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - fallthrough
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - modifier_order
+  - redundant_nil_coalescing
+  - sorted_imports
+  - unowned_variable_capture

@@ -1,6 +1,15 @@
 import AppKit
 import UserNotifications
 
+/// `UNNotificationRequest` is immutable but not annotated Sendable by the SDK.
+private final class SendableNotificationRequest: @unchecked Sendable {
+    let value: UNNotificationRequest
+
+    init(_ value: UNNotificationRequest) {
+        self.value = value
+    }
+}
+
 extension Notification.Name {
     /// Posted (userInfo["tab"] = UUID string) when the user taps a "session is
     /// waiting" notification, or when the Cockpit should focus a session.
@@ -57,11 +66,12 @@ final class CockpitNotifier: NSObject {
                 case .authorized, .provisional:
                     self.post(project: project, question: question, tabID: tabID)
                 case .notDetermined:
-                    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, _ in
-                        Task { @MainActor in
-                            if granted { self.post(project: project, question: question, tabID: tabID) }
-                            else { self.surfaceDenied() }
-                        }
+                    let granted = (try? await UNUserNotificationCenter.current()
+                        .requestAuthorization(options: [.alert, .sound])) == true
+                    if granted {
+                        self.post(project: project, question: question, tabID: tabID)
+                    } else {
+                        self.surfaceDenied()
                     }
                 case .denied:
                     self.surfaceDenied()
@@ -82,7 +92,7 @@ final class CockpitNotifier: NSObject {
             content.title = title
             content.body = body
             content.sound = .default
-            UNUserNotificationCenter.current().add(
+            Self.enqueue(
                 UNNotificationRequest(identifier: "throttle-rule-\(UUID().uuidString)",
                                       content: content, trigger: nil))
         }
@@ -110,7 +120,7 @@ final class CockpitNotifier: NSObject {
                 content.userInfo = ["tab": tabID.uuidString]
                 let req = UNNotificationRequest(identifier: "cockpit-ratelimit-\(tabID.uuidString)",
                                                 content: content, trigger: nil)
-                UNUserNotificationCenter.current().add(req)
+                Self.enqueue(req)
             }
         }
     }
@@ -118,12 +128,25 @@ final class CockpitNotifier: NSObject {
     /// Throttle auto-hibernated idle sessions to reclaim RAM under memory
     /// pressure. One aggregate banner (never one per session) so the user knows
     /// what happened and that it's reversible (tabs wake via `--resume`).
-    func notifyAutoHibernate(count: Int, freedBytes: UInt64) {
+    func notifyAutoHibernate(
+        count: Int,
+        freedBytes: UInt64,
+        resumeContextTokens: Int = 0,
+        resumeRebuildEUR: Double = 0
+    ) {
         guard count > 0 else { return }
         let freed = ByteCountFormatter.string(fromByteCount: Int64(freedBytes), countStyle: .memory)
-        let body = freedBytes > 0
-            ? "Freed ~\(freed) — reopen a tab to resume it with full context."
-            : "Reopen a tab to resume it with full context."
+        var parts: [String] = []
+        if freedBytes > 0 { parts.append("Freed ~\(freed)") }
+        if resumeContextTokens > 0 {
+            let tokens = resumeContextTokens >= 1_000
+                ? "~\(resumeContextTokens / 1_000)k input tokens"
+                : "~\(resumeContextTokens) input tokens"
+            parts.append(String(format: "resume may rebuild %@ (≈€%.2f)", tokens, resumeRebuildEUR))
+        } else {
+            parts.append("reopen a tab to resume it with full context")
+        }
+        let body = parts.joined(separator: " — ") + "."
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             let status = settings.authorizationStatus
             Task { @MainActor in
@@ -134,7 +157,7 @@ final class CockpitNotifier: NSObject {
                 content.sound = nil   // silent — this is a background reclaim, not an alert
                 let req = UNNotificationRequest(identifier: "cockpit-autohibernate",
                                                 content: content, trigger: nil)
-                UNUserNotificationCenter.current().add(req)
+                Self.enqueue(req)
             }
         }
     }
@@ -155,7 +178,7 @@ final class CockpitNotifier: NSObject {
                 content.sound = nil   // silent — background reclaim, fully reversible
                 let req = UNNotificationRequest(identifier: "cockpit-autopause",
                                                 content: content, trigger: nil)
-                UNUserNotificationCenter.current().add(req)
+                Self.enqueue(req)
             }
         }
     }
@@ -176,7 +199,7 @@ final class CockpitNotifier: NSObject {
                 content.sound = nil
                 let req = UNNotificationRequest(identifier: "cockpit-autotrim",
                                                 content: content, trigger: nil)
-                UNUserNotificationCenter.current().add(req)
+                Self.enqueue(req)
             }
         }
     }
@@ -200,7 +223,7 @@ final class CockpitNotifier: NSObject {
                 let key = ContentStore.sha256Hex(Data(projectPath.utf8)).prefix(12)
                 let request = UNNotificationRequest(identifier: "read-firewall-\(key)",
                                                     content: content, trigger: nil)
-                UNUserNotificationCenter.current().add(request)
+                Self.enqueue(request)
             }
         }
     }
@@ -215,6 +238,13 @@ final class CockpitNotifier: NSObject {
         NotificationCenter.default.post(name: .cockpitNotificationsDenied, object: nil)
     }
 
+    nonisolated private static func enqueue(_ request: UNNotificationRequest) {
+        let request = SendableNotificationRequest(request)
+        Task {
+            _ = try? await UNUserNotificationCenter.current().add(request.value)
+        }
+    }
+
     private func post(project: String, question: String, tabID: UUID) {
         let content = UNMutableNotificationContent()
         content.title = "\(project) needs you"
@@ -223,7 +253,7 @@ final class CockpitNotifier: NSObject {
         content.userInfo = ["tab": tabID.uuidString]
         let req = UNNotificationRequest(identifier: "cockpit-wait-\(tabID.uuidString)",
                                         content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(req)
+        Self.enqueue(req)
     }
 }
 

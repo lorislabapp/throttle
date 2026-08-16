@@ -86,12 +86,12 @@ struct DropdownView: View {
             titleRow
             hairline
             exactModeWarningBanner.padding(.horizontal, 16)
-            if !appState.claudeCodeDetected {
-                emptyState(message: "Claude Code not detected. Install it to start measuring.")
-            } else if !appState.snapshot.hasAnyData {
-                emptyState(message: "No sessions yet — start one in Claude Code.")
+            if !appState.claudeCodeDetected && !appState.codexDetected {
+                emptyState(message: "Claude Code and Codex were not detected.")
+            } else if !appState.snapshot.hasAnyData && appState.codexUsageSnapshot == nil {
+                emptyState(message: "No usage events yet — start a Claude Code or Codex session.")
             } else {
-                meterReadout
+                providerMeterReadout
             }
             if !appState.isPro && appState.snapshot.hasAnyData {
                 ProUpsellBanner(configSize: 95, savings: 40)
@@ -109,9 +109,108 @@ struct DropdownView: View {
             // Keep milestone accrual + the footer's signed-in label working.
             _ = MilestoneTracker.shared.observeWeeklySnapshot(appState.savedTokensThisWeek)
             Task { @MainActor in
+                appState.refreshCodexUsage()
                 embeddedSignedIn = await EmbeddedClaudeSession.shared.isSignedIn()
             }
         }
+    }
+
+    @ViewBuilder
+    private var providerMeterReadout: some View {
+        if appState.snapshot.hasAnyData {
+            providerHeading("CLAUDE")
+            meterReadout
+        }
+        if appState.codexDetected || appState.codexUsageSnapshot != nil {
+            if appState.snapshot.hasAnyData { hairline }
+            codexMeterReadout
+        }
+    }
+
+    private func providerHeading(_ name: String) -> some View {
+        Text(name)
+            .font(.system(size: 10, weight: .bold))
+            .tracking(0.8)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 16)
+            .padding(.top, 11)
+    }
+
+    @ViewBuilder
+    private var codexMeterReadout: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            HStack(spacing: 7) {
+                Label("CODEX", systemImage: "chevron.left.forwardslash.chevron.right")
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(0.7)
+                Spacer(minLength: 0)
+                if let snapshot = appState.codexUsageSnapshot {
+                    Text(snapshot.isFresh() ? "LOCAL · FRESH" : "LOCAL · STALE")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(snapshot.isFresh() ? Color.secondary : Color.orange)
+                }
+            }
+
+            if let snapshot = appState.codexUsageSnapshot {
+                ForEach(snapshot.windows) { window in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text(codexWindowLabel(window))
+                                .font(.system(size: 12.5, weight: .semibold))
+                            Spacer(minLength: 0)
+                            Text("\(Int(window.usedPercent.rounded()))%")
+                                .font(.system(size: 18, weight: .medium).monospacedDigit())
+                                .foregroundStyle(snapshot.isFresh() ? .primary : .secondary)
+                        }
+                        UsageBar(
+                            pct: window.normalizedUsed,
+                            tint: progressTint(for: window.normalizedUsed),
+                            degraded: !snapshot.isFresh(),
+                            height: 6
+                        )
+                        HStack {
+                            if let reset = window.resetsAt {
+                                Text("resets in \(MultiCockpitModel.countdown(max(0, Int64(reset.timeIntervalSinceNow))))")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 0)
+                            Text(window.kind == .primary ? "primary" : "secondary")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+                if let tokens = snapshot.tokens {
+                    HStack {
+                        Text("Current Codex session")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                        Spacer(minLength: 0)
+                        Text("\(formatTokens(tokens.total)) tokens")
+                            .font(.system(size: 11, weight: .medium).monospacedDigit())
+                    }
+                }
+            } else {
+                Text("No local Codex usage event yet. Run a Codex turn, then reopen this menu.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+
+    private func codexWindowLabel(_ window: CodexUsageSnapshot.RateWindow) -> String {
+        guard let minutes = window.windowMinutes else {
+            return window.kind == .primary ? String(localized: "Primary limit") : String(localized: "Secondary limit")
+        }
+        if minutes == 300 { return String(localized: "5-hour limit") }
+        if minutes == 10_080 { return String(localized: "Weekly limit") }
+        if minutes.isMultiple(of: 1_440) { return "\(minutes / 1_440)-day limit" }
+        if minutes.isMultiple(of: 60) { return "\(minutes / 60)-hour limit" }
+        return "\(minutes)-minute limit"
     }
 
     /// Quiet one-line savings summary. Demoted from the old green hero card:
@@ -211,8 +310,7 @@ struct DropdownView: View {
         // opens our embedded sign-in window. Only pure transient HTTP
         // 5xx / timeout / parse errors get a Retry button.
         switch err {
-        case .notSignedIn, .noClaudeTab, .safariNotRunning,
-             .tabZombieRateLimited, .automationDenied, .invalidResponse:
+        case .notSignedIn, .invalidResponse:
             return ExactModeAction(title: String(localized: "Sign in to claude.ai")) {
                 Task { @MainActor in
                     let signed = await EmbeddedClaudeSession.shared.presentSignIn()
@@ -226,7 +324,7 @@ struct DropdownView: View {
                     if signed { await ExactModeService.shared.refresh() }
                 }
             }
-        case .httpError, .appleScript, .timeout:
+        case .httpError, .session, .timeout:
             return ExactModeAction(title: String(localized: "Retry")) {
                 Task { await ExactModeService.shared.refresh() }
             }
@@ -2116,10 +2214,7 @@ private struct InlineProPane: View {
 
     private var exactSteps: some View {
         VStack(spacing: 0) {
-            exactStep(idx: 1, done: true, "Open claude.ai in Safari",
-                      action: SettingsButton(title: "Open") { ExactModeService.shared.openSignInPage() })
-            SettingsHair()
-            exactStep(idx: 2, done: signedIn, "Sign in to claude.ai",
+            exactStep(idx: 1, done: signedIn, "Sign in to claude.ai",
                       action: signedIn ? nil : SettingsButton(title: "Sign in") {
                           Task { @MainActor in
                               let ok = await EmbeddedClaudeSession.shared.presentSignIn()
@@ -2127,7 +2222,7 @@ private struct InlineProPane: View {
                           }
                       })
             SettingsHair()
-            exactStep(idx: 3, done: appState.exactSnapshot != nil, "Test connection",
+            exactStep(idx: 2, done: appState.exactSnapshot != nil, "Test connection",
                       action: SettingsButton(title: testing ? "Testing…" : "Test") { testConnection() })
         }
         .padding(.top, 2)
@@ -2211,16 +2306,11 @@ private struct InlineProPane: View {
 /// InlineGeneralPane (Settings) and DropdownView (the meter banner).
 fileprivate func describe(_ err: ExactModeError) -> String {
     switch err {
-    case .notSignedIn:        return "Not signed in to claude.ai in Safari. Sign in and re-test."
-    case .noClaudeTab:        return "Couldn't open a claude.ai tab in Safari. Open one manually and re-test."
-    case .safariNotRunning:   return "Safari isn't running. Open it (or click 'Open claude.ai in Safari') and re-test."
-    case .automationDenied:   return "macOS denied automation. Open System Settings → Privacy & Security → Automation → Throttle → enable Safari, then re-test."
+    case .notSignedIn:        return "Not signed in to claude.ai inside Throttle. Sign in and re-test."
     case .httpError(let code): return "HTTP \(code)"
     case .invalidResponse:    return "Bad response from claude.ai."
-    case .appleScript(let s): return "AppleScript: \(s)"
+    case .session(let s):     return "Embedded session: \(s)"
     case .timeout:            return "Timed out."
-    case .tabZombieRateLimited:
-        return "Safari discarded the claude.ai tab. Open the tab once to wake it; Throttle will resume polling automatically."
     }
 }
 

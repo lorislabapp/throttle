@@ -1,4 +1,6 @@
-# Throttle — influencer outreach (seed + affiliate)
+# ARCHIVED — DO NOT SEND: Throttle influencer outreach (seed + affiliate)
+
+> These drafts contain obsolete privacy and savings claims. Do not send or reuse them until product, legal and release evidence has been freshly reviewed against `README.md` and `PRIVACY.md`.
 
 **Model:** free lifetime Pro (no strings) + 35% commission per sale via a per-creator promo code (buyer gets ~10% off). Creators make their own content — you supply the tool + the live page link (animated demo already on it).
 

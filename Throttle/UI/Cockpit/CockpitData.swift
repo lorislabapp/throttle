@@ -124,15 +124,15 @@ final class CockpitViewModel {
                 try? await Task.sleep(for: .seconds(10))
             }
         }
-        Task { [weak self] in await self?.probeMCP() }     // one probe on open
-        Task { [weak self] in await self?.scanDedup() }     // one dedup scan on open
-        Task { [weak self] in await self?.scanMemory() }    // one memory scan on open
-        Task { [weak self] in await self?.scanMemoryIndex() } // MEMORY.md auto-load cap
-        Task { [weak self] in await self?.scanCache() }     // one cache-hygiene scan on open
-        Task { [weak self] in await self?.scanSkills() }    // one skill-usage scan on open
-        Task { [weak self] in await self?.scanReads() }     // one read-firewall scan on open
-        Task { [weak self] in await self?.scanScopeCandidates() } // skills usable in one project only
-        Task { [weak self] in await self?.scanBloat() }     // one context-bloat scan on open
+        _ = Task { [weak self] in await self?.probeMCP() }     // one probe on open
+        _ = Task { [weak self] in await self?.scanDedup() }     // one dedup scan on open
+        _ = Task { [weak self] in await self?.scanMemory() }    // one memory scan on open
+        _ = Task { [weak self] in await self?.scanMemoryIndex() } // MEMORY.md auto-load cap
+        _ = Task { [weak self] in await self?.scanCache() }     // one cache-hygiene scan on open
+        _ = Task { [weak self] in await self?.scanSkills() }    // one skill-usage scan on open
+        _ = Task { [weak self] in await self?.scanReads() }     // one read-firewall scan on open
+        _ = Task { [weak self] in await self?.scanScopeCandidates() } // skills usable in one project only
+        _ = Task { [weak self] in await self?.scanBloat() }     // one context-bloat scan on open
     }
 
     func stop() { loop?.cancel(); loop = nil }
@@ -146,7 +146,7 @@ final class CockpitViewModel {
     /// Hoist a duplicated block to a shared skill + remove from CLAUDE.md
     /// (backed up first), then rescan.
     func hoistDedup(_ block: DuplicatedBlock) async {
-        await Task.detached(priority: .utility) { ConfigDedupService.hoist(block) }.value
+        _ = await Task.detached(priority: .utility) { ConfigDedupService.hoist(block) }.value
         await scanDedup()
     }
 
@@ -191,7 +191,7 @@ final class CockpitViewModel {
 
     /// Archive a dead skill (reversible move) then rescan.
     func archiveSkill(_ name: String) async {
-        await Task.detached(priority: .utility) { try? SkillUsageService.archive(skillName: name) }.value
+        _ = await Task.detached(priority: .utility) { try? SkillUsageService.archive(skillName: name) }.value
         await scanSkills()
     }
 
@@ -226,7 +226,7 @@ final class CockpitViewModel {
     /// reversible). Opt-in — it adds a third-party npx server. Restart Claude Code after.
     func installFirewall() async {
         firewallBusy = true
-        await Task.detached(priority: .utility) { try? ReadFirewallService.install() }.value
+        _ = await Task.detached(priority: .utility) { try? ReadFirewallService.install() }.value
         firewallInstalled = ReadFirewallService.isInstalled()
         firewallBusy = false
     }
@@ -295,12 +295,12 @@ final class CockpitViewModel {
 
     private func currentSessionId() -> String? {
         guard let db = appState?.database else { return nil }
-        return (try? db.read { try StatsDataService.cockpitCurrentSessionId(in: $0) }) ?? nil
+        return try? db.read { try StatsDataService.cockpitCurrentSessionId(in: $0) }
     }
 
     /// Archive stale memory files (reversible move) then rescan.
     func archiveMemory(_ paths: [String]) async {
-        await Task.detached(priority: .utility) { MemoryCleanupService.archive(paths: paths) }.value
+        _ = await Task.detached(priority: .utility) { MemoryCleanupService.archive(paths: paths) }.value
         await scanMemory()
     }
 

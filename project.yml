@@ -35,13 +35,23 @@ packages:
     path: ThrottleShared
   GRDB:
     url: https://github.com/groue/GRDB.swift
-    from: "6.29.0"
+    exactVersion: "6.29.3"
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
-    from: "2.6.0"
+    exactVersion: "2.9.1"
   SwiftTerm:
     url: https://github.com/migueldeicaza/SwiftTerm
-    from: "1.14.0"   # 1.14 parser fixes; bumped chasing macOS 27 beta ANSI mis-render
+    exactVersion: "1.14.0"   # 1.14 parser fixes; bumped chasing macOS 27 beta ANSI mis-render
+
+schemes:
+  ThrottleiOS:
+    build:
+      targets:
+        ThrottleiOS: all
+        ThrottleiOSTests: [test]
+    test:
+      targets:
+        - ThrottleiOSTests
 
 targets:
   Throttle:
@@ -67,18 +77,10 @@ targets:
           - CFBundleURLName: com.lorislab.throttle.activate
             CFBundleURLSchemes:
               - throttle
-        # The Session Offload edge agent is reached over plain HTTP at a
-        # user-configured LAN/Tailscale address (its own bearer token + Tailscale is
-        # the security boundary, not TLS). ATS blocks cleartext by default, which is
-        # why Verify failed with "requires a secure connection". Allow it — the host
-        # is arbitrary user input so a domain exception can't be pinned; Throttle is
-        # Developer-ID (not App Store), so NSAllowsArbitraryLoads is acceptable here.
-        # ⚠️ Do NOT add NSAllowsLocalNetworking alongside: when both are present the
-        # OS IGNORES NSAllowsArbitraryLoads (documented ATS precedence), and Tailscale
-        # 100.64/10 CGNAT is not "local" — that combo re-broke Verify in 3.2.61.
+        # Edge uses HTTPS through a tailnet/private reverse proxy. Only explicit
+        # loopback development traffic may remain cleartext.
         NSAppTransportSecurity:
-          NSAllowsArbitraryLoads: true
-        NSAppleEventsUsageDescription: "Throttle uses Safari to fetch your claude.ai usage page so it can show the same numbers Anthropic shows you. It only reads /api/organizations/.../usage — never your messages."
+          NSAllowsLocalNetworking: true
         NSCalendarsFullAccessUsageDescription: "Throttle adds a one-time reminder to your default calendar when your weekly Claude limit is about to reset. Optional — only when you tap the Calendar button."
         NSCalendarsUsageDescription: "Throttle adds a one-time reminder to your default calendar when your weekly Claude limit is about to reset. Optional — only when you tap the Calendar button."
         NSUserNotificationsUsageDescription: "Throttle banners you when your Claude usage crosses 80% or 95%."
@@ -90,13 +92,14 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.lorislab.throttle
         PRODUCT_NAME: Throttle
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
         CODE_SIGN_ENTITLEMENTS: Throttle/Throttle.entitlements
         # Manual Developer ID signing: the CloudKit entitlement forces an embedded
         # provisioning profile, which automatic signing can't mint without an Apple
         # ID in Xcode. We provision the profile out-of-band via the ASC API and pin
         # it here. Profile: "Throttle DevID iCloud" (bundle com.lorislab.throttle).
         CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "Developer ID Application"
+        CODE_SIGN_IDENTITY: "8333AB7CD909731530AC62DD28CCA47C8D288225"
         PROVISIONING_PROFILE_SPECIFIER: "Throttle DevID iCloud"
     dependencies:
       - package: GRDB
@@ -124,12 +127,13 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.lorislab.throttle.widget
         PRODUCT_NAME: ThrottleWidget
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
         CODE_SIGN_ENTITLEMENTS: ThrottleWidget/ThrottleWidget.entitlements
         SKIP_INSTALL: YES
         # Manual signing (see Throttle target). The parent app is manually signed
         # for CloudKit, so the embedded widget must be too — same Developer ID cert.
         CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "Developer ID Application"
+        CODE_SIGN_IDENTITY: "8333AB7CD909731530AC62DD28CCA47C8D288225"
         PROVISIONING_PROFILE_SPECIFIER: "Throttle Widget DevID"
 
   # ─── iOS companion (App Store) ───────────────────────────────────────────
@@ -143,6 +147,12 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: ThrottleiOS
+        excludes:
+          # App Review 4.2.7: the App Store companion is a LAN client for the
+          # user's Mac, not an off-LAN/cloud thin client. Edge remains macOS-only.
+          - Services/EdgeSessionsService.swift
+          - Views/EdgeSessionListView.swift
+          - Views/EdgeTerminalView.swift
     info:
       path: ThrottleiOS/Info.plist
       properties:
@@ -158,16 +168,10 @@ targets:
           - _throttle._tcp
         # Face ID gates typing into a remote session. Without this key
         # LAContext.evaluatePolicy is a deterministic crash on Face ID devices.
-        NSFaceIDUsageDescription: "Throttle uses Face ID to unlock typing into a remote session, so the write path stays behind your device's biometrics."
-        # The edge agent is plain HTTP/ws at a user-configured LAN/Tailscale address
-        # (bearer token + Tailscale is the boundary, not TLS). Tailscale's 100.64/10
-        # CGNAT range is NOT covered by NSAllowsLocalNetworking, so the whole Edge tab
-        # is dead on device without this. Not App Store's favourite, but this app talks
-        # only to the user's own box on their own tailnet.
-        # ⚠️ NSAllowsLocalNetworking must NOT sit alongside NSAllowsArbitraryLoads —
-        # their combo makes the OS ignore ArbitraryLoads (ATS precedence rule).
+        NSFaceIDUsageDescription: "Throttle uses Face ID or your device passcode to unlock terminal input. Sessions start read-only and relock after inactivity or when the app leaves the foreground."
+        # The App Store client uses only the authenticated LAN peer transport.
         NSAppTransportSecurity:
-          NSAllowsArbitraryLoads: true
+          NSAllowsLocalNetworking: true
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -175,6 +179,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.lorislab.throttle.ios
         PRODUCT_NAME: Throttle
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
         CODE_SIGN_ENTITLEMENTS: ThrottleiOS/ThrottleiOS.entitlements
         # iPhone-only v1: portrait phone mirror; iPad multitasking would force
         # all-4 orientations + iPad layouts not designed. Bump to "1,2" later.
@@ -211,6 +216,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.lorislab.throttle.ios.widget
         PRODUCT_NAME: ThrottleiOSWidget
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
         CODE_SIGN_ENTITLEMENTS: ThrottleiOSWidget/ThrottleiOSWidget.entitlements
         SKIP_INSTALL: YES
         # Pin to the iOS app's version — else the appex inherits the project-level
@@ -235,6 +241,8 @@ targets:
     sources:
       - path: ThrottleVision
       - path: ThrottleiOS/Services
+        excludes:
+          - EdgeSessionsService.swift
       - path: ThrottleiOS/Views/MirrorUI.swift   # shared palette + countdown helper
     info:
       path: ThrottleVision/Info.plist
@@ -251,6 +259,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.lorislab.throttle.vision
         PRODUCT_NAME: Throttle
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
         CODE_SIGN_ENTITLEMENTS: ThrottleVision/ThrottleVision.entitlements
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
@@ -258,6 +267,22 @@ targets:
       - package: ThrottleShared
       - package: ThrottleShared
         product: ThrottlePeer
+
+  ThrottleiOSTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: ThrottleiOSTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lorislab.throttle.ios.tests
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+        CODE_SIGN_STYLE: Automatic
+        BUNDLE_LOADER: $(TEST_HOST)
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Throttle.app/Throttle
+    dependencies:
+      - target: ThrottleiOS
 
   ThrottleTests:
     type: bundle.unit-test
@@ -269,6 +294,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.lorislab.throttle.tests
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
         BUNDLE_LOADER: $(TEST_HOST)
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/Throttle.app/Contents/MacOS/Throttle
     dependencies:

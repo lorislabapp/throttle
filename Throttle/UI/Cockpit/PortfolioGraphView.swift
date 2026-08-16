@@ -88,7 +88,7 @@ struct PortfolioGraphView: View {
             guard let p = sim.pos[n.id] else { continue }
             let dim = hv != nil && n.id != hv && !nb.contains(n.id)
             let r = sim.radius(n)
-            var ring = Path(ellipseIn: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2))
+            let ring = Path(ellipseIn: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2))
             ctx.fill(ring, with: .color(color(n).opacity(dim ? 0.2 : 1)))
             if n.kind != .app && !dim {
                 ctx.stroke(ring, with: .color(color(n).opacity(0.35)), lineWidth: 3)   // soft glow proxy
@@ -189,7 +189,7 @@ struct PortfolioGraphView: View {
     func step() {
         guard size.width > 0, nodes.count > 1 else { return }
         let W = size.width, H = size.height
-        var ids = Array(pos.keys)
+        let ids = Array(pos.keys)
         for i in 0..<ids.count {
             for j in (i+1)..<ids.count {
                 guard var a = pos[ids[i]], var b = pos[ids[j]] else { continue }

@@ -18,7 +18,6 @@ final class PeerClient {
 
     private var connector: PeerConnector?
     private var currentSecretB64: String?
-    private var currentFallbackHost: String?
 
     /// True only while a peer connection is actually established (driven by the
     /// connector's `onConnected`), NOT merely because a connector object exists —
@@ -26,14 +25,10 @@ final class PeerClient {
     private(set) var connected = false
 
     /// Feed each freshly-synced snapshot here; picks up (or rotates to) the pairing
-    /// secret and (re)starts the LAN link. Also keeps the off-LAN fallback host
-    /// current on the existing connector — a host entered/changed in Mac Settings
-    /// shouldn't require a fresh pairing secret to take effect.
+    /// secret and (re)starts the LAN link. The App Store client deliberately does
+    /// not consume `peerFallbackHost`: remote input is constrained to the local
+    /// Bonjour/LAN path under App Review guideline 4.2.7.
     func syncPairing(from snapshot: ThrottleMirrorSnapshot) {
-        if snapshot.peerFallbackHost != currentFallbackHost {
-            currentFallbackHost = snapshot.peerFallbackHost
-            connector?.setFallbackHost(currentFallbackHost)
-        }
         guard let b64 = snapshot.peerPairingSecret,
               b64 != currentSecretB64,
               let secret = PeerPairingSecret(base64: b64) else { return }
@@ -77,7 +72,6 @@ final class PeerClient {
     private func restart(with secret: PeerPairingSecret) {
         connector?.stop()
         let c = PeerConnector(secret: secret)
-        c.setFallbackHost(currentFallbackHost)
         c.onSnapshot = { data in
             // Fires on the connector's queue; decode off-main then ingest on main.
             guard let snap = try? ThrottleMirrorSnapshot.decoded(from: data) else { return }

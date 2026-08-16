@@ -33,11 +33,14 @@ if [ -f "$INFO" ]; then
                                          || ko "Bundle ID is '$BID' (expected com.lorislab.throttle)"
 fi
 
-# Code signing
-if codesign -dvv "$APP_PATH" 2>&1 | grep -q "Authority=Developer ID Application"; then
-    ok "Signed with Developer ID Application"
+# Code signing: displaying an Authority is not integrity verification. Require
+# the complete nested bundle to satisfy its signatures before reporting PASS.
+if codesign --verify --deep --strict --verbose=2 "$APP_PATH" >/dev/null 2>&1 \
+   && codesign --verify --strict --verbose=2 "$APP_PATH/Contents/PlugIns/ThrottleWidget.appex" >/dev/null 2>&1 \
+   && codesign -dvv "$APP_PATH" 2>&1 | grep -q "Authority=Developer ID Application"; then
+    ok "Developer ID signature integrity (app + widget)"
 else
-    ko "Not signed with Developer ID Application (check signing config)"
+    ko "Developer ID signature invalid (app or widget)"
 fi
 
 # Team ID

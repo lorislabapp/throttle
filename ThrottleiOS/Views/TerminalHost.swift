@@ -1,4 +1,23 @@
+import SwiftTerm
 import SwiftUI
+
+/// Drops first responder when SwiftUI removes a terminal from the visible window,
+/// preventing the accessory keyboard from leaking over another tab.
+final class ResigningTerminalView: TerminalView {
+    override func willMove(toWindow newWindow: UIWindow?) {
+        super.willMove(toWindow: newWindow)
+        if newWindow == nil, isFirstResponder { _ = resignFirstResponder() }
+    }
+}
+
+enum TerminalRendering {
+    /// Avoid transparent gaps and stale cells while the keyboard changes geometry.
+    static func applyOpaqueBackground(_ terminal: TerminalView) {
+        terminal.isOpaque = true
+        terminal.backgroundColor = .black
+        terminal.clearsContextBeforeDrawing = true
+    }
+}
 
 /// Live connection state for a terminal screen, so the UI never shows a frozen
 /// black terminal with no explanation (the #1 confusing failure the review found).
@@ -22,6 +41,7 @@ final class TerminalConnection {
 /// and the accessory key bar. Keeps the two terminals' UX identical and removes the
 /// black-screen-no-feedback failure mode.
 struct TerminalHost<Terminal: View>: View {
+    @Environment(\.scenePhase) private var scenePhase
     let title: String
     let lockState: TerminalLockState
     let keySender: TerminalKeySender
@@ -47,8 +67,6 @@ struct TerminalHost<Terminal: View>: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                // A toggle, not a one-way door: typing is on by default, and locking a
-                // session is a deliberate act you can take and undo.
                 Button { lockState.unlocked ? lockState.lock() : unlock() } label: {
                     Image(systemName: lockState.unlocked ? "lock.open.fill" : "lock.fill")
                         .foregroundStyle(lockState.unlocked ? MirrorUI.ok : MirrorUI.warn)
@@ -57,7 +75,11 @@ struct TerminalHost<Terminal: View>: View {
                 .accessibilityLabel(lockState.unlocked ? "Typing unlocked — tap to lock" : "Locked — tap to unlock typing")
             }
         }
+        .onAppear { keySender.enabled = lockState.unlocked }
         .onChange(of: lockState.unlocked) { _, unlocked in keySender.enabled = unlocked }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { lockState.lock() }
+        }
     }
 
     @ViewBuilder private var overlay: some View {
@@ -106,7 +128,7 @@ struct TerminalHost<Terminal: View>: View {
         .disabled(unlocking)
     }
 
-    private func banner(_ text: String, tint: Color, glyph: String) -> some View {
+    private func banner(_ text: String, tint: SwiftUI.Color, glyph: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: glyph)
             Text(text).font(.footnote.weight(.medium))

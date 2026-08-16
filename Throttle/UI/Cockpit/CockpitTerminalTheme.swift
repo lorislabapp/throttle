@@ -7,6 +7,7 @@ import SwiftTerm
 /// is ANSI 8 (the "dim" colour claude uses for tool/meta lines, kept recessive)
 /// and ANSI 15 (bright white, prose emphasis) so Claude's answers stand out from
 /// the actions it runs — using only the palette, never rewriting the stream.
+@MainActor
 enum CockpitTerminalTheme {
 
     enum Preset: String, CaseIterable, Identifiable {

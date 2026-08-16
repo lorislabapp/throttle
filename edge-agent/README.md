@@ -2,8 +2,8 @@
 
 Runs on a Proxmox LXC (or any Linux/macOS host with `tmux` + `ttyd` + `node ≥18`) to
 **offload Claude Code sessions off a RAM-constrained Mac**. It spawns and measures
-sessions, and — on explicit attach — streams keystrokes into one, over a token-gated
-HTTP API the Throttle Mac cockpit and iOS companion talk to.
+sessions, and — on explicit attach — streams keystrokes into one. The agent listens
+on loopback only; Throttle reaches it through tailnet-only HTTPS.
 
 **Doctrine:** `claude` on this host talks to Anthropic **directly** — the agent is
 **not** on the data path and never sees request/response bodies. Lifecycle
@@ -22,11 +22,15 @@ same rather than reaching for `apt-get install ttyd` — it won't find anything.
 
 ## Run
 ```bash
-export THROTTLE_AGENT_TOKEN="$(openssl rand -hex 24)"   # share this with the Mac
+umask 077
+openssl rand -hex 24 > /opt/throttle-agent/agent-token  # share once with the Mac
+export THROTTLE_AGENT_TOKEN_FILE=/opt/throttle-agent/agent-token
 node throttle-agent.mjs
 ```
 
-Env: `THROTTLE_AGENT_TOKEN` (required), `THROTTLE_AGENT_HOST` (default `0.0.0.0`),
+Env: `THROTTLE_AGENT_TOKEN_FILE` (production; systemd credential in one-click deploy),
+`THROTTLE_AGENT_TOKEN` (development fallback only), `THROTTLE_AGENT_HOST` (loopback only,
+default `127.0.0.1`),
 `THROTTLE_AGENT_PORT` (default `8787`), `THROTTLE_AGENT_TTYD_PORT` (default `8788`),
 `THROTTLE_AGENT_CLAUDE_CMD` (default `claude`; tests use `sleep 3600`),
 `CLAUDE_PROJECTS_DIR` (default `~/.claude/projects`), and bounded mission roots
@@ -39,25 +43,27 @@ systemd service capped at 6 GiB RAM, 2 GiB swap, 250% CPU and 256 tasks. Claude 
 non-interactively with a USD budget and deadline, safe mode, no Bash or web tools.
 
 ## Security
-- **Transport**: bind to a Tailscale/LAN address and keep the host behind Tailscale —
-  WireGuard is the encryption boundary for both the HTTP API and the ttyd WebSocket.
-  No separate TLS/Caddy layer for either; mTLS remains a possible future hardening.
-- **App-layer gate**: every HTTP request except `/health` requires `Authorization:
-  Bearer <token>` (constant-time compared). The ttyd instance spawned on attach reuses
-  the *same* shared token as its HTTP Basic credential (`-c throttle:<token>`) — one
-  secret to rotate, not two.
+- **Transport**: the process refuses non-loopback binds. One-click deploy requires
+  the node's full `*.ts.net` name and configures Tailscale Serve as a persistent,
+  tailnet-only HTTPS reverse proxy. A separately managed private HTTPS proxy is an
+  acceptable manual alternative. Never use Tailscale Funnel.
+- **App-layer gate**: every control request requires `Authorization: Bearer <token>`
+  (constant-time compared). ttyd binds only to `127.0.0.1`; the agent authenticates
+  and proxies its WebSocket, injecting an internal header. No secret is placed in
+  ttyd's argv or handshake.
 - **Client-side write-unlock**: the iOS/Mac terminal client opens read-only and
   requires a local Face ID/Touch ID unlock before forwarding keystrokes, auto-relocking
   after 5 min idle. This is a UX safety net enforced by the client, not by ttyd or the
   agent — a compromised/jailbroken device could bypass it, same trust level as the
-  token already sitting in UserDefaults today.
+  token stored in the platform Keychain.
 - The explicit Deploy button makes Throttle SSH to the selected host (and, when
   configured, pipes each step through `pct exec <id> -- bash -s`). It verifies the
   bearer-gated MCP endpoint before backing up and changing local Claude routing.
-- **NAT/firewall**: if the box sits behind a host doing Tailscale DNAT (e.g. a Proxmox
-  LXC), forward **both** `THROTTLE_AGENT_PORT` and `THROTTLE_AGENT_TTYD_PORT` — the
-  deploy script only writes files on the box itself, it doesn't touch host firewall
-  rules. Easy to forget the second port since the HTTP API keeps working without it.
+- **Exposure**: only the HTTPS proxy port is exposed. `THROTTLE_AGENT_TTYD_PORT` is
+  an internal loopback hop and must never be forwarded.
+- **Claude OAuth**: setup-token output is written atomically to a mode-0600,
+  purpose-scoped file and injected only into spawned Claude processes. It is never
+  appended to `~/.profile` or passed as a command argument.
 
 ## API
 | Method | Path | Auth | Body / Result |
@@ -69,7 +75,7 @@ non-interactively with a USD budget and deadline, safe mode, no Bash or web tool
 | POST | `/sessions/:id/stop` | yes | kill the tmux session (and any attached ttyd) |
 | POST | `/sessions/:id/pause` | yes | SIGSTOP the session's process (freeze tokens) |
 | POST | `/sessions/:id/resume` | yes | SIGCONT |
-| POST | `/sessions/:id/attach` | yes | `{ok, id, port, path}` — (re)spawns ttyd on `THROTTLE_AGENT_TTYD_PORT` attached to this session's tmux pane; retargeting kills any previous attach |
+| POST | `/sessions/:id/attach` | yes | `{ok, id, port, path}` — (re)spawns a loopback ttyd and returns the authenticated WS proxy path on the API port; retargeting kills any previous attach |
 | PUT | `/transcripts?cwd=<abs>&session=<id>` | yes | raw JSONL body → `{ok, sessionId, bytes}` — context transfer: writes the FULL session transcript to `~/.claude/projects/<encoded cwd>/<id>.jsonl` so a follow-up `POST /sessions {cwd, resume: id}` resumes with the Mac session's context (verified live 2026-07-12: `claude --resume` accepts a transcript copied from another machine/cwd). 512 MB cap, streamed to disk |
 | POST | `/missions` | yes | bounded `{missionId,cwd,baseCommit,task,maxSeconds,maxBudgetUsd}` → accepted mission in an isolated Git worktree |
 | GET | `/missions/:id` | yes | bounded state/output tail plus base commit, patch SHA-256 and HMAC result authentication |
@@ -78,7 +84,7 @@ non-interactively with a USD budget and deadline, safe mode, no Bash or web tool
 | DELETE | `/missions/:id` | yes | deletes a terminal mission worktree/result and its exact `/opt/throttle-agent/incoming/:id` clone |
 
 Mission requests and exit status are persisted with mode `0600`. If the Edge Agent
-restarts while a transient mission unit continues, version 0.9.0 reattaches a bounded
+restarts while a transient mission unit continues, version 1.0.0 reattaches a bounded
 watcher and finalizes the authenticated result. Deletion is refused while a mission
 is running or when its persisted source path does not exactly match the mission ID.
 

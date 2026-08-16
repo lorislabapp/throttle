@@ -1,13 +1,31 @@
 #!/usr/bin/env bash
 # Finalize a DMG from an ALREADY-exported, signed Throttle.app — skips the slow
 # archive/export when create-dmg flaked at the unmount step. Reuses build/export.
+# Notarization is fail-closed: pass --notarize only after explicit approval.
 set -Eeuo pipefail
 trap 'rc=$?; echo "✘ finalize-dmg.sh failed at line $LINENO (exit $rc)" >&2; exit $rc' ERR
+
+NOTARIZE=false
+case "${1:-}" in
+    --notarize) NOTARIZE=true ;;
+    --prepare-only|"") ;;
+    *) echo "usage: $0 [--prepare-only|--notarize]" >&2; exit 64 ;;
+esac
 
 PROJECT_DIR="${PROJECT_DIR:-$HOME/GitHub/Throttle}"
 cd "$PROJECT_DIR"
 APP_PATH="$PROJECT_DIR/build/export/Throttle.app"
 [ -d "$APP_PATH" ] || { echo "no export at $APP_PATH"; exit 1; }
+
+LOGIN_KEYCHAIN="${LOGIN_KEYCHAIN:-$HOME/Library/Keychains/login.keychain-db}"
+SIGNING_IDENTITY="Developer ID Application: Christine Martin (TDV6D5L785)"
+SIGNING_SHA1="8333AB7CD909731530AC62DD28CCA47C8D288225"
+if ! security find-identity -v -p codesigning "$LOGIN_KEYCHAIN" | grep -Fq "$SIGNING_SHA1"; then
+    echo "✘ Required Developer ID identity is unavailable in $LOGIN_KEYCHAIN: $SIGNING_SHA1" >&2
+    exit 78
+fi
+codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+codesign --verify --strict --verbose=2 "$APP_PATH/Contents/PlugIns/ThrottleWidget.appex"
 
 # Detach any stale create-dmg leftovers so the mount/unmount is clean.
 for v in /Volumes/dmg.*; do [ -d "$v" ] && hdiutil detach "$v" -force 2>/dev/null || true; done
@@ -26,9 +44,15 @@ create-dmg \
     "$DMG_PATH" "$APP_PATH"
 
 echo "→ Signing DMG"
-codesign --force --sign "Developer ID Application: Christine Martin (TDV6D5L785)" \
+codesign --force --sign "$SIGNING_SHA1" --keychain "$LOGIN_KEYCHAIN" \
     --options runtime --timestamp "$DMG_PATH"
-codesign --verify --verbose=2 "$DMG_PATH"
+codesign --verify --strict --verbose=2 "$DMG_PATH"
+
+if [ "$NOTARIZE" != true ]; then
+    echo "→ Prepared locally: $DMG_PATH"
+    echo "→ Notarization NOT RUN. Re-run with --notarize after explicit approval."
+    exit 0
+fi
 
 echo "→ Notarizing"
 xcrun notarytool submit "$DMG_PATH" --keychain-profile throttle-notary --wait

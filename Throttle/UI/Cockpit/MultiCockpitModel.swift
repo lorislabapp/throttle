@@ -3,8 +3,8 @@ import SwiftTerm
 import SwiftUI
 
 /// One project session in the multi-cockpit: a real login-shell terminal
-/// running in the project's cwd (the user runs `claude` in it, or it auto-
-/// launches), plus the live metadata the decision layer shows. Per-session
+/// running Claude Code or Codex in the project's cwd, plus the live metadata
+/// the decision layer shows. Per-session
 /// cost/model are real-or-nil — never faked (the golden rule); they stay nil
 /// until a data-linking pass wires them to StatsDataService.
 @MainActor
@@ -13,10 +13,12 @@ final class CockpitTab: Identifiable {
     let id = UUID()
     let projectName: String
     let cwd: String
+    let missionID: UUID
+    let runtime: AgentRuntime
     /// When this TAB was created (cockpit launch / new session) — used as the
     /// since-floor for transcript discovery. NOT the session's run time.
     let startedAt = Date()
-    /// When the live `claude` PROCESS actually spawned — the real uptime. nil
+    /// When the live agent PROCESS actually spawned — the real uptime. nil
     /// until spawned (a dormant restored tab has no running process, so it shows
     /// no uptime instead of the misleading shared "cockpit has been open Xm").
     var spawnedAt: Date?
@@ -28,13 +30,20 @@ final class CockpitTab: Identifiable {
     /// split pane beside claude. nil until the user first opens the shell on this
     /// tab. NOT a claude subtree — just a shell (~10 MB), so cheap to keep.
     private(set) var shellTerminal: DroppableTerminalView?
-    /// When restoring, resume the exact prior claude session.
+    /// When restoring, resume the exact prior native agent session.
     private let resumeSessionId: String?
+    /// Provider-neutral continuation packet supplied only when a handoff creates
+    /// a fresh native session. It is passed as the CLI's first prompt.
+    private let initialPrompt: String?
 
     // Live metadata — nil = "not yet known", rendered as ≈/— (never invented).
     var model: String?
     var eur: Double?
     var tokens: Int?
+    /// Latest observed request context. Used to price a likely cold prefill
+    /// before model switches and after a hibernated `--resume`.
+    var promptCacheImpact: PromptCacheImpact?
+    var codexProgress: CodexProgressSnapshot?
     var isLive = false
 
     /// A question claude printed and is (best-effort) waiting on.
@@ -55,6 +64,8 @@ final class CockpitTab: Identifiable {
     /// output alone cannot tell those apart: a 10-minute build prints nothing.
     var lastCPUSeconds: Double?
     var lastCPUSampleAt = Date()
+    var cpuPercent: Double = 0
+    private var consecutiveHighCPUSamples = 0
     /// Set when claude prints a usage/rate-limit message; cleared once the stated
     /// reset time passes. Drives the `.rateLimited` state + cockpit banner.
     var rateLimitedUntil: Date?
@@ -71,8 +82,63 @@ final class CockpitTab: Identifiable {
     var leakSuspected = false
     /// Resident memory of this session's process subtree (shell → claude → node).
     var ramBytes: UInt64 = 0
+
+    enum ResourceState: String {
+        case healthy
+        case constrained
+        case critical
+    }
+
+    struct ResourceEnvelope: Equatable {
+        let warningBytes: UInt64
+        let criticalBytes: UInt64
+        let cpuWarningPercent: Double
+    }
+
+    /// Hardware-aware defaults, overridable without changing the user's agent
+    /// configuration. These are sampled application guards, not kernel quotas.
+    static var resourceEnvelope: ResourceEnvelope {
+        let physical = ProcessInfo.processInfo.physicalMemory
+        let defaultWarning = max(1_500_000_000, min(4_000_000_000, physical / 4))
+        let defaultCritical = max(defaultWarning + 500_000_000, min(6_000_000_000, physical * 3 / 8))
+        let defaults = UserDefaults.standard
+        let warningMB = defaults.integer(forKey: "throttleSessionMemoryWarningMB")
+        let criticalMB = defaults.integer(forKey: "throttleSessionMemoryCriticalMB")
+        return ResourceEnvelope(
+            warningBytes: warningMB > 0 ? UInt64(warningMB) * 1_048_576 : defaultWarning,
+            criticalBytes: criticalMB > 0 ? UInt64(criticalMB) * 1_048_576 : defaultCritical,
+            cpuWarningPercent: 250
+        )
+    }
+
+    var resourceState: ResourceState {
+        let envelope = Self.resourceEnvelope
+        if ramBytes >= envelope.criticalBytes { return .critical }
+        if ramBytes >= envelope.warningBytes || consecutiveHighCPUSamples >= 3 { return .constrained }
+        return .healthy
+    }
+
+    var resourceReason: String? {
+        let envelope = Self.resourceEnvelope
+        if ramBytes >= envelope.criticalBytes {
+            return "RAM reached the sampled critical envelope"
+        }
+        if ramBytes >= envelope.warningBytes { return "RAM is above the sampled warning envelope" }
+        if consecutiveHighCPUSamples >= 3 { return "CPU stayed above 250% for three samples" }
+        return nil
+    }
+
+    func recordCPUPercent(_ value: Double) {
+        cpuPercent = max(0, value)
+        consecutiveHighCPUSamples = value >= Self.resourceEnvelope.cpuWarningPercent
+            ? consecutiveHighCPUSamples + 1
+            : 0
+    }
     /// The running claude session id, discovered at runtime — used for persistence.
     var sessionId: String?
+    /// Human-readable recovery diagnostic. The terminal remains usable and, for
+    /// Codex, opens its native session picker when an exact saved ID is missing.
+    var resumeIssue: String?
     /// Set when this session's transcript was offloaded to the edge box — the
     /// remote session id it resumed as. Lets the decision menu say "already
     /// offloaded" instead of silently re-uploading.
@@ -83,6 +149,10 @@ final class CockpitTab: Identifiable {
     /// Previous dominant model, for the mid-session swap detector (a swap
     /// orphans the per-model prompt cache — usually costs MORE, not less).
     var lastSeenModel: String?
+    /// Target selected through Throttle's cache-aware confirmation. Suppresses
+    /// the redundant after-the-fact notification; terminal-entered `/model`
+    /// changes still get the detector notification.
+    var confirmedModelSwitchTarget: String?
 
     /// Rich session state for the rail dot — replaces the binary live/gray flicker.
     /// `working` covers BOTH claude streaming AND the user typing (lastActivityAt
@@ -127,17 +197,27 @@ final class CockpitTab: Identifiable {
         return pid
     }
 
-    init(projectName: String, cwd: String, resumeSessionId: String? = nil) {
+    init(
+        projectName: String,
+        cwd: String,
+        runtime: AgentRuntime = .claudeCode,
+        missionID: UUID = UUID(),
+        resumeSessionId: String? = nil,
+        initialPrompt: String? = nil
+    ) {
         self.projectName = projectName
         self.cwd = cwd
+        self.runtime = runtime
+        self.missionID = missionID
         self.resumeSessionId = resumeSessionId
         self.sessionId = resumeSessionId
+        self.initialPrompt = initialPrompt
     }
 
     var isSpawned: Bool { terminal != nil }
 
     /// Spawn the terminal on first activation: a login shell, then cd into the
-    /// project and launch (or `--resume`) claude.
+    /// project and launch (or resume) the tab's native runtime.
     func ensureSpawned() {
         guard terminal == nil else { return }
         isHibernated = false
@@ -184,19 +264,41 @@ final class CockpitTab: Identifiable {
         // stop one runaway session eating the whole 16 GB.
         var heapMB = d.integer(forKey: "throttleNodeHeapCapMB")
         if heapMB <= 0, d.bool(forKey: "throttleLowMemoryMode") { heapMB = 3072 }
-        if heapMB > 0 { cmd += "export NODE_OPTIONS='--max-old-space-size=\(heapMB)' && " }
+        if runtime == .claudeCode, heapMB > 0 { cmd += "export NODE_OPTIONS='--max-old-space-size=\(heapMB)' && " }
         let maxAgents = d.integer(forKey: "throttleMaxAgents")
-        let agentsFlag = maxAgents > 0 ? " --max-agents \(maxAgents)" : ""
+        let agentsFlag = runtime == .claudeCode && maxAgents > 0 ? " --max-agents \(maxAgents)" : ""
         // Prefer the persisted id; if it was lost, fall back to the newest
         // transcript in this project dir so we resume real context instead of
         // starting an empty session.
-        let sid = sessionId ?? resumeSessionId
-            ?? MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
+        let discovered = runtime == .claudeCode
+            ? MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
+            : MissionRuntimeService.newestCodexSession(cwd: cwd, since: .distantPast)?.id
+        let sid = sessionId ?? resumeSessionId ?? discovered
         // Quote the id (M19): it's a transcript-derived value interpolated into a
         // shell command. Only accept a sane session-id shape, else start fresh.
         if let sid, sid.allSatisfy({ $0.isHexDigit || $0 == "-" }) {
-            cmd += "claude --resume '\(sid)'\(agentsFlag)"; self.sessionId = sid
-        } else { cmd += "claude\(agentsFlag)" }
+            if runtime == .claudeCode {
+                cmd += "claude --resume '\(sid)'\(agentsFlag)"
+                resumeIssue = nil
+                self.sessionId = sid
+            } else if MissionRuntimeService.codexSessionExists(id: sid, cwd: cwd) {
+                cmd += "codex resume '\(sid)'"
+                resumeIssue = nil
+                self.sessionId = sid
+            } else {
+                // Do not knowingly submit a foreign/stale UUID. Codex's picker is
+                // the honest recovery path when the local store cannot prove it.
+                cmd += "printf '\\nThrottle: saved Codex session not found locally; choose a session below.\\n\\n' && codex resume"
+                resumeIssue = "Saved Codex session not found locally — choose it from Codex resume."
+                self.sessionId = nil
+            }
+        } else {
+            resumeIssue = nil
+            cmd += runtime.executable + agentsFlag
+            if let initialPrompt, !initialPrompt.isEmpty {
+                cmd += " " + MissionRuntimeService.shellQuote(initialPrompt)
+            }
+        }
         term.send(txt: cmd + "\n")
     }
 
@@ -256,7 +358,9 @@ final class CockpitTab: Identifiable {
     func hibernate() {
         guard terminal != nil else { return }
         if sessionId == nil {
-            sessionId = MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
+            sessionId = runtime == .claudeCode
+                ? MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
+                : MissionRuntimeService.newestCodexSession(cwd: cwd, since: .distantPast)?.id
         }
         terminate()
         terminateShell()   // the side shell is per-tab RAM too; free it with the session
@@ -328,11 +432,11 @@ final class MultiCockpitModel {
         var id: String { rawValue }
         var label: String {
             switch self {
-            case .dashboard: return "Dashboard"
-            case .tabs:      return "Tabs"
-            case .rail:      return "Rail"
-            case .mission:   return "Overview"
-            case .portfolio: return "Portfolio"
+            case .dashboard: return String(localized: "Dashboard")
+            case .tabs:      return String(localized: "Tabs")
+            case .rail:      return String(localized: "Rail")
+            case .mission:   return String(localized: "Overview")
+            case .portfolio: return String(localized: "Portfolio")
             }
         }
     }
@@ -342,16 +446,32 @@ final class MultiCockpitModel {
         var id: String { rawValue }
         var label: String {
             switch self {
-            case .manual:  return "Manual order"
-            case .recent:  return "Last activity"
-            case .cost:    return "Cost"
-            case .ram:     return "Memory"
-            case .name:    return "Name"
-            case .waiting: return "Waiting first"
+            case .manual:  return String(localized: "Manual order")
+            case .recent:  return String(localized: "Last activity")
+            case .cost:    return String(localized: "Cost")
+            case .ram:     return String(localized: "Memory")
+            case .name:    return String(localized: "Name")
+            case .waiting: return String(localized: "Waiting first")
             }
         }
     }
     var sortMode: SortMode = .manual { didSet { if sortMode != oldValue { recomputeSortOrder() } } }
+    var routingMode: MissionRoutingMode = MissionRoutingMode(
+        rawValue: UserDefaults.standard.string(forKey: "cockpitMissionRoutingMode") ?? ""
+    ) ?? .automatic {
+        didSet { UserDefaults.standard.set(routingMode.rawValue, forKey: "cockpitMissionRoutingMode") }
+    }
+
+    var runtimeForNewMission: AgentRuntime {
+        if routingMode == .hybrid {
+            return MissionRuntimeService.resolveHybrid(
+                claudeRateLimited: !rateLimitedSessions.isEmpty,
+                claudeSessions: sessions.filter { $0.runtime == .claudeCode }.count,
+                codexSessions: sessions.filter { $0.runtime == .codex }.count
+            )
+        }
+        return MissionRuntimeService.resolve(routingMode, claudeRateLimited: !rateLimitedSessions.isEmpty)
+    }
 
     private(set) var sessions: [CockpitTab] = []
 
@@ -758,7 +878,7 @@ final class MultiCockpitModel {
         for tab in live {
             // Mid-tool beats every other signal: claude is working by definition, even
             // if the tool prints nothing and burns no CPU while it waits.
-            if let sid = tab.sessionId,
+            if tab.runtime == .claudeCode, let sid = tab.sessionId,
                Self.isMidToolCall(cwd: tab.cwd, sessionId: sid, now: now) {
                 tab.lastActivityAt = now
             }
@@ -776,7 +896,9 @@ final class MultiCockpitModel {
             // a burst of pressure-rise callbacks would reset the window every time and
             // no session would ever register as busy.
             guard wall >= 1 else { continue }
-            if total >= previous, (total - previous) / wall * 100 >= Self.busyCPUPercent {
+            let percent = total >= previous ? (total - previous) / wall * 100 : 0
+            tab.recordCPUPercent(percent)
+            if percent >= Self.busyCPUPercent {
                 tab.lastActivityAt = now
             }
             tab.lastCPUSeconds = total
@@ -815,7 +937,14 @@ final class MultiCockpitModel {
             for v in victims { v.hibernate() }
             recomputeSortOrder()
             persist()
-            CockpitNotifier.shared.notifyAutoHibernate(count: victims.count, freedBytes: freed)
+            let resumeTokens = victims.compactMap(\.promptCacheImpact).reduce(0) { $0 + $1.contextTokens }
+            let resumeEUR = victims.compactMap(\.promptCacheImpact).reduce(0) { $0 + $1.rebuildEUR }
+            CockpitNotifier.shared.notifyAutoHibernate(
+                count: victims.count,
+                freedBytes: freed,
+                resumeContextTokens: resumeTokens,
+                resumeRebuildEUR: resumeEUR
+            )
         } else {
             // Crowded but RAM fine → freeze instead of kill. Route through the same
             // quiescent-window drain as manual/auto pause so a bare SIGSTOP never lands
@@ -904,54 +1033,88 @@ final class MultiCockpitModel {
     /// tokens. Off-main; nil stays nil (never invented).
     func refreshStats() {
         guard let db = appState?.database else { return }
-        let items = sessions.map { (id: $0.id, cwd: $0.cwd, since: $0.startedAt, sessionId: $0.sessionId) }
+        let items = sessions.map {
+            (id: $0.id, runtime: $0.runtime, cwd: $0.cwd, since: $0.startedAt, sessionId: $0.sessionId)
+        }
         guard !items.isEmpty else { return }
         Task { [weak self] in
-            let results: [(UUID, Double?, Int?, String?, Bool, String?, LoopSignal?)] = await Task.detached(priority: .utility) {
-                items.map { item in
+            let results: [(UUID, Double?, Int?, String?, PromptCacheImpact?, Bool, String?, LoopSignal?, CodexProgressSnapshot?)] = await Task.detached(priority: .utility) {
+                let codexRoot = FileManager.default.homeDirectoryForCurrentUser
+                    .appendingPathComponent(".codex/sessions", isDirectory: true)
+                let codexURLs = items.contains(where: { $0.runtime == .codex })
+                    ? CodexUsageService.recentRolloutURLs(root: codexRoot, now: Date())
+                    : []
+                return items.map { item in
                     // since-gated discovery → liveness + the id we're allowed to adopt.
-                    let recent = Self.newestSession(cwd: item.cwd, since: item.since)
+                    let recent = item.runtime == .claudeCode
+                        ? Self.newestSession(cwd: item.cwd, since: item.since)
+                        : MissionRuntimeService.newestCodexSession(cwd: item.cwd, since: item.since)
                     let live = recent.map { Date().timeIntervalSince($0.mtime) < 12 } ?? false
                     // Runaway-loop check on the LIVE transcript only (cheap tail read).
-                    let loop = (live ? recent?.id : nil).flatMap { LoopDetectorService.detect(cwd: item.cwd, sessionId: $0) }
+                    let loop = item.runtime == .claudeCode
+                        ? (live ? recent?.id : nil).flatMap { LoopDetectorService.detect(cwd: item.cwd, sessionId: $0) }
+                        : nil
                     // For COST, fall back to the persisted id / newest-ever transcript
                     // so a dormant restored tab with real history isn't shown "—" (M07).
-                    let costId = recent?.id ?? item.sessionId
-                        ?? Self.newestSession(cwd: item.cwd, since: .distantPast)?.id
-                    guard let costId else { return (item.id, nil, nil, nil, live, recent?.id, loop) }
-                    let stats: (Double?, Int?, String?)? = try? db.read { d in
+                    let costId = recent?.id ?? item.sessionId ?? (item.runtime == .claudeCode
+                        ? Self.newestSession(cwd: item.cwd, since: .distantPast)?.id
+                        : MissionRuntimeService.newestCodexSession(cwd: item.cwd, since: .distantPast)?.id)
+                    guard let costId else { return (item.id, nil, nil, nil, nil, live, recent?.id, loop, nil) }
+                    // The existing usage database is fed by Claude transcripts.
+                    // Keep Codex values unknown until a dedicated, validated ingest
+                    // exists; never label Claude project totals as Codex session cost.
+                    guard item.runtime == .claudeCode else {
+                        let progress = CodexProgressService.latest(
+                            sessionID: costId, cwd: item.cwd, sessionsRoot: codexRoot, rolloutURLs: codexURLs
+                        )
+                        return (item.id, nil, nil, nil, nil, live, recent?.id ?? costId, loop, progress)
+                    }
+                    let stats: (Double?, Int?, String?, PromptCacheImpact?)? = try? db.read { d in
                         let eur = try? StatsDataService.cockpitSessionCostEUR(in: d, sessionId: costId)
                         let tok = try? StatsDataService.cockpitSessionTokens(in: d, sessionId: costId)
                         let split = (try? StatsDataService.cockpitModelSplitForSession(in: d, sessionId: costId)) ?? []
                         let model = split.max { $0.weightedTokens < $1.weightedTokens }
                             .flatMap { Self.modelName($0.tier) }
-                        return (eur, tok, model)
+                        let impact = try? PromptCacheImpactService.latest(in: d, sessionId: costId)
+                        return (eur, tok, model, impact)
                     }
-                    return (item.id, stats?.0, stats?.1, stats?.2, live, recent?.id, loop)
+                    return (item.id, stats?.0, stats?.1, stats?.2, stats?.3, live, recent?.id, loop, nil)
                 }
             }.value
             guard let self else { return }
             var changed = false
-            for (id, eur, tok, model, live, sid, loop) in results {
+            for (id, eur, tok, model, impact, live, sid, loop, progress) in results {
                 if let tab = self.sessions.first(where: { $0.id == id }) {
                     // Mid-session model swap = orphaned prompt cache (caches are
                     // per-model). On a big context this makes the swap COSTLIER
                     // than staying — verified against Anthropic's cache docs
                     // (deep research 2026-07-14). Warn once per swap; ≥30k tokens
                     // so a fresh session picking its model doesn't false-fire.
-                    if let old = tab.lastSeenModel, let new = model, old != new,
-                       live, (tok ?? 0) > 30_000 {
-                        CockpitNotifier.shared.notifyRule(
-                            title: "Model swap mid-session — \(tab.projectName)",
-                            body: "\(old) → \(new) with \((tok ?? 0) / 1_000)k tokens of context: the prompt cache is per-model, so this rebuilds it from scratch (often pricier than staying). Prefer finishing the task, or offload to the box.")
+                    if let old = tab.lastSeenModel, let new = model, old != new {
+                        let wasConfirmed = tab.confirmedModelSwitchTarget.map {
+                            new.lowercased().contains($0.lowercased())
+                        } ?? false
+                        if live, (tok ?? 0) > 30_000, !wasConfirmed {
+                            CockpitNotifier.shared.notifyRule(
+                                title: "Model swap mid-session — \(tab.projectName)",
+                                body: "\(old) → \(new) with \((tok ?? 0) / 1_000)k tokens of context: the prompt cache is per-model, so this rebuilds it from scratch (often pricier than staying). Prefer finishing the task, or offload to the box.")
+                        }
+                        tab.confirmedModelSwitchTarget = nil
                     }
                     if model != nil { tab.lastSeenModel = model }
-                    tab.eur = eur; tab.tokens = tok; tab.model = model; tab.isLive = live; tab.loopSignal = loop
+                    tab.eur = eur; tab.tokens = tok; tab.model = model
+                    tab.promptCacheImpact = impact
+                    tab.codexProgress = progress
+                    tab.isLive = live; tab.loopSignal = loop
                     // Only adopt a freshly-discovered id — NEVER clear to nil.
                     // A dormant restored tab has an old transcript mtime, so
                     // newestSession returns nil; clearing here would erase its
                     // persisted resume-id and lose the session on next restart.
-                    if let sid, tab.sessionId != sid { tab.sessionId = sid; changed = true }
+                    if let sid, tab.sessionId != sid {
+                        tab.sessionId = sid
+                        tab.resumeIssue = nil
+                        changed = true
+                    }
                 }
             }
             if changed { self.persist() }   // keep saved resume-ids fresh
@@ -1045,7 +1208,14 @@ final class MultiCockpitModel {
     // MARK: - Persistence (memory-aware: restored tabs spawn lazily via resume)
 
     private static let persistKey = "cockpitOpenSessions"
-    private struct Saved: Codable { let cwd: String; let name: String; let sessionId: String? }
+    private struct Saved: Codable {
+        let cwd: String
+        let name: String
+        let sessionId: String?
+        let runtime: AgentRuntime?
+        let missionID: UUID?
+        let isHibernated: Bool?
+    }
 
     /// True once restore() has run or a session was added — i.e. `sessions` is the
     /// canonical working set. Until then, persisting would write garbage.
@@ -1056,7 +1226,10 @@ final class MultiCockpitModel {
         // (e.g. the app launched but the cockpit was never opened, so restore()
         // didn't run). That would wipe the user's sessions on quit.
         guard sessionsLoaded else { return }
-        let saved = sessions.map { Saved(cwd: $0.cwd, name: $0.projectName, sessionId: $0.sessionId) }
+        let saved = sessions.map {
+            Saved(cwd: $0.cwd, name: $0.projectName, sessionId: $0.sessionId,
+                  runtime: $0.runtime, missionID: $0.missionID, isHibernated: $0.isHibernated)
+        }
         if let data = try? JSONEncoder().encode(saved) {
             UserDefaults.standard.set(data, forKey: Self.persistKey)
         }
@@ -1069,7 +1242,14 @@ final class MultiCockpitModel {
         for item in saved {
             var isDir: ObjCBool = false
             guard fm.fileExists(atPath: item.cwd, isDirectory: &isDir), isDir.boolValue else { continue }
-            let tab = CockpitTab(projectName: item.name, cwd: item.cwd, resumeSessionId: item.sessionId)
+            let tab = CockpitTab(
+                projectName: item.name,
+                cwd: item.cwd,
+                runtime: item.runtime ?? .claudeCode,
+                missionID: item.missionID ?? UUID(),
+                resumeSessionId: item.sessionId
+            )
+            tab.isHibernated = item.isHibernated ?? false
             wire(tab)
             sessions.append(tab)
         }
@@ -1100,21 +1280,55 @@ final class MultiCockpitModel {
                     // unbounded on long sessions/subagents. Flag a ballooned subtree
                     // so the UI can nudge a restart-in-place (reclaims the leaked
                     // heap, keeps context via --resume) — advisory, never automatic.
-                    tab.leakSuspected = bytes > 3_000_000_000
+                    tab.leakSuspected = bytes >= CockpitTab.resourceEnvelope.warningBytes
                 }
             }
         }
     }
 
     @discardableResult
-    func newSession(projectName: String, cwd: String) -> CockpitTab {
-        let s = CockpitTab(projectName: projectName, cwd: cwd)
+    func newSession(
+        projectName: String,
+        cwd: String,
+        runtime: AgentRuntime? = nil,
+        missionID: UUID = UUID(),
+        initialPrompt: String? = nil
+    ) -> CockpitTab {
+        let selectedRuntime = runtime ?? runtimeForNewMission
+        let kickoff = initialPrompt ?? (runtime == nil && routingMode == .hybrid
+            ? MissionRuntimeService.hybridKickoff(runtime: selectedRuntime)
+            : nil)
+        let s = CockpitTab(
+            projectName: projectName,
+            cwd: cwd,
+            runtime: selectedRuntime,
+            missionID: missionID,
+            initialPrompt: kickoff
+        )
         wire(s)
         sessions.append(s)
         recomputeSortOrder()
         activeID = s.id   // didSet → ensureSpawned
         persist()
         return s
+    }
+
+    /// Explicit one-writer handoff. The source is hibernated first, preserving its
+    /// native resume id, then the target starts fresh with the canonical packet.
+    @discardableResult
+    func continueMission(_ sourceID: UUID, with handoff: MissionHandoff) -> CockpitTab? {
+        guard let source = sessions.first(where: { $0.id == sourceID }),
+              source.missionID == handoff.missionID,
+              source.runtime == handoff.source,
+              source.cwd == handoff.cwd else { return nil }
+        if source.isSpawned { hibernate(sourceID) }
+        return newSession(
+            projectName: source.projectName,
+            cwd: source.cwd,
+            runtime: handoff.target,
+            missionID: source.missionID,
+            initialPrompt: handoff.prompt
+        )
     }
 
     /// Hibernate a session to free RAM. If it's the active one, move focus to
@@ -1180,6 +1394,7 @@ final class MultiCockpitModel {
 
     var binding: Binding? {
         guard let appState else { return nil }
+        var candidates: [Binding] = []
         // Only claim EXACT when the server snapshot is actually fresh — otherwise
         // degrade to the local estimate (≈), same as the menu-bar dropdown. A
         // stale exact value labelled EXACT violates the golden rule.
@@ -1189,23 +1404,47 @@ final class MultiCockpitModel {
                 ("Weekly", ex.sevenDay.utilization, ex.sevenDay.resetsAt),
                 ("Weekly · Sonnet", ex.sevenDaySonnet.utilization, ex.sevenDaySonnet.resetsAt),
             ]
-            if let b = ws.max(by: { $0.1 < $1.1 }) {
-                return Binding(pct: b.1, name: b.0, reset: b.2.map(Self.hm) ?? "—", estimate: false,
-                               resetInSeconds: b.2.map { Int64($0.timeIntervalSinceNow) })
+            for window in ws {
+                candidates.append(Binding(
+                    pct: window.1,
+                    name: "Claude · \(window.0)",
+                    reset: window.2.map(Self.hm) ?? "—",
+                    estimate: false,
+                    resetInSeconds: window.2.map { Int64($0.timeIntervalSinceNow) }
+                ))
             }
+        } else {
+            let snap = appState.snapshot
+            let local: [(String, Double, Int64)] = [
+                ("Session", snap.session5h.percentUsed ?? -1, snap.session5h.resetInSeconds),
+                ("Weekly", snap.weeklyAll.percentUsed ?? -1, snap.weeklyAll.resetInSeconds),
+                ("Weekly · Sonnet", snap.weeklySonnet.percentUsed ?? -1, snap.weeklySonnet.resetInSeconds),
+            ].filter { $0.1 >= 0 }
+            candidates.append(contentsOf: local.map { value in
+                Binding(
+                    pct: Int((value.1 * 100).rounded()),
+                    name: "Claude · \(value.0)",
+                    reset: Self.hm(Date().addingTimeInterval(TimeInterval(value.2))),
+                    estimate: true,
+                    resetInSeconds: value.2
+                )
+            })
         }
-        let snap = appState.snapshot
-        let cands: [(String, Double, Int64)] = [
-            ("Session", snap.session5h.percentUsed ?? -1, snap.session5h.resetInSeconds),
-            ("Weekly", snap.weeklyAll.percentUsed ?? -1, snap.weeklyAll.resetInSeconds),
-            ("Weekly · Sonnet", snap.weeklySonnet.percentUsed ?? -1, snap.weeklySonnet.resetInSeconds),
-        ].filter { $0.1 >= 0 }
-        if let b = cands.max(by: { $0.1 < $1.1 }) {
-            return Binding(pct: Int((b.1 * 100).rounded()), name: b.0,
-                           reset: Self.hm(Date().addingTimeInterval(TimeInterval(b.2))), estimate: true,
-                           resetInSeconds: b.2)
+        if let codex = appState.codexUsageSnapshot, codex.isFresh() {
+            candidates.append(contentsOf: codex.windows.map { window in
+                let minutes = window.windowMinutes.map { String($0) } ?? "?"
+                let label = window.windowMinutes == 300 ? "5h"
+                    : (window.windowMinutes == 10_080 ? "Weekly" : "\(minutes)m")
+                return Binding(
+                    pct: Int(window.usedPercent.rounded()),
+                    name: "Codex · \(label)",
+                    reset: window.resetsAt.map(Self.hm) ?? "—",
+                    estimate: false,
+                    resetInSeconds: window.resetsAt.map { Int64($0.timeIntervalSinceNow) }
+                )
+            })
         }
-        return nil
+        return candidates.max(by: { $0.pct < $1.pct })
     }
 
     private static let hmFormatter: DateFormatter = {

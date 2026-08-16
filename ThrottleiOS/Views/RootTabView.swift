@@ -1,6 +1,8 @@
 import SwiftUI
 
-/// Three tabs: live mirror (hero), sessions, history/trends.
+/// App Store surface: usage, LAN-paired Mac sessions, and local history.
+/// Off-LAN Edge control remains a macOS/direct-distribution capability; exposing
+/// a cloud thin-client path here would conflict with App Review guideline 4.2.7.
 struct RootTabView: View {
     @State private var showOnboarding = !UserDefaults.standard.bool(forKey: OnboardingView.doneKey)
 
@@ -10,8 +12,6 @@ struct RootTabView: View {
                 .tabItem { Label("Usage", systemImage: "gauge.with.needle") }
             SessionListView()
                 .tabItem { Label("Sessions", systemImage: "terminal") }
-            EdgeSessionListView()
-                .tabItem { Label("Edge", systemImage: "server.rack") }
             HistoryChartsView()
                 .tabItem { Label("History", systemImage: "chart.xyaxis.line") }
         }

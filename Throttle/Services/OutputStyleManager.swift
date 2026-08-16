@@ -135,8 +135,8 @@ enum OutputStyleManager {
             guard let t = templates.first(where: { $0.name == name }), t.name != "Blank" else { continue }
             let bodyCurrent = onDisk.contains(t.body.trimmingCharacters(in: .whitespacesAndNewlines))
             if !bodyCurrent {
-                try? saveStyle(name: t.name, description: t.description, body: t.body,
-                               keepCoding: t.keepCoding, managed: true, fileURL: url)
+                _ = try? saveStyle(name: t.name, description: t.description, body: t.body,
+                                   keepCoding: t.keepCoding, managed: true, fileURL: url)
             }
         }
     }

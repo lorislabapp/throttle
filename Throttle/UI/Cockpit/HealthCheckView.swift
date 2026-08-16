@@ -88,7 +88,7 @@ struct HealthCheckView: View {
     }
 
     private func fixLabel(_ fix: HealthFix) -> String {
-        switch fix { case .killOrphans: return "Kill"; case .none: return "" }
+        switch fix { case .killOrphans: return String(localized: "Kill"); case .none: return "" }
     }
 
     // MARK: - Verdict styling
@@ -110,8 +110,14 @@ struct HealthCheckView: View {
     private var overallSummary: String {
         let fails = items.filter { $0.status == .fail }.count
         let warns = items.filter { $0.status == .warn }.count
-        if fails > 0 { return "\(fails) failing · \(warns) warning" }
-        if warns > 0 { return "\(warns) warning — otherwise healthy" }
-        return loading ? "Running checks…" : "All systems healthy"
+        if fails > 0 {
+            return String.localizedStringWithFormat(
+                String(localized: "%lld failing · %lld warning"), fails, warns)
+        }
+        if warns > 0 {
+            return String.localizedStringWithFormat(
+                String(localized: "%lld warning — otherwise healthy"), warns)
+        }
+        return loading ? String(localized: "Running checks…") : String(localized: "All systems healthy")
     }
 }

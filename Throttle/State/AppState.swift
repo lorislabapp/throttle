@@ -12,6 +12,14 @@ final class AppState {
     /// True when ~/.claude/ is not present.
     var claudeCodeDetected: Bool = false
 
+    /// Codex is considered available once its local data directory exists. This
+    /// does not claim that a login is valid or that a fresh quota event exists.
+    var codexDetected: Bool = false
+
+    /// Latest provider-emitted Codex usage observation. It remains visible when
+    /// stale, but stale limits are excluded from the menu-bar headline.
+    var codexUsageSnapshot: CodexUsageSnapshot?
+
     /// Current snapshot from local JSONL math. Updated whenever usage data or calibration changes.
     var snapshot: UsageSnapshot = .empty
 
@@ -58,10 +66,14 @@ final class AppState {
     let database: any DatabaseWriter
 
     private var refreshTask: Task<Void, Never>?
+    private var codexRefreshTask: Task<Void, Never>?
 
     init(database: any DatabaseWriter) {
         self.database = database
         self.claudeCodeDetected = ClaudeCodePathProvider.projectsDirectory() != nil
+        self.codexDetected = FileManager.default.fileExists(
+            atPath: FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".codex").path
+        )
     }
 
     #if DEBUG
@@ -70,6 +82,7 @@ final class AppState {
     static var demo: AppState {
         let state = AppState(database: try! DatabaseQueue())
         state.claudeCodeDetected = true
+        state.codexDetected = true
         state.firstRunDone = true
         state.isPro = true
 
@@ -117,6 +130,21 @@ final class AppState {
         )
 
         return state
+    }
+
+    /// Refresh Codex independently from the Claude database pipeline. Separating
+    /// the tasks prevents a busy Claude file watcher from continuously cancelling
+    /// the bounded Codex rollout read.
+    func refreshCodexUsage() {
+        codexRefreshTask?.cancel()
+        codexRefreshTask = Task {
+            let snapshot = await Task.detached(priority: .utility) {
+                CodexUsageService.latestSnapshot()
+            }.value
+            guard !Task.isCancelled else { return }
+            self.codexUsageSnapshot = snapshot
+            self.codexDetected = self.codexDetected || snapshot != nil
+        }
     }
     #endif
 

@@ -26,7 +26,7 @@
 	<string>public.app-category.developer-tools</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
-		<key>NSAllowsArbitraryLoads</key>
+		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
 	<key>NSBonjourServices</key>
@@ -34,7 +34,7 @@
 		<string>_throttle._tcp</string>
 	</array>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Throttle uses Face ID to unlock typing into a remote session, so the write path stays behind your device's biometrics.</string>
+	<string>Throttle uses Face ID or your device passcode to unlock terminal input. Sessions start read-only and relock after inactivity or when the app leaves the foreground.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Throttle mirrors your Mac's live Claude Code usage over your local network for instant updates when both devices are on the same Wi-Fi. It falls back to iCloud otherwise.</string>
 	<key>UIBackgroundModes</key>

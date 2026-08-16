@@ -1,121 +1,77 @@
-# Throttle Meter
+# Throttle
 
-> An open-source Claude Code usage meter for macOS. Watch your 5-hour and weekly limits live in your menu bar so you never get cut off mid-session without warning.
+Throttle is an Apple-first cockpit for Claude Code and Codex. It measures local coding-agent usage, helps diagnose context and prompt-cache cost, manages multiple terminal sessions, and supports reviewed handoffs between providers when one is unavailable or rate-limited.
 
-> ⚠️ **Status: v1.0-alpha** — buildable from source, no installable DMG yet. The commercial Throttle (Free + Pro) is in active development; landing page coming soon.
-
-This repo is the **free, open-source meter** — the same code that will ship inside the commercial **Throttle** app, minus the Pro features (optimizer wizard, license management, paid-tier UI). The commercial version's landing page at `lorislab.fr/throttle` is *coming soon*; for now, contact [support@lorislab.fr](mailto:support@lorislab.fr) for beta access.
-
-## Screenshots
-
-_Coming soon — a 5-second GIF of the menu bar dropdown will land here before public promotion._
+Current status: active pre-release development. The repository contains macOS, iOS, widget, visionOS and self-hosted Edge surfaces. A local build is not proof of notarization, TestFlight approval or production readiness.
 
 ## What it does
 
-- Reads your Claude Code session files at `~/.claude/projects/<repo>/<session>.jsonl`
-- Sums tokens consumed across rolling 5-hour and weekly windows
-- Shows usage as a percentage in your menu bar, with progress bars in the dropdown
-- Auto-calibrates from your observed peaks; manually adjustable in Settings
-- Works fully offline — no telemetry, no network calls, no account
+- Parses local Claude Code session data and displays measured or clearly labelled estimated usage.
+- Runs Claude Code and Codex sessions in a native macOS cockpit.
+- Creates reviewed, one-writer handoff packets between providers; it does not silently copy provider transcripts.
+- Offers explicit, reversible optimizers for supported Claude Code configuration and transcript workflows.
+- Optionally mirrors encrypted state through the user's private CloudKit database and an authenticated LAN peer link.
+- Optionally connects to a self-hosted Edge agent for remote sessions and repository transfer.
+- Checks licenses and updates when those features are enabled.
 
-## What it does *not* do
+Throttle is local-first, not offline-only. It has no third-party advertising or analytics SDK, but enabled product features can make network requests and can transfer user-selected data. See [PRIVACY.md](PRIVACY.md) for the current data-flow map and controls.
 
-- Modify any file in `~/.claude/`
-- Connect to Anthropic, LorisLabs, or anyone else
-- Track or log session content (only token counts and timestamps)
+## Trust boundaries
 
-If you want optimization, hook installation, license-tier features, and Sparkle auto-update, the commercial **Throttle** (€19, one-time) is in development — landing page coming soon at lorislab.fr/throttle. Email [support@lorislab.fr](mailto:support@lorislab.fr) for beta access.
+- Local session files remain the source for local metrics. Unknown values stay unknown; Throttle does not invent provider usage or cost.
+- Claude Code and Codex keep their own native session stores and authentication.
+- Cross-provider handoff is reviewed before launch and keeps only one writer active in a checkout.
+- Remote terminal input starts locked on iPhone, requires device-owner authentication, and relocks after inactivity or backgrounding.
+- Edge is self-hosted and must use the secure transport requirements documented with the agent. Do not expose an insecure development endpoint to an untrusted network.
+- Configuration-changing tools are opt-in, previewed, backed up and reversible.
 
-## Privacy
+## Platforms
 
-Everything stays on your Mac. The privacy claim is **auditable in this repo** — see `Throttle/Services/`, `Throttle/Parser/`, `Throttle/DataLayer/`. The only filesystem reads are `~/.claude/projects/` (recursive) and writes are to `~/Library/Application Support/com.lorislab.throttle/` (local SQLite + logs).
-
-## Free vs Commercial
-
-| | Throttle Meter (this repo) | Throttle (commercial, coming soon) |
-|---|:---:|:---:|
-| Live menu-bar meter | ✅ | ✅ |
-| 5-hour + weekly windows | ✅ | ✅ |
-| Calibration (auto / manual) | ✅ | ✅ |
-| Settings + log viewer | ✅ | ✅ |
-| Optimizer wizard (cuts up to 70% off session-start context) | ❌ | ✅ |
-| Hooks management UI | ❌ | ✅ |
-| Backup + rollback for Claude Code config | ❌ | ✅ |
-| Sparkle auto-update | ❌ | ✅ |
-| Paid support | ❌ | ✅ |
-| **License** | MIT | Commercial (€19 one-time) |
-
-The commercial version is built on top of this exact codebase plus closed-source Pro modules.
+| Surface | Purpose | Current proof boundary |
+|---|---|---|
+| macOS app + widget | usage, optimizer, cockpit, handoff and Edge setup | unit tests and local builds; fresh notarization still required |
+| iOS app + widget | private mirror, alerts and authenticated LAN input to the user's Mac | simulator/build tests plus real-device gates |
+| visionOS app | spatial read-only mirror | build/device validation required |
+| Edge agent | macOS-managed self-hosted sessions and bounded repo transfer | local contract tests; live deployment is a separate gate |
 
 ## Build
 
 Requirements:
 
-- macOS 14 (Sonoma) or later
-- Xcode 16 or later
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
+- macOS 14 or later
+- Xcode compatible with the SDKs in `project.yml`
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen)
 
 ```bash
-git clone https://github.com/lorislabapp/throttle-meter.git
-cd throttle-meter
 xcodegen generate
-open Throttle.xcodeproj
-```
-
-Or build from CLI:
-
-```bash
-xcodebuild -project Throttle.xcodeproj -scheme Throttle \
-  -destination 'platform=macOS' build
-```
-
-The `.app` lands in `~/Library/Developer/Xcode/DerivedData/Throttle-*/Build/Products/Debug/Throttle.app`.
-
-## Tests
-
-```bash
 xcodebuild test -project Throttle.xcodeproj -scheme Throttle \
   -destination 'platform=macOS'
+swift test --package-path ThrottleShared
+(cd edge-agent && npm test)
 ```
 
-21 unit tests covering JSONL parsing, calibration math, database queries, and the cold-start scanner.
+The XcodeGen source of truth is [`project.yml`](project.yml). Do not hand-edit generated project settings.
 
-## Architecture
+## Repository map
 
-Layered SwiftUI 6 + GRDB.swift app. One responsibility per file:
-
-```
-Throttle/
-├── Models/         Codable + GRDB record types
-├── Database/       Migrations, DatabaseManager, queries
-├── Parser/         JSONL line parser, file parser, warning detector
-├── DataLayer/      Cold-start scanner, FSEvents watcher, hourly sweeper, coordinator
-├── Calibration/    Window math, calibration engine (auto/manual/anchor)
-├── State/          @Observable AppState, UsageSnapshot
-├── Services/       AppLogger, ClaudeCodePathProvider, login items, hook status
-├── UI/MenuBar/     Menu bar label + dropdown
-├── UI/FirstRun/    3-step welcome window
-├── UI/Settings/    5 panes (General, Calibration, Hooks, Privacy, About)
-└── UI/States/      Log viewer, empty states
+```text
+Throttle/             macOS app
+ThrottleTests/        macOS unit tests
+ThrottleiOS/          iOS companion
+ThrottleiOSTests/     iOS security/behavior tests
+ThrottleiOSWidget/    iOS widget and Live Activity
+ThrottleVision/       visionOS companion
+ThrottleShared/       shared models, peer transport and package tests
+edge-agent/           self-hosted agent and contract tests
+docs/                 designs and historical decisions (dated documents may be stale)
 ```
 
-## Identity
+## Security and privacy reports
 
-Built and signed by **Christine Martin** (LorisLabs).
+Security reports should use the repository's private disclosure channel or contact [support@lorislab.fr](mailto:support@lorislab.fr). Do not include access tokens, transcripts or personal session content in an issue.
 
-- Apple Developer Team ID: `TDV6D5L785`
-- Bundle ID: `com.lorislab.throttle`
+See [PRIVACY.md](PRIVACY.md) for data handling. Historical launch and positioning documents are not current product or privacy policy.
 
 ## License
 
-[MIT](LICENSE) — do whatever you want with it. Attribution appreciated, not required.
-
-## Contributing
-
-PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). Be excellent to each other ([Code of Conduct](CODE_OF_CONDUCT.md)).
-
-## Status
-
-**v1.0-alpha.1** — first buildable version. Free tier complete. The commercial version's Pro features (optimizer, paywall, license) are in active development in a separate private repo.
-
-If you'd like to be a beta tester, reach out at [support@lorislab.fr](mailto:support@lorislab.fr).
+Copyright © 2026 LorisLabs. Check the applicable source headers and distribution agreement before redistributing commercial app components; the repository is not represented as an MIT-only meter.

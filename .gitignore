@@ -15,6 +15,17 @@ build/
 Package.resolved
 *.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 
+# XcodeGen's project is generated, but the SwiftPM lock is source-controlled so
+# CI and release builds consume reviewed revisions instead of resolving anew.
+!Throttle.xcodeproj/
+Throttle.xcodeproj/*
+!Throttle.xcodeproj/project.xcworkspace/
+Throttle.xcodeproj/project.xcworkspace/*
+!Throttle.xcodeproj/project.xcworkspace/xcshareddata/
+Throttle.xcodeproj/project.xcworkspace/xcshareddata/*
+!Throttle.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+!Throttle.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
 # Misc
 *.swp
 *.swo

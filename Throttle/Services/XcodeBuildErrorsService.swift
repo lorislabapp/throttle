@@ -85,7 +85,7 @@ enum XcodeBuildErrorsService {
             for e in entries where e.hasSuffix(".xcresult") {
                 let full = "\(buildLogs)/\(e)"
                 let mtime = (try? fm.attributesOfItem(atPath: full)[.modificationDate] as? Date) ?? .distantPast
-                found.append(BuildResult(path: full, name: name.isEmpty ? proj : name, mtime: mtime ?? .distantPast))
+                found.append(BuildResult(path: full, name: name.isEmpty ? proj : name, mtime: mtime))
             }
         }
         guard !found.isEmpty else { return nil }

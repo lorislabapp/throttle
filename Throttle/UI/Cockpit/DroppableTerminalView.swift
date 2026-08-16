@@ -116,6 +116,64 @@ final class DroppableTerminalView: LocalProcessTerminalView {
 
     // MARK: - Input activity
 
+    /// Large or multi-line clipboard payloads can contain an accidental command
+    /// sequence. Show byte/line/hash evidence before a single confirmed send.
+    override func paste(_ sender: Any?) {
+        guard let text = NSPasteboard.general.string(forType: .string), !text.isEmpty else {
+            super.paste(sender as Any)
+            return
+        }
+        guard ReviewedPasteService.requiresReview(text) else {
+            paste(text)
+            return
+        }
+        let challenge: ReviewedPasteChallenge
+        do {
+            challenge = try ReviewedPasteService.prepare(text)
+        } catch {
+            NSSound.beep()
+            presentPasteError(error)
+            return
+        }
+        presentPasteReview(challenge, text: text)
+    }
+
+    private func presentPasteReview(_ challenge: ReviewedPasteChallenge, text: String) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Review terminal paste"
+        alert.informativeText = "\(challenge.lineCount) lines · \(challenge.byteCount) bytes\nSHA-256 \(challenge.sha256.prefix(16))…\n\n\(challenge.preview)"
+        alert.addButton(withTitle: "Paste once")
+        alert.addButton(withTitle: "Cancel")
+        let commit: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard response == .alertFirstButtonReturn,
+                  ReviewedPasteService.validates(challenge, text: text) else {
+                if response == .alertFirstButtonReturn { NSSound.beep() }
+                return
+            }
+            self?.paste(text)
+            self?.window?.makeFirstResponder(self)
+        }
+        if let window {
+            alert.beginSheetModal(for: window, completionHandler: commit)
+        } else {
+            commit(alert.runModal())
+        }
+    }
+
+    private func presentPasteError(_ error: Error) {
+        let alert = NSAlert()
+        alert.alertStyle = .critical
+        alert.messageText = "Paste blocked"
+        if error as? ReviewedPasteError == .tooLarge {
+            alert.informativeText = "Terminal pastes are limited to 64 KiB. Use a file or a smaller reviewed paste."
+        } else {
+            alert.informativeText = "The clipboard contains a NUL or escape control sequence and was not sent."
+        }
+        alert.addButton(withTitle: "OK")
+        if let window { alert.beginSheetModal(for: window, completionHandler: nil) } else { alert.runModal() }
+    }
+
     /// User input (keystrokes/paste) sent to the PTY counts as activity too, so
     /// the session reads as "working" the instant you hit Enter — through claude's
     /// pre-first-token think gap — instead of flickering to idle. `send(source:)`
@@ -673,7 +731,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
 
     /// Backslash-escape shell/Claude-significant characters, matching how
     /// Terminal.app & Finder escape paths on drag.
-    static func terminalEscape(_ path: String) -> String {
+    nonisolated static func terminalEscape(_ path: String) -> String {
         let special: Set<Character> = [
             " ", "\t", "\"", "'", "\\", "(", ")", "[", "]", "{", "}",
             "<", ">", "|", ";", "&", "$", "`", "*", "?", "!", "#", "~",

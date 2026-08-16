@@ -1,27 +1,32 @@
 import Foundation
 import LocalAuthentication
 
-/// Opt-in write lock for remote terminals. **Unlocked by default** (2026-07-17):
-/// the original read-only-until-Face-ID default (verdict of 2026-07-11) made the
-/// terminal look broken — the keyboard never took focus and keystrokes were dropped
-/// without a word, so "I can't type on iOS" was the whole experience.
+/// Local write gate for remote terminals. Every terminal starts read-only, asks for
+/// device-owner authentication on the first attempted write, and relocks after five
+/// minutes without outgoing input or whenever the app leaves the foreground.
 ///
-/// It was never a security boundary anyway: ttyd accepts input the moment a socket
-/// attaches, and the token already sits in UserDefaults, so a compromised device
-/// bypasses this trivially. It only ever bought protection against *your own* stray
-/// taps — which is worth a button, not a wall.
-///
-/// Now: type immediately; tap the lock to make a session read-only on purpose;
-/// typing into a locked session prompts to unlock instead of silently swallowing it.
-/// No idle auto-relock — that would silently re-arm the same trap mid-session.
-/// One `TerminalLockState` per attached terminal (not shared/global).
+/// This protects against accidental/unauthorized writes on an unlocked phone; it is
+/// deliberately not described as end-to-end authorization for the remote agent.
+/// One `TerminalLockState` is owned by each attached terminal.
 @MainActor
 @Observable
 final class TerminalLockState {
-    private(set) var unlocked = true
+    private(set) var unlocked = false
 
     /// Why the last unlock attempt failed, for the UI to surface a recovery hint.
     private(set) var lastError: String?
+
+    private let relockAfterNanoseconds: UInt64
+    private let authenticationOverride: (@MainActor () async -> Bool)?
+    private var relockTask: Task<Void, Never>?
+
+    init(
+        relockAfterNanoseconds: UInt64 = 5 * 60 * 1_000_000_000,
+        authenticationOverride: (@MainActor () async -> Bool)? = nil
+    ) {
+        self.relockAfterNanoseconds = relockAfterNanoseconds
+        self.authenticationOverride = authenticationOverride
+    }
 
     /// Prompt for biometrics **with device-passcode fallback**, so a user with no
     /// enrolled Face ID / Touch ID (or one that's hit biometry lockout) can still
@@ -29,6 +34,14 @@ final class TerminalLockState {
     /// On success, unlock and start the idle countdown.
     @discardableResult
     func unlock() async -> Bool {
+        if let authenticationOverride {
+            guard await authenticationOverride() else {
+                lastError = "Authentication was not confirmed."
+                return false
+            }
+            completeUnlock()
+            return true
+        }
         let ctx = LAContext()
         var err: NSError?
         guard ctx.canEvaluatePolicy(.deviceOwnerAuthentication, error: &err) else {
@@ -36,20 +49,52 @@ final class TerminalLockState {
             return false
         }
         do {
-            let ok = try await ctx.evaluatePolicy(.deviceOwnerAuthentication,
-                                                  localizedReason: "Unlock to type into this remote session")
-            guard ok else { lastError = "Authentication was not confirmed."; return false }
+            let authenticated = try await ctx.evaluatePolicy(
+                .deviceOwnerAuthentication,
+                localizedReason: "Unlock to type into this remote session"
+            )
+            guard authenticated else { lastError = "Authentication was not confirmed."; return false }
         } catch {
             // User cancel / system cancel are not errors worth shouting about.
             lastError = (error as? LAError)?.code == .userCancel ? nil : error.localizedDescription
             return false
         }
-        lastError = nil
-        unlocked = true
+        completeUnlock()
         return true
     }
 
-    func lock() { unlocked = false }
+    func lock() {
+        relockTask?.cancel()
+        relockTask = nil
+        unlocked = false
+    }
+
+    /// Call immediately before every outgoing terminal write. A write is the only
+    /// activity that extends the unlock window; passive output never does.
+    func registerWriteActivity() {
+        guard unlocked else { return }
+        scheduleRelock()
+    }
+
+    private func completeUnlock() {
+        lastError = nil
+        unlocked = true
+        scheduleRelock()
+    }
+
+    private func scheduleRelock() {
+        relockTask?.cancel()
+        let delay = relockAfterNanoseconds
+        relockTask = Task { [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: delay)
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+            self?.lock()
+        }
+    }
 
     /// A keystroke arrived while locked. Raise the unlock prompt once rather than
     /// dropping the key in silence — a terminal that ignores your typing with no

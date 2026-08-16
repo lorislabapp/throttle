@@ -65,5 +65,17 @@ final class MouseReportFilterTests: XCTestCase {
                           "heredoc terminator \(term) not at column 0")
         }
         XCTAssertFalse(all.contains(" B64"), "indented B64 terminator")
+        XCTAssertTrue(all.contains("tailscale serve --bg --yes --https=8787 localhost:8787"))
+        XCTAssertFalse(all.contains("-c throttle:"), "ttyd credentials must not be emitted in argv")
+        XCTAssertFalse(all.contains("THROTTLE_AGENT_TOKEN="),
+                       "systemd must load the bearer from a credential file, not process env")
+        XCTAssertTrue(all.contains("/etc/throttle-agent.token"))
+    }
+
+    func testEdgeRemoteURLIsHTTPSExceptLoopback() {
+        XCTAssertEqual(EdgeAgentService.remoteURL(host: "edge.example.ts.net", port: 8787),
+                       "https://edge.example.ts.net:8787/")
+        XCTAssertEqual(EdgeAgentService.remoteURL(host: "127.0.0.1", port: 8787),
+                       "http://127.0.0.1:8787/")
     }
 }

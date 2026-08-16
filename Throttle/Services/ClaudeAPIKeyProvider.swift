@@ -171,7 +171,7 @@ enum ClaudeAPIKeyStore {
     private static let account = "key"
 
     static func read() -> String? {
-        var query: [String: Any] = [
+        let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,

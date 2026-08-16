@@ -84,7 +84,7 @@ def hero():
 # ---------- Screen 2: sessions ----------
 def sessions():
     im=Image.new("RGB",(W,H)); d=ImageDraw.Draw(im); bg(d)
-    caption(d,"Every session,","mirrored — read-only.")
+    caption(d,"Your sessions,","safely mirrored.")
     d,(x0,y0,x1,y1)=phone(im); d=ImageDraw.Draw(im)
     d.text((x0+60,y0+120),"Sessions",font=f(BOLD,72),fill=INK)
     rows=[("Throttle","opus · working",OK,"€1.12","5.0k",False),
