@@ -1,6 +1,6 @@
 # Throttle release ledger — 3.2.80 (180)
 
-Updated UTC: 2026-08-17T09:32:14Z
+Updated UTC: 2026-08-17T09:37:57Z
 Repository: `/Users/kevinnadjarian/GitHub/Throttle`
 Channel: Developer ID direct distribution through Sparkle
 Authority: release requested by the user. The publish-apple workflow still requires an exact-artifact confirmation before Apple notarization and another before public upload.
@@ -54,7 +54,8 @@ Authority: release requested by the user. The publish-apple workflow still requi
 
 ## Metadata
 
-- Appcast item and landing page: PENDING second explicit confirmation.
+- Appcast item and landing page: LIVE; 3.2.80 (180) is the first feed item.
+- Public landing-page download link: LIVE and points to `Throttle-3.2.80.dmg`.
 
 ## Assemble
 
@@ -74,8 +75,18 @@ Authority: release requested by the user. The publish-apple workflow still requi
 ## Submit
 
 - Apple notarization upload: COMPLETE and accepted.
-- Public DMG/appcast/site upload: NOT STARTED.
+- Public DMG/appcast/site upload: COMPLETE after the second explicit GO.
+- Targeted uploader sent exactly `throttle/Throttle-3.2.80.dmg`,
+  `throttle/appcast.xml` and `throttle/index.html`; unrelated dirty website files
+  were excluded.
 
 ## Post-release
 
-- Live feed, DMG digest, staple, Gatekeeper and landing page: PENDING.
+- Live feed XML: PASS; top item is 3.2.80 (180), enclosure length 26,177,492.
+- Live landing page: PASS; version, size and download link show 3.2.80.
+- Live DMG download: PASS; 26,177,492 bytes.
+- Live DMG SHA-256: `a92529d71ddd039d2e3f8d27197c8dd498b24e4727331e431dd88685175ad0cf`, exact local match.
+- Live downloaded DMG staple validation and strict signature: PASS.
+- Live mounted app/widget strict signatures: PASS; universal `x86_64 arm64`.
+- Live downloaded DMG and mounted-app Gatekeeper: PASS, source `Notarized Developer ID`.
+- Rollback remains available through the existing 3.2.79 feed item and DMG.
