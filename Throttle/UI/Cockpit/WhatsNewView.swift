@@ -15,12 +15,14 @@ struct WhatsNewView: View {
 
     // Curated: the optimizations, newest first. `now` flags this release's additions.
     private let features: [Feature] = [
+        .init(icon: "cpu.fill", title: "Local Qwen worker for Claude + Codex",
+              blurb: "Delegate bounded summaries, extraction, classification, normalization and drafts to Qwen on this Mac. Exact evidence is checked; risky, unsupported or weak work escalates to Claude or Codex, which keeps control of plans, patches and final verification.", now: true),
         .init(icon: "shield.lefthalf.filled", title: "Context Firewall for Claude + Codex",
-              blurb: "Large files and logs become focused, line-numbered evidence with a recoverable content pointer. One explicit MCP setup serves both coding agents without copying their private transcripts.", now: true),
+              blurb: "Large files and logs become focused, line-numbered evidence with a recoverable content pointer. One explicit MCP setup serves both coding agents without copying their private transcripts.", now: false),
         .init(icon: "globe.badge.chevron.backward", title: "Local web research",
-              blurb: "Throttle renders pages in an ephemeral WebKit view, blocks private-network destinations and prompt-injection instructions, archives the exact source, and returns only query-relevant evidence and safe next links.", now: true),
+              blurb: "Throttle renders pages in an ephemeral WebKit view, blocks private-network destinations and prompt-injection instructions, archives the exact source, and returns only query-relevant evidence and safe next links.", now: false),
         .init(icon: "cpu", title: "Local Qwen summaries",
-              blurb: "The embedded Qwen model can summarize archived files, logs and web pages entirely on this Mac. No Ollama daemon, cloud fallback, account or API key is required.", now: true),
+              blurb: "The embedded Qwen model can summarize archived files, logs and web pages entirely on this Mac. No Ollama daemon, cloud fallback, account or API key is required.", now: false),
         .init(icon: "bolt.horizontal", title: "Recoverable Miss Cost",
               blurb: "The audit panel now puts a € figure on cache waste: money spent re-writing a prompt cache that should still have been warm (a busted prefix billed at the 1.25× write rate instead of the 0.10× read rate).", now: false),
         .init(icon: "scope", title: "Spatial skill scoping",

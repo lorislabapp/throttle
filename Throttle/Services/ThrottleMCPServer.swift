@@ -34,7 +34,10 @@ enum ThrottleMCPServer {
             ])
         case "tools/list":
             var tools = [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema(), mcpHealthSchema(), expandPointerSchema(), recallSchema(), semanticSearchSchema(), contextReadSchema()]
-            if EmbeddedModelRuntime.isInstalled { tools.append(localSummarizeSchema()) }
+            if EmbeddedModelRuntime.isInstalled {
+                tools.append(localSummarizeSchema())
+                if LocalDelegationService.isEnabled { tools.append(localDelegateSchema()) }
+            }
             // web_render is opt-in: only advertised when the user enabled Web
             // research, so a disabled capability costs zero schema tokens.
             if UserDefaults.standard.bool(forKey: "throttleWebEnabled") { tools.append(webRenderSchema()); tools.append(researchGroundedSchema()) }
@@ -95,6 +98,17 @@ enum ThrottleMCPServer {
                     )))
                 } else {
                     respond(id: id, error: [-32602, "Missing throttle_id or task"])
+                }
+            case "throttle_local_delegate":
+                if let throttleID = args?["throttle_id"] as? String,
+                   let objective = args?["objective"] as? String,
+                   let kind = args?["kind"] as? String {
+                    respond(id: id, result: textResult(WebRenderClient.localDelegate(
+                        throttleID: throttleID, objective: objective, kind: kind,
+                        maxTokens: args?["maxTokens"] as? Int
+                    )))
+                } else {
+                    respond(id: id, error: [-32602, "Missing throttle_id, objective or kind"])
                 }
             case "web_render":
                 if let url = args?["url"] as? String {
@@ -343,6 +357,23 @@ enum ThrottleMCPServer {
                     "maxTokens": ["type": "integer", "description": "Output ceiling, 64-768 tokens (default 384)."],
                 ],
                 "required": ["throttle_id", "task"],
+            ],
+        ]
+    }
+
+    private static func localDelegateSchema() -> [String: Any] {
+        [
+            "name": "throttle_local_delegate",
+            "description": "Delegate a bounded, non-mutating evidence task to Throttle's embedded Qwen model to save Claude/Codex context. First archive the source with throttle_read or web_render, then pass its throttle_id. Allowed kinds: summarize, extract, classify, normalize, draft. Throttle verifies exact evidence quotes and returns verified, review_required, or escalate. Qwen has no shell, network, file-write or credential access; Claude/Codex remains responsible for plans, risky decisions, patches and final verification.",
+            "inputSchema": [
+                "type": "object",
+                "properties": [
+                    "throttle_id": ["type": "string", "description": "64-character content ID returned by Throttle."],
+                    "objective": ["type": "string", "description": "One bounded outcome with explicit scope."],
+                    "kind": ["type": "string", "enum": ["summarize", "extract", "classify", "normalize", "draft"]],
+                    "maxTokens": ["type": "integer", "description": "Output ceiling, 64-768 tokens (default 384)."],
+                ],
+                "required": ["throttle_id", "objective", "kind"],
             ],
         ]
     }

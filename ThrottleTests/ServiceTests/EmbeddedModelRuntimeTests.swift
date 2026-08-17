@@ -40,4 +40,24 @@ final class EmbeddedModelRuntimeTests: XCTestCase {
         }
         XCTAssertFalse(response.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
+
+    func testEndToEndDelegationWhenExplicitlyEnabled() async throws {
+        let explicitFlag = ProcessInfo.processInfo.environment["THROTTLE_RUN_EMBEDDED_MODEL_TEST"] == "1"
+            || FileManager.default.fileExists(atPath: "/private/tmp/throttle-run-embedded-model-test")
+        guard explicitFlag else {
+            throw XCTSkip("Set THROTTLE_RUN_EMBEDDED_MODEL_TEST=1 for live MLX delegation acceptance.")
+        }
+
+        try await EmbeddedModelRuntime.shared.install { _ in }
+        let source = "Build report: 231 tests passed. Zero failures. The optional GPU benchmark was skipped."
+        let result = try await EmbeddedModelRuntime.shared.delegate(
+            source: source,
+            objective: "Summarize the verified test outcome.",
+            kind: .summarize,
+            maxTokens: 192
+        )
+        XCTAssertFalse(result.result.isEmpty)
+        XCTAssertNotEqual(result.status, "escalate", "The local model must satisfy the bounded JSON contract")
+        XCTAssertTrue(result.evidence.allSatisfy(source.contains))
+    }
 }

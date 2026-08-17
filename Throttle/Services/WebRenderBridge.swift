@@ -110,6 +110,7 @@ final class WebRenderBridge: @unchecked Sendable {
 
     private func handle(_ conn: NWConnection, path: String, body: Data) {
         if path == "/summarize" { handleSummary(conn, body: body); return }
+        if path == "/delegate" { handleDelegation(conn, body: body); return }
         guard path == "/render" else {
             send(conn, status: "404 Not Found", json: ["ok": false, "error": "unknown endpoint"]); return
         }
@@ -204,6 +205,42 @@ final class WebRenderBridge: @unchecked Sendable {
             } catch {
                 let response = Self.encode(["ok": false, "error": error.localizedDescription])
                 self.q.async { self.send(conn, status: "500 Internal Server Error", body: response) }
+            }
+        }
+    }
+
+    private func handleDelegation(_ conn: NWConnection, body: Data) {
+        guard LocalDelegationService.isEnabled else {
+            send(conn, status: "403 Forbidden", json: ["ok": false, "error": "local delegation is disabled in Throttle"]); return
+        }
+        guard EmbeddedModelRuntime.isInstalled else {
+            send(conn, status: "409 Conflict", json: ["ok": false, "error": "install the embedded Qwen model in Throttle first"]); return
+        }
+        guard let obj = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
+              let throttleID = obj["throttleID"] as? String,
+              let objective = obj["objective"] as? String,
+              let rawKind = obj["kind"] as? String,
+              let data = ContentStore.get(throttleID),
+              let source = String(data: data, encoding: .utf8) else {
+            send(conn, status: "400 Bad Request", json: ["ok": false, "error": "invalid request or expired throttle_id"]); return
+        }
+        switch LocalDelegationService.assess(kind: rawKind, objective: objective) {
+        case .escalate(let reason):
+            send(conn, status: "200 OK", json: ["ok": true, "status": "escalate", "reason": reason]); return
+        case .allow(let kind):
+            let maxTokens = (obj["maxTokens"] as? Int) ?? 384
+            Task {
+                do {
+                    let result = try await EmbeddedModelRuntime.shared.delegate(
+                        source: source, objective: objective, kind: kind, maxTokens: maxTokens
+                    )
+                    LocalDelegationService.record(result)
+                    let response = Self.encode(["ok": true, "markdown": result.markdown, "status": result.status])
+                    self.q.async { self.send(conn, status: "200 OK", body: response) }
+                } catch {
+                    let response = Self.encode(["ok": false, "error": error.localizedDescription])
+                    self.q.async { self.send(conn, status: "500 Internal Server Error", body: response) }
+                }
             }
         }
     }

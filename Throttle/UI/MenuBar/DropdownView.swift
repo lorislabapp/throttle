@@ -2843,6 +2843,9 @@ private func sparklinePoints(values: [Int], in rect: CGRect) -> [CGPoint] {
 private struct InlineAssistantPane: View {
     @Environment(AppState.self) private var appState
     @AppStorage("cavemanModeEnabled") private var cavemanModeEnabled = false
+    @AppStorage(LocalDelegationService.taskCountKey) private var localDelegationTaskCount = 0
+    @AppStorage(LocalDelegationService.sourceCharactersKey) private var localDelegationSourceCharacters = 0
+    @AppStorage(LocalDelegationService.returnedCharactersKey) private var localDelegationReturnedCharacters = 0
     @State private var importStatus: String = ""
     @State private var importing: Bool = false
     @State private var aiAvailability: [AIProviderKind: Bool] = [:]
@@ -2873,10 +2876,8 @@ private struct InlineAssistantPane: View {
                 SettingsHair()
                 apiKeyRow
             }
-            if (aiSelection ?? defaultProviderKind()) == .embeddedModel {
-                SettingsHair()
-                embeddedModelRow
-            }
+            SettingsHair()
+            embeddedModelRow
             SettingsHair()
             SettingsRow(title: "Caveman mode", sub: "Terse, telegraphic replies from the project Assistant. Ug.") {
                 Toggle("", isOn: $cavemanModeEnabled).labelsHidden().toggleStyle(.switch).tint(.accentColor)
@@ -2938,17 +2939,35 @@ private struct InlineAssistantPane: View {
                     }
                 }
             } else {
-                HStack(spacing: 10) {
-                    VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 2) {
                         Text(EmbeddedModelRuntime.displayName).font(.system(size: 12, weight: .medium))
                         Text("Installed in Throttle. Project context stays on this Mac; no daemon or cloud fallback.")
                             .font(.system(size: 11)).foregroundStyle(.tertiary)
                         Link("Model card · Apache 2.0", destination: EmbeddedModelRuntime.modelURL)
                             .font(.system(size: 10))
+                        }
+                        Spacer()
+                        SettingsButton(title: "Remove", role: .destructive) {
+                            removeEmbeddedModel()
+                        }
                     }
-                    Spacer()
-                    SettingsButton(title: "Remove", role: .destructive) {
-                        removeEmbeddedModel()
+                    Toggle(isOn: Binding(
+                        get: { LocalDelegationService.isEnabled },
+                        set: { LocalDelegationService.isEnabled = $0 }
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Delegate safe subtasks to Qwen").font(.system(size: 12, weight: .medium))
+                            Text("Claude/Codex may offload summaries, extraction, classification and drafts. Exact quotes are checked; risky or weak results escalate back automatically.")
+                                .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .toggleStyle(.switch).tint(.accentColor)
+                    if localDelegationTaskCount > 0 {
+                        Text("\(localDelegationTaskCount) local tasks · \(max(0, localDelegationSourceCharacters - localDelegationReturnedCharacters)) source characters kept out of planner context.")
+                            .font(.system(size: 10)).foregroundStyle(.tertiary)
                     }
                 }
             }
@@ -2984,7 +3003,6 @@ private struct InlineAssistantPane: View {
                 embeddedInstalled = true
                 embeddedInstalling = false
                 embeddedStatus = "Installed."
-                AIProviderRegistry.shared.preferredKind = .embeddedModel
                 await reloadAvailability()
             } catch {
                 embeddedInstalling = false
@@ -2998,6 +3016,7 @@ private struct InlineAssistantPane: View {
             do {
                 try await EmbeddedModelRuntime.shared.removeInstalledModel()
                 embeddedInstalled = false
+                LocalDelegationService.isEnabled = false
                 embeddedStatus = "Model removed."
                 if AIProviderRegistry.shared.preferredKind == .embeddedModel {
                     AIProviderRegistry.shared.preferredKind = nil

@@ -91,6 +91,30 @@ enum WebRenderClient {
         """
     }
 
+    static func localDelegate(
+        throttleID: String,
+        objective: String,
+        kind: String,
+        maxTokens: Int?
+    ) -> String {
+        var body: [String: Any] = [
+            "throttleID": throttleID,
+            "objective": objective,
+            "kind": kind,
+        ]
+        if let maxTokens { body["maxTokens"] = maxTokens }
+        guard let response = post(path: "/delegate", body: body, timeout: 90) else {
+            return "Local delegation unavailable — open Throttle and retry."
+        }
+        guard (response["ok"] as? Bool) == true else {
+            return "Local delegation failed: \(response["error"] as? String ?? "unknown error")"
+        }
+        if response["status"] as? String == "escalate" {
+            return "# Local delegation: escalate\nReason: \(response["reason"] as? String ?? "task requires the planning model")\nClaude/Codex must perform this task directly."
+        }
+        return response["markdown"] as? String ?? "Local delegation returned no usable result; Claude/Codex must perform the task directly."
+    }
+
     // MARK: - Loopback POST (sync)
 
     private static func post(path: String, body: [String: Any], timeout: TimeInterval) -> [String: Any]? {
