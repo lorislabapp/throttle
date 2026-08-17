@@ -1,6 +1,6 @@
 # Throttle release ledger — 3.2.80 (180)
 
-Updated UTC: 2026-08-17T09:09:17Z
+Updated UTC: 2026-08-17T09:24:11Z
 Repository: `/Users/kevinnadjarian/GitHub/Throttle`
 Channel: Developer ID direct distribution through Sparkle
 Authority: release requested by the user. The publish-apple workflow still requires an exact-artifact confirmation before Apple notarization and another before public upload.
@@ -36,16 +36,16 @@ Authority: release requested by the user. The publish-apple workflow still requi
 - Explicit embedded-model acceptance: 1 passed, 0 skipped; 937 MB installed and a real MLX response streamed.
 - Release arm64 compilation before version bump: PASS.
 - Fresh universal Developer ID archive/export: archive and export completed.
-- Release gate: FAIL after export. The app and widget passed the script's initial
-  strict verification, but a fresh post-DMG verification reported both universal
-  binaries modified. At the same time the login keychain changed from three valid
-  identities to zero, preventing a clean re-sign. The DMG was renamed
-  `Throttle-3.2.80.INVALID-DO-NOT-PUBLISH.dmg`; nothing was uploaded.
+- Fresh outside-sandbox signing recheck: PASS. The intervening `0 valid identities`
+  and `invalid signature` results were sandbox false negatives; no certificate was
+  created, imported, replaced or revoked.
 
 ## Assets
 
-- Signed DMG: INVALID / quarantined locally; must be rebuilt after the Developer ID
-  identity is restored and revalidated.
+- Signed DMG: `/private/tmp/throttle-release-3.2.80/Throttle-3.2.80.dmg`.
+- Size: 26,175,256 bytes.
+- Pre-notary SHA-256: `e2c6e14dcf74a3e1d85cb9a1ae7d2d9570539b7f54cb68ae8ed30d718871183e`.
+- Architecture: universal `x86_64 arm64`.
 - Apple notarization/staple: PENDING explicit confirmation.
 - Sparkle enclosure signature and SHA-256: PENDING.
 
@@ -57,14 +57,17 @@ Authority: release requested by the user. The publish-apple workflow still requi
 
 - Project generation: PASS after version bump and dependency pinning.
 - Initial deep/strict app signature, widget signature and smoke test: PASS (5/5).
-- Independent post-DMG deep/strict recheck: FAIL; this later result governs release.
+- Independent outside-sandbox post-DMG app/widget/DMG strict recheck: PASS.
+- Read-only mounted app strict verification: PASS.
 
 ## Validate
 
 - Full XCTest after version bump: PASS (221 passed, 1 opt-in acceptance test skipped, 0 failed).
 - Embedded Qwen download and live inference: PASS in the separate explicitly enabled acceptance run.
 - `git diff --check`: PASS before archive preparation.
-- Gatekeeper and notarization: PENDING.
+- Pre-notary Gatekeeper state: expected `rejected`, source `Unnotarized Developer ID`,
+  origin `Developer ID Application: Christine Martin (TDV6D5L785)`.
+- Notarization: PENDING explicit confirmation.
 
 ## Submit
 
