@@ -1,6 +1,6 @@
 # Throttle release ledger — 3.2.80 (180)
 
-Updated UTC: 2026-08-17T08:46:39Z
+Updated UTC: 2026-08-17T09:09:17Z
 Repository: `/Users/kevinnadjarian/GitHub/Throttle`
 Channel: Developer ID direct distribution through Sparkle
 Authority: release requested by the user. The publish-apple workflow still requires an exact-artifact confirmation before Apple notarization and another before public upload.
@@ -35,14 +35,17 @@ Authority: release requested by the user. The publish-apple workflow still requi
 - Final XCTest after version bump and project-open flow: 221 passed, 1 intentionally skipped, 0 failed on macOS 27 beta.
 - Explicit embedded-model acceptance: 1 passed, 0 skipped; 937 MB installed and a real MLX response streamed.
 - Release arm64 compilation before version bump: PASS.
-- Fresh Developer ID archive/export: BLOCKED — the first universal MLX archive was
-  interrupted before system disk exhaustion (390 MB free at the stop point). Its
-  isolated DerivedData and release temp directory were removed; no artifact was
-  produced and nothing was uploaded.
+- Fresh universal Developer ID archive/export: archive and export completed.
+- Release gate: FAIL after export. The app and widget passed the script's initial
+  strict verification, but a fresh post-DMG verification reported both universal
+  binaries modified. At the same time the login keychain changed from three valid
+  identities to zero, preventing a clean re-sign. The DMG was renamed
+  `Throttle-3.2.80.INVALID-DO-NOT-PUBLISH.dmg`; nothing was uploaded.
 
 ## Assets
 
-- Signed DMG: PENDING.
+- Signed DMG: INVALID / quarantined locally; must be rebuilt after the Developer ID
+  identity is restored and revalidated.
 - Apple notarization/staple: PENDING explicit confirmation.
 - Sparkle enclosure signature and SHA-256: PENDING.
 
@@ -53,7 +56,8 @@ Authority: release requested by the user. The publish-apple workflow still requi
 ## Assemble
 
 - Project generation: PASS after version bump and dependency pinning.
-- Deep/strict app signature, widget signature and smoke test: PENDING.
+- Initial deep/strict app signature, widget signature and smoke test: PASS (5/5).
+- Independent post-DMG deep/strict recheck: FAIL; this later result governs release.
 
 ## Validate
 
