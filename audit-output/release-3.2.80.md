@@ -1,6 +1,6 @@
 # Throttle release ledger — 3.2.80 (180)
 
-Updated UTC: 2026-08-17T09:24:11Z
+Updated UTC: 2026-08-17T09:32:14Z
 Repository: `/Users/kevinnadjarian/GitHub/Throttle`
 Channel: Developer ID direct distribution through Sparkle
 Authority: release requested by the user. The publish-apple workflow still requires an exact-artifact confirmation before Apple notarization and another before public upload.
@@ -43,11 +43,14 @@ Authority: release requested by the user. The publish-apple workflow still requi
 ## Assets
 
 - Signed DMG: `/private/tmp/throttle-release-3.2.80/Throttle-3.2.80.dmg`.
-- Size: 26,175,256 bytes.
+- Pre-notary size: 26,175,256 bytes.
 - Pre-notary SHA-256: `e2c6e14dcf74a3e1d85cb9a1ae7d2d9570539b7f54cb68ae8ed30d718871183e`.
 - Architecture: universal `x86_64 arm64`.
-- Apple notarization/staple: PENDING explicit confirmation.
-- Sparkle enclosure signature and SHA-256: PENDING.
+- Apple notarization: ACCEPTED, submission `979b5e0f-8e84-4915-8e0a-c6e0eeaffc37`.
+- Staple and staple validation: PASS.
+- Final stapled size: 26,177,492 bytes.
+- Final stapled SHA-256: `a92529d71ddd039d2e3f8d27197c8dd498b24e4727331e431dd88685175ad0cf`.
+- Sparkle EdDSA enclosure signature: `jEKSgpB0koReAYwtWISmdN5FenuS30sgPElMJlmr2wSMWdt7mcz9nL0WhBvrx8QSjJ1QBHpe+3phebOxjPVBAg==`.
 
 ## Metadata
 
@@ -65,13 +68,12 @@ Authority: release requested by the user. The publish-apple workflow still requi
 - Full XCTest after version bump: PASS (221 passed, 1 opt-in acceptance test skipped, 0 failed).
 - Embedded Qwen download and live inference: PASS in the separate explicitly enabled acceptance run.
 - `git diff --check`: PASS before archive preparation.
-- Pre-notary Gatekeeper state: expected `rejected`, source `Unnotarized Developer ID`,
+- Post-staple DMG and mounted-app Gatekeeper: PASS, source `Notarized Developer ID`,
   origin `Developer ID Application: Christine Martin (TDV6D5L785)`.
-- Notarization: PENDING explicit confirmation.
 
 ## Submit
 
-- Apple notarization upload: NOT STARTED.
+- Apple notarization upload: COMPLETE and accepted.
 - Public DMG/appcast/site upload: NOT STARTED.
 
 ## Post-release
