@@ -1,6 +1,6 @@
 # Throttle release ledger — 3.2.81 (181)
 
-Updated UTC: 2026-08-17T10:56:00Z
+Updated UTC: 2026-08-17T11:16:21Z
 Repository: `/Users/kevinnadjarian/GitHub/Throttle`
 Channel: Developer ID direct distribution through Sparkle
 Authority: commit and public Sparkle/web release requested by the user. Fresh exact-artifact confirmations remain required before Apple notarization and public upload.
@@ -42,8 +42,11 @@ Authority: commit and public Sparkle/web release requested by the user. Fresh ex
 - Pre-notary size: 26,247,448 bytes.
 - Pre-notary SHA-256: `7e2b7de57f9e7aa586b7d674d7d3ec1872bbb4f7ed9ff2b1f386643e3b809223`.
 - Architecture: universal `x86_64 arm64`.
-- Apple notarization/staple: PENDING exact-artifact confirmation.
-- Sparkle EdDSA enclosure signature and SHA-256: PENDING.
+- Apple notarization: ACCEPTED, submission `fa401a22-e48c-482e-890c-ce901e7d9c02`.
+- Staple and staple validation: PASS.
+- Final stapled size: 26,249,684 bytes.
+- Final stapled SHA-256: `079c6c48e2f76c64990ec4a27adad6f2ae4ed61527337120b9dc699c93f39514`.
+- Sparkle EdDSA enclosure signature: `DTtAPHQxUZTKPtAT+dcCnjbcJVcwgjGz4LnrKURpk3P9IxK8p/GF0DH5dwBUoz2I6WuybP9ZBvTeaVm1Gq3cDA==`.
 
 ## Metadata
 
@@ -60,11 +63,12 @@ Authority: commit and public Sparkle/web release requested by the user. Fresh ex
 
 - Final post-version-bump XCTest: PASS (231 passed, 1 opt-in test skipped, 0 failed).
 - Pre-notary Gatekeeper state: expected `rejected`, source `Unnotarized Developer ID`, origin `Developer ID Application: Christine Martin (TDV6D5L785)`.
-- Post-notary Gatekeeper and staple validation: PENDING.
+- Post-staple DMG and mounted-app Gatekeeper: PASS, source `Notarized Developer ID`, origin `Developer ID Application: Christine Martin (TDV6D5L785)`.
+- Mounted app/widget strict signatures and universal `x86_64 arm64` architecture: PASS.
 
 ## Submit
 
-- Apple notarization upload: NOT STARTED.
+- Apple notarization upload: COMPLETE and accepted.
 - Public DMG/appcast/site upload: NOT STARTED.
 
 ## Post-release
