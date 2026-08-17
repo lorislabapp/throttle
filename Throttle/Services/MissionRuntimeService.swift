@@ -58,8 +58,42 @@ struct MissionHandoffContext: Equatable, Sendable {
     var remaining: String
     var validation: String
     var blockers: String
+    var recentConversation: String = ""
 
-    static let empty = MissionHandoffContext(completed: "", remaining: "", validation: "", blockers: "")
+    static let empty = MissionHandoffContext(
+        completed: "", remaining: "", validation: "", blockers: "", recentConversation: ""
+    )
+}
+
+struct MissionCapabilityInventory: Equatable, Sendable {
+    let skills: [String]
+    let mcpServers: [String]
+
+    static let empty = MissionCapabilityInventory(skills: [], mcpServers: [])
+}
+
+/// Names-only capability map used during a provider handoff. It never contains
+/// commands, arguments, URLs, environment values, tokens, or skill contents.
+struct MissionCapabilityCompatibility: Equatable, Sendable {
+    let source: MissionCapabilityInventory
+    let target: MissionCapabilityInventory
+
+    static let empty = MissionCapabilityCompatibility(source: .empty, target: .empty)
+
+    var sharedSkills: [String] { intersection(source.skills, target.skills) }
+    var missingSkillsOnTarget: [String] { difference(source.skills, target.skills) }
+    var sharedMCPServers: [String] { intersection(source.mcpServers, target.mcpServers) }
+    var missingMCPServersOnTarget: [String] { difference(source.mcpServers, target.mcpServers) }
+
+    private func intersection(_ lhs: [String], _ rhs: [String]) -> [String] {
+        let right = Set(rhs.map { $0.lowercased() })
+        return lhs.filter { right.contains($0.lowercased()) }.sorted()
+    }
+
+    private func difference(_ lhs: [String], _ rhs: [String]) -> [String] {
+        let right = Set(rhs.map { $0.lowercased() })
+        return lhs.filter { !right.contains($0.lowercased()) }.sorted()
+    }
 }
 
 struct MissionHandoff: Identifiable, Equatable, Sendable {
@@ -73,6 +107,7 @@ struct MissionHandoff: Identifiable, Equatable, Sendable {
     let sourceSessionID: String?
     var objective: String
     var context: MissionHandoffContext = .empty
+    var capabilities: MissionCapabilityCompatibility = .empty
     let git: MissionGitEvidence
 
     var prompt: String { MissionRuntimeService.render(self) }
@@ -181,6 +216,15 @@ enum MissionRuntimeService {
         let blockers = normalized(
             handoff.context.blockers, fallback: "No blockers were recorded; verify independently."
         )
+        let recentConversation = handoff.context.recentConversation
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let portableContext = recentConversation.isEmpty
+            ? "No conversation excerpt was available. Use the ledger and repository evidence."
+            : recentConversation
+        let sharedSkills = names(handoff.capabilities.sharedSkills)
+        let missingSkills = names(handoff.capabilities.missingSkillsOnTarget)
+        let sharedMCP = names(handoff.capabilities.sharedMCPServers)
+        let missingMCP = names(handoff.capabilities.missingMCPServersOnTarget)
 
         return """
         Continue mission \(handoff.missionID.uuidString).
@@ -196,6 +240,16 @@ enum MissionRuntimeService {
         - Remaining: \(remaining)
         - Validation: \(validation)
         - Blockers / risks: \(blockers)
+
+        Recent provider-neutral conversation excerpt (user/assistant text only; no tool output or hidden reasoning):
+        \(portableContext)
+
+        Capability compatibility (names only; no configuration or secrets):
+        - Skills available on both providers: \(sharedSkills)
+        - Source skills unavailable on target: \(missingSkills)
+        - MCP servers configured on both providers: \(sharedMCP)
+        - Source MCP servers unavailable on target: \(missingMCP)
+        - Never assume a missing capability exists. Use a repository-local equivalent or ask before changing provider configuration.
 
         Fresh handoff snapshot:
         - Branch: \(branch)
@@ -218,6 +272,101 @@ enum MissionRuntimeService {
         let cleaned = value.trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: "\n", with: " ")
         return cleaned.isEmpty ? fallback : cleaned
+    }
+
+    private static func names(_ values: [String]) -> String {
+        values.isEmpty ? "none detected" : values.joined(separator: ", ")
+    }
+
+    /// Compare provider capabilities without mutating either provider. Only the
+    /// definition names escape this function; config bodies and SKILL.md content
+    /// are never copied into the handoff packet.
+    nonisolated static func capabilityCompatibility(
+        source: AgentRuntime,
+        target: AgentRuntime,
+        cwd: String,
+        home: URL = FileManager.default.homeDirectoryForCurrentUser
+    ) -> MissionCapabilityCompatibility {
+        MissionCapabilityCompatibility(
+            source: capabilityInventory(runtime: source, cwd: cwd, home: home),
+            target: capabilityInventory(runtime: target, cwd: cwd, home: home)
+        )
+    }
+
+    nonisolated static func capabilityInventory(
+        runtime: AgentRuntime,
+        cwd: String,
+        home: URL = FileManager.default.homeDirectoryForCurrentUser
+    ) -> MissionCapabilityInventory {
+        let fm = FileManager.default
+        let providerDir = runtime == .claudeCode ? ".claude" : ".codex"
+        let skillRoots = [
+            home.appendingPathComponent("\(providerDir)/skills", isDirectory: true),
+            URL(fileURLWithPath: cwd, isDirectory: true)
+                .appendingPathComponent("\(providerDir)/skills", isDirectory: true)
+        ]
+        var skills = Set<String>()
+        for root in skillRoots {
+            guard let children = try? fm.contentsOfDirectory(
+                at: root, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]
+            ) else { continue }
+            for child in children where fm.fileExists(
+                atPath: child.appendingPathComponent("SKILL.md").path
+            ) {
+                skills.insert(child.lastPathComponent)
+            }
+        }
+
+        let mcp: Set<String>
+        switch runtime {
+        case .claudeCode:
+            mcp = claudeMCPNames(cwd: cwd, home: home)
+        case .codex:
+            mcp = codexMCPNames(config: home.appendingPathComponent(".codex/config.toml"))
+        }
+        return MissionCapabilityInventory(skills: skills.sorted(), mcpServers: mcp.sorted())
+    }
+
+    nonisolated private static func claudeMCPNames(cwd: String, home: URL) -> Set<String> {
+        var names = Set<String>()
+        if let root = jsonObject(home.appendingPathComponent(".claude.json")) {
+            names.formUnion(dictionaryKeys(root["mcpServers"]))
+            if let projects = root["projects"] as? [String: Any],
+               let local = projects[cwd] as? [String: Any] {
+                names.formUnion(dictionaryKeys(local["mcpServers"]))
+            }
+        }
+        let projectConfig = URL(fileURLWithPath: cwd, isDirectory: true).appendingPathComponent(".mcp.json")
+        if let root = jsonObject(projectConfig) {
+            names.formUnion(dictionaryKeys(root["mcpServers"]))
+        }
+        return names
+    }
+
+    nonisolated private static func codexMCPNames(config: URL) -> Set<String> {
+        guard let text = try? String(contentsOf: config, encoding: .utf8) else { return [] }
+        var names = Set<String>()
+        for rawLine in text.split(separator: "\n") {
+            let line = rawLine.trimmingCharacters(in: .whitespaces)
+            guard line.hasPrefix("[mcp_servers."), let close = line.firstIndex(of: "]") else { continue }
+            var name = String(line[line.index(line.startIndex, offsetBy: 13)..<close])
+                .trimmingCharacters(in: .whitespaces)
+            if name.hasPrefix("\"") && name.hasSuffix("\"") && name.count >= 2 {
+                name.removeFirst(); name.removeLast()
+            }
+            if !name.isEmpty, !name.contains(".") { names.insert(name) }
+        }
+        return names
+    }
+
+    nonisolated private static func jsonObject(_ url: URL) -> [String: Any]? {
+        guard let data = try? Data(contentsOf: url),
+              let value = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        return value
+    }
+
+    nonisolated private static func dictionaryKeys(_ value: Any?) -> Set<String> {
+        Set((value as? [String: Any])?.keys ?? Dictionary<String, Any>().keys)
     }
 
     /// Build a bounded snapshot without evaluating shell text from the repository.
@@ -289,6 +438,155 @@ enum MissionRuntimeService {
 
     static func shellQuote(_ value: String) -> String {
         "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+
+    /// A handoff always starts a new native conversation. Resuming a target
+    /// provider's unrelated "newest session" would discard the handoff prompt and
+    /// can accidentally attach this mission to older work in the same checkout.
+    static func shouldDiscoverResumeSession(initialPrompt: String?) -> Bool {
+        initialPrompt?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false
+    }
+
+    /// Validate Claude's native identity just as strictly as Codex's. The two CLIs
+    /// both use UUID-looking identifiers, so shape validation alone cannot prevent
+    /// a Codex UUID from being submitted to `claude --resume`.
+    nonisolated static func claudeSessionExists(
+        id: String,
+        cwd: String,
+        projectsRoot: URL? = nil
+    ) -> Bool {
+        claudeSessionURL(id: id, cwd: cwd, projectsRoot: projectsRoot) != nil
+    }
+
+    /// Build a bounded, local continuation excerpt from native transcripts. Only
+    /// explicit user/assistant text is copied: tool calls/results, system prompts,
+    /// hidden reasoning and command output are excluded. The caller displays the
+    /// excerpt for review before sending it to the other provider.
+    nonisolated static func portableConversationContext(
+        runtime: AgentRuntime,
+        sessionID: String?,
+        cwd: String,
+        claudeProjectsRoot: URL? = nil,
+        codexSessionsRoot: URL? = nil,
+        maxCharacters: Int = 12_000
+    ) -> String {
+        guard let sessionID, maxCharacters > 0 else { return "" }
+        let url: URL?
+        switch runtime {
+        case .claudeCode:
+            url = claudeSessionURL(id: sessionID, cwd: cwd, projectsRoot: claudeProjectsRoot)
+        case .codex:
+            url = codexSessionURL(id: sessionID, cwd: cwd, sessionsRoot: codexSessionsRoot)
+        }
+        guard let url, let lines = tailJSONLines(url: url, byteLimit: 2 * 1024 * 1024) else { return "" }
+
+        var messages: [(role: String, text: String)] = []
+        for line in lines {
+            guard let object = try? JSONSerialization.jsonObject(with: line) as? [String: Any],
+                  let message = transcriptMessage(from: object, runtime: runtime) else { continue }
+            let cleaned = message.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !cleaned.isEmpty else { continue }
+            if messages.last?.role == message.role && messages.last?.text == cleaned { continue }
+            messages.append((message.role, cleaned))
+        }
+
+        var selected: [String] = []
+        var used = 0
+        for message in messages.reversed() {
+            let label = message.role == "user" ? "USER" : "ASSISTANT"
+            let block = "\(label): \(message.text)"
+            let remaining = maxCharacters - used
+            guard remaining > label.count + 4 else { break }
+            let bounded = block.count > remaining ? String(block.suffix(remaining)) : block
+            selected.append(bounded)
+            used += bounded.count + 2
+            if used >= maxCharacters { break }
+        }
+        return selected.reversed().joined(separator: "\n\n")
+    }
+
+    nonisolated private static func claudeSessionURL(
+        id: String,
+        cwd: String,
+        projectsRoot: URL?
+    ) -> URL? {
+        let root = projectsRoot ?? FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/projects", isDirectory: true)
+        let encoded = MultiCockpitModel.claudeProjectDirName(cwd)
+        let url = root.appendingPathComponent(encoded, isDirectory: true)
+            .appendingPathComponent(id).appendingPathExtension("jsonl")
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    nonisolated private static func codexSessionURL(
+        id: String,
+        cwd: String,
+        sessionsRoot: URL?
+    ) -> URL? {
+        let root = sessionsRoot ?? FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".codex/sessions", isDirectory: true)
+        guard let enumerator = FileManager.default.enumerator(
+            at: root, includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles, .skipsPackageDescendants]
+        ) else { return nil }
+        for case let url as URL in enumerator where url.pathExtension == "jsonl" {
+            guard let lines = prefixJSONLines(url: url, byteLimit: 64 * 1024) else { continue }
+            for line in lines.prefix(12) {
+                guard let object = try? JSONSerialization.jsonObject(with: line) as? [String: Any],
+                      object["type"] as? String == "session_meta",
+                      let payload = object["payload"] as? [String: Any] else { continue }
+                if payload["id"] as? String == id && payload["cwd"] as? String == cwd { return url }
+                break
+            }
+        }
+        return nil
+    }
+
+    nonisolated private static func transcriptMessage(
+        from object: [String: Any], runtime: AgentRuntime
+    ) -> (role: String, text: String)? {
+        let message: [String: Any]
+        switch runtime {
+        case .claudeCode:
+            guard let type = object["type"] as? String, type == "user" || type == "assistant",
+                  let value = object["message"] as? [String: Any] else { return nil }
+            message = value
+        case .codex:
+            guard object["type"] as? String == "response_item",
+                  let payload = object["payload"] as? [String: Any],
+                  payload["type"] as? String == "message" else { return nil }
+            message = payload
+        }
+        guard let role = message["role"] as? String, role == "user" || role == "assistant" else { return nil }
+        if let text = message["content"] as? String { return (role, text) }
+        guard let content = message["content"] as? [[String: Any]] else { return nil }
+        let allowed = runtime == .codex
+            ? Set(["input_text", "output_text"])
+            : Set(["text"])
+        let text = content.compactMap { item -> String? in
+            guard let type = item["type"] as? String, allowed.contains(type) else { return nil }
+            return item["text"] as? String
+        }.joined(separator: "\n")
+        return text.isEmpty ? nil : (role, text)
+    }
+
+    nonisolated private static func prefixJSONLines(url: URL, byteLimit: Int) -> [Data]? {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        let data = (try? handle.read(upToCount: byteLimit)) ?? Data()
+        return data.split(separator: 0x0A).map(Data.init)
+    }
+
+    nonisolated private static func tailJSONLines(url: URL, byteLimit: UInt64) -> [Data]? {
+        guard let handle = try? FileHandle(forReadingFrom: url),
+              let end = try? handle.seekToEnd() else { return nil }
+        defer { try? handle.close() }
+        let start = end > byteLimit ? end - byteLimit : 0
+        guard (try? handle.seek(toOffset: start)) != nil,
+              let data = try? handle.readToEnd() else { return nil }
+        var lines = data.split(separator: 0x0A).map(Data.init)
+        if start > 0, !lines.isEmpty { lines.removeFirst() }
+        return lines
     }
 
     /// Discover the newest Codex rollout for a cwd from its observed local

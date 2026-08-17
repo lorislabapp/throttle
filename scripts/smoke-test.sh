@@ -14,13 +14,15 @@ APP_PATH="${1:-$HOME/GitHub/Throttle/build/Build/Products/Debug/Throttle.app}"
 
 [ -d "$APP_PATH" ] && ok "App bundle present at $APP_PATH" || ko "App bundle missing at $APP_PATH"
 
-# LSUIElement
+# Dock lifecycle: Throttle owns real Cockpit/project windows. It must remain a
+# regular app so clicking its Dock icon can reopen the existing process instead
+# of producing a stale/dead tile while the menu-bar process is still running.
 INFO="$APP_PATH/Contents/Info.plist"
 if [ -f "$INFO" ]; then
-    if /usr/libexec/PlistBuddy -c "Print :LSUIElement" "$INFO" 2>/dev/null | grep -q true; then
-        ok "LSUIElement = true"
+    if /usr/libexec/PlistBuddy -c "Print :LSUIElement" "$INFO" 2>/dev/null | grep -q false; then
+        ok "LSUIElement = false (Dock reopen enabled)"
     else
-        ko "LSUIElement not set to true (would show in Dock)"
+        ko "LSUIElement is not false (Dock reopen would be unreliable)"
     fi
 else
     ko "Info.plist missing"

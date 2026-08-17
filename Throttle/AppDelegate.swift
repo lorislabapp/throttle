@@ -15,6 +15,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var licenseRenewalTimer: Timer?
     private var codexUsageTimer: Timer?
 
+    /// App-hosted tests already initialize the state/database they exercise, but
+    /// must not start production listeners, CloudKit, login items or singleton
+    /// ownership. Xcode 27 no longer guarantees the legacy environment marker.
+    private static var isRunningTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || NSClassFromString("XCTestCase") != nil
+            || Bundle.allBundles.contains(where: { $0.bundlePath.hasSuffix(".xctest") })
+    }
+
     override init() {
         FileHandle.standardError.write(Data("[AppDelegate.init] start\n".utf8))
         // Check for -demo launch argument for screen recordings & screenshots
@@ -84,9 +93,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// User re-opened Throttle (double-clicked the app while it's already running).
-    /// LSUIElement menu-bar apps do NOT get this on the login-item launch, so the
-    /// Cockpit opens only on an intentional reopen — never on boot auto-launch.
+    /// Clicking Throttle's Dock icon while the app is already running always brings
+    /// back the Cockpit, even when every auxiliary window was previously closed.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         CockpitWindowController.shared.show(appState: appState)
         return true
@@ -99,6 +107,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // In demo mode, skip all background services and just show the UI with fake data
         guard !isDemoMode else {
             logger.notice("🎬 DEMO MODE: Skipping all background services")
+            return
+        }
+        guard !Self.isRunningTests else {
+            logger.notice("XCTest host detected: skipping production background services")
             return
         }
         FileHandle.standardError.write(Data("[applicationDidFinishLaunching] past demo check\n".utf8))
@@ -170,13 +182,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Skip the singleton check under XCTest — the test host bundle launches a
         // second Throttle.app process to load the test bundle, and the singleton
         // lock would terminate it before tests can run.
-        let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
-        if !isRunningTests {
-            guard Self.acquireSingletonLock() else {
-                logger.notice("Another Throttle instance is already running. Quitting.")
-                NSApp.terminate(nil)
-                return
-            }
+        guard Self.acquireSingletonLock() else {
+            logger.notice("Another Throttle instance is already running. Quitting.")
+            NSApp.terminate(nil)
+            return
         }
 
         logger.notice("Throttle launched (\(Bundle.main.shortVersion, privacy: .public))")

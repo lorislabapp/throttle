@@ -2,9 +2,9 @@ import AppKit
 import SwiftUI
 
 /// Secondary NSWindow hosting the cockpit (live meter strip + terminal running
-/// `claude`). Mirrors `ProjectWindowController`'s `.accessory` → `.regular`
-/// activation-policy switch, which dodges the macOS 26.5 NSTitlebar crash that
-/// fires when a menu-bar (accessory) app creates a titled window.
+/// a coding agent). Throttle stays a regular Dock application for its lifetime:
+/// demoting to `.accessory` on close left a stale Dock tile that could launch a
+/// doomed second instance while the menu-bar process was still alive.
 @MainActor
 final class CockpitWindowController: NSObject {
     static let shared = CockpitWindowController()
@@ -67,8 +67,6 @@ extension CockpitWindowController: NSWindowDelegate {
     nonisolated func windowWillClose(_ notification: Notification) {
         Task { @MainActor in
             self.window = nil
-            try? await Task.sleep(for: .milliseconds(100))
-            NSApp.setActivationPolicy(.accessory)
         }
     }
 }

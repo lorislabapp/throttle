@@ -131,6 +131,7 @@ final class AppState {
 
         return state
     }
+    #endif
 
     /// Refresh Codex independently from the Claude database pipeline. Separating
     /// the tasks prevents a busy Claude file watcher from continuously cancelling
@@ -146,7 +147,6 @@ final class AppState {
             self.codexDetected = self.codexDetected || snapshot != nil
         }
     }
-    #endif
 
     /// Anchor the local cap of each window to the server-true utilization from a
     /// fresh exact snapshot, so the local estimate (used between exact refreshes

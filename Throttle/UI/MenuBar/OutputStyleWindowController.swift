@@ -63,8 +63,6 @@ extension OutputStyleWindowController: NSWindowDelegate {
         Task { @MainActor in
             self.window = nil
             NotificationCenter.default.post(name: .outputStyleChanged, object: nil)
-            try? await Task.sleep(for: .milliseconds(100))
-            NSApp.setActivationPolicy(.accessory)
         }
     }
 }

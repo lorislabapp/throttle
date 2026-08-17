@@ -22,6 +22,8 @@ esac
 
 PROJECT_DIR="${PROJECT_DIR:-$HOME/GitHub/Throttle}"
 cd "$PROJECT_DIR"
+RELEASE_BUILD_DIR="${THROTTLE_RELEASE_BUILD_DIR:-$PROJECT_DIR/build}"
+mkdir -p "$RELEASE_BUILD_DIR"
 
 LOGIN_KEYCHAIN="${LOGIN_KEYCHAIN:-$HOME/Library/Keychains/login.keychain-db}"
 SIGNING_IDENTITY="Developer ID Application: Christine Martin (TDV6D5L785)"
@@ -35,7 +37,7 @@ echo "→ Generating Xcode project"
 xcodegen generate
 
 echo "→ Archiving Release build"
-ARCHIVE_PATH="$PROJECT_DIR/build/Throttle.xcarchive"
+ARCHIVE_PATH="$RELEASE_BUILD_DIR/Throttle.xcarchive"
 rm -rf "$ARCHIVE_PATH"
 xcodebuild -project Throttle.xcodeproj -scheme Throttle \
     -configuration Release \
@@ -43,11 +45,11 @@ xcodebuild -project Throttle.xcodeproj -scheme Throttle \
     -destination 'generic/platform=macOS' \
     archive
 
-EXPORT_DIR="$PROJECT_DIR/build/export"
+EXPORT_DIR="$RELEASE_BUILD_DIR/export"
 rm -rf "$EXPORT_DIR"
 mkdir -p "$EXPORT_DIR"
 
-EXPORT_PLIST="$PROJECT_DIR/build/ExportOptions.plist"
+EXPORT_PLIST="$RELEASE_BUILD_DIR/ExportOptions.plist"
 cat > "$EXPORT_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -89,7 +91,7 @@ echo "→ Smoke-testing the build"
 
 echo "→ Building DMG (diskutil — no create-dmg AppleScript, which needs Automation→Finder TCC and fails headless / on macOS betas)"
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist")
-DMG_PATH="$PROJECT_DIR/build/Throttle-${VERSION}.dmg"
+DMG_PATH="$RELEASE_BUILD_DIR/Throttle-${VERSION}.dmg"
 rm -f "$DMG_PATH"
 STAGING=$(mktemp -d)
 cp -R "$APP_PATH" "$STAGING/"
@@ -139,7 +141,7 @@ if true; then
     PUBDATE=$(LC_TIME=en_US date +"%a, %d %b %Y %H:%M:%S %z")
 
     # sign_update emits its own length="..." attribute; drop ours to avoid duplicates.
-    APPCAST_ENTRY="$PROJECT_DIR/build/appcast-entry-${VERSION}.xml"
+    APPCAST_ENTRY="$RELEASE_BUILD_DIR/appcast-entry-${VERSION}.xml"
     cat > "$APPCAST_ENTRY" <<XML
 <item>
     <title>Version ${VERSION}</title>

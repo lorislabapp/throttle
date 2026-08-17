@@ -832,10 +832,19 @@ struct MultiCockpitRoot: View {
         let projectName = session.projectName
         let cwd = session.cwd
         let source = session.runtime
-        let sourceSessionID = session.sessionId
+        let sourceSessionID = session.sessionId ?? (session.runtime == .claudeCode
+            ? MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
+            : MissionRuntimeService.newestCodexSession(cwd: cwd, since: .distantPast)?.id)
         Task {
-            let git = await Task.detached(priority: .utility) {
-                MissionRuntimeService.gitEvidence(at: cwd)
+            let snapshot = await Task.detached(priority: .utility) {
+                let git = MissionRuntimeService.gitEvidence(at: cwd)
+                let conversation = MissionRuntimeService.portableConversationContext(
+                    runtime: source, sessionID: sourceSessionID, cwd: cwd
+                )
+                let capabilities = MissionRuntimeService.capabilityCompatibility(
+                    source: source, target: target, cwd: cwd
+                )
+                return (git, conversation, capabilities)
             }.value
             pendingHandoff = MissionHandoff(
                 sourceTabID: sourceTabID,
@@ -846,7 +855,12 @@ struct MultiCockpitRoot: View {
                 target: target,
                 sourceSessionID: sourceSessionID,
                 objective: "Continue the current work at the next unfinished task.",
-                git: git
+                context: MissionHandoffContext(
+                    completed: "", remaining: "", validation: "", blockers: "",
+                    recentConversation: snapshot.1
+                ),
+                capabilities: snapshot.2,
+                git: snapshot.0
             )
         }
     }
@@ -1504,9 +1518,9 @@ struct MultiCockpitRoot: View {
     }
 }
 
-/// Review gate between native providers. Throttle never moves transcript content
-/// or changes provider configuration; the user controls the objective sent to the
-/// fresh target session.
+/// Review gate between native providers. Throttle copies only a bounded local
+/// user/assistant excerpt, never tool output or hidden reasoning; the user reviews
+/// the exact continuation packet before it reaches the fresh target session.
 private struct MissionHandoffSheet: View {
     let handoff: MissionHandoff
     let onContinue: (MissionHandoff) -> Void
@@ -1569,6 +1583,36 @@ private struct MissionHandoffSheet: View {
                 ledgerField("Blockers / risks", text: $blockers, prompt: "Unknowns, external gates, or risks")
             }
 
+            if !handoff.context.recentConversation.isEmpty {
+                VStack(alignment: .leading, spacing: 7) {
+                    Text("PORTABLE CONTEXT")
+                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                    ScrollView {
+                        Text(handoff.context.recentConversation)
+                            .font(.system(size: 11, design: .monospaced))
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(height: 110)
+                    .padding(9)
+                    .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 8))
+                    .overlay { RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.10)) }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 7) {
+                Text("SKILLS + MCP COMPATIBILITY")
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                Text(capabilityText)
+                    .font(.system(size: 11, design: .monospaced))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(9)
+                    .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 8))
+            }
+
             VStack(alignment: .leading, spacing: 7) {
                 Text("FRESH GIT SNAPSHOT").font(.system(size: 10, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 Text(snapshotText)
@@ -1579,7 +1623,7 @@ private struct MissionHandoffSheet: View {
                     .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 8))
             }
 
-            Text("No Claude or Codex configuration is modified. Transcript content is not copied; the target revalidates the repository from this bounded handoff.")
+            Text("No Claude or Codex configuration is modified. The reviewed packet includes a bounded excerpt of user/assistant text, without tool output or hidden reasoning; the target revalidates the repository.")
                 .font(.caption).foregroundStyle(.secondary)
 
             HStack {
@@ -1599,8 +1643,10 @@ private struct MissionHandoffSheet: View {
                             completed: completed,
                             remaining: remaining,
                             validation: validation,
-                            blockers: blockers
+                            blockers: blockers,
+                            recentConversation: handoff.context.recentConversation
                         ),
+                        capabilities: handoff.capabilities,
                         git: handoff.git
                     ))
                 }
@@ -1610,6 +1656,19 @@ private struct MissionHandoffSheet: View {
         }
         .padding(22)
         .frame(width: 620)
+    }
+
+    private var capabilityText: String {
+        let c = handoff.capabilities
+        func line(_ title: String, _ values: [String]) -> String {
+            "\(title): \(values.isEmpty ? "none detected" : values.joined(separator: ", "))"
+        }
+        return [
+            line("Shared skills", c.sharedSkills),
+            line("Missing target skills", c.missingSkillsOnTarget),
+            line("Shared MCP", c.sharedMCPServers),
+            line("Missing target MCP", c.missingMCPServersOnTarget)
+        ].joined(separator: "\n")
     }
 
     private func ledgerField(_ label: LocalizedStringKey, text: Binding<String>, prompt: LocalizedStringKey) -> some View {

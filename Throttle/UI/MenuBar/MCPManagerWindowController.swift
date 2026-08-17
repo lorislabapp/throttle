@@ -60,8 +60,6 @@ extension MCPManagerWindowController: NSWindowDelegate {
         Task { @MainActor in
             self.window = nil
             NotificationCenter.default.post(name: .mcpConfigChanged, object: nil)
-            try? await Task.sleep(for: .milliseconds(100))
-            NSApp.setActivationPolicy(.accessory)
         }
     }
 }

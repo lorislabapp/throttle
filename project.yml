@@ -19,8 +19,8 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
-    MARKETING_VERSION: "3.2.78"
-    CURRENT_PROJECT_VERSION: "178"
+    MARKETING_VERSION: "3.2.79"
+    CURRENT_PROJECT_VERSION: "179"
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
   configs:
     # Hardened runtime is required for notarized Release distribution but
@@ -68,7 +68,10 @@ targets:
     info:
       path: Throttle/Info.plist
       properties:
-        LSUIElement: YES
+        # Throttle exposes real Cockpit/project windows and supports Dock reopen.
+        # Keeping it permanently regular avoids a stale Dock tile launching a
+        # second instance while the menu-bar process is still alive.
+        LSUIElement: NO
         LSApplicationCategoryType: public.app-category.developer-tools
         NSHumanReadableCopyright: "Copyright © 2026 LorisLabs. All rights reserved."
         CFBundleShortVersionString: $(MARKETING_VERSION)

@@ -1,18 +1,11 @@
 import AppKit
 import SwiftUI
 
-/// True secondary NSWindow for menu-bar apps. The trick that makes it
-/// work on macOS 26.5 (where direct NSWindow creation from a status-
-/// item context crashes inside NSTitlebarBackgroundView) is the
-/// activation-policy switch:
-///
-///   1. Throttle launches as `.accessory` (LSUIElement = 1 → no Dock).
-///   2. Right before showing the project window we flip to `.regular`
-///      so the app is treated as a normal foreground app — that
-///      avoids the broken codepath that fires only for titled NSWindows
-///      created from accessory apps.
-///   3. When the window closes we flip back to `.accessory` so the
-///      Dock icon disappears again.
+/// True secondary NSWindow for Throttle's regular Dock application. Throttle
+/// previously toggled between `.accessory` and `.regular` around every window;
+/// overlapping close animations could demote the still-running app and leave a
+/// stale Dock tile. The app now remains regular, while this explicit AppKit window
+/// continues to avoid SwiftUI's macOS 26.5 titlebar regression.
 ///
 /// If this still crashes on the next macOS dot release, fall back to
 /// the inline mode in DropdownView.Mode.projects.
@@ -33,8 +26,7 @@ final class ProjectWindowController: NSObject {
             return
         }
 
-        // Step 1: become a real foreground app for the duration of the
-        // window. This is what dodges the macOS 26.5 NSTitlebar crash.
+        // Idempotent for normal launches and defensive for test/helper launches.
         NSApp.setActivationPolicy(.regular)
 
         let root = ProjectWindowRoot(onBack: { [weak self] in
@@ -72,10 +64,8 @@ extension ProjectWindowController: NSWindowDelegate {
     nonisolated func windowWillClose(_ notification: Notification) {
         Task { @MainActor in
             self.window = nil
-            // Step 3: back to accessory so the Dock icon disappears.
-            // Defer slightly so AppKit can finish its close animation.
-            try? await Task.sleep(for: .milliseconds(100))
-            NSApp.setActivationPolicy(.accessory)
+            // Keep the regular activation policy so the Dock icon remains a
+            // reliable reopen target while the menu-bar process is alive.
         }
     }
 }

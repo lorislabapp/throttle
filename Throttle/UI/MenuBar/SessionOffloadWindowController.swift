@@ -53,8 +53,6 @@ extension SessionOffloadWindowController: NSWindowDelegate {
     nonisolated func windowWillClose(_ notification: Notification) {
         Task { @MainActor in
             self.window = nil
-            try? await Task.sleep(for: .milliseconds(100))
-            NSApp.setActivationPolicy(.accessory)
         }
     }
 }

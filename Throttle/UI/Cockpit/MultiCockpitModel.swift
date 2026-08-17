@@ -270,17 +270,26 @@ final class CockpitTab: Identifiable {
         // Prefer the persisted id; if it was lost, fall back to the newest
         // transcript in this project dir so we resume real context instead of
         // starting an empty session.
-        let discovered = runtime == .claudeCode
-            ? MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
-            : MissionRuntimeService.newestCodexSession(cwd: cwd, since: .distantPast)?.id
+        // A handoff prompt must create a fresh target-native session. Resuming an
+        // unrelated target session here silently drops the handoff context.
+        let discovered = MissionRuntimeService.shouldDiscoverResumeSession(initialPrompt: initialPrompt)
+            ? (runtime == .claudeCode
+                ? MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
+                : MissionRuntimeService.newestCodexSession(cwd: cwd, since: .distantPast)?.id)
+            : nil
         let sid = sessionId ?? resumeSessionId ?? discovered
         // Quote the id (M19): it's a transcript-derived value interpolated into a
         // shell command. Only accept a sane session-id shape, else start fresh.
         if let sid, sid.allSatisfy({ $0.isHexDigit || $0 == "-" }) {
-            if runtime == .claudeCode {
+            if runtime == .claudeCode,
+               MissionRuntimeService.claudeSessionExists(id: sid, cwd: cwd) {
                 cmd += "claude --resume '\(sid)'\(agentsFlag)"
                 resumeIssue = nil
                 self.sessionId = sid
+            } else if runtime == .claudeCode {
+                cmd += "printf '\\nThrottle: saved Claude session not found locally; choose a session below.\\n\\n' && claude --resume"
+                resumeIssue = "Saved Claude session not found locally — choose it from Claude resume."
+                self.sessionId = nil
             } else if MissionRuntimeService.codexSessionExists(id: sid, cwd: cwd) {
                 cmd += "codex resume '\(sid)'"
                 resumeIssue = nil
