@@ -144,14 +144,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         FileHandle.standardError.write(Data("[applicationDidFinishLaunching] after Traycer\n".utf8))
 
-        // Web research: local WKWebView render bridge for the `web_render` MCP tool.
-        // Opt-in; fail-open (a bind conflict on 4319 disables it silently). The CLI
-        // MCP process reaches it over loopback; the renderer must live here because
-        // the GUI-less --mcp-server can't host a WKWebView.
+        // Provider-neutral local context bridge. It stays loopback-only and cheap;
+        // WebKit is created only when the explicit web preference is enabled and a
+        // render is requested. The same bridge hosts bounded embedded-model drafts.
         FileHandle.standardError.write(Data("[applicationDidFinishLaunching] before WebRenderBridge\n".utf8))
-        if UserDefaults.standard.bool(forKey: "throttleWebEnabled") {
-            WebRenderBridge.shared.start(writer: database)
-        }
+        WebRenderBridge.shared.start(writer: database)
         FileHandle.standardError.write(Data("[applicationDidFinishLaunching] after WebRenderBridge\n".utf8))
 
         // iOS companion mirror: publish live usage/cockpit state to the user's

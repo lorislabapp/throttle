@@ -1,10 +1,9 @@
 import Foundation
 
-/// Installs / removes the `throttle-memory` MCP server in the global Claude Code
-/// config (`~/.claude.json` → `mcpServers`), pointing at Throttle's own binary
-/// (`Throttle --mcp-server`). Lets Claude search the user's past sessions via the
-/// `search_sessions` tool. Opt-in, backed up, reversible. Restart Claude Code to
-/// load it.
+/// Installs / removes the same `throttle-memory` MCP server for Claude Code and
+/// Codex, pointing at Throttle's signed binary (`Throttle --mcp-server`). Both
+/// writes are explicit, backed up and reversible; no provider transcript or
+/// secret is copied between configurations.
 enum TranscriptMemoryInstaller {
 
     static let serverKey = "throttle-memory"
@@ -12,24 +11,51 @@ enum TranscriptMemoryInstaller {
     private static var home: URL { FileManager.default.homeDirectoryForCurrentUser }
     private static var globalConfig: URL { home.appendingPathComponent(".claude.json") }
     private static var backupsDir: URL { home.appendingPathComponent(".claude/throttle-backups", isDirectory: true) }
+    private static var codexConfig: URL { home.appendingPathComponent(".codex/config.toml") }
+    private static var codexBackupsDir: URL { home.appendingPathComponent(".codex/throttle-backups", isDirectory: true) }
     private static var execPath: String { Bundle.main.executablePath ?? "/Applications/Throttle.app/Contents/MacOS/Throttle" }
+    private static let codexBegin = "# BEGIN THROTTLE MCP: throttle-memory"
+    private static let codexEnd = "# END THROTTLE MCP: throttle-memory"
 
     static func isInstalled() -> Bool {
+        isInstalledForClaude() || isInstalledForCodex()
+    }
+
+    static func isInstalledForClaude() -> Bool {
         ((readJSON()?["mcpServers"] as? [String: Any])?[serverKey]) != nil
+    }
+
+    static func isInstalledForCodex() -> Bool {
+        guard let text = try? String(contentsOf: codexConfig, encoding: .utf8) else { return false }
+        return text.contains(codexBegin) || text.contains("[mcp_servers.\(serverKey)]")
     }
 
     @discardableResult
     static func install() throws -> Bool {
-        guard var dict = readJSON() else { throw Err.noConfig }
+        // Validate the Codex mutation before touching either provider. A same-name
+        // unmanaged section is a hard conflict, not a reason to leave a partial
+        // Claude-only installation behind.
+        let oldCodex = (try? String(contentsOf: codexConfig, encoding: .utf8)) ?? ""
+        let newCodex = try codexConfigInstalling(in: oldCodex, execPath: execPath)
+        var changed = false
+        var dict = readJSON() ?? [:]
         var mcp = dict["mcpServers"] as? [String: Any] ?? [:]
-        guard mcp[serverKey] == nil else { return false }
-        try backup()
-        mcp[serverKey] = ["command": execPath, "args": ["--mcp-server"]] as [String: Any]
-        dict["mcpServers"] = mcp
-        try writeJSON(dict)
+        if mcp[serverKey] == nil {
+            try backup()
+            mcp[serverKey] = ["command": execPath, "args": ["--mcp-server"]] as [String: Any]
+            dict["mcpServers"] = mcp
+            try writeJSON(dict)
+            changed = true
+        }
+        if newCodex != oldCodex {
+            try backupCodex()
+            try FileManager.default.createDirectory(at: codexConfig.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try newCodex.write(to: codexConfig, atomically: true, encoding: .utf8)
+            changed = true
+        }
         // Warm the index now so the first search isn't the slow full build.
         DispatchQueue.global(qos: .utility).async { _ = TranscriptIndex.reindex() }
-        return true
+        return changed
     }
 
     /// Heal a stale exec path in our `throttle-memory` entry without the user
@@ -40,10 +66,19 @@ enum TranscriptMemoryInstaller {
     /// pick it up. Mirrors TokoptHookInstaller.reconcile().
     @discardableResult
     static func reconcile() -> Bool {
-        guard let dict = readJSON(), let healed = healing(dict, execPath: execPath) else { return false }
-        try? backup()
-        try? writeJSON(healed)
-        return true
+        var changed = false
+        if let dict = readJSON(), let healed = healing(dict, execPath: execPath) {
+            try? backup()
+            try? writeJSON(healed)
+            changed = true
+        }
+        if let text = try? String(contentsOf: codexConfig, encoding: .utf8), text.contains(codexBegin),
+           let healed = try? codexConfigInstalling(in: text, execPath: execPath), healed != text {
+            try? backupCodex()
+            try? healed.write(to: codexConfig, atomically: true, encoding: .utf8)
+            changed = true
+        }
+        return changed
     }
 
     /// Pure: repoint `throttle-memory`'s command to `execPath`, or nil if no change
@@ -60,15 +95,70 @@ enum TranscriptMemoryInstaller {
     }
 
     static func remove() throws {
-        guard var dict = readJSON(),
-              var mcp = dict["mcpServers"] as? [String: Any], mcp[serverKey] != nil else { return }
-        try backup()
-        mcp.removeValue(forKey: serverKey)
-        dict["mcpServers"] = mcp
-        try writeJSON(dict)
+        if var dict = readJSON(), var mcp = dict["mcpServers"] as? [String: Any], mcp[serverKey] != nil {
+            try backup()
+            mcp.removeValue(forKey: serverKey)
+            dict["mcpServers"] = mcp
+            try writeJSON(dict)
+        }
+        if let old = try? String(contentsOf: codexConfig, encoding: .utf8) {
+            let new = codexConfigRemovingManagedBlock(from: old)
+            if new != old {
+                try backupCodex()
+                try new.write(to: codexConfig, atomically: true, encoding: .utf8)
+            }
+        }
     }
 
-    enum Err: Error { case noConfig }
+    enum Err: LocalizedError {
+        case noConfig, codexServerConflict
+
+        var errorDescription: String? {
+            switch self {
+            case .noConfig: return "the provider configuration could not be created"
+            case .codexServerConflict:
+                return "Codex already has an unmanaged mcp_servers.throttle-memory section; Throttle left both configurations unchanged"
+            }
+        }
+    }
+
+    static func codexConfigInstalling(in text: String, execPath: String) throws -> String {
+        let escaped = execPath.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+        let block = """
+        \(codexBegin)
+        [mcp_servers.\(serverKey)]
+        command = "\(escaped)"
+        args = ["--mcp-server"]
+        \(codexEnd)
+        """
+        if let begin = text.range(of: codexBegin),
+           let end = text.range(of: codexEnd, range: begin.upperBound..<text.endIndex) {
+            var out = text
+            out.replaceSubrange(begin.lowerBound..<end.upperBound, with: block)
+            return out
+        }
+        if text.contains("[mcp_servers.\(serverKey)]") { throw Err.codexServerConflict }
+        let prefix = text.isEmpty || text.hasSuffix("\n") ? text : text + "\n"
+        return prefix + (prefix.isEmpty ? "" : "\n") + block + "\n"
+    }
+
+    static func codexConfigRemovingManagedBlock(from text: String) -> String {
+        guard let begin = text.range(of: codexBegin),
+              let end = text.range(of: codexEnd, range: begin.upperBound..<text.endIndex) else { return text }
+        var out = text
+        var lower = begin.lowerBound
+        // Installation separates its managed block with one extra newline. Remove
+        // exactly that separator so uninstall restores the prior TOML byte-for-byte.
+        if lower > out.startIndex {
+            let previous = out.index(before: lower)
+            if out[previous] == "\n" { lower = previous }
+        }
+        var upper = end.upperBound
+        if upper < out.endIndex, out[upper] == "\n" { upper = out.index(after: upper) }
+        out.removeSubrange(lower..<upper)
+        return out.replacingOccurrences(of: "\n\n\n", with: "\n\n")
+    }
 
     private static func readJSON() -> [String: Any]? {
         guard let data = try? Data(contentsOf: globalConfig),
@@ -83,5 +173,13 @@ enum TranscriptMemoryInstaller {
         try FileManager.default.createDirectory(at: backupsDir, withIntermediateDirectories: true)
         let dest = backupsDir.appendingPathComponent("claude.json-\(Int(Date().timeIntervalSince1970)).bak")
         if FileManager.default.fileExists(atPath: globalConfig.path) { try? FileManager.default.copyItem(at: globalConfig, to: dest) }
+    }
+
+    private static func backupCodex() throws {
+        try FileManager.default.createDirectory(at: codexBackupsDir, withIntermediateDirectories: true)
+        let dest = codexBackupsDir.appendingPathComponent("config.toml-\(Int(Date().timeIntervalSince1970)).bak")
+        if FileManager.default.fileExists(atPath: codexConfig.path) {
+            try? FileManager.default.copyItem(at: codexConfig, to: dest)
+        }
     }
 }

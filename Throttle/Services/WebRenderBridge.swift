@@ -102,11 +102,20 @@ final class WebRenderBridge: @unchecked Sendable {
                 return
             }
             let body = buffer.subdata(in: bodyStart..<buffer.index(bodyStart, offsetBy: cl))
-            self.handle(conn, body: body)
+            let requestLine = header.split(separator: "\r\n").first.map(String.init) ?? ""
+            let path = requestLine.split(separator: " ").dropFirst().first.map(String.init) ?? "/"
+            self.handle(conn, path: path, body: body)
         }
     }
 
-    private func handle(_ conn: NWConnection, body: Data) {
+    private func handle(_ conn: NWConnection, path: String, body: Data) {
+        if path == "/summarize" { handleSummary(conn, body: body); return }
+        guard path == "/render" else {
+            send(conn, status: "404 Not Found", json: ["ok": false, "error": "unknown endpoint"]); return
+        }
+        guard UserDefaults.standard.bool(forKey: "throttleWebEnabled") else {
+            send(conn, status: "403 Forbidden", json: ["ok": false, "error": "web research is disabled in Throttle"]); return
+        }
         guard let obj = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
               let url = obj["url"] as? String, !url.isEmpty else {
             send(conn, status: "400 Bad Request", json: ["ok": false, "error": "missing url"]); return
@@ -116,28 +125,48 @@ final class WebRenderBridge: @unchecked Sendable {
         let maxChars = (obj["maxChars"] as? Int) ?? 12_000
         let timeoutMs = (obj["timeoutMs"] as? Int) ?? 15_000
         let useCache = (obj["useCache"] as? Bool) ?? true
+        let query = obj["query"] as? String
         let ttl = TimeInterval((obj["ttlSeconds"] as? Int) ?? 3_600)
         let cacheWriter = writer.map(WriterBox.init)
 
         // Cache short-circuit: a recent identical render skips WKWebView entirely.
         if useCache, let writer, let hit = WebResearchCache.lookup(url, ttl: ttl, reader: writer) {
-            let text = hit.text.count > maxChars ? String(hit.text.prefix(maxChars)) : hit.text
+            let packet = ContextFirewall.packet(text: hit.text, source: url, query: query,
+                                                maxCharacters: maxChars, untrusted: true)
             send(conn, status: "200 OK", json: [
-                "ok": true, "text": text, "title": "", "finalURL": url,
-                "renderMs": 0, "truncated": hit.text.count > maxChars, "waitReason": "cache",
+                "ok": true, "text": packet.text, "title": "", "finalURL": url,
+                "renderMs": 0, "truncated": packet.returnedCharacters < packet.originalCharacters,
+                "originalID": packet.originalID, "waitReason": "cache",
                 "cacheHit": true, "cacheAgeSec": hit.ageSeconds, "error": NSNull(),
             ])
             return
         }
 
         Task { @MainActor in
+            // Extract a substantially larger source than the response budget. The
+            // Context Firewall below selects exact evidence and archives this raw
+            // extraction, instead of prefix-truncating before relevance is known.
+            let extractionCap = min(max(maxChars * 8, 120_000), 500_000)
             let r = await WebRenderer.shared.render(url: url, wait: wait, waitSelector: waitSelector,
-                                                    maxChars: maxChars, timeoutMs: timeoutMs)
-            let payload: [String: Any] = [
-                "ok": r.ok, "text": r.text, "title": r.title, "finalURL": r.finalURL,
-                "renderMs": r.renderMs, "truncated": r.truncated, "waitReason": r.waitReason,
-                "cacheHit": false, "error": r.error as Any,
+                                                    maxChars: extractionCap, timeoutMs: timeoutMs)
+            let packet = r.ok ? ContextFirewall.packet(
+                text: r.text, source: r.finalURL.isEmpty ? url : r.finalURL,
+                query: query, maxCharacters: maxChars, untrusted: true
+            ) : nil
+            var payload: [String: Any] = [
+                "ok": r.ok, "text": packet?.text ?? r.text, "title": r.title, "finalURL": r.finalURL,
+                "renderMs": r.renderMs,
+                "truncated": r.truncated || ((packet?.returnedCharacters ?? 0) < (packet?.originalCharacters ?? 0)),
+                "waitReason": r.waitReason, "cacheHit": false,
             ]
+            if let originalID = packet?.originalID { payload["originalID"] = originalID }
+            else { payload["originalID"] = NSNull() }
+            if let error = r.error { payload["error"] = error }
+            else { payload["error"] = NSNull() }
+            let nextLinks = WebNavigationPlanner.ranked(
+                r.links, query: query, baseURL: r.finalURL.isEmpty ? url : r.finalURL
+            )
+            payload["links"] = nextLinks.map { ["url": $0.url, "label": $0.label] }
             let responseBody = Self.encode(payload)
             self.q.async { self.send(conn, status: "200 OK", body: responseBody) }
             // Record for future cache hits, off the response path so it never adds latency.
@@ -149,6 +178,32 @@ final class WebRenderBridge: @unchecked Sendable {
                         sessionId: nil, writer: cacheWriter.value
                     )
                 }
+            }
+        }
+    }
+
+    private func handleSummary(_ conn: NWConnection, body: Data) {
+        guard EmbeddedModelRuntime.isInstalled else {
+            send(conn, status: "409 Conflict", json: ["ok": false, "error": "install the embedded Qwen model in Throttle first"]); return
+        }
+        guard let obj = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
+              let throttleID = obj["throttleID"] as? String,
+              let task = obj["task"] as? String,
+              let data = ContentStore.get(throttleID),
+              let source = String(data: data, encoding: .utf8) else {
+            send(conn, status: "400 Bad Request", json: ["ok": false, "error": "invalid or expired throttle_id"]); return
+        }
+        let maxTokens = (obj["maxTokens"] as? Int) ?? 384
+        Task {
+            do {
+                let summary = try await EmbeddedModelRuntime.shared.summarize(
+                    source: source, task: task, maxTokens: maxTokens
+                )
+                let response = Self.encode(["ok": true, "summary": summary, "error": NSNull()])
+                self.q.async { self.send(conn, status: "200 OK", body: response) }
+            } catch {
+                let response = Self.encode(["ok": false, "error": error.localizedDescription])
+                self.q.async { self.send(conn, status: "500 Internal Server Error", body: response) }
             }
         }
     }

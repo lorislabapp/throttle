@@ -5,6 +5,27 @@ import XCTest
 /// stale exec path (dev DerivedData build → /Applications, or a Sparkle move) so
 /// the new MCP tools reach the user without re-toggling.
 final class TranscriptMemoryInstallerTests: XCTestCase {
+    func testCodexManagedBlockInstallUpdateAndRemovePreservesSiblings() throws {
+        let original = "model = \"gpt-test\"\n\n[mcp_servers.other]\ncommand = \"other\"\n"
+        let installed = try TranscriptMemoryInstaller.codexConfigInstalling(
+            in: original, execPath: "/Applications/Throttle.app/Contents/MacOS/Throttle"
+        )
+        XCTAssertTrue(installed.contains("[mcp_servers.throttle-memory]"))
+        XCTAssertTrue(installed.contains("command = \"/Applications/Throttle.app/Contents/MacOS/Throttle\""))
+        XCTAssertTrue(installed.contains("[mcp_servers.other]"))
+        XCTAssertEqual(installed.components(separatedBy: "BEGIN THROTTLE MCP").count - 1, 1)
+
+        let updated = try TranscriptMemoryInstaller.codexConfigInstalling(in: installed, execPath: "/New/Throttle")
+        XCTAssertTrue(updated.contains("command = \"/New/Throttle\""))
+        XCTAssertEqual(updated.components(separatedBy: "BEGIN THROTTLE MCP").count - 1, 1)
+        XCTAssertEqual(TranscriptMemoryInstaller.codexConfigRemovingManagedBlock(from: updated), original)
+    }
+
+    func testCodexInstallerRefusesToOverwriteUnmanagedSameName() {
+        let config = "[mcp_servers.throttle-memory]\ncommand = \"custom\"\n"
+        XCTAssertThrowsError(try TranscriptMemoryInstaller.codexConfigInstalling(in: config, execPath: "/Throttle"))
+    }
+
 
     private let appPath = "/Applications/Throttle.app/Contents/MacOS/Throttle"
     private let oldPath = "/Users/x/Library/Developer/Xcode/DerivedData/Throttle-abc/Build/Products/Debug/Throttle.app/Contents/MacOS/Throttle"

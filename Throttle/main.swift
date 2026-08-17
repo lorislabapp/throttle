@@ -104,6 +104,8 @@ if let i = CommandLine.arguments.firstIndex(of: "--web-render-inproc"), i + 1 < 
 // client runs off-main so the main run loop stays free to service the render.
 if let i = CommandLine.arguments.firstIndex(of: "--web-bridge-selftest"), i + 1 < CommandLine.arguments.count {
     let target = CommandLine.arguments[i + 1]
+    let priorWebPreference = UserDefaults.standard.bool(forKey: "throttleWebEnabled")
+    UserDefaults.standard.set(true, forKey: "throttleWebEnabled")
     let app = NSApplication.shared
     app.setActivationPolicy(.accessory)
     // Temp DB so the render cache (web_fetches) is exercised — the 2nd identical
@@ -121,7 +123,10 @@ if let i = CommandLine.arguments.firstIndex(of: "--web-bridge-selftest"), i + 1 
         print("=== FIRST ===\n" + String(first.prefix(200)))
         print("\n=== SECOND (expect cache) ===\n" + String(second.prefix(200)))
         usleep(2_000_000)   // let the async __web__ corpus indexing land before exit
-        DispatchQueue.main.async { NSApp.terminate(nil) }
+        DispatchQueue.main.async {
+            UserDefaults.standard.set(priorWebPreference, forKey: "throttleWebEnabled")
+            NSApp.terminate(nil)
+        }
     }
     app.run()
     exit(0)

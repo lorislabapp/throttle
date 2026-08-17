@@ -13,6 +13,7 @@ struct WebRenderResult: Sendable {
     var truncated: Bool = false
     var waitReason: String = ""
     var error: String? = nil
+    var links: [WebPageLink] = []
 }
 
 /// The edge Claude Code's native WebFetch structurally lacks: WebFetch sees only
@@ -43,6 +44,7 @@ final class WebRenderer: NSObject {
     private var hostWindow: NSWindow?
     private var navContinuations: [CheckedContinuation<Void, Error>] = []
     private var navigating = false
+    private var navigationTimeout: Task<Void, Never>?
     private var busy = false                     // one render at a time
     private var idleTeardown: Task<Void, Never>?
 
@@ -59,10 +61,14 @@ final class WebRenderer: NSObject {
                 timeoutMs: Int = 15_000) async -> WebRenderResult {
         // SSRF / scheme guard: http(s) only, and never internal hosts — the model
         // must not be steerable into rendering localhost admin panels or the LAN.
-        guard let url = URL(string: urlString),
-              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
-              let host = url.host, !Self.isBlockedHost(host) else {
-            return WebRenderResult(ok: false, error: "Refused: only public http(s) URLs are allowed (blocked scheme or private/loopback host).")
+        guard let url = URL(string: urlString) else {
+            return WebRenderResult(ok: false, error: "Refused: malformed URL.")
+        }
+        let rejection = await Task.detached(priority: .utility) {
+            WebURLPolicy.rejectionReason(for: url)
+        }.value
+        if let rejection {
+            return WebRenderResult(ok: false, error: "Refused: \(rejection).")
         }
 
         // Serialize: wait for any in-flight render to finish.
@@ -145,7 +151,10 @@ final class WebRenderer: NSObject {
             for (var i=0;i<junk.length;i++){ try{ junk[i].remove(); }catch(e){} }
             var cand = doc.querySelector('article') || doc.querySelector('main') || doc.querySelector('[role="main"]') || doc.body;
             var text = ((cand && (cand.innerText || cand.textContent)) || '').replace(/[\\t ]{2,}/g,' ').replace(/\\n{3,}/g,'\\n\\n').trim();
-            return JSON.stringify({ title: title, text: text, url: location.href });
+            var links = Array.from((cand || doc).querySelectorAll('a[href]')).slice(0,200).map(function(a){
+              return { href: a.href || '', label: (a.innerText || a.textContent || a.getAttribute('aria-label') || '').trim() };
+            });
+            return JSON.stringify({ title: title, text: text, url: location.href, links: links });
           } catch(e) { return JSON.stringify({ title: document.title || '', text: '', url: location.href, err: String(e) }); }
         })();
         """
@@ -158,10 +167,14 @@ final class WebRenderer: NSObject {
         var text = obj["text"] as? String ?? ""
         let truncated = text.count > maxChars
         if truncated { text = String(text.prefix(maxChars)) }
+        let links = (obj["links"] as? [[String: Any]] ?? []).compactMap { item -> WebPageLink? in
+            guard let href = item["href"] as? String, !href.isEmpty else { return nil }
+            return WebPageLink(url: href, label: item["label"] as? String ?? "")
+        }
         return WebRenderResult(ok: true, text: text,
                                title: obj["title"] as? String ?? "",
                                finalURL: obj["url"] as? String ?? "",
-                               truncated: truncated)
+                               truncated: truncated, links: links)
     }
 
     // MARK: - Navigation (cloned from EmbeddedClaudeSession)
@@ -169,6 +182,13 @@ final class WebRenderer: NSObject {
     private func navigate(_ view: WKWebView, to url: URL, timeoutMs: Int) async throws {
         while navigating { try? await Task.sleep(nanoseconds: 50_000_000) }
         navigating = true
+        navigationTimeout?.cancel()
+        navigationTimeout = Task { [weak self, weak view] in
+            try? await Task.sleep(nanoseconds: UInt64(timeoutMs) * 1_000_000)
+            guard let self, let view, !Task.isCancelled, self.navigating else { return }
+            view.stopLoading()
+            self.finishNavigation(error: EmbeddedSessionError.scriptError("Web navigation timed out"))
+        }
         try await withCheckedThrowingContinuation { (c: CheckedContinuation<Void, Error>) in
             navContinuations.append(c)
             view.load(URLRequest(url: url))
@@ -177,6 +197,8 @@ final class WebRenderer: NSObject {
 
     private func finishNavigation(error: Error?) {
         navigating = false
+        navigationTimeout?.cancel()
+        navigationTimeout = nil
         let conts = navContinuations; navContinuations.removeAll()
         for c in conts { if let error { c.resume(throwing: error) } else { c.resume() } }
     }
@@ -257,16 +279,7 @@ final class WebRenderer: NSObject {
     /// renderer can't be steered at the user's internal services. Best-effort host
     /// string check (public research targets are hostnames or public IPs).
     static func isBlockedHost(_ host: String) -> Bool {
-        let h = host.lowercased()
-        if h == "localhost" || h.hasSuffix(".local") || h.hasSuffix(".internal") { return true }
-        if h == "::1" || h.hasPrefix("fe80:") || h.hasPrefix("fc") || h.hasPrefix("fd") { return true }
-        if h.hasPrefix("127.") || h.hasPrefix("10.") || h.hasPrefix("169.254.") { return true }
-        if h.hasPrefix("192.168.") { return true }
-        if h.hasPrefix("172.") {
-            let second = h.split(separator: ".").dropFirst().first.flatMap { Int($0) } ?? -1
-            if (16...31).contains(second) { return true }
-        }
-        return false
+        WebURLPolicy.isBlockedHostname(host) || WebURLPolicy.isPrivateIPAddress(host)
     }
 
     private static func jsString(_ s: String) -> String {
@@ -279,6 +292,15 @@ final class WebRenderer: NSObject {
 // MARK: - Navigation + UI delegates
 
 extension WebRenderer: WKNavigationDelegate {
+    nonisolated func webView(_ webView: WKWebView,
+                             decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+        guard let url = await navigationAction.request.url else { return .cancel }
+        let rejection = await Task.detached(priority: .utility) {
+            WebURLPolicy.rejectionReason(for: url)
+        }.value
+        return rejection == nil ? .allow : .cancel
+    }
+
     nonisolated func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         Task { @MainActor in self.finishNavigation(error: nil) }
     }

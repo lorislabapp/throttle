@@ -28,13 +28,14 @@ enum WebRenderClient {
     }
 
     /// Returns the MCP `content`-ready text for a `web_render` call.
-    static func render(url: String, wait: String?, waitSelector: String?, maxChars: Int?, timeoutMs: Int?, useCache: Bool? = nil) -> String {
+    static func render(url: String, wait: String?, waitSelector: String?, maxChars: Int?, timeoutMs: Int?, useCache: Bool? = nil, query: String? = nil) -> String {
         var req: [String: Any] = ["url": url]
         if let wait { req["wait"] = wait }
         if let waitSelector { req["waitSelector"] = waitSelector }
         if let maxChars { req["maxChars"] = maxChars }
         if let timeoutMs { req["timeoutMs"] = timeoutMs }
         if let useCache { req["useCache"] = useCache }
+        if let query, !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { req["query"] = query }
 
         // Client timeout must outlast the render's hard 30 s ceiling.
         guard let resp = post(path: "/render", body: req, timeout: 35) else {
@@ -59,8 +60,35 @@ enum WebRenderClient {
         } else {
             head = "# \(title.isEmpty ? finalURL : title)\n\(finalURL)  ·  rendered in \(ms)ms (settle: \(reason))"
         }
-        if truncated { head += "  ·  [truncated]" }
-        return head + "\n\n" + (text.isEmpty ? "(no readable text extracted)" : text)
+        if truncated { head += "  ·  [focused packet; full original is rehydratable]" }
+        var output = head + "\n\n" + (text.isEmpty ? "(no readable text extracted)" : text)
+        if let links = resp["links"] as? [[String: String]], !links.isEmpty {
+            let rows = links.prefix(12).map { link in
+                let label = link["label"].flatMap { $0.isEmpty ? nil : $0 } ?? "Next page"
+                return "- \(label): \(link["url"] ?? "")"
+            }
+            output += "\n\n## Safe relevant links for the next navigation\n" + rows.joined(separator: "\n")
+        }
+        return output
+    }
+
+    static func localSummary(throttleID: String, task: String, maxTokens: Int?) -> String {
+        var body: [String: Any] = ["throttleID": throttleID, "task": task]
+        if let maxTokens { body["maxTokens"] = maxTokens }
+        guard let response = post(path: "/summarize", body: body, timeout: 90) else {
+            return "Local summarizer unavailable — open Throttle and retry."
+        }
+        guard (response["ok"] as? Bool) == true else {
+            return "Local summarizer failed: \(response["error"] as? String ?? "unknown error")"
+        }
+        let summary = response["summary"] as? String ?? ""
+        return """
+        # Local Qwen draft — verify against the original
+        throttle_id: \(throttleID)
+        This is probabilistic synthesis, not evidence. Use throttle_expand_pointer before relying on omitted details.
+
+        \(summary)
+        """
     }
 
     // MARK: - Loopback POST (sync)

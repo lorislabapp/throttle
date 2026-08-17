@@ -15,12 +15,18 @@ struct WhatsNewView: View {
 
     // Curated: the optimizations, newest first. `now` flags this release's additions.
     private let features: [Feature] = [
+        .init(icon: "shield.lefthalf.filled", title: "Context Firewall for Claude + Codex",
+              blurb: "Large files and logs become focused, line-numbered evidence with a recoverable content pointer. One explicit MCP setup serves both coding agents without copying their private transcripts.", now: true),
+        .init(icon: "globe.badge.chevron.backward", title: "Local web research",
+              blurb: "Throttle renders pages in an ephemeral WebKit view, blocks private-network destinations and prompt-injection instructions, archives the exact source, and returns only query-relevant evidence and safe next links.", now: true),
+        .init(icon: "cpu", title: "Local Qwen summaries",
+              blurb: "The embedded Qwen model can summarize archived files, logs and web pages entirely on this Mac. No Ollama daemon, cloud fallback, account or API key is required.", now: true),
         .init(icon: "bolt.horizontal", title: "Recoverable Miss Cost",
-              blurb: "The audit panel now puts a € figure on cache waste: money spent re-writing a prompt cache that should still have been warm (a busted prefix billed at the 1.25× write rate instead of the 0.10× read rate).", now: true),
+              blurb: "The audit panel now puts a € figure on cache waste: money spent re-writing a prompt cache that should still have been warm (a busted prefix billed at the 1.25× write rate instead of the 0.10× read rate).", now: false),
         .init(icon: "scope", title: "Spatial skill scoping",
-              blurb: "Throttle spots a skill used in only one project but loaded into every session, and offers to move it into that project (reversible) so it stops taxing the rest.", now: true),
+              blurb: "Throttle spots a skill used in only one project but loaded into every session, and offers to move it into that project (reversible) so it stops taxing the rest.", now: false),
         .init(icon: "contextualmenu.and.cursorarrow", title: "Throttle-shaped terminal menu",
-              blurb: "Right-click the terminal: Compact context (/compact), paste an image as OCR'd text (skip vision tokens), ask claude to explain/fix/summarize, and pause/resume the session (freeze token burn, no lost state).", now: true),
+              blurb: "Right-click the terminal: Compact context (/compact), paste an image as OCR'd text (skip vision tokens), ask claude to explain/fix/summarize, and pause/resume the session (freeze token burn, no lost state).", now: false),
         .init(icon: "arrow.triangle.2.circlepath", title: "Runaway-loop circuit breaker",
               blurb: "Spots an agent cycling the same action with no file changes — burning tokens toward your 5-hour cap — and lets you pause it.", now: false),
         .init(icon: "gauge.with.dots.needle.33percent", title: "Quiet mode under memory pressure",

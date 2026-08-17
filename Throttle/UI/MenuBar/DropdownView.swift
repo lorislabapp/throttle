@@ -1641,7 +1641,7 @@ private struct InlineGeneralPane: View {
             SettingsHair()
             SettingsRow(title: "Throttle as an MCP source",
                         sub: memoryNote.isEmpty
-                            ? "Installs a local MCP server so Claude can ask Throttle about ITSELF mid-session: search your past sessions, check budget headroom (how much before the 5-hour cap), session cost, and which loaded tools went unused. 100% local + read-only. Reversible; restart Claude Code after."
+                            ? "Installs the same local Context Firewall in Claude Code and Codex: focused reads, semantic search, exact-content recovery, compact web evidence, session recall and budget signals. Local, backed up and reversible; restart both agents after."
                             : memoryNote) {
                 HStack(spacing: 6) {
                     if !appState.isPro {
@@ -1655,13 +1655,24 @@ private struct InlineGeneralPane: View {
                         .disabled(!appState.isPro)
                         .onChange(of: memoryOn) { _, on in
                             guard appState.isPro else { return }
-                            Task.detached(priority: .utility) {
-                                if on { _ = try? TranscriptMemoryInstaller.install() }
-                                else { try? TranscriptMemoryInstaller.remove() }
+                            Task {
+                                let failure: String? = await Task.detached(priority: .utility) {
+                                    do {
+                                        if on { _ = try TranscriptMemoryInstaller.install() }
+                                        else { try TranscriptMemoryInstaller.remove() }
+                                        return nil
+                                    } catch {
+                                        return error.localizedDescription
+                                    }
+                                }.value
+                                if let failure {
+                                    memoryNote = "Could not update Claude Code + Codex: \(failure)"
+                                } else {
+                                    memoryNote = on
+                                        ? "Installed for Claude Code + Codex — restart both agents to load the shared tools."
+                                        : "Removed from Claude Code + Codex — restart both agents."
+                                }
                             }
-                            memoryNote = on
-                                ? "Installed — restart Claude Code, then ask it your budget headroom, cost, dead tools, or to search past sessions."
-                                : "Removed — restart Claude Code."
                         }
                 }
             }
@@ -1700,7 +1711,7 @@ private struct InlineGeneralPane: View {
             SettingsHair()
             SettingsRow(title: "Web research (local render)",
                         sub: webNote.isEmpty
-                            ? "Adds a web_render tool to Claude Code that renders a page's JavaScript in a private on-device WebKit engine and returns the fully-rendered text — content plain fetches miss (SPAs, client-rendered pages). 100% local, cookie-less, public URLs only. Restart Claude Code after enabling."
+                            ? "Adds provider-neutral web_render + research_grounded tools to Claude Code and Codex. WebKit renders JavaScript privately, then the Context Firewall returns exact query-focused excerpts with line numbers and a rehydratable original. Cookie-less, public URLs only; redirects and private DNS targets are blocked."
                             : webNote) {
                 HStack(spacing: 6) {
                     if !appState.isPro {
@@ -1717,10 +1728,12 @@ private struct InlineGeneralPane: View {
                             UserDefaults.standard.set(on, forKey: "throttleWebEnabled")
                             if on {
                                 WebRenderBridge.shared.start(writer: appState.database)   // live now; web_render appears in new sessions
-                                webNote = "On — restart Claude Code so it picks up the web_render tool."
+                                webNote = "On — restart Claude Code and Codex so both pick up the web research tools."
                             } else {
-                                WebRenderBridge.shared.stop()
-                                webNote = "Off — restart Claude Code to drop the web_render tool."
+                                // Keep the loopback bridge alive for embedded-model
+                                // Context Firewall summaries; /render itself now
+                                // rejects requests while this preference is off.
+                                webNote = "Off — restart Claude Code and Codex to drop the web research tools."
                             }
                         }
                 }

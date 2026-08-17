@@ -1,11 +1,11 @@
 import Foundation
 
-/// A tiny stdio MCP server (`Throttle --mcp-server`) that lets Claude Code search
-/// the user's OWN past sessions — the context its window has lost. Reuses the
+/// A tiny stdio MCP server (`Throttle --mcp-server`) that gives Claude Code and
+/// Codex the same local context/research tools. Reuses the
 /// signed app binary (no separate Node server). JSON-RPC 2.0 over newline-
 /// delimited stdin/stdout, exposing one tool: `search_sessions`.
 ///
-/// On-wedge: Throttle only PROVIDES local search; Claude's engine decides when to
+/// On-wedge: Throttle only PROVIDES local evidence; the agent decides when to
 /// call it. 100% local — nothing leaves the machine.
 enum ThrottleMCPServer {
 
@@ -33,7 +33,8 @@ enum ThrottleMCPServer {
                 "serverInfo": ["name": "throttle-memory", "version": "1.0.0"],
             ])
         case "tools/list":
-            var tools = [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema(), mcpHealthSchema(), expandPointerSchema(), recallSchema(), semanticSearchSchema()]
+            var tools = [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema(), mcpHealthSchema(), expandPointerSchema(), recallSchema(), semanticSearchSchema(), contextReadSchema()]
+            if EmbeddedModelRuntime.isInstalled { tools.append(localSummarizeSchema()) }
             // web_render is opt-in: only advertised when the user enabled Web
             // research, so a disabled capability costs zero schema tokens.
             if UserDefaults.standard.bool(forKey: "throttleWebEnabled") { tools.append(webRenderSchema()); tools.append(researchGroundedSchema()) }
@@ -76,12 +77,31 @@ enum ThrottleMCPServer {
                 } else {
                     respond(id: id, error: [-32602, "Missing query"])
                 }
+            case "throttle_read":
+                if let path = args?["path"] as? String {
+                    respond(id: id, result: textResult(contextReadText(
+                        path: path,
+                        query: args?["query"] as? String,
+                        maxCharacters: (args?["maxChars"] as? Int) ?? 12_000
+                    )))
+                } else {
+                    respond(id: id, error: [-32602, "Missing path"])
+                }
+            case "throttle_local_summarize":
+                if let throttleID = args?["throttle_id"] as? String,
+                   let task = args?["task"] as? String {
+                    respond(id: id, result: textResult(WebRenderClient.localSummary(
+                        throttleID: throttleID, task: task, maxTokens: args?["maxTokens"] as? Int
+                    )))
+                } else {
+                    respond(id: id, error: [-32602, "Missing throttle_id or task"])
+                }
             case "web_render":
                 if let url = args?["url"] as? String {
                     respond(id: id, result: textResult(WebRenderClient.render(
                         url: url, wait: args?["wait"] as? String, waitSelector: args?["waitSelector"] as? String,
                         maxChars: args?["maxChars"] as? Int, timeoutMs: args?["timeoutMs"] as? Int,
-                        useCache: args?["useCache"] as? Bool)))
+                        useCache: args?["useCache"] as? Bool, query: args?["query"] as? String)))
                 } else {
                     respond(id: id, error: [-32602, "Missing url"])
                 }
@@ -295,6 +315,63 @@ enum ThrottleMCPServer {
         }.joined(separator: "\n")
     }
 
+    private static func contextReadSchema() -> [String: Any] {
+        [
+            "name": "throttle_read",
+            "description": "Read a large local text file through Throttle's reversible Context Firewall. Returns exact numbered excerpts selected for the query plus a throttle_id that can rehydrate the byte-identical original. Prefer this over loading a whole large file into context. The path must stay inside the current repo (or the explicit repo root). Local and provider-neutral: works from Claude Code and Codex through MCP.",
+            "inputSchema": [
+                "type": "object",
+                "properties": [
+                    "path": ["type": "string", "description": "File path, absolute or relative to repo."],
+                    "query": ["type": "string", "description": "What evidence to select. Omit for a structural overview."],
+                    "maxChars": ["type": "integer", "description": "Context budget, 1000-64000 characters (default 12000)."],
+                ],
+                "required": ["path"],
+            ],
+        ]
+    }
+
+    private static func localSummarizeSchema() -> [String: Any] {
+        [
+            "name": "throttle_local_summarize",
+            "description": "Ask Throttle's embedded Qwen model to draft a compact summary of an exact payload already archived by the Context Firewall. Pass a throttle_id from throttle_read, web_render, or another Throttle pointer; the large source stays local and is not repeated in this tool call. Probabilistic and non-authoritative: verify critical details with throttle_expand_pointer.",
+            "inputSchema": [
+                "type": "object",
+                "properties": [
+                    "throttle_id": ["type": "string", "description": "64-character content ID returned by Throttle."],
+                    "task": ["type": "string", "description": "Bounded synthesis task, e.g. extract decisions and unresolved blockers."],
+                    "maxTokens": ["type": "integer", "description": "Output ceiling, 64-768 tokens (default 384)."],
+                ],
+                "required": ["throttle_id", "task"],
+            ],
+        ]
+    }
+
+    private static func contextReadText(path: String, query: String?, maxCharacters: Int) -> String {
+        let fm = FileManager.default
+        let root = SemanticCorpusStore.repoRoot(from: URL(fileURLWithPath: fm.currentDirectoryPath, isDirectory: true))
+            .standardizedFileURL.resolvingSymlinksInPath()
+        let candidate = (path.hasPrefix("/")
+            ? URL(fileURLWithPath: path)
+            : root.appendingPathComponent(path)).standardizedFileURL.resolvingSymlinksInPath()
+        let rootPrefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
+        guard candidate.path == root.path || candidate.path.hasPrefix(rootPrefix) else {
+            return "throttle_read refused: path escapes the repository root."
+        }
+        guard let values = try? candidate.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
+              values.isRegularFile == true else { return "throttle_read failed: not a regular file." }
+        let byteLimit = 8 * 1024 * 1024
+        guard (values.fileSize ?? byteLimit + 1) <= byteLimit else {
+            return "throttle_read refused: file exceeds the 8 MB safety limit; narrow it with an exact local search first."
+        }
+        guard let data = try? Data(contentsOf: candidate, options: [.mappedIfSafe]),
+              !data.contains(0), let text = String(data: data, encoding: .utf8) else {
+            return "throttle_read failed: binary or non-UTF-8 content is not accepted."
+        }
+        return ContextFirewall.packet(text: text, source: candidate.path, query: query,
+                                      maxCharacters: maxCharacters).text
+    }
+
     private static func webRenderSchema() -> [String: Any] {
         [
             "name": "web_render",
@@ -308,6 +385,7 @@ enum ThrottleMCPServer {
                     "maxChars": ["type": "integer", "description": "Cap on returned text length (default 12000)."],
                     "timeoutMs": ["type": "integer", "description": "Max render time in ms (default 15000, hard-capped at 30000)."],
                     "useCache": ["type": "boolean", "description": "Reuse a recent identical render (default true; within ~1h) instead of re-rendering. Set false to force a fresh render."],
+                    "query": ["type": "string", "description": "Focus the returned evidence packet on this question. Exact numbered excerpts are returned; the full rendered page remains rehydratable."],
                 ],
                 "required": ["url"],
             ],
@@ -341,7 +419,10 @@ enum ThrottleMCPServer {
             parts.append("No URLs given. Use WebSearch to find relevant pages for “\(query)”, then call research_grounded again with the urls[] — this tool renders + grounds, it does not search.")
         } else {
             for u in urls.prefix(5) {
-                parts.append("## Web source\n" + WebRenderClient.render(url: u, wait: nil, waitSelector: nil, maxChars: 4_000, timeoutMs: nil))
+                parts.append("## Web source\n" + WebRenderClient.render(
+                    url: u, wait: nil, waitSelector: nil, maxChars: 4_000,
+                    timeoutMs: nil, query: query
+                ))
             }
         }
 
