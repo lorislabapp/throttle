@@ -12,6 +12,7 @@ final class AIProviderRegistry {
     private let qualityKey  = "aiQualityPreference"
 
     private let appleIntel = AppleIntelligenceProvider()
+    private let embedded   = EmbeddedModelProvider()
     private let claudeKey  = ClaudeAPIKeyProvider()
     private let claudeWeb  = ClaudeWebSessionProvider()
 
@@ -53,6 +54,7 @@ final class AIProviderRegistry {
     func provider(for kind: AIProviderKind) -> any AIProvider {
         switch kind {
         case .appleIntelligence: return appleIntel
+        case .embeddedModel:     return embedded
         case .claudeAPIKey:      return claudeKey
         case .claudeWebSession:  return claudeWeb
         }
@@ -67,8 +69,13 @@ final class AIProviderRegistry {
         if let preferred = preferredKind {
             let p = provider(for: preferred)
             if await p.isAvailable { return p }
+            // "Local" is a privacy boundary, not just a routing preference.
+            // If the embedded model is missing, surface that state instead of silently sending
+            // project context to Claude or another network provider.
+            if preferred == .embeddedModel { return nil }
         }
         for kind in [AIProviderKind.appleIntelligence,
+                     .embeddedModel,
                      .claudeWebSession,
                      .claudeAPIKey] {
             let p = provider(for: kind)
@@ -86,6 +93,7 @@ final class AIProviderRegistry {
     /// instead of having to manually switch providers.
     func firstAvailable(excluding: Set<AIProviderKind>) async -> (any AIProvider)? {
         for kind in [AIProviderKind.appleIntelligence,
+                     .embeddedModel,
                      .claudeWebSession,
                      .claudeAPIKey] where !excluding.contains(kind) {
             let p = provider(for: kind)
@@ -97,6 +105,7 @@ final class AIProviderRegistry {
     func availabilityMap() async -> [AIProviderKind: Bool] {
         var map: [AIProviderKind: Bool] = [:]
         map[.appleIntelligence] = await appleIntel.isAvailable
+        map[.embeddedModel]     = await embedded.isAvailable
         map[.claudeWebSession]  = await claudeWeb.isAvailable
         map[.claudeAPIKey]      = await claudeKey.isAvailable
         return map

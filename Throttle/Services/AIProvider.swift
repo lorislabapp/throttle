@@ -246,6 +246,7 @@ struct ProjectChatContext: Sendable {
 /// Identifier persisted in UserDefaults for the user's selected provider.
 enum AIProviderKind: String, Sendable, CaseIterable {
     case appleIntelligence = "apple"
+    case embeddedModel     = "embedded"
     case claudeWebSession  = "claudeWeb"
     case claudeAPIKey      = "claudeKey"
 }

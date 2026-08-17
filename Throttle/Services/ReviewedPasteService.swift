@@ -19,7 +19,11 @@ enum ReviewedPasteError: Error, Equatable {
 }
 
 enum ReviewedPasteService {
-    static let maximumBytes = 64 * 1024
+    /// A reviewed terminal paste may be large enough to carry a real build log.
+    /// 64 KiB was a conservative command-paste guard, but it made ordinary Xcode
+    /// and CI diagnostics unusable. Keep the hash/review gate and cap at 1 MiB to
+    /// prevent accidental multi-megabyte clipboard floods.
+    static let maximumBytes = 1024 * 1024
     static let reviewBytes = 4 * 1024
     static let reviewLines = 4
     static let timeToLive: TimeInterval = 30

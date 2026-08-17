@@ -25,6 +25,10 @@ struct ProjectAssistantTab: View {
     /// Apply sheet). Cleared when the user picks one or sends any new
     /// message of their own.
     @State private var followUpSuggestions: [String] = []
+    @State private var embeddedModelInstalled = EmbeddedModelRuntime.isInstalled
+    @State private var embeddedModelInstalling = false
+    @State private var embeddedModelProgress = 0.0
+    @State private var embeddedModelError = ""
 
     /// Per-entry expansion state for the inline tool-result cards. Keyed
     /// by `<msg.id>-<entryIdx>` so each row in a batch tool_result can
@@ -63,7 +67,10 @@ struct ProjectAssistantTab: View {
                 inputBar
             }
         }
-        .task { await refreshProvider() }
+        .task {
+            embeddedModelInstalled = EmbeddedModelRuntime.isInstalled
+            await refreshProvider()
+        }
         .onChange(of: project.id) { _, _ in
             transcript.removeAll()
             loadedContext = nil
@@ -103,7 +110,7 @@ struct ProjectAssistantTab: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Pick how the Assistant talks to AI")
                         .font(.title2.bold())
-                    Text("Three options. Pick one — you can change it later via the toggle in the chat header.")
+                    Text("Four options. Pick one — you can change it later via the toggle in the chat header.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
                 .padding(.bottom, 8)
@@ -118,6 +125,29 @@ struct ProjectAssistantTab: View {
                     description: String(localized: "Runs on your Mac (macOS 26+ with Apple Intelligence enabled). Nothing leaves your device. Quality is OK for short questions; longer audits are better with Claude."),
                     requiresExtra: false
                 )
+
+                providerCard(
+                    kind: .embeddedModel,
+                    title: String(localized: "Qwen embedded"),
+                    badge: String(localized: "Free · local · no Ollama"),
+                    description: embeddedModelInstalled
+                        ? String(localized: "Qwen 3 1.7B runs directly inside Throttle through MLX. Project context never leaves this Mac and there is no cloud fallback.")
+                        : String(localized: "Installs the 968 MB Qwen 3 1.7B 4-bit model once, then runs fully offline inside Throttle. No Ollama daemon or account required."),
+                    requiresExtra: false,
+                    actionTitle: embeddedModelInstalled
+                        ? String(localized: "Use this")
+                        : (embeddedModelInstalling
+                           ? String(localized: "Installing \(Int(embeddedModelProgress * 100))%")
+                           : String(localized: "Install & use")),
+                    disabled: embeddedModelInstalling
+                )
+                if !embeddedModelError.isEmpty {
+                    Text(embeddedModelError)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+                Link("Model card · Apache 2.0", destination: EmbeddedModelRuntime.modelURL)
+                    .font(.caption)
 
                 providerCard(
                     kind: .claudeWebSession,
@@ -147,7 +177,7 @@ struct ProjectAssistantTab: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Answer quality")
                 .font(.subheadline.bold())
-            Text("Affects the API-key provider only — Apple Intelligence has one model, and Claude (subscription) inherits whatever claude.ai picks.")
+            Text("Affects the API-key provider only. Embedded Qwen, Apple Intelligence, and Claude subscription manage their own model.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -173,6 +203,7 @@ struct ProjectAssistantTab: View {
         badge: String,
         description: String,
         requiresExtra: Bool,
+        actionTitle: String? = nil,
         disabled: Bool = false
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -192,11 +223,15 @@ struct ProjectAssistantTab: View {
             HStack {
                 Spacer()
                 Button {
-                    pickProvider(kind, requiresExtra: requiresExtra)
+                    if kind == .embeddedModel && !embeddedModelInstalled {
+                        installEmbeddedModel()
+                    } else {
+                        pickProvider(kind, requiresExtra: requiresExtra)
+                    }
                 } label: {
-                    Text(requiresExtra
+                    Text(actionTitle ?? (requiresExtra
                          ? String(localized: "Set up")
-                         : String(localized: "Use this"))
+                         : String(localized: "Use this")))
                     .padding(.horizontal, 8)
                 }
                 .buttonStyle(.borderedProminent)
@@ -221,6 +256,24 @@ struct ProjectAssistantTab: View {
             }
         }
         Task { await refreshProvider() }
+    }
+
+    private func installEmbeddedModel() {
+        embeddedModelInstalling = true
+        embeddedModelError = ""
+        Task {
+            do {
+                try await EmbeddedModelRuntime.shared.install { fraction in
+                    embeddedModelProgress = fraction
+                }
+                embeddedModelInstalled = true
+                embeddedModelInstalling = false
+                pickProvider(.embeddedModel, requiresExtra: false)
+            } catch {
+                embeddedModelInstalling = false
+                embeddedModelError = error.localizedDescription
+            }
+        }
     }
 
     private var statusBar: some View {

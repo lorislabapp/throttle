@@ -5,6 +5,12 @@ import XCTest
 /// (alongside the wall-clock "resets 9pm") as well as the cockpit binding.
 @MainActor
 final class CockpitCountdownTests: XCTestCase {
+    func testCanonicalCWDNormalizesTrailingComponents() {
+        XCTAssertEqual(
+            MultiCockpitModel.canonicalCWD("/private/tmp/project/../project/"),
+            MultiCockpitModel.canonicalCWD("/private/tmp/project")
+        )
+    }
     func test_countdown_formats() {
         XCTAssertEqual(MultiCockpitModel.countdown(0), "now")
         XCTAssertEqual(MultiCockpitModel.countdown(-5), "now")

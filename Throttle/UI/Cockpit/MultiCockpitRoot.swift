@@ -1219,8 +1219,64 @@ struct MultiCockpitRoot: View {
 
     private func open(_ name: String, _ cwd: String) {
         if model.gated, !confirmOpenUnderPressure() { return }
-        model.newSession(projectName: name, cwd: cwd)
+
+        if let existing = model.sessions(inProjectAt: cwd).first {
+            switch confirmDuplicateProject(name: name, count: model.sessions(inProjectAt: cwd).count) {
+            case .focusExisting:
+                selectedRemoteID = nil
+                model.focusSession(existing.id)
+                if model.viewMode == .mission { model.viewMode = .rail }
+                return
+            case .openAnother:
+                break
+            case .cancel:
+                return
+            }
+        }
+
+        guard let runtime = chooseRuntimeForNewSession() else { return }
+        model.newSession(projectName: name, cwd: cwd, runtime: runtime)
         if model.viewMode == .mission { model.viewMode = .rail }
+    }
+
+    private enum DuplicateProjectChoice {
+        case focusExisting, openAnother, cancel
+    }
+
+    private func confirmDuplicateProject(name: String, count: Int) -> DuplicateProjectChoice {
+        let alert = NSAlert()
+        alert.messageText = "A tab for \(name) is already open"
+        alert.informativeText = count == 1
+            ? "Go to the existing tab, or intentionally open another agent session for the same project?"
+            : "\(count) tabs already use this project. Go to the most recently active one, or intentionally open another?"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "Go to Existing Tab")
+        alert.addButton(withTitle: "Open Anyway")
+        alert.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+        switch alert.runModal() {
+        case .alertFirstButtonReturn: return .focusExisting
+        case .alertSecondButtonReturn: return .openAnother
+        default: return .cancel
+        }
+    }
+
+    private func chooseRuntimeForNewSession() -> AgentRuntime? {
+        let recommended = model.runtimeForNewMission
+        let alternative: AgentRuntime = recommended == .claudeCode ? .codex : .claudeCode
+        let alert = NSAlert()
+        alert.messageText = "Start with Claude Code or Codex?"
+        alert.informativeText = "Choose the coding agent for this new tab. You can switch later through a reviewed context handoff."
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: recommended.label)
+        alert.addButton(withTitle: alternative.label)
+        alert.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+        switch alert.runModal() {
+        case .alertFirstButtonReturn: return recommended
+        case .alertSecondButtonReturn: return alternative
+        default: return nil
+        }
     }
 
     /// Saturation is advisory, not a hard block — it's the user's Mac. Warn
@@ -1250,7 +1306,7 @@ struct MultiCockpitRoot: View {
             panel.allowsMultipleSelection = false
             panel.canCreateDirectories = true   // adds the "New Folder" button → start a brand-new project
             panel.prompt = "Open Session"
-            panel.message = "Choose or create a project folder to start a claude session in."
+            panel.message = "Choose or create a project folder to start a Claude Code or Codex session in."
             NSApp.activate(ignoringOtherApps: true)
             // Pas de makeKeyAndOrderFront manuel : runModal ordonne le panel lui-même.
             // L'ordonner tôt fait poster windowWillOrderOnScreen dans le NSRemoteView

@@ -574,6 +574,32 @@ final class MultiCockpitModel {
 
     var active: CockpitTab? { sessions.first { $0.id == activeID } ?? sessions.first }
 
+    /// Tabs already associated with the same checkout. Canonicalizing both sides
+    /// catches `/tmp/link/project` vs `/Users/me/project` and trailing-slash
+    /// variants before the UI asks whether to focus or intentionally duplicate.
+    func sessions(inProjectAt cwd: String) -> [CockpitTab] {
+        let target = Self.canonicalCWD(cwd)
+        return sessions
+            .filter { Self.canonicalCWD($0.cwd) == target }
+            .sorted { $0.lastActivityAt > $1.lastActivityAt }
+    }
+
+    func focusSession(_ id: UUID) {
+        guard let tab = sessions.first(where: { $0.id == id }) else { return }
+        if tab.isHibernated {
+            wake(id)
+        } else {
+            activeID = id
+        }
+    }
+
+    nonisolated static func canonicalCWD(_ path: String) -> String {
+        URL(fileURLWithPath: path, isDirectory: true)
+            .standardizedFileURL
+            .resolvingSymlinksInPath()
+            .path
+    }
+
     /// Freeze / unfreeze every live session (SIGSTOP/SIGCONT) — the reversible
     /// pause exposed to App Intents / Shortcuts. No-op on dormant tabs.
     func pauseAll()  { for s in sessions { s.pauseProcess() } }
@@ -1304,7 +1330,7 @@ final class MultiCockpitModel {
         initialPrompt: String? = nil
     ) -> CockpitTab {
         let selectedRuntime = runtime ?? runtimeForNewMission
-        let kickoff = initialPrompt ?? (runtime == nil && routingMode == .hybrid
+        let kickoff = initialPrompt ?? (routingMode == .hybrid
             ? MissionRuntimeService.hybridKickoff(runtime: selectedRuntime)
             : nil)
         let s = CockpitTab(

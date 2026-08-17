@@ -40,6 +40,7 @@ echo "→ Archiving Release build"
 ARCHIVE_PATH="$RELEASE_BUILD_DIR/Throttle.xcarchive"
 rm -rf "$ARCHIVE_PATH"
 xcodebuild -project Throttle.xcodeproj -scheme Throttle \
+    -skipPackagePluginValidation -skipMacroValidation \
     -configuration Release \
     -archivePath "$ARCHIVE_PATH" \
     -destination 'generic/platform=macOS' \

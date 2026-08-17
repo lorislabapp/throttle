@@ -27,4 +27,11 @@ final class ReviewedPasteServiceTests: XCTestCase {
             String(repeating: "x", count: ReviewedPasteService.maximumBytes + 1)
         ))
     }
+
+    func testAcceptsReviewedBuildLogLargerThanLegacy64KiBLimit() throws {
+        let log = String(repeating: "compile warning: sample\n", count: 4_000)
+        XCTAssertGreaterThan(log.utf8.count, 64 * 1024)
+        XCTAssertLessThan(log.utf8.count, ReviewedPasteService.maximumBytes)
+        XCTAssertNoThrow(try ReviewedPasteService.prepare(log))
+    }
 }

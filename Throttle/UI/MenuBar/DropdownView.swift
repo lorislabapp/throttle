@@ -2836,6 +2836,10 @@ private struct InlineAssistantPane: View {
     @State private var aiSelection: AIProviderKind? = AIProviderRegistry.shared.preferredKind
     @State private var aiKeyDraft: String = ""
     @State private var aiKeyStatus: String = ""
+    @State private var embeddedInstalled = EmbeddedModelRuntime.isInstalled
+    @State private var embeddedInstalling = false
+    @State private var embeddedProgress = 0.0
+    @State private var embeddedStatus = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -2846,6 +2850,7 @@ private struct InlineAssistantPane: View {
                     set: { newValue in aiSelection = newValue; AIProviderRegistry.shared.preferredKind = newValue }
                 )) {
                     Text("Apple").tag(AIProviderKind.appleIntelligence as AIProviderKind?)
+                    Text("Local").tag(AIProviderKind.embeddedModel as AIProviderKind?)
                     Text("Claude").tag(AIProviderKind.claudeWebSession as AIProviderKind?)
                     Text("API").tag(AIProviderKind.claudeAPIKey as AIProviderKind?)
                 }
@@ -2854,6 +2859,10 @@ private struct InlineAssistantPane: View {
             if (aiSelection ?? defaultProviderKind()) == .claudeAPIKey {
                 SettingsHair()
                 apiKeyRow
+            }
+            if (aiSelection ?? defaultProviderKind()) == .embeddedModel {
+                SettingsHair()
+                embeddedModelRow
             }
             SettingsHair()
             SettingsRow(title: "Caveman mode", sub: "Terse, telegraphic replies from the project Assistant. Ug.") {
@@ -2895,15 +2904,97 @@ private struct InlineAssistantPane: View {
         .padding(.horizontal, 16).padding(.vertical, 9)
     }
 
+    private var embeddedModelRow: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            if !embeddedInstalled {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Qwen 3 1.7B · embedded").font(.system(size: 12, weight: .medium))
+                        Text(embeddedStatus.isEmpty
+                             ? "968 MB one-time download. Runs inside Throttle; no Ollama or cloud fallback."
+                             : embeddedStatus)
+                            .font(.system(size: 11)).foregroundStyle(.tertiary)
+                        Link("Model card · Apache 2.0", destination: EmbeddedModelRuntime.modelURL)
+                            .font(.system(size: 10))
+                    }
+                    Spacer()
+                    SettingsButton(title: embeddedInstalling
+                                   ? "Installing \(Int(embeddedProgress * 100))%"
+                                   : "Install") {
+                        installEmbeddedModel()
+                    }
+                }
+            } else {
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(EmbeddedModelRuntime.displayName).font(.system(size: 12, weight: .medium))
+                        Text("Installed in Throttle. Project context stays on this Mac; no daemon or cloud fallback.")
+                            .font(.system(size: 11)).foregroundStyle(.tertiary)
+                        Link("Model card · Apache 2.0", destination: EmbeddedModelRuntime.modelURL)
+                            .font(.system(size: 10))
+                    }
+                    Spacer()
+                    SettingsButton(title: "Remove", role: .destructive) {
+                        removeEmbeddedModel()
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 9)
+    }
+
     private func defaultProviderKind() -> AIProviderKind {
         if aiAvailability[.appleIntelligence] == true { return .appleIntelligence }
+        if aiAvailability[.embeddedModel] == true { return .embeddedModel }
         if aiAvailability[.claudeAPIKey] == true { return .claudeAPIKey }
         return .appleIntelligence
     }
 
     private func reloadAvailability() async {
         let map = await AIProviderRegistry.shared.availabilityMap()
-        await MainActor.run { aiAvailability = map }
+        await MainActor.run {
+            aiAvailability = map
+            embeddedInstalled = EmbeddedModelRuntime.isInstalled
+        }
+    }
+
+    private func installEmbeddedModel() {
+        guard !embeddedInstalling else { return }
+        embeddedInstalling = true
+        embeddedStatus = "Downloading model…"
+        Task {
+            do {
+                try await EmbeddedModelRuntime.shared.install { fraction in
+                    embeddedProgress = fraction
+                    embeddedStatus = "Downloading model… \(Int(fraction * 100))%"
+                }
+                embeddedInstalled = true
+                embeddedInstalling = false
+                embeddedStatus = "Installed."
+                AIProviderRegistry.shared.preferredKind = .embeddedModel
+                await reloadAvailability()
+            } catch {
+                embeddedInstalling = false
+                embeddedStatus = "Install failed: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    private func removeEmbeddedModel() {
+        Task {
+            do {
+                try await EmbeddedModelRuntime.shared.removeInstalledModel()
+                embeddedInstalled = false
+                embeddedStatus = "Model removed."
+                if AIProviderRegistry.shared.preferredKind == .embeddedModel {
+                    AIProviderRegistry.shared.preferredKind = nil
+                    aiSelection = nil
+                }
+                await reloadAvailability()
+            } catch {
+                embeddedStatus = "Removal failed: \(error.localizedDescription)"
+            }
+        }
     }
 
     private func runImport() {

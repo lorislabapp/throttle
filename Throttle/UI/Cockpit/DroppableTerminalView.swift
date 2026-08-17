@@ -142,7 +142,8 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         let alert = NSAlert()
         alert.alertStyle = .warning
         alert.messageText = "Review terminal paste"
-        alert.informativeText = "\(challenge.lineCount) lines · \(challenge.byteCount) bytes\nSHA-256 \(challenge.sha256.prefix(16))…\n\n\(challenge.preview)"
+        let estimatedTokens = max(1, challenge.byteCount / 4)
+        alert.informativeText = "\(challenge.lineCount) lines · \(challenge.byteCount) bytes · ≈\(estimatedTokens) tokens\nSHA-256 \(challenge.sha256.prefix(16))…\n\n\(challenge.preview)"
         alert.addButton(withTitle: "Paste once")
         alert.addButton(withTitle: "Cancel")
         let commit: (NSApplication.ModalResponse) -> Void = { [weak self] response in
@@ -166,7 +167,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         alert.alertStyle = .critical
         alert.messageText = "Paste blocked"
         if error as? ReviewedPasteError == .tooLarge {
-            alert.informativeText = "Terminal pastes are limited to 64 KiB. Use a file or a smaller reviewed paste."
+            alert.informativeText = "Reviewed terminal pastes are limited to 1 MiB. Save larger logs to a file and ask the agent to inspect that path."
         } else {
             alert.informativeText = "The clipboard contains a NUL or escape control sequence and was not sent."
         }
