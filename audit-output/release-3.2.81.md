@@ -1,6 +1,6 @@
 # Throttle release ledger — 3.2.81 (181)
 
-Updated UTC: 2026-08-17T10:46:00Z
+Updated UTC: 2026-08-17T10:56:00Z
 Repository: `/Users/kevinnadjarian/GitHub/Throttle`
 Channel: Developer ID direct distribution through Sparkle
 Authority: commit and public Sparkle/web release requested by the user. Fresh exact-artifact confirmations remain required before Apple notarization and public upload.
@@ -27,19 +27,21 @@ Authority: commit and public Sparkle/web release requested by the user. Fresh ex
 - Live Sparkle head verified as 3.2.80 (180); its DMG returns HTTP 200 with the feed-declared 26,177,492-byte length.
 - Source version advanced to 3.2.81 (181).
 - Existing user-owned `.codex/` and `.mcp.json` are excluded from release source changes.
-- Developer ID Application SHA-1 `8333AB7CD909731530AC62DD28CCA47C8D288225` is available in the login keychain; profile/export availability remains gated by the fresh archive.
+- Developer ID Application SHA-1 `8333AB7CD909731530AC62DD28CCA47C8D288225` is available in the login keychain; the app and widget exported with their pinned Developer ID profiles.
 
 ## Build/archive
 
 - Full XCTest after version bump: PASS (231 passed, 1 opt-in test skipped, 0 failed).
 - Explicit embedded Qwen inference acceptance: PASS.
 - Live WebKit bridge/cache acceptance against `https://example.com`: PASS.
-- Fresh universal Developer ID archive/export: PENDING.
+- Fresh universal Developer ID archive/export: PASS.
 
 ## Assets
 
-- Signed DMG: PENDING.
-- Architecture: PENDING.
+- Signed DMG: `/private/tmp/throttle-release-3.2.81/Throttle-3.2.81.dmg`.
+- Pre-notary size: 26,247,448 bytes.
+- Pre-notary SHA-256: `7e2b7de57f9e7aa586b7d674d7d3ec1872bbb4f7ed9ff2b1f386643e3b809223`.
+- Architecture: universal `x86_64 arm64`.
 - Apple notarization/staple: PENDING exact-artifact confirmation.
 - Sparkle EdDSA enclosure signature and SHA-256: PENDING.
 
@@ -50,12 +52,15 @@ Authority: commit and public Sparkle/web release requested by the user. Fresh ex
 ## Assemble
 
 - Project generation after version bump: PASS.
-- Exported app/widget strict signature and smoke test: PENDING.
+- Exported app/widget strict signature: PASS.
+- DMG strict signature: PASS.
+- Bundle smoke test: PASS (5/5, including Dock lifecycle metadata).
 
 ## Validate
 
 - Final post-version-bump XCTest: PASS (231 passed, 1 opt-in test skipped, 0 failed).
-- Gatekeeper and staple validation: PENDING.
+- Pre-notary Gatekeeper state: expected `rejected`, source `Unnotarized Developer ID`, origin `Developer ID Application: Christine Martin (TDV6D5L785)`.
+- Post-notary Gatekeeper and staple validation: PENDING.
 
 ## Submit
 
