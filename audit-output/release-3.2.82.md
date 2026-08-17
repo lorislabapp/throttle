@@ -1,6 +1,6 @@
 # Throttle release ledger — 3.2.82 (182)
 
-Updated UTC: 2026-08-17T12:01:42Z
+Updated UTC: 2026-08-17T12:07:28Z
 Repository: `/Users/kevinnadjarian/GitHub/Throttle`
 Channel: Developer ID direct distribution through Sparkle
 Authority: local changes, commit, push and release preparation requested by the user. Exact-artifact Apple notarization and public upload remain separate confirmation gates.
@@ -50,7 +50,7 @@ Authority: local changes, commit, push and release preparation requested by the 
 ## Metadata
 
 - Landing page: repositioning in progress.
-- Appcast item and 3.2.82 landing-page link: PREPARED locally, not public.
+- Appcast item, 3.2.82 landing-page link, home-page positioning and app metadata: LIVE.
 
 ## Assemble
 
@@ -69,8 +69,17 @@ Authority: local changes, commit, push and release preparation requested by the 
 ## Submit
 
 - Apple notarization upload: COMPLETE and accepted after exact-artifact confirmation.
-- Public DMG/appcast/site upload: BLOCKED pending exact-destination confirmation.
+- Public DMG/appcast/site upload: COMPLETE after exact-destination confirmation.
+- Targeted Hostinger upload sent exactly `throttle/Throttle-3.2.82.dmg`, `throttle/appcast.xml`, `throttle/index.html`, `index.html` and `apps/throttle.json`; unrelated dirty website files were excluded.
 
 ## Post-release
 
-- Live feed, page, DMG hash, Sparkle signature, staple and Gatekeeper checks: PENDING.
+- Live feed XML: PASS; top item is 3.2.82 (182), enclosure length 26,267,604 and its EdDSA signature matches the locally generated value.
+- Live landing page: PASS; the page links 3.2.82 and presents Throttle as a token, context and cost optimizer for Claude Code and Codex.
+- Live home-page card and app metadata: PASS; both expose the new multi-provider/local-Qwen positioning.
+- Live DMG download: PASS; 26,267,604 bytes.
+- Live DMG SHA-256: `4e03bb19b40e930a9a2ffe51843e5118c21a7dcf51ce8644ce6f88e00628c342`, exact local match and byte-identical comparison PASS.
+- Live downloaded DMG staple validation and strict signature: PASS.
+- Live mounted app/widget strict signatures: PASS; universal `x86_64 arm64`, version/build 3.2.82 (182).
+- Live downloaded DMG and mounted-app Gatekeeper: PASS, source `Notarized Developer ID`.
+- Rollback remains available through the existing 3.2.81 feed item and DMG.
