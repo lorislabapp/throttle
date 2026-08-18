@@ -9,12 +9,44 @@ import Foundation
 enum AgentRuntime: String, Codable, CaseIterable, Identifiable, Sendable {
     case claudeCode
     case codex
+    case local
+    case terminal
 
     var id: String { rawValue }
-    var label: String { self == .claudeCode ? "Claude Code" : "Codex" }
-    var shortLabel: String { self == .claudeCode ? "Claude" : "Codex" }
-    var executable: String { self == .claudeCode ? "claude" : "codex" }
-    var symbol: String { self == .claudeCode ? "sparkles" : "chevron.left.forwardslash.chevron.right" }
+    var label: String {
+        switch self {
+        case .claudeCode: return "Claude Code"
+        case .codex: return "Codex"
+        case .local: return "Local"
+        case .terminal: return "Terminal"
+        }
+    }
+    var shortLabel: String {
+        switch self {
+        case .claudeCode: return "Claude"
+        case .codex: return "Codex"
+        case .local: return "Local"
+        case .terminal: return "Terminal"
+        }
+    }
+    var executable: String? {
+        switch self {
+        case .claudeCode: return "claude"
+        case .codex: return "codex"
+        case .local, .terminal: return nil
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .claudeCode: return "sparkles"
+        case .codex: return "chevron.left.forwardslash.chevron.right"
+        case .local: return "cpu"
+        case .terminal: return "terminal"
+        }
+    }
+    /// Only these runtimes emit native CLI transcripts/cost metadata that Throttle
+    /// can track and restore reliably.
+    var usesTranscript: Bool { self == .claudeCode || self == .codex }
 }
 
 /// User intent for the next mission/session. Changing this never kills or
@@ -298,6 +330,9 @@ enum MissionRuntimeService {
         cwd: String,
         home: URL = FileManager.default.homeDirectoryForCurrentUser
     ) -> MissionCapabilityInventory {
+        guard runtime.usesTranscript else {
+            return MissionCapabilityInventory(skills: [], mcpServers: [])
+        }
         let fm = FileManager.default
         let providerDir = runtime == .claudeCode ? ".claude" : ".codex"
         let skillRoots = [
@@ -323,6 +358,8 @@ enum MissionRuntimeService {
             mcp = claudeMCPNames(cwd: cwd, home: home)
         case .codex:
             mcp = codexMCPNames(config: home.appendingPathComponent(".codex/config.toml"))
+        case .local, .terminal:
+            mcp = []
         }
         return MissionCapabilityInventory(skills: skills.sorted(), mcpServers: mcp.sorted())
     }
@@ -470,6 +507,7 @@ enum MissionRuntimeService {
         codexSessionsRoot: URL? = nil,
         maxCharacters: Int = 12_000
     ) -> String {
+        guard runtime.usesTranscript else { return "" }
         guard let sessionID, maxCharacters > 0 else { return "" }
         let url: URL?
         switch runtime {
@@ -477,6 +515,8 @@ enum MissionRuntimeService {
             url = claudeSessionURL(id: sessionID, cwd: cwd, projectsRoot: claudeProjectsRoot)
         case .codex:
             url = codexSessionURL(id: sessionID, cwd: cwd, sessionsRoot: codexSessionsRoot)
+        case .local, .terminal:
+            return ""
         }
         guard let url, let lines = tailJSONLines(url: url, byteLimit: 2 * 1024 * 1024) else { return "" }
 
@@ -556,6 +596,8 @@ enum MissionRuntimeService {
                   let payload = object["payload"] as? [String: Any],
                   payload["type"] as? String == "message" else { return nil }
             message = payload
+        case .local, .terminal:
+            return nil
         }
         guard let role = message["role"] as? String, role == "user" || role == "assistant" else { return nil }
         if let text = message["content"] as? String { return (role, text) }

@@ -272,7 +272,8 @@ final class CockpitTab: Identifiable {
         // starting an empty session.
         // A handoff prompt must create a fresh target-native session. Resuming an
         // unrelated target session here silently drops the handoff context.
-        let discovered = MissionRuntimeService.shouldDiscoverResumeSession(initialPrompt: initialPrompt)
+        let discovered = runtime.usesTranscript
+            && MissionRuntimeService.shouldDiscoverResumeSession(initialPrompt: initialPrompt)
             ? (runtime == .claudeCode
                 ? MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
                 : MissionRuntimeService.newestCodexSession(cwd: cwd, since: .distantPast)?.id)
@@ -280,7 +281,7 @@ final class CockpitTab: Identifiable {
         let sid = sessionId ?? resumeSessionId ?? discovered
         // Quote the id (M19): it's a transcript-derived value interpolated into a
         // shell command. Only accept a sane session-id shape, else start fresh.
-        if let sid, sid.allSatisfy({ $0.isHexDigit || $0 == "-" }) {
+        if let sid, runtime.usesTranscript, sid.allSatisfy({ $0.isHexDigit || $0 == "-" }) {
             if runtime == .claudeCode,
                MissionRuntimeService.claudeSessionExists(id: sid, cwd: cwd) {
                 cmd += "claude --resume '\(sid)'\(agentsFlag)"
@@ -303,9 +304,15 @@ final class CockpitTab: Identifiable {
             }
         } else {
             resumeIssue = nil
-            cmd += runtime.executable + agentsFlag
-            if let initialPrompt, !initialPrompt.isEmpty {
-                cmd += " " + MissionRuntimeService.shellQuote(initialPrompt)
+            if let executable = runtime.executable {
+                cmd += executable + agentsFlag
+                if let initialPrompt, !initialPrompt.isEmpty {
+                    cmd += " " + MissionRuntimeService.shellQuote(initialPrompt)
+                }
+            } else {
+                // .local / .terminal have no agent CLI: the mission is the login
+                // shell itself, so close the dangling "&& " with a no-op.
+                cmd += ":"
             }
         }
         term.send(txt: cmd + "\n")
