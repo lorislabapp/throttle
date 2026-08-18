@@ -48,4 +48,6 @@ Authority: build, notarization, Sparkle publication and website update explicitl
 
 - Landing page `throttle/index.html`: three New rows (Local Mix measured, Router advisory, Deterministic log fold), 3.2.82 badges retired, download meta v3.2.83 / 26.4 MB.
 - Appcast item 3.2.83 with release-notes description: committed in lorislab-website (fc96356).
-- Publication to lorislab.fr: PENDING user confirmation (unrelated user work sits dirty in the website worktree; deploy is a full replacement).
+- Publication to lorislab.fr: LIVE 2026-08-18 ~18:53 UTC (deploy stamps 20260818185225 + 20260818185308 with DEPLOY_DMG=1).
+- Independent post-deploy verification: live appcast shortVersionString 3.2.83; landing v3.2.83; served DMG SHA-256 matches the notarized artifact byte-for-byte.
+- User's unrelated in-progress website work (arcyra.html, kernel files, downloads/, arcyra images) was stashed/held during the deploy at the user's request and fully restored after.
