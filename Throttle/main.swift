@@ -42,6 +42,19 @@ if CommandLine.arguments.contains("--mcp-server") {
     exit(0)
 }
 
+// Evidence mode (`Throttle --sota-selftest`): prove the frontier↔local mix stack
+// end-to-end with zero frontier tokens — real DB, real transcripts, on-device
+// model — and write a timestamped report. GUI-less; exits with 0 on full pass.
+if CommandLine.arguments.contains("--sota-selftest") {
+    // dispatchMain (not a semaphore): the model loader and pressure monitor hop
+    // through the main queue, so the main thread must keep draining it.
+    Task.detached {
+        let ok = await SOTASelfTest.run()
+        exit(ok ? 0 : 1)
+    }
+    dispatchMain()
+}
+
 // MCP supervisor mode (opt-in, Pattern-B): wrap ONE MCP server's command so it
 // auto-respawns + drains stderr. The user sets a server's command to
 // `Throttle --mcp-wrap <real-cmd> [args]` by hand — Throttle never rewrites config.

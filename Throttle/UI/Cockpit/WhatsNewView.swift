@@ -15,8 +15,14 @@ struct WhatsNewView: View {
 
     // Curated: the optimizations, newest first. `now` flags this release's additions.
     private let features: [Feature] = [
+        .init(icon: "arrow.triangle.branch", title: "Frontier ↔ Local mix, measured",
+              blurb: "LOCAL MIX in the dashboard: Throttle spots recent sessions a local model could have served, shadow-replays them on the embedded Qwen (zero API tokens, real sessions untouched) and builds a golden-set ledger — with an honest statistical bound, never a guess. Benchmark measures the model on YOUR Mac.", now: true),
+        .init(icon: "signpost.right.and.left", title: "Router advisory at the task boundary",
+              blurb: "When you hand a mission to another runtime, Throttle reads the objective and advises Local-safe / Frontier / Uncertain — deterministic rules plus your own replay history (which can only demote, never overpromise). Switching lanes at a NEW session keeps every prompt cache warm.", now: true),
+        .init(icon: "text.line.magnify", title: "Deterministic log fold",
+              blurb: "Repeated log lines collapse to one + a count, ANSI colour codes are stripped — before the local model reads them. Only exact repetition is removed, and only local prompts are touched. Under critical memory pressure the local model now unloads itself automatically.", now: true),
         .init(icon: "cpu.fill", title: "Local Qwen worker for Claude + Codex",
-              blurb: "Delegate bounded summaries, extraction, classification, normalization and drafts to Qwen on this Mac. Exact evidence is checked; risky, unsupported or weak work escalates to Claude or Codex, which keeps control of plans, patches and final verification.", now: true),
+              blurb: "Delegate bounded summaries, extraction, classification, normalization and drafts to Qwen on this Mac. Exact evidence is checked; risky, unsupported or weak work escalates to Claude or Codex, which keeps control of plans, patches and final verification.", now: false),
         .init(icon: "shield.lefthalf.filled", title: "Context Firewall for Claude + Codex",
               blurb: "Large files and logs become focused, line-numbered evidence with a recoverable content pointer. One explicit MCP setup serves both coding agents without copying their private transcripts.", now: false),
         .init(icon: "globe.badge.chevron.backward", title: "Local web research",
