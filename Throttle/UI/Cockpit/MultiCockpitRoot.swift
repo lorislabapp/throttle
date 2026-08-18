@@ -1586,6 +1586,10 @@ private struct MissionHandoffSheet: View {
     @State private var remaining: String
     @State private var validation: String
     @State private var blockers: String
+    // Prospective router advisory (rules + the user's own shadow-replay ledger):
+    // this sheet IS the task boundary — the one cache-safe moment to pick a lane.
+    @State private var routerAdvice: RouterAdvisorService.Advice?
+    @State private var replayLedger = ShadowReplayService.Ledger.empty
 
     init(
         handoff: MissionHandoff,
@@ -1629,6 +1633,24 @@ private struct MissionHandoffSheet: View {
                     .frame(height: 82)
                     .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8))
                     .overlay { RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.10)) }
+                if let advice = routerAdvice {
+                    HStack(spacing: 8) {
+                        Text(advice.recommendation.label.uppercased())
+                            .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.primary.opacity(0.25)))
+                        Text(([advice.reasons.first, advice.history].compactMap { $0 }).joined(separator: " · "))
+                            .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                }
+            }
+            .onAppear {
+                replayLedger = ShadowReplayService.loadLedger()
+                routerAdvice = RouterAdvisorService.advise(objective: objective, ledger: replayLedger)
+            }
+            .onChange(of: objective) {
+                routerAdvice = RouterAdvisorService.advise(objective: objective, ledger: replayLedger)
             }
 
             VStack(alignment: .leading, spacing: 8) {

@@ -13,6 +13,13 @@ struct CockpitDashboardView: View {
     @State private var host = HostMetricsService.shared
     @State private var sampler: Task<Void, Never>?
     @State private var localRuntimes: [String] = []
+    // LOCAL MIX (frontier ↔ local, measured on this Mac)
+    @State private var localModelInstalled = false
+    @State private var replayLedger = ShadowReplayService.Ledger.empty
+    @State private var benchProfile: LocalModelBenchService.Profile?
+    @State private var replayBusy = false
+    @State private var benchBusy = false
+    @State private var localMixNote: String?
 
     private let hair = Color.primary.opacity(0.10)
 
@@ -30,6 +37,11 @@ struct CockpitDashboardView: View {
         var opusShare: Double = 0
         var sonnetSaving: Double = 0       // est. total-bill fraction if half of Opus → Sonnet
         struct ModelBar: Equatable, Identifiable { let id = UUID(); let label: String; let share: Double; let isOpus: Bool }
+        // Retro-attribution (advisory): completed sessions whose shape a local
+        // 3–4B serves credibly. A profile match, never a "would have worked".
+        var localCandidateCount: Int = 0
+        var localScannedSessions: Int = 0
+        var localAvoidableEUR: Double = 0
     }
 
     var body: some View {
@@ -38,6 +50,7 @@ struct CockpitDashboardView: View {
                 OSIssueBanner()
                 claudePanel
                 if !data.modelMix.isEmpty { modelMixPanel }
+                if localModelInstalled || replayLedger.replayed > 0 { localMixPanel }
                 WeekComparisonView()
                 machinePanel
                 SavingsLedgerView()
@@ -139,6 +152,104 @@ struct CockpitDashboardView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 4)
             }
+            // Retro-attribution nudge — a profile observation, not a promise. Only
+            // shown when there is something to route AND the money is non-trivial.
+            if data.localCandidateCount > 0 && data.localAvoidableEUR >= 0.05 {
+                Text("\(data.localCandidateCount) of your last \(data.localScannedSessions) sessions had a bounded, local-safe profile (≤\(LocalCandidateService.maxTurns) turns, small context, small output) — ≈€\(String(format: "%.2f", data.localAvoidableEUR)) est of frontier spend. Quick asks like these are what a Local session is for.")
+                    .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 4)
+            }
+        }
+    }
+
+    // MARK: - LOCAL MIX (frontier ↔ local, measured on this Mac)
+
+    /// The measured half of the local-candidate nudge. Shadow replay re-runs
+    /// completed local-safe sessions on the embedded model and validates the
+    /// result through the delegation contract — building the golden set that
+    /// turns "local-safe profile" into evidence. Never touches a real session.
+    private var localMixPanel: some View {
+        panel("LOCAL MIX") {
+            if replayLedger.replayed > 0 {
+                HStack(spacing: 14) {
+                    kv("REPLAYED", "\(replayLedger.replayed)")
+                    kv("VERIFIED", "\(replayLedger.verified)")
+                    kv("REVIEW", "\(replayLedger.review)")
+                    kv("FAILED", "\(replayLedger.hardFailures)")
+                }
+                if let bound = replayLedger.hardFailureBound95 {
+                    Text("0 hard failures over \(replayLedger.replayed) replays — hard-failure rate ≤\(String(format: "%.0f", bound * 100))% (95% bound, est). Review items still need a human A/B before any claim.")
+                        .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else {
+                Text("Shadow replay re-runs your completed local-safe sessions on \(EmbeddedModelRuntime.displayName) and validates the output — measuring, on your own data, what a local model actually serves. The real sessions are never touched.")
+                    .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let p = benchProfile {
+                HStack(spacing: 14) {
+                    kv("THIS MAC", "≈\(Int(p.estTokensPerSecond.rounded())) tok/s est")
+                    kv("LOAD", String(format: "%.1fs", p.loadSeconds))
+                    kv("MEASURED", p.measuredAt.formatted(.relative(presentation: .named)))
+                }
+            }
+            HStack(spacing: 10) {
+                Button(replayBusy ? "Replaying…" : "Shadow replay") { runShadowReplay() }
+                    .disabled(replayBusy || !localModelInstalled)
+                Button(benchBusy ? "Measuring…" : "Benchmark this Mac") { runBench() }
+                    .disabled(benchBusy || !localModelInstalled)
+                if let note = localMixNote {
+                    Text(note).font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                }
+            }
+            .controlSize(.small)
+        }
+    }
+
+    private func runShadowReplay() {
+        guard !MemoryPressureMonitor.shared.isQuiet else {
+            localMixNote = "Skipped — memory pressure. Try when the Mac is quiet."
+            return
+        }
+        replayBusy = true; localMixNote = nil
+        let db = appState.database
+        Task {
+            let prepared = await Task.detached(priority: .utility) {
+                () async -> ([LocalCandidateService.Candidate], [String: String]) in
+                let report = (try? await db.read { try LocalCandidateService.scan(in: $0) }) ?? .empty
+                var paths: [String: String] = [:]
+                for c in report.candidates {
+                    if let p = try? await db.read({ try StatsDataService.cockpitSessionPath(in: $0, sessionId: c.sessionId) }) {
+                        paths[c.sessionId] = p
+                    }
+                }
+                return (report.candidates, paths)
+            }.value
+            let fresh = await ShadowReplayService.replayBatch(
+                candidates: prepared.0, transcriptPaths: prepared.1)
+            replayLedger = ShadowReplayService.loadLedger()
+            localMixNote = fresh.isEmpty
+                ? "No new candidates to replay."
+                : "\(fresh.count) session(s) replayed."
+            if MemoryPressureMonitor.shared.level != .normal {
+                await EmbeddedModelRuntime.shared.unload()
+            }
+            replayBusy = false
+        }
+    }
+
+    private func runBench() {
+        guard !MemoryPressureMonitor.shared.isQuiet else {
+            localMixNote = "Skipped — memory pressure. A benchmark under swap would worsen the very condition it measures."
+            return
+        }
+        benchBusy = true; localMixNote = nil
+        Task {
+            do { benchProfile = try await LocalModelBenchService.run() }
+            catch { localMixNote = "Benchmark failed: \(error.localizedDescription)" }
+            benchBusy = false
         }
     }
 
@@ -228,6 +339,9 @@ struct CockpitDashboardView: View {
 
     private func load() {
         localRuntimes = MultiVendorService.localRuntimes()
+        localModelInstalled = EmbeddedModelRuntime.isInstalled
+        replayLedger = ShadowReplayService.loadLedger()
+        benchProfile = LocalModelBenchService.loadProfile()
         // Caps: prefer the server-true exact utilization, else the local estimate.
         if let ex = appState.exactSnapshot {
             data.cap5h = Double(ex.fiveHour.utilization) / 100
@@ -250,11 +364,15 @@ struct CockpitDashboardView: View {
                 : []
             let opusShare = breakdown?.opusShare ?? 0
             let saving = breakdown?.sonnetSavingsFraction(opusMovable: 0.5) ?? 0
+            let localReport = (try? await db.read { try LocalCandidateService.scan(in: $0) }) ?? .empty
             await MainActor.run {
                 data.costEUR = cost; data.rmcEUR = rmc; data.cacheEff = eff
                 data.activeWeekHours = wa.activeWeek / 3600
                 data.projects = Array(projects); data.spark = spark
                 data.modelMix = bars; data.opusShare = opusShare; data.sonnetSaving = saving
+                data.localCandidateCount = localReport.candidates.count
+                data.localScannedSessions = localReport.scannedSessions
+                data.localAvoidableEUR = localReport.avoidableEUR
             }
         }
     }

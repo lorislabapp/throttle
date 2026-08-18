@@ -260,6 +260,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        // Adaptive keep-alive for the embedded local model (2026-08 mix research):
+        // weights reload in seconds, the user's swapping sessions don't recover —
+        // so under critical pressure the model is never kept resident.
+        MemoryPressureMonitor.shared.onPressureRise { level in
+            guard level == .critical else { return }
+            Task { await EmbeddedModelRuntime.shared.unload() }
+        }
+
         // Throttle Autopilot — keep the Claude Code setup optimized, by default,
         // system-wide. Off-main; debounced to ~once/day; every action reversible
         // and logged (Settings → Autopilot → Review & undo).
