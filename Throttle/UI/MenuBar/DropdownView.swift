@@ -2867,10 +2867,10 @@ private struct InlineAssistantPane: View {
                     get: { aiSelection ?? defaultProviderKind() },
                     set: { newValue in aiSelection = newValue; AIProviderRegistry.shared.preferredKind = newValue }
                 )) {
-                    Text("Apple").tag(AIProviderKind.appleIntelligence as AIProviderKind?)
-                    Text("Local").tag(AIProviderKind.embeddedModel as AIProviderKind?)
-                    Text("Claude").tag(AIProviderKind.claudeWebSession as AIProviderKind?)
-                    Text("API").tag(AIProviderKind.claudeAPIKey as AIProviderKind?)
+                    Text("Apple").tag(AIProviderKind.appleIntelligence)
+                    Text("Local").tag(AIProviderKind.embeddedModel)
+                    Text("Claude").tag(AIProviderKind.claudeWebSession)
+                    Text("API").tag(AIProviderKind.claudeAPIKey)
                 }
                 .pickerStyle(.segmented).labelsHidden().fixedSize()
             }
