@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// Which backend actually served a local-worker task. Recorded per task so the
 /// UI shows honest counts — never a guess about where inference ran.
@@ -66,8 +67,14 @@ actor LocalWorkerRouter {
     // MARK: - Health
 
     private var lastHealth: (ok: Bool, at: Date)?
+    /// Human-readable detail of the last probe outcome, for the Settings Test
+    /// button — "guessing why the server is unreachable" is not a UI.
+    private(set) var lastProbeDetail: String = ""
+    private static let log = Logger(subsystem: "com.lorislab.throttle", category: "LocalWorkerRouter")
 
-    /// Cheap cached probe (GET /api/version, 3 s budget, 60 s cache) so a dead
+    func probeDetail() -> String { lastProbeDetail }
+
+    /// Cheap cached probe (GET /api/version, 5 s budget, 60 s cache) so a dead
     /// box costs one timeout per minute, not one per task.
     func healthyServer(force: Bool = false) async -> URL? {
         guard let endpoint = Self.configuredEndpoint else { return nil }
@@ -75,14 +82,18 @@ actor LocalWorkerRouter {
             return lastHealth.ok ? endpoint : nil
         }
         var request = URLRequest(url: endpoint.appending(path: "api/version"))
-        request.timeoutInterval = 3
+        request.timeoutInterval = 5
         let ok: Bool
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
-            ok = (response as? HTTPURLResponse)?.statusCode == 200
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            ok = status == 200
+            lastProbeDetail = ok ? "HTTP 200" : "HTTP \(status)"
         } catch {
             ok = false
+            lastProbeDetail = (error as NSError).localizedDescription
         }
+        Self.log.info("health probe \(endpoint.absoluteString, privacy: .private): \(self.lastProbeDetail, privacy: .public)")
         lastHealth = (ok, Date())
         return ok ? endpoint : nil
     }

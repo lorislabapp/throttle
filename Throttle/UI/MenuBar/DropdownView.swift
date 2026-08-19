@@ -3011,9 +3011,10 @@ private struct InlineAssistantPane: View {
         localWorkerServerStatus = "Probing…"
         Task {
             let healthy = await LocalWorkerRouter.shared.healthyServer(force: true) != nil
+            let detail = await LocalWorkerRouter.shared.probeDetail()
             localWorkerServerStatus = healthy
-                ? "Server answered — delegated tasks will prefer \(LocalWorkerRouter.serverDisplayName)."
-                : "No answer — tasks fall back to the embedded model until it responds."
+                ? "Server answered (\(detail)) — delegated tasks will prefer \(LocalWorkerRouter.serverDisplayName)."
+                : "No answer — \(detail.isEmpty ? "unknown error" : detail). Tasks fall back to the embedded model."
         }
     }
 
