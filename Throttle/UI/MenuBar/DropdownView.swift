@@ -2855,6 +2855,8 @@ private struct InlineAssistantPane: View {
     @State private var embeddedInstalled = EmbeddedModelRuntime.isInstalled
     @State private var embeddedInstalling = false
     @State private var embeddedProgress = 0.0
+    @AppStorage(LocalWorkerRouter.endpointKey) private var localWorkerServerURL = ""
+    @State private var localWorkerServerStatus = ""
     @State private var embeddedStatus = ""
 
     var body: some View {
@@ -2971,8 +2973,48 @@ private struct InlineAssistantPane: View {
                     }
                 }
             }
+            localWorkerServerRow
         }
         .padding(.horizontal, 16).padding(.vertical, 9)
+    }
+
+    /// Optional self-hosted Ollama endpoint for delegated tasks (e.g. a Proxmox
+    /// LXC on the tailnet). When set and healthy it serves instead of the
+    /// embedded model; any failure falls back to the embedded model silently.
+    private var localWorkerServerRow: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Local worker server (optional)").font(.system(size: 12, weight: .medium))
+            Text("Ollama URL on your own network — e.g. http://100.x.y.z:11434. Delegated tasks prefer it when it responds; otherwise the embedded model serves. Model: \(LocalWorkerRouter.serverModel).")
+                .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                TextField("http://host:11434", text: $localWorkerServerURL)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 11, design: .monospaced))
+                SettingsButton(title: "Test") { testLocalWorkerServer() }
+            }
+            if !localWorkerServerStatus.isEmpty {
+                Text(localWorkerServerStatus)
+                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.top, 6)
+    }
+
+    private func testLocalWorkerServer() {
+        guard LocalWorkerRouter.configuredEndpoint != nil else {
+            localWorkerServerStatus = localWorkerServerURL.isEmpty
+                ? "No server configured — the embedded model serves everything."
+                : "Not a valid http(s) URL."
+            return
+        }
+        localWorkerServerStatus = "Probing…"
+        Task {
+            let healthy = await LocalWorkerRouter.shared.healthyServer(force: true) != nil
+            localWorkerServerStatus = healthy
+                ? "Server answered — delegated tasks will prefer \(LocalWorkerRouter.serverDisplayName)."
+                : "No answer — tasks fall back to the embedded model until it responds."
+        }
     }
 
     private func defaultProviderKind() -> AIProviderKind {

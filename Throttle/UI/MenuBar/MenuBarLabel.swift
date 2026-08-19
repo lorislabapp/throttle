@@ -15,9 +15,21 @@ struct MenuBarLabel: View {
             // H07: a hidden session waiting on input swaps the gauge for a bell,
             // so "needs you" surfaces on the always-visible menu-bar item even
             // with the Cockpit closed / notifications off.
-            Label("\(Int(pct * 100))%",
-                  systemImage: MultiCockpitModel.shared.waitingCount > 0 ? "bell.badge.fill" : meterIcon(for: pct))
-                .labelStyle(.titleAndIcon)
+            //
+            // At the cap the percentage stops being information — the only
+            // question left is "when do I get it back". Swap in a live
+            // countdown to the binding window's reset while it's saturated.
+            if pct >= 0.98, let reset = bindingResetDate() {
+                TimelineView(.everyMinute) { context in
+                    Label(Self.countdown(to: reset, now: context.date),
+                          systemImage: MultiCockpitModel.shared.waitingCount > 0 ? "bell.badge.fill" : "hourglass")
+                        .labelStyle(.titleAndIcon)
+                }
+            } else {
+                Label("\(Int(pct * 100))%",
+                      systemImage: MultiCockpitModel.shared.waitingCount > 0 ? "bell.badge.fill" : meterIcon(for: pct))
+                    .labelStyle(.titleAndIcon)
+            }
         } else {
             Image(systemName: "gauge.with.dots.needle.bottom.50percent")
         }
@@ -51,6 +63,46 @@ struct MenuBarLabel: View {
             providerPressures.append(pressure)
         }
         return providerPressures.max()
+    }
+
+    /// The reset moment of the most-binding saturated window, when known.
+    /// Exact-mode resets come straight from Anthropic; Codex windows carry
+    /// their own. Local rolling-window math has no authoritative reset — the
+    /// label keeps showing the percentage in that case rather than guessing.
+    private func bindingResetDate() -> Date? {
+        var candidates: [(pressure: Double, reset: Date)] = []
+        if let ex = appState.exactSnapshot, ex.isFresh() {
+            for window in [ex.fiveHour, ex.sevenDay] where window.utilization >= 98 {
+                if let reset = window.resetsAt {
+                    candidates.append((Double(window.utilization) / 100.0, reset))
+                }
+            }
+        }
+        if let codex = appState.codexUsageSnapshot, codex.isFresh() {
+            for window in codex.windows where window.normalizedUsed >= 0.98 {
+                if let reset = window.resetsAt {
+                    candidates.append((window.normalizedUsed, reset))
+                }
+            }
+        }
+        // Among saturated windows the user is freed when the SOONEST one
+        // resets only if it is the binding one — pick the highest pressure,
+        // break ties on the earlier reset.
+        return candidates.max { a, b in
+            a.pressure == b.pressure ? a.reset > b.reset : a.pressure < b.pressure
+        }?.reset
+    }
+
+    /// Compact countdown for the menu bar: "47m", "2h05", "3d". Clamps at
+    /// "now" once the reset has passed but a stale snapshot still says 100%.
+    static func countdown(to reset: Date, now: Date) -> String {
+        let seconds = max(0, Int(reset.timeIntervalSince(now)))
+        if seconds < 60 { return "now" }
+        let minutes = seconds / 60
+        if minutes < 60 { return "\(minutes)m" }
+        let hours = minutes / 60
+        if hours < 24 { return String(format: "%dh%02d", hours, minutes % 60) }
+        return "\(hours / 24)d"
     }
 
     private func meterIcon(for percent: Double) -> String {

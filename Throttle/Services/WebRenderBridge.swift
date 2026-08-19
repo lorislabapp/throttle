@@ -184,8 +184,8 @@ final class WebRenderBridge: @unchecked Sendable {
     }
 
     private func handleSummary(_ conn: NWConnection, body: Data) {
-        guard EmbeddedModelRuntime.isInstalled else {
-            send(conn, status: "409 Conflict", json: ["ok": false, "error": "install the embedded Qwen model in Throttle first"]); return
+        guard LocalWorkerRouter.anyBackendAvailable else {
+            send(conn, status: "409 Conflict", json: ["ok": false, "error": "install the embedded Qwen model in Throttle first (or configure a local worker server in AI Settings)"]); return
         }
         guard let obj = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
               let throttleID = obj["throttleID"] as? String,
@@ -197,10 +197,10 @@ final class WebRenderBridge: @unchecked Sendable {
         let maxTokens = (obj["maxTokens"] as? Int) ?? 384
         Task {
             do {
-                let summary = try await EmbeddedModelRuntime.shared.summarize(
+                let (summary, backend) = try await LocalWorkerRouter.shared.summarize(
                     source: source, task: task, maxTokens: maxTokens
                 )
-                let response = Self.encode(["ok": true, "summary": summary, "error": NSNull()])
+                let response = Self.encode(["ok": true, "summary": summary, "backend": backend.rawValue, "error": NSNull()])
                 self.q.async { self.send(conn, status: "200 OK", body: response) }
             } catch {
                 let response = Self.encode(["ok": false, "error": error.localizedDescription])
@@ -213,8 +213,8 @@ final class WebRenderBridge: @unchecked Sendable {
         guard LocalDelegationService.isEnabled else {
             send(conn, status: "403 Forbidden", json: ["ok": false, "error": "local delegation is disabled in Throttle"]); return
         }
-        guard EmbeddedModelRuntime.isInstalled else {
-            send(conn, status: "409 Conflict", json: ["ok": false, "error": "install the embedded Qwen model in Throttle first"]); return
+        guard LocalWorkerRouter.anyBackendAvailable else {
+            send(conn, status: "409 Conflict", json: ["ok": false, "error": "install the embedded Qwen model in Throttle first (or configure a local worker server in AI Settings)"]); return
         }
         guard let obj = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
               let throttleID = obj["throttleID"] as? String,
@@ -231,7 +231,7 @@ final class WebRenderBridge: @unchecked Sendable {
             let maxTokens = (obj["maxTokens"] as? Int) ?? 384
             Task {
                 do {
-                    let result = try await EmbeddedModelRuntime.shared.delegate(
+                    let result = try await LocalWorkerRouter.shared.delegate(
                         source: source, objective: objective, kind: kind, maxTokens: maxTokens
                     )
                     LocalDelegationService.record(result)

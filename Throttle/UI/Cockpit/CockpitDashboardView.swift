@@ -195,6 +195,16 @@ struct CockpitDashboardView: View {
                     kv("MEASURED", p.measuredAt.formatted(.relative(presentation: .named)))
                 }
             }
+            if LocalWorkerRouter.configuredEndpoint != nil {
+                HStack(spacing: 14) {
+                    kv("SERVER", LocalWorkerRouter.serverDisplayName)
+                    kv("SERVED", "\(LocalWorkerRouter.serverTaskCount)")
+                    kv("EMBEDDED", "\(LocalWorkerRouter.embeddedTaskCount)")
+                }
+                Text("Delegated tasks prefer the server when it answers a health probe and fall back to the embedded model otherwise. Counts are per-task records of which backend actually served.")
+                    .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             HStack(spacing: 10) {
                 Button(replayBusy ? "Replaying…" : "Shadow replay") { runShadowReplay() }
                     .disabled(replayBusy || !localModelInstalled)
