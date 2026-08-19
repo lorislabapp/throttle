@@ -4,7 +4,13 @@ struct MenuBarLabel: View {
     @Environment(AppState.self) private var appState
 
     var body: some View {
-        if !appState.claudeCodeDetected && !appState.codexDetected {
+        // A runaway update loop on this label swap-locked a 16 GB Mac (3.2.88).
+        // Once the watchdog trips, render one static symbol: no Label, no
+        // countdown, no width changes — nothing that can drive another
+        // `NSStatusItem._adjustLength` AutoLayout pass. See `MenuBarUpdateGuard`.
+        if MenuBarUpdateGuard.isDegraded {
+            Image(systemName: "gauge.with.dots.needle.0percent")
+        } else if !appState.claudeCodeDetected && !appState.codexDetected {
             Image(systemName: "gauge.with.dots.needle.0percent")
         } else if !appState.snapshot.hasAnyData && appState.codexUsageSnapshot == nil {
             Image(systemName: "gauge.with.dots.needle.0percent")
@@ -19,6 +25,9 @@ struct MenuBarLabel: View {
             // At the cap the percentage stops being information — the only
             // question left is "when do I get it back". Swap in a live
             // countdown to the binding window's reset while it's saturated.
+            // `MultiCockpitModel.waitingCount` is a STORED Int on purpose. Reading
+            // a computed one here subscribed the menu bar to `needsInput` on every
+            // open tab, which is what produced the runaway loop above.
             if pct >= 0.98, let reset = bindingResetDate() {
                 TimelineView(.everyMinute) { context in
                     Label(Self.countdown(to: reset, now: context.date),

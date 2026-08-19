@@ -102,6 +102,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         FileHandle.standardError.write(Data("[applicationDidFinishLaunching] start\n".utf8))
+        // Before anything else: the runaway-menu-bar watchdog. It runs on its own
+        // queue precisely because the failure it guards against wedges the main
+        // thread, so it must not be scheduled behind any other startup work.
+        MenuBarUpdateGuard.start()
         let isDemoMode = CommandLine.arguments.contains("-demo")
 
         // In demo mode, skip all background services and just show the UI with fake data

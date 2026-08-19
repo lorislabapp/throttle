@@ -49,7 +49,15 @@ final class CockpitTab: Identifiable {
     /// A question claude printed and is (best-effort) waiting on.
     struct Question: Identifiable { let id = UUID(); let text: String; let at = Date() }
     /// claude appears to be blocked on a prompt the user hasn't answered.
-    var needsInput = false
+    /// The `didSet` keeps `MultiCockpitModel.waitingCount` in sync on the exact
+    /// transitions — see that property for why the menu bar must never read this
+    /// one across all tabs.
+    var needsInput = false {
+        didSet {
+            guard needsInput != oldValue else { return }
+            MultiCockpitModel.shared.refreshWaitingCount()
+        }
+    }
     /// Recent detected questions (newest last), capped — the "don't lose it" feed.
     private(set) var questions: [Question] = []
     /// The latest question text, for inline display.
@@ -489,7 +497,7 @@ final class MultiCockpitModel {
         return MissionRuntimeService.resolve(routingMode, claudeRateLimited: !rateLimitedSessions.isEmpty)
     }
 
-    private(set) var sessions: [CockpitTab] = []
+    private(set) var sessions: [CockpitTab] = [] { didSet { refreshWaitingCount() } }
 
     /// Cached display order (session ids). Recomputed only on an explicit trigger
     /// — sort-mode change, session add/remove, and the periodic tick — NOT on every
@@ -551,8 +559,30 @@ final class MultiCockpitModel {
         if showShell, let a = active, !a.isHibernated { a.ensureShellSpawned() }
     }
     private(set) var machine: MemoryHealth = .unknown
-    /// Count of sessions currently waiting on a question (for the header badge).
-    var waitingCount: Int { sessions.filter { $0.needsInput }.count }
+    /// Count of sessions currently waiting on a question (header badge + the
+    /// always-visible menu-bar bell).
+    ///
+    /// STORED, never computed. As a computed property it was read from
+    /// `MenuBarLabel.body`, which subscribed the menu-bar item to `needsInput`
+    /// on EVERY tab plus `sessions` itself. With 50+ restored tabs streaming PTY
+    /// output, each mutation invalidated the label → `NSStatusBarButton.setImage:`
+    /// → a full `NSStatusItem._adjustLength` AutoLayout solve. Invalidations
+    /// arrived faster than a render completed, so SwiftUI's `UpdateGroup` never
+    /// drained, the main run loop never came back, and its autorelease pool never
+    /// released the AutoLayout temporaries: ~270M live allocations and 30+ GB of
+    /// footprint in under three minutes, which swap-locked the whole Mac. The
+    /// label now depends on exactly one Int that changes only on a real
+    /// waiting-state transition.
+    private(set) var waitingCount: Int = 0
+
+    /// Recompute `waitingCount` from the live tabs. Cheap (a reduce over the
+    /// tabs) and called only off the render path: on a `needsInput` transition,
+    /// on session add/remove/reorder, and once per tick as a backstop. Assigns
+    /// only on a real change so unchanged ticks publish no `@Observable` mutation.
+    func refreshWaitingCount() {
+        let n = sessions.reduce(into: 0) { $0 += $1.needsInput ? 1 : 0 }
+        if n != waitingCount { waitingCount = n }
+    }
 
     /// cwds open in more than one SPAWNED tab — wasted RAM + tokens on the same
     /// project. (Cost reads identical across them because cost is per-project.)
@@ -1065,6 +1095,7 @@ final class MultiCockpitModel {
                 self?.evaluateCacheEfficiencyDrop()
                 self?.evaluatePacing()             // soft cross-session pacing tier below auto-pause
                 self?.autoHibernateIfPressured()   // MEM-H01: reclaim idle-session RAM under critical pressure
+                self?.refreshWaitingCount()        // backstop for any transition the didSet missed
                 if !quiet { self?.sampleSessionRAM() }
             }
         }
