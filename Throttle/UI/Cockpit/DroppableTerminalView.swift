@@ -299,7 +299,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
             // thread, so handling synchronously here is safe — and required, since
             // consuming an event can't be decided from an async hop.
             if event.type == .scrollWheel, event.hasPreciseScrollingDeltas,
-               self.eventIsOverSelf(event), self.canScroll {
+               self.eventIsOverSelf(event) {
                 self.handlePreciseScroll(event)
                 return nil
             }
@@ -337,12 +337,24 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// content (matches SwiftTerm's own scrollWheel convention for mice).
     private func handlePreciseScroll(_ event: NSEvent) {
         if event.phase == .began { preciseScrollAccumulator = 0 }
-        let rows = max(getTerminal().rows, 1)
+        let terminal = getTerminal()
+        let rows = max(terminal.rows, 1)
         let cellHeight = max(frame.height / CGFloat(rows), 1)
         preciseScrollAccumulator += event.scrollingDeltaY
         let lines = Int(preciseScrollAccumulator / cellHeight)
         guard lines != 0 else { return }
         preciseScrollAccumulator -= CGFloat(lines) * cellHeight
+
+        // Full-screen TUIs (claude, vim, less) own the screen: SwiftTerm's
+        // scrollback is empty by design there (`canScroll == false`), so the ONLY
+        // way to move through their history is to hand the gesture to the program
+        // itself as wheel reports — exactly what a mouse would do. Without this
+        // the pane is frozen: no scrollback to walk, and the program never hears
+        // the gesture.
+        guard canScroll else {
+            sendWheelReports(up: lines > 0, count: min(abs(lines), 10), terminal: terminal)
+            return
+        }
         if lines > 0 {
             scrollUp(lines: lines)
             scrolledUpByUser = true
@@ -350,6 +362,30 @@ final class DroppableTerminalView: LocalProcessTerminalView {
             scrollDown(lines: -lines)
         }
         if atLiveBottom { scrolledUpByUser = false; flushIfReady() }
+    }
+
+    /// Emit SGR wheel reports (button 64 = up, 65 = down) at the pointer cell.
+    /// Only when the program actually armed mouse tracking — otherwise the codes
+    /// would land in its input line as text. Motion and click reports stay
+    /// filtered out; a wheel report is unambiguous and is what the TUI expects.
+    private func sendWheelReports(up: Bool, count: Int, terminal: Terminal) {
+        guard terminal.mouseMode != .off else { return }
+        // SwiftTerm keeps its hit-testing internal, so derive the cell from the
+        // pointer ourselves: same cell metrics the renderer uses (frame / rows,
+        // frame / cols), clamped into the grid.
+        let point = convert(window?.mouseLocationOutsideOfEventStream ?? .zero, from: nil)
+        let cellH = max(frame.height / CGFloat(max(terminal.rows, 1)), 1)
+        let cellW = max(frame.width / CGFloat(max(terminal.cols, 1)), 1)
+        // AppKit's origin is bottom-left; terminal rows count from the top.
+        let rowFromTop = Int((frame.height - point.y) / cellH)
+        let button = up ? 64 : 65
+        let col = min(max(1, Int(point.x / cellW) + 1), max(terminal.cols, 1))
+        let row = min(max(1, rowFromTop + 1), max(terminal.rows, 1))
+        var bytes: [UInt8] = []
+        for _ in 0..<max(count, 1) {
+            bytes.append(contentsOf: Array("\u{1B}[<\(button);\(col);\(row)M".utf8))
+        }
+        send(data: bytes[...])
     }
 
     private func eventIsOverSelf(_ event: NSEvent) -> Bool {

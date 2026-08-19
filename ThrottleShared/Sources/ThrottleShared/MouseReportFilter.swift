@@ -67,6 +67,12 @@ public struct MouseReportFilter: Sendable {
             if (0x40...0x7E).contains(b) {
                 defer { held = [] }
                 if b == UInt8(ascii: "M") || b == UInt8(ascii: "m") {
+                    // WHEEL reports are the one mouse event a full-screen TUI
+                    // genuinely needs: they are how claude/vim/less scroll their
+                    // own history, and they only exist when the user really
+                    // scrolled. Motion and clicks — the source of the
+                    // `35;97;40M` garbage — stay dropped.
+                    if Self.isWheelReport(held) { out.append(contentsOf: held); continue }
                     continue   // mouse report (SGR `ESC[<…M/m` or URXVT `ESC[…M`) → drop
                 }
                 out.append(contentsOf: held)
@@ -77,6 +83,20 @@ public struct MouseReportFilter: Sendable {
             }
         }
         return out
+    }
+
+    /// SGR wheel report: `ESC [ < B ; col ; row M` where the button field is
+    /// 64/65 (wheel up/down) or 66/67 (wheel left/right), optionally with
+    /// modifier bits (4 shift, 8 meta, 16 control) added on top.
+    static func isWheelReport(_ seq: [UInt8]) -> Bool {
+        guard seq.count > 4, seq[2] == UInt8(ascii: "<") else { return false }
+        var button = 0, digits = 0
+        for b in seq[3...] {
+            guard b >= UInt8(ascii: "0"), b <= UInt8(ascii: "9") else { break }
+            button = button * 10 + Int(b - UInt8(ascii: "0")); digits += 1
+        }
+        guard digits > 0 else { return false }
+        return (button & ~28) >= 64 && (button & ~28) <= 67
     }
 
     /// Flush any held prefix (call when the stream ends/detaches, so a trailing

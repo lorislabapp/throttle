@@ -834,12 +834,27 @@ enum StatsDataService {
     /// is the 1.15× delta. Conservative on purpose (golden rule — never overstate):
     /// only counts writes >10 k tokens within the 5-min TTL, so normal incremental
     /// writes don't inflate it. Returns (eur, tokens). 0 when the cache is healthy.
+    /// Cache spend that never paid for itself.
+    ///
+    /// A cache WRITE bills at 1.25x, a READ at 0.10x, so a written prefix is
+    /// already a net win the first time it is read back. Waste is therefore not
+    /// "a big write soon after a turn" — that is the ordinary delta write that
+    /// BUYS the reuse — but a write the session never read back at all.
+    ///
+    /// The previous definition (cache_create > 10k less than 5 min after the
+    /// prior turn, ignoring cache_read entirely) counted healthy incremental
+    /// caching as loss. On a real 7-day window it reported ~806 EUR recoverable
+    /// while the same data showed 126.9M written against 6,272.6M read — a 49x
+    /// amortisation, with only 0.9M tokens never read back. It was overstating
+    /// waste by two orders of magnitude on the app's most prominent number.
     static func recoverableMissCostEUR(in db: Database, days: Int = 7, now: Date = Date()) throws -> (eur: Double, tokens: Int) {
         let cutoff = Int(now.timeIntervalSince1970) - days * 86_400
-        // Per-session sequential gap via window function; flag big writes within TTL.
+        // Per session: tokens written into the cache that the session never read
+        // back. Sessions that amortised their writes contribute nothing.
         let sql = """
-            WITH seq AS (
+            WITH per_session AS (
                 SELECT
+                    session_id,
                     CASE
                         WHEN lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%' THEN 'fable'
                         WHEN lower(model) LIKE '%opus%'   THEN 'opus'
@@ -847,14 +862,15 @@ enum StatsDataService {
                         WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
                         ELSE 'other'
                     END AS bucket,
-                    cache_create AS cc,
-                    timestamp - LAG(timestamp) OVER (PARTITION BY session_id ORDER BY timestamp) AS gap
+                    SUM(cache_create) AS written,
+                    SUM(cache_read)   AS read_back
                 FROM usage_events
                 WHERE timestamp >= ?
+                GROUP BY session_id, bucket
             )
-            SELECT bucket, SUM(cc) AS recoverable
-            FROM seq
-            WHERE gap IS NOT NULL AND gap >= 0 AND gap < 300 AND cc > 10000
+            SELECT bucket, SUM(MAX(written - read_back, 0)) AS recoverable
+            FROM per_session
+            WHERE read_back < written
             GROUP BY bucket
             """
         let rows = try Row.fetchAll(db, sql: sql, arguments: [cutoff])
