@@ -66,7 +66,7 @@ actor LocalWorkerRouter {
 
     // MARK: - Health
 
-    private var lastHealth: (ok: Bool, at: Date)?
+    fileprivate var lastHealth: (ok: Bool, at: Date)?
     /// Human-readable detail of the last probe outcome, for the Settings Test
     /// button — "guessing why the server is unreachable" is not a UI.
     private(set) var lastProbeDetail: String = ""
@@ -204,4 +204,111 @@ enum LocalWorkerError: Error, LocalizedError {
             return "the local worker server did not return a usable response"
         }
     }
+}
+
+// MARK: - Detailed status (Settings)
+
+/// Everything the server itself reports, measured — never inferred. Each field
+/// is nil when the server did not answer that question, so the UI can say
+/// "unknown" instead of inventing a reassuring value.
+struct LocalWorkerStatus: Sendable, Equatable {
+    enum State: Equatable { case unconfigured, probing, reachable, unreachable }
+    var state: State = .unconfigured
+    var latencyMs: Int?
+    var version: String?
+    /// The configured model exists in the server's library.
+    var modelInstalled: Bool?
+    /// The model is currently resident, and how much of it sits in VRAM.
+    var modelLoaded: Bool?
+    var vramBytes: Int?
+    var totalBytes: Int?
+    var detail: String = ""
+
+    /// True when most of the model sits outside VRAM, so it will answer at CPU
+    /// speed. Measured on this exact setup: ~83% resident still gave 16.8 tok/s
+    /// while 2% gave 4.3 — the cliff is well below "not fully on the GPU", so
+    /// only a real majority miss earns a warning.
+    var mostlyOffGPU: Bool {
+        guard let total = totalBytes, total > 0, let vram = vramBytes else { return false }
+        return Double(vram) / Double(total) < 0.5
+    }
+
+    /// "2.5 GB on GPU" / "2.5 GB in RAM" — only when the server said so.
+    var residencyText: String? {
+        guard let total = totalBytes, total > 0 else { return nil }
+        let gb = Double(total) / 1_073_741_824
+        let size = String(format: "%.1f GB", gb)
+        guard let vram = vramBytes else { return size }
+        if vram == 0 { return "\(size) in RAM (CPU)" }
+        return vram >= total ? "\(size) on GPU" : "\(size), \(Int(Double(vram) / Double(total) * 100))% on GPU"
+    }
+}
+
+extension LocalWorkerRouter {
+    /// One round of honest questions to the server: is it there (timed), what
+    /// version, does it have the configured model, and is that model resident
+    /// right now. Never throws — every failure becomes a readable state.
+    func detailedStatus() async -> LocalWorkerStatus {
+        guard let endpoint = Self.configuredEndpoint else {
+            var s = LocalWorkerStatus()
+            s.detail = "No server configured — the embedded model serves every delegated task."
+            return s
+        }
+        var status = LocalWorkerStatus()
+        let started = Date()
+        guard let versionData = await get(endpoint, "api/version", timeout: 5) else {
+            status.state = .unreachable
+            status.detail = lastProbeDetail.isEmpty ? "no answer" : lastProbeDetail
+            markProbe(ok: false)
+            return status
+        }
+        status.state = .reachable
+        status.latencyMs = Int(Date().timeIntervalSince(started) * 1000)
+        status.version = (try? JSONSerialization.jsonObject(with: versionData) as? [String: Any])
+            .flatMap { $0?["version"] as? String }
+        markProbe(ok: true)
+
+        let wanted = Self.serverModel
+        if let tags = await get(endpoint, "api/tags", timeout: 5),
+           let obj = try? JSONSerialization.jsonObject(with: tags) as? [String: Any],
+           let models = obj["models"] as? [[String: Any]] {
+            let names = models.compactMap { $0["name"] as? String }
+            status.modelInstalled = names.contains { $0 == wanted || $0.hasPrefix("\(wanted):") }
+        }
+        if let ps = await get(endpoint, "api/ps", timeout: 5),
+           let obj = try? JSONSerialization.jsonObject(with: ps) as? [String: Any],
+           let running = obj["models"] as? [[String: Any]] {
+            if let live = running.first(where: { name in
+                guard let n = name["name"] as? String else { return false }
+                return n == wanted || n.hasPrefix("\(wanted):")
+            }) {
+                status.modelLoaded = true
+                status.vramBytes = live["size_vram"] as? Int
+                status.totalBytes = live["size"] as? Int
+            } else {
+                status.modelLoaded = false
+            }
+        }
+        return status
+    }
+
+    private func get(_ endpoint: URL, _ path: String, timeout: TimeInterval) async -> Data? {
+        var request = URLRequest(url: endpoint.appending(path: path))
+        request.timeoutInterval = timeout
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+                lastProbeDetail = "HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1)"
+                return nil
+            }
+            return data
+        } catch {
+            lastProbeDetail = (error as NSError).localizedDescription
+            return nil
+        }
+    }
+
+    /// Share the probe result with the routing cache so a Settings check also
+    /// warms (or invalidates) the path delegation will take.
+    private func markProbe(ok: Bool) { lastHealth = (ok, Date()) }
 }

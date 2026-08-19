@@ -2856,7 +2856,8 @@ private struct InlineAssistantPane: View {
     @State private var embeddedInstalling = false
     @State private var embeddedProgress = 0.0
     @AppStorage(LocalWorkerRouter.endpointKey) private var localWorkerServerURL = ""
-    @State private var localWorkerServerStatus = ""
+    @State private var localWorkerStatus = LocalWorkerStatus()
+    @State private var localWorkerProbing = false
     @State private var embeddedStatus = ""
 
     var body: some View {
@@ -2982,41 +2983,102 @@ private struct InlineAssistantPane: View {
     /// LXC on the tailnet). When set and healthy it serves instead of the
     /// embedded model; any failure falls back to the embedded model silently.
     private var localWorkerServerRow: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Local worker server (optional)").font(.system(size: 12, weight: .medium))
-            Text("Ollama URL on your own network — e.g. http://100.x.y.z:11434. Delegated tasks prefer it when it responds; otherwise the embedded model serves. Model: \(LocalWorkerRouter.serverModel).")
+            Text("Ollama URL on your own network — e.g. http://100.x.y.z:11434. Delegated tasks prefer it when it responds; otherwise the embedded model serves.")
                 .font(.system(size: 10.5)).foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 8) {
                 TextField("http://host:11434", text: $localWorkerServerURL)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 11, design: .monospaced))
-                SettingsButton(title: "Test") { testLocalWorkerServer() }
+                SettingsButton(title: localWorkerProbing ? "Testing…" : "Test") { testLocalWorkerServer() }
             }
-            if !localWorkerServerStatus.isEmpty {
-                Text(localWorkerServerStatus)
+            localWorkerStatusBlock
+        }
+        .padding(.top, 6)
+        .onAppear { if localWorkerStatus.state == .unconfigured && !localWorkerServerURL.isEmpty { testLocalWorkerServer() } }
+    }
+
+    /// Measured facts only: the dot reflects the last real probe, the numbers
+    /// come from the server's own answers, and anything it did not tell us is
+    /// simply absent rather than guessed.
+    private var localWorkerStatusBlock: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 6) {
+                Circle().fill(localWorkerDotColor).frame(width: 7, height: 7)
+                Text(localWorkerHeadline)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(localWorkerStatus.state == .unreachable ? Color.orange : Color.primary)
+                if let ms = localWorkerStatus.latencyMs, localWorkerStatus.state == .reachable {
+                    Text("· \(ms) ms").font(.system(size: 10.5, design: .monospaced)).foregroundStyle(.tertiary)
+                }
+                if let v = localWorkerStatus.version, localWorkerStatus.state == .reachable {
+                    Text("· Ollama \(v)").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                }
+            }
+            if localWorkerStatus.state == .reachable {
+                HStack(spacing: 6) {
+                    Text(LocalWorkerRouter.serverModel)
+                        .font(.system(size: 10.5, design: .monospaced)).foregroundStyle(.secondary)
+                    if localWorkerStatus.modelInstalled == false {
+                        Text("· not on the server — tasks fall back to the embedded model")
+                            .font(.system(size: 10.5)).foregroundStyle(.orange)
+                    } else if localWorkerStatus.modelLoaded == true {
+                        Text("· loaded" + (localWorkerStatus.residencyText.map { " · \($0)" } ?? ""))
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(localWorkerStatus.mostlyOffGPU ? Color.orange : Color.secondary)
+                        if localWorkerStatus.mostlyOffGPU {
+                            Text("— most layers are outside VRAM (GPU memory taken elsewhere); expect CPU speed")
+                                .font(.system(size: 10)).foregroundStyle(.tertiary)
+                        }
+                    } else if localWorkerStatus.modelLoaded == false {
+                        Text("· idle (loads on first task)")
+                            .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            if !localWorkerStatus.detail.isEmpty {
+                Text(localWorkerStatus.detail)
                     .font(.system(size: 10)).foregroundStyle(.tertiary)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            if LocalWorkerRouter.serverTaskCount > 0 || LocalWorkerRouter.embeddedTaskCount > 0 {
+                Text("\(LocalWorkerRouter.serverTaskCount) task(s) served here · \(LocalWorkerRouter.embeddedTaskCount) by the embedded model")
+                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+            }
         }
-        .padding(.top, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var localWorkerDotColor: Color {
+        switch localWorkerStatus.state {
+        case .reachable:    return localWorkerStatus.modelInstalled == false ? .orange : .green
+        case .unreachable:  return .orange
+        case .probing:      return .yellow
+        case .unconfigured: return .secondary
+        }
+    }
+
+    private var localWorkerHeadline: String {
+        switch localWorkerStatus.state {
+        case .reachable:    return "Connected"
+        case .unreachable:  return "Unreachable — embedded model serves"
+        case .probing:      return "Probing…"
+        case .unconfigured: return localWorkerServerURL.isEmpty ? "Not configured" : "Not checked yet"
+        }
     }
 
     private func testLocalWorkerServer() {
-        guard LocalWorkerRouter.configuredEndpoint != nil else {
-            localWorkerServerStatus = localWorkerServerURL.isEmpty
-                ? "No server configured — the embedded model serves everything."
-                : "Not a valid http(s) URL."
-            return
-        }
-        localWorkerServerStatus = "Probing…"
+        guard !localWorkerProbing else { return }
+        localWorkerProbing = true
+        localWorkerStatus = LocalWorkerStatus(state: .probing)
         Task {
-            let healthy = await LocalWorkerRouter.shared.healthyServer(force: true) != nil
-            let detail = await LocalWorkerRouter.shared.probeDetail()
-            localWorkerServerStatus = healthy
-                ? "Server answered (\(detail)) — delegated tasks will prefer \(LocalWorkerRouter.serverDisplayName)."
-                : "No answer — \(detail.isEmpty ? "unknown error" : detail). Tasks fall back to the embedded model."
+            let status = await LocalWorkerRouter.shared.detailedStatus()
+            localWorkerStatus = status
+            localWorkerProbing = false
         }
     }
 
