@@ -2996,6 +2996,8 @@ private struct InlineAssistantPane: View {
             if !localWorkerServerStatus.isEmpty {
                 Text(localWorkerServerStatus)
                     .font(.system(size: 10)).foregroundStyle(.tertiary)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(.top, 6)

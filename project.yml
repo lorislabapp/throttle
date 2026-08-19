@@ -19,8 +19,8 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
-    MARKETING_VERSION: "3.2.86"
-    CURRENT_PROJECT_VERSION: "186"
+    MARKETING_VERSION: "3.2.87"
+    CURRENT_PROJECT_VERSION: "187"
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
   configs:
     # Hardened runtime is required for notarized Release distribution but
@@ -89,10 +89,21 @@ targets:
           - CFBundleURLName: com.lorislab.throttle.activate
             CFBundleURLSchemes:
               - throttle
-        # Edge uses HTTPS through a tailnet/private reverse proxy. Only explicit
-        # loopback development traffic may remain cleartext.
+        # Throttle is a local-first tool whose whole job is talking to servers the
+        # USER runs: loopback bridges, an edge agent on the LAN, an Ollama worker
+        # on a tailnet. Those are plain HTTP by nature.
+        # NSAllowsLocalNetworking alone is NOT enough: it whitelists only .local,
+        # link-local and RFC1918 (10/8, 172.16/12, 192.168/16). Tailscale's CGNAT
+        # range (100.64/10) is NOT covered, so every request to a tailnet address
+        # failed with NSURLErrorAppTransportSecurityRequiresSecureConnection
+        # (-1022) BEFORE a socket was ever opened — no packet, nothing to capture.
+        # And the two keys cannot be combined: when NSAllowsLocalNetworking is
+        # present, NSAllowsArbitraryLoads is ignored (verified empirically here,
+        # both variants, 2026-08-19). Hence arbitrary loads alone — a superset
+        # that still covers loopback and LAN. Every provider endpoint the app
+        # talks to is an explicit https:// URL, so this does not downgrade them.
         NSAppTransportSecurity:
-          NSAllowsLocalNetworking: true
+          NSAllowsArbitraryLoads: true
         NSCalendarsFullAccessUsageDescription: "Throttle adds a one-time reminder to your default calendar when your weekly Claude limit is about to reset. Optional — only when you tap the Calendar button."
         NSCalendarsUsageDescription: "Throttle adds a one-time reminder to your default calendar when your weekly Claude limit is about to reset. Optional — only when you tap the Calendar button."
         NSUserNotificationsUsageDescription: "Throttle banners you when your Claude usage crosses 80% or 95%."
