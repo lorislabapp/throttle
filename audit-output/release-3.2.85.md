@@ -47,3 +47,9 @@ Authority: user greenlit "ok ont met sa en place?" on 2026-08-19 after choosing 
 
 - User installs the Sparkle update (app currently not running; last check 2026-08-18).
 - First SERVED counter increments from real sessions = the loop closed.
+
+## Hotfix 3.2.86 (même journée)
+
+- Le Test du local worker chez Kevin échouait en "No answer" sans détail; le probe ne loggait rien — indiagnosticable à distance (aucune tentative visible côté TCP/CFNetwork, cause encore ouverte).
+- 3.2.86: erreur réelle affichée sous Test (statut HTTP ou NSError), os_log LocalWorkerRouter, budget probe 3s→5s.
+- Publiée + vérifiée live 2026-08-19 (stamp 20260819171946, DMG hash local = servi).
