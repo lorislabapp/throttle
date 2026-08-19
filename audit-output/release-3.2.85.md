@@ -53,3 +53,11 @@ Authority: user greenlit "ok ont met sa en place?" on 2026-08-19 after choosing 
 - Le Test du local worker chez Kevin échouait en "No answer" sans détail; le probe ne loggait rien — indiagnosticable à distance (aucune tentative visible côté TCP/CFNetwork, cause encore ouverte).
 - 3.2.86: erreur réelle affichée sous Test (statut HTTP ou NSError), os_log LocalWorkerRouter, budget probe 3s→5s.
 - Publiée + vérifiée live 2026-08-19 (stamp 20260819171946, DMG hash local = servi).
+
+## Hotfix 3.2.87 — ATS (cause racine du local worker)
+
+- Root cause: NSAllowsLocalNetworking ne couvre pas 100.64/10 (Tailscale CGNAT) -> URLSession refuse en -1022 AVANT tout socket. curl marchait (pas dInfo.plist, donc pas dATS). Les 2 cles ATS ne se combinent pas.
+- Verifie empiriquement (mini-app bundlee, 3 variantes) avant correctif.
+- Fix: cible Mac = NSAllowsArbitraryLoads seul; iOS non touchee (App Store + transport Network.framework).
+- + statut du bouton Test non tronque/selectionnable.
+- Suite XCTest complete PASS; DMG notarise+staple verifie (bundle porte bien la cle); live 2026-08-19 stamp 20260819193559, hash local = servi.
