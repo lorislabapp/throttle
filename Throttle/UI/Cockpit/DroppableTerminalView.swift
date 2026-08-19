@@ -87,6 +87,9 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     nonisolated(unsafe) private var pendingChunks: [[UInt8]] = []
     nonisolated(unsafe) private var pendingBytes = 0
     nonisolated(unsafe) private var selectionMonitor: Any?
+    // Precise-scroll (trackpad) accumulator: fractional pixel deltas carried
+    // across events until they add up to at least one whole cell row.
+    nonisolated(unsafe) private var preciseScrollAccumulator: CGFloat = 0
     private static let pendingCap = 2 * 1024 * 1024   // give up holding past 2 MB
 
     private enum EscState { case normal, esc, csi, osc, oscEsc }
@@ -286,6 +289,20 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     private func installSelectionMonitor() {
         selectionMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp, .scrollWheel]) { [weak self] event in
             guard let self else { return event }
+            // Trackpads send precise pixel deltas (with gesture phases); SwiftTerm's
+            // scrollWheel reads only the legacy line-based `deltaY`, which is 0 for
+            // gesture scrolls on recent macOS — so the trackpad never scrolled
+            // (mice send integral legacy deltas and work). Handle precise gestures
+            // ourselves via the public scrollUp/scrollDown API and CONSUME them so
+            // SwiftTerm's broken handler never sees the event. Mouse wheels (non-
+            // precise) pass through untouched. Local monitors fire on the main
+            // thread, so handling synchronously here is safe — and required, since
+            // consuming an event can't be decided from an async hop.
+            if event.type == .scrollWheel, event.hasPreciseScrollingDeltas,
+               self.eventIsOverSelf(event), self.canScroll {
+                self.handlePreciseScroll(event)
+                return nil
+            }
             DispatchQueue.main.async {
                 switch event.type {
                 case .leftMouseDown:
@@ -312,6 +329,27 @@ final class DroppableTerminalView: LocalProcessTerminalView {
             }
             return event   // never consume — let SwiftTerm handle the gesture
         }
+    }
+
+    /// Convert a precise (trackpad) scroll gesture into whole-row scrolls of the
+    /// scrollback buffer, carrying the fractional remainder across events so slow
+    /// swipes still move. Positive deltaY = fingers moved down = view earlier
+    /// content (matches SwiftTerm's own scrollWheel convention for mice).
+    private func handlePreciseScroll(_ event: NSEvent) {
+        if event.phase == .began { preciseScrollAccumulator = 0 }
+        let rows = max(getTerminal().rows, 1)
+        let cellHeight = max(frame.height / CGFloat(rows), 1)
+        preciseScrollAccumulator += event.scrollingDeltaY
+        let lines = Int(preciseScrollAccumulator / cellHeight)
+        guard lines != 0 else { return }
+        preciseScrollAccumulator -= CGFloat(lines) * cellHeight
+        if lines > 0 {
+            scrollUp(lines: lines)
+            scrolledUpByUser = true
+        } else {
+            scrollDown(lines: -lines)
+        }
+        if atLiveBottom { scrolledUpByUser = false; flushIfReady() }
     }
 
     private func eventIsOverSelf(_ event: NSEvent) -> Bool {
