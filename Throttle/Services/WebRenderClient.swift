@@ -82,10 +82,17 @@ enum WebRenderClient {
             return "Local summarizer failed: \(response["error"] as? String ?? "unknown error")"
         }
         let summary = response["summary"] as? String ?? ""
+        // Two distinct warnings, and they are not interchangeable. The first is
+        // about RELIABILITY: a small model's synthesis can be wrong. The second
+        // is about AUTHORITY: the summary restates content from a source nobody
+        // vouched for, so an instruction planted in that source can survive the
+        // summarisation and reach a reader that holds tools. See
+        // `LocalDelegationService.trustBoundary`.
         return """
         # Local Qwen draft — verify against the original
         throttle_id: \(throttleID)
         This is probabilistic synthesis, not evidence. Use throttle_expand_pointer before relying on omitted details.
+        \(LocalDelegationService.trustBoundary)
 
         \(summary)
         """
