@@ -162,6 +162,26 @@ final class CockpitNotifier: NSObject {
         }
     }
 
+    /// The agent exited twice in quick succession, so Throttle stopped relaunching
+    /// it and suspended input on that tab. Worth a sound: unlike a background
+    /// reclaim, this one is waiting on a decision, and until it is made the pane
+    /// is a shell wearing a session's clothes.
+    func notifyAgentExited(project: String) {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let status = settings.authorizationStatus
+            Task { @MainActor in
+                guard status == .authorized || status == .provisional else { return }
+                let content = UNMutableNotificationContent()
+                content.title = "\(project): the agent keeps exiting"
+                content.body = "Throttle stopped relaunching it and suspended typing on that tab, "
+                    + "so nothing lands in the shell underneath. Resume it or switch to the shell."
+                let req = UNNotificationRequest(identifier: "cockpit-agent-exited-\(project)",
+                                                content: content, trigger: nil)
+                Self.enqueue(req)
+            }
+        }
+    }
+
     /// Froze idle sessions under crowding (not real RAM pressure): SIGSTOP keeps
     /// resident pages but stops token burn, and waking is instant with NO
     /// `claude --resume` — so, unlike hibernate, zero re-send and no "resuming will

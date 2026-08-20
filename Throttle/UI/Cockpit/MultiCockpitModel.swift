@@ -259,71 +259,80 @@ final class CockpitTab: Identifiable {
         self.terminal = term
         self.spawnedAt = Date()                // real process start → honest uptime
 
-        let quoted = "'" + cwd.replacingOccurrences(of: "'", with: "'\\''") + "'"
-        var cmd = "cd \(quoted) && clear && "
-        // Spawn-tuning (16 GB constraint): Throttle owns the shell, so it can cap
-        // the Node/V8 heap per session before launching claude. Opt-in — a cap set
-        // too low crashes claude on a big context ("JS heap out of memory"), so it
-        // ships OFF (0). --max-agents is likewise opt-in (verify your Claude Code
-        // version supports the flag before enabling).
-        let d = UserDefaults.standard
-        // Low-memory mode supplies a safe default cap (3072 MB) when the user hasn't
-        // set one — high enough not to OOM claude on a big context, low enough to
-        // stop one runaway session eating the whole 16 GB.
-        var heapMB = d.integer(forKey: "throttleNodeHeapCapMB")
-        if heapMB <= 0, d.bool(forKey: "throttleLowMemoryMode") { heapMB = 3072 }
-        if runtime == .claudeCode, heapMB > 0 { cmd += "export NODE_OPTIONS='--max-old-space-size=\(heapMB)' && " }
-        let maxAgents = d.integer(forKey: "throttleMaxAgents")
-        let agentsFlag = runtime == .claudeCode && maxAgents > 0 ? " --max-agents \(maxAgents)" : ""
-        // Prefer the persisted id; if it was lost, fall back to the newest
-        // transcript in this project dir so we resume real context instead of
-        // starting an empty session.
-        // A handoff prompt must create a fresh target-native session. Resuming an
-        // unrelated target session here silently drops the handoff context.
-        let discovered = runtime.usesTranscript
-            && MissionRuntimeService.shouldDiscoverResumeSession(initialPrompt: initialPrompt)
-            ? (runtime == .claudeCode
-                ? MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
-                : MissionRuntimeService.newestCodexSession(cwd: cwd, since: .distantPast)?.id)
-            : nil
-        let sid = sessionId ?? resumeSessionId ?? discovered
-        // Quote the id (M19): it's a transcript-derived value interpolated into a
-        // shell command. Only accept a sane session-id shape, else start fresh.
-        if let sid, runtime.usesTranscript, sid.allSatisfy({ $0.isHexDigit || $0 == "-" }) {
-            if runtime == .claudeCode,
-               MissionRuntimeService.claudeSessionExists(id: sid, cwd: cwd) {
-                cmd += "claude --resume '\(sid)'\(agentsFlag)"
-                resumeIssue = nil
-                self.sessionId = sid
-            } else if runtime == .claudeCode {
-                cmd += "printf '\\nThrottle: saved Claude session not found locally; choose a session below.\\n\\n' && claude --resume"
-                resumeIssue = "Saved Claude session not found locally — choose it from Claude resume."
-                self.sessionId = nil
-            } else if MissionRuntimeService.codexSessionExists(id: sid, cwd: cwd) {
-                cmd += "codex resume '\(sid)'"
-                resumeIssue = nil
-                self.sessionId = sid
-            } else {
-                // Do not knowingly submit a foreign/stale UUID. Codex's picker is
-                // the honest recovery path when the local store cannot prove it.
-                cmd += "printf '\\nThrottle: saved Codex session not found locally; choose a session below.\\n\\n' && codex resume"
-                resumeIssue = "Saved Codex session not found locally — choose it from Codex resume."
-                self.sessionId = nil
-            }
-        } else {
-            resumeIssue = nil
-            if let executable = runtime.executable {
-                cmd += executable + agentsFlag
-                if let initialPrompt, !initialPrompt.isEmpty {
-                    cmd += " " + MissionRuntimeService.shellQuote(initialPrompt)
+        term.send(txt: agentCommand() + "\n")
+    }
+
+    /// The shell command that launches this tab's agent, including the resume
+    /// id, the heap cap and any handoff prompt. Extracted from `ensureSpawned`
+    /// so it can be re-issued into the SHELL THAT IS ALREADY THERE when the
+    /// agent exits under us — relaunching needs the same command, not a new
+    /// terminal.
+    func agentCommand() -> String {
+            let quoted = "'" + cwd.replacingOccurrences(of: "'", with: "'\\''") + "'"
+            var cmd = "cd \(quoted) && clear && "
+            // Spawn-tuning (16 GB constraint): Throttle owns the shell, so it can cap
+            // the Node/V8 heap per session before launching claude. Opt-in — a cap set
+            // too low crashes claude on a big context ("JS heap out of memory"), so it
+            // ships OFF (0). --max-agents is likewise opt-in (verify your Claude Code
+            // version supports the flag before enabling).
+            let d = UserDefaults.standard
+            // Low-memory mode supplies a safe default cap (3072 MB) when the user hasn't
+            // set one — high enough not to OOM claude on a big context, low enough to
+            // stop one runaway session eating the whole 16 GB.
+            var heapMB = d.integer(forKey: "throttleNodeHeapCapMB")
+            if heapMB <= 0, d.bool(forKey: "throttleLowMemoryMode") { heapMB = 3072 }
+            if runtime == .claudeCode, heapMB > 0 { cmd += "export NODE_OPTIONS='--max-old-space-size=\(heapMB)' && " }
+            let maxAgents = d.integer(forKey: "throttleMaxAgents")
+            let agentsFlag = runtime == .claudeCode && maxAgents > 0 ? " --max-agents \(maxAgents)" : ""
+            // Prefer the persisted id; if it was lost, fall back to the newest
+            // transcript in this project dir so we resume real context instead of
+            // starting an empty session.
+            // A handoff prompt must create a fresh target-native session. Resuming an
+            // unrelated target session here silently drops the handoff context.
+            let discovered = runtime.usesTranscript
+                && MissionRuntimeService.shouldDiscoverResumeSession(initialPrompt: initialPrompt)
+                ? (runtime == .claudeCode
+                    ? MultiCockpitModel.newestSession(cwd: cwd, since: .distantPast)?.id
+                    : MissionRuntimeService.newestCodexSession(cwd: cwd, since: .distantPast)?.id)
+                : nil
+            let sid = sessionId ?? resumeSessionId ?? discovered
+            // Quote the id (M19): it's a transcript-derived value interpolated into a
+            // shell command. Only accept a sane session-id shape, else start fresh.
+            if let sid, runtime.usesTranscript, sid.allSatisfy({ $0.isHexDigit || $0 == "-" }) {
+                if runtime == .claudeCode,
+                   MissionRuntimeService.claudeSessionExists(id: sid, cwd: cwd) {
+                    cmd += "claude --resume '\(sid)'\(agentsFlag)"
+                    resumeIssue = nil
+                    self.sessionId = sid
+                } else if runtime == .claudeCode {
+                    cmd += "printf '\\nThrottle: saved Claude session not found locally; choose a session below.\\n\\n' && claude --resume"
+                    resumeIssue = "Saved Claude session not found locally — choose it from Claude resume."
+                    self.sessionId = nil
+                } else if MissionRuntimeService.codexSessionExists(id: sid, cwd: cwd) {
+                    cmd += "codex resume '\(sid)'"
+                    resumeIssue = nil
+                    self.sessionId = sid
+                } else {
+                    // Do not knowingly submit a foreign/stale UUID. Codex's picker is
+                    // the honest recovery path when the local store cannot prove it.
+                    cmd += "printf '\\nThrottle: saved Codex session not found locally; choose a session below.\\n\\n' && codex resume"
+                    resumeIssue = "Saved Codex session not found locally — choose it from Codex resume."
+                    self.sessionId = nil
                 }
             } else {
-                // .local / .terminal have no agent CLI: the mission is the login
-                // shell itself, so close the dangling "&& " with a no-op.
-                cmd += ":"
+                resumeIssue = nil
+                if let executable = runtime.executable {
+                    cmd += executable + agentsFlag
+                    if let initialPrompt, !initialPrompt.isEmpty {
+                        cmd += " " + MissionRuntimeService.shellQuote(initialPrompt)
+                    }
+                } else {
+                    // .local / .terminal have no agent CLI: the mission is the login
+                    // shell itself, so close the dangling "&& " with a no-op.
+                    cmd += ":"
+                }
             }
-        }
-        term.send(txt: cmd + "\n")
+        return cmd
     }
 
     /// SwiftTerm's `getEnvironmentVariables` is a fixed whitelist (TERM/LANG/…)
@@ -428,6 +437,66 @@ final class CockpitTab: Identifiable {
         let wasLimited = isRateLimited
         rateLimitedUntil = until
         if !wasLimited { onRateLimited?(self) }
+    }
+
+    // MARK: - Agent exit
+
+    /// The agent process is gone but its login shell is still alive.
+    ///
+    /// This is the dangerous state: the pane looks exactly like a live session,
+    /// the prompt from the agent is still painted on screen, and every keystroke
+    /// now reaches zsh. Text meant for an agent — a path, a sentence with
+    /// backticks, anything with `>` or `&&` — becomes a shell command.
+    private(set) var agentExited = false
+    /// Keystrokes are dropped until the user picks resume or shell. Set only
+    /// when relaunching would be the wrong answer.
+    private(set) var inputSuspended = false
+    /// Exit instants inside the flap window, newest last.
+    private var recentAgentExits: [Date] = []
+
+    /// Two exits this close together mean relaunching is not fixing anything —
+    /// the agent is failing to start, or the machine cannot hold it. Relaunching
+    /// again is the hibernate→respawn loop this codebase already refuses to build.
+    static let agentFlapWindow: TimeInterval = 120
+    static let agentFlapCount = 2
+
+    /// Called when the process poll finds no agent left in this tab's subtree.
+    /// Returns true when the caller should relaunch, false when input was
+    /// suspended instead.
+    @discardableResult
+    func noteAgentExit(now: Date = Date()) -> Bool {
+        recentAgentExits.append(now)
+        recentAgentExits.removeAll { now.timeIntervalSince($0) > Self.agentFlapWindow }
+        agentExited = true
+        needsInput = false
+
+        guard recentAgentExits.count < Self.agentFlapCount else {
+            inputSuspended = true
+            (terminal as? DroppableTerminalView)?.inputSuspended = true
+            return false
+        }
+        return true
+    }
+
+    /// Re-issue the agent command into the shell that is already sitting there.
+    /// No new terminal, no lost scrollback — the session resumes by id, so the
+    /// conversation continues rather than restarting.
+    func relaunchAgent() {
+        guard let view = terminal as? DroppableTerminalView, runtime.executable != nil else { return }
+        agentExited = false
+        inputSuspended = false
+        view.inputSuspended = false
+        spawnedAt = Date()
+        view.sendProgrammatic(txt: agentCommand() + "\n")
+    }
+
+    /// The user chose to keep the bare shell. Clear the flags so the pane stops
+    /// claiming to be an agent and starts behaving like what it is.
+    func acceptShell() {
+        agentExited = false
+        inputSuspended = false
+        (terminal as? DroppableTerminalView)?.inputSuspended = false
+        recentAgentExits.removeAll()
     }
 
     /// User is now looking at this session → clear the attention flag.
@@ -978,6 +1047,50 @@ final class MultiCockpitModel {
         }
     }
 
+    /// Poll for tabs whose agent has exited while its login shell lived on.
+    ///
+    /// Nothing in Throttle causes this: `pauseProcess` is a clean SIGSTOP and
+    /// `hibernate` drops the terminal entirely. The agent leaves for its own
+    /// reasons — a clean exit after a long idle, a crash, a reclaim. What
+    /// Throttle owes the user is noticing, because the pane gives no sign: the
+    /// PTY belongs to the shell, and `isLive` only reports transcript mtime,
+    /// which says "wrote recently", never "still exists".
+    ///
+    /// A clean single exit resumes in place. A second exit inside the flap
+    /// window suspends input instead — at that point relaunching is not a fix.
+    func detectAgentExit() {
+        let candidates = sessions.filter {
+            $0.isSpawned && !$0.isHibernated && !$0.isPaused && !$0.agentExited
+                && $0.runtime.executable != nil
+        }
+        let pairs: [(UUID, pid_t)] = candidates.compactMap { tab in tab.shellPid.map { (tab.id, $0) } }
+        guard !pairs.isEmpty else { return }
+        let names = Set(candidates.compactMap(\.runtime.executable))
+        let pids = pairs.map { $0.1 }
+        Task { [weak self] in
+            let alive = await Task.detached(priority: .utility) {
+                SystemMemoryService.subtreeHasAgent(rootPids: pids, names: names)
+            }.value
+            guard let self else { return }
+            for (id, pid) in pairs {
+                // Absent from the map means the probe could not answer. Treat that
+                // as "still there": suspending input or relaunching on a failed
+                // `ps` would be worse than missing one exit.
+                guard alive[pid] == false,
+                      let tab = self.sessions.first(where: { $0.id == id }),
+                      // Re-check: the tab may have been paused or hibernated while
+                      // the probe was running off-thread.
+                      tab.isSpawned, !tab.isHibernated, !tab.isPaused, !tab.agentExited
+                else { continue }
+                if tab.noteAgentExit() {
+                    tab.relaunchAgent()
+                } else {
+                    CockpitNotifier.shared.notifyAgentExited(project: tab.projectName)
+                }
+            }
+        }
+    }
+
     func autoHibernateIfPressured() {
         let spawnedCount = sessions.filter { $0.isSpawned && !$0.isHibernated }.count
         let crowded = maxLiveSessions > 0 && spawnedCount > maxLiveSessions
@@ -1096,6 +1209,7 @@ final class MultiCockpitModel {
                 self?.evaluatePacing()             // soft cross-session pacing tier below auto-pause
                 self?.autoHibernateIfPressured()   // MEM-H01: reclaim idle-session RAM under critical pressure
                 self?.refreshWaitingCount()        // backstop for any transition the didSet missed
+                self?.detectAgentExit()            // agent gone but its shell still taking keystrokes
                 if !quiet { self?.sampleSessionRAM() }
             }
         }

@@ -182,7 +182,22 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     /// the session reads as "working" the instant you hit Enter — through claude's
     /// pre-first-token think gap — instead of flickering to idle. `send(source:)`
     /// is SwiftTerm's open hook for terminal→process bytes.
+    /// Drop user keystrokes: the agent exited and the login shell underneath is
+    /// still accepting input, so anything typed here would run as a command
+    /// while the pane still looks like a live session. Programmatic sends —
+    /// Throttle relaunching the agent, `/model`, paste — bypass this.
+    nonisolated(unsafe) var inputSuspended = false
+    nonisolated(unsafe) private var programmaticDepth = 0
+
+    /// Input Throttle itself is injecting, never the user's keyboard.
+    func sendProgrammatic(txt: String) {
+        programmaticDepth += 1
+        defer { programmaticDepth -= 1 }
+        send(txt: txt)
+    }
+
     override func send(source: TerminalView, data: ArraySlice<UInt8>) {
+        guard !inputSuspended || programmaticDepth > 0 else { return }
         // Drop mouse reports before they ever reach the PTY (see ptyOutFilter).
         // A pure-mouse chunk filters to empty → no send, no activity blip.
         let clean = ptyOutFilter.filter(Array(data))

@@ -198,6 +198,62 @@ enum SystemMemoryService {
         return out
     }
 
+    /// Per root pid: is an agent process still alive somewhere in its subtree?
+    ///
+    /// A cockpit tab's PTY belongs to the login SHELL; the agent (`claude`,
+    /// `codex`) is only a child of it. When the agent exits — cleanly, on a
+    /// crash, or because the machine reclaimed it — the shell survives and
+    /// returns to its prompt, and from the outside the pane is indistinguishable
+    /// from a live session. Everything else Throttle has is a proxy: transcript
+    /// mtime says "wrote recently", CPU says "busy", neither says "exists". This
+    /// asks the process table directly.
+    ///
+    /// One `ps` pass for every root, off the main thread like the RSS and CPU
+    /// samplers next to it.
+    static func subtreeHasAgent(rootPids: [pid_t], names: Set<String>) -> [pid_t: Bool] {
+        guard !rootPids.isEmpty, !names.isEmpty else { return [:] }
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/ps")
+        p.arguments = ["-axo", "pid=,ppid=,comm="]
+        let pipe = Pipe()
+        p.standardOutput = pipe
+        p.standardError = FileHandle.nullDevice
+        // A failed probe must not read as "the agent is gone": that would
+        // suspend input or relaunch a session on nothing at all.
+        do { try p.run() } catch { return rootPids.reduce(into: [:]) { $0[$1] = true } }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        guard let text = String(data: data, encoding: .utf8) else {
+            return rootPids.reduce(into: [:]) { $0[$1] = true }
+        }
+
+        var children: [pid_t: [pid_t]] = [:]
+        var isAgent: [pid_t: Bool] = [:]
+        for line in text.split(separator: "\n") {
+            // comm can hold spaces and a full path, so split off exactly two
+            // leading numeric fields and keep the remainder intact.
+            let f = line.split(separator: " ", maxSplits: 2, omittingEmptySubsequences: true)
+            guard f.count == 3, let pid = pid_t(f[0]), let ppid = pid_t(f[1]) else { continue }
+            children[ppid, default: []].append(pid)
+            let comm = f[2].trimmingCharacters(in: .whitespaces)
+            let leaf = (comm as NSString).lastPathComponent
+            isAgent[pid] = names.contains(leaf)
+        }
+
+        var out: [pid_t: Bool] = [:]
+        for root in rootPids {
+            var found = false
+            var stack = [root]
+            while let cur = stack.popLast() {
+                // The root is the shell itself — never count it as the agent.
+                if cur != root, isAgent[cur] == true { found = true; break }
+                if let kids = children[cur] { stack.append(contentsOf: kids) }
+            }
+            out[root] = found
+        }
+        return out
+    }
+
     /// Guaranteed teardown of a session's process subtree (shell → claude → node):
     /// SIGTERM the whole tree (deepest first so a parent can't respawn a child),
     /// then SIGKILL any survivor after a grace period. This is what actually frees

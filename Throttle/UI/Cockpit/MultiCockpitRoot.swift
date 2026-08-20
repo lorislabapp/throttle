@@ -605,6 +605,38 @@ struct MultiCockpitRoot: View {
         }
         .onChange(of: model.activeID) { selectedRemoteID = nil }
         .onAppear { if remoteSvc.isConfigured { remoteSvc.startPolling() } }
+        // Sits ABOVE the pane on purpose. The whole failure is that the pane looks
+        // unchanged when the agent has gone and the shell underneath is taking
+        // keystrokes; a marker in the rail would be exactly the sign the user
+        // already missed.
+        .overlay(alignment: .top) {
+            if let active = model.active, active.inputSuspended {
+                agentExitedBanner(active)
+            }
+        }
+    }
+
+    private func agentExitedBanner(_ tab: CockpitTab) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("\(tab.runtime.shortLabel) exited twice — typing is suspended")
+                    .font(.system(size: 12, weight: .medium))
+                Text("The login shell underneath is still live. Keystrokes are dropped so nothing runs there by accident.")
+                    .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            Button("Resume") { tab.relaunchAgent() }
+                .buttonStyle(.borderedProminent).controlSize(.small)
+            Button("Use shell") { tab.acceptShell() }
+                .buttonStyle(.bordered).controlSize(.small)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Color.primary.opacity(0.10)).frame(height: 1)
+        }
     }
 
     // MARK: A — Tab bar
