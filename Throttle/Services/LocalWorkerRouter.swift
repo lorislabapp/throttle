@@ -26,6 +26,26 @@ actor LocalWorkerRouter {
     static let serverTaskCountKey = "throttleLocalWorkerServerTaskCount"
     static let embeddedTaskCountKey = "throttleLocalWorkerEmbeddedTaskCount"
     static let defaultServerModel = "throttle-worker"
+    static let contextCeilingKey = "throttleLocalWorkerCtxCeiling"
+
+    /// Largest context window this server has proven it can serve without the
+    /// model falling entirely to CPU. Learned, not configured.
+    ///
+    /// The research asked for an admission controller that reads free VRAM
+    /// before choosing a window. Ollama exposes no such endpoint — `/api/ps`
+    /// reports what a LOADED model occupies, never what the card has left. So
+    /// the loop is closed the other way round: ask for a window, then look at
+    /// what actually happened, and lower the ceiling when the answer is "none of
+    /// it reached the GPU". That is measured rather than modelled, and it tracks
+    /// a card whose free memory moves as other tenants come and go.
+    nonisolated static var contextCeiling: Int {
+        get {
+            let stored = UserDefaults.standard.integer(forKey: contextCeilingKey)
+            return stored >= 4096 ? min(stored, 16384) : 16384
+        }
+        set { UserDefaults.standard.set(min(max(newValue, 4096), 16384), forKey: contextCeilingKey) }
+    }
+
 
     /// The configured Ollama endpoint, or nil when the feature is off. Only
     /// private/loopback-style HTTP endpoints make sense here; the user owns the
@@ -67,6 +87,8 @@ actor LocalWorkerRouter {
     // MARK: - Health
 
     fileprivate var lastHealth: (ok: Bool, at: Date)?
+    /// Consecutive runs that reached the GPU, for raising the ceiling back.
+    private var cleanRuns = 0
     /// Human-readable detail of the last probe outcome, for the Settings Test
     /// button — "guessing why the server is unreachable" is not a UI.
     private(set) var lastProbeDetail: String = ""
@@ -217,8 +239,9 @@ actor LocalWorkerRouter {
         // hold the whole thing plus the answer — but only when the source is
         // actually that big. See `contextWindow`.
         let budget = min(max(maxTokens, 64), 768)
-        let window = Self.contextWindow(system: system, prompt: prompt, maxTokens: budget)
-        Self.log.info("ollama generate: num_ctx \(window, privacy: .public)")
+        let window = min(Self.contextWindow(system: system, prompt: prompt, maxTokens: budget),
+                         Self.contextCeiling)
+        Self.log.info("ollama generate: num_ctx \(window, privacy: .public) (ceiling \(Self.contextCeiling, privacy: .public))")
         var options: [String: Any] = [
             "num_predict": budget,
             "num_ctx": window,
@@ -242,7 +265,59 @@ actor LocalWorkerRouter {
         else {
             throw LocalWorkerError.serverFailed
         }
+        await observeResidency(endpoint: endpoint, requestedWindow: window)
         return text
+    }
+
+    /// Look at where the model actually ran, and lower the ceiling if it ran
+    /// nowhere near the GPU.
+    ///
+    /// The cliff being avoided is `size_vram == 0` — not a partial offload. A
+    /// partially offloaded model is fine: 28 of 37 layers measured ~11 tok/s
+    /// against 78 s for one bounded extraction on CPU. Treating any partial
+    /// offload as failure would drive the ceiling to its floor immediately,
+    /// since even a 4096 window leaves this card partially loaded.
+    ///
+    /// Recovery matters as much as the step down: the other tenants on that GPU
+    /// come and go, so a ceiling lowered during a busy hour must be able to rise
+    /// again. Two clean runs are enough — the cost of guessing high is one slow
+    /// request, and the ceiling immediately drops back.
+    private func observeResidency(endpoint: URL, requestedWindow: Int) async {
+        var request = URLRequest(url: endpoint.appending(path: "api/ps"))
+        request.timeoutInterval = 5
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let models = object["models"] as? [[String: Any]]
+        else { return }   // a failed probe teaches nothing; never guess from it
+
+        let model = Self.serverModel
+        guard let entry = models.first(where: { ($0["name"] as? String)?.hasPrefix(model) == true })
+                ?? models.first,
+              let size = entry["size"] as? NSNumber
+        else { return }
+        let vram = (entry["size_vram"] as? NSNumber)?.uint64Value ?? 0
+        let total = size.uint64Value
+
+        if vram == 0, total > 0 {
+            cleanRuns = 0
+            let lowered = max(4096, requestedWindow / 2)
+            if lowered < Self.contextCeiling {
+                Self.contextCeiling = lowered
+                Self.log.notice("""
+                    local worker ran entirely on CPU at num_ctx \(requestedWindow, privacy: .public) \
+                    — context ceiling lowered to \(lowered, privacy: .public)
+                    """)
+            }
+        } else {
+            cleanRuns += 1
+            if cleanRuns >= 2, Self.contextCeiling < 16384 {
+                cleanRuns = 0
+                let raised = min(16384, Self.contextCeiling * 2)
+                Self.contextCeiling = raised
+                Self.log.notice("local worker back on the GPU — context ceiling raised to \(raised, privacy: .public)")
+            }
+        }
     }
 
     private nonisolated static func bump(_ key: String) {
