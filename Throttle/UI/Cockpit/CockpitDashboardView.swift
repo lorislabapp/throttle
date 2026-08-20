@@ -167,6 +167,28 @@ struct CockpitDashboardView: View {
 
     /// The measured half of the local-candidate nudge. Shadow replay re-runs
     /// completed local-safe sessions on the embedded model and validates the
+    /// Distance to a defensible claim, stated in cases rather than adjectives.
+    /// 299 frozen cases with zero false `verified` are what puts the 95% bound
+    /// under 1% — below that the honest phrasing is the bound itself, never
+    /// "proven".
+    @ViewBuilder private var certificationProgress: some View {
+        let target = ShadowReplayService.Ledger.casesNeeded(forBound: 0.01)
+        let done = replayLedger.certifiedVerifiedClaims
+        if let bound = replayLedger.falseVerifiedBound95 {
+            Text("0 false verified over \(done) adjudicated certification cases — false-verified rate ≤\(String(format: "%.1f", bound * 100))% (95% bound, est). \(max(0, target - done)) more to claim under 1%.")
+                .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        } else if replayLedger.falseVerified > 0 {
+            Text("\(replayLedger.falseVerified) false verified out of \(done) adjudicated — measured, not bounded. Fix the pipeline before certifying.")
+                .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        } else {
+            Text("Certification: \(done)/\(target) adjudicated cases. Until a human checks these verdicts against the source, none of them bounds how often \"verified\" is wrong.")
+                .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     /// result through the delegation contract — building the golden set that
     /// turns "local-safe profile" into evidence. Never touches a real session.
     private var localMixPanel: some View {
@@ -183,6 +205,12 @@ struct CockpitDashboardView: View {
                         .font(.system(size: 10.5)).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                // The hard-failure bound above covers the cases the pipeline
+                // correctly REFUSED. The risk worth bounding is the opposite: a
+                // `verified` that a human would have overturned. That needs
+                // frozen, adjudicated cases, so show how far off that is rather
+                // than letting the panel imply the question is already settled.
+                certificationProgress
             } else {
                 Text("Shadow replay re-runs your completed local-safe sessions on \(EmbeddedModelRuntime.displayName) and validates the output — measuring, on your own data, what a local model actually serves. The real sessions are never touched.")
                     .font(.system(size: 10.5)).foregroundStyle(.secondary)
