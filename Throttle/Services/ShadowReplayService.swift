@@ -24,6 +24,8 @@ enum ShadowReplayService {
     static let maxAskCharacters = 12_000
     /// How many candidates one batch replays (sequential — 16 GB discipline).
     static let batchLimit = 5
+    /// Bound on the request text kept for later adjudication.
+    static let maxAdjudicationCharacters = 4_000
 
     /// Which population a case was drawn from. Never mix them into one rate: the
     /// naturalistic sample estimates production performance, the stress sample
@@ -91,6 +93,23 @@ enum ShadowReplayService {
         /// adjudicated, which is why an un-adjudicated case can never count
         /// toward a bound: nothing has checked the pipeline's own claim.
         var adjudicatedStatus: String?
+        var adjudicatedAt: Int64?
+        /// Why the human overturned (or upheld) the pipeline. The failure MODE is
+        /// what tunes the prompt and the validator; a bare count never did.
+        var adjudicationNote: String?
+
+        // MARK: Material to adjudicate FROM
+
+        /// A verdict cannot be checked against a verdict. Judging whether
+        /// `verified` was earned needs what the model actually said and what it
+        /// claimed as proof — the earlier schema recorded only lengths, which
+        /// made the ledger unauditable by the person it was built for.
+        var output: String?
+        var evidence: [String]?
+        /// Bounded copy of the request. The transcript is the real source, but it
+        /// can be deleted or compacted long before anyone adjudicates; a case that
+        /// cannot be re-read is a case that cannot be judged.
+        var askExcerpt: String?
 
         static let currentSchemaVersion = 2
 
@@ -192,6 +211,55 @@ enum ShadowReplayService {
         }
     }
 
+    // MARK: - Adjudication
+
+    /// Record a human verdict against an existing case and, when it is meant to
+    /// certify, freeze it into the certification stage.
+    ///
+    /// The whole ledger is rewritten. At the sizes that matter — 299 cases per
+    /// family — that is a few megabytes, and it keeps the file a plain readable
+    /// JSONL that can be inspected, diffed and copied by hand. An append-only
+    /// correction log would be cheaper and much harder for a person to audit,
+    /// which would defeat the point of the file.
+    @discardableResult
+    static func adjudicate(entryID: String,
+                           verdict: String,
+                           stage: Stage,
+                           note: String?,
+                           now: Date = Date()) -> Bool {
+        var entries = loadLedger().entries
+        guard let index = entries.firstIndex(where: { $0.id == entryID }) else { return false }
+        entries[index].adjudicatedStatus = verdict
+        entries[index].adjudicatedAt = Int64(now.timeIntervalSince1970)
+        entries[index].adjudicationNote = note?.isEmpty == true ? nil : note
+        entries[index].stage = stage.rawValue
+
+        let encoder = JSONEncoder()
+        var payload = Data()
+        for entry in entries {
+            guard var line = try? encoder.encode(entry) else { continue }
+            line.append(0x0A)
+            payload.append(line)
+        }
+        let url = ledgerURL
+        try? FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        // Write beside it and swap: a truncated ledger would destroy every case
+        // already adjudicated, which is the most expensive data here.
+        let temporary = url.appendingPathExtension("tmp")
+        guard (try? payload.write(to: temporary, options: .atomic)) != nil else { return false }
+        _ = try? FileManager.default.replaceItemAt(url, withItemAt: temporary)
+        return true
+    }
+
+    /// Cases still waiting on a human, oldest first — adjudicating in order keeps
+    /// the sample chronological rather than cherry-picked.
+    static func pendingAdjudication() -> [Entry] {
+        loadLedger().entries
+            .filter { $0.adjudicatedStatus == nil && $0.status != "error" }
+            .sorted { $0.ts < $1.ts }
+    }
+
     // MARK: - Replay
 
     /// Replay one candidate. Reads the session transcript for the original ask,
@@ -201,7 +269,8 @@ enum ShadowReplayService {
                        transcriptPath: String?) async -> Entry {
         let started = Date()
         func entry(kind: String, status: String, reason: String,
-                   localChars: Int = 0, askChars: Int = 0, askSHA: String? = nil) -> Entry {
+                   localChars: Int = 0, askChars: Int = 0, askSHA: String? = nil,
+                   ask: String? = nil, output: String? = nil, evidence: [String]? = nil) -> Entry {
             Entry(
                 ts: Int64(Date().timeIntervalSince1970),
                 sessionId: candidate.sessionId,
@@ -229,7 +298,10 @@ enum ShadowReplayService {
                 // Adjudication is a human act against the original source. It
                 // stays nil until someone does it, which is exactly why a fresh
                 // replay contributes nothing to the certification bound.
-                adjudicatedStatus: nil
+                adjudicatedStatus: nil,
+                output: output,
+                evidence: evidence,
+                askExcerpt: ask.map { String($0.prefix(maxAdjudicationCharacters)) }
             )
         }
 
@@ -251,7 +323,7 @@ enum ShadowReplayService {
             kind: kind.rawValue, objective: String(boundedAsk.prefix(1_800))
         ) {
             return entry(kind: kind.rawValue, status: "escalate", reason: why,
-                         askChars: boundedAsk.count, askSHA: sha256(boundedAsk))
+                         askChars: boundedAsk.count, askSHA: sha256(boundedAsk), ask: boundedAsk)
         }
 
         do {
@@ -262,7 +334,8 @@ enum ShadowReplayService {
             )
             return entry(kind: kind.rawValue, status: result.status, reason: result.reason,
                          localChars: result.returnedCharacters, askChars: boundedAsk.count,
-                         askSHA: sha256(boundedAsk))
+                         askSHA: sha256(boundedAsk), ask: boundedAsk,
+                         output: result.result, evidence: result.evidence)
         } catch {
             return entry(kind: kind.rawValue, status: "error",
                          reason: error.localizedDescription, askChars: boundedAsk.count,

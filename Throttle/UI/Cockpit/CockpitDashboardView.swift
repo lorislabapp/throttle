@@ -16,6 +16,7 @@ struct CockpitDashboardView: View {
     // LOCAL MIX (frontier ↔ local, measured on this Mac)
     @State private var localModelInstalled = false
     @State private var replayLedger = ShadowReplayService.Ledger.empty
+    @State private var showAdjudication = false
     @State private var benchProfile: LocalModelBenchService.Profile?
     @State private var replayBusy = false
     @State private var benchBusy = false
@@ -211,6 +212,10 @@ struct CockpitDashboardView: View {
                 // frozen, adjudicated cases, so show how far off that is rather
                 // than letting the panel imply the question is already settled.
                 certificationProgress
+                if replayLedger.entries.contains(where: { $0.adjudicatedStatus == nil && $0.status != "error" }) {
+                    Button("Adjudicate cases") { showAdjudication = true }
+                        .controlSize(.small)
+                }
             } else {
                 Text("Shadow replay re-runs your completed local-safe sessions on \(EmbeddedModelRuntime.displayName) and validates the output — measuring, on your own data, what a local model actually serves. The real sessions are never touched.")
                     .font(.system(size: 10.5)).foregroundStyle(.secondary)
@@ -243,6 +248,12 @@ struct CockpitDashboardView: View {
                 }
             }
             .controlSize(.small)
+        }
+        .sheet(isPresented: $showAdjudication) {
+            AdjudicationSheet {
+                showAdjudication = false
+                replayLedger = ShadowReplayService.loadLedger()   // the bound moves as cases are judged
+            }
         }
     }
 
