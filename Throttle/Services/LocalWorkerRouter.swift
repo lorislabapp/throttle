@@ -172,6 +172,31 @@ actor LocalWorkerRouter {
         "required": ["result", "evidence", "confidence"],
     ] }
 
+    /// Context window sized to THIS request instead of to the 48k-char worst
+    /// case. A hard-coded 16384 cost the GPU entirely: measured against the
+    /// Proxmox Quadro P2000 (5046 MiB, ~1188 held by other tenants on the box),
+    /// a 16k window wants 2304 MiB of KV cache on top of the 2375 MiB model —
+    /// 4770 MiB against 3858 free — so llama.cpp offloaded ZERO of 37 layers and
+    /// ran on CPU: 78 s for one bounded extraction. The same task at 8192
+    /// offloads 28/37 layers and generates at ~11 tok/s. Sizing the window to
+    /// the real prompt keeps the 48k ceiling available for the rare huge source
+    /// while letting the common case stay on the GPU.
+    ///
+    /// Budget = (system + prompt) at ~4 chars/token — the same estimate
+    /// `LocalModelBenchService` labels `est` — plus the output ceiling, plus 25%
+    /// headroom for a tokenizer that disagrees with the heuristic. Rounded up to
+    /// a power of two because the KV cache is allocated in one block. Floored at
+    /// Ollama's own 4096 default (below it a short prompt gains nothing) and
+    /// capped at 16384, the window that holds the 48k-char cap — a source
+    /// needing more than that was already truncated before it got here.
+    static func contextWindow(system: String, prompt: String, maxTokens: Int) -> Int {
+        let estimated = (system.count + prompt.count) / 4 + maxTokens
+        let target = Int((Double(estimated) * 1.25).rounded(.up))
+        var window = 4096
+        while window < target && window < 16384 { window *= 2 }
+        return window
+    }
+
     private func ollamaGenerate(
         endpoint: URL,
         system: String,
@@ -188,11 +213,15 @@ actor LocalWorkerRouter {
         // num_ctx matters as much as the model: Ollama defaults to a 4096-token
         // window, which silently TRUNCATED the source — the worker then answered
         // about the part it could see and invented the rest. Our prompt caps the
-        // source at 48k characters (~13k tokens), so give it a window that holds
-        // the whole thing plus the answer.
+        // source at 48k characters (~13k tokens), so the window must be able to
+        // hold the whole thing plus the answer — but only when the source is
+        // actually that big. See `contextWindow`.
+        let budget = min(max(maxTokens, 64), 768)
+        let window = Self.contextWindow(system: system, prompt: prompt, maxTokens: budget)
+        Self.log.info("ollama generate: num_ctx \(window, privacy: .public)")
         var options: [String: Any] = [
-            "num_predict": min(max(maxTokens, 64), 768),
-            "num_ctx": 16384,
+            "num_predict": budget,
+            "num_ctx": window,
         ]
         options["temperature"] = 0.2   // extraction, not prose
         var payload: [String: Any] = [
