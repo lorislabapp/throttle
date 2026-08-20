@@ -61,13 +61,19 @@ This is a batch / sidecar resource. It is not usable for anything interactive.
 
 ## Sharing rules
 
-There is no concurrency configuration yet — neither `OLLAMA_NUM_PARALLEL` nor
-`OLLAMA_MAX_LOADED_MODELS` is set, so Ollama picks defaults based on free memory
-and that choice can change on its own. Deep research on 2026-08-20 recommends
-pinning both to `1` on a box with this little VRAM, because Ollama's own docs
-state that parallel requests multiply the context memory proportionally. **That
-change is not applied yet** — until it is, expect the default behaviour
-described below.
+Concurrency is pinned, as of 2026-08-20:
+
+```
+OLLAMA_NUM_PARALLEL=1
+OLLAMA_MAX_LOADED_MODELS=1
+```
+
+(`/etc/systemd/system/ollama.service.d/concurrency.conf`.) Left to its own
+defaults, Ollama chooses from free memory and the choice changes on its own;
+its docs also state that parallel requests multiply context memory
+proportionally, so a second in-flight request can push the model off the GPU
+exactly like an oversized `num_ctx` does. One request, one resident model:
+slower under burst, predictable always.
 
 In practice:
 
