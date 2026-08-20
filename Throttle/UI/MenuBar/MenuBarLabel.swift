@@ -30,18 +30,52 @@ struct MenuBarLabel: View {
             // open tab, which is what produced the runaway loop above.
             if pct >= 0.98, let reset = bindingResetDate() {
                 TimelineView(.everyMinute) { context in
-                    Label(Self.countdown(to: reset, now: context.date),
-                          systemImage: MultiCockpitModel.shared.waitingCount > 0 ? "bell.badge.fill" : "hourglass")
+                    Label(text(pressure: Self.countdown(to: reset, now: context.date)),
+                          systemImage: waiting ? "bell.badge.fill" : "hourglass")
                         .labelStyle(.titleAndIcon)
                 }
             } else {
-                Label("\(Int(pct * 100))%",
-                      systemImage: MultiCockpitModel.shared.waitingCount > 0 ? "bell.badge.fill" : meterIcon(for: pct))
+                Label(text(pressure: "\(Int(pct * 100))%"),
+                      systemImage: waiting ? "bell.badge.fill" : meterIcon(for: pct))
                     .labelStyle(.titleAndIcon)
             }
         } else {
             Image(systemName: "gauge.with.dots.needle.bottom.50percent")
         }
+    }
+
+    /// A session is blocked on a question. Reads the STORED count — see
+    /// `MultiCockpitModel.waitingCount` for why this must never be computed.
+    /// The bell is honoured only when the user left the signal on.
+    private var waiting: Bool {
+        MenuBarSignalSettings.shared.isOn(.waiting) && MultiCockpitModel.shared.waitingCount > 0
+    }
+
+    /// Cap pressure first, then whatever optional signals are switched on, in a
+    /// fixed order. Every value here comes from state refreshed on a timer, never
+    /// from a query run inside the render pass.
+    private func text(pressure: String) -> String {
+        var parts = [pressure]
+        for signal in MenuBarSignal.renderOrder where MenuBarSignalSettings.shared.isOn(signal) {
+            switch signal {
+            case .waiting:
+                continue   // rendered as the bell icon, not as text
+            case .cost:
+                let eur = appState.weeklyCostEUR
+                if eur > 0 { parts.append(String(format: "%.2f€", eur)) }
+            case .tokens:
+                let tokens = appState.snapshot.weeklyAll.usedTokens
+                if tokens > 0 { parts.append(Self.compactTokens(tokens)) }
+            }
+        }
+        return parts.joined(separator: "  ")
+    }
+
+    /// Menu-bar width is scarce: 1.2M, 940k, 512. Never a raw seven-digit number.
+    static func compactTokens(_ tokens: Int) -> String {
+        if tokens >= 1_000_000 { return String(format: "%.1fM", Double(tokens) / 1_000_000) }
+        if tokens >= 1_000 { return "\(tokens / 1_000)k" }
+        return "\(tokens)"
     }
 
     private func highestPressurePercent() -> Double? {

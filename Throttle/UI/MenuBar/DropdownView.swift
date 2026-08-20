@@ -1482,9 +1482,27 @@ private struct InlineGeneralPane: View {
         }
     }
 
+    private var menuBarSignals: MenuBarSignalSettings { MenuBarSignalSettings.shared }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             autopilotGroup
+            SettingsGroupHeader(label: "Menu bar")
+            SettingsRow(title: "Cap pressure",
+                        sub: "The percentage, or the reset countdown once a window is full. Always shown — it is the warning Throttle exists to give.") {
+                Text("Always on").font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            ForEach(MenuBarSignal.renderOrder) { signal in
+                SettingsHair()
+                SettingsRow(title: signal.title, sub: signal.detail) {
+                    Toggle("", isOn: Binding(
+                        get: { menuBarSignals.isOn(signal) },
+                        set: { menuBarSignals.set(signal, on: $0) }
+                    ))
+                    .labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                }
+            }
+
             SettingsGroupHeader(label: "General")
             SettingsRow(title: "Launch at login") {
                 Toggle("", isOn: $loginItemsEnabled).labelsHidden().toggleStyle(.switch).tint(.accentColor)

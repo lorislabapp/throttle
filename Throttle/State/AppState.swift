@@ -38,6 +38,11 @@ final class AppState {
     /// Displayed prominently in the meter view — concrete proof of the
     /// hooks' value, not buried in Stats. Updated on every refresh().
     var savedTokensThisWeek: Int = 0
+    /// API-equivalent value of the last 7 days, already computed off-main by
+    /// `refresh()` for the Shortcuts snapshot. Stored so the menu-bar label can
+    /// show it without touching the database from a render pass — the mistake
+    /// that produced the 3.2.88 runaway.
+    var weeklyCostEUR: Double = 0
 
     /// Per-day savings for the last 7 days, oldest first. Drives the
     /// sparkline next to the hero counter so users see a trend, not just
@@ -230,6 +235,7 @@ final class AppState {
                 self.snapshot = computed
                 self.savedTokensThisWeek = savedTokens
                 self.savedTokensByDay = savedByDay
+                self.weeklyCostEUR = weeklyCost
                 ThresholdNotifier.shared.evaluate(snapshot: computed, exact: self.exactSnapshot)
                 // Keep the terminal statusline's pre-rendered line fresh (the
                 // script reads this file; falls back to Claude Code's own
