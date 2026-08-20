@@ -15,12 +15,20 @@ struct WhatsNewView: View {
 
     // Curated: the optimizations, newest first. `now` flags this release's additions.
     private let features: [Feature] = [
+        .init(icon: "gauge.with.dots.needle.100percent", title: "The menu bar no longer eats your Mac",
+              blurb: "With many Cockpit sessions open, the menu-bar item could invalidate itself faster than it could draw — allocating tens of GB in minutes until the whole machine swapped. It now depends on a single value refreshed on a timer, and a watchdog on its own thread freezes the label rather than take the Mac down.", now: true),
+        .init(icon: "slider.horizontal.3", title: "Choose what the menu bar shows",
+              blurb: "Settings now has a Menu bar group: turn the waiting-session bell, weekly cost and weekly tokens on or off. Cap pressure has no switch — it is the warning Throttle exists to give.", now: true),
+        .init(icon: "bolt.horizontal.fill", title: "The local worker stays on the GPU",
+              blurb: "Throttle asked its Ollama server for a 16k context on every task, sized for the worst case. On a small shared GPU that pushed every layer onto the CPU and made a bounded extraction take 78 s instead of seconds. The window is now sized to the actual request.", now: true),
+        .init(icon: "checkmark.shield", title: "Local results are marked untrusted",
+              blurb: "A quote verified byte-for-byte proves it came from your source, not that it is safe to act on. Local worker results now say so explicitly, so an instruction planted in a file cannot borrow the authority of a verified citation.", now: true),
         .init(icon: "arrow.triangle.branch", title: "Frontier ↔ Local mix, measured",
-              blurb: "LOCAL MIX in the dashboard: Throttle spots recent sessions a local model could have served, shadow-replays them on the embedded Qwen (zero API tokens, real sessions untouched) and builds a golden-set ledger — with an honest statistical bound, never a guess. Benchmark measures the model on YOUR Mac.", now: true),
+              blurb: "LOCAL MIX in the dashboard: Throttle spots recent sessions a local model could have served, shadow-replays them on the embedded Qwen (zero API tokens, real sessions untouched) and builds a golden-set ledger — with an honest statistical bound, never a guess. Benchmark measures the model on YOUR Mac.", now: false),
         .init(icon: "signpost.right.and.left", title: "Router advisory at the task boundary",
-              blurb: "When you hand a mission to another runtime, Throttle reads the objective and advises Local-safe / Frontier / Uncertain — deterministic rules plus your own replay history (which can only demote, never overpromise). Switching lanes at a NEW session keeps every prompt cache warm.", now: true),
+              blurb: "When you hand a mission to another runtime, Throttle reads the objective and advises Local-safe / Frontier / Uncertain — deterministic rules plus your own replay history (which can only demote, never overpromise). Switching lanes at a NEW session keeps every prompt cache warm.", now: false),
         .init(icon: "text.line.magnify", title: "Deterministic log fold",
-              blurb: "Repeated log lines collapse to one + a count, ANSI colour codes are stripped — before the local model reads them. Only exact repetition is removed, and only local prompts are touched. Under critical memory pressure the local model now unloads itself automatically.", now: true),
+              blurb: "Repeated log lines collapse to one + a count, ANSI colour codes are stripped — before the local model reads them. Only exact repetition is removed, and only local prompts are touched. Under critical memory pressure the local model now unloads itself automatically.", now: false),
         .init(icon: "cpu.fill", title: "Local Qwen worker for Claude + Codex",
               blurb: "Delegate bounded summaries, extraction, classification, normalization and drafts to Qwen on this Mac. Exact evidence is checked; risky, unsupported or weak work escalates to Claude or Codex, which keeps control of plans, patches and final verification.", now: false),
         .init(icon: "shield.lefthalf.filled", title: "Context Firewall for Claude + Codex",
