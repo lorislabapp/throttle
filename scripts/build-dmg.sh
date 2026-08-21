@@ -33,6 +33,33 @@ if ! security find-identity -v -p codesigning "$LOGIN_KEYCHAIN" | grep -Fq "$SIG
     exit 78
 fi
 
+# Sparkle compares CFBundleVersion, NOT the marketing string. Shipping 3.2.91
+# with CURRENT_PROJECT_VERSION left at 190 — the same build as 3.2.90 — produced
+# a release that notarized, deployed and served correctly, and that no client
+# ever offered: two builds numbered 190, nothing newer. Catch it here, before
+# ten minutes of archiving, rather than after a full publish cycle.
+PLANNED_BUILD=$(grep -m1 'CURRENT_PROJECT_VERSION:' project.yml | tr -dc '0-9')
+PLANNED_VERSION=$(grep -m1 'MARKETING_VERSION:' project.yml | sed 's/.*"\(.*\)".*/\1/')
+if [ -n "$PLANNED_BUILD" ]; then
+    # The published feed is the only authority on what has already shipped. A
+    # network failure must NOT block a build, so this warns and continues; only a
+    # feed we actually read can veto.
+    FEED=$(curl -fsS --max-time 10 https://lorislab.fr/throttle/appcast.xml 2>/dev/null || true)
+    if [ -z "$FEED" ]; then
+        echo "⚠ Could not read the published appcast — build-number collision NOT checked."
+    elif printf '%s' "$FEED" | grep -q "<sparkle:version>${PLANNED_BUILD}</sparkle:version>"; then
+        SHIPPED=$(printf '%s' "$FEED" \
+            | grep -B4 "<sparkle:version>${PLANNED_BUILD}</sparkle:version>" \
+            | grep -m1 '<title>' | sed 's/.*<title>\(.*\)<\/title>.*/\1/')
+        echo "✘ Build ${PLANNED_BUILD} is already published as \"${SHIPPED}\"." >&2
+        echo "  Sparkle compares CFBundleVersion, so ${PLANNED_VERSION} would never be offered." >&2
+        echo "  Raise CURRENT_PROJECT_VERSION in project.yml before building." >&2
+        exit 65
+    else
+        echo "→ Build ${PLANNED_BUILD} (${PLANNED_VERSION}) is not yet published — OK"
+    fi
+fi
+
 echo "→ Generating Xcode project"
 xcodegen generate
 
