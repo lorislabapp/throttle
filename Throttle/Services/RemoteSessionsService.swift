@@ -209,6 +209,50 @@ final class RemoteSessionsService {
         }
     }
 
+    /// Bring the box's commits home, into refs nothing else reads.
+    ///
+    /// Deliberately NOT a merge. The point of this feature is that work is never
+    /// lost, and an automatic merge into a working tree that may itself have
+    /// moved is a way to lose some. Everything the box has lands under
+    /// `refs/throttle-edge/`, where it is safe, inspectable and mergeable at the
+    /// user's chosen moment — and the status line says what arrived and how to
+    /// reach it, so "safe" does not quietly become "invisible".
+    private func retrieveRepo(remoteCwd: String, localCwd: String) async -> String {
+        guard FileManager.default.fileExists(atPath: localCwd + "/.git") else {
+            return "No git repo here, so no code to bring back."
+        }
+        offloadStatus = "Fetching the box's commits…"
+        do {
+            let (bundle, wip) = try await EdgeAgentService.downloadRepoBundle(
+                baseURL: baseURL, token: token, remoteCwd: remoteCwd)
+            defer { try? FileManager.default.removeItem(at: bundle) }
+            // One refspec for everything the bundle carries: branches land under
+            // refs/throttle-edge/heads/*, in-flight work under
+            // refs/throttle-edge/throttle/wip. No per-ref special-casing, and
+            // nothing can collide with a real branch.
+            guard await Self.runGit(["-C", localCwd, "fetch", "--quiet", bundle.path,
+                                     "+refs/*:refs/throttle-edge/*"]) != nil else {
+                return "The box's commits could not be fetched — its work is still on the server."
+            }
+            let branch = await Self.runGit(["-C", localCwd, "rev-parse", "--abbrev-ref", "HEAD"]) ?? "HEAD"
+            let aheadText = await Self.runGit(["-C", localCwd, "rev-list", "--count",
+                                               "\(branch)..refs/throttle-edge/heads/\(branch)"])
+            let ahead = Int(aheadText ?? "0") ?? 0
+            var parts: [String] = []
+            if ahead > 0 {
+                parts.append("\(ahead) commit\(ahead == 1 ? "" : "s") from the box are in refs/throttle-edge/heads/\(branch) — merge when you're ready.")
+            } else {
+                parts.append("No new commits on the box.")
+            }
+            if wip != nil {
+                parts.append("It also had uncommitted work: git stash apply refs/throttle-edge/throttle/wip")
+            }
+            return parts.joined(separator: " ")
+        } catch {
+            return "Couldn't fetch the box's code (\(error.localizedDescription)) — it is still on the server."
+        }
+    }
+
     /// Run git off-main; returns trimmed stdout, nil on any failure.
     private nonisolated static func runGit(_ args: [String]) async -> String? {
         await withCheckedContinuation { cont in
@@ -241,17 +285,13 @@ final class RemoteSessionsService {
                 .appendingPathComponent(".claude/projects/\(MultiCockpitModel.claudeProjectDirName(localCwd))")
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             try data.write(to: dir.appendingPathComponent("\(sid).jsonl"), options: .atomic)
+            // Fetch the code back BEFORE stopping the box: a stopped session is a
+            // session whose working tree we can no longer read.
+            let repo = await retrieveRepo(
+                remoteCwd: "/root/offload/\(URL(fileURLWithPath: localCwd).lastPathComponent)",
+                localCwd: localCwd)
             try await EdgeAgentService.action(baseURL: baseURL, token: token, id: remoteID, action: "stop")
-            // The transcript comes home. The CODE does not, and saying only
-            // "back on the Mac" invites the worst reading of that: the session
-            // resumes saying it fixed something, the files here never changed,
-            // and nothing contradicts it. Offload ships the repo out as a git
-            // bundle; there is no inverse yet, so the honest thing is to name
-            // the gap at the moment it matters.
-            let project = URL(fileURLWithPath: localCwd).lastPathComponent
-            offloadStatus = """
-                Back on the Mac — resuming \(sid.prefix(8)) locally.                 The conversation returned; any file the box changed did NOT.                 Commit and push from /root/offload/\(project) on the server,                 then pull here.
-                """
+            offloadStatus = "Back on the Mac — resuming \(sid.prefix(8)) locally. \(repo)"
             await refresh()
             return sid
         } catch {

@@ -502,6 +502,35 @@ public enum EdgeAgentService {
     /// Repo transfer: upload a `git bundle` for the agent to clone at `remoteCwd`
     /// (409 = cwd already has content; caller treats that as non-fatal).
     @discardableResult
+    /// Pull the box's repository back as a git bundle.
+    ///
+    /// Returns the bundle on disk and, when the box had uncommitted work, the
+    /// commit that captured it. The caller fetches from the bundle into refs of
+    /// its own choosing — this deliberately does not decide where the commits
+    /// land, because that decision can destroy work and does not belong to a
+    /// transport function.
+    public static func downloadRepoBundle(baseURL: String, token: String, remoteCwd: String,
+                                          timeout: TimeInterval = 300)
+        async throws -> (fileURL: URL, wipCommit: String?) {
+        guard validatedBaseURL(baseURL) != nil else { throw APIError.badURL }
+        var comps = URLComponents(string: baseURL)
+        comps?.path = "/repos"
+        comps?.queryItems = [URLQueryItem(name: "cwd", value: remoteCwd)]
+        guard let url = comps?.url else { throw APIError.badURL }
+        var r = URLRequest(url: url); r.httpMethod = "GET"; r.timeoutInterval = timeout
+        r.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let (temp, resp) = try await URLSession.shared.download(for: r)
+        guard let http = resp as? HTTPURLResponse, http.statusCode == 200 else {
+            throw APIError.http((resp as? HTTPURLResponse)?.statusCode ?? -1)
+        }
+        let dest = FileManager.default.temporaryDirectory
+            .appendingPathComponent("throttle-edge-\(UUID().uuidString).bundle")
+        try? FileManager.default.removeItem(at: dest)
+        try FileManager.default.moveItem(at: temp, to: dest)
+        let wip = http.value(forHTTPHeaderField: "x-throttle-wip")
+        return (dest, (wip?.isEmpty == false) ? wip : nil)
+    }
+
     public static func uploadRepoBundle(baseURL: String, token: String, remoteCwd: String,
                                         branch: String, fileURL: URL,
                                         timeout: TimeInterval = 300) async throws -> Bool {

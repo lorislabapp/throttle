@@ -784,6 +784,59 @@ async function receiveRepo(req, url) {
   }
 }
 
+// Bring-back for CODE, symmetric to `receiveRepo`. The offload ships the repo
+// out as a bundle; without this the reverse trip carried only the conversation,
+// so a session could report work that existed nowhere the user could reach.
+//
+// A bundle rather than a diff or a tarball: it is one file, it carries real
+// commits with their history, and `git fetch <bundle>` on the other side is an
+// ordinary fetch — no patch application, no conflict resolution, nothing that
+// can damage the Mac's working tree.
+//
+// Uncommitted work on the box is included as its own ref. `git stash create`
+// builds a commit object from the index and worktree WITHOUT touching either,
+// so the box keeps working exactly as it was while the Mac still receives what
+// was in flight. Losing that is the failure this whole feature exists to
+// prevent.
+async function sendRepoBundle(req, res, url) {
+  const cwd = url.searchParams.get('cwd');
+  if (!cwd || !cwd.startsWith('/')) throw new Error('cwd (absolute) required');
+  if (!fs.existsSync(path.join(cwd, '.git'))) {
+    const err = new Error('not a git repository'); err.code = 404; throw err;
+  }
+
+  // Capture in-flight work as a ref the bundle can carry.
+  let wip = null;
+  try {
+    const created = await sh('git', ['-C', cwd, 'stash', 'create']);
+    const sha = (created || '').trim();
+    if (/^[0-9a-f]{40}$/.test(sha)) {
+      await execFileP('git', ['-C', cwd, 'update-ref', 'refs/throttle/wip', sha]);
+      wip = sha;
+    }
+  } catch { /* no in-flight work, or stash unavailable — the commits still go */ }
+
+  const tmp = path.join(os.tmpdir(), `throttle-out-${crypto.randomBytes(4).toString('hex')}.bundle`);
+  try {
+    await execFileP('git', ['-C', cwd, 'bundle', 'create', tmp, '--all']);
+    const stat = fs.statSync(tmp);
+    res.writeHead(200, {
+      'content-type': 'application/octet-stream',
+      'content-length': String(stat.size),
+      // The Mac needs to know whether in-flight work is inside, and which commit
+      // it is, without parsing the bundle.
+      'x-throttle-wip': wip || '',
+    });
+    await new Promise((resolve, reject) => {
+      const rs = fs.createReadStream(tmp);
+      rs.on('error', reject); res.on('error', reject); res.on('finish', resolve);
+      rs.pipe(res);
+    });
+  } finally {
+    fs.rmSync(tmp, { force: true });
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
@@ -839,6 +892,10 @@ const server = http.createServer(async (req, res) => {
       catch (e) { return send(res, e.code === 409 ? 409 : 500, { error: String(e.message || e) }); }
     }
     if (p === '/transcripts' && req.method === 'PUT') { const r = await receiveTranscript(req, url); return send(res, 201, r); }
+    if (p === '/repos' && req.method === 'GET') {
+      try { return await sendRepoBundle(req, res, url); }
+      catch (e) { return send(res, e.code === 404 ? 404 : 500, { error: String(e.message || e) }); }
+    }
     if (p === '/repos' && req.method === 'PUT') {
       try { const r = await receiveRepo(req, url); return send(res, 201, r); }
       catch (e) { return send(res, e.code === 409 ? 409 : 500, { error: String(e.message || e) }); }
