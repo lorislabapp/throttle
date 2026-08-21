@@ -544,7 +544,7 @@ struct MultiCockpitRoot: View {
             Spacer(minLength: 0)
             Button("Open Settings") {
                 if let url = URL(string: "x-apple.systempreferences:com.apple.preference.notifications") {
-                    NSWorkspace.shared.open(url)
+                    NSWorkspace.openInBackground(url)
                 }
             }.buttonStyle(.plain).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(Color.accentColor)
             Button { showNotifBanner = false } label: {

@@ -829,7 +829,7 @@ struct DropdownView: View {
                 HStack(spacing: 11) {
                     metaLink("Usage", systemImage: "arrow.up.right") {
                         if let url = URL(string: "https://claude.ai/settings/usage") {
-                            NSWorkspace.shared.open(url)
+                            NSWorkspace.openInBackground(url)
                         }
                     }
                     metaLink("About") { mode = .settings(.about) }
@@ -2130,7 +2130,7 @@ private struct InlineProPane: View {
     private var buyRow: some View {
         HStack(spacing: 9) {
             SettingsButton(title: "Buy Pro · €29", primary: true) {
-                if let url = URL(string: "https://lorislab.fr/throttle/buy") { NSWorkspace.shared.open(url) }
+                if let url = URL(string: "https://lorislab.fr/throttle/buy") { NSWorkspace.openInBackground(url) }
             }
             Button {
                 activateFromClipboard()
@@ -2216,7 +2216,7 @@ private struct InlineProPane: View {
                         .disabled(activating)
                 } else {
                     SettingsButton(title: "Buy Pro · €29", primary: true) {
-                        if let url = URL(string: "https://lorislab.fr/throttle/buy") { NSWorkspace.shared.open(url) }
+                        if let url = URL(string: "https://lorislab.fr/throttle/buy") { NSWorkspace.openInBackground(url) }
                     }
                 }
             }
@@ -2682,7 +2682,7 @@ private struct InlineAboutPane: View {
 
     private func linkRow(_ title: String, url: String) -> some View {
         Button {
-            if let u = URL(string: url) { NSWorkspace.shared.open(u) }
+            if let u = URL(string: url) { NSWorkspace.openInBackground(u) }
         } label: {
             HStack {
                 Text(title).font(.system(size: 13)).foregroundStyle(.primary)

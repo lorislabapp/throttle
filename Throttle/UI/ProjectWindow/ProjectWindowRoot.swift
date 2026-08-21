@@ -218,7 +218,7 @@ struct ProjectWindowRoot: View {
             if !appState.isPro {
                 Button {
                     if let url = URL(string: "https://lorislab.fr/throttle/buy") {
-                        NSWorkspace.shared.open(url)
+                        NSWorkspace.openInBackground(url)
                     }
                 } label: {
                     Text("Upgrade to Pro · €29")

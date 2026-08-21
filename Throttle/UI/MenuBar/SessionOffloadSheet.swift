@@ -208,7 +208,7 @@ struct SessionOffloadSheet: View {
         if let url = authURL, claudeAuth == false {
             VStack(alignment: .leading, spacing: 6) {
                 Button("1 · Open the authorization page") {
-                    if let u = URL(string: url) { NSWorkspace.shared.open(u) }
+                    if let u = URL(string: url) { NSWorkspace.openInBackground(u) }
                 }.controlSize(.small)
                 HStack {
                     TextField("2 · Paste the code here", text: $authCode)

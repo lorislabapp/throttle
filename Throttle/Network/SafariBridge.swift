@@ -71,7 +71,7 @@ enum SafariBridge {
     /// provider.
     static func openClaudeUsagePage() {
         if let url = URL(string: "https://claude.ai/settings/usage") {
-            NSWorkspace.shared.open(url)
+            NSWorkspace.openInBackground(url)
         }
     }
 

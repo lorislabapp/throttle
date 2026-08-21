@@ -573,7 +573,7 @@ struct StatsInline: View {
                 .multilineTextAlignment(.center)
             Button {
                 if let url = URL(string: "https://lorislab.fr/throttle/buy") {
-                    NSWorkspace.shared.open(url)
+                    NSWorkspace.openInBackground(url)
                 }
             } label: {
                 Text("Upgrade to Pro")
@@ -593,7 +593,7 @@ struct StatsInline: View {
         VStack(spacing: 0) {
             Button {
                 if let url = URL(string: "https://claude.ai/settings/usage") {
-                    NSWorkspace.shared.open(url)
+                    NSWorkspace.openInBackground(url)
                 }
             } label: {
                 HStack(spacing: 10) {

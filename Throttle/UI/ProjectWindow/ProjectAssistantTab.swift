@@ -252,7 +252,7 @@ struct ProjectAssistantTab: View {
             // Pop the meter dropdown's General settings so the user can
             // paste their key. The Project window stays open behind it.
             if let url = URL(string: "throttle://settings/ai") {
-                NSWorkspace.shared.open(url)
+                NSWorkspace.openInBackground(url)
             }
         }
         Task { await refreshProvider() }
@@ -684,7 +684,7 @@ struct ProjectAssistantTab: View {
         // a dedicated AI settings sheet will land alongside the
         // Optimizer tab in v2.2.
         if let url = URL(string: "throttle://settings") {
-            NSWorkspace.shared.open(url)
+            NSWorkspace.openInBackground(url)
         }
     }
 

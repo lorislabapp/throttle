@@ -90,7 +90,7 @@ struct ProUpsellBanner: View {
     
     private func openProPage() {
         if let url = URL(string: "https://lorislab.fr/throttle") {
-            NSWorkspace.shared.open(url)
+            NSWorkspace.openInBackground(url)
         }
     }
 

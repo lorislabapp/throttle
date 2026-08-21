@@ -59,7 +59,7 @@ struct ProjectFilesTab: View {
                     Button { NSWorkspace.shared.activateFileViewerSelecting([url]) } label: {
                         Text("Reveal").font(.system(size: 11.5, weight: .medium)).foregroundStyle(.tint)
                     }.buttonStyle(.plain)
-                    Button { NSWorkspace.shared.open(url) } label: {
+                    Button { NSWorkspace.openInBackground(url) } label: {
                         Text("Open").font(.system(size: 11.5, weight: .medium)).foregroundStyle(.tint)
                     }.buttonStyle(.plain)
                 }
