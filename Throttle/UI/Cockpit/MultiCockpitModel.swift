@@ -166,14 +166,69 @@ final class CockpitTab: Identifiable {
     /// `working` covers BOTH claude streaming AND the user typing (lastActivityAt
     /// is bumped on keystrokes too), so the "claude is thinking before the first
     /// token" gap no longer reads as idle.
-    /// Frozen via SIGSTOP (reversible) to stop token burn without killing state —
-    /// the circuit-breaker's safe, user-triggered half.
-    var isPaused = false
-    /// True when the freeze was applied by the crowding tier of auto-reclaim, NOT by
-    /// the user. Auto-paused tabs resume instantly (SIGCONT) the moment they're
-    /// focused, and may be escalated to hibernate under real memory pressure — neither
-    /// happens to a tab the user paused by hand (explicit intent is preserved).
-    var autoPaused = false
+    /// WHY this session is frozen (nil = running). Every SIGSTOP in the app carries
+    /// a reason, because the two policies that used to hang off a loose `autoPaused`
+    /// bool — "does focusing it wake it?" and "may pressure escalate it to hibernate?"
+    /// — are properties of the reason, not of the caller who happened to remember to
+    /// set the flag. It was set on exactly one of the three automatic pause paths, so
+    /// a tab frozen by the pacing one-tap or the cap breaker stayed frozen when you
+    /// focused it, with nothing on screen saying why.
+    var pauseReason: PauseReason?
+    /// Frozen via SIGSTOP (reversible) to stop token burn without killing state.
+    var isPaused: Bool { pauseReason != nil }
+
+    enum PauseReason: Equatable {
+        /// The user hit Pause. Explicit intent — never undone by focus or pressure.
+        case user
+        /// Crowding tier of auto-reclaim: too many tabs spawned, RAM still fine.
+        case crowding
+        /// The pacing banner's "pause idle sessions" one-tap.
+        case pacing
+        /// The ≥95% circuit breaker fired. Resuming is the user's call — waking this
+        /// on focus would defeat the breaker the moment you looked at the tab.
+        case capBreaker
+        /// A user-configured rule fired (per-session Opus/Fable token cap). Same as
+        /// the breaker: the point is to make you look before it burns more.
+        case rule(String)
+
+        /// Focusing the tab unfreezes it (SIGCONT, zero tokens, no `--resume`).
+        /// True only where the freeze was a resource guess we made FOR the user:
+        /// focusing is them telling us the guess was wrong.
+        var resumesOnFocus: Bool {
+            switch self {
+            case .crowding, .pacing: return true
+            case .user, .capBreaker, .rule: return false
+            }
+        }
+        /// Real memory pressure may escalate this freeze to a hibernate (kills the
+        /// subtree, wakes via `--resume`). Only for freezes we applied ourselves for
+        /// resource reasons — never a user pause, never a breaker pause.
+        var escalatesToHibernate: Bool { resumesOnFocus }
+
+        var title: String {
+            switch self {
+            case .user:       return "Session frozen"
+            case .crowding:   return "Frozen to free memory"
+            case .pacing:     return "Frozen to slow the burn"
+            case .capBreaker: return "Frozen at the cap"
+            case .rule:       return "Frozen by a rule"
+            }
+        }
+        var detail: String {
+            switch self {
+            case .user:
+                return "You paused it. The process is stopped — no tokens, no output, keystrokes are dropped. State is intact."
+            case .crowding:
+                return "Too many sessions were live at once. Nothing is lost — resuming costs no tokens and no reload."
+            case .pacing:
+                return "Paused as an idle session to leave headroom in the window. Resuming costs no tokens and no reload."
+            case .capBreaker:
+                return "The binding window hit 95%. Resuming restarts token burn against a nearly-full cap."
+            case .rule(let what):
+                return "\(what) Resume once you've checked what it was doing."
+            }
+        }
+    }
 
     enum SessionState { case dormant, hibernated, rateLimited, paused, working, waiting, idle }
     var state: SessionState {
@@ -187,16 +242,22 @@ final class CockpitTab: Identifiable {
 
     /// Freeze/resume this session's process subtree (SIGSTOP/SIGCONT). No-op if
     /// not spawned. Reversible — never loses state, unlike hibernate (which kills).
-    func pauseProcess() {
+    func pauseProcess(reason: PauseReason) {
         guard let pid = shellPid, !isPaused else { return }
         SystemMemoryService.signalSubtree(rootPid: pid, signal: SIGSTOP)
-        isPaused = true
+        pauseReason = reason
+        // Drop keystrokes while the subtree is stopped. They would otherwise sit in
+        // the tty buffer and all flush at once on SIGCONT — a stray Return landing on
+        // whatever prompt claude was showing. Same reason input is suspended after an
+        // agent exit: a pane that looks live must never bank input for later.
+        (terminal as? DroppableTerminalView)?.frozen = true
     }
     func resumeProcess() {
         guard let pid = shellPid, isPaused else { return }
         SystemMemoryService.signalSubtree(rootPid: pid, signal: SIGCONT)
-        isPaused = false
-        autoPaused = false
+        pauseReason = nil
+        (terminal as? DroppableTerminalView)?.frozen = false
+        lastActivityAt = Date()   // waking is activity; don't let the reclaim sweep re-freeze it
     }
 
     /// PID of the session's login shell (root of its process subtree), if spawned.
@@ -244,7 +305,7 @@ final class CockpitTab: Identifiable {
         term.isPausedProvider = { [weak self] in self?.isPaused ?? false }
         term.onTogglePause = { [weak self] in
             guard let self else { return }
-            if self.isPaused { self.resumeProcess() } else { self.pauseProcess() }
+            if self.isPaused { self.resumeProcess() } else { self.pauseProcess(reason: .user) }
         }
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let shellName = (shell as NSString).lastPathComponent
@@ -401,8 +462,8 @@ final class CockpitTab: Identifiable {
         ramBytes = 0
         isLive = false
         needsInput = false
-        isPaused = false       // the SIGSTOP is moot once the subtree is killed; don't
-        autoPaused = false     // leave a stale freeze flag on the hibernated (or woken) tab
+        pauseReason = nil      // the SIGSTOP is moot once the subtree is killed; don't
+                               // leave a stale freeze flag on the hibernated (or woken) tab
         isHibernated = true
     }
 
@@ -611,7 +672,7 @@ final class MultiCockpitModel {
             a.ensureSpawned()
             // An auto-paused tab wakes the instant you focus it: SIGCONT, zero tokens,
             // no --resume. A tab the USER paused stays frozen (their explicit intent).
-            if a.autoPaused { a.resumeProcess() }
+            if a.pauseReason?.resumesOnFocus == true { a.resumeProcess() }
             if showShell { a.ensureShellSpawned() }   // keep the split's shell live for the new tab
         }
         active?.clearAttention()
@@ -708,7 +769,7 @@ final class MultiCockpitModel {
 
     /// Freeze / unfreeze every live session (SIGSTOP/SIGCONT) — the reversible
     /// pause exposed to App Intents / Shortcuts. No-op on dormant tabs.
-    func pauseAll()  { for s in sessions { s.pauseProcess() } }
+    func pauseAll()  { for s in sessions { s.pauseProcess(reason: .user) } }
     func resumeAll() { for s in sessions { s.resumeProcess() } }
 
     // MARK: - Auto-pause ACT (opt-in, ≥97% binding AND ETA<5min, cancelable)
@@ -762,7 +823,7 @@ final class MultiCockpitModel {
         // non-working, so this almost always fires immediately — but it's correct.
         Task { @MainActor [weak self] in
             guard let self else { return }
-            for s in targets { await self.drainThenPause(s) }
+            for s in targets { await self.drainThenPause(s, reason: .pacing) }
             self.recomputeSortOrder(); self.persist()
         }
     }
@@ -827,7 +888,7 @@ final class MultiCockpitModel {
             if tok < cap { s.ruleCapAcknowledged = false; continue }
             guard s.isSpawned, !s.isPaused, !s.ruleCapAcknowledged else { continue }
             s.ruleCapAcknowledged = true
-            s.pauseProcess()
+            s.pauseProcess(reason: .rule("\(model.capitalized) crossed the \(cap / 1_000)k-token cap you set."))
             CockpitNotifier.shared.notifyRule(
                 title: "Session paused — \(s.projectName)",
                 body: "\(model.capitalized) crossed \(cap / 1_000)k tokens (Opus-cap rule). Resume from the rail when you've checked it.")
@@ -883,7 +944,7 @@ final class MultiCockpitModel {
         // the blast radius minimal (NotebookLM: don't freeze the whole fleet).
         let looping = sessions.filter { $0.isLive && !$0.isPaused && $0.loopSignal != nil }
         let targets = looping.isEmpty ? sessions.filter { $0.isLive && !$0.isPaused } : looping
-        for s in targets { await drainThenPause(s) }
+        for s in targets { await drainThenPause(s, reason: .capBreaker) }
         autoPauseTask = nil
         autoPauseCountdown = nil
         apLastPct = nil; apLastAt = nil
@@ -896,7 +957,7 @@ final class MultiCockpitModel {
     /// session's transcript has been quiet for a beat (no stream/tool-write in flight).
     /// Capped at 4 s so a relentlessly busy session is still paused — it already had
     /// the 10 s cancelable countdown.
-    private func drainThenPause(_ s: CockpitTab) async {
+    private func drainThenPause(_ s: CockpitTab, reason: CockpitTab.PauseReason) async {
         let cwd = s.cwd
         let deadline = Date().addingTimeInterval(4)
         var last = Self.newestSession(cwd: cwd, since: .distantPast)?.mtime
@@ -908,7 +969,7 @@ final class MultiCockpitModel {
             last = now
         }
         guard !s.isPaused else { return }
-        s.pauseProcess()
+        s.pauseProcess(reason: reason)
     }
     /// Opening another session would push the Mac past saturation.
     var gated: Bool { machine.critical }
@@ -1113,7 +1174,7 @@ final class MultiCockpitModel {
             // justified when memory is genuinely scarce).
             let victims = sessions.filter {
                 $0.isSpawned && !$0.isHibernated && !$0.isRateLimited && $0.id != activeID
-                && ($0.state == .idle || ($0.state == .paused && $0.autoPaused))
+                && ($0.state == .idle || $0.pauseReason?.escalatesToHibernate == true)
                 && idleLongEnough($0)
             }
             guard !victims.isEmpty else { return }
@@ -1145,11 +1206,8 @@ final class MultiCockpitModel {
             lastAutoHibernateAt = now
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                for v in victims {
-                    await self.drainThenPause(v)
-                    if v.isPaused { v.autoPaused = true }   // mark so focus auto-resumes it
-                }
-                let paused = victims.filter(\.autoPaused).count
+                for v in victims { await self.drainThenPause(v, reason: .crowding) }
+                let paused = victims.filter { $0.pauseReason == .crowding }.count
                 self.recomputeSortOrder()
                 self.persist()
                 CockpitNotifier.shared.notifyAutoPause(count: paused)

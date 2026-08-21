@@ -51,6 +51,11 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     }
     /// Current paused state, so the context menu shows Pause vs Resume. nil = not spawned.
     var isPausedProvider: (@MainActor () -> Bool)?
+    /// The subtree is SIGSTOPped. Keystrokes are dropped rather than banked: a stopped
+    /// process reads nothing, so anything typed would sit in the tty buffer and flush
+    /// as one burst on SIGCONT — a stray Return landing on whatever prompt was on
+    /// screen. Mirrors `CockpitTab.isPaused`; the pane says so above the terminal.
+    nonisolated(unsafe) var frozen = false
     nonisolated(unsafe) private var lastRateLimitFire = Date.distantPast
 
     // Outgoing PTY filter — strips mouse reports at the single terminal→process
@@ -198,6 +203,9 @@ final class DroppableTerminalView: LocalProcessTerminalView {
 
     override func send(source: TerminalView, data: ArraySlice<UInt8>) {
         guard !inputSuspended || programmaticDepth > 0 else { return }
+        // Frozen wins over programmatic too: a queued command typed into a stopped
+        // subtree runs at wake time, out of context, with no one watching.
+        guard !frozen else { return }
         // Drop mouse reports before they ever reach the PTY (see ptyOutFilter).
         // A pure-mouse chunk filters to empty → no send, no activity blip.
         let clean = ptyOutFilter.filter(Array(data))

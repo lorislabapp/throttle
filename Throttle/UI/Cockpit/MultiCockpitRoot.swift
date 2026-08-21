@@ -425,7 +425,7 @@ struct MultiCockpitRoot: View {
                     .font(.system(size: 11.5)).foregroundStyle(.primary).lineLimit(1)
                 Spacer(minLength: 0)
                 if s.isSpawned {
-                    Button(s.isPaused ? "Resume" : "Pause") { s.isPaused ? s.resumeProcess() : s.pauseProcess() }
+                    Button(s.isPaused ? "Resume" : "Pause") { s.isPaused ? s.resumeProcess() : s.pauseProcess(reason: .user) }
                         .buttonStyle(.plain).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(Color.accentColor)
                 }
                 Button { s.loopSignal = nil } label: { Image(systemName: "xmark").font(.system(size: 10)) }
@@ -612,7 +612,37 @@ struct MultiCockpitRoot: View {
         .overlay(alignment: .top) {
             if let active = model.active, active.inputSuspended {
                 agentExitedBanner(active)
+            } else if let active = model.active, let reason = active.pauseReason {
+                frozenBanner(active, reason)
             }
+        }
+    }
+
+    /// Same rule as the agent-exited banner, for the same reason: a SIGSTOPped
+    /// session renders its last frame forever. The spinner sits mid-animation, scroll
+    /// does nothing (a full-screen TUI takes wheel reports, and a stopped process
+    /// reads none), and typing goes nowhere — which reads as "the terminal is broken",
+    /// not as "Throttle froze this on purpose". The rail glyph is not enough: it is one
+    /// small icon in a list of fifty. Say it over the pane, say WHY, and offer the
+    /// single control that undoes it.
+    private func frozenBanner(_ tab: CockpitTab, _ reason: CockpitTab.PauseReason) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "pause.circle.fill").foregroundStyle(.purple)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(reason.title)
+                    .font(.system(size: 12, weight: .medium))
+                Text(reason.detail)
+                    .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            Button("Resume") { tab.resumeProcess() }
+                .buttonStyle(.borderedProminent).controlSize(.small)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Color.primary.opacity(0.10)).frame(height: 1)
         }
     }
 
@@ -848,7 +878,7 @@ struct MultiCockpitRoot: View {
         Button("Server settings…") { SessionOffloadWindowController.shared.show() }
         Divider()
         if s.isSpawned {
-            Button(s.isPaused ? "Resume" : "Pause") { s.isPaused ? s.resumeProcess() : s.pauseProcess() }
+            Button(s.isPaused ? "Resume" : "Pause") { s.isPaused ? s.resumeProcess() : s.pauseProcess(reason: .user) }
             Button(hibernateActionLabel(s)) { model.hibernate(s.id) }
         }
         Button("Project stats + optimizer") {
@@ -1094,7 +1124,7 @@ struct MultiCockpitRoot: View {
                     if s.isSpawned {
                         railAction(s.isPaused ? "play.fill" : "pause.fill", 11, s.isPaused ? .purple : .secondary,
                                    s.isPaused ? "Resume — unfreeze this session" : "Pause — freeze this session (keeps state)") {
-                            s.isPaused ? s.resumeProcess() : s.pauseProcess()
+                            s.isPaused ? s.resumeProcess() : s.pauseProcess(reason: .user)
                         }
                         railAction("moon.zzz.fill", 12, .secondary, hibernateActionLabel(s)) { model.hibernate(s.id) }
                     }
@@ -1381,9 +1411,9 @@ struct MultiCockpitRoot: View {
     private func stateDotHelp(_ s: CockpitTab) -> String {
         switch s.state {
         case .working:    return "Working"
-        case .paused:     return s.autoPaused
-            ? "Auto-paused (crowded) — focus this tab to resume instantly, 0 tokens"
-            : "Paused (frozen) — click ▶ to resume"
+        case .paused:     return s.pauseReason?.resumesOnFocus == true
+            ? "\(s.pauseReason?.title ?? "Paused") — focus this tab to resume instantly, 0 tokens"
+            : "\(s.pauseReason?.title ?? "Paused") — click ▶ to resume"
         case .rateLimited:
             let when = s.rateLimitedUntil.map { " — frees up in \(MultiCockpitModel.countdown(Int64($0.timeIntervalSinceNow)))" } ?? ""
             return "Rate-limited\(when)"
