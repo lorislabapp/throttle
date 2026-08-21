@@ -249,7 +249,13 @@ async function tmuxList() {
 
 // Best-effort usage readout from the newest transcript for a cwd (mirrors the Mac's
 // cwd -> ~/.claude/projects/<encoded> mapping; encoding = path with / and . -> -).
-function encodedProjectDir(cwd) { return cwd.replace(/[/.]/g, '-'); }
+// Must reproduce Claude Code's own encoding EXACTLY, or a transcript lands in a
+// directory `claude --resume` never looks in — and the failure is silent: the
+// session starts and immediately dies with "No conversation found with session
+// ID". Claude replaces every code unit outside [A-Za-z0-9-], so an accent becomes
+// a dash while the letter under it survives (decomposed "Éclair" -> "E-clair").
+// Replacing only / and . kept the accent bytes and produced a different directory.
+function encodedProjectDir(cwd) { return cwd.replace(/[^A-Za-z0-9-]/g, '-'); }
 function newestTranscript(cwd) {
   const dir = path.join(PROJECTS_DIR, encodedProjectDir(cwd));
   try {

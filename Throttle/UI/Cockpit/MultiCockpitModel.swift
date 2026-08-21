@@ -1381,8 +1381,16 @@ final class MultiCockpitModel {
     /// to `-`). Matching this exactly is critical — "Opnsens Prod" → "…-Opnsens
     /// -Prod", not "…-Opnsens Prod". A mismatch unlinks the session and loses it.
     nonisolated static func claudeProjectDirName(_ cwd: String) -> String {
-        let allowed = Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-        return String(cwd.map { allowed.contains($0) ? $0 : "-" })
+        // Iterate SCALARS, not Characters. Swift treats "É" as ONE Character even
+        // when the filesystem stores it decomposed (E + U+0301), so mapping
+        // Characters collapsed it to a single dash — while Claude Code, walking
+        // code units, keeps the E and dashes only the accent. `/root/offload/Éclair`
+        // resolved to `-root-offload--clair` here and `-root-offload-E-clair` there,
+        // so an offloaded session died with "No conversation found with session ID":
+        // the transcript sat in a directory claude never reads.
+        let allowed = Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".unicodeScalars)
+        return String(String.UnicodeScalarView(
+            cwd.unicodeScalars.map { allowed.contains($0) ? $0 : "-" }))
     }
 
     /// The sessionId of the tab's running claude: newest `.jsonl` in

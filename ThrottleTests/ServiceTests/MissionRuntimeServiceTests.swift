@@ -252,3 +252,27 @@ final class MissionRuntimeServiceTests: XCTestCase {
         XCTAssertLessThan(Date().timeIntervalSince(started), 1)
     }
 }
+
+/// The encoding has to match Claude Code byte for byte: a transcript written to a
+/// directory claude does not read comes back as "No conversation found with
+/// session ID" — an offload that reports success and silently loses the session.
+final class ClaudeProjectDirNameTests: XCTestCase {
+    func testAccentedPathKeepsTheLetterAndDashesTheAccent() {
+        // Decomposed, the way the macOS filesystem hands it over: E + U+0301.
+        let decomposed = "/root/offload/E\u{0301}clair"
+        XCTAssertEqual(MultiCockpitModel.claudeProjectDirName(decomposed),
+                       "-root-offload-E-clair")
+    }
+
+    func testPrecomposedAccentBecomesASingleDash() {
+        // One scalar, so one dash — and claude, walking the same scalars, agrees.
+        XCTAssertEqual(MultiCockpitModel.claudeProjectDirName("/a/\u{00C9}clair"),
+                       "-a--clair")
+    }
+
+    func testSpacesAndDotsCollapseLikeBefore() {
+        XCTAssertEqual(MultiCockpitModel.claudeProjectDirName("/Users/k/Opnsens Prod"),
+                       "-Users-k-Opnsens-Prod")
+        XCTAssertEqual(MultiCockpitModel.claudeProjectDirName("/a/b.c"), "-a-b-c")
+    }
+}
