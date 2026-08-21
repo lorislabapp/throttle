@@ -211,6 +211,32 @@ enum Migrations {
             try db.create(index: "idx_web_fetches_at", on: "web_fetches", columns: ["fetched_at"])
         }
 
+        // v9: codex_usage — Codex was metered live in the menu bar and nowhere
+        // else, so there was no 7-day Codex cost, no trend, and `get_session_cost`
+        // reported a Claude-only figure as if it were the whole bill.
+        //
+        // Codex rollouts carry CUMULATIVE totals for a session, not per-turn
+        // deltas. Appending them to `usage_events` would re-add a session's whole
+        // history on every refresh — the same shape as the ~12% double-count that
+        // v6 had to migrate away. So this table is keyed by session and the write
+        // is an UPSERT of the latest totals: re-reading the same rollout a hundred
+        // times converges on one row instead of accumulating. Deltas, when needed,
+        // are derived at read time.
+        migrator.registerMigration("v9_codex_usage") { db in
+            try db.create(table: "codex_usage") { t in
+                t.primaryKey("session_id", .text)          // rollout UUID
+                t.column("observed_at", .integer).notNull() // rollout mtime, seconds
+                t.column("input_tokens", .integer).notNull().defaults(to: 0)
+                t.column("cached_input_tokens", .integer).notNull().defaults(to: 0)
+                t.column("cache_write_input_tokens", .integer).notNull().defaults(to: 0)
+                t.column("output_tokens", .integer).notNull().defaults(to: 0)
+                t.column("reasoning_output_tokens", .integer).notNull().defaults(to: 0)
+                t.column("total_tokens", .integer).notNull().defaults(to: 0)
+                t.column("context_window", .integer)
+            }
+            try db.create(index: "idx_codex_usage_at", on: "codex_usage", columns: ["observed_at"])
+        }
+
         try migrator.migrate(writer)
     }
 }

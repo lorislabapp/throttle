@@ -109,6 +109,7 @@ enum CodexUsageService {
         return .init(
             input: integer(value["input_tokens"]) ?? 0,
             cachedInput: integer(value["cached_input_tokens"]) ?? 0,
+            cacheWrite: integer(value["cache_write_input_tokens"]) ?? 0,
             output: integer(value["output_tokens"]) ?? 0,
             reasoning: integer(value["reasoning_output_tokens"]) ?? 0,
             total: total

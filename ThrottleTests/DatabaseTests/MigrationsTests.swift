@@ -17,6 +17,7 @@ final class MigrationsTests: XCTestCase {
         }
         XCTAssertEqual(tables, [
             "calibration",
+            "codex_usage",
             "file_state",
             "settings",
             "tokopt_savings",

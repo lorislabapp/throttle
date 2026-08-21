@@ -8,6 +8,11 @@ struct CodexUsageSnapshot: Sendable, Equatable {
     struct Tokens: Sendable, Equatable {
         let input: Int
         let cachedInput: Int
+        /// Tokens written to the provider cache. Distinct from `cachedInput`,
+        /// which is what was READ back — the two are priced differently and a
+        /// cache-aware cost figure needs both. Defaulted so the field could be
+        /// added without disturbing existing call sites.
+        var cacheWrite: Int = 0
         let output: Int
         let reasoning: Int
         let total: Int

@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let database: any DatabaseWriter  // Accept both DatabasePool and DatabaseQueue
     private let coordinator: DataLayerCoordinator
     private let savingsIngester: SavingsIngester
+    private let codexIngester: CodexUsageIngester
     private let traycer = TraycerReceiver.shared   // local OTLP receiver (opt-in; started below)
     private let updater = UpdaterService.shared
     private let logger = AppLogger.app
@@ -36,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.database = try DatabaseQueue()
                 self.coordinator = DataLayerCoordinator(database: database)
                 self.savingsIngester = SavingsIngester(database: database)
+                self.codexIngester = CodexUsageIngester(database: database)
                 self.appState = AppState.demo  // Must come after super.init()
                 super.init()
                 // No-op: demo data is static, no need to refresh
@@ -53,6 +55,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 FileHandle.standardError.write(Data("[AppDelegate.init] after AppState init\n".utf8))
                 self.coordinator = DataLayerCoordinator(database: database)
                 self.savingsIngester = SavingsIngester(database: database)
+                self.codexIngester = CodexUsageIngester(database: database)
                 super.init()
                 self.coordinator.appState = appState
                 self.coordinator.onUsageChanged = { [weak self] in
@@ -222,6 +225,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.appState.refresh()
         }
         savingsIngester.start()
+        codexIngester.onIngest = { [weak self] in
+            self?.appState.refresh()
+        }
+        codexIngester.start()
 
         CrashReporter.shared.start()
         TokoptHook.purgeRaw()   // age out raw command-output dumps (M16)
@@ -333,6 +340,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         CaffeineService.shared.setActive(false) // release the power assertion (M04)
         coordinator.stop()
         savingsIngester.stop()
+        codexIngester.stop()
         traycer.stop()
         logger.notice("Throttle quitting")
     }

@@ -41,3 +41,40 @@ struct TokoptSavingsRow: Codable, FetchableRecord, PersistableRecord, Equatable,
 
     var savedBytes: Int { max(0, baselineBytes - actualBytes) }
 }
+
+/// Cumulative Codex usage for one rollout session.
+///
+/// Keyed by session rather than appended per observation on purpose. Codex
+/// reports a session's totals, not the delta since the last read, so appending
+/// would re-add the whole history every refresh — the shape of the double-count
+/// that migration v6 had to undo. Upserting the latest totals makes re-reading
+/// the same rollout idempotent by construction.
+struct CodexUsageRow: Codable, FetchableRecord, PersistableRecord, Equatable, Sendable {
+    static let databaseTableName = "codex_usage"
+
+    var sessionId: String
+    var observedAt: Int64
+    var inputTokens: Int
+    var cachedInputTokens: Int
+    var cacheWriteInputTokens: Int
+    var outputTokens: Int
+    var reasoningOutputTokens: Int
+    var totalTokens: Int
+    var contextWindow: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case observedAt = "observed_at"
+        case inputTokens = "input_tokens"
+        case cachedInputTokens = "cached_input_tokens"
+        case cacheWriteInputTokens = "cache_write_input_tokens"
+        case outputTokens = "output_tokens"
+        case reasoningOutputTokens = "reasoning_output_tokens"
+        case totalTokens = "total_tokens"
+        case contextWindow = "context_window"
+    }
+
+    /// What actually had to be sent to the provider: cache reads are served from
+    /// the cache, so counting them as fresh input overstates the work done.
+    var uncachedInputTokens: Int { max(0, inputTokens - cachedInputTokens) }
+}
