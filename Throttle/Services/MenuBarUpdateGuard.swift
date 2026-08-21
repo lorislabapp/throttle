@@ -53,6 +53,26 @@ enum MenuBarUpdateGuard {
     private nonisolated(unsafe) static var lastFootprint: UInt64 = 0
     private nonisolated(unsafe) static var consecutiveBreaches = 0
 
+    /// Renders of `MenuBarLabel.body` since the last sample.
+    ///
+    /// Memory was the wrong and only signal. On 2026-08-21 the label spun at
+    /// 100% of a core with a footprint of about 1 GB — `NSStatusBarButton
+    /// setImage:` driving a full AutoLayout pass on the status item, over and
+    /// over. The Mac was unusable and the guard never looked: its soft floor is
+    /// 2 GB, so it was watching for a symptom this runaway had not produced yet.
+    ///
+    /// The loop's defining property is not its size, it is its RATE. A label
+    /// that legitimately updates does so on a timer — a countdown moves once a
+    /// minute, a percentage a few times a minute. Hundreds of renders in two
+    /// seconds is not a fast update, it is a cycle.
+    private static let renderCount = OSAllocatedUnfairLock(initialState: 0)
+
+    /// Renders per sampling interval above which the label is a cycle, not a
+    /// meter. Generous on purpose: at two seconds per sample this allows 30
+    /// renders a second, far beyond anything a timer-driven label needs, so a
+    /// busy-but-healthy period cannot trip it.
+    private static let runawayRendersPerInterval = 60
+
     /// True while a runaway is in progress. `MenuBarLabel` renders a static icon
     /// in that case: no `Label`, no countdown, no width changes — nothing that
     /// can drive another `NSStatusItem._adjustLength` pass.
@@ -75,7 +95,24 @@ enum MenuBarUpdateGuard {
         }
     }
 
+    /// Called from `MenuBarLabel.body`. Cheap by construction: one lock, one
+    /// increment, no allocation — it runs inside the render pass it measures.
+    static func noteRender() {
+        renderCount.withLock { $0 &+= 1 }
+    }
+
     private static func sample() {
+        let renders = renderCount.withLock { count -> Int in
+            defer { count = 0 }
+            return count
+        }
+        if renders >= runawayRendersPerInterval, !isDegraded {
+            lock.withLock { $0 = true }
+            log.fault("""
+                menu-bar update runaway: \(renders, privacy: .public) renders in                 one interval — degrading the label to a static icon
+                """)
+        }
+
         guard let footprint = processFootprintBytes() else { return }
         defer { lastFootprint = footprint }
 
@@ -98,7 +135,7 @@ enum MenuBarUpdateGuard {
             consecutiveBreaches = 0
             // Recover once the footprint is back under the floor: the runaway is
             // over (or was never one), and the live label can come back.
-            if isDegraded, footprint < softFloorBytes {
+            if isDegraded, footprint < softFloorBytes, renders < runawayRendersPerInterval {
                 lock.withLock { $0 = false }
                 log.notice("""
                     menu-bar label restored: footprint back to \

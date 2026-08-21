@@ -4,6 +4,10 @@ struct MenuBarLabel: View {
     @Environment(AppState.self) private var appState
 
     var body: some View {
+        // Counted here, inside the pass being measured: a runaway is a render
+        // RATE, and no observer outside the view can see it.
+        let _ = MenuBarUpdateGuard.noteRender()
+
         // A runaway update loop on this label swap-locked a 16 GB Mac (3.2.88).
         // Once the watchdog trips, render one static symbol: no Label, no
         // countdown, no width changes — nothing that can drive another
