@@ -73,9 +73,13 @@ final class RemoteSessionsService {
 
     func stopPolling() { pollTask?.cancel(); pollTask = nil; polling = false }
 
-    func start(project: String?, cwd: String) async {
+    /// `runtime` is "claude" or "codex". The box launches a different binary and
+    /// resumes with a different flag for each, so the choice cannot be inferred
+    /// afterwards — it has to travel with the request.
+    func start(project: String?, cwd: String, runtime: String = "claude") async {
         guard isConfigured else { return }
-        _ = try? await EdgeAgentService.start(baseURL: baseURL, token: token, project: project, cwd: cwd)
+        _ = try? await EdgeAgentService.start(baseURL: baseURL, token: token, project: project,
+                                              cwd: cwd, runtime: runtime)
         await refresh()
     }
 
