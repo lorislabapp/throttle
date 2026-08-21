@@ -188,10 +188,21 @@ final class RemoteSessionsService {
             return nil
         }
         let remoteCwd = "/root/offload/\(projectName)"
+        // Offload moves the conversation and the code. It does NOT move
+        // capabilities: MCP servers, plugins and provider credentials belong to
+        // the machine they were configured on. A session that could submit to
+        // App Store Connect here will discover on the box that it cannot — and
+        // discovering it at the moment of a GO, after the work is done, is the
+        // expensive way to learn it. Say it up front.
+        let missing = Self.capabilitiesLostOnOffload(localCwd: localCwd)
         await uploadRepoIfGit(localCwd: localCwd, remoteCwd: remoteCwd)
         let local = LocalSession(id: sessionId, project: projectName, path: path,
                                  sizeBytes: size, modified: Date())
-        return await offload(local, remoteCwd: remoteCwd, runtime: runtimeName)
+        let remoteID = await offload(local, remoteCwd: remoteCwd, runtime: runtimeName)
+        if remoteID != nil, !missing.isEmpty {
+            offloadStatus = (offloadStatus ?? "") + " Note: \(missing) stay on this Mac."
+        }
+        return remoteID
     }
 
     /// Best-effort repo transfer: bundle the local git history (full clone, no
@@ -262,6 +273,37 @@ final class RemoteSessionsService {
         } catch {
             return "Couldn't fetch the box's code (\(error.localizedDescription)) — it is still on the server."
         }
+    }
+
+    /// What this project can do here that it will not be able to do on the box.
+    ///
+    /// Counted from the MCP servers configured for the project, plus the local
+    /// credential-bound work that cannot move at all — signing, notarisation and
+    /// App Store submission need the login keychain and the Apple key, and those
+    /// are not things to copy onto a server because a session asked.
+    static func capabilitiesLostOnOffload(localCwd: String) -> String {
+        var lost: [String] = []
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        if let data = try? Data(contentsOf: home.appendingPathComponent(".claude.json")),
+           let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            var names = Set((root["mcpServers"] as? [String: Any])?.keys.map { $0 } ?? [])
+            if let projects = root["projects"] as? [String: Any],
+               let mine = projects[localCwd] as? [String: Any],
+               let scoped = mine["mcpServers"] as? [String: Any] {
+                names.formUnion(scoped.keys)
+            }
+            // Present on the box already — see the agent's own MCP config.
+            names.subtract(["proxmox", "opnsense-mcp"])
+            if !names.isEmpty {
+                lost.append("\(names.count) MCP server\(names.count == 1 ? "" : "s")")
+            }
+        }
+        if FileManager.default.fileExists(atPath: localCwd + "/project.yml")
+            || !((try? FileManager.default.contentsOfDirectory(atPath: localCwd))?
+                .filter { $0.hasSuffix(".xcodeproj") }.isEmpty ?? true) {
+            lost.append("signing and App Store submission")
+        }
+        return lost.joined(separator: " and ")
     }
 
     /// Run git off-main; returns trimmed stdout, nil on any failure.
