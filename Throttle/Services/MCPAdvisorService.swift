@@ -6,8 +6,17 @@ import Foundation
 ///   • **usage** — how many `mcp__<name>__…` tool calls appear in the last 30 days
 ///     of Claude Code transcripts (the real "is this server actually used" signal),
 ///   • **cost** — best-effort resident memory of matching running child processes,
+///   • **context** — the last measured byte weight of the server's `tools/list`
+///     JSON (`MCPSchemaCache`), which is paid on *every* turn of every session the
+///     server is enabled in, whether or not a single tool gets called,
 ///   • **transport** — stdio-local (spawns a process on the Mac) vs remote HTTP,
 /// into a verdict: keep / disable / offload / review.
+///
+/// Context weight is why a *remote* server is no longer an automatic `keep`: it
+/// spawns nothing on the Mac, but an unused one still bills its tool list into the
+/// prompt every turn. That cost is invisible in `ps` and was the gap this advisor
+/// had — measured 2026-08-21, 419 tools / 18 027 bytes of tool names across all
+/// servers before a character is typed.
 ///
 /// Memory-disciplined (this is the 16 GB-relief feature — it must not itself be a
 /// hog): transcripts are scanned via memory-mapped `Data` and a raw byte search,
@@ -26,6 +35,9 @@ enum MCPAdvisorService {
         let transportRemote: Bool
         let calls30d: Int
         let estRSSBytes: UInt64      // 0 when no running process matched
+        /// Last measured `tools/list` weight. `nil` = never probed — say "not
+        /// measured", never guess.
+        let context: MCPSchemaCache.Entry?
         let verdict: Verdict
         let reason: String
         var id: String { scopeKey + "/" + name }
@@ -42,15 +54,18 @@ enum MCPAdvisorService {
 
         let usage = usageCounts(names: servers.map(\.name))
         let rss = estimatedRSS(for: servers)
+        let schema = MCPSchemaCache.load()
 
         return servers.map { s in
             let remote = s.transport.hasPrefix("HTTP")
             let calls = usage[s.name] ?? 0
             let bytes = rss[s.name] ?? 0
-            let (verdict, reason) = decide(name: s.name, remote: remote,
-                                           disabled: s.disabled, calls: calls, rss: bytes)
+            let ctx = schema[s.name]
+            let (verdict, reason) = decide(name: s.name, remote: remote, disabled: s.disabled,
+                                           calls: calls, rss: bytes, context: ctx)
             return Recommendation(name: s.name, scopeKey: s.scope.key, transportRemote: remote,
-                                  calls30d: calls, estRSSBytes: bytes, verdict: verdict, reason: reason)
+                                  calls30d: calls, estRSSBytes: bytes, context: ctx,
+                                  verdict: verdict, reason: reason)
         }
         .sorted { rank($0.verdict) != rank($1.verdict) ? rank($0.verdict) < rank($1.verdict) : $0.name < $1.name }
     }
@@ -61,22 +76,50 @@ enum MCPAdvisorService {
 
     // MARK: - Heuristic
 
-    private static func decide(name: String, remote: Bool, disabled: Bool,
-                               calls: Int, rss: UInt64) -> (Verdict, String) {
+    private static func decide(name: String, remote: Bool, disabled: Bool, calls: Int,
+                               rss: UInt64, context: MCPSchemaCache.Entry?) -> (Verdict, String) {
         if disabled {
+            // A disabled server injects nothing, so context weight is moot here.
             return calls == 0
                 ? (.keep, "Disabled and unused — leave it off.")
                 : (.review, "Disabled but used \(calls)× in 30d — re-enable if you still need it.")
         }
+
+        let ctx = contextPhrase(context, remote: remote)
+
         if remote {
-            return (.keep, "Already remote (HTTP) — no local process on the Mac.")
+            // No longer an automatic keep. A remote server spawns nothing on the
+            // Mac, but its tool list is still billed into every turn's prompt.
+            if calls == 0 {
+                return (.disable, "No tool calls in 30 days. It spawns no process on the Mac, but \(ctx) whether you use it or not. Disable it for projects that don't need it.")
+            }
+            return (.keep, "Remote (HTTP), used \(calls)× in 30d — no local process. Note \(ctx).")
         }
+
         // stdio-local from here → it spawns a child process on the Mac.
         let ram = rss > 0 ? " (~\(mb(rss)) resident)" : ""
         if calls == 0 {
-            return (.disable, "No tool calls in 30 days\(ram) — a local process spawned for nothing, plus its tool list in every session's context. Disable it.")
+            return (.disable, "No tool calls in 30 days\(ram) — a local process spawned for nothing, and \(ctx). Disable it.")
         }
-        return (.offload, "Used \(calls)× in 30d and runs locally\(ram) — if it doesn't read local files/repos, host it on your server over HTTP so `claude` connects by URL and spawns zero process on the Mac (a preflight confirms before moving).")
+        return (.offload, "Used \(calls)× in 30d and runs locally\(ram) — if it doesn't read local files/repos, host it on your server over HTTP so `claude` connects by URL and spawns zero process on the Mac (a preflight confirms before moving). Either way \(ctx).")
+    }
+
+    /// Phrase the context cost without ever inventing one. Stdio servers can be
+    /// probed on demand; remote tool lists aren't probed yet, so say that plainly
+    /// instead of implying the user forgot to measure.
+    private static func contextPhrase(_ e: MCPSchemaCache.Entry?, remote: Bool) -> String {
+        guard let e else {
+            return "its tool list is injected into every turn's context (weight not measured — run the MCP probe to put a number on it)"
+        }
+        let age = Int(e.age / 86_400)
+        let when = age <= 0 ? "measured today" : "measured \(age)d ago"
+        // Two numbers, never one: Claude Code defers tool schemas and injects names
+        // only, so the floor is what you actually pay today — but a client that
+        // sends full schemas pays the ceiling, and the spread reaches 13×.
+        if let floor = e.nameTokensEst {
+            return "its \(e.tools) tools cost ~\(floor) tokens of context on every turn as names alone, up to ~\(e.tokensEst) if full schemas are sent (\(when))"
+        }
+        return "its \(e.tools) tools weigh ~\(e.tokensEst) tokens of context when full schemas are sent (\(when))"
     }
 
     /// LLM-ready seam. Today: the heuristic reason. Later: a local model could

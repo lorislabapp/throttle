@@ -132,7 +132,10 @@ struct ClaudeSetupView: View {
     /// model owns the "dead ∧ probed" rule.
     private var deadMCPTokenTax: Int {
         guard let report else { return 0 }
-        let tokensByServer = probe.compactMapValues { $0.schemaTokensEst }
+        // Floor (names) over ceiling (full schemas): Claude Code defers schemas, so
+        // the names are what a dead server actually costs. Overstating it here would
+        // inflate the tax by an order of magnitude.
+        let tokensByServer = probe.compactMapValues { $0.nameTokensEst ?? $0.schemaTokensEst }
         return DeadSkillService.folding(report, withProbe: tokensByServer).deadMCPTokens
     }
 
@@ -153,7 +156,7 @@ struct ClaudeSetupView: View {
                 }
             }
             .buttonStyle(.plain).foregroundStyle(Color.accentColor).disabled(probing)
-            Text("spawns each server once to read live tool count + schema cost")
+            Text("contacts each server once to read live tool count + schema cost")
                 .font(.system(size: 10)).foregroundStyle(.tertiary).lineLimit(1)
             Spacer(minLength: 0)
         }
@@ -220,16 +223,29 @@ struct ClaudeSetupView: View {
     private func probeLine(_ pr: MCPProbeResult) -> some View {
         switch pr.status {
         case .healthy:
-            let tok = pr.schemaTokensEst.map { " · ≈\($0 >= 1000 ? String(format: "%.1fk", Double($0)/1000) : "\($0)") tok schema" } ?? ""
-            Text("probe: \(pr.toolCount ?? 0) tool\((pr.toolCount ?? 0) == 1 ? "" : "s")\(tok)")
+            // Floor first (names — what a schema-deferring client injects), then
+            // the ceiling, so neither number can be mistaken for the whole story.
+            let names = pr.nameTokensEst.map { " · ≈\(shortTok($0)) tok names" } ?? ""
+            let tok = pr.schemaTokensEst.map { " · ≈\(shortTok($0)) tok full schema" } ?? ""
+            Text("probe: \(pr.toolCount ?? 0) tool\((pr.toolCount ?? 0) == 1 ? "" : "s")\(names)\(tok)")
                 .font(.system(size: 9.5).monospacedDigit()).foregroundStyle(.secondary)
         case .unresponsive:
-            Text("probe: no response from Throttle's environment").font(.system(size: 9.5)).foregroundStyle(.tertiary)
+            Text(pr.remote ? "probe: server answered nothing usable"
+                           : "probe: no response from Throttle's environment")
+                .font(.system(size: 9.5)).foregroundStyle(.tertiary)
         case .spawnError:
             Text("probe: couldn't start from here").font(.system(size: 9.5)).foregroundStyle(.tertiary)
-        case .notStdio:
-            EmptyView()
+        case .authRequired:
+            Text("probe: up but needs auth — tool list not readable from here")
+                .font(.system(size: 9.5)).foregroundStyle(.tertiary)
+        case .unsupportedTransport:
+            Text("probe: legacy SSE transport — not measured yet")
+                .font(.system(size: 9.5)).foregroundStyle(.tertiary)
         }
+    }
+
+    private func shortTok(_ n: Int) -> String {
+        n >= 1000 ? String(format: "%.1fk", Double(n) / 1000) : "\(n)"
     }
 
     private func relative(_ d: Date) -> String {
