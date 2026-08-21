@@ -42,20 +42,15 @@ public enum EdgeAgentService {
 
     // MARK: Deploy script (emitted as text; the user runs it — the app never SSHes)
 
-    /// Remote Edge is HTTPS-only, with two narrow exceptions where the transport
-    /// is already protected without it: loopback, and a Tailscale address.
+    /// Remote Edge is HTTPS-only. Plain HTTP is accepted only for an explicit
+    /// loopback development endpoint; the agent refuses non-loopback binds and
+    /// expects Tailscale Serve (or an equivalent trusted proxy) to terminate TLS.
     ///
-    /// The tailnet exception is not a relaxation of the guarantee — it is the same
-    /// guarantee obtained one layer down. Traffic to 100.64.0.0/10 leaves the Mac
-    /// inside a WireGuard tunnel: encrypted, and authenticated to a device identity
-    /// far stronger than a hostname on a certificate. Terminating TLS in front of
-    /// the agent would encrypt an already-encrypted link, at the price of a
-    /// certificate to issue, trust and rotate.
-    ///
-    /// Without this, offload could not work at all: the agent speaks plain HTTP
-    /// (`http.createServer`), so every attempt died as "a TLS error occurred" with
-    /// nothing to fix on either side. Bearer-token auth is unchanged and still
-    /// required — this decides the transport, never the authorisation.
+    /// A tailnet-scoped HTTP exception was tried first, when the deployed agent
+    /// still bound 0.0.0.0 and every offload died as "a TLS error occurred". It
+    /// was withdrawn once the agent was put behind Tailscale Serve: WireGuard
+    /// already carried the traffic, but the certificate costs nothing here and
+    /// leaves no plaintext path to argue about later.
     public static func remoteURL(host: String, port: Int) -> String {
         let trimmed = host.trimmingCharacters(in: .whitespacesAndNewlines)
         let renderedHost = trimmed.contains(":") && !trimmed.hasPrefix("[")
@@ -63,17 +58,9 @@ public enum EdgeAgentService {
         return "\(allowsPlainHTTP(trimmed) ? "http" : "https")://\(renderedHost):\(port)/"
     }
 
-    /// Loopback, or a Tailscale CGNAT address (100.64.0.0/10). Deliberately NOT
-    /// every private range: RFC1918 covers ordinary LANs and coffee-shop Wi-Fi,
-    /// where nothing carries the traffic but the wire itself.
+    /// Loopback only.
     static func allowsPlainHTTP(_ host: String) -> Bool {
-        let h = host.lowercased()
-        if ["127.0.0.1", "localhost", "::1"].contains(h) { return true }
-        let parts = h.split(separator: ".")
-        guard parts.count == 4, let first = Int(parts[0]), let second = Int(parts[1]),
-              parts.allSatisfy({ Int($0).map { $0 >= 0 && $0 <= 255 } == true })
-        else { return false }
-        return first == 100 && (64...127).contains(second)
+        ["127.0.0.1", "localhost", "::1"].contains(host.lowercased())
     }
 
     private static func validatedBaseURL(_ value: String) -> URL? {

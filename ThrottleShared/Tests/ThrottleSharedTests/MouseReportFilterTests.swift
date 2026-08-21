@@ -80,29 +80,20 @@ final class MouseReportFilterTests: XCTestCase {
     }
 }
 
-/// Offload died as "a TLS error occurred" for as long as the edge URL was forced
-/// to https: the agent speaks plain HTTP, so the handshake had nothing to answer.
-/// These pin the exception to exactly the range that is already encrypted.
+/// Offload died as "a TLS error occurred" while the agent served plain HTTP. The
+/// answer was a certificate in front of it, not a hole in the client: everything
+/// but loopback stays https, tailnet addresses included.
 final class EdgeAgentTransportTests: XCTestCase {
-    func testTailscaleAddressesKeepPlainHTTP() {
-        XCTAssertEqual(EdgeAgentService.remoteURL(host: "100.123.83.107", port: 8787),
-                       "http://100.123.83.107:8787/")
-        XCTAssertTrue(EdgeAgentService.allowsPlainHTTP("100.64.0.1"))
-        XCTAssertTrue(EdgeAgentService.allowsPlainHTTP("100.127.255.254"))
-    }
-
     func testLoopbackKeepsPlainHTTP() {
         XCTAssertEqual(EdgeAgentService.remoteURL(host: "127.0.0.1", port: 8787),
                        "http://127.0.0.1:8787/")
     }
 
-    /// The neighbours of the CGNAT block, and ordinary LANs, must still be HTTPS:
-    /// nothing protects those but the wire.
     func testEverythingElseIsForcedToHTTPS() {
-        for host in ["100.63.255.255", "100.128.0.1", "192.168.1.10", "10.9.8.134",
-                     "box.example.com", "100.abc.1.1"] {
-            XCTAssertFalse(EdgeAgentService.allowsPlainHTTP(host), "\(host) must not get plain HTTP")
-            XCTAssertTrue(EdgeAgentService.remoteURL(host: host, port: 8787).hasPrefix("https://"),
+        for host in ["100.123.83.107", "throttle-agent.fox-inconnu.ts.net",
+                     "192.168.1.10", "10.9.8.134", "box.example.com"] {
+            XCTAssertFalse(EdgeAgentService.allowsPlainHTTP(host))
+            XCTAssertTrue(EdgeAgentService.remoteURL(host: host, port: 443).hasPrefix("https://"),
                           "\(host) must be https")
         }
     }
