@@ -50,13 +50,18 @@ struct SavingsLedgerView: View {
             }
 
             if !realized.isEmpty {
-                sectionLabel("REALIZED · MEASURED", "exact before/after on the same output · last 7d")
+                sectionLabel("REALIZED", "before/after per technique · last 7d")
                 ForEach(realized) { r in
+                    let measured = Self.isMeasured(r.hook)
                     row(label: techLabel(r.hook),
-                        method: "\(r.records) hook fires · Σ exact byte delta",
-                        bytes: r.bytes, exact: true)
+                        method: measured
+                            ? "\(r.records) hook fires · Σ exact byte delta"
+                            : "\(r.records) hook fires · vs assumed baseline",
+                        bytes: r.bytes, exact: measured)
                 }
-                totalRow("Realized total", bytes: realized.reduce(0) { $0 + $1.bytes }, exact: true)
+                totalRow("Realized total",
+                         bytes: realized.reduce(0) { $0 + $1.bytes },
+                         exact: realized.allSatisfy { Self.isMeasured($0.hook) })
             }
 
             if deadSkillTokens > 0 || toon.hasData {
@@ -180,9 +185,28 @@ struct SavingsLedgerView: View {
             .foregroundStyle(exact ? Color(nsColor: .windowBackgroundColor) : .secondary)
     }
 
+    /// Whether a hook's row is a true before/after on the same bytes, or a
+    /// comparison against a baseline we assumed.
+    ///
+    /// The distinction is not cosmetic. `tokopt-bash` sees the real output and
+    /// the trimmed output, so its delta is a fact. `session-start-router`
+    /// compares what it emitted against what a hypothetical unrouted session
+    /// would have carried — an assumption that, when its routing table went
+    /// stale, produced a fixed six-figure "saving" every session while the hook
+    /// was emitting nothing at all. Anything resting on an assumed baseline is
+    /// labelled as the estimate it is.
+    private static let assumedBaselineHooks: Set<String> = [
+        "session-start-router", "pre-compact",
+    ]
+
+    static func isMeasured(_ hook: String) -> Bool { !assumedBaselineHooks.contains(hook) }
+
     private func techLabel(_ hook: String) -> String {
         switch hook {
         case "tokopt-bash": return "Bash output trim"
+        case "local-delegation": return "Local model absorbed source"
+        case "session-start-router": return "Memory routing"
+        case "pre-compact": return "Compaction trim"
         case "tokopt-read": return "File-read trim"
         case "image-pointer": return "Image → pointer"
         default: return hook

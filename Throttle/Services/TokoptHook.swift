@@ -361,12 +361,20 @@ enum TokoptHook {
 
     /// Append one record to savings.jsonl (the schema SavingsIngester reads).
     static func logSavings(command: String, before: Int, after: Int) {
+        logSavings(hook: "tokopt-bash", before: before, after: after)
+    }
+
+    /// Same ledger, any producer. Local delegation writes here too: the source
+    /// it absorbed is context the planning session never had to hold, which is
+    /// exactly what this table measures — it was simply never recorded, so the
+    /// work was invisible to the savings UI and to `get_session_cost`.
+    static func logSavings(hook: String, before: Int, after: Int) {
         let dir = appSupport
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let url = dir.appendingPathComponent("savings.jsonl")
         let rec: [String: Any] = [
             "ts": Int(Date().timeIntervalSince1970),
-            "hook": "tokopt-bash",
+            "hook": hook,
             "baseline_bytes": before,
             "actual_bytes": after,
         ]

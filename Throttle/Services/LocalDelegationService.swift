@@ -84,6 +84,18 @@ enum LocalDelegationService {
                      forKey: sourceCharactersKey)
         defaults.set(defaults.integer(forKey: returnedCharactersKey) + result.returnedCharacters,
                      forKey: returnedCharactersKey)
+
+        // Also write to the savings ledger. These counters lived only in
+        // UserDefaults, so the context the local model absorbed — the whole
+        // point of delegating — never reached the savings table, the Cockpit
+        // card or `get_session_cost`. Baseline is the source the planning
+        // session would otherwise have carried; actual is the result it got
+        // back instead. An escalation returns the work unchanged, so it saved
+        // nothing and is not recorded as if it had.
+        guard result.status != "escalate" else { return }
+        TokoptHook.logSavings(hook: "local-delegation",
+                              before: result.sourceCharacters,
+                              after: result.returnedCharacters)
     }
 
     /// Fail closed on action-oriented work. The local model is an evidence worker,
