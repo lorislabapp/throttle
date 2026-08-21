@@ -246,7 +246,8 @@ actor LocalWorkerRouter {
         // and the caller got a truncated monologue instead of a result. The
         // answer keeps its own ceiling; this headroom is what the model needs to
         // reach it.
-        let reasoningHeadroom = 512
+        // Only the schema-less path pays for reasoning; see the `think` note below.
+        let reasoningHeadroom = schema == nil ? 512 : 0
         // The window has to hold what is actually generated, reasoning included
         // — the KV cache does not care that the caller never sees the monologue.
         let window = min(Self.contextWindow(system: system, prompt: prompt,
@@ -263,15 +264,26 @@ actor LocalWorkerRouter {
             "system": system,
             "prompt": prompt,
             "stream": false,
-            // Counter-intuitive but measured (2026-08-21, Ollama 0.32.14 +
-            // throttle-worker): `false` is the setting that POLLUTES the answer.
-            // The chat template emits the opening <think> itself, so with
-            // thinking "off" the generation carries only the CLOSING </think>;
-            // Ollama's parser never sees a block to split out and dumps the
-            // whole monologue into `response`. Asking for thinking explicitly
-            // makes Ollama parse it into the separate `thinking` field and hand
-            // back a clean `response`. Verified both ways on the same prompt.
-            "think": true,
+            // The correct setting depends on whether generation is grammar-
+            // constrained, and the two cases are opposites. Measured on the
+            // full matrix (2026-08-21, Ollama 0.32.14 + throttle-worker):
+            //
+            //              think:false          think:true
+            //   schema     clean JSON           response EMPTY
+            //   no schema  monologue leaks      clean answer
+            //
+            // Without a schema the chat template emits the opening <think>
+            // itself, so "off" leaves only the CLOSING </think> in the stream;
+            // Ollama's parser finds no block to split out and dumps the whole
+            // monologue into `response`. Asking for thinking makes it parse the
+            // block into `thinking` and hand back a clean `response`.
+            //
+            // With a schema the grammar already forbids prose, so reasoning
+            // cannot leak — and asking for thinking sends the ENTIRE generation
+            // to `thinking`, leaving `response` empty. That empty body throws
+            // `serverFailed`, so the task fell back to the embedded model
+            // without a word: a silent regression, not a visible failure.
+            "think": schema == nil,
             // Ollama's own default unloads the model after 5 minutes, and this
             // box needs ~28 s to load it back (measured 2026-08-21: 31.6 s
             // total for 24 tokens, of which 27.6 s was the cold load). A
