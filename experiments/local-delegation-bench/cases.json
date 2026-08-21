@@ -6,28 +6,48 @@
       "kind": "extract",
       "objective": "Extract the exact error code and the file path that failed.",
       "source": "[12:04:01] Compiling Throttle...\n[12:04:09] /Users/k/GitHub/Throttle/Services/Router.swift:88:14: error: value of type 'URL' has no member 'appending'\n[12:04:09] ** BUILD FAILED **\n[12:04:09] exit code 65",
-      "must_contain": ["Router.swift", "65"]
+      "must_contain": [
+        "Router.swift",
+        "65"
+      ]
     },
     {
       "id": "release-versions",
       "kind": "extract",
       "objective": "Extract the version that was released and the build number.",
       "source": "release: 3.2.93 notarized ok\nCFBundleVersion=1471\nMARKETING_VERSION=3.2.93\nappcast updated at 13:02Z",
-      "must_contain": ["3.2.93", "1471"]
+      "must_contain": [
+        "3.2.93",
+        "1471"
+      ]
     },
     {
       "id": "test-outcome",
       "kind": "classify",
       "objective": "Classify the outcome as one of: success, failure, partial.",
       "source": "tests: 118 passed, 2 failed\ncoverage 71%\nFAIL ThrottleTests.SavingsIngesterTests.testTailOnly",
-      "must_contain": ["fail"]
+      "must_contain": [
+        "fail"
+      ]
     },
     {
       "id": "timestamps",
       "kind": "normalize",
       "objective": "Normalise the three timestamps to ISO-8601 UTC.",
       "source": "started 21/08/2026 09:14 CEST\nretried 21/08/2026 09:41 CEST\nfinished 21/08/2026 10:02 CEST",
-      "must_contain": ["2026-08-21"]
+      "must_contain": [
+        "2026-08-21"
+      ]
+    },
+    {
+      "id": "migration-summary",
+      "kind": "summarize",
+      "objective": "Summarise what changed and whether anything failed.",
+      "source": "v9_codex_usage applied in 0.4s\n2 indexes created\n0 rows migrated\nWARNING: table codex_usage already existed, skipped",
+      "must_contain": [
+        "v9",
+        "skipped"
+      ]
     }
   ]
 }
