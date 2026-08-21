@@ -203,10 +203,37 @@ async function authStart() {
   return { ok: true };
 }
 
+/// Rebuild the sign-in URL from a tmux pane.
+///
+/// A single regex over the capture returns the first third of it. Claude Code
+/// prints the URL across several pane rows, and `capture-pane -J` does not join
+/// them — it only rejoins lines TMUX wrapped, not lines the application emitted.
+/// The result looked like a URL, was returned as a URL, and led nowhere; the
+/// only way to authenticate the box was to reassemble it by hand.
+///
+/// A URL continues onto the next row when that row has no spaces and is not
+/// blank — wrapped continuations never do, and the prose around them always
+/// does.
+function extractAuthURL(pane) {
+  const lines = pane.split('\n').map(l => l.replace(/\s+$/, ''));
+  for (let i = 0; i < lines.length; i++) {
+    const start = lines[i].match(/https:\/\/\S+$/);
+    if (!start) continue;
+    let url = start[0];
+    for (let j = i + 1; j < lines.length; j++) {
+      const next = lines[j].trim();
+      if (!next || /\s/.test(next)) break;
+      url += next;
+    }
+    return url;
+  }
+  return null;
+}
+
 async function authPeek() {
   const pane = await sh('tmux', ['capture-pane', '-t', AUTH_SESSION, '-p', '-J', '-S', '-200']);
   if (pane === null) return { running: false, url: null, done: claudeAuthReady() };
-  const url = (pane.match(/https:\/\/\S+/g) || []).pop() || null;
+  const url = extractAuthURL(pane);
   // setup-token prints the minted token on success — persist it and clean up.
   const tok = (pane.match(/sk-ant-oat[0-9A-Za-z_-]+/g) || []).pop() || null;
   if (tok) {
