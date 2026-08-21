@@ -136,12 +136,19 @@ final class RemoteSessionsService {
     @discardableResult
     func offload(_ session: LocalSession, remoteCwd: String, runtime: String? = nil) async -> String? {
         guard isConfigured, !remoteCwd.isEmpty else { return nil }
+        // Which step failed matters more than what the error said. "The network
+        // connection was lost" is true of an upload, of starting the session, and
+        // of the poll that follows — and those have nothing to do with each other.
+        // Without the step, the same sentence sent me measuring a 456 MB transfer
+        // that turned out to be fine.
+        var step = "uploading the transcript"
         offloadStatus = "Uploading \(session.id.prefix(8))… (\(session.sizeBytes / 1024) KB)"
         do {
             let bytes = try await EdgeAgentService.uploadTranscript(
                 baseURL: baseURL, token: token, remoteCwd: remoteCwd,
                 sessionId: session.id, fileURL: session.path, runtime: runtime)
             offloadStatus = "Uploaded \(bytes / 1024) KB — starting remote session…"
+            step = "starting the session on the box"
             let remoteID = try await EdgeAgentService.start(
                 baseURL: baseURL, token: token, project: session.project,
                 cwd: remoteCwd, resume: session.id, runtime: runtime)
@@ -149,7 +156,7 @@ final class RemoteSessionsService {
             await refresh()
             return remoteID
         } catch {
-            offloadStatus = "Offload failed: \(error.localizedDescription)"
+            offloadStatus = "Offload failed while \(step): \(error.localizedDescription)"
             return nil
         }
     }
