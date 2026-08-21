@@ -224,8 +224,7 @@ final class RemoteSessionsService {
         // `git stash create` builds a commit object from the index and worktree
         // without touching either: the Mac keeps its changes exactly as they are,
         // and the box still receives them under a ref of its own.
-        if let sha = await Self.runGit(["-C", localCwd, "stash", "create"]),
-           sha.count == 40, sha.allSatisfy(\.isHexDigit) {
+        if let sha = await Self.snapshotWorkInProgress(in: localCwd) {
             _ = await Self.runGit(["-C", localCwd, "update-ref", "refs/throttle/wip", sha])
         } else {
             // Nothing in flight, or a previous handoff left a ref behind. Either
@@ -284,7 +283,9 @@ final class RemoteSessionsService {
                 parts.append("No new commits on the box.")
             }
             if wip != nil {
-                parts.append("It also had uncommitted work: git stash apply refs/throttle-edge/throttle/wip")
+                parts.append("It also had uncommitted work — check it with "
+                             + "git show --stat refs/throttle-edge/throttle/wip, "
+                             + "then apply with git checkout refs/throttle-edge/throttle/wip -- .")
             }
             return parts.joined(separator: " ")
         } catch {
@@ -323,13 +324,49 @@ final class RemoteSessionsService {
         return lost.joined(separator: " and ")
     }
 
+    /// A commit holding everything not yet committed — modified tracked files
+    /// AND new untracked ones — without disturbing the repository.
+    ///
+    /// `git stash create` was the obvious tool and is the wrong one: it silently
+    /// drops untracked files, and it ignores `-u` when asked to include them.
+    /// A handoff that loses every newly created file is worse than no handoff,
+    /// because the loss is invisible until someone looks for the file.
+    ///
+    /// Writing through a TEMPORARY index is what makes this safe: `git add -A`
+    /// stages into a throwaway file, so the real index and the working tree are
+    /// untouched and the user's `git status` reads exactly as before. Ignored
+    /// paths stay ignored, so build products and dependencies do not travel.
+    static func snapshotWorkInProgress(in cwd: String) async -> String? {
+        let index = FileManager.default.temporaryDirectory
+            .appendingPathComponent("throttle-index-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: index) }
+        let env = ["GIT_INDEX_FILE": index.path]
+        guard await runGit(["-C", cwd, "read-tree", "HEAD"], env: env) != nil,
+              await runGit(["-C", cwd, "add", "-A", "."], env: env) != nil,
+              let tree = await runGit(["-C", cwd, "write-tree"], env: env),
+              !tree.isEmpty
+        else { return nil }
+        // Identical tree means nothing is in flight; a snapshot would be noise.
+        if let head = await runGit(["-C", cwd, "rev-parse", "HEAD^{tree}"]), head == tree {
+            return nil
+        }
+        return await runGit(["-C", cwd, "commit-tree", tree, "-p", "HEAD",
+                             "-m", "Throttle handoff: work in progress"])
+    }
+
     /// Run git off-main; returns trimmed stdout, nil on any failure.
-    private nonisolated static func runGit(_ args: [String]) async -> String? {
+    private nonisolated static func runGit(_ args: [String],
+                                          env: [String: String] = [:]) async -> String? {
         await withCheckedContinuation { cont in
             DispatchQueue.global(qos: .userInitiated).async {
                 let p = Process()
                 p.executableURL = URL(fileURLWithPath: "/usr/bin/git")
                 p.arguments = args
+                if !env.isEmpty {
+                    var merged = ProcessInfo.processInfo.environment
+                    env.forEach { merged[$0.key] = $0.value }
+                    p.environment = merged
+                }
                 let out = Pipe(); p.standardOutput = out; p.standardError = Pipe()
                 do { try p.run() } catch { cont.resume(returning: nil); return }
                 p.waitUntilExit()

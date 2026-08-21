@@ -813,13 +813,48 @@ async function receiveRepo(req, url) {
     try {
       await execFileP('git', ['-C', cwd, 'fetch', '--quiet', tmp,
                               '+refs/throttle/wip:refs/throttle/wip']);
-      // The clone is untouched, so this cannot conflict with anything.
-      await execFileP('git', ['-C', cwd, 'stash', 'apply', 'refs/throttle/wip']);
+      // The ref is a plain snapshot commit, not a stash, so `stash apply` does
+      // not apply. Checking its tree out over a freshly cloned worktree cannot
+      // conflict with anything, then unstaging leaves the files modified exactly
+      // as they were on the other machine.
+      await execFileP('git', ['-C', cwd, 'checkout', 'refs/throttle/wip', '--', '.']);
+      await execFileP('git', ['-C', cwd, 'reset', '--quiet']);
       wipApplied = true;
     } catch { /* nothing was in flight, or it did not apply — the commits are there */ }
     return { ok: true, cwd, branch, wipApplied };
   } finally {
     fs.rmSync(tmp, { force: true });
+  }
+}
+
+// A commit holding everything not yet committed — modified tracked files AND new
+// untracked ones — without disturbing the repository.
+//
+// `git stash create` was the obvious tool and is the wrong one: it silently drops
+// untracked files, and ignores `-u` when asked to include them. A handoff that
+// loses every newly created file is worse than no handoff, because the loss is
+// invisible until someone goes looking for the file.
+//
+// Writing through a TEMPORARY index is what makes this safe: `git add -A` stages
+// into a throwaway file, so the real index and working tree are untouched and the
+// session keeps running exactly as it was. Ignored paths stay ignored.
+async function snapshotWorkInProgress(cwd) {
+  const idx = path.join(os.tmpdir(), `throttle-index-${crypto.randomBytes(6).toString('hex')}`);
+  const env = { ...process.env, GIT_INDEX_FILE: idx };
+  try {
+    await execFileP('git', ['-C', cwd, 'read-tree', 'HEAD'], { env });
+    await execFileP('git', ['-C', cwd, 'add', '-A', '.'], { env });
+    const { stdout: tree } = await execFileP('git', ['-C', cwd, 'write-tree'], { env });
+    const t = tree.trim();
+    const { stdout: head } = await execFileP('git', ['-C', cwd, 'rev-parse', 'HEAD^{tree}']);
+    if (!t || t === head.trim()) return null;   // nothing in flight
+    const { stdout: c } = await execFileP('git', ['-C', cwd, 'commit-tree', t, '-p', 'HEAD',
+                                                  '-m', 'Throttle handoff: work in progress']);
+    return c.trim() || null;
+  } catch {
+    return null;
+  } finally {
+    fs.rmSync(idx, { force: true });
   }
 }
 
@@ -847,13 +882,10 @@ async function sendRepoBundle(req, res, url) {
   // Capture in-flight work as a ref the bundle can carry.
   let wip = null;
   try {
-    const created = await sh('git', ['-C', cwd, 'stash', 'create']);
-    const sha = (created || '').trim();
-    if (/^[0-9a-f]{40}$/.test(sha)) {
-      await execFileP('git', ['-C', cwd, 'update-ref', 'refs/throttle/wip', sha]);
-      wip = sha;
-    }
-  } catch { /* no in-flight work, or stash unavailable — the commits still go */ }
+    wip = await snapshotWorkInProgress(cwd);
+    if (wip) await execFileP('git', ['-C', cwd, 'update-ref', 'refs/throttle/wip', wip]);
+    else await execFileP('git', ['-C', cwd, 'update-ref', '-d', 'refs/throttle/wip']).catch(() => {});
+  } catch { /* nothing in flight — the commits still go */ }
 
   const tmp = path.join(os.tmpdir(), `throttle-out-${crypto.randomBytes(4).toString('hex')}.bundle`);
   try {
