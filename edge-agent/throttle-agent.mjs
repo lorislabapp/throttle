@@ -53,6 +53,7 @@ const HOST = process.env.THROTTLE_AGENT_HOST || '127.0.0.1';
 const PORT = parseInt(process.env.THROTTLE_AGENT_PORT || '8787', 10);
 const TTYD_PORT = parseInt(process.env.THROTTLE_AGENT_TTYD_PORT || '8788', 10);
 const CLAUDE_CMD = process.env.THROTTLE_AGENT_CLAUDE_CMD || 'claude';
+const CODEX_CMD = process.env.THROTTLE_AGENT_CODEX_CMD || 'codex';
 const PROJECTS_DIR = process.env.CLAUDE_PROJECTS_DIR || path.join(os.homedir(), '.claude', 'projects');
 const VERSION = '1.0.0';
 const MISSION_ROOT = process.env.THROTTLE_AGENT_MISSION_ROOT || '/opt/throttle-agent/missions';
@@ -255,6 +256,12 @@ async function tmuxList() {
 // ID". Claude replaces every code unit outside [A-Za-z0-9-], so an accent becomes
 // a dash while the letter under it survives (decomposed "Éclair" -> "E-clair").
 // Replacing only / and . kept the accent bytes and produced a different directory.
+/// `claude` or `codex`; anything unknown falls back to claude, which is what
+/// every caller predating the runtime parameter meant.
+function normalizeRuntime(value) {
+  return String(value || '').toLowerCase() === 'codex' ? 'codex' : 'claude';
+}
+
 function encodedProjectDir(cwd) { return cwd.replace(/[^A-Za-z0-9-]/g, '-'); }
 function newestTranscript(cwd) {
   const dir = path.join(PROJECTS_DIR, encodedProjectDir(cwd));
@@ -322,12 +329,22 @@ function seedClaudeConfig(cwd) {
   } catch {}
 }
 
-async function startSession({ project, cwd, resume }) {
+async function startSession({ project, cwd, resume, runtime }) {
   if (!cwd) throw new Error('cwd required');
-  seedClaudeConfig(cwd);
+  const kind = normalizeRuntime(runtime);
+  if (kind === 'claude') seedClaudeConfig(cwd);
   const id = crypto.randomBytes(4).toString('hex');
   const name = PREFIX + id;
-  const launch = resume ? `${CLAUDE_CMD} --resume ${JSON.stringify(resume)}` : CLAUDE_CMD;
+  // The two CLIs disagree on how to name the thing and how to reopen it, so the
+  // runtime has to travel with the request. Offloading a Codex tab used to launch
+  // `claude --resume <codex uuid>`: claude has never heard of that id, the session
+  // died on the spot, and the offload still reported success.
+  const bin = kind === 'codex' ? CODEX_CMD : CLAUDE_CMD;
+  const launch = resume
+    ? (kind === 'codex'
+        ? `${bin} resume ${JSON.stringify(resume)}`
+        : `${bin} --resume ${JSON.stringify(resume)}`)
+    : bin;
   // mkdir -p the cwd first: an offloaded session names a project dir that may not
   // exist yet on this box (the Mac had it, we don't). Without this `cd` fails and
   // the tmux session dies on launch — the transcript was uploaded but claude never
@@ -714,11 +731,30 @@ function streamToFile(req, dest) {
 async function receiveTranscript(req, url) {
   const cwd = url.searchParams.get('cwd');
   const sessionId = url.searchParams.get('session');
+  const kind = normalizeRuntime(url.searchParams.get('runtime'));
   if (!cwd || !cwd.startsWith('/')) throw new Error('cwd (absolute) required');
   if (!sessionId || !/^[A-Za-z0-9-]{8,64}$/.test(sessionId)) throw new Error('bad session id');
+  if (kind === 'codex') return receiveCodexRollout(req, url, sessionId);
   const dir = path.join(PROJECTS_DIR, encodedProjectDir(cwd));
   fs.mkdirSync(dir, { recursive: true });
   const dest = path.join(dir, `${sessionId}.jsonl`);
+  const bytes = await streamToFile(req, dest);
+  if (bytes === 0) { fs.rmSync(dest, { force: true }); throw new Error('empty transcript'); }
+  return { ok: true, sessionId, bytes, dest };
+}
+
+// Codex files its rollouts by DATE, not by working directory:
+// ~/.codex/sessions/YYYY/MM/DD/rollout-<iso>-<uuid>.jsonl. The date is carried in
+// the filename itself, so the original name has to travel with the upload — invent
+// one and `codex resume` will not find the session it just received.
+async function receiveCodexRollout(req, url, sessionId) {
+  const file = url.searchParams.get('file') || '';
+  const m = /^rollout-(\d{4})-(\d{2})-(\d{2})T[0-9-]+-[A-Za-z0-9-]+\.jsonl$/.exec(file);
+  if (!m) throw new Error('codex rollout filename required (rollout-<iso>-<uuid>.jsonl)');
+  if (!file.includes(sessionId)) throw new Error('rollout filename does not carry the session id');
+  const dir = path.join(os.homedir(), '.codex', 'sessions', m[1], m[2], m[3]);
+  fs.mkdirSync(dir, { recursive: true });
+  const dest = path.join(dir, file);
   const bytes = await streamToFile(req, dest);
   if (bytes === 0) { fs.rmSync(dest, { force: true }); throw new Error('empty transcript'); }
   return { ok: true, sessionId, bytes, dest };

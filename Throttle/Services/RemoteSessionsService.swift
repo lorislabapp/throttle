@@ -130,17 +130,17 @@ final class RemoteSessionsService {
     /// rebuild on the box. Full copy only; the file is streamed as-is, never trimmed.
     /// Returns the new remote session id, nil on failure (status carries the why).
     @discardableResult
-    func offload(_ session: LocalSession, remoteCwd: String) async -> String? {
+    func offload(_ session: LocalSession, remoteCwd: String, runtime: String? = nil) async -> String? {
         guard isConfigured, !remoteCwd.isEmpty else { return nil }
         offloadStatus = "Uploading \(session.id.prefix(8))… (\(session.sizeBytes / 1024) KB)"
         do {
             let bytes = try await EdgeAgentService.uploadTranscript(
                 baseURL: baseURL, token: token, remoteCwd: remoteCwd,
-                sessionId: session.id, fileURL: session.path)
+                sessionId: session.id, fileURL: session.path, runtime: runtime)
             offloadStatus = "Uploaded \(bytes / 1024) KB — starting remote session…"
             let remoteID = try await EdgeAgentService.start(
                 baseURL: baseURL, token: token, project: session.project,
-                cwd: remoteCwd, resume: session.id)
+                cwd: remoteCwd, resume: session.id, runtime: runtime)
             offloadStatus = "Offloaded — resumed \(session.id.prefix(8)) on the box. It's in the cockpit rail with a REMOTE badge (click to attach)."
             await refresh()
             return remoteID
@@ -156,19 +156,31 @@ final class RemoteSessionsService {
     /// git repo, the CODE goes too (git bundle → clone on the box), so the remote
     /// claude wakes up next to the files it was working on — not an empty dir.
     @discardableResult
-    func offloadTab(sessionId: String, localCwd: String, projectName: String) async -> String? {
-        let enc = MultiCockpitModel.claudeProjectDirName(localCwd)
-        let path = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".claude/projects/\(enc)/\(sessionId).jsonl")
-        guard let size = try? path.resourceValues(forKeys: [.fileSizeKey]).fileSize else {
-            offloadStatus = "No transcript found for this session yet — say something to claude first."
+    func offloadTab(sessionId: String, localCwd: String, projectName: String,
+                    isCodex: Bool = false) async -> String? {
+        // The two runtimes keep their transcripts in unrelated places: claude by
+        // encoded cwd, codex by date with the timestamp in the filename. Offloading
+        // a Codex tab used to look for a claude transcript that never existed, or
+        // worse, ship it and ask claude to resume an id it had never seen.
+        let path: URL?
+        if isCodex {
+            path = MissionRuntimeService.codexRolloutURL(id: sessionId)
+        } else {
+            let enc = MultiCockpitModel.claudeProjectDirName(localCwd)
+            path = FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(".claude/projects/\(enc)/\(sessionId).jsonl")
+        }
+        let runtimeName = isCodex ? "codex" : "claude"
+        guard let path,
+              let size = try? path.resourceValues(forKeys: [.fileSizeKey]).fileSize else {
+            offloadStatus = "No transcript found for this session yet — say something to \(runtimeName) first."
             return nil
         }
         let remoteCwd = "/root/offload/\(projectName)"
         await uploadRepoIfGit(localCwd: localCwd, remoteCwd: remoteCwd)
         let local = LocalSession(id: sessionId, project: projectName, path: path,
                                  sizeBytes: size, modified: Date())
-        return await offload(local, remoteCwd: remoteCwd)
+        return await offload(local, remoteCwd: remoteCwd, runtime: runtimeName)
     }
 
     /// Best-effort repo transfer: bundle the local git history (full clone, no

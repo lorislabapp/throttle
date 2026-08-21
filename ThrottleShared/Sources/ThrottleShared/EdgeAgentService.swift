@@ -442,10 +442,13 @@ public enum EdgeAgentService {
     }
 
     @discardableResult
-    public static func start(baseURL: String, token: String, project: String?, cwd: String, resume: String? = nil) async throws -> String {
+    public static func start(baseURL: String, token: String, project: String?, cwd: String,
+                             resume: String? = nil, runtime: String? = nil) async throws -> String {
         var body: [String: Any] = ["cwd": cwd]
         if let project { body["project"] = project }
         if let resume { body["resume"] = resume }
+        // Omitted means claude, which is what every caller predating this meant.
+        if let runtime { body["runtime"] = runtime }
         let (data, _) = try await request(baseURL, "sessions", method: "POST", token: token,
                                           json: try JSONSerialization.data(withJSONObject: body))
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -464,14 +467,26 @@ public enum EdgeAgentService {
     /// copied from another machine/cwd). Never truncate the file — a partial JSONL
     /// corrupts the session chain.
     @discardableResult
+    /// `runtime` decides where the box files the transcript. Codex stores rollouts
+    /// by DATE with the timestamp baked into the filename, so its original name has
+    /// to travel too — reconstructing one would put the file somewhere
+    /// `codex resume` never looks.
     public static func uploadTranscript(baseURL: String, token: String, remoteCwd: String,
                                         sessionId: String, fileURL: URL,
+                                        runtime: String? = nil,
                                         timeout: TimeInterval = 120) async throws -> Int {
         guard validatedBaseURL(baseURL) != nil else { throw APIError.badURL }
         var comps = URLComponents(string: baseURL)
         comps?.path = "/transcripts"
-        comps?.queryItems = [URLQueryItem(name: "cwd", value: remoteCwd),
-                             URLQueryItem(name: "session", value: sessionId)]
+        var items = [URLQueryItem(name: "cwd", value: remoteCwd),
+                     URLQueryItem(name: "session", value: sessionId)]
+        if let runtime {
+            items.append(URLQueryItem(name: "runtime", value: runtime))
+            if runtime == "codex" {
+                items.append(URLQueryItem(name: "file", value: fileURL.lastPathComponent))
+            }
+        }
+        comps?.queryItems = items
         guard let url = comps?.url else { throw APIError.badURL }
         var r = URLRequest(url: url); r.httpMethod = "PUT"; r.timeoutInterval = timeout
         r.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")

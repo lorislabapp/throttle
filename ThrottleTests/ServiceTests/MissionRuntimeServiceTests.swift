@@ -276,3 +276,34 @@ final class ClaudeProjectDirNameTests: XCTestCase {
         XCTAssertEqual(MultiCockpitModel.claudeProjectDirName("/a/b.c"), "-a-b-c")
     }
 }
+
+/// Codex names rollouts by timestamp and files them by date, so the path cannot be
+/// derived from the session id — it has to be found, or an offloaded Codex tab
+/// ships nothing and reports success anyway.
+final class CodexRolloutLocatorTests: XCTestCase {
+    func testFindsTheRolloutCarryingTheSessionID() throws {
+        let now = Date()
+        let root = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("codex-loc-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
+        let p = cal.dateComponents([.year, .month, .day], from: now)
+        let dir = root
+            .appendingPathComponent(String(format: "%04d", p.year!), isDirectory: true)
+            .appendingPathComponent(String(format: "%02d", p.month!), isDirectory: true)
+            .appendingPathComponent(String(format: "%02d", p.day!), isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let id = "01a01f90-94fb-7030-b853-3ca8b5f8c3a9"
+        let name = "rollout-2026-08-20T16-26-04-\(id).jsonl"
+        try "{}".write(to: dir.appendingPathComponent(name), atomically: true, encoding: .utf8)
+
+        let found = MissionRuntimeService.codexRolloutURL(id: id, now: now, sessionsRoot: root)
+        XCTAssertEqual(found?.lastPathComponent, name)
+    }
+
+    func testUnknownSessionFindsNothing() {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("codex-empty-\(UUID().uuidString)", isDirectory: true)
+        XCTAssertNil(MissionRuntimeService.codexRolloutURL(id: "does-not-exist", sessionsRoot: root))
+    }
+}

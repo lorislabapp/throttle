@@ -647,6 +647,38 @@ enum MissionRuntimeService {
         return match
     }
 
+    /// The rollout file backing a Codex session id.
+    ///
+    /// Codex names rollouts `rollout-<iso timestamp>-<uuid>.jsonl` and files them
+    /// under YYYY/MM/DD, so neither the path nor the name can be derived from the
+    /// id alone — it has to be found. Bounded to the same three-day window the rest
+    /// of the Codex reading uses.
+    nonisolated static func codexRolloutURL(
+        id: String,
+        now: Date = Date(),
+        sessionsRoot: URL? = nil
+    ) -> URL? {
+        let root = sessionsRoot ?? FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".codex/sessions", isDirectory: true)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .current
+        for offset in 0..<3 {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: now) else { continue }
+            let p = calendar.dateComponents([.year, .month, .day], from: day)
+            guard let y = p.year, let m = p.month, let d = p.day else { continue }
+            let dir = root
+                .appendingPathComponent(String(format: "%04d", y), isDirectory: true)
+                .appendingPathComponent(String(format: "%02d", m), isDirectory: true)
+                .appendingPathComponent(String(format: "%02d", d), isDirectory: true)
+            let files = (try? FileManager.default.contentsOfDirectory(
+                at: dir, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []
+            if let hit = files.first(where: {
+                $0.pathExtension == "jsonl" && $0.lastPathComponent.contains(id)
+            }) { return hit }
+        }
+        return nil
+    }
+
     nonisolated static var codexSessionIndexBuildCount: Int { codexSessionIndex.buildCount }
 
     /// Validate a persisted native identity before asking Codex to resume it.

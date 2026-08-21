@@ -978,14 +978,18 @@ struct MultiCockpitRoot: View {
     private func offloadTab(_ s: CockpitTab) {
         // The tab may not know its claude session id until claude writes the
         // transcript — fall back to the newest JSONL for the cwd.
-        let sid = s.sessionId ?? MultiCockpitModel.newestSession(cwd: s.cwd, since: .distantPast)?.id
+        let sid = s.sessionId ?? (s.runtime == .codex
+            ? MissionRuntimeService.newestCodexSession(cwd: s.cwd, since: .distantPast)?.id
+            : MultiCockpitModel.newestSession(cwd: s.cwd, since: .distantPast)?.id)
         guard let sid else {
             remoteSvc.offloadStatus = "No transcript yet for \(s.projectName) — say something to claude first."
             return
         }
         let cwd = s.cwd, project = s.projectName
+        let isCodex = s.runtime == .codex
         Task {
-            if let rid = await remoteSvc.offloadTab(sessionId: sid, localCwd: cwd, projectName: project) {
+            if let rid = await remoteSvc.offloadTab(sessionId: sid, localCwd: cwd,
+                                                    projectName: project, isCodex: isCodex) {
                 s.offloadedRemoteID = rid
                 // MOVE semantics, not copy: hibernate the local twin (context kept,
                 // RAM freed — the whole point of offloading on a 16 GB Mac). The
