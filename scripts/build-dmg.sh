@@ -128,8 +128,30 @@ diskutil image create from --volumeName "Throttle" --format UDZO "$STAGING" "$DM
 rm -rf "$STAGING"
 
 echo "→ Signing DMG itself (Gatekeeper trusts the container too)"
-codesign --force --sign "$SIGNING_SHA1" --keychain "$LOGIN_KEYCHAIN" \
-    --options runtime --timestamp "$DMG_PATH"
+# Apple's timestamp service is a network dependency, and it goes away sometimes.
+# Twice on 2026-08-21 it failed with "The timestamp service is not available",
+# after six minutes of universal archiving, leaving a zero-byte DMG behind — and
+# both times an immediate manual retry succeeded. A signature without a trusted
+# timestamp is not an option (notarization requires one), so retry rather than
+# discard the build.
+for attempt in 1 2 3 4 5; do
+    if codesign --force --sign "$SIGNING_SHA1" --keychain "$LOGIN_KEYCHAIN" \
+        --options runtime --timestamp "$DMG_PATH" 2>"$RELEASE_BUILD_DIR/codesign.err"; then
+        break
+    fi
+    if ! grep -q "timestamp service is not available" "$RELEASE_BUILD_DIR/codesign.err"; then
+        cat "$RELEASE_BUILD_DIR/codesign.err" >&2
+        echo "✘ DMG signing failed for a reason other than the timestamp service." >&2
+        exit 1
+    fi
+    if [ "$attempt" = 5 ]; then
+        echo "✘ Apple's timestamp service stayed unavailable across 5 attempts." >&2
+        echo "  The build is intact; re-run when it recovers." >&2
+        exit 1
+    fi
+    echo "⚠ Timestamp service unavailable (attempt $attempt/5) — retrying in $((attempt * 10))s"
+    sleep $((attempt * 10))
+done
 codesign --verify --strict --verbose=2 "$DMG_PATH"
 
 if [ "$NOTARIZE" != true ]; then
