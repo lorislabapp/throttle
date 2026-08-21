@@ -125,7 +125,14 @@ private struct MacEdgeTerminalView: NSViewRepresentable {
         coord.attachTask?.cancel()
         coord.attachTask = Task {
             do {
-                let (port, path) = try await EdgeAgentService.attach(
+                // The agent reports the port IT listens on, which is the wrong
+                // number the moment anything sits in front of it. Behind
+                // Tailscale Serve the agent still says 8787 while the reachable
+                // port is 443, so the terminal opened a socket to a port nothing
+                // answers on and sat in "reconnecting…" while the session was
+                // alive and working. Only the PATH is the agent's to decide; the
+                // port belongs to whoever configured how to reach it.
+                let (_, path) = try await EdgeAgentService.attach(
                     baseURL: svc.baseURL, token: svc.token, id: session.id)
                 if Task.isCancelled { return }
                 let client = TtydClient()
@@ -139,7 +146,7 @@ private struct MacEdgeTerminalView: NSViewRepresentable {
                     Task { @MainActor in connection.state = .reconnecting }
                 }
                 coord.client = client
-                client.connect(host: svc.host, port: port, path: path, token: svc.token,
+                client.connect(host: svc.host, port: svc.port, path: path, token: svc.token,
                                cols: geometry.cols, rows: geometry.rows,
                                secure: svc.baseURL.hasPrefix("https://"))
             } catch {

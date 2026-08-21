@@ -242,7 +242,16 @@ final class RemoteSessionsService {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             try data.write(to: dir.appendingPathComponent("\(sid).jsonl"), options: .atomic)
             try await EdgeAgentService.action(baseURL: baseURL, token: token, id: remoteID, action: "stop")
-            offloadStatus = "Back on the Mac — resuming \(sid.prefix(8)) locally."
+            // The transcript comes home. The CODE does not, and saying only
+            // "back on the Mac" invites the worst reading of that: the session
+            // resumes saying it fixed something, the files here never changed,
+            // and nothing contradicts it. Offload ships the repo out as a git
+            // bundle; there is no inverse yet, so the honest thing is to name
+            // the gap at the moment it matters.
+            let project = URL(fileURLWithPath: localCwd).lastPathComponent
+            offloadStatus = """
+                Back on the Mac — resuming \(sid.prefix(8)) locally.                 The conversation returned; any file the box changed did NOT.                 Commit and push from /root/offload/\(project) on the server,                 then pull here.
+                """
             await refresh()
             return sid
         } catch {
