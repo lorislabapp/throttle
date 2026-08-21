@@ -33,11 +33,24 @@ struct MenuBarLabel: View {
             // a computed one here subscribed the menu bar to `needsInput` on every
             // open tab, which is what produced the runaway loop above.
             if pct >= 0.98, let reset = bindingResetDate() {
-                TimelineView(.everyMinute) { context in
-                    Label(text(pressure: Self.countdown(to: reset, now: context.date)),
-                          systemImage: waiting ? "bell.badge.fill" : "hourglass")
-                        .labelStyle(.titleAndIcon)
-                }
+                // No `TimelineView` here, and that is the point. It was the only
+                // self-scheduling component in this view, and this view is an
+                // `NSStatusItem` button: every render calls `setImage:`, which
+                // calls `_adjustLength`, which runs a full AutoLayout pass on the
+                // status item window. A component that schedules its own next
+                // update inside that cycle has no reason to stop, and on
+                // 2026-08-21 it did not — 1029 of 1062 main-thread samples sat in
+                // exactly that chain while the Mac was unusable.
+                //
+                // The countdown needs minute granularity. `appState.refresh()`
+                // already fires whenever usage changes, which is far more often
+                // than that, so the label ticks without asking SwiftUI to wake
+                // itself up. This restores the rule stated above: every value
+                // comes from state refreshed on a timer, never from a scheduler
+                // living inside the render pass.
+                Label(text(pressure: Self.countdown(to: reset, now: Date())),
+                      systemImage: waiting ? "bell.badge.fill" : "hourglass")
+                    .labelStyle(.titleAndIcon)
             } else {
                 Label(text(pressure: "\(Int(pct * 100))%"),
                       systemImage: waiting ? "bell.badge.fill" : meterIcon(for: pct))
