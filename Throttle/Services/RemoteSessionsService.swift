@@ -343,6 +343,7 @@ final class RemoteSessionsService {
         let env = ["GIT_INDEX_FILE": index.path]
         guard await runGit(["-C", cwd, "read-tree", "HEAD"], env: env) != nil,
               await runGit(["-C", cwd, "add", "-A", "."], env: env) != nil,
+              await addDeclaredExtras(in: cwd, env: env),
               let tree = await runGit(["-C", cwd, "write-tree"], env: env),
               !tree.isEmpty
         else { return nil }
@@ -352,6 +353,34 @@ final class RemoteSessionsService {
         }
         return await runGit(["-C", cwd, "commit-tree", tree, "-p", "HEAD",
                              "-m", "Throttle handoff: work in progress"])
+    }
+
+    /// Carry the ignored files the user says the session needs.
+    ///
+    /// A handoff that drops `.env`, a local certificate or a fixture leaves the
+    /// other machine unable to run anything — the code arrives, the thing that
+    /// makes it work does not. Isolated-workspace tools solve this with an
+    /// opt-in include list rather than by syncing ignored paths wholesale, which
+    /// would drag build products and dependencies across the wire.
+    ///
+    /// Opt-in, and only opt-in: these paths are ignored precisely because they
+    /// are local, and some of them are secrets. Naming a file here is the user
+    /// saying "this one may leave this machine".
+    ///
+    /// Format: `.throttleinclude` at the repository root, one path or glob per
+    /// line, `#` for comments.
+    private static func addDeclaredExtras(in cwd: String, env: [String: String]) async -> Bool {
+        let list = URL(fileURLWithPath: cwd).appendingPathComponent(".throttleinclude")
+        guard let text = try? String(contentsOf: list, encoding: .utf8) else { return true }
+        let patterns = text.split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && !$0.hasPrefix("#") }
+        for pattern in patterns {
+            // Failure is not fatal: a pattern matching nothing is a stale line in
+            // a config file, not a reason to abandon the whole handoff.
+            _ = await runGit(["-C", cwd, "add", "-f", "--", pattern], env: env)
+        }
+        return true
     }
 
     /// Run git off-main; returns trimmed stdout, nil on any failure.

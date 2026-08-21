@@ -844,6 +844,16 @@ async function snapshotWorkInProgress(cwd) {
   try {
     await execFileP('git', ['-C', cwd, 'read-tree', 'HEAD'], { env });
     await execFileP('git', ['-C', cwd, 'add', '-A', '.'], { env });
+    // Ignored files the user declared as necessary: `.env`, certificates,
+    // fixtures. Opt-in only — they are ignored because they are local, and some
+    // are secrets. Naming one here is the user saying it may leave the machine.
+    try {
+      const list = fs.readFileSync(path.join(cwd, '.throttleinclude'), 'utf8');
+      for (const line of list.split('\n').map(l => l.trim())) {
+        if (!line || line.startsWith('#')) continue;
+        await execFileP('git', ['-C', cwd, 'add', '-f', '--', line], { env }).catch(() => {});
+      }
+    } catch { /* no include list, which is the normal case */ }
     const { stdout: tree } = await execFileP('git', ['-C', cwd, 'write-tree'], { env });
     const t = tree.trim();
     const { stdout: head } = await execFileP('git', ['-C', cwd, 'rev-parse', 'HEAD^{tree}']);
