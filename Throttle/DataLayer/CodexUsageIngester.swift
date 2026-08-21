@@ -63,8 +63,13 @@ final class CodexUsageIngester {
         let rows: [CodexUsageRow] = urls.compactMap { url in
             guard let snapshot = CodexUsageService.snapshot(from: url),
                   let tokens = snapshot.tokens else { return nil }
-            // A rollout without usable totals is not evidence of zero usage.
-            guard tokens.total > 0 else { return nil }
+            // Codex sometimes reports `total_tokens` equal to the context window
+            // with every component at zero — observed 2026-08-21 on a real
+            // rollout that carried 111 such events. That is Codex describing the
+            // window, not work performed, and storing it credited a session with
+            // 121,600 tokens it never spent. A total no component accounts for is
+            // not evidence, so require the components rather than the total.
+            guard tokens.input > 0 || tokens.output > 0 else { return nil }
             return CodexUsageRow(
                 sessionId: snapshot.sessionID ?? Self.sessionID(fromRolloutAt: url),
                 observedAt: Int64(snapshot.observedAt.timeIntervalSince1970),

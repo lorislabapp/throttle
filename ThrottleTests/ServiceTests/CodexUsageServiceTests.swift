@@ -138,6 +138,28 @@ final class CodexUsageIngesterTests: XCTestCase {
         XCTAssertEqual(rows.first?.totalTokens, 5_000, "a session total must only ever move forward")
     }
 
+    /// Codex reports `total_tokens` equal to the context window, all components
+    /// zero, when a session has no usage to describe. Crediting that as spend
+    /// inflates the bill with tokens nobody used.
+    @MainActor
+    func testAWindowSizedTotalWithNoComponentsIsNotStored() async throws {
+        let now = Date()
+        let (root, dayDir) = try makeRoot(for: now)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let json = """
+        {"timestamp":"\(ISO8601DateFormatter().string(from: now))","type":"event_msg","payload":{"type":"token_count","session_id":"empty","info":{"total_token_usage":{"input_tokens":0,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":0,"reasoning_output_tokens":0,"total_tokens":121600},"model_context_window":121600}}}
+        """
+        try json.write(to: dayDir.appendingPathComponent("rollout-empty.jsonl"),
+                       atomically: true, encoding: .utf8)
+
+        let db = try DatabaseQueue()
+        try Migrations.register(on: db)
+        await CodexUsageIngester(database: db, sessionsRoot: root).ingest(now: now)
+
+        let rows = try await db.read { try CodexUsageRow.fetchAll($0) }
+        XCTAssertTrue(rows.isEmpty, "a window-sized total with no components is not usage")
+    }
+
     @MainActor
     func testSessionIDFallsBackToTheRolloutFilenameUUID() {
         let url = URL(fileURLWithPath: "/x/rollout-2026-08-20T16-26-04-01a01f90-94fb-7030-b853-3ca8b5f8c3a9.jsonl")
