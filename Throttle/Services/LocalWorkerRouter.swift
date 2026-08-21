@@ -239,11 +239,22 @@ actor LocalWorkerRouter {
         // hold the whole thing plus the answer — but only when the source is
         // actually that big. See `contextWindow`.
         let budget = min(max(maxTokens, 64), 768)
-        let window = min(Self.contextWindow(system: system, prompt: prompt, maxTokens: budget),
+        // qwen3 reasons before it answers, and the reasoning is charged to
+        // num_predict like everything else. Measured 2026-08-21: a one-sentence
+        // summary spent ~250 tokens thinking before emitting 20 tokens of
+        // answer, so a bare 384-token budget was consumed entirely by reasoning
+        // and the caller got a truncated monologue instead of a result. The
+        // answer keeps its own ceiling; this headroom is what the model needs to
+        // reach it.
+        let reasoningHeadroom = 512
+        // The window has to hold what is actually generated, reasoning included
+        // — the KV cache does not care that the caller never sees the monologue.
+        let window = min(Self.contextWindow(system: system, prompt: prompt,
+                                            maxTokens: budget + reasoningHeadroom),
                          Self.contextCeiling)
         Self.log.info("ollama generate: num_ctx \(window, privacy: .public) (ceiling \(Self.contextCeiling, privacy: .public))")
         var options: [String: Any] = [
-            "num_predict": budget,
+            "num_predict": budget + reasoningHeadroom,
             "num_ctx": window,
         ]
         options["temperature"] = 0.2   // extraction, not prose
@@ -252,7 +263,24 @@ actor LocalWorkerRouter {
             "system": system,
             "prompt": prompt,
             "stream": false,
-            "think": false,
+            // Counter-intuitive but measured (2026-08-21, Ollama 0.32.14 +
+            // throttle-worker): `false` is the setting that POLLUTES the answer.
+            // The chat template emits the opening <think> itself, so with
+            // thinking "off" the generation carries only the CLOSING </think>;
+            // Ollama's parser never sees a block to split out and dumps the
+            // whole monologue into `response`. Asking for thinking explicitly
+            // makes Ollama parse it into the separate `thinking` field and hand
+            // back a clean `response`. Verified both ways on the same prompt.
+            "think": true,
+            // Ollama's own default unloads the model after 5 minutes, and this
+            // box needs ~28 s to load it back (measured 2026-08-21: 31.6 s
+            // total for 24 tokens, of which 27.6 s was the cold load). A
+            // delegation arriving more than five minutes after the last one
+            // therefore pays a cold start that dwarfs the generation itself.
+            // Holding the model for 30 minutes matches how delegation actually
+            // arrives — in bursts inside one working session — and costs the
+            // LXC nothing it was not already spending during that burst.
+            "keep_alive": "30m",
             "options": options,
         ]
         if let schema { payload["format"] = schema }
