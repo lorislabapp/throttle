@@ -73,6 +73,16 @@ else
 fi
 
 if ! $AUTO_YES; then
+    # No TTY — a `claude !` shell, a hook, CI. `read` would take EOF and the
+    # script would exit silently under `set -e`, looking like it had simply done
+    # nothing. Say what happened and how to proceed instead.
+    if [ ! -t 0 ]; then
+        echo
+        echo "✘ No interactive terminal, so the confirmation cannot be answered." >&2
+        echo "  Nothing was killed. Re-run with --yes to proceed:" >&2
+        echo "    bash $0 --yes" >&2
+        exit 64
+    fi
     printf "\nThis kills every cockpit session. Continue? [y/N] "
     read -r reply
     case "$reply" in [yY]*) ;; *) echo "Aborted — nothing killed."; exit 0 ;; esac
