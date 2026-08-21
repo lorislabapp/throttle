@@ -805,7 +805,19 @@ async function receiveRepo(req, url) {
   try {
     const args = branch === 'HEAD' ? ['clone', tmp, cwd] : ['clone', '-b', branch, tmp, cwd];
     await execFileP('git', args);
-    return { ok: true, cwd, branch };
+    // A clone takes branches and tags; it ignores refs/throttle/wip, which is
+    // where the Mac's uncommitted work travels. Fetch it explicitly and apply it
+    // to the fresh worktree, so a session handed over mid-edit continues from
+    // what was on screen rather than from the last commit.
+    let wipApplied = false;
+    try {
+      await execFileP('git', ['-C', cwd, 'fetch', '--quiet', tmp,
+                              '+refs/throttle/wip:refs/throttle/wip']);
+      // The clone is untouched, so this cannot conflict with anything.
+      await execFileP('git', ['-C', cwd, 'stash', 'apply', 'refs/throttle/wip']);
+      wipApplied = true;
+    } catch { /* nothing was in flight, or it did not apply — the commits are there */ }
+    return { ok: true, cwd, branch, wipApplied };
   } finally {
     fs.rmSync(tmp, { force: true });
   }

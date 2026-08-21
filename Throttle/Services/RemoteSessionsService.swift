@@ -215,6 +215,23 @@ final class RemoteSessionsService {
         let bundle = FileManager.default.temporaryDirectory
             .appendingPathComponent("throttle-\(UUID().uuidString).bundle")
         defer { try? FileManager.default.removeItem(at: bundle) }
+        // Carry uncommitted work OUT as well, the way the return trip already
+        // carries it back. Without this the handoff was one-directional in a way
+        // nobody would expect: leave the Mac mid-edit and the box receives a repo
+        // that has never seen those edits, so the session starts by re-doing work
+        // that already exists — or worse, contradicts it.
+        //
+        // `git stash create` builds a commit object from the index and worktree
+        // without touching either: the Mac keeps its changes exactly as they are,
+        // and the box still receives them under a ref of its own.
+        if let sha = await Self.runGit(["-C", localCwd, "stash", "create"]),
+           sha.count == 40, sha.allSatisfy(\.isHexDigit) {
+            _ = await Self.runGit(["-C", localCwd, "update-ref", "refs/throttle/wip", sha])
+        } else {
+            // Nothing in flight, or a previous handoff left a ref behind. Either
+            // way the box must not receive a stale one and mistake it for now.
+            _ = await Self.runGit(["-C", localCwd, "update-ref", "-d", "refs/throttle/wip"])
+        }
         guard let branch = await Self.runGit(["-C", localCwd, "rev-parse", "--abbrev-ref", "HEAD"]),
               await Self.runGit(["-C", localCwd, "bundle", "create", bundle.path, "--all"]) != nil else {
             offloadStatus = "Repo bundling failed — offloading transcript only."
