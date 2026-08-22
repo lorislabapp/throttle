@@ -604,7 +604,17 @@ struct MultiCockpitRoot: View {
             }
         }
         .onChange(of: model.activeID) { selectedRemoteID = nil }
-        .onAppear { if remoteSvc.isConfigured { remoteSvc.startPolling() } }
+        .onAppear {
+            guard remoteSvc.isConfigured else { return }
+            // Tell the user when a session on the box ends, instead of removing a
+            // row and hoping they notice. The box has its own memory limits, and
+            // an OOM there looks exactly like nothing happening here.
+            remoteSvc.onSessionVanished = { session in
+                CockpitNotifier.shared.notifyRemoteSessionEnded(
+                    project: session.project)
+            }
+            remoteSvc.startPolling()
+        }
         // Sits ABOVE the pane on purpose. The whole failure is that the pane looks
         // unchanged when the agent has gone and the shell underneath is taking
         // keystrokes; a marker in the rail would be exactly the sign the user

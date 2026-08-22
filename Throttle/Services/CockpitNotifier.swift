@@ -53,6 +53,16 @@ final class CockpitNotifier: NSObject {
         self.appState = appState
     }
 
+    /// A session that was running on the edge box is no longer reported by it.
+    /// Reuses the question path so the message lands wherever the user already
+    /// watches for attention — the failure mode being fixed is silence, so this
+    /// deliberately does not invent a quieter channel of its own.
+    func notifyRemoteSessionEnded(project: String) {
+        notifyWaiting(project: project,
+                      question: "Session ended on the box — its work is still on disk there.",
+                      tabID: UUID())
+    }
+
     func notifyWaiting(project: String, question: String, tabID: UUID) {
         // C02: query the LIVE system status every time — never trust an in-memory
         // "requested/denied" latch. A user who later enables notifications in

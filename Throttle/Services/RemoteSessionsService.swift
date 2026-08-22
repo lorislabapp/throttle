@@ -55,9 +55,20 @@ final class RemoteSessionsService {
     func refresh() async {
         guard isConfigured else { return }
         if let list = try? await EdgeAgentService.sessions(baseURL: baseURL, token: token) {
+            // A session that stops appearing has ended on the box, and the row
+            // simply vanishing is the worst way to learn it: measured 2026-08-22,
+            // a session was OOM-killed there and the only signal was a rail that
+            // was one line shorter than before. Announce the disappearance.
+            let goneIDs = Set(sessions.map(\.id)).subtracting(list.map(\.id))
+            let gone = sessions.filter { goneIDs.contains($0.id) }
             sessions = list
+            for session in gone { onSessionVanished?(session) }
         }
     }
+
+    /// Raised when a remote session the app was tracking is no longer reported by
+    /// the box. `nil` until the cockpit wires a notification to it.
+    var onSessionVanished: ((EdgeAgentService.RemoteSession) -> Void)?
 
     /// Poll every 10 s while the panel is visible / feature is on.
     func startPolling() {
