@@ -484,6 +484,16 @@ final class CockpitTab: Identifiable {
         if questions.last?.text == q { return }
         questions.append(Question(text: q))
         if questions.count > 8 { questions.removeFirst(questions.count - 8) }
+
+        // Answer it ourselves only when a rule can PROVE the command has no
+        // lasting effect. Everything else still wakes the user — the feature is
+        // "stop asking me about `git status`", not "decide for me".
+        if AutoApproval.enabled, case .approve(let rule) = ApprovalRuleService.decide(prompt: q, projectRoot: cwd) {
+            ApprovalRuleService.recordApproval(project: projectName, command: q, rule: rule)
+            terminal?.send(txt: "1\r")
+            return
+        }
+
         needsInput = true
         onQuestion?(self, q)
     }
