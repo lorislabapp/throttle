@@ -12,7 +12,14 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Precise cockpit,\nin your pocket")
                         .font(.largeTitle.weight(.bold))
-                    Text("A private mirror of your Mac’s live coding-agent usage, synced through your own iCloud account. Optional paired-device and self-hosted controls stay under your control.")
+                    // "self-hosted controls" was a promise this target cannot
+                    // keep: the Edge views are excluded from the App Store build
+                    // (App Review 4.2.7 — a LAN companion for the user's Mac, not
+                    // an off-LAN thin client). Paired-device control IS delivered,
+                    // through the remote terminal on a Mac session, so that half
+                    // stays. Promising a capability the binary does not contain is
+                    // the kind of thing a reviewer opens the app to check.
+                    Text("A private mirror of your Mac’s live coding-agent usage, synced through your own iCloud account. Sessions on a paired Mac stay controllable from here.")
                         .foregroundStyle(.secondary)
                 }
                 .padding(.top, 8)
