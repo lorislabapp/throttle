@@ -1642,9 +1642,10 @@ final class MultiCockpitModel {
         w.scopedModel.map { "Weekly · \($0)" } ?? "Weekly · scoped"
     }
 
-    /// The mirrored shape does not carry the model name, so it says what it
-    /// knows rather than guessing one — the guess is exactly what was wrong.
-    static let scopedLabelMirror = "Weekly · scoped"
+    /// The local/mirrored shape carries no model name of its own, so it uses the
+    /// last name the server stated on this Mac. That is a fact we were told, not
+    /// a guess — and the guess is exactly what was wrong.
+    static var scopedLabelMirror: String { ScopedCapModel.bindingLabel }
 
     func move(dragged: UUID, onto target: UUID) {
         guard dragged != target,

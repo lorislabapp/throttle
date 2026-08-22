@@ -34,42 +34,74 @@ final class ThresholdNotifier {
 
     var isEnabled: Bool { enabled }
 
+    /// One window under threshold watch.
+    ///
+    /// `isScoped` marks the per-model cap STRUCTURALLY. It used to be recognised
+    /// by comparing the label to the literal "Weekly Sonnet", so the moment the
+    /// label started naming the model the server actually scoped the cap to, the
+    /// softer "this is not a hard stop" wording silently stopped being used.
+    private struct Metric {
+        let label: String
+        let pct: Double
+        /// Seconds until reset; lets the forecast skip a window that resets
+        /// before the current burn could ever reach the cap.
+        let resetSec: Double
+        let isScoped: Bool
+
+        init(_ label: String, _ window: ExactSnapshot.Window, scoped: Bool) {
+            self.label = label
+            self.pct = Double(window.utilization) / 100.0
+            self.resetSec = window.resetsAt?.timeIntervalSinceNow ?? -1
+            self.isScoped = scoped
+        }
+
+        init(_ label: String, _ window: UsageSnapshot.Window, scoped: Bool) {
+            self.label = label
+            self.pct = window.percentUsed ?? 0
+            self.resetSec = Double(window.resetInSeconds)
+            self.isScoped = scoped
+        }
+    }
+
     /// Check the latest snapshot and fire notifications for any newly-crossed thresholds.
     /// Should be called from AppState.refresh() and after each ExactMode poll.
     func evaluate(snapshot: UsageSnapshot, exact: ExactSnapshot?) {
         guard enabled else { return }
 
-        // (label, pct, secondsUntilReset) — reset seconds let the forecast skip a
-        // window that will reset before the burn would ever reach the cap.
-        let metrics: [(String, Double, Double)] = {
+        let metrics: [Metric] = {
             if let ex = exact, ex.isFresh() {
+                let scopedName = ex.sevenDayScoped.scopedModel.map { "Weekly \($0)" }
                 return [
-                    ("Session 5h", Double(ex.fiveHour.utilization) / 100.0, ex.fiveHour.resetsAt?.timeIntervalSinceNow ?? -1),
-                    ("Weekly all", Double(ex.sevenDay.utilization) / 100.0, ex.sevenDay.resetsAt?.timeIntervalSinceNow ?? -1),
-                    (ex.sevenDayScoped.scopedModel.map { "Weekly \($0)" } ?? "Weekly (scoped)", Double(ex.sevenDayScoped.utilization) / 100.0, ex.sevenDaySonnet.resetsAt?.timeIntervalSinceNow ?? -1)
+                    Metric("Session 5h", ex.fiveHour, scoped: false),
+                    Metric("Weekly all", ex.sevenDay, scoped: false),
+                    Metric(scopedName ?? "Weekly (scoped)", ex.sevenDayScoped, scoped: true)
                 ]
             }
             return [
-                ("Session 5h", snapshot.session5h.percentUsed ?? 0, Double(snapshot.session5h.resetInSeconds)),
-                ("Weekly all", snapshot.weeklyAll.percentUsed ?? 0, Double(snapshot.weeklyAll.resetInSeconds)),
-                ("Weekly Sonnet", snapshot.weeklySonnet.percentUsed ?? 0, Double(snapshot.weeklySonnet.resetInSeconds))
+                Metric("Session 5h", snapshot.session5h, scoped: false),
+                Metric("Weekly all", snapshot.weeklyAll, scoped: false),
+                Metric(ScopedCapModel.bindingLabel, snapshot.weeklySonnet, scoped: true)
             ]
         }()
 
-        for (label, pct, _) in metrics {
+        for metric in metrics {
+            let (label, pct, isScoped) = (metric.label, metric.pct, metric.isScoped)
             for threshold in thresholds where pct >= threshold {
                 let key = "lastFired_\(label)_\(Int(threshold * 100))"
                 let lastFired = UserDefaults.standard.double(forKey: key)
                 let now = Date().timeIntervalSince1970
                 if now - lastFired < debounceInterval { continue }
-                fire(label: label, percent: pct, threshold: threshold)
+                fire(label: label, percent: pct, threshold: threshold, isScoped: isScoped)
                 UserDefaults.standard.set(now, forKey: key)
                 // Only fire the highest crossed threshold per window per pass.
                 break
             }
         }
 
-        for (label, pct, resetSec) in metrics { forecastCapETA(label: label, pct: pct, resetSeconds: resetSec) }
+        for metric in metrics {
+            forecastCapETA(label: metric.label, pct: metric.pct,
+                           resetSeconds: metric.resetSec, isScoped: metric.isScoped)
+        }
 
         detectSessionReset(snapshot: snapshot, exact: exact)
     }
@@ -120,7 +152,7 @@ final class ThresholdNotifier {
     /// if the cap is within `forecastHorizon` AND the window won't reset first.
     /// Only in the mid-range (50–95%); below is premature, ≥95% the fixed
     /// threshold already fires. Pure derivation from pct — no DB, no burn query.
-    private func forecastCapETA(label: String, pct: Double, resetSeconds: Double) {
+    private func forecastCapETA(label: String, pct: Double, resetSeconds: Double, isScoped: Bool) {
         let pKey = "fcPct_\(label)", tKey = "fcT_\(label)", fKey = "fcFired_\(label)"
         // Outside the actionable band: clear the baseline so a fresh rise starts clean.
         guard pct >= 0.50, pct < 0.95 else {
@@ -150,15 +182,17 @@ final class ThresholdNotifier {
         let lastFired = UserDefaults.standard.double(forKey: fKey)
         guard now - lastFired >= forecastDebounce else { return }
         UserDefaults.standard.set(now, forKey: fKey)
-        fireForecast(label: label, etaMinutes: max(1, Int(etaSec / 60)), pct: Int(pct * 100))
+        fireForecast(label: label, etaMinutes: max(1, Int(etaSec / 60)), pct: Int(pct * 100), isScoped: isScoped)
     }
 
-    private func fireForecast(label: String, etaMinutes: Int, pct: Int) {
+    private func fireForecast(label: String, etaMinutes: Int, pct: Int, isScoped: Bool) {
         let content = UNMutableNotificationContent()
         content.title = "\(label) cap in ~\(etaMinutes) min"
-        content.body = label == "Weekly Sonnet"
-            ? "At your current rate the Sonnet weekly cap is ~\(etaMinutes) min away (\(pct)% now) — switch to Opus to keep going."
-            : "At your current burn rate you'll hit the \(label) cap in ~\(etaMinutes) min (\(pct)% now). Wrap up or batch to avoid a lockout."
+        content.body = isScoped
+            ? "At your current rate the \(label) cap is ~\(etaMinutes) min away "
+              + "(\(pct)% now) — switch to another model to keep going."
+            : "At your current burn rate you'll hit the \(label) cap in ~\(etaMinutes) min "
+              + "(\(pct)% now). Wrap up or batch to avoid a lockout."
         content.sound = .default
         let request = UNNotificationRequest(
             identifier: "throttle.forecast.\(label)",
@@ -170,16 +204,19 @@ final class ThresholdNotifier {
         }
     }
 
-    private func fire(label: String, percent: Double, threshold: Double) {
+    private func fire(label: String, percent: Double, threshold: Double, isScoped: Bool) {
         let content = UNMutableNotificationContent()
         let pctInt = Int(percent * 100)
         let thrInt = Int(threshold * 100)
         content.title = "Claude usage at \(pctInt)%"
-        // The Sonnet-only weekly cap isn't a hard stop — when it's exhausted
-        // you can still work on Opus. Frame it as a fallback prompt, not a
+        // The per-model weekly cap isn't a hard stop — when it's exhausted you
+        // can still work on another model. Frame it as a fallback prompt, not a
         // "slow down" warning, so users don't sit out thinking they're locked.
-        if label == "Weekly Sonnet" {
-            content.body = "Sonnet weekly cap at \(pctInt)% — switch to Opus to keep working."
+        // It does NOT name the model to switch TO: the cap is not always
+        // Sonnet's, and telling someone capped on Opus to "switch to Opus" is
+        // the same defect one layer down.
+        if isScoped {
+            content.body = "\(label) at \(pctInt)% — switch to another model to keep working."
         } else {
             content.body = "\(label) crossed \(thrInt)% — slow down or batch your work."
         }

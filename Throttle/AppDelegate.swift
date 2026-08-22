@@ -112,7 +112,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Reclaim what Throttle itself keeps. Measured 2026-08-22: 3.8 GB of
         // never-expiring caches on a Mac whose disk hit zero twice that day —
         // the tool reporting memory pressure was a cause of it.
-        Task.detached(priority: .background) { RetentionService.sweep() }
+        RetentionService.startPeriodicSweeps()
         // Serves build/test requests from the box only if the user turned it on.
         CapabilityHostService.shared.restoreIfEnabled()
         let isDemoMode = CommandLine.arguments.contains("-demo")
@@ -212,6 +212,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task { @MainActor in
                 self?.appState.exactSnapshot = snap
                 self?.appState.exactModeError = nil
+                // Learn which model the per-model weekly cap belongs to, so the
+                // label and the offline estimate stop assuming Sonnet.
+                ScopedCapModel.remember(snap.sevenDayScoped.scopedModel)
                 self?.appState.anchorCalibration(from: snap)   // make the local estimate track server truth
                 self?.appState.refreshStatusline()   // keep the terminal line in sync with exact
             }

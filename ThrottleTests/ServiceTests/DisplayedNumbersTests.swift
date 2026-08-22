@@ -62,6 +62,42 @@ final class DisplayedNumbersTests: XCTestCase {
         XCTAssertEqual(MultiCockpitModel.scopedLabel(snap.sevenDayScoped), "Weekly · scoped")
     }
 
+    // MARK: - The scoped cap keeps its name everywhere, not just in the cockpit
+
+    /// The cockpit label was fixed and the menu bar was not: `DropdownView`
+    /// hardcoded the string "Sonnet only", so the screenshot still read
+    /// "Weekly · Sonnet only" over a cap scoped to Fable. Worse, the OFFLINE
+    /// estimate behind that row filtered `LIKE '%sonnet%'`, so it counted a
+    /// different model's events than the cap it claimed to track.
+    func testScopedCapNamesAndFiltersTheModelTheServerStated() {
+        let saved = ScopedCapModel.displayName
+        defer { ScopedCapModel.displayName = saved }
+
+        ScopedCapModel.displayName = nil
+        XCTAssertEqual(ScopedCapModel.subtitle, "Sonnet only",
+                       "before the server states a model, say what is actually measured")
+        XCTAssertEqual(ScopedCapModel.matchToken, "sonnet")
+
+        ScopedCapModel.remember("Fable")
+        XCTAssertEqual(ScopedCapModel.subtitle, "Fable only")
+        XCTAssertEqual(ScopedCapModel.bindingLabel, "Weekly · Fable")
+        XCTAssertEqual(ScopedCapModel.matchToken, "fable",
+                       "the local estimate must count the capped model, not Sonnet")
+        XCTAssertEqual(MultiCockpitModel.scopedLabelMirror, "Weekly · Fable")
+    }
+
+    /// A payload that omits the scope must not erase a name we were already
+    /// given — otherwise one incomplete poll reverts every label to Sonnet.
+    func testAbsentScopeDoesNotUnlearnTheModel() {
+        let saved = ScopedCapModel.displayName
+        defer { ScopedCapModel.displayName = saved }
+
+        ScopedCapModel.remember("Fable")
+        ScopedCapModel.remember(nil)
+        ScopedCapModel.remember("")
+        XCTAssertEqual(ScopedCapModel.displayName, "Fable")
+    }
+
     // MARK: - A hook that adds context is not a saving
 
     /// The session-start router EMITS the memory files it selected. Its recorded
@@ -107,6 +143,92 @@ final class DisplayedNumbersTests: XCTestCase {
         let marginal = TokoptSavingsRow(id: nil, timestamp: 0, hook: "tokopt-bash",
                                         baselineBytes: 101_000, actualBytes: 100_000)
         XCTAssertEqual(marginal.cacheAwareSavedBytes, 0)
+    }
+
+    // MARK: - One pressure doctrine, not three
+
+    /// The menu bar excluded the per-model weekly cap from the headline (it
+    /// forces a model fallback, it does not lock you out) and the statusline
+    /// included it, under a comment promising they used the same rule. Measured
+    /// 2026-08-22: the scoped cap sat at 100%, so every terminal on this Mac
+    /// showed a red 100% while the menu bar showed the truth.
+    func testScopedCapNeverBecomesTheHeadlinePressure() {
+        let exact = ExactSnapshot(
+            fiveHour: .init(utilization: 12, resetsAt: nil),
+            sevenDay: .init(utilization: 40, resetsAt: nil),
+            sevenDayScoped: .init(utilization: 100, resetsAt: nil, scopedModel: "Fable"),
+            fetchedAt: Date())
+
+        let reading = UsagePressure.binding(snapshot: .empty, exact: exact, codex: nil)
+        XCTAssertEqual(reading?.percent, 40,
+                       "the all-models week binds; the scoped cap at 100% must not")
+        XCTAssertNotEqual(reading?.percent, 100)
+    }
+
+    /// Codex counts toward pressure. The menu bar included it, the statusline
+    /// did not — the same disagreement in the other direction.
+    func testCodexPressureCountsToo() {
+        let exact = ExactSnapshot(
+            fiveHour: .init(utilization: 10, resetsAt: nil),
+            sevenDay: .init(utilization: 20, resetsAt: nil),
+            sevenDayScoped: .init(utilization: 0, resetsAt: nil),
+            fetchedAt: Date())
+        let codex = CodexUsageSnapshot(
+            sessionID: nil, tokens: nil, contextWindow: nil,
+            primary: .init(kind: .primary, usedPercent: 90, windowMinutes: 300, resetsAt: nil),
+            secondary: nil, planType: nil, observedAt: Date())
+
+        let reading = UsagePressure.binding(snapshot: .empty, exact: exact, codex: codex)
+        XCTAssertEqual(reading?.percent, 90)
+    }
+
+    // MARK: - The portfolio graph must stop computing
+
+    /// `TimelineView(.animation(minimumInterval: 1/60))` drove an O(n²)
+    /// force-directed step for as long as the cockpit stayed open. Measured on
+    /// this Mac 2026-08-22: ~28% of a core, steady, 46 minutes in, with zero
+    /// SwiftTerm frames in the profile — the terminals were innocent, the idle
+    /// graph was not.
+    func testPortfolioLayoutSettlesAndStopsStepping() {
+        let sim = PortfolioSim()
+        sim.ensure(size: CGSize(width: 600, height: 400))
+        sim.seed(PortfolioGraph(
+            nodes: (0..<8).map { PortfolioNode(id: "n\($0)", label: "n\($0)", kind: .app, reach: 1) },
+            edges: [PortfolioEdge(from: "n0", to: "n1")]))
+        sim.ensure(size: CGSize(width: 600, height: 400))
+
+        XCTAssertFalse(sim.settled, "a freshly seeded graph has work to do")
+        for _ in 0..<4000 where !sim.settled { sim.step() }
+        XCTAssertTrue(sim.settled, "the layout must reach rest and stop asking for frames")
+
+        // And a resize must wake it back up — a settled flag that never clears
+        // would leave the graph frozen in the wrong shape.
+        sim.ensure(size: CGSize(width: 900, height: 500))
+        XCTAssertFalse(sim.settled)
+    }
+
+    // MARK: - One price table
+
+    /// Six copies of the rates existed; one still carried Claude 3 Opus prices
+    /// ($15/$75) for Opus 5, and Fable matched no branch at all.
+    func testPricesAndMultipliersComeFromOneTable() {
+        XCTAssertEqual(ModelPricing.rate(forModel: "claude-opus-5").input, 5)
+        XCTAssertEqual(ModelPricing.rate(forModel: "claude-fable-5").output, 50)
+        XCTAssertEqual(ModelPricing.rate(forModel: "something-unheard-of").input,
+                       ModelPricing.sonnet.input, "unknown models price as Sonnet")
+        XCTAssertEqual(ModelPricing.priceMultiplier(forBucket: "fable"), 3.33)
+        XCTAssertEqual(ModelPricing.priceMultiplier(forBucket: "opus"), 1.67)
+        XCTAssertEqual(ModelPricing.priceMultiplier(forBucket: "haiku"), 0.33)
+        // The generated SQL must carry the same numbers as the Swift table.
+        XCTAssertTrue(ModelPricing.sqlRowEurExpr().contains("output_tokens/1e6*50.0"))
+        XCTAssertFalse(ModelPricing.sqlRowEurExpr().contains("*75"), "Claude 3 Opus pricing must be gone")
+    }
+
+    // MARK: - An empty exclusion set must not break the SQL
+
+    func testInjectingHookPredicateIsAlwaysValidSQL() {
+        XCTAssertTrue(TokoptSavingsRow.notInjectingSQL.contains("session-start-router"))
+        XCTAssertTrue(TokoptSavingsRow.notInjectingSQL.hasPrefix("hook NOT IN ("))
     }
 
     // MARK: - The indexer must not embed somebody else's library

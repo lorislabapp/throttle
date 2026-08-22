@@ -48,6 +48,15 @@ struct TokoptSavingsRow: Codable, FetchableRecord, PersistableRecord, Equatable,
     /// else it measures.
     static let injectingHooks: Set<String> = ["session-start-router"]
 
+    /// SQL predicate excluding the injecting hooks. Built here so an empty set
+    /// yields `1=1` rather than `hook NOT IN ()`, which is a syntax error in
+    /// SQLite and would take every savings figure down with it.
+    static var notInjectingSQL: String {
+        guard !injectingHooks.isEmpty else { return "1=1" }
+        let list = injectingHooks.sorted().map { "'\($0)'" }.joined(separator: ", ")
+        return "hook NOT IN (\(list))"
+    }
+
     var isInjection: Bool { Self.injectingHooks.contains(hook) }
 
     /// Bytes this hook kept out of context. Zero for injecting hooks: they spend

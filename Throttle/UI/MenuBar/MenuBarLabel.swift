@@ -100,34 +100,14 @@ struct MenuBarLabel: View {
         return "\(tokens)"
     }
 
+    /// Delegates to `UsagePressure` — the same function the statusline uses.
+    /// The two used to compute this separately and disagreed about whether the
+    /// per-model weekly cap counts (it does not: exhausting it forces a model
+    /// fallback, it does not lock you out).
     private func highestPressurePercent() -> Double? {
-        // Only count caps that gate *all* usage: the 5h session and the
-        // all-models weekly cap. The Sonnet-only weekly cap is deliberately
-        // excluded — hitting it doesn't lock you out, it just forces a
-        // fallback to Opus, so surfacing it as a 100% headline made users
-        // think they were throttled when they still had headroom.
-        //
-        // Prefer exact-mode data when fresh — those are the numbers Anthropic
-        // is actually rate-limiting against. Fall back to local rolling-window
-        // math otherwise.
-        var providerPressures: [Double] = []
-        if let ex = appState.exactSnapshot, ex.isFresh() {
-            let exactPcts = [
-                Double(ex.fiveHour.utilization),
-                Double(ex.sevenDay.utilization)
-            ].max() ?? 0
-            providerPressures.append(exactPcts / 100.0)
-        } else {
-            providerPressures.append(contentsOf: [
-                appState.snapshot.session5h.percentUsed,
-                appState.snapshot.weeklyAll.percentUsed
-            ].compactMap { $0 })
-        }
-        if let codex = appState.codexUsageSnapshot, codex.isFresh(),
-           let pressure = codex.highestPressure {
-            providerPressures.append(pressure)
-        }
-        return providerPressures.max()
+        UsagePressure.binding(snapshot: appState.snapshot,
+                              exact: appState.exactSnapshot,
+                              codex: appState.codexUsageSnapshot)?.fraction
     }
 
     /// The reset moment of the most-binding saturated window, when known.

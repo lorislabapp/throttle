@@ -499,7 +499,7 @@ struct StatsInline: View {
     // MARK: - Period strip
 
     private var periodStrip: some View {
-        let savedEUR = Double(max(savedTokens, appState.savedTokensThisWeek)) / 1_000_000 * 6.00
+        let savedEUR = MilestoneTracker.shared.eurFor(tokens: max(savedTokens, appState.savedTokensThisWeek))
         return HStack(spacing: 0) {
             periodCell("Today", "\(est ? "≈" : "")\(formatTokens(todayTokens))", muted: false, leading: false)
             periodCell("This week", "\(est ? "≈" : "")\(formatTokens(thisWeekTokens))", muted: false, leading: true)

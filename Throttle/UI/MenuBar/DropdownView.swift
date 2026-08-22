@@ -248,7 +248,7 @@ struct DropdownView: View {
     /// Total EUR saved (lifetime + this week) using MilestoneTracker's conversion rate.
     private var lifetimeAndWeeklyEUR: Double {
         let liveTokens = MilestoneTracker.shared.lifetimeTokens + appState.savedTokensThisWeek
-        return Double(liveTokens) / 1_000_000 * 6.00
+        return MilestoneTracker.shared.eurFor(tokens: liveTokens)
     }
 
     /// Banner shown when the user has enabled exact mode but the latest poll
@@ -459,9 +459,11 @@ struct DropdownView: View {
             subtitle = String(localized: "all models")
             bindingLabel = String(localized: "Weekly · all models")
         case .weeklySonnet:
+            // Named after the model the server scoped the cap to. This row read
+            // "Sonnet only" unconditionally while the cap at 100% was Fable's.
             title = String(localized: "Weekly")
-            subtitle = String(localized: "Sonnet only")
-            bindingLabel = String(localized: "Weekly · Sonnet only")
+            subtitle = ScopedCapModel.subtitle
+            bindingLabel = ScopedCapModel.bindingLabel
         }
         let local: UsageSnapshot.Window
         switch kind {
@@ -1185,7 +1187,7 @@ private struct FirstRunInline: View {
             meterDivider
             meterRow("Weekly", "all models", cap: pick?.weekly, pct: demo.weekly, auto: auto, filled: filled)
             meterDivider
-            meterRow("Weekly", "Sonnet only", cap: pick?.weekly, pct: demo.sonnet, auto: auto, filled: filled)
+            meterRow("Weekly", ScopedCapModel.subtitle, cap: pick?.weekly, pct: demo.sonnet, auto: auto, filled: filled)
         }
         .padding(13)
         .background(RoundedRectangle(cornerRadius: 13).fill(Color(nsColor: .controlBackgroundColor)))
@@ -2410,7 +2412,7 @@ private struct InlineCalibrationPane: View {
             SettingsHair()
             calWindow(.weeklyAll, "Weekly", "all models")
             SettingsHair()
-            calWindow(.weeklySonnet, "Weekly", "Sonnet only")
+            calWindow(.weeklySonnet, "Weekly", ScopedCapModel.subtitle)
             SettingsHair()
             recalBlock
             SettingsHair()

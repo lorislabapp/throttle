@@ -18,19 +18,7 @@ extension StatsDataService {
     /// cache_create at 1.25×, cache_read at 0.10×). Kept as a string so
     /// window-scoped attribution (Traycer) can SUM it inside a correlated
     /// subquery. `cockpitSessionCostEUR` stays the source of truth for the rates.
-    static let eurRowExpr = """
-        (CASE
-           WHEN lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%'
-             THEN input_tokens/1e6*10 + output_tokens/1e6*50 + cache_create/1e6*10*1.25 + cache_read/1e6*10*0.10
-           WHEN lower(model) LIKE '%opus%'
-             THEN input_tokens/1e6*5  + output_tokens/1e6*25 + cache_create/1e6*5*1.25  + cache_read/1e6*5*0.10
-           WHEN lower(model) LIKE '%sonnet%'
-             THEN input_tokens/1e6*3  + output_tokens/1e6*15 + cache_create/1e6*3*1.25  + cache_read/1e6*3*0.10
-           WHEN lower(model) LIKE '%haiku%'
-             THEN input_tokens/1e6*1  + output_tokens/1e6*5  + cache_create/1e6*1*1.25  + cache_read/1e6*1*0.10
-           ELSE   input_tokens/1e6*3  + output_tokens/1e6*15 + cache_create/1e6*3*1.25  + cache_read/1e6*3*0.10
-         END) * 0.93
-        """
+    static let eurRowExpr = ModelPricing.sqlRowEurExpr()
 
     /// The session with the most recent activity — the one the user is in.
     static func cockpitCurrentSessionId(in db: Database) throws -> String? {
@@ -50,13 +38,7 @@ extension StatsDataService {
     static func cockpitSessionCostEUR(in db: Database, sessionId: String) throws -> Double {
         let sql = """
             SELECT
-                CASE
-                    WHEN lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%' THEN 'fable'
-                    WHEN lower(model) LIKE '%opus%'   THEN 'opus'
-                    WHEN lower(model) LIKE '%sonnet%' THEN 'sonnet'
-                    WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
-                    ELSE 'other'
-                END AS bucket,
+                \(ModelPricing.sqlBucketExpr("model")) AS bucket,
                 SUM(input_tokens) AS i, SUM(output_tokens) AS o,
                 SUM(cache_create) AS cc, SUM(cache_read) AS cr
             FROM usage_events WHERE session_id = ? GROUP BY bucket
