@@ -267,6 +267,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if UserDefaults.standard.bool(forKey: "throttleAutoTrimEnabled") {
             Task.detached(priority: .utility) {
                 let r = ContextTrimmerService.autoTrimIdle()
+                // `r` is a tuple whose first member is named `count`, not a
+                // collection. SwiftLint's empty_count autocorrect rewrote this
+                // to `!r.isEmpty` and broke the build.
+                // swiftlint:disable:next empty_count
                 if r.count > 0 {
                     await CockpitNotifier.shared.notifyAutoTrim(count: r.count, tokensSaved: r.tokensSaved)
                 }

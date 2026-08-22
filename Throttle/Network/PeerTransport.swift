@@ -1,6 +1,6 @@
 import Foundation
-import ThrottleShared
 import ThrottlePeer
+import ThrottleShared
 
 /// Mac-side LAN mirror transport: wraps `PeerAdvertiser` and conforms to
 /// `MirrorTransport` so `MirrorFanout` treats it like any other sink. Opt-in and

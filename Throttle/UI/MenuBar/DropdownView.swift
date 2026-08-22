@@ -241,7 +241,7 @@ struct DropdownView: View {
 
     private func formatTokens(_ n: Int) -> String {
         if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
-        if n >= 1_000     { return String(format: "%.0fk", Double(n) / 1_000) }
+        if n >= 1_000 { return String(format: "%.0fk", Double(n) / 1_000) }
         return "\(n)"
     }
 
@@ -746,7 +746,6 @@ struct DropdownView: View {
         }
     }
 
-
     /// Direction A — "The Dock". Four destinations as a compact icon row over
     /// one quiet meta line carrying sign-in STATUS and demoted chrome. Replaces
     /// the old flat 10-row menu (incl. the two inert Run Optimizer / Manage
@@ -774,8 +773,7 @@ struct DropdownView: View {
                 }
                 DockTile(icon: "chevron.left.forwardslash.chevron.right", label: "Commands",
                          badgeText: appState.isPro ? nil : "PRO", badgeStyle: .pro) {
-                    if appState.isPro { CommandRunnerWindowController.shared.show() }
-                    else { mode = .settings(.pro) }
+                    if appState.isPro { CommandRunnerWindowController.shared.show() } else { mode = .settings(.pro) }
                 }
                 DockTile(icon: "magnifyingglass", label: "Search") {
                     TranscriptSearchWindowController.shared.show()
@@ -973,7 +971,7 @@ private struct DockBadgeView: View {
 private struct DockTile: View {
     let icon: String
     let label: LocalizedStringKey
-    var badgeText: String? = nil
+    var badgeText: String?
     var badgeStyle: DockBadgeStyle = .beta
     let action: () -> Void
     @State private var hover = false
@@ -1016,7 +1014,7 @@ private struct SettingsHair: View {
 
 private struct SettingsGroupHeader: View {
     let label: String
-    var desc: String? = nil
+    var desc: String?
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(LocalizedStringKey(label)).font(.system(size: 10.5, weight: .semibold))
@@ -1033,7 +1031,7 @@ private struct SettingsGroupHeader: View {
 /// Flat ≥44pt settings row: title (+ optional sub) left, a trailing control right.
 private struct SettingsRow<Trailing: View>: View {
     let title: String
-    var sub: String? = nil
+    var sub: String?
     @ViewBuilder var trailing: Trailing
     var body: some View {
         HStack(spacing: 12) {
@@ -1067,9 +1065,9 @@ private struct SettingsNote: View {
 /// Bordered settings button (`.primary` = accent fill). Calm, native-ish.
 private struct SettingsButton: View {
     let title: String
-    var systemImage: String? = nil
+    var systemImage: String?
     var primary: Bool = false
-    var role: ButtonRole? = nil
+    var role: ButtonRole?
     let action: () -> Void
     var body: some View {
         Button(role: role, action: action) {
@@ -1082,8 +1080,7 @@ private struct SettingsButton: View {
             .foregroundStyle(primary ? AnyShapeStyle(Color.white)
                              : AnyShapeStyle(role == .destructive ? Color.red : Color.primary))
             .background {
-                if primary { RoundedRectangle(cornerRadius: 8).fill(Color.accentColor) }
-                else { RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.12), lineWidth: 1) }
+                if primary { RoundedRectangle(cornerRadius: 8).fill(Color.accentColor) } else { RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.12), lineWidth: 1) }
             }
         }
         .buttonStyle(.plain)
@@ -1132,7 +1129,7 @@ private struct FirstRunInline: View {
         }
     }
 
-    @State private var pick: PlanChoice? = nil
+    @State private var pick: PlanChoice?
     @State private var enableLoginItems: Bool = true
     @State private var signedIn: Bool = false
     /// Conversational step: 0 = ask plan, 1 = ask launch, 2 = done.
@@ -1680,8 +1677,7 @@ private struct InlineGeneralPane: View {
                         .onChange(of: tokoptOn) { _, on in
                             guard appState.isPro else { return }
                             Task.detached(priority: .utility) {
-                                if on { _ = try? TokoptHookInstaller.install() }
-                                else { try? TokoptHookInstaller.remove() }
+                                if on { _ = try? TokoptHookInstaller.install() } else { try? TokoptHookInstaller.remove() }
                             }
                             tokoptNote = on
                                 ? "Installed — restart Claude Code to start compressing."
@@ -1709,8 +1705,7 @@ private struct InlineGeneralPane: View {
                             Task {
                                 let failure: String? = await Task.detached(priority: .utility) {
                                     do {
-                                        if on { _ = try TranscriptMemoryInstaller.install() }
-                                        else { try TranscriptMemoryInstaller.remove() }
+                                        if on { _ = try TranscriptMemoryInstaller.install() } else { try TranscriptMemoryInstaller.remove() }
                                         return nil
                                     } catch {
                                         return error.localizedDescription
@@ -2264,8 +2259,7 @@ private struct InlineProPane: View {
                     get: { appState.exactModeEnabled },
                     set: { on in
                         appState.setExactModeEnabled(on)
-                        if on { ExactModeService.shared.start() }
-                        else { ExactModeService.shared.stop(); appState.exactSnapshot = nil }
+                        if on { ExactModeService.shared.start() } else { ExactModeService.shared.stop(); appState.exactSnapshot = nil }
                     }
                 )).labelsHidden().toggleStyle(.switch).tint(.accentColor)
             }
@@ -2337,7 +2331,7 @@ private struct InlineProPane: View {
         .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 12)
     }
 
-    private func testConnection() {
+    func testConnection() {
         testing = true
         connectionStatus = ""
         Task {
@@ -2368,7 +2362,7 @@ private struct InlineProPane: View {
 
 /// Shared file-private formatter for ExactModeError messages, used by both
 /// InlineGeneralPane (Settings) and DropdownView (the meter banner).
-fileprivate func describe(_ err: ExactModeError) -> String {
+private func describe(_ err: ExactModeError) -> String {
     switch err {
     case .notSignedIn:        return "Not signed in to claude.ai inside Throttle. Sign in and re-test."
     case .httpError(let code): return "HTTP \(code)"
@@ -2391,17 +2385,17 @@ private struct InlineCalibrationPane: View {
     /// once Apple ships a fix or we move calibration into a dedicated NSWindow.
     private static let presets: [WindowKind: [(label: String, tokens: Int)]] = [
         .session5h: [
-            ("4M",  4_000_000),
-            ("8M",  8_000_000),
+            ("4M", 4_000_000),
+            ("8M", 8_000_000),
             ("20M", 20_000_000)
         ],
         .weeklyAll: [
-            ("60M",  60_000_000),
+            ("60M", 60_000_000),
             ("200M", 200_000_000),
             ("800M", 800_000_000)
         ],
         .weeklySonnet: [
-            ("60M",  60_000_000),
+            ("60M", 60_000_000),
             ("200M", 200_000_000),
             ("800M", 800_000_000)
         ]
@@ -2538,7 +2532,7 @@ private struct InlineCalibrationPane: View {
     private func formatTokens(_ n: Int) -> String {
         if n == 0 { return "—" }
         if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
-        if n >= 1_000     { return String(format: "%.0fK", Double(n) / 1_000) }
+        if n >= 1_000 { return String(format: "%.0fK", Double(n) / 1_000) }
         return "\(n)"
     }
 
@@ -3122,7 +3116,7 @@ private struct InlineAssistantPane: View {
         }
     }
 
-    private func testLocalWorkerServer() {
+    func testLocalWorkerServer() {
         guard !localWorkerProbing else { return }
         localWorkerProbing = true
         localWorkerStatus = LocalWorkerStatus(state: .probing)

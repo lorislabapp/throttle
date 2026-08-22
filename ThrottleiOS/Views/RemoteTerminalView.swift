@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftTerm
+import SwiftUI
 
 /// On-device SwiftTerm view that drives a live Mac session over the TLS-PSK peer
 /// link. Feeds `termOut` bytes into the emulator and forwards the on-screen

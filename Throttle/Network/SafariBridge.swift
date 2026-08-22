@@ -224,7 +224,7 @@ enum SafariBridge {
         }.value
     }
 
-    private nonisolated static func handleAppleScriptResult(_ result: AppleScriptResult) -> Result<Data, BridgeError> {
+    nonisolated private static func handleAppleScriptResult(_ result: AppleScriptResult) -> Result<Data, BridgeError> {
         switch result {
         case .failure(let err):
             // -1743 = not authorized to send Apple events to Safari (user denied
@@ -250,7 +250,7 @@ enum SafariBridge {
             if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let status = obj["_throttle_status"] as? Int {
                 if status == 401 { return .failure(.notSignedIn) }
-                if status > 0    {
+                if status > 0 {
                     if let err = obj["_err"] as? String, !err.isEmpty {
                         return .failure(.scriptError("HTTP \(status): \(err)"))
                     }
@@ -272,7 +272,7 @@ enum SafariBridge {
         case failure(String)
     }
 
-    private nonisolated static func runAppleScript(source: String) -> AppleScriptResult {
+    nonisolated private static func runAppleScript(source: String) -> AppleScriptResult {
         var error: NSDictionary?
         guard let script = NSAppleScript(source: source) else {
             return .failure("Failed to parse AppleScript")

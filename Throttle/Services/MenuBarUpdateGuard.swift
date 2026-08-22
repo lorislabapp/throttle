@@ -49,9 +49,9 @@ enum MenuBarUpdateGuard {
     private static let lock = OSAllocatedUnfairLock(initialState: false)
     private static let queue = DispatchQueue(label: "com.lorislab.throttle.menubar-guard",
                                              qos: .utility)
-    private nonisolated(unsafe) static var timer: DispatchSourceTimer?
-    private nonisolated(unsafe) static var lastFootprint: UInt64 = 0
-    private nonisolated(unsafe) static var consecutiveBreaches = 0
+    nonisolated(unsafe) private static var timer: DispatchSourceTimer?
+    nonisolated(unsafe) private static var lastFootprint: UInt64 = 0
+    nonisolated(unsafe) private static var consecutiveBreaches = 0
 
     /// Renders of `MenuBarLabel.body` since the last sample.
     ///

@@ -34,7 +34,7 @@ enum ApprovalRuleService {
     private static let readOnly: Set<String> = [
         "ls", "cat", "head", "tail", "wc", "file", "stat", "du", "df",
         "pwd", "which", "type", "echo", "date", "uname", "whoami",
-        "grep", "rg", "find", "fd", "diff", "sort", "uniq", "cut", "awk", "sed",
+        "grep", "rg", "find", "fd", "diff", "sort", "uniq", "cut", "awk", "sed"
     ]
 
     /// `git` is only read-only in part, so it is allowlisted subcommand by
@@ -43,7 +43,7 @@ enum ApprovalRuleService {
     /// most effort protecting.
     private static let readOnlyGit: Set<String> = [
         "status", "log", "diff", "show", "branch", "remote", "ls-files",
-        "rev-parse", "for-each-ref", "describe", "blame", "shortlog", "config",
+        "rev-parse", "for-each-ref", "describe", "blame", "shortlog", "config"
     ]
 
     /// Anything that lets one command become another. Their presence ends the
@@ -135,14 +135,15 @@ enum ApprovalRuleService {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let line = [
             "ts": Int(Date().timeIntervalSince1970),
-            "project": project, "rule": rule, "command": String(command.prefix(300)),
+            "project": project, "rule": rule, "command": String(command.prefix(300))
         ] as [String: Any]
         guard let data = try? JSONSerialization.data(withJSONObject: line) else { return }
         let url = dir.appendingPathComponent("auto-approvals.jsonl")
         if let h = try? FileHandle(forWritingTo: url) {
             h.seekToEndOfFile(); h.write(data); h.write(Data([0x0a])); try? h.close()
         } else {
-            try? (String(data: data, encoding: .utf8)! + "\n").write(to: url, atomically: true, encoding: .utf8)
+            guard let text = String(data: data, encoding: .utf8) else { return }
+            try? (text + "\n").write(to: url, atomically: true, encoding: .utf8)
         }
     }
 }

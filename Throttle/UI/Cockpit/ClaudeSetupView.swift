@@ -150,8 +150,7 @@ struct ClaudeSetupView: View {
         HStack(spacing: 8) {
             Button { runProbe() } label: {
                 HStack(spacing: 5) {
-                    if probing { ProgressView().controlSize(.mini) }
-                    else { Image(systemName: "dot.radiowaves.left.and.right").font(.system(size: 10.5)) }
+                    if probing { ProgressView().controlSize(.mini) } else { Image(systemName: "dot.radiowaves.left.and.right").font(.system(size: 10.5)) }
                     Text(probing ? "Probing…" : "Probe servers").font(.system(size: 11, weight: .medium))
                 }
             }

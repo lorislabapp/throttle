@@ -31,7 +31,7 @@ final class CockpitNotifier: NSObject {
 
     private weak var appState: AppState?
 
-    private override init() {
+    override private init() {
         super.init()
         let center = UNUserNotificationCenter.current()
         center.delegate = self
@@ -41,7 +41,7 @@ final class CockpitNotifier: NSObject {
             options: [.foreground])
         center.setNotificationCategories([
             UNNotificationCategory(identifier: Self.readFirewallCategory,
-                                   actions: [deploy], intentIdentifiers: []),
+                                   actions: [deploy], intentIdentifiers: [])
         ])
     }
 

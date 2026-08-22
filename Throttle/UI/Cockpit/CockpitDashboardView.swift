@@ -27,7 +27,7 @@ struct CockpitDashboardView: View {
     struct DashData: Equatable {
         var cap5h: Double = 0, cap7d: Double = 0
         var costEUR: Double = 0, rmcEUR: Double = 0
-    var cacheEff: Double? = nil   // prompt-cache hit rate 0…1 (plan-yield score)
+    var cacheEff: Double?   // prompt-cache hit rate 0…1 (plan-yield score)
         var activeWeekHours: Double = 0
         var projects: [Proj] = []          // top by active time this week
         var spark: [Double] = []           // daily active seconds, last 7d
@@ -296,8 +296,7 @@ struct CockpitDashboardView: View {
         }
         benchBusy = true; localMixNote = nil
         Task {
-            do { benchProfile = try await LocalModelBenchService.run() }
-            catch { localMixNote = "Benchmark failed: \(error.localizedDescription)" }
+            do { benchProfile = try await LocalModelBenchService.run() } catch { localMixNote = "Benchmark failed: \(error.localizedDescription)" }
             benchBusy = false
         }
     }
@@ -403,7 +402,7 @@ struct CockpitDashboardView: View {
         Task.detached(priority: .utility) {
             let cost = (try? await db.read { try StatsDataService.extrapolatedCostEUR(in: $0, range: .last7d) }) ?? 0
             let rmc = (try? await db.read { try StatsDataService.recoverableMissCostEUR(in: $0).eur }) ?? 0
-            let eff = (try? await db.read { try StatsDataService.cacheEfficiency(in: $0, range: .last7d) }) ?? nil
+            let eff = (try? await db.read { try StatsDataService.cacheEfficiency(in: $0, range: .last7d) })
             let wa = (try? await db.read { try StatsDataService.workActivity(in: $0) }) ?? .init()
             let projects = wa.topProjects.prefix(5).map { DashData.Proj(name: $0.name, hours: $0.seconds / 3600) }
             let spark = wa.daily.map { $0.seconds }

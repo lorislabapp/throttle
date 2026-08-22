@@ -31,13 +31,13 @@ enum ContextTrimmerService {
         /// stubbed to its head. nil = off (the conservative default — stubbing a
         /// tool result is lossless for *reasoning* only because the assistant's
         /// summary remains, so it stays opt-in).
-        var stubToolResultsOver: Int? = nil
+        var stubToolResultsOver: Int?
         /// If set, the bulky string INPUTS of write-oriented tool_use blocks
         /// (`content` / `old_string` / `new_string` of Write/Edit/…) longer than
         /// this many UTF-8 bytes are stubbed. Lossless for reasoning: the file is
         /// already on disk and the whitelist metadata (`file_path`, `command`)
         /// stays, so the model still knows what was written where. Opt-in.
-        var stubToolInputsOver: Int? = nil
+        var stubToolInputsOver: Int?
         /// Replace text from events superseded by the latest compaction boundary
         /// while retaining their structural envelope and dependency identifiers.
         var trimSupersededEvents: Bool = false
@@ -294,7 +294,7 @@ enum ContextTrimmerService {
     /// model's reasoning. The metadata whitelist (file_path/command/…) is untouched.
     private static let writeToolInputs: [String: [String]] = [
         "Write": ["content"], "Edit": ["old_string", "new_string"],
-        "NotebookEdit": ["new_source"],
+        "NotebookEdit": ["new_source"]
     ]   // MultiEdit's `edits` array is handled separately (nested old/new strings).
 
     private struct LineOutcome { var line: String; var counters = Counters() }

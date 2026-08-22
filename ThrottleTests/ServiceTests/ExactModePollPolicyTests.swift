@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// Poll-cadence policy: failure backoff, the new capped-window "honor the reset"
 /// backoff (don't hammer claude.ai into the wall while a window is at 100%), and

@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// Tests for the PostToolUse(Bash) token-optimization hook, focused on the
 /// test-runner recipe. The cardinal invariant: a FAILING run is never altered

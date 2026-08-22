@@ -12,7 +12,7 @@ struct WebRenderResult: Sendable {
     var renderMs: Int = 0
     var truncated: Bool = false
     var waitReason: String = ""
-    var error: String? = nil
+    var error: String?
     var links: [WebPageLink] = []
 }
 
@@ -48,7 +48,7 @@ final class WebRenderer: NSObject {
     private var busy = false                     // one render at a time
     private var idleTeardown: Task<Void, Never>?
 
-    private override init() { super.init() }
+    override private init() { super.init() }
 
     // MARK: - Public
 
@@ -212,9 +212,7 @@ final class WebRenderer: NSObject {
             view.callAsyncJavaScript(body, arguments: [:], in: nil, in: .page) { result in
                 switch result {
                 case .success(let value):
-                    if let s = value as? String { c.resume(returning: s) }
-                    else if let n = value as? NSNumber { c.resume(returning: n.stringValue) }
-                    else { c.resume(returning: "") }
+                    if let s = value as? String { c.resume(returning: s) } else if let n = value as? NSNumber { c.resume(returning: n.stringValue) } else { c.resume(returning: "") }
                 case .failure(let e): c.resume(throwing: e)
                 }
             }

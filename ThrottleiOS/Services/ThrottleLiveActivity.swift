@@ -1,8 +1,8 @@
 #if os(iOS)
 import ActivityKit
-import UIKit
 import OSLog
 import ThrottleShared
+import UIKit
 
 /// Owns the single Claude-usage Live Activity: starts it (foreground only, per
 /// ActivityKit rules), keeps it in step with every mirror snapshot, and ends it.

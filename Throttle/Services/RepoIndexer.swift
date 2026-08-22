@@ -20,14 +20,14 @@ enum RepoIndexer {
         "swift", "m", "mm", "h", "hpp", "c", "cc", "cpp", "js", "jsx", "ts", "tsx",
         "py", "rb", "go", "rs", "java", "kt", "kts", "php", "cs", "scala", "sh",
         "md", "markdown", "txt", "rst", "json", "yaml", "yml", "toml", "ini",
-        "cfg", "html", "css", "scss", "sql", "graphql", "proto",
+        "cfg", "html", "css", "scss", "sql", "graphql", "proto"
     ]
 
     /// Directory names pruned wholesale (build output, deps, VCS, caches).
     static let excludedDirs: Set<String> = [
         ".git", "node_modules", ".build", "build", "DerivedData", "Pods", "dist",
         "out", "target", ".next", "vendor", ".venv", "venv", "__pycache__",
-        ".swiftpm", ".gradle", "coverage", ".cache",
+        ".swiftpm", ".gradle", "coverage", ".cache"
     ]
 
     /// Index `root` into `index`, updating `manifest` (relPath → content SHA-256).

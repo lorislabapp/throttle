@@ -51,16 +51,16 @@ enum BashSandbox {
     /// (npm, pip, brew, cargo), interpreters (python, ruby, node),
     /// destructive tools (rm, mv, chmod, chown, kill).
     private static let allowlist: [String: String] = [
-        "git":         "/usr/bin/git",
-        "swift":       "/usr/bin/swift",
-        "xcodebuild":  "/usr/bin/xcodebuild",
-        "ls":          "/bin/ls",
-        "cat":         "/bin/cat",
-        "find":        "/usr/bin/find",
-        "grep":        "/usr/bin/grep",
-        "head":        "/usr/bin/head",
-        "tail":        "/usr/bin/tail",
-        "wc":          "/usr/bin/wc"
+        "git": "/usr/bin/git",
+        "swift": "/usr/bin/swift",
+        "xcodebuild": "/usr/bin/xcodebuild",
+        "ls": "/bin/ls",
+        "cat": "/bin/cat",
+        "find": "/usr/bin/find",
+        "grep": "/usr/bin/grep",
+        "head": "/usr/bin/head",
+        "tail": "/usr/bin/tail",
+        "wc": "/usr/bin/wc"
     ]
 
     /// Path prefixes that may NEVER appear in any argument the AI

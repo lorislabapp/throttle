@@ -1,5 +1,5 @@
-import Foundation
 import CryptoKit
+import Foundation
 
 /// Content-addressed blob store for CMV pointers (Chantier 2). When the trimmer
 /// replaces a bulky payload (a base64 image, an oversized tool_result) with a

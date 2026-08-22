@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// OKF v0.1 bundles: serialize↔parse round-trips losslessly and write↔read +
 /// search work over the file store.

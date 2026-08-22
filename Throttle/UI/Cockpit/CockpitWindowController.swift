@@ -12,7 +12,7 @@ final class CockpitWindowController: NSObject {
     private var window: NSWindow?
     private weak var appState: AppState?
 
-    private override init() {}
+    override private init() {}
 
     private static let alwaysOnTopKey = "cockpitAlwaysOnTop"
     /// Opt-in: keep the Cockpit window floating above other apps (a companion you

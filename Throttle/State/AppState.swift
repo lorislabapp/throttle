@@ -163,7 +163,7 @@ final class AppState {
         let pairs: [(WindowKind, Int)] = [
             (.session5h, exact.fiveHour.utilization),
             (.weeklyAll, exact.sevenDay.utilization),
-            (.weeklySonnet, exact.sevenDaySonnet.utilization),
+            (.weeklySonnet, exact.sevenDaySonnet.utilization)
         ]
         let database = self.database
         Task { [weak self] in

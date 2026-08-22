@@ -1,6 +1,6 @@
 import Foundation
-import WidgetKit
 import ThrottleShared
+import WidgetKit
 
 /// The phone's local truth: the latest mirrored snapshot plus an append-only
 /// history (the standalone value — charts/trends that work with the Mac OFF).

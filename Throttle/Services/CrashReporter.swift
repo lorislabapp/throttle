@@ -36,7 +36,7 @@ final class CrashReporter: NSObject, MXMetricManagerSubscriber, @unchecked Senda
         return dir
     }
 
-    private override init() {
+    override private init() {
         super.init()
     }
 

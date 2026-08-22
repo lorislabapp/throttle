@@ -779,7 +779,7 @@ final class MultiCockpitModel {
 
     /// Freeze / unfreeze every live session (SIGSTOP/SIGCONT) — the reversible
     /// pause exposed to App Intents / Shortcuts. No-op on dormant tabs.
-    func pauseAll()  { for s in sessions { s.pauseProcess(reason: .user) } }
+    func pauseAll() { for s in sessions { s.pauseProcess(reason: .user) } }
     func resumeAll() { for s in sessions { s.resumeProcess() } }
 
     // MARK: - Auto-pause ACT (opt-in, ≥97% binding AND ETA<5min, cancelable)
@@ -870,8 +870,8 @@ final class MultiCockpitModel {
         lastEffCheck = Date()
         guard let db = appState?.database else { return }
         Task.detached(priority: .utility) {
-            guard let e24 = try? await db.read({ try StatsDataService.cacheEfficiency(in: $0, range: .last24h) }) ?? nil,
-                  let e7 = try? await db.read({ try StatsDataService.cacheEfficiency(in: $0, range: .last7d) }) ?? nil,
+            guard let e24 = try? await db.read({ try StatsDataService.cacheEfficiency(in: $0, range: .last24h) }),
+                  let e7 = try? await db.read({ try StatsDataService.cacheEfficiency(in: $0, range: .last7d) }),
                   e7 > 0.3, e24 < e7 - 0.2 else { return }
             let last = UserDefaults.standard.double(forKey: "throttleCacheEffDropNotifiedAt")
             guard Date().timeIntervalSince1970 - last > 24 * 3600 else { return }
@@ -1246,8 +1246,7 @@ final class MultiCockpitModel {
                 guard let action = note.userInfo?["action"] as? String else { return }
                 Task { @MainActor in
                     guard let self else { return }
-                    if action == ThrottleAction.pauseAll.rawValue { self.pauseAll() }
-                    else if action == ThrottleAction.resumeAll.rawValue { self.resumeAll() }
+                    if action == ThrottleAction.pauseAll.rawValue { self.pauseAll() } else if action == ThrottleAction.resumeAll.rawValue { self.resumeAll() }
                 }
             }
         }
@@ -1377,7 +1376,7 @@ final class MultiCockpitModel {
         }
     }
 
-    private nonisolated static func modelName(_ tier: ModelTier) -> String? {
+    nonisolated private static func modelName(_ tier: ModelTier) -> String? {
         switch tier {
         case .opus:   return "Opus"
         case .sonnet: return "Sonnet"
@@ -1678,7 +1677,7 @@ final class MultiCockpitModel {
             let ws: [(String, Int, Date?)] = [
                 ("Session", ex.fiveHour.utilization, ex.fiveHour.resetsAt),
                 ("Weekly", ex.sevenDay.utilization, ex.sevenDay.resetsAt),
-                (Self.scopedLabel(ex.sevenDayScoped), ex.sevenDayScoped.utilization, ex.sevenDaySonnet.resetsAt),
+                (Self.scopedLabel(ex.sevenDayScoped), ex.sevenDayScoped.utilization, ex.sevenDaySonnet.resetsAt)
             ]
             for window in ws {
                 candidates.append(Binding(
@@ -1694,7 +1693,7 @@ final class MultiCockpitModel {
             let local: [(String, Double, Int64)] = [
                 ("Session", snap.session5h.percentUsed ?? -1, snap.session5h.resetInSeconds),
                 ("Weekly", snap.weeklyAll.percentUsed ?? -1, snap.weeklyAll.resetInSeconds),
-                (Self.scopedLabelMirror, snap.weeklySonnet.percentUsed ?? -1, snap.weeklySonnet.resetInSeconds),
+                (Self.scopedLabelMirror, snap.weeklySonnet.percentUsed ?? -1, snap.weeklySonnet.resetInSeconds)
             ].filter { $0.1 >= 0 }
             candidates.append(contentsOf: local.map { value in
                 Binding(

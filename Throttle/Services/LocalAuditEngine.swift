@@ -224,7 +224,7 @@ enum LocalAuditEngine {
         // "consult <file>.md before".
         let patterns: [(NSRegularExpression.Options, String)] = [
             ([.anchorsMatchLines], #"^[^\n]*\bRead\s+([A-Za-z0-9_./-]+\.(md|txt|json))\b"#),
-            ([.caseInsensitive],    #"\bconsult\s+([A-Za-z0-9_./-]+\.(md|txt|json))\s+before\b"#)
+            ([.caseInsensitive], #"\bconsult\s+([A-Za-z0-9_./-]+\.(md|txt|json))\s+before\b"#)
         ]
         var refs: Set<String> = []
         for (opts, pattern) in patterns {
@@ -264,9 +264,9 @@ enum LocalAuditEngine {
         let medium = findings.filter { $0.severity == .medium }.count
         let low    = findings.filter { $0.severity == .low }.count
         var summary: [String] = []
-        if high > 0   { summary.append("\(high) high") }
+        if high > 0 { summary.append("\(high) high") }
         if medium > 0 { summary.append("\(medium) medium") }
-        if low > 0    { summary.append("\(low) low") }
+        if low > 0 { summary.append("\(low) low") }
         lines.append("**Local audit — \(summary.joined(separator: ", "))** _(deterministic, no AI tokens)_")
         lines.append("")
         for (i, f) in findings.enumerated() {

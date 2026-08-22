@@ -274,8 +274,7 @@ struct MCPManagerSheet: View {
     }
 
     private func run(_ op: () throws -> Void) {
-        do { try op(); errorText = nil; reload() }
-        catch { errorText = "\(error)" }
+        do { try op(); errorText = nil; reload() } catch { errorText = "\(error)" }
     }
 
     private func moveToPickedProject(_ entry: MCPConfigService.Entry, shared: Bool) {

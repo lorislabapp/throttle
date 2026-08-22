@@ -28,10 +28,10 @@ final class MilestoneTracker {
     }
 
     static let ladder: [Milestone] = [
-        Milestone(id: "day_pro",    thresholdEUR:   0.65, label: String(localized: "1 day of Pro paid back"),     emoji: "🌱"),
-        Milestone(id: "week_pro",   thresholdEUR:   4.50, label: String(localized: "1 week of Pro paid back"),    emoji: "🌿"),
-        Milestone(id: "month_pro",  thresholdEUR:  18.00, label: String(localized: "1 month of Pro paid back"),   emoji: "🍀"),
-        Milestone(id: "month_max5", thresholdEUR:  92.00, label: String(localized: "1 month of Max 5× paid back"), emoji: "🌳"),
+        Milestone(id: "day_pro", thresholdEUR: 0.65, label: String(localized: "1 day of Pro paid back"), emoji: "🌱"),
+        Milestone(id: "week_pro", thresholdEUR: 4.50, label: String(localized: "1 week of Pro paid back"), emoji: "🌿"),
+        Milestone(id: "month_pro", thresholdEUR: 18.00, label: String(localized: "1 month of Pro paid back"), emoji: "🍀"),
+        Milestone(id: "month_max5", thresholdEUR: 92.00, label: String(localized: "1 month of Max 5× paid back"), emoji: "🌳"),
         Milestone(id: "month_max20", thresholdEUR: 184.00, label: String(localized: "1 month of Max 20× paid back"), emoji: "🏆")
     ]
 

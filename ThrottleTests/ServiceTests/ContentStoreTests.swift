@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// ContentStore (CMV blob store) + end-to-end reversibility of the trimmer's
 /// SHA-256 pointers: a trimmed payload must rehydrate to byte-identical original.

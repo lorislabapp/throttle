@@ -73,7 +73,7 @@ enum StatuslineService {
         let prev = dict["statusLine"]
         let prevJSON = prev.flatMap { encodeJSON($0) }
         let already = (prev as? [String: Any])?["command"] as? String
-        var backup: URL? = nil
+        var backup: URL?
         if already?.contains("throttle-statusline.sh") != true {
             backup = try backupSettings()
             dict["statusLine"] = ["type": "command", "command": "~/.claude/throttle-statusline.sh"]

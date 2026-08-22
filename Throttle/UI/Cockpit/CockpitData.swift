@@ -101,7 +101,7 @@ final class CockpitViewModel {
     private(set) var memoryIndex: MemoryIndexReport = .empty
     private(set) var cache: CacheHygieneReport = .empty
     private(set) var cacheRecoverableEUR: Double = 0   // € re-written into a cache that should've been warm
-    private(set) var cacheBustReport: CacheBustAnalyzer.Report? = nil   // WHY the cache got busted (model swap vs prefix churn)
+    private(set) var cacheBustReport: CacheBustAnalyzer.Report?   // WHY the cache got busted (model swap vs prefix churn)
     private(set) var skills: SkillReport = .empty
     private(set) var reads: ReadFirewallReport = .empty
     private(set) var firewallInstalled = ReadFirewallService.isInstalled()

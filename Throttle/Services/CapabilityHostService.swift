@@ -1,6 +1,6 @@
 import Foundation
-import ThrottleShared
 import os
+import ThrottleShared
 
 /// Runs, on this Mac, the things a session offloaded to the box cannot do itself.
 ///
@@ -47,7 +47,7 @@ final class CapabilityHostService: ObservableObject {
                 return ("/usr/bin/xcodebuild", [
                     "-scheme", scheme, "-configuration", configuration,
                     "-destination", "platform=macOS",
-                    "-skipPackagePluginValidation", "-skipMacroValidation", action,
+                    "-skipPackagePluginValidation", "-skipMacroValidation", action
                 ])
             case .lint:
                 return ("/usr/bin/env", ["swiftlint", "lint", "--quiet", cwd])

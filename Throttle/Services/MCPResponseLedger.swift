@@ -50,7 +50,7 @@ enum MCPResponseLedger {
             // punctuation, and a trimming rule that confuses the two would
             // report savings it never made.
             "bytes": bytes,
-            "text_bytes": textBytes,
+            "text_bytes": textBytes
         ]
         if parts.count > 1 { rec["name"] = parts.dropFirst().joined(separator: "__") }
 
@@ -60,7 +60,8 @@ enum MCPResponseLedger {
         if let h = try? FileHandle(forWritingTo: url) {
             h.seekToEndOfFile(); h.write(line); h.write(Data([0x0a])); try? h.close()
         } else {
-            try? (String(data: line, encoding: .utf8)! + "\n").write(to: url, atomically: true, encoding: .utf8)
+            guard let text = String(data: line, encoding: .utf8) else { return }
+            try? (text + "\n").write(to: url, atomically: true, encoding: .utf8)
         }
     }
 

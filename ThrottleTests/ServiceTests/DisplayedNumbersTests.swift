@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// Tests for the numbers Throttle SHOWS, as opposed to the machinery that
 /// produces them.

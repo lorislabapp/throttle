@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// Locks the "2h 14m" reset-countdown format now shown in the menu-bar dropdown
 /// (alongside the wall-clock "resets 9pm") as well as the cockpit binding.

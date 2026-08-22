@@ -1,5 +1,5 @@
-import Foundation
 import Accelerate
+import Foundation
 
 /// Edge vector store (Chantier 4) — the stack-agnostic layer. `VectorStore` is the
 /// contract; `BruteForceVectorStore` is the pure-Swift V1 baseline (cosine over

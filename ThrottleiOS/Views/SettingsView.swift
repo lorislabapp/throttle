@@ -1,6 +1,6 @@
 import SwiftUI
-import UserNotifications
 import ThrottleShared
+import UserNotifications
 
 /// A small Settings surface so notification permission and iCloud state aren't
 /// dead-ends: the one-shot onboarding used to be the only place to grant

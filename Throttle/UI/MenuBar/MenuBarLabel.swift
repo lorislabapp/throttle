@@ -6,6 +6,11 @@ struct MenuBarLabel: View {
     var body: some View {
         // Counted here, inside the pass being measured: a runaway is a render
         // RATE, and no observer outside the view can see it.
+        // `let _ =` on purpose: inside a @ViewBuilder this is a declaration and
+        // contributes no view, while a bare `_ =` is an expression the builder
+        // tries to turn into one. SwiftLint's redundant_discardable_let
+        // autocorrect made that change and broke the build.
+        // swiftlint:disable:next redundant_discardable_let
         let _ = MenuBarUpdateGuard.noteRender()
 
         // A runaway update loop on this label swap-locked a 16 GB Mac (3.2.88).

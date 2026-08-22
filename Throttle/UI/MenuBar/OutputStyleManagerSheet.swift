@@ -101,8 +101,7 @@ struct OutputStyleManagerSheet: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(style.name).font(.system(size: 13, weight: .medium))
-                    if style.isBuiltIn { tag("BUILT-IN") }
-                    else if style.isTemplate { tag("READY") }
+                    if style.isBuiltIn { tag("BUILT-IN") } else if style.isTemplate { tag("READY") }
                 }
                 Text(style.description).font(.system(size: 11)).foregroundStyle(.secondary)
                     .lineLimit(2).fixedSize(horizontal: false, vertical: true)
@@ -199,7 +198,7 @@ struct OutputStyleManagerSheet: View {
             Task {
                 let share = try? await DatabaseManager.shared.open()
                     .read { db in try StatsDataService.outputCostShare(in: db, range: .last30d) }
-                await MainActor.run { outputShare = share ?? nil }
+                await MainActor.run { outputShare = share}
             }
         }
     }

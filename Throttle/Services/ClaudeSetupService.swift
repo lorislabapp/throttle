@@ -64,9 +64,7 @@ enum ClaudeSetupService {
         let kind = (d["type"] as? String) ?? "stdio"
         // NEVER read `env` — secrets live there. Show only the transport locator.
         let locator: String
-        if let url = d["url"] as? String { locator = url }
-        else if let cmd = d["command"] as? String { locator = (cmd as NSString).lastPathComponent }
-        else { locator = "" }
+        if let url = d["url"] as? String { locator = url } else if let cmd = d["command"] as? String { locator = (cmd as NSString).lastPathComponent } else { locator = "" }
         return MCPEntry(name: name, kind: kind, locator: locator)
     }
 
@@ -99,8 +97,7 @@ enum ClaudeSetupService {
         for line in lines.dropFirst() {
             let t = line.trimmingCharacters(in: .whitespaces)
             if t == "---" { break }
-            if name == nil, t.hasPrefix("name:") { name = value(t, "name:") }
-            else if desc == nil, t.hasPrefix("description:") { desc = value(t, "description:") }
+            if name == nil, t.hasPrefix("name:") { name = value(t, "name:") } else if desc == nil, t.hasPrefix("description:") { desc = value(t, "description:") }
         }
         return (name, desc)
     }

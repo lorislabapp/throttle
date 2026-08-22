@@ -29,13 +29,13 @@ enum PortfolioMapService {
     private static let skipDirs: Set<String> = [".git", "node_modules", ".build", "Pods",
                                                 "DerivedData", ".worktrees", "build", ".swiftpm"]
     private static let stop: Set<String> = [
-        "the","and","for","with","from","into","claude","code","app","apps","ios","macos","mac",
-        "swift","research","deep","readme","index","notes","note","doc","docs","plan","plans",
-        "final","draft","brief","report","analysis","strategy","phase","phase1","phase2","phase3",
-        "implementation","architecture","foundation","overview","design","guide","part","section",
-        "spec","specs","agenda","queue","synthese","synthesis","audit","roadmap","tasks","task",
-        "todo","status","summary","current","new","old","test","tests","fix","fixes","update",
-        "flow","product","gemini"]
+        "the", "and", "for", "with", "from", "into", "claude", "code", "app", "apps", "ios", "macos", "mac",
+        "swift", "research", "deep", "readme", "index", "notes", "note", "doc", "docs", "plan", "plans",
+        "final", "draft", "brief", "report", "analysis", "strategy", "phase", "phase1", "phase2", "phase3",
+        "implementation", "architecture", "foundation", "overview", "design", "guide", "part", "section",
+        "spec", "specs", "agenda", "queue", "synthese", "synthesis", "audit", "roadmap", "tasks", "task",
+        "todo", "status", "summary", "current", "new", "old", "test", "tests", "fix", "fixes", "update",
+        "flow", "product", "gemini"]
 
     static func scan(minApps: Int = 2, topCode: Int = 14, topResearch: Int = 16) async -> PortfolioGraph {
         await Task.detached(priority: .utility) { computeSync(minApps, topCode, topResearch) }.value

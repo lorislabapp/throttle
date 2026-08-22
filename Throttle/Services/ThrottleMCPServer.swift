@@ -30,7 +30,7 @@ enum ThrottleMCPServer {
             respond(id: id, result: [
                 "protocolVersion": "2024-11-05",
                 "capabilities": ["tools": [:] as [String: Any]],
-                "serverInfo": ["name": "throttle-memory", "version": "1.0.0"],
+                "serverInfo": ["name": "throttle-memory", "version": "1.0.0"]
             ])
         case "tools/list":
             var tools = [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema(), mcpHealthSchema(), expandPointerSchema(), recallSchema(), semanticSearchSchema(), contextReadSchema()]
@@ -146,10 +146,10 @@ enum ThrottleMCPServer {
                 "type": "object",
                 "properties": [
                     "query": ["type": "string", "description": "Keywords or a phrase to find in past sessions."],
-                    "limit": ["type": "integer", "description": "Max results (default 12)."],
+                    "limit": ["type": "integer", "description": "Max results (default 12)."]
                 ],
-                "required": ["query"],
-            ],
+                "required": ["query"]
+            ]
         ]
     }
 
@@ -157,7 +157,7 @@ enum ThrottleMCPServer {
         [
             "name": "get_budget_headroom",
             "description": "How much Claude Code usage budget the user has left RIGHT NOW: the 5-hour rolling cap and the 7-day cap, as % used and % headroom remaining. Call this before starting an expensive task, or when the user asks 'how much do I have left' / 'am I close to the cap'. Read-only; reflects what Throttle's meter currently shows.",
-            "inputSchema": ["type": "object", "properties": [:] as [String: Any]],
+            "inputSchema": ["type": "object", "properties": [:] as [String: Any]]
         ]
     }
 
@@ -165,7 +165,7 @@ enum ThrottleMCPServer {
         [
             "name": "get_session_cost",
             "description": "The user's recent Claude Code token spend and reference cost (last 7 days, weighted tokens + ≈EUR at developer-API rates), plus tokens Throttle's optimizations saved. A reference figure, not the user's actual subscription bill. Use when the user asks what their work is costing or how much Throttle is saving.",
-            "inputSchema": ["type": "object", "properties": [:] as [String: Any]],
+            "inputSchema": ["type": "object", "properties": [:] as [String: Any]]
         ]
     }
 
@@ -206,7 +206,7 @@ enum ThrottleMCPServer {
         [
             "name": "get_dead_skills",
             "description": "List the MCP servers and skills that are LOADED into every Claude Code session (costing schema tokens in the context window) but went UNUSED over the last 30 days. Purely informative context about your own tool-loadout weight — it does not tell you to change anything; the user decides what to prune.",
-            "inputSchema": ["type": "object", "properties": [:] as [String: Any]],
+            "inputSchema": ["type": "object", "properties": [:] as [String: Any]]
         ]
     }
 
@@ -224,7 +224,7 @@ enum ThrottleMCPServer {
         [
             "name": "get_mcp_health_status",
             "description": "Health of the user's OTHER MCP servers as last probed by Throttle: which are ok / slow / down / unreachable, their latency and tool count. Call this if one of your tools is failing or hanging, to know whether a server is a zombie. Informative only; reports how long ago it was probed.",
-            "inputSchema": ["type": "object", "properties": [:] as [String: Any]],
+            "inputSchema": ["type": "object", "properties": [:] as [String: Any]]
         ]
     }
 
@@ -250,10 +250,10 @@ enum ThrottleMCPServer {
             "inputSchema": [
                 "type": "object",
                 "properties": [
-                    "throttle_id": ["type": "string", "description": "The 64-character SHA-256 ID from the Throttle pointer."],
+                    "throttle_id": ["type": "string", "description": "The 64-character SHA-256 ID from the Throttle pointer."]
                 ],
-                "required": ["throttle_id"],
-            ],
+                "required": ["throttle_id"]
+            ]
         ]
     }
 
@@ -273,10 +273,10 @@ enum ThrottleMCPServer {
                 "type": "object",
                 "properties": [
                     "topic": ["type": "string", "description": "Subject to recall, e.g. 'Stripe API'."],
-                    "scope": ["type": "string", "description": "Optional project/context to specialize the fact, e.g. 'Throttle'."],
+                    "scope": ["type": "string", "description": "Optional project/context to specialize the fact, e.g. 'Throttle'."]
                 ],
-                "required": ["topic"],
-            ],
+                "required": ["topic"]
+            ]
         ]
     }
 
@@ -305,10 +305,10 @@ enum ThrottleMCPServer {
                 "properties": [
                     "query": ["type": "string", "description": "What you're looking for, in natural language."],
                     "repo": ["type": "string", "description": "Optional absolute repo path; defaults to the current working directory's repo."],
-                    "k": ["type": "integer", "description": "Max results (default 6)."],
+                    "k": ["type": "integer", "description": "Max results (default 6)."]
                 ],
-                "required": ["query"],
-            ],
+                "required": ["query"]
+            ]
         ]
     }
 
@@ -338,10 +338,10 @@ enum ThrottleMCPServer {
                 "properties": [
                     "path": ["type": "string", "description": "File path, absolute or relative to repo."],
                     "query": ["type": "string", "description": "What evidence to select. Omit for a structural overview."],
-                    "maxChars": ["type": "integer", "description": "Context budget, 1000-64000 characters (default 12000)."],
+                    "maxChars": ["type": "integer", "description": "Context budget, 1000-64000 characters (default 12000)."]
                 ],
-                "required": ["path"],
-            ],
+                "required": ["path"]
+            ]
         ]
     }
 
@@ -354,10 +354,10 @@ enum ThrottleMCPServer {
                 "properties": [
                     "throttle_id": ["type": "string", "description": "64-character content ID returned by Throttle."],
                     "task": ["type": "string", "description": "Bounded synthesis task, e.g. extract decisions and unresolved blockers."],
-                    "maxTokens": ["type": "integer", "description": "Output ceiling, 64-768 tokens (default 384)."],
+                    "maxTokens": ["type": "integer", "description": "Output ceiling, 64-768 tokens (default 384)."]
                 ],
-                "required": ["throttle_id", "task"],
-            ],
+                "required": ["throttle_id", "task"]
+            ]
         ]
     }
 
@@ -371,10 +371,10 @@ enum ThrottleMCPServer {
                     "throttle_id": ["type": "string", "description": "64-character content ID returned by Throttle."],
                     "objective": ["type": "string", "description": "One bounded outcome with explicit scope."],
                     "kind": ["type": "string", "enum": ["summarize", "extract", "classify", "normalize", "draft"]],
-                    "maxTokens": ["type": "integer", "description": "Output ceiling, 64-768 tokens (default 384)."],
+                    "maxTokens": ["type": "integer", "description": "Output ceiling, 64-768 tokens (default 384)."]
                 ],
-                "required": ["throttle_id", "objective", "kind"],
-            ],
+                "required": ["throttle_id", "objective", "kind"]
+            ]
         ]
     }
 
@@ -416,10 +416,10 @@ enum ThrottleMCPServer {
                     "maxChars": ["type": "integer", "description": "Cap on returned text length (default 12000)."],
                     "timeoutMs": ["type": "integer", "description": "Max render time in ms (default 15000, hard-capped at 30000)."],
                     "useCache": ["type": "boolean", "description": "Reuse a recent identical render (default true; within ~1h) instead of re-rendering. Set false to force a fresh render."],
-                    "query": ["type": "string", "description": "Focus the returned evidence packet on this question. Exact numbered excerpts are returned; the full rendered page remains rehydratable."],
+                    "query": ["type": "string", "description": "Focus the returned evidence packet on this question. Exact numbered excerpts are returned; the full rendered page remains rehydratable."]
                 ],
-                "required": ["url"],
-            ],
+                "required": ["url"]
+            ]
         ]
     }
 
@@ -433,10 +433,10 @@ enum ThrottleMCPServer {
                     "query": ["type": "string", "description": "The research question, in natural language — used to retrieve the related local chunks."],
                     "urls": ["type": "array", "items": ["type": "string"], "description": "Public http(s) page URLs to render and consult. Find them with WebSearch first."],
                     "repo": ["type": "string", "description": "Optional absolute repo path to ground against; defaults to the current working directory's repo."],
-                    "groundingK": ["type": "integer", "description": "Max local chunks to return (default 6)."],
+                    "groundingK": ["type": "integer", "description": "Max local chunks to return (default 6)."]
                 ],
-                "required": ["query"],
-            ],
+                "required": ["query"]
+            ]
         ]
     }
 

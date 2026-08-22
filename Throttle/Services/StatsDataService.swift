@@ -268,7 +268,7 @@ enum StatsDataService {
         let nowEpoch = Int64(now.timeIntervalSince1970)
         let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
         let startTs = nowEpoch - Int64(toHoursAgo) * 3600
-        let _ = encodedName  // see fs.encoded_project filter below
+        _ = encodedName  // see fs.encoded_project filter below
         let sql = """
             SELECT COALESCE(SUM(e.input_tokens + e.output_tokens + e.cache_create + (e.cache_read / 10)), 0) AS w
             FROM usage_events e
@@ -502,7 +502,7 @@ enum StatsDataService {
         let nowEpoch = Int64(now.timeIntervalSince1970)
         let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
         let startTs = nowEpoch - Int64(toHoursAgo) * 3600
-        let _ = encodedName  // see fs.encoded_project filter below
+        _ = encodedName  // see fs.encoded_project filter below
         let sql = """
             SELECT
                 COUNT(DISTINCT e.session_id) AS sessions,
@@ -529,7 +529,7 @@ enum StatsDataService {
         let nowEpoch = Int64(now.timeIntervalSince1970)
         let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
         let startTs = nowEpoch - Int64(toHoursAgo) * 3600
-        let _ = encodedName  // see fs.encoded_project filter below
+        _ = encodedName  // see fs.encoded_project filter below
         let sql = """
             SELECT
                 CASE
@@ -564,7 +564,7 @@ enum StatsDataService {
         let nowEpoch = Int64(now.timeIntervalSince1970)
         let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
         let startTs = nowEpoch - Int64(toHoursAgo) * 3600
-        let _ = encodedName  // see fs.encoded_project filter below
+        _ = encodedName  // see fs.encoded_project filter below
         let sql = """
             SELECT
                 CASE

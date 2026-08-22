@@ -1,6 +1,6 @@
 import Foundation
-import Sparkle
 import OSLog
+import Sparkle
 
 /// Wraps SPUStandardUpdaterController so the rest of the app talks to a
 /// stable, MainActor-friendly façade. We keep automatic checks on by

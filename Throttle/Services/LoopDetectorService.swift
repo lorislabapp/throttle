@@ -82,8 +82,7 @@ enum LoopDetectorService {
     /// name + a short stable digest of the input (command for Bash, else the JSON).
     private static func signature(name: String, input: [String: Any]?) -> String {
         let detail: String
-        if let cmd = input?["command"] as? String { detail = String(cmd.prefix(200)) }
-        else if let input, let data = try? JSONSerialization.data(withJSONObject: input, options: [.sortedKeys]) {
+        if let cmd = input?["command"] as? String { detail = String(cmd.prefix(200)) } else if let input, let data = try? JSONSerialization.data(withJSONObject: input, options: [.sortedKeys]) {
             detail = String(decoding: data.prefix(200), as: UTF8.self)
         } else { detail = "" }
         return "\(name):\(detail)"

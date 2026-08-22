@@ -87,10 +87,10 @@ enum TokoptBenchmark {
 
         return [
             ("cargo test (green)", "cargo test", cargoGreen),
-            ("cargo test (fail)",  "cargo test", cargoFail),
-            ("git status",         "git status", gitStatus),
-            ("npm install",        "npm install", npmInstall),
-            ("json array",         "gh api /x", jsonArray),
+            ("cargo test (fail)", "cargo test", cargoFail),
+            ("git status", "git status", gitStatus),
+            ("npm install", "npm install", npmInstall),
+            ("json array", "gh api /x", jsonArray)
         ]
     }()
 }

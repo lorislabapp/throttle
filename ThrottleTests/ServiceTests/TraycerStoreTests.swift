@@ -1,6 +1,6 @@
-import XCTest
 import GRDB
 @testable import Throttle
+import XCTest
 
 /// Store tests on an in-memory DB seeded from the real OTLP fixture. Proves
 /// idempotent ingestion (replayed OTLP batch = no double-count) and the

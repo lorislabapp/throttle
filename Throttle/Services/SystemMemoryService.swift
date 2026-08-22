@@ -1,5 +1,5 @@
-import Foundation
 import Darwin
+import Foundation
 
 /// Live system-memory health — the missing half of the "keep going?" decision.
 /// Token headroom says nothing about whether the Mac can take another `claude`

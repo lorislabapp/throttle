@@ -162,3 +162,53 @@ Rien n'a alerté pendant 20 minutes de panne totale. Une alerte sur
 - Deux bugs Throttle relevés pendant l'incident : une session distante morte
   garde l'air vivante, et une session affichée « offloadée » tournait en fait
   en local.
+
+---
+
+## Résolution — appliquée le 2026-08-22 (session homelab)
+
+**Diagnostic indépendant : conclusion « swap plein » CONFIRMÉE.** Mesuré à nouveau
+en direct : `SwapFree` = 68–196 kB (zram 8 GB à 100 %), `Write-error on
+swap-device (251:0:…)` **encore actifs** (10:20), load 18–23, MemAvailable
+descendu jusqu'à **13 %** pendant l'intervention. Le mécanisme est exactement
+celui décrit : zram plein → le noyau ne peut plus swapper → allocations bloquées
+→ services muets pendant que l'ARP répond.
+
+**Hypothèse ajoutée puis écartée :** l'ARC ZFS n'est **pas** le voleur de RAM
+caché — `size` = 3,4 GB, `c_max` = 6,3 GB (déjà plafonné). Les deux plus gros
+postes sont les **VM `mailcow` (180)** et **`ha` (450)**, 8 GB chacune, sans
+ballooning. **Aucun OOM-killer userspace** n'était présent (`earlyoom` absent,
+`systemd-oomd` inactif) → rien ne tuait un process avant le deadlock noyau.
+
+### ⚠️ Correctif #1 (swap zvol) écarté — ne pas l'appliquer
+Un swap sur zvol ZFS **deadlocke** sous pression : pour écrire la page de swap
+censée libérer de la RAM, ZFS doit en **allouer**, alors qu'il n'y en a plus.
+C'est vraisemblablement pourquoi un zvol swap avait déjà été retiré après un
+freeze (mémoire homelab : « freeze fixed, zvol swap removed »). Le rajouter
+reproduirait la panne. Choix retenu à la place : **earlyoom** (dégrader au lieu
+de figer).
+
+### Ce qui a été appliqué (tout à chaud, aucun reboot)
+
+| # | Action | Détail |
+| --- | --- | --- |
+| 1a | **earlyoom installé + actif** | `/etc/default/earlyoom` : SIGTERM à mem≤8 %, SIGKILL à 4 %. `--avoid (kvm\|qemu\|systemd\|sshd\|pmxcfs\|pve\|corosync\|watchdog\|zed\|lxcfs\|init)` (protège VM + démons PVE), `--prefer (ffmpeg\|frigate\|python\|java\|Suricata\|motis)`. Tue un process de conteneur (redémarré seul) au lieu de figer l'hôte. |
+| 3 | **Alerte mémoire → Slack** | `/root/pve-mem-alert.sh` + `pve-mem-alert.timer` (2 min). Seuil **MemAvailable ≤ 15 %** (précurseur réel — « swap>90 % » seul déclencherait en permanence, le zram étant chroniquement plein). Canal Slack *LorisLabs Comms*, cooldown 30 min, message de rétablissement à ≥20 %. **Testé (`ok=true`), a déjà déclenché à 15 %.** |
+| 1b | **Ballooning VM** | `qm set 180 --balloon 6144` + `qm set 450 --balloon 6144` (min 6 / max 8 GB) → pvestatd récupère jusqu'à ~4 GB sous pression. |
+| — | **Délestage** | Jellyfin (CT173) arrêté + `--onboot 0` (redondant avec Plex, **+1,9 GB**) ; Plex éteint la nuit `/etc/cron.d/plex-night` (`pct stop 105` @00h, `start` @08h). |
+| — | **KSM** | `ksmtuned` déjà actif (dédup pages inter-VM). |
+| 2 | **Tempête broadcast Plex coupée** | DLNA + GDM désactivés à chaud via l'API Plex (`PUT /:/prefs?DlnaEnabled=0&GdmEnabled=0`). Martians **~4200 → ~120 /min** (–97 %). Un restart Plex finirait le résiduel. |
+
+### Vérifications de reprise
+- earlyoom `active`, `pve-mem-alert.timer` `active`.
+- MemAvailable remonté à ~10–11 GB après l'arrêt de Jellyfin.
+- Post Slack de test : `ok=true`.
+
+### Ce qui reste — durable
+**Plus de RAM.** 62 GB reste trop juste pour la flotte (2 VM = 16 GB + Frigate
+3,2 GB + conteneurs). earlyoom empêche le crash mais ne crée pas de RAM → cible :
+**barrettes 32 GB DDR4-3200 RDIMM ECC** (voir discussion d'achat en cours). Le
+restart de Plex (résiduel martian) et l'arbitrage sur ce qui doit vraiment
+tourner (2e serveur média, VM à 8 GB fixes) restent à trancher.
+
+_Détail complet + commandes rejouables : mémoire homelab `pve-memory-freeze-earlyoom`._

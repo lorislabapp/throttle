@@ -1,6 +1,6 @@
 import Foundation
-import Security
 import OSLog
+import Security
 
 /// Server-truth usage via Anthropic's OAuth endpoint — the same numbers the
 /// Claude apps show, aggregated across ALL the user's machines, fetched
@@ -97,7 +97,7 @@ enum OAuthUsageProvider {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "Claude Code-credentials",
             kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecMatchLimit as String: kSecMatchLimitOne
         ]
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)

@@ -1,5 +1,5 @@
-import Foundation
 import CloudKit
+import Foundation
 
 /// Maps `ThrottleMirrorSnapshot` ↔ `CKRecord`. The whole snapshot rides as one
 /// JSON blob in `encryptedValues[payload]`; only `publishedAt` + `schemaVersion`

@@ -1,6 +1,6 @@
-import XCTest
 import GRDB
 @testable import Throttle
+import XCTest
 
 /// CacheBustAnalyzer: classifies recoverable prompt-cache misses into model-swap vs
 /// prefix-churn, and prices them.

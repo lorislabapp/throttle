@@ -11,9 +11,9 @@ import SwiftUI
 struct ProUpsellBanner: View {
     let configSize: Int  // Size of user's config in KB
     let savings: Int     // Potential savings %
-    
+
     @State private var dismissed: Bool = false
-    
+
     var body: some View {
         if !dismissed {
             HStack(spacing: 12) {
@@ -25,19 +25,19 @@ struct ProUpsellBanner: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 24))
                     .foregroundStyle(.orange)
-                
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Your config is bloated")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
-                    
+
                     Text("**\(configSize)KB** could be \(savings)% smaller with Pro Optimizer")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                
+
                 Spacer(minLength: 0)
-                
+
                 // CTA Button
                 Button {
                     openProPage()
@@ -87,7 +87,7 @@ struct ProUpsellBanner: View {
             .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
-    
+
     private func openProPage() {
         if let url = URL(string: "https://lorislab.fr/throttle") {
             NSWorkspace.openInBackground(url)
@@ -98,7 +98,7 @@ struct ProUpsellBanner: View {
         let date = Date().addingTimeInterval(3 * 86400)
         UserDefaults.standard.set(date.timeIntervalSince1970, forKey: "throttle.upsell.dismissedUntil")
     }
-    
+
     // Persistence: don't nag more than once every 3 days
     private var dismissedUntil: Date? {
         get {

@@ -196,7 +196,7 @@ struct SavingsLedgerView: View {
     /// was emitting nothing at all. Anything resting on an assumed baseline is
     /// labelled as the estimate it is.
     private static let assumedBaselineHooks: Set<String> = [
-        "session-start-router", "pre-compact",
+        "session-start-router", "pre-compact"
     ]
 
     static func isMeasured(_ hook: String) -> Bool { !assumedBaselineHooks.contains(hook) }

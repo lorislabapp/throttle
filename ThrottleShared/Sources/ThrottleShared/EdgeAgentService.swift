@@ -84,7 +84,7 @@ public enum EdgeAgentService {
     /// checksummed before it's ever executed. Covers the two arches PVE actually runs.
     private static let ttydSHA256: [String: String] = [
         "x86_64": "8a217c968aba172e0dbf3f34447218dc015bc4d5e59bf51db2f2cd12b7be4f55",
-        "aarch64": "b38acadd89d1d396a0f5649aa52c539edbad07f4bc7348b27b4f4b7219dd4165",
+        "aarch64": "b38acadd89d1d396a0f5649aa52c539edbad07f4bc7348b27b4f4b7219dd4165"
     ]
 
     /// A self-contained `#!/usr/bin/env bash` script: installs Node + tmux + ttyd,
@@ -222,7 +222,7 @@ public enum EdgeAgentService {
                 tailscale status >/dev/null
                 tailscale serve --bg --yes --https=\(httpPort) localhost:\(httpPort)
                 tailscale serve status
-                """),
+                """)
         ]
     }
 

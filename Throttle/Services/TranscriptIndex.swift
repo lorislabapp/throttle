@@ -72,7 +72,7 @@ enum TranscriptIndex {
         // Newest first, bounded.
         files.sort { $0.1 > $1.1 }
         for (url, mtime) in files.prefix(maxFiles) {
-            let known = (try? db.read { try Double.fetchOne($0, sql: "SELECT mtime FROM indexed_files WHERE path = ?", arguments: [url.path]) }) ?? nil
+            let known = (try? db.read { try Double.fetchOne($0, sql: "SELECT mtime FROM indexed_files WHERE path = ?", arguments: [url.path]) })
             if let known, known >= mtime { continue }   // unchanged
             added += indexFile(url, into: db, project: decodeProject(url), mtime: mtime)
         }

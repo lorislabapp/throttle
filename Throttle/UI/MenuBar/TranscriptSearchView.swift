@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 /// Search your OWN past Claude Code sessions directly (no Claude in the loop) —
 /// full-text over ~/.claude transcripts. Type a query, get ranked snippets with

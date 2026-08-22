@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
-@preconcurrency import WebKit
 import OSLog
+@preconcurrency import WebKit
 
 /// Throttle-owned claude.ai session backed by an embedded WKWebView.
 ///
@@ -66,7 +66,7 @@ final class EmbeddedClaudeSession: NSObject {
     private var navigationInProgress = false
     private var navigationContinuations: [CheckedContinuation<Void, Error>] = []
 
-    private override init() {
+    override private init() {
         super.init()
     }
 
@@ -224,7 +224,7 @@ final class EmbeddedClaudeSession: NSObject {
         if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let status = obj["_throttle_status"] as? Int {
             if status == 401 { throw EmbeddedSessionError.notSignedIn }
-            if status > 0    { throw EmbeddedSessionError.httpError(status) }
+            if status > 0 { throw EmbeddedSessionError.httpError(status) }
             if let err = obj["_err"] as? String, !err.isEmpty {
                 throw EmbeddedSessionError.scriptError(err)
             }
@@ -261,8 +261,8 @@ final class EmbeddedClaudeSession: NSObject {
     private static func calibrationPlanKey(for planID: String) -> String? {
         let lower = planID.lowercased()
         if lower.contains("max_20x") || lower.contains("max-20x") || lower.contains("max20x") { return "max20x" }
-        if lower.contains("max_5x")  || lower.contains("max-5x")  || lower.contains("max5x")  { return "max5x" }
-        if lower.contains("pro")     { return "pro" }
+        if lower.contains("max_5x")  || lower.contains("max-5x")  || lower.contains("max5x") { return "max5x" }
+        if lower.contains("pro") { return "pro" }
         return nil
     }
 
@@ -275,11 +275,11 @@ final class EmbeddedClaudeSession: NSObject {
     static func planLabel(for planID: String) -> String {
         let lower = planID.lowercased()
         if lower.contains("max_20x") || lower.contains("max-20x") || lower.contains("max20x") { return "Max (20x)" }
-        if lower.contains("max_5x")  || lower.contains("max-5x")  || lower.contains("max5x")  { return "Max (5x)" }
-        if lower.contains("pro")     { return "Pro" }
-        if lower.contains("team")    { return "Team" }
+        if lower.contains("max_5x")  || lower.contains("max-5x")  || lower.contains("max5x") { return "Max (5x)" }
+        if lower.contains("pro") { return "Pro" }
+        if lower.contains("team") { return "Team" }
         if lower.contains("enterprise") || lower.contains("ent") { return "Enterprise" }
-        if lower.contains("free")    { return "Free" }
+        if lower.contains("free") { return "Free" }
         return planID
     }
 

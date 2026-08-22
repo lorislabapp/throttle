@@ -69,7 +69,7 @@ enum TokoptHook {
         let failureSignals = [
             "(?im)^\\s*(error|fatal|panic|exception)\\b[: ]",
             "(?im)traceback \\(most recent call last\\)",
-            "(?im)^[\\s=-]*FAIL(ED|URE)?\\b",
+            "(?im)^[\\s=-]*FAIL(ED|URE)?\\b"
         ]
         for re in failureSignals where stdout.range(of: re, options: .regularExpression) != nil {
             return false                                     // preserve diagnostics verbatim
@@ -190,7 +190,7 @@ enum TokoptHook {
             #"^Test Suite .+ (started|passed) at "#,      // XCTest suite frames
             #"^\s*[✓√]\s"#,                                // jest/vitest pass tick
             #"^PASS\s+\S+"#,                              // jest per-file PASS <path>
-            #"\bPASSED\b"#,                               // pytest -v: ::test PASSED
+            #"\bPASSED\b"#                               // pytest -v: ::test PASSED
         ]
         let dropRes = dropPatterns.compactMap { try? NSRegularExpression(pattern: $0) }
         // Defensive belt-and-braces: never drop a line carrying any diagnostic
@@ -260,7 +260,7 @@ enum TokoptHook {
             "(?i)^\\s*(downloading|fetching|resolving|compiling|building|installing|updating|extracting|unpacking|preparing|reading|writing|verifying)\\b",
             "^\\s*[\\[(]?\\d{1,3}%",                 // 42%  / [42%]
             "^[⠁-⣿✔✓●○◐◓◑◒\\-\\\\|/]\\s",            // spinner glyphs
-            "^\\s*\\d+\\s+packages?\\s+(are|in)\\b", // npm "N packages are looking for funding"
+            "^\\s*\\d+\\s+packages?\\s+(are|in)\\b" // npm "N packages are looking for funding"
         ]
         let res = progress.map { try? NSRegularExpression(pattern: $0) }
         let lines = s.components(separatedBy: "\n")
@@ -290,8 +290,7 @@ enum TokoptHook {
         var out: [String] = []
         var blanks = 0
         for l in lines {
-            if l.isEmpty { blanks += 1; if blanks <= 1 { out.append(l) } }
-            else { blanks = 0; out.append(l) }
+            if l.isEmpty { blanks += 1; if blanks <= 1 { out.append(l) } } else { blanks = 0; out.append(l) }
         }
         return out.joined(separator: "\n")
     }
@@ -306,8 +305,7 @@ enum TokoptHook {
             while j < lines.count && lines[j] == lines[i] { j += 1 }
             let n = j - i
             out.append(lines[i])
-            if n > 2 { out.append("[… repeated \(n) times]") }
-            else if n == 2 { out.append(lines[i]) }
+            if n > 2 { out.append("[… repeated \(n) times]") } else if n == 2 { out.append(lines[i]) }
             i = j
         }
         return out.joined(separator: "\n")
@@ -333,13 +331,13 @@ enum TokoptHook {
             "stdout": stdout,
             "stderr": original["stderr"] as? String ?? "",
             "interrupted": original["interrupted"] as? Bool ?? false,
-            "isImage": original["isImage"] as? Bool ?? false,
+            "isImage": original["isImage"] as? Bool ?? false
         ]
         let out: [String: Any] = [
             "hookSpecificOutput": [
                 "hookEventName": "PostToolUse",
-                "updatedToolOutput": updated,
-            ],
+                "updatedToolOutput": updated
+            ]
         ]
         // If serialization fails, print nothing → safe no-op.
         guard let data = try? JSONSerialization.data(withJSONObject: out, options: [.withoutEscapingSlashes]) else { return }
@@ -393,7 +391,7 @@ enum TokoptHook {
             "ts": Int(Date().timeIntervalSince1970),
             "hook": hook,
             "baseline_bytes": before,
-            "actual_bytes": after,
+            "actual_bytes": after
         ]
         guard let line = try? JSONSerialization.data(withJSONObject: rec) else { return }
         if let h = try? FileHandle(forWritingTo: url) {

@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// DeltaMem residual-tree store: roots + scope-applicable deltas compose into one
 /// effective fact, deltas never orphan, and the graph persists.

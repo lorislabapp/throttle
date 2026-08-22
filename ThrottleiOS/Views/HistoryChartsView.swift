@@ -1,5 +1,5 @@
-import SwiftUI
 import Charts
+import SwiftUI
 import ThrottleShared
 
 /// The standalone value (App Store 4.2): usage history + trends built entirely

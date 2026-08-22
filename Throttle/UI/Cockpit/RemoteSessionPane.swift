@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftTerm
+import SwiftUI
 import ThrottleShared
 
 /// Connection state for a remote (edge-agent) terminal — mirrors the iOS

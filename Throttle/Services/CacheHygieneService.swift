@@ -15,7 +15,7 @@ struct CacheRisk: Sendable, Identifiable {
     let severity: Severity
     /// The file the user should open to fix this — the hook script (or
     /// settings.json where it's wired) / the CLAUDE.md. nil if unresolved.
-    var path: String? = nil
+    var path: String?
 }
 
 struct CacheHygieneReport: Sendable {
@@ -39,7 +39,7 @@ enum CacheHygieneService {
         "$random", "${random", "uuidgen", "$(uuidgen",             // randomness
         "timestamp", "epoch", "nanosecond",
         "$(hostname", "`hostname", "ifconfig", "ipconfig",         // host/net identity
-        "curl ", "wget ",                                          // live network fetch
+        "curl ", "wget "                                          // live network fetch
     ]
 
     static func scan() -> CacheHygieneReport {

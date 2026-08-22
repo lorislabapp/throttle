@@ -448,7 +448,7 @@ final class RemoteSessionsService {
     }
 
     /// Run git off-main; returns trimmed stdout, nil on any failure.
-    private nonisolated static func runGit(_ args: [String],
+    nonisolated private static func runGit(_ args: [String],
                                           env: [String: String] = [:]) async -> String? {
         await withCheckedContinuation { cont in
             DispatchQueue.global(qos: .userInitiated).async {

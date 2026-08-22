@@ -25,7 +25,7 @@ enum SettingsAuditService {
         "Read(./node_modules/**)",
         "Read(./dist/**)",
         "Read(./build/**)",
-        "Bash(git push *)",
+        "Bash(git push *)"
     ]
 
     /// Merge the recommended wins into `currentJSON`. Never removes or overrides

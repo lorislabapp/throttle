@@ -1,6 +1,6 @@
-import XCTest
 import GRDB
 @testable import Throttle
+import XCTest
 
 final class CalibrationEngineTests: XCTestCase {
     private func makeDatabase() throws -> DatabaseQueue {

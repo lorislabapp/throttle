@@ -69,7 +69,7 @@ final class EdgeDeployService {
         steps = plan.map { StepStatus(label: $0.label) } + [
             StepStatus(label: "Verify Streamable HTTP"),
             StepStatus(label: "Bundle + clone repository"),
-            StepStatus(label: "Route Claude to edge"),
+            StepStatus(label: "Route Claude to edge")
         ]
         running = true
         failureDetail = nil
@@ -164,7 +164,7 @@ final class EdgeDeployService {
         let object: [String: Any] = [
             "type": "http",
             "url": url,
-            "headers": ["Authorization": "Bearer \(token)"],
+            "headers": ["Authorization": "Bearer \(token)"]
         ]
         guard JSONSerialization.isValidJSONObject(object) else {
             throw DeployError.invalidDefinition
@@ -173,13 +173,13 @@ final class EdgeDeployService {
                                           options: [.sortedKeys, .withoutEscapingSlashes])
     }
 
-    private nonisolated static func installClaudeEdgeRoute(baseURL: String,
+    nonisolated private static func installClaudeEdgeRoute(baseURL: String,
                                                            token: String) throws {
         try MCPConfigService.add(name: "throttle-edge", scope: .user,
                                  defJSON: edgeMCPDefinition(baseURL: baseURL, token: token))
     }
 
-    private nonisolated static func bundleAndUpload(repository: URL, remoteCwd: String,
+    nonisolated private static func bundleAndUpload(repository: URL, remoteCwd: String,
                                                     baseURL: String, token: String) async throws {
         let bundle = FileManager.default.temporaryDirectory
             .appendingPathComponent("throttle-edge-\(UUID().uuidString).bundle")
@@ -197,7 +197,7 @@ final class EdgeDeployService {
             branch: branch == "HEAD" ? "HEAD" : branch, fileURL: bundle)
     }
 
-    private nonisolated static func runGit(_ arguments: [String]) async -> String? {
+    nonisolated private static func runGit(_ arguments: [String]) async -> String? {
         await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 let process = Process()

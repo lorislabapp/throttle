@@ -12,7 +12,7 @@ public enum KeychainStore {
         let base: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "com.lorislab.throttle",
-            kSecAttrAccount as String: account,
+            kSecAttrAccount as String: account
         ]
         SecItemDelete(base as CFDictionary)
         guard let value, let data = value.data(using: .utf8) else { return true }
@@ -28,7 +28,7 @@ public enum KeychainStore {
             kSecAttrService as String: "com.lorislab.throttle",
             kSecAttrAccount as String: account,
             kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecMatchLimit as String: kSecMatchLimitOne
         ]
         var out: CFTypeRef?
         guard SecItemCopyMatching(query as CFDictionary, &out) == errSecSuccess,

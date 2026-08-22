@@ -40,7 +40,7 @@ enum LogFoldService {
         let clean = stripANSI(raw)
         var out: [String] = []
         var collapsed = 0
-        var previousTrimmed: String? = nil
+        var previousTrimmed: String?
         var runLength = 0
 
         func flushRun() {

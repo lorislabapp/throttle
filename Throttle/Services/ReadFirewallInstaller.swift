@@ -12,8 +12,8 @@ enum ReadFirewallInstaller {
             "env": [
                 "EMBEDDING_MODEL": "Xenova/all-MiniLM-L6-v2",
                 "VECTOR_STORE": "lancedb",
-                "LANCEDB_PATH": ".throttle/lancedb",
-            ],
+                "LANCEDB_PATH": ".throttle/lancedb"
+            ]
         ]
     }
 

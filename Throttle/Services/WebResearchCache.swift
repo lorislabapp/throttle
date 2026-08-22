@@ -48,7 +48,7 @@ enum WebResearchCache {
                 WHERE url_normalized = ? AND fetched_at >= ?
                 ORDER BY fetched_at DESC LIMIT 1
                 """, arguments: [norm, cutoff]).map { (($0["content_hash"] as String), ($0["fetched_at"] as Int)) }
-        }) ?? nil
+        })
         guard let (hash, at) = found,
               let data = ContentStore.get(hash),
               let text = String(data: data, encoding: .utf8) else { return nil }

@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// Sandbox tests for the AI's `bash` tool. Critical: a bug in the
 /// allowlist or arg validation lets a prompt-injected response read

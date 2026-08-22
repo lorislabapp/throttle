@@ -134,8 +134,8 @@ enum BrevityHookService {
         try JSONSerialization.data(withJSONObject: [
             "hookSpecificOutput": [
                 "hookEventName": eventName,
-                "additionalContext": directive,
-            ],
+                "additionalContext": directive
+            ]
         ], options: [.sortedKeys, .withoutEscapingSlashes])
     }
 
