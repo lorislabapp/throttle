@@ -316,6 +316,52 @@ function usageFor(cwd) {
   } catch { return { tokens: null, model: null }; }
 }
 
+
+// Bytes of the newest transcript for a working directory, across both harnesses.
+// Best-effort: a missing file is not an error, it means the session has not
+// written anything yet.
+function transcriptBytesFor(cwd) {
+  const candidates = [];
+  const codexRoot = path.join(HOME_DIR, '.codex', 'sessions');
+  const claudeRoot = path.join(HOME_DIR, '.claude', 'projects');
+  const walk = (dir, depth = 0) => {
+    if (depth > 6) return;
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) walk(full, depth + 1);
+      else if (e.name.endsWith('.jsonl')) {
+        try {
+          const st = fs.statSync(full);
+          candidates.push({ full, size: st.size, mtime: st.mtimeMs });
+        } catch { /* raced with a delete */ }
+      }
+    }
+  };
+  walk(codexRoot);
+  walk(claudeRoot);
+  if (!candidates.length) return null;
+  // Newest wins: the session writing right now is the one that matters.
+  candidates.sort((a, b) => b.mtime - a.mtime);
+  return candidates[0].size;
+}
+
+// How much memory this container actually has, so the Mac can judge a transcript
+// against the machine holding it rather than against a constant.
+let memTotalCache = null;
+function containerMemoryTotal() {
+  if (memTotalCache !== null) return memTotalCache;
+  for (const p of ['/sys/fs/cgroup/memory.max', '/sys/fs/cgroup/memory/memory.limit_in_bytes']) {
+    try {
+      const raw = fs.readFileSync(p, 'utf8').trim();
+      if (raw && raw !== 'max') { memTotalCache = Number(raw); return memTotalCache; }
+    } catch { /* not this cgroup layout */ }
+  }
+  memTotalCache = os.totalmem();
+  return memTotalCache;
+}
+
 async function listSessions() {
   const live = await tmuxList();
   return live.map(s => {
@@ -330,6 +376,14 @@ async function listSessions() {
       model: u.model,
       tokens: u.tokens,
       startedAt: s.created,
+      // The size of the transcript this session is holding. A harness keeps its
+      // rollout in memory, so on a small container this number, not the token
+      // count, is what decides whether the session survives: measured
+      // 2026-08-22, a codex rollout reached 275 MB here and the OOM killer took
+      // the session and this unit with it. Reported so the Mac can warn while
+      // there is still time to act.
+      transcriptBytes: meta.cwd ? transcriptBytesFor(meta.cwd) : null,
+      memoryTotalBytes: containerMemoryTotal(),
     };
   });
 }

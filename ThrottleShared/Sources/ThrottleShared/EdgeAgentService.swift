@@ -37,6 +37,13 @@ public enum EdgeAgentService {
         public let state: String
         public let model: String?
         public let tokens: Int?
+        /// Size of the transcript this session is holding on the box. A harness
+        /// keeps its rollout in memory, so on a small container this is what
+        /// decides survival — not the token count.
+        public let transcriptBytes: Int?
+        /// The box's own memory ceiling, so a transcript is judged against the
+        /// machine holding it rather than a constant.
+        public let memoryTotalBytes: Int?
         public let startedAt: Double?
     }
 

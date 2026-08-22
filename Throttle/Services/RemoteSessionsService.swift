@@ -66,12 +66,47 @@ final class RemoteSessionsService {
             let gone = sessions.filter { goneIDs.contains($0.id) }
             sessions = list
             for session in gone { onSessionVanished?(session) }
+            warnOnTranscriptGrowth(list)
         }
     }
 
     /// Raised when a remote session the app was tracking is no longer reported by
     /// the box. `nil` until the cockpit wires a notification to it.
     var onSessionVanished: ((EdgeAgentService.RemoteSession) -> Void)?
+
+    /// Raised once per session when its transcript grows past a share of the
+    /// box's memory. `nil` until the cockpit wires a notification to it.
+    var onTranscriptTooLarge: ((EdgeAgentService.RemoteSession, String) -> Void)?
+    private var warnedTranscripts: Set<String> = []
+
+    /// Warn while the session can still be saved.
+    ///
+    /// The guard at offload time only covers sessions being moved. The one that
+    /// died on 2026-08-22 was already on the box and grew there: its rollout
+    /// reached 275 MB against 2 GB of container memory, and nothing watched it.
+    /// The threshold is a fraction of the box's actual memory rather than a fixed
+    /// size, because the same transcript is harmless on a large machine.
+    private func warnOnTranscriptGrowth(_ list: [EdgeAgentService.RemoteSession]) {
+        for session in list {
+            guard let bytes = session.transcriptBytes, bytes > 0 else { continue }
+            let total = session.memoryTotalBytes ?? (2 * 1024 * 1024 * 1024)
+            // An eighth of the box's memory: the session that died was at roughly
+            // that mark twenty minutes before the kill, which is enough warning
+            // to finish a thought and start fresh.
+            guard bytes >= total / 8 else {
+                warnedTranscripts.remove(session.id)   // shrank or restarted
+                continue
+            }
+            guard !warnedTranscripts.contains(session.id) else { continue }
+            warnedTranscripts.insert(session.id)
+            let size = ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
+            let cap = ByteCountFormatter.string(fromByteCount: Int64(total), countStyle: .memory)
+            onTranscriptTooLarge?(session,
+                "Its transcript has reached \(size) on a box with \(cap). A harness holds that in "
+                + "memory: a session was killed here at 275 MB on 2026-08-22. Finish the thought and "
+                + "start a fresh session — the code stays where it is.")
+        }
+    }
 
     /// Poll every 10 s while the panel is visible / feature is on.
     func startPolling() {

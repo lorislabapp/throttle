@@ -613,6 +613,10 @@ struct MultiCockpitRoot: View {
                 CockpitNotifier.shared.notifyRemoteSessionEnded(
                     project: session.project)
             }
+            remoteSvc.onTranscriptTooLarge = { session, why in
+                CockpitNotifier.shared.notifyWaiting(project: session.project,
+                                                     question: why, tabID: UUID())
+            }
             remoteSvc.startPolling()
         }
         // Sits ABOVE the pane on purpose. The whole failure is that the pane looks
