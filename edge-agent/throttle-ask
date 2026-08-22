@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+#
+# throttle-ask — from the box, ask the Mac to do what the box cannot.
+#
+# A session offloaded here has the CPU and the memory but not the toolchain:
+# no Xcode, no simulators, no signing identity, no macOS. Rather than stopping
+# at the first build, it asks the Mac for a named capability and waits.
+#
+#   throttle-ask build --repo Eclair --scheme Eclair
+#   throttle-ask test  --repo Throttle --scheme Throttle
+#   throttle-ask lint  --repo Throttle
+#
+# What you may ask for is a NAME, never a command. The Mac owns the mapping from
+# name to command line, and refuses anything it does not offer. That asymmetry is
+# deliberate: this box is less trusted than the laptop, so a session compromised
+# here can obtain a build and nothing else.
+#
+# Exits with the capability's own exit code, so `throttle-ask build && ...` reads
+# the way a local build would.
+set -euo pipefail
+
+AGENT="${THROTTLE_AGENT_URL:-http://127.0.0.1:8787}"
+TOKEN_FILE="${THROTTLE_AGENT_TOKEN_FILE:-/etc/throttle-agent.token}"
+POLL=5
+DEADLINE=$((20 * 60))
+
+die() { printf 'throttle-ask: %s\n' "$*" >&2; exit 64; }
+
+capability="${1:-}"
+case "$capability" in
+    build|test|lint) shift ;;
+    ""|-h|--help)
+        sed -n '3,20p' "$0" | sed 's/^# \{0,1\}//'
+        exit 0 ;;
+    *) die "unknown capability '$capability' — build, test or lint" ;;
+esac
+
+repo=""; declare -a extra=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --repo)   repo="${2:?--repo needs a value}"; shift 2 ;;
+        --scheme) extra+=("scheme" "${2:?--scheme needs a value}"); shift 2 ;;
+        --configuration) extra+=("configuration" "${2:?--configuration needs a value}"); shift 2 ;;
+        *) die "unexpected argument '$1'" ;;
+    esac
+done
+[ -n "$repo" ] || die "--repo is required (the mirror name, e.g. Eclair)"
+
+[ -r "$TOKEN_FILE" ] || die "cannot read the agent token at $TOKEN_FILE"
+TOKEN=$(cat "$TOKEN_FILE")
+
+# Build the args object without a JSON library — values are already constrained
+# to scalars by the agent, and re-validating here keeps a typo from travelling.
+args="{}"
+if [ ${#extra[@]} -gt 0 ]; then
+    args="{"
+    i=0
+    while [ $i -lt ${#extra[@]} ]; do
+        [ $i -gt 0 ] && args="$args,"
+        args="$args\"${extra[$i]}\":\"${extra[$((i + 1))]}\""
+        i=$((i + 2))
+    done
+    args="$args}"
+fi
+
+payload="{\"capability\":\"$capability\",\"repo\":\"$repo\",\"args\":$args}"
+created=$(curl -sS --noproxy '*' -m 20 -X POST "$AGENT/capabilities" \
+    -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+    -d "$payload")
+id=$(printf '%s' "$created" | sed -n 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+[ -n "$id" ] || { printf '%s\n' "$created" >&2; die "the agent refused the request"; }
+
+printf 'asked the Mac to %s %s (request %s)\n' "$capability" "$repo" "${id:0:8}"
+
+waited=0
+while [ $waited -lt $DEADLINE ]; do
+    sleep "$POLL"; waited=$((waited + POLL))
+    rec=$(curl -sS --noproxy '*' -m 20 "$AGENT/capabilities/$id" -H "Authorization: Bearer $TOKEN")
+    state=$(printf '%s' "$rec" | sed -n 's/.*"state"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+    case "$state" in
+        pending) continue ;;
+        completed|failed)
+            # The Mac already capped the output; print it as it came.
+            printf '%s' "$rec" | python3 -c '
+import json, sys
+r = json.load(sys.stdin)
+if r.get("error"):
+    print("refused by the Mac:", r["error"], file=sys.stderr)
+    sys.exit(64)
+print(r.get("output", ""))
+sys.exit(r.get("exitCode") if isinstance(r.get("exitCode"), int) else 1)
+'
+            exit $? ;;
+        *) die "unexpected state '$state'" ;;
+    esac
+done
+die "no answer after $((DEADLINE / 60)) minutes — is the Mac awake, and is capability hosting turned on in Throttle?"

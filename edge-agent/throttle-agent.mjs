@@ -918,6 +918,93 @@ async function sendRepoBundle(req, res, url) {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// Capability requests — the box asking the Mac to do what only the Mac can do.
+//
+// A session offloaded here has no Xcode, no simulators, no signing identity and
+// no macOS. Today that means the work simply stops at the point it needs them.
+// This lets the session ask for a NAMED CAPABILITY instead: "build", "test",
+// "sign". The Mac decides what command that maps to.
+//
+// The distinction is the entire security model. A remote session that could send
+// a command string to the Mac would be a shell on the Mac, reachable from a
+// machine that is by definition less trusted than the laptop. A session that can
+// only name a capability gets a build — nothing else — even if it is fully
+// compromised. Arguments are a bounded map of scalars, never a command line.
+const CAPABILITY_ROOT = path.join(MISSION_ROOT, '..', 'capabilities');
+const CAPABILITIES = new Set(['build', 'test', 'lint', 'sign']);
+const CAP_MAX_ARGS = 12;
+
+function capPath(id) { return path.join(CAPABILITY_ROOT, `${id}.json`); }
+
+function capRead(id) {
+  try { return JSON.parse(fs.readFileSync(capPath(id), 'utf8')); } catch { return null; }
+}
+
+function capWrite(rec) {
+  fs.mkdirSync(CAPABILITY_ROOT, { recursive: true });
+  fs.writeFileSync(capPath(rec.id), JSON.stringify(rec, null, 2));
+  return rec;
+}
+
+// Arguments are scalars only, and short. A capability request is a description
+// of intent, not a payload — anything long enough to smuggle a script in is
+// rejected rather than truncated, so the refusal is visible.
+function capSanitizeArgs(raw) {
+  const out = {};
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    for (const [k, v] of Object.entries(raw)) {
+      if (Object.keys(out).length >= CAP_MAX_ARGS) break;
+      if (!/^[a-zA-Z][a-zA-Z0-9_-]{0,31}$/.test(k)) continue;
+      if (typeof v === 'number' || typeof v === 'boolean') { out[k] = v; continue; }
+      if (typeof v === 'string' && v.length <= 128 && !/[\n\r\0]/.test(v)) out[k] = v;
+    }
+  }
+  return out;
+}
+
+function capCreate({ capability, repo, args, session }) {
+  if (!CAPABILITIES.has(capability)) {
+    const e = new Error(`unknown capability '${capability}' — known: ${[...CAPABILITIES].join(', ')}`);
+    e.code = 400; throw e;
+  }
+  if (typeof repo !== 'string' || !/^[A-Za-z0-9._-]{1,64}$/.test(repo)) {
+    const e = new Error('repo must be a plain mirror name'); e.code = 400; throw e;
+  }
+  return capWrite({
+    id: crypto.randomUUID(),
+    capability, repo,
+    args: capSanitizeArgs(args),
+    session: typeof session === 'string' ? session.slice(0, 64) : null,
+    state: 'pending',
+    requestedAt: new Date().toISOString(),
+  });
+}
+
+function capPending() {
+  try {
+    return fs.readdirSync(CAPABILITY_ROOT)
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => { try { return JSON.parse(fs.readFileSync(path.join(CAPABILITY_ROOT, f), 'utf8')); } catch { return null; } })
+      .filter((r) => r && r.state === 'pending');
+  } catch { return []; }
+}
+
+// The Mac reports back. Output is capped here as well as on the Mac: a failing
+// build can emit megabytes, and the whole point of the session being on the box
+// is that its context is not free.
+function capComplete(id, { exitCode, output, error }) {
+  const rec = capRead(id);
+  if (!rec) { const e = new Error('no such capability request'); e.code = 404; throw e; }
+  rec.state = error ? 'failed' : 'completed';
+  rec.exitCode = Number.isInteger(exitCode) ? exitCode : null;
+  rec.output = typeof output === 'string' ? output.slice(-64_000) : '';
+  rec.error = error ? String(error).slice(0, 2_000) : null;
+  rec.completedAt = new Date().toISOString();
+  return capWrite(rec);
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
@@ -933,6 +1020,23 @@ const server = http.createServer(async (req, res) => {
   }
   if (!authed(req)) return send(res, 401, { error: 'unauthorized' });
   try {
+    if (p === '/capabilities' && req.method === 'POST') {
+      try { return send(res, 201, capCreate(await body(req))); }
+      catch (e) { return send(res, e.code === 400 ? 400 : 500, { error: String(e.message || e) }); }
+    }
+    if (p === '/capabilities/pending' && req.method === 'GET') {
+      return send(res, 200, { requests: capPending() });
+    }
+    const cap = p.match(/^\/capabilities\/([a-f0-9-]{36})$/);
+    if (cap && req.method === 'GET') {
+      const rec = capRead(cap[1]);
+      return rec ? send(res, 200, rec) : send(res, 404, { error: 'no such capability request' });
+    }
+    const capResult = p.match(/^\/capabilities\/([a-f0-9-]{36})\/result$/);
+    if (capResult && req.method === 'POST') {
+      try { return send(res, 200, capComplete(capResult[1], await body(req))); }
+      catch (e) { return send(res, e.code === 404 ? 404 : 500, { error: String(e.message || e) }); }
+    }
     if (p === '/mcp' && req.method === 'POST') return await handleMCP(req, res);
     if (p === '/auth/start' && req.method === 'POST') return send(res, 200, await authStart());
     if (p === '/auth/peek' && req.method === 'GET') return send(res, 200, await authPeek());

@@ -434,6 +434,37 @@ public enum EdgeAgentService {
         _ = try await request(baseURL, "auth/submit", method: "POST", token: token, json: body)
     }
 
+    /// A capability the box asked this Mac to perform on its behalf. The request
+    /// names what it wants — `build`, `test` — never how to do it; the mapping
+    /// from name to command lives on the Mac, which is the whole security model.
+    public struct CapabilityRequest: Decodable, Sendable, Identifiable {
+        public let id: String
+        public let capability: String
+        public let repo: String
+        public let args: [String: String]?
+        public let session: String?
+    }
+
+    public static func pendingCapabilities(baseURL: String, token: String,
+                                           timeout: TimeInterval = 15) async throws -> [CapabilityRequest] {
+        let (data, _) = try await request(baseURL, "capabilities/pending", method: "GET",
+                                          token: token, timeout: timeout)
+        struct Wrap: Decodable { let requests: [CapabilityRequest] }
+        guard let wrap = try? JSONDecoder().decode(Wrap.self, from: data) else { throw APIError.decode }
+        return wrap.requests
+    }
+
+    public static func completeCapability(baseURL: String, token: String, id: String,
+                                          exitCode: Int32?, output: String, error: String?,
+                                          timeout: TimeInterval = 30) async throws {
+        var body: [String: Any] = ["output": output]
+        if let exitCode { body["exitCode"] = Int(exitCode) }
+        if let error { body["error"] = error }
+        let json = try JSONSerialization.data(withJSONObject: body)
+        _ = try await request(baseURL, "capabilities/\(id)/result", method: "POST",
+                              token: token, json: json, timeout: timeout)
+    }
+
     public static func sessions(baseURL: String, token: String, timeout: TimeInterval = 15) async throws -> [RemoteSession] {
         let (data, _) = try await request(baseURL, "sessions", method: "GET", token: token, timeout: timeout)
         struct Wrap: Decodable { let sessions: [RemoteSession] }
