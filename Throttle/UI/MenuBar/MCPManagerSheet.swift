@@ -94,7 +94,13 @@ struct MCPManagerSheet: View {
             HStack(spacing: 8) {
                 Image(systemName: "gauge.with.dots.needle.33percent").font(.system(size: 12)).foregroundStyle(.secondary)
                 let ram = ByteCountFormatter.string(fromByteCount: Int64(localRSS), countStyle: .memory)
-                Text("Local MCP ≈ \(ram) · \(disableable.count) unused")
+                // Total answer weight is the headline: it is where MCP actually
+                // spends context, by three orders of magnitude over tool lists.
+                let answers = recs.values.reduce(0) { $0 + $1.responseBytes }
+                let ansText = answers > 0
+                    ? " · \(ByteCountFormatter.string(fromByteCount: Int64(answers), countStyle: .file)) answered in 30d"
+                    : ""
+                Text("Local MCP ≈ \(ram) · \(disableable.count) unused\(ansText)")
                     .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 Spacer()
                 if !disableable.isEmpty {
@@ -149,6 +155,13 @@ struct MCPManagerSheet: View {
                         // injects; the ceiling lives in the reason line below.
                         if let c = r.context, !entry.disabled {
                             tag("~\(kTokens(c.nameTokensEst ?? c.tokensEst)) CTX")
+                        }
+                        // Answers dwarf tool lists — measured 2026-08-22 on this
+                        // Mac: 18 KB of tool names against 71 MB of responses in
+                        // 30 days. Give the bigger number the louder chip.
+                        if r.responseBytes > 0, !entry.disabled {
+                            tag(ByteCountFormatter.string(fromByteCount: Int64(r.responseBytes),
+                                                          countStyle: .file).uppercased() + " ANS")
                         }
                     }
                 }
