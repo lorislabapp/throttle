@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// Repo ingestion: eligibility (extensions, excluded dirs, size), incremental
 /// manifest (unchanged skip, changed re-embed, deleted evict), removeDoc, and

@@ -10,6 +10,9 @@ struct PortfolioGraphView: View {
     @State private var sim = PortfolioSim()
     @State private var hover: String?
     @State private var mouse: CGPoint = .init(x: -1, y: -1)
+    /// Mirrors `sim.settled` so the timeline can stop. Flipped at most twice per
+    /// load, never per frame.
+    @State private var settled = false
 
     private let code = Color(red: 1.0, green: 0.42, blue: 0.27)
     private let research = Color(red: 0.22, green: 0.78, blue: 0.66)
@@ -19,11 +22,19 @@ struct PortfolioGraphView: View {
             header
             GeometryReader { geo in
                 ZStack(alignment: .topLeading) {
-                    TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { _ in
+                    // Paused once the layout stops moving. This ran at 60 fps
+                    // for as long as the cockpit was open: `step()` is O(n²)
+                    // over every node pair, so a settled graph nobody was
+                    // looking at still cost ~28% of a core indefinitely
+                    // (measured 2026-08-22, 46 min uptime, 2.2 GB peak
+                    // footprint). A force-directed layout converges in a couple
+                    // of seconds; there is nothing to compute after that.
+                    TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: settled)) { _ in
                         Canvas { ctx, size in
                             sim.ensure(size: size)
                             sim.step()
                             draw(ctx, size: size)
+                            if sim.settled != settled { settled = sim.settled }
                         }
                     }
                     .onContinuousHover { phase in
@@ -131,6 +142,7 @@ struct PortfolioGraphView: View {
         let g = await PortfolioMapService.scan()
         graph = g
         sim.seed(g)
+        settled = false
         loading = false
     }
 }
@@ -147,18 +159,33 @@ struct PortfolioGraphView: View {
     private var size: CGSize = .zero
     private var warm = 0
 
+    /// True when the layout has stopped moving, so the view can stop asking for
+    /// frames. Reset by anything that disturbs the layout.
+    private(set) var settled = false
+    /// Consecutive low-energy steps seen. A few in a row, so one slow frame
+    /// mid-convergence does not freeze the graph half-arranged.
+    private var calm = 0
+
+    /// Mean kinetic energy per node below which the layout counts as at rest.
+    /// Node velocities are damped 0.86 each step, so a converged graph falls
+    /// well under this within a second or two.
+    private static let restEnergy = 0.02
+    private static let framesAtRest = 20
+
     func seed(_ g: PortfolioGraph) {
         nodes = g.nodes; edges = g.edges
         maxReach = max(1, g.nodes.filter { $0.kind != .app }.map(\.reach).max() ?? 1)
         neighbourMap = [:]
         for e in edges { neighbourMap[e.from, default: []].insert(e.to); neighbourMap[e.to, default: []].insert(e.from) }
         pos = [:]; warm = 0
+        calm = 0; settled = false
         seedPositions()
     }
 
     func ensure(size s: CGSize) {
         guard s != size, s.width > 0 else { return }
         size = s
+        calm = 0; settled = false      // a resize moves every node again
         if pos.isEmpty || pos.values.allSatisfy({ $0.x == 0 && $0.y == 0 }) { seedPositions() }
     }
 
@@ -187,7 +214,7 @@ struct PortfolioGraphView: View {
     }
 
     func step() {
-        guard size.width > 0, nodes.count > 1 else { return }
+        guard !settled, size.width > 0, nodes.count > 1 else { return }
         let W = size.width, H = size.height
         let ids = Array(pos.keys)
         for i in 0..<ids.count {
@@ -208,13 +235,19 @@ struct PortfolioGraphView: View {
             a.vx += dx*f; a.vy += dy*f; b.vx -= dx*f; b.vy -= dy*f
             pos[e.from] = a; pos[e.to] = b
         }
+        var energy = 0.0
         for id in ids {
             guard var p = pos[id] else { continue }
             p.vx += (W/2 - p.x) * 0.0016; p.vy += (H/2 - p.y) * 0.0016
             p.vx *= 0.86; p.vy *= 0.86
             p.x = min(max(22, p.x + p.vx), W - 22); p.y = min(max(22, p.y + p.vy), H - 22)
             pos[id] = p
+            energy += p.vx * p.vx + p.vy * p.vy
         }
         warm += 1
+
+        let mean = energy / Double(max(1, ids.count))
+        calm = mean < Self.restEnergy ? calm + 1 : 0
+        if calm >= Self.framesAtRest { settled = true }
     }
 }

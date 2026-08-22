@@ -1,5 +1,5 @@
-@testable import Throttle
 import GRDB
+@testable import Throttle
 import XCTest
 
 final class CodexUsageServiceTests: XCTestCase {
@@ -33,7 +33,7 @@ final class CodexUsageServiceTests: XCTestCase {
             .write(to: old, atomically: true, encoding: .utf8)
         let latestBody = [
             #"{"timestamp":"2026-08-16T10:01:00Z","type":"event_msg","payload":{"type":"token_count","rate_limits":{"primary":{"used_percent":20}}}}"#,
-            #"{"timestamp":"2026-08-16T10:02:00Z","type":"event_msg","payload":{"type":"token_count","rate_limits":{"primary":{"used_percent":44}}}}"#,
+            #"{"timestamp":"2026-08-16T10:02:00Z","type":"event_msg","payload":{"type":"token_count","rate_limits":{"primary":{"used_percent":44}}}}"#
         ].joined(separator: "\n")
         try latestBody.write(to: latest, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: latest.path)

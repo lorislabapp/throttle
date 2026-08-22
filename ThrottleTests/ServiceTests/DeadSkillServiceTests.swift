@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// Tests for the Dead-Skill audit's MCP token-tax accounting — the CFO number
 /// "≈N tokens/session paid for loaded-but-unused MCP servers".
@@ -12,9 +12,9 @@ final class DeadSkillServiceTests: XCTestCase {
     func test_folding_countsOnlyDeadAndProbedMCP() {
         let report = DeadSkillReport(rows: [
             mcp("alpha", uses: 0),   // dead + probed  → counts
-            mcp("beta",  uses: 5),   // alive          → excluded
+            mcp("beta", uses: 5),   // alive          → excluded
             mcp("gamma", uses: 0),   // dead, no probe → excluded (unknown cost)
-            DeadSkillRow(name: "skill-x", kind: .skill, uses: 0, lastUsed: nil, loaded: true), // skill → excluded
+            DeadSkillRow(name: "skill-x", kind: .skill, uses: 0, lastUsed: nil, loaded: true) // skill → excluded
         ], filesScanned: 1, windowDays: 30)
 
         let folded = DeadSkillService.folding(report, withProbe: ["alpha": 3200, "beta": 999, "skill-x": 50])

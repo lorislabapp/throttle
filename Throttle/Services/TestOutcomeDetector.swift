@@ -49,8 +49,7 @@ enum TestOutcomeDetector {
               let m = re.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) else { return nil }
         var out: [Int?] = []
         for i in 1..<m.numberOfRanges {
-            if let r = Range(m.range(at: i), in: text) { out.append(Int(text[r])) }
-            else { out.append(nil) }
+            if let r = Range(m.range(at: i), in: text) { out.append(Int(text[r])) } else { out.append(nil) }
         }
         return out
     }

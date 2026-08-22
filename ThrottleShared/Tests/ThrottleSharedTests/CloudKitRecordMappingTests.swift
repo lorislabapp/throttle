@@ -1,6 +1,6 @@
-import XCTest
 import CloudKit
 @testable import ThrottleShared
+import XCTest
 
 final class CloudKitRecordMappingTests: XCTestCase {
 

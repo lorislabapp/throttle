@@ -10,7 +10,7 @@ struct ProjectWindowRoot: View {
     let onBack: () -> Void
     /// Optional project to focus on open (encoded id) — used when the cockpit's
     /// "more info" button jumps straight to a session's project.
-    var initialProjectID: String? = nil
+    var initialProjectID: String?
     @State private var projects: [ProjectInfo] = []
     @State private var selectedProjectID: String?
     @State private var selectedTab: Tab = .stats

@@ -20,15 +20,31 @@ enum RepoIndexer {
         "swift", "m", "mm", "h", "hpp", "c", "cc", "cpp", "js", "jsx", "ts", "tsx",
         "py", "rb", "go", "rs", "java", "kt", "kts", "php", "cs", "scala", "sh",
         "md", "markdown", "txt", "rst", "json", "yaml", "yml", "toml", "ini",
-        "cfg", "html", "css", "scss", "sql", "graphql", "proto",
+        "cfg", "html", "css", "scss", "sql", "graphql", "proto"
     ]
 
     /// Directory names pruned wholesale (build output, deps, VCS, caches).
     static let excludedDirs: Set<String> = [
         ".git", "node_modules", ".build", "build", "DerivedData", "Pods", "dist",
         "out", "target", ".next", "vendor", ".venv", "venv", "__pycache__",
-        ".swiftpm", ".gradle", "coverage", ".cache",
+        ".swiftpm", ".gradle", "coverage", ".cache", "site-packages", "Carthage"
     ]
+
+    /// Prefixes that prune whatever follows them. Exact-name matching alone let a
+    /// 1.8 GB index through: the directory was `venv312`, and its sibling
+    /// `.venv312-preserve`, so neither matched `venv` or `.venv` and the whole of
+    /// torch, scipy and sympy was embedded as if it were the user's code.
+    /// Measured 2026-08-22 — one repository accounted for 1.8 of the 3.0 GB the
+    /// semantic index occupied.
+    static let excludedPrefixes: [String] = ["venv", ".venv", "virtualenv", "env-", ".tox"]
+
+    /// True when this directory should not be walked. Name first (cheap), then
+    /// prefixes.
+    static func isExcluded(directoryNamed name: String) -> Bool {
+        if excludedDirs.contains(name) { return true }
+        let lowered = name.lowercased()
+        return excludedPrefixes.contains { lowered.hasPrefix($0) }
+    }
 
     /// Index `root` into `index`, updating `manifest` (relPath → content SHA-256).
     /// Mutates both in place; caller persists them.
@@ -48,7 +64,7 @@ enum RepoIndexer {
         while let url = en.nextObject() as? URL {
             let rv = try? url.resourceValues(forKeys: Set(keys))
             if rv?.isDirectory == true {
-                if excludedDirs.contains(url.lastPathComponent) { en.skipDescendants() }
+                if isExcluded(directoryNamed: url.lastPathComponent) { en.skipDescendants() }
                 continue
             }
             guard rv?.isRegularFile == true,

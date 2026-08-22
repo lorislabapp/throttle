@@ -48,8 +48,7 @@ enum MCPProxyServer {
 
             // Need full headers first.
             guard let headerEnd = range(of: Data("\r\n\r\n".utf8), in: buffer) else {
-                if isComplete || error != nil { conn.cancel() }
-                else { serve(conn, child: child, sessionId: sessionId, carry: buffer) }
+                if isComplete || error != nil { conn.cancel() } else { serve(conn, child: child, sessionId: sessionId, carry: buffer) }
                 return
             }
             let headerData = buffer.subdata(in: buffer.startIndex..<headerEnd.lowerBound)
@@ -58,8 +57,7 @@ enum MCPProxyServer {
             let contentLength = headerValue("content-length", in: header).flatMap { Int($0) } ?? 0
             let have = buffer.distance(from: bodyStart, to: buffer.endIndex)
             guard have >= contentLength else {                       // wait for the full body
-                if isComplete || error != nil { conn.cancel() }
-                else { serve(conn, child: child, sessionId: sessionId, carry: buffer) }
+                if isComplete || error != nil { conn.cancel() } else { serve(conn, child: child, sessionId: sessionId, carry: buffer) }
                 return
             }
             let body = buffer.subdata(in: bodyStart..<buffer.index(bodyStart, offsetBy: contentLength))
@@ -92,7 +90,7 @@ enum MCPProxyServer {
             return http(200, sessionId: sessionId, json: rpcResult(id, [
                 "protocolVersion": reqVer,
                 "capabilities": ["tools": [:] as [String: Any]],
-                "serverInfo": ["name": "throttle-proxy", "version": "1.0.0"],
+                "serverInfo": ["name": "throttle-proxy", "version": "1.0.0"]
             ]))
         case "notifications/initialized":
             return http(202, sessionId: sessionId, json: nil)

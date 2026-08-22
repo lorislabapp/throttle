@@ -1,6 +1,6 @@
-import XCTest
 import GRDB
 @testable import Throttle
+import XCTest
 
 final class ColdStartScannerTests: XCTestCase {
     func test_scanInsertsEventsAndUpdatesFileState() throws {

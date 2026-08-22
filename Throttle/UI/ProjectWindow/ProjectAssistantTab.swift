@@ -392,8 +392,7 @@ struct ProjectAssistantTab: View {
                     DisclosureGroup(isExpanded: Binding(
                         get: { expandedToolResults.contains(key) },
                         set: { isOpen in
-                            if isOpen { expandedToolResults.insert(key) }
-                            else { expandedToolResults.remove(key) }
+                            if isOpen { expandedToolResults.insert(key) } else { expandedToolResults.remove(key) }
                         }
                     )) {
                         ScrollView(.vertical) {

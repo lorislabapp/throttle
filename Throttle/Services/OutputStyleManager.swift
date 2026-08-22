@@ -30,7 +30,7 @@ enum OutputStyleManager {
     static let builtIns: [(name: String, description: String)] = [
         ("Default", "Claude Code's standard engineering assistant."),
         ("Explanatory", "Explains its reasoning and design choices as it works."),
-        ("Learning", "Teaches as it goes, with occasional hands-on asks."),
+        ("Learning", "Teaches as it goes, with occasional hands-on asks.")
     ]
 
     private static var home: URL { FileManager.default.homeDirectoryForCurrentUser }
@@ -161,8 +161,7 @@ enum OutputStyleManager {
     static func setActive(_ name: String) throws {
         var dict = readSettings() ?? [:]
         _ = try? backupSettings()
-        if name == "Default" { dict.removeValue(forKey: "outputStyle") }
-        else {
+        if name == "Default" { dict.removeValue(forKey: "outputStyle") } else {
             dict["outputStyle"] = name
             // Mutually exclusive with the "Concise Claude Code replies" flag: an
             // active output style already governs reply voice, so clear the flag
@@ -341,7 +340,7 @@ enum OutputStyleManager {
         Template(name: "Blank",
                  description: "Start from an empty body.",
                  body: "",
-                 keepCoding: true),
+                 keepCoding: true)
     ]
 
     // MARK: - Frontmatter parse

@@ -59,8 +59,7 @@ public final class PredictiveEcho: @unchecked Sendable {
     public func observeRTT(_ rttMs: Double) {
         estimator.sample(rttMs)
         guard let s = estimator.srtt else { return }
-        if !engaged, s > engageAboveMs { engaged = true }
-        else if engaged, s < disengageBelowMs { engaged = false }
+        if !engaged, s > engageAboveMs { engaged = true } else if engaged, s < disengageBelowMs { engaged = false }
     }
 
     /// Whether to speculatively echo this outgoing keystroke locally. Only printable

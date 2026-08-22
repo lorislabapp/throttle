@@ -1,5 +1,5 @@
-import SwiftUI
 import SwiftTerm
+import SwiftUI
 import ThrottleShared
 
 /// On-device SwiftTerm view for an edge-agent session, driven over ttyd

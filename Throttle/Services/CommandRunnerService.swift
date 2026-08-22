@@ -122,6 +122,8 @@ final class CommandRunnerService {
                 return RunResult(output: "Timed out after \(Int(timeout))s.",
                                  exitCode: -2, durationMs: Int(timeout * 1000), truncated: false)
             }
+            // Element type is already optional, so `group.next()` is doubly so.
+            // swiftlint:disable:next redundant_nil_coalescing
             let first = await group.next() ?? nil
             group.cancelAll()
             return first ?? RunResult(output: "", exitCode: -1, durationMs: 0, truncated: false)

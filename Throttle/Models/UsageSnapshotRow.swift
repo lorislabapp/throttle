@@ -39,7 +39,52 @@ struct TokoptSavingsRow: Codable, FetchableRecord, PersistableRecord, Equatable,
         case actualBytes = "actual_bytes"
     }
 
-    var savedBytes: Int { max(0, baselineBytes - actualBytes) }
+    /// Hooks that ADD context rather than remove it. Their "baseline" is a
+    /// counterfactual nobody would have lived — "without routing you would have
+    /// loaded every memory file" — and counting it as a saving inflated the
+    /// headline figure by ~26× (measured 2026-08-22: 291 KB claimed per session
+    /// against 226 bytes actually emitted, on top of an index that loads either
+    /// way). A tool that overstates its own gains cannot be trusted on anything
+    /// else it measures.
+    static let injectingHooks: Set<String> = ["session-start-router"]
+
+    /// SQL predicate excluding the injecting hooks. Built here so an empty set
+    /// yields `1=1` rather than `hook NOT IN ()`, which is a syntax error in
+    /// SQLite and would take every savings figure down with it.
+    static var notInjectingSQL: String {
+        guard !injectingHooks.isEmpty else { return "1=1" }
+        let list = injectingHooks.sorted().map { "'\($0)'" }.joined(separator: ", ")
+        return "hook NOT IN (\(list))"
+    }
+
+    var isInjection: Bool { Self.injectingHooks.contains(hook) }
+
+    /// Bytes this hook kept out of context. Zero for injecting hooks: they spend
+    /// context to spend it better, which is worth doing and is not a saving.
+    var savedBytes: Int { isInjection ? 0 : max(0, baselineBytes - actualBytes) }
+
+    /// What an injecting hook cost. Reported separately so the ledger stays
+    /// honest in both directions.
+    var injectedBytes: Int { isInjection ? actualBytes : 0 }
+
+    /// Bytes saved, discounted for what breaking the prompt cache costs.
+    ///
+    /// Anthropic bills a cache read at 0.1× the base input rate and a cache write
+    /// at 1.25× (5-minute TTL). Trimming rewrites the prefix, so the turn after a
+    /// trim pays full write price on the whole remaining prompt while the
+    /// untrimmed session would have paid 0.1× — the trim only pays for itself
+    /// after enough turns. CMV measures break-even at ~10 turns for tool-heavy
+    /// sessions and ~40 for conversational ones, and concludes that trimming a
+    /// low-tool session is economically counterproductive.
+    ///
+    /// This is the honest floor: what the trim is worth on the very next turn,
+    /// before amortisation. A session that continues long enough earns the rest.
+    var cacheAwareSavedBytes: Int {
+        guard savedBytes > 0 else { return 0 }
+        let cacheRead = 0.1, cacheWrite = 1.25
+        let penalty = Double(actualBytes) * (cacheWrite - cacheRead)
+        return max(0, Int(Double(savedBytes) * cacheRead - penalty))
+    }
 }
 
 /// Cumulative Codex usage for one rollout session.

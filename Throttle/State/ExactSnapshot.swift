@@ -17,24 +17,61 @@ struct ExactSnapshot: Sendable, Equatable, Codable {
     struct Window: Sendable, Equatable, Codable {
         let utilization: Int
         let resetsAt: Date?
+        /// Which model this window is scoped to, when Anthropic says so.
+        ///
+        /// The per-model weekly cap moved into `limits[].weekly_scoped`, and the
+        /// payload names the model in `scope.model.display_name`. Measured
+        /// 2026-08-22 on this account: the 100% cap was scoped to **Fable**
+        /// while the UI called it "Weekly · Sonnet", because the value was
+        /// stored in a field named `sevenDaySonnet` and the real name was
+        /// discarded. `seven_day_sonnet` is `null` on current plans, so the old
+        /// name was never right — it was left over from a shape Anthropic no
+        /// longer sends.
+        let scopedModel: String?
+
+        init(utilization: Int, resetsAt: Date?, scopedModel: String? = nil) {
+            self.utilization = utilization
+            self.resetsAt = resetsAt
+            self.scopedModel = scopedModel
+        }
 
         enum CodingKeys: String, CodingKey {
             case utilization
             case resetsAt = "resets_at"
+            case scopedModel = "scoped_model"
         }
     }
 
     let fiveHour: Window
     let sevenDay: Window
-    let sevenDaySonnet: Window
+    /// The per-model weekly window. Named for what it IS — a scoped cap — not for
+    /// the model it happened to carry when this field was written.
+    let sevenDayScoped: Window
+    /// Kept so existing call sites keep compiling; new code should read
+    /// `sevenDayScoped` and label it with `scopedModel`.
+    var sevenDaySonnet: Window { sevenDayScoped }
 
     /// Local timestamp when this snapshot was fetched.
     let fetchedAt: Date
 
+    init(fiveHour: Window, sevenDay: Window, sevenDayScoped: Window, fetchedAt: Date) {
+        self.fiveHour = fiveHour
+        self.sevenDay = sevenDay
+        self.sevenDayScoped = sevenDayScoped
+        self.fetchedAt = fetchedAt
+    }
+
+    /// Compatibility spelling for call sites written when the scoped window was
+    /// assumed to be Sonnet. Kept so the rename does not churn every test.
+    init(fiveHour: Window, sevenDay: Window, sevenDaySonnet: Window, fetchedAt: Date) {
+        self.init(fiveHour: fiveHour, sevenDay: sevenDay,
+                  sevenDayScoped: sevenDaySonnet, fetchedAt: fetchedAt)
+    }
+
     enum CodingKeys: String, CodingKey {
         case fiveHour = "five_hour"
         case sevenDay = "seven_day"
-        case sevenDaySonnet = "seven_day_sonnet"
+        case sevenDayScoped = "seven_day_scoped"
         case fetchedAt
     }
 
@@ -51,7 +88,7 @@ struct ExactSnapshot: Sendable, Equatable, Codable {
             // claude.ai now returns "seven_day_sonnet": null (the per-model window
             // was removed). Default to a zero window so the snapshot still decodes
             // — five_hour + seven_day are the binding numbers that matter.
-            sevenDaySonnet: wire.sevenDaySonnet ?? Window(utilization: 0, resetsAt: nil),
+            sevenDayScoped: wire.sevenDayScoped ?? Window(utilization: 0, resetsAt: nil),
             fetchedAt: fetchedAt
         )
     }
@@ -59,11 +96,14 @@ struct ExactSnapshot: Sendable, Equatable, Codable {
     private struct Wire: Decodable {
         let fiveHour: Window
         let sevenDay: Window
-        let sevenDaySonnet: Window?
+        /// The per-model weekly window, optional in this mirrored shape.
+        let sevenDayScoped: Window?
+        var sevenDaySonnet: Window? { sevenDayScoped }
+
         enum CodingKeys: String, CodingKey {
             case fiveHour = "five_hour"
             case sevenDay = "seven_day"
-            case sevenDaySonnet = "seven_day_sonnet"
+            case sevenDayScoped = "seven_day_scoped"
         }
     }
 

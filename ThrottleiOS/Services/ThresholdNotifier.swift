@@ -1,6 +1,6 @@
 import Foundation
-import UserNotifications
 import ThrottleShared
+import UserNotifications
 
 /// Fires a local notification when the binding window crosses 80% / 95%.
 /// Runs on-device from the last synced snapshot — works even with the Mac off,

@@ -1,5 +1,5 @@
-import XCTest
 @testable import ThrottleShared
+import XCTest
 
 final class MouseReportFilterTests: XCTestCase {
 

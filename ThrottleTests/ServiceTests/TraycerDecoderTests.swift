@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// Decoder tests run against a REAL captured OTLP/JSON body (a `session-tag`
 /// skill run against Claude Code v2.1.202, fixture `traycer-otlp-logs.json`) —

@@ -19,6 +19,7 @@ struct SessionOffloadSheet: View {
     /// box identity, like host/port.
     @AppStorage("throttleEdgeLxcID") private var lxcID = ""
     @State private var verifying = false
+    @State private var newRuntime = "claude"
     @State private var newCwd = ""
     @State private var localSessions: [RemoteSessionsService.LocalSession] = []
     @State private var selectedLocalId: String?
@@ -126,9 +127,20 @@ struct SessionOffloadSheet: View {
                     group("3 · Remote sessions") {
                         HStack {
                             field("New session cwd", $newCwd, "/root/projects/app")
+                            // The box can run either agent, and they are not
+                            // interchangeable: different binary, different resume
+                            // flag, different transcript store. Starting one and
+                            // hoping is how a session lands with no context.
+                            Picker("", selection: $newRuntime) {
+                                Text("Claude").tag("claude")
+                                Text("Codex").tag("codex")
+                            }
+                            .pickerStyle(.segmented)
+                            .frame(width: 130)
+                            .labelsHidden()
                             Button("Start") {
-                                let cwd = newCwd
-                                Task { await svc.start(project: nil, cwd: cwd) }
+                                let cwd = newCwd, runtime = newRuntime
+                                Task { await svc.start(project: nil, cwd: cwd, runtime: runtime) }
                             }.controlSize(.small).disabled(newCwd.isEmpty || !svc.isConfigured)
                             Button(svc.polling ? "Stop poll" : "Poll") {
                                 svc.polling ? svc.stopPolling() : svc.startPolling()

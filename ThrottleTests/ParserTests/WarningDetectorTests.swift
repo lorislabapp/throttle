@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 final class WarningDetectorTests: XCTestCase {
     func test_detects90PercentWeeklyWarning() throws {

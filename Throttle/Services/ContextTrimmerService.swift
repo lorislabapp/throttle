@@ -31,13 +31,13 @@ enum ContextTrimmerService {
         /// stubbed to its head. nil = off (the conservative default — stubbing a
         /// tool result is lossless for *reasoning* only because the assistant's
         /// summary remains, so it stays opt-in).
-        var stubToolResultsOver: Int? = nil
+        var stubToolResultsOver: Int?
         /// If set, the bulky string INPUTS of write-oriented tool_use blocks
         /// (`content` / `old_string` / `new_string` of Write/Edit/…) longer than
         /// this many UTF-8 bytes are stubbed. Lossless for reasoning: the file is
         /// already on disk and the whitelist metadata (`file_path`, `command`)
         /// stays, so the model still knows what was written where. Opt-in.
-        var stubToolInputsOver: Int? = nil
+        var stubToolInputsOver: Int?
         /// Replace text from events superseded by the latest compaction boundary
         /// while retaining their structural envelope and dependency identifiers.
         var trimSupersededEvents: Bool = false
@@ -173,7 +173,17 @@ enum ContextTrimmerService {
     @discardableResult
     static func writeSnapshot(_ url: URL, options: Options = .safe) throws -> (url: URL, plan: Plan) {
         // Persist trimmed originals so the snapshot's pointers stay expandable.
-        let (lines, plan) = try buildTrimmed(url, options, sink: { _, data in ContentStore.put(data) })
+        // Fail the whole apply if a payload could not be stored: the pointer we
+        // are about to write into the transcript would refer to nothing, and the
+        // trim advertises itself as reversible. Better to refuse than to leave a
+        // transcript that cannot be rehydrated.
+        var storeFailed = false
+        let (lines, plan) = try buildTrimmed(url, options, sink: { _, data in
+            if ContentStore.put(data) == nil { storeFailed = true }
+        })
+        if storeFailed {
+            throw TrimError.validationFailed("content store write failed (disk full?); nothing was changed")
+        }
         guard !plan.isEmpty else { throw TrimError.nothingToTrim }
         let out = url.deletingPathExtension()
             .appendingPathExtension("throttle-trimmed.jsonl")
@@ -194,7 +204,17 @@ enum ContextTrimmerService {
 
         // Persist each trimmed payload to the content store BEFORE replacing the
         // file, so every pointer in the new transcript is rehydratable.
-        let (lines, plan) = try buildTrimmed(url, options, sink: { _, data in ContentStore.put(data) })
+        // Fail the whole apply if a payload could not be stored: the pointer we
+        // are about to write into the transcript would refer to nothing, and the
+        // trim advertises itself as reversible. Better to refuse than to leave a
+        // transcript that cannot be rehydrated.
+        var storeFailed = false
+        let (lines, plan) = try buildTrimmed(url, options, sink: { _, data in
+            if ContentStore.put(data) == nil { storeFailed = true }
+        })
+        if storeFailed {
+            throw TrimError.validationFailed("content store write failed (disk full?); nothing was changed")
+        }
         guard !plan.isEmpty else { throw TrimError.nothingToTrim }
 
         // 1) Back up the original BEFORE touching it.
@@ -274,7 +294,7 @@ enum ContextTrimmerService {
     /// model's reasoning. The metadata whitelist (file_path/command/…) is untouched.
     private static let writeToolInputs: [String: [String]] = [
         "Write": ["content"], "Edit": ["old_string", "new_string"],
-        "NotebookEdit": ["new_source"],
+        "NotebookEdit": ["new_source"]
     ]   // MultiEdit's `edits` array is handled separately (nested old/new strings).
 
     private struct LineOutcome { var line: String; var counters = Counters() }

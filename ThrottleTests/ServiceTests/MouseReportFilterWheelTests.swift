@@ -1,5 +1,5 @@
-import XCTest
 @testable import ThrottleShared
+import XCTest
 
 /// The filter must keep dropping the garbage that motivated it (motion reports)
 /// while letting wheel reports through — otherwise a full-screen TUI can never

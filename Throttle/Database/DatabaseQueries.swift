@@ -19,6 +19,28 @@ enum DatabaseQueries {
         return row?["total"] ?? 0
     }
 
+    /// Weighted token total for events whose model name contains `modelToken`.
+    ///
+    /// The scoped weekly cap is not always Sonnet — on this account it was
+    /// scoped to Fable — so the caller supplies the model to match rather than
+    /// the query hardcoding one. `%` and `_` are stripped: the token comes from
+    /// a server-supplied display name, and a name containing a LIKE wildcard
+    /// would silently widen the filter to models that are not capped.
+    static func totalTokens(
+        in db: Database,
+        sinceTimestamp: Int64,
+        modelToken: String
+    ) throws -> Int {
+        let safe = modelToken.lowercased().filter { $0 != "%" && $0 != "_" }
+        guard !safe.isEmpty else { return 0 }
+        let row = try Row.fetchOne(db, sql: """
+            SELECT COALESCE(SUM(\(weightedTokenSumExpr)), 0) AS total
+            FROM usage_events
+            WHERE timestamp > ? AND lower(model) LIKE ?
+            """, arguments: [sinceTimestamp, "%" + safe + "%"])
+        return row?["total"] ?? 0
+    }
+
     static func totalTokens(
         in db: Database,
         sinceTimestamp: Int64,

@@ -43,6 +43,9 @@ final class AppState {
     /// show it without touching the database from a render pass — the mistake
     /// that produced the 3.2.88 runaway.
     var weeklyCostEUR: Double = 0
+    /// EUR value of `savedTokensThisWeek`, priced at the input rate of the
+    /// models this account actually ran — not a flat blended constant.
+    var savedValueEURThisWeek: Double = 0
 
     /// Per-day savings for the last 7 days, oldest first. Drives the
     /// sparkline next to the hero counter so users see a trend, not just
@@ -163,7 +166,7 @@ final class AppState {
         let pairs: [(WindowKind, Int)] = [
             (.session5h, exact.fiveHour.utilization),
             (.weeklyAll, exact.sevenDay.utilization),
-            (.weeklySonnet, exact.sevenDaySonnet.utilization),
+            (.weeklySonnet, exact.sevenDaySonnet.utilization)
         ]
         let database = self.database
         Task { [weak self] in
@@ -201,21 +204,10 @@ final class AppState {
                     )
                 }
             }.value) ?? .empty
-            let savedTokens: Int = (try? await Task.detached {
-                try database.read { db in
-                    try StatsDataService.savedTokensThisWeek(in: db)
-                }
-            }.value) ?? 0
-            let savedByDay: [Int] = (try? await Task.detached {
-                try database.read { db in
-                    try StatsDataService.savedTokensByDay(in: db, days: 7)
-                }
-            }.value) ?? Array(repeating: 0, count: 7)
-            let weeklyCost: Double = (try? await Task.detached {
-                try database.read { db in
-                    try StatsDataService.extrapolatedCostEUR(in: db, range: .last7d)
-                }
-            }.value) ?? 0
+            let derived = await Self.loadDerived(from: database)
+            let savedTokens = derived.saved.tokens
+            let savedByDay = derived.savedByDay
+            let weeklyCost = derived.weeklyCost
 
             // Check cancellation before writing back to MainActor
             guard !Task.isCancelled else { return }
@@ -236,12 +228,17 @@ final class AppState {
                 self.savedTokensThisWeek = savedTokens
                 self.savedTokensByDay = savedByDay
                 self.weeklyCostEUR = weeklyCost
+                self.savedValueEURThisWeek = derived.saved.eur
+                if savedTokens > 0 {
+                    MilestoneTracker.shared.setRatePerMillion(derived.saved.eur / Double(savedTokens) * 1_000_000)
+                }
                 ThresholdNotifier.shared.evaluate(snapshot: computed, exact: self.exactSnapshot)
                 // Keep the terminal statusline's pre-rendered line fresh (the
                 // script reads this file; falls back to Claude Code's own
                 // rate_limits when it's stale). Cheap atomic write.
                 if computed.hasAnyData {
-                    StatuslineService.update(snapshot: computed, exact: self.exactSnapshot, savedTokens: savedTokens)
+                    StatuslineService.update(snapshot: computed, exact: self.exactSnapshot,
+                                             codex: self.codexUsageSnapshot, savedEUR: derived.saved.eur)
                 }
                 // Persist a compact snapshot for App Intents (Shortcuts).
                 // The intent reads UserDefaults so it can answer in <50 ms
@@ -272,7 +269,8 @@ final class AppState {
     @MainActor
     func refreshStatusline() {
         guard snapshot.hasAnyData else { return }
-        StatuslineService.update(snapshot: snapshot, exact: exactSnapshot, savedTokens: savedTokensThisWeek)
+        StatuslineService.update(snapshot: snapshot, exact: exactSnapshot,
+                                 codex: codexUsageSnapshot, savedEUR: savedValueEURThisWeek)
     }
 
     // Note: refreshTask cleanup removed — Swift 6 deinit cannot access MainActor-isolated
@@ -291,6 +289,34 @@ final class AppState {
             // INSERT OR REPLACE — overwrite same bucket with latest values.
             try row.save(db)
         }
+    }
+
+    /// The figures `refresh()` derives from the database off the main actor.
+    /// Extracted so the single read that produces both the saved-token count and
+    /// its euro value sits next to the other two rather than inline.
+    private struct Derived {
+        var saved: (tokens: Int, eur: Double) = (0, 0)
+        var savedByDay: [Int] = Array(repeating: 0, count: 7)
+        var weeklyCost: Double = 0
+    }
+
+    nonisolated private static func loadDerived(from database: any DatabaseWriter) async -> Derived {
+        var out = Derived()
+        // One read for the pair: the token count and what it is worth at the
+        // input rate of the models actually run this week.
+        out.saved = (try? await Task.detached {
+            try database.read { db in
+                let tokens = try StatsDataService.savedTokensThisWeek(in: db)
+                return (tokens, try StatsDataService.savedValueEUR(tokens: tokens, in: db))
+            }
+        }.value) ?? (0, 0)
+        out.savedByDay = (try? await Task.detached {
+            try database.read { try StatsDataService.savedTokensByDay(in: $0, days: 7) }
+        }.value) ?? Array(repeating: 0, count: 7)
+        out.weeklyCost = (try? await Task.detached {
+            try database.read { try StatsDataService.extrapolatedCostEUR(in: $0, range: .last7d) }
+        }.value) ?? 0
+        return out
     }
 
     nonisolated private static func computeWindow(in db: Database, kind: WindowKind) throws -> UsageSnapshot.Window {

@@ -67,7 +67,7 @@ enum OutputStyleService {
 
         var dict = readSettings() ?? [:]
         let previous = dict["outputStyle"] as? String
-        var backup: URL? = nil
+        var backup: URL?
         if previous != styleName {
             backup = try backupSettings()
             dict["outputStyle"] = styleName

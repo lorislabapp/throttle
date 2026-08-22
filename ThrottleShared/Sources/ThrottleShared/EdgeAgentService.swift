@@ -37,6 +37,13 @@ public enum EdgeAgentService {
         public let state: String
         public let model: String?
         public let tokens: Int?
+        /// Size of the transcript this session is holding on the box. A harness
+        /// keeps its rollout in memory, so on a small container this is what
+        /// decides survival — not the token count.
+        public let transcriptBytes: Int?
+        /// The box's own memory ceiling, so a transcript is judged against the
+        /// machine holding it rather than a constant.
+        public let memoryTotalBytes: Int?
         public let startedAt: Double?
     }
 
@@ -77,7 +84,7 @@ public enum EdgeAgentService {
     /// checksummed before it's ever executed. Covers the two arches PVE actually runs.
     private static let ttydSHA256: [String: String] = [
         "x86_64": "8a217c968aba172e0dbf3f34447218dc015bc4d5e59bf51db2f2cd12b7be4f55",
-        "aarch64": "b38acadd89d1d396a0f5649aa52c539edbad07f4bc7348b27b4f4b7219dd4165",
+        "aarch64": "b38acadd89d1d396a0f5649aa52c539edbad07f4bc7348b27b4f4b7219dd4165"
     ]
 
     /// A self-contained `#!/usr/bin/env bash` script: installs Node + tmux + ttyd,
@@ -215,7 +222,7 @@ public enum EdgeAgentService {
                 tailscale status >/dev/null
                 tailscale serve --bg --yes --https=\(httpPort) localhost:\(httpPort)
                 tailscale serve status
-                """),
+                """)
         ]
     }
 
@@ -434,6 +441,37 @@ public enum EdgeAgentService {
         _ = try await request(baseURL, "auth/submit", method: "POST", token: token, json: body)
     }
 
+    /// A capability the box asked this Mac to perform on its behalf. The request
+    /// names what it wants — `build`, `test` — never how to do it; the mapping
+    /// from name to command lives on the Mac, which is the whole security model.
+    public struct CapabilityRequest: Decodable, Sendable, Identifiable {
+        public let id: String
+        public let capability: String
+        public let repo: String
+        public let args: [String: String]?
+        public let session: String?
+    }
+
+    public static func pendingCapabilities(baseURL: String, token: String,
+                                           timeout: TimeInterval = 15) async throws -> [CapabilityRequest] {
+        let (data, _) = try await request(baseURL, "capabilities/pending", method: "GET",
+                                          token: token, timeout: timeout)
+        struct Wrap: Decodable { let requests: [CapabilityRequest] }
+        guard let wrap = try? JSONDecoder().decode(Wrap.self, from: data) else { throw APIError.decode }
+        return wrap.requests
+    }
+
+    public static func completeCapability(baseURL: String, token: String, id: String,
+                                          exitCode: Int32?, output: String, error: String?,
+                                          timeout: TimeInterval = 30) async throws {
+        var body: [String: Any] = ["output": output]
+        if let exitCode { body["exitCode"] = Int(exitCode) }
+        if let error { body["error"] = error }
+        let json = try JSONSerialization.data(withJSONObject: body)
+        _ = try await request(baseURL, "capabilities/\(id)/result", method: "POST",
+                              token: token, json: json, timeout: timeout)
+    }
+
     public static func sessions(baseURL: String, token: String, timeout: TimeInterval = 15) async throws -> [RemoteSession] {
         let (data, _) = try await request(baseURL, "sessions", method: "GET", token: token, timeout: timeout)
         struct Wrap: Decodable { let sessions: [RemoteSession] }
@@ -502,6 +540,35 @@ public enum EdgeAgentService {
     /// Repo transfer: upload a `git bundle` for the agent to clone at `remoteCwd`
     /// (409 = cwd already has content; caller treats that as non-fatal).
     @discardableResult
+    /// Pull the box's repository back as a git bundle.
+    ///
+    /// Returns the bundle on disk and, when the box had uncommitted work, the
+    /// commit that captured it. The caller fetches from the bundle into refs of
+    /// its own choosing — this deliberately does not decide where the commits
+    /// land, because that decision can destroy work and does not belong to a
+    /// transport function.
+    public static func downloadRepoBundle(baseURL: String, token: String, remoteCwd: String,
+                                          timeout: TimeInterval = 300)
+        async throws -> (fileURL: URL, wipCommit: String?) {
+        guard validatedBaseURL(baseURL) != nil else { throw APIError.badURL }
+        var comps = URLComponents(string: baseURL)
+        comps?.path = "/repos"
+        comps?.queryItems = [URLQueryItem(name: "cwd", value: remoteCwd)]
+        guard let url = comps?.url else { throw APIError.badURL }
+        var r = URLRequest(url: url); r.httpMethod = "GET"; r.timeoutInterval = timeout
+        r.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let (temp, resp) = try await URLSession.shared.download(for: r)
+        guard let http = resp as? HTTPURLResponse, http.statusCode == 200 else {
+            throw APIError.http((resp as? HTTPURLResponse)?.statusCode ?? -1)
+        }
+        let dest = FileManager.default.temporaryDirectory
+            .appendingPathComponent("throttle-edge-\(UUID().uuidString).bundle")
+        try? FileManager.default.removeItem(at: dest)
+        try FileManager.default.moveItem(at: temp, to: dest)
+        let wip = http.value(forHTTPHeaderField: "x-throttle-wip")
+        return (dest, (wip?.isEmpty == false) ? wip : nil)
+    }
+
     public static func uploadRepoBundle(baseURL: String, token: String, remoteCwd: String,
                                         branch: String, fileURL: URL,
                                         timeout: TimeInterval = 300) async throws -> Bool {

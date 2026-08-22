@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// Pure-function tests for the BYO Claude API key path's native
 /// tool_use protocol. These cover request construction and SSE response

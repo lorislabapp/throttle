@@ -161,10 +161,10 @@ enum SOTASelfTest {
             "Duration: \(String(format: "%.1f", Date().timeIntervalSince(started)))s",
             "Frontier tokens used: **0** — every check is local (SQLite, files, pure functions, on-device MLX).",
             "Golden-set ledger untouched: the synthetic replay never appends to it.",
-            "",
+            ""
         ] + checks.map { "- [\($0.status)] **\($0.name)** — \($0.detail)" } + [
             "",
-            "Result: \(failures.isEmpty ? "PASS" : "FAIL") (\(checks.filter { $0.status == "PASS" }.count) pass · \(failures.count) fail · \(checks.filter { $0.status == "SKIP" }.count) skip)",
+            "Result: \(failures.isEmpty ? "PASS" : "FAIL") (\(checks.filter { $0.status == "PASS" }.count) pass · \(failures.count) fail · \(checks.filter { $0.status == "SKIP" }.count) skip)"
         ]
         let report = lines.joined(separator: "\n") + "\n"
 
@@ -184,7 +184,7 @@ enum SOTASelfTest {
         guard let enumerator = FileManager.default.enumerator(
             at: root, includingPropertiesForKeys: [.contentModificationDateKey]
         ) else { return nil }
-        var newest: (URL, Date)? = nil
+        var newest: (URL, Date)?
         for case let url as URL in enumerator where url.pathExtension == "jsonl" {
             let date = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?
                 .contentModificationDate ?? .distantPast

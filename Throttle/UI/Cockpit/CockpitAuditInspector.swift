@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 /// The audit half of the cockpit, re-homed for the multi-session window: a
 /// collapsible right inspector reusing the existing `CockpitViewModel` (config

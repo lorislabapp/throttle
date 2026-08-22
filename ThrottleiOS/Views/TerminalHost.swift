@@ -46,7 +46,7 @@ struct TerminalHost<Terminal: View>: View {
     let lockState: TerminalLockState
     let keySender: TerminalKeySender
     let connection: TerminalConnection
-    var onRetry: (() -> Void)? = nil
+    var onRetry: (() -> Void)?
     @ViewBuilder var terminal: () -> Terminal
 
     @State private var unlocking = false

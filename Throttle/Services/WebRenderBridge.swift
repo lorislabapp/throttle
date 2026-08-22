@@ -1,6 +1,6 @@
 import Foundation
-import Network
 import GRDB
+import Network
 
 /// In-app loopback HTTP bridge (127.0.0.1:4319) that lets the GUI-less
 /// `--mcp-server` CLI drive the in-app `WebRenderer`. The CLI can't host a
@@ -137,8 +137,8 @@ final class WebRenderBridge: @unchecked Sendable {
             send(conn, status: "200 OK", json: [
                 "ok": true, "text": packet.text, "title": "", "finalURL": url,
                 "renderMs": 0, "truncated": packet.returnedCharacters < packet.originalCharacters,
-                "originalID": packet.originalID, "waitReason": "cache",
-                "cacheHit": true, "cacheAgeSec": hit.ageSeconds, "error": NSNull(),
+                "originalID": packet.originalID ?? NSNull(), "waitReason": "cache",
+                "cacheHit": true, "cacheAgeSec": hit.ageSeconds, "error": NSNull()
             ])
             return
         }
@@ -158,12 +158,10 @@ final class WebRenderBridge: @unchecked Sendable {
                 "ok": r.ok, "text": packet?.text ?? r.text, "title": r.title, "finalURL": r.finalURL,
                 "renderMs": r.renderMs,
                 "truncated": r.truncated || ((packet?.returnedCharacters ?? 0) < (packet?.originalCharacters ?? 0)),
-                "waitReason": r.waitReason, "cacheHit": false,
+                "waitReason": r.waitReason, "cacheHit": false
             ]
-            if let originalID = packet?.originalID { payload["originalID"] = originalID }
-            else { payload["originalID"] = NSNull() }
-            if let error = r.error { payload["error"] = error }
-            else { payload["error"] = NSNull() }
+            if let originalID = packet?.originalID { payload["originalID"] = originalID } else { payload["originalID"] = NSNull() }
+            if let error = r.error { payload["error"] = error } else { payload["error"] = NSNull() }
             let nextLinks = WebNavigationPlanner.ranked(
                 r.links, query: query, baseURL: r.finalURL.isEmpty ? url : r.finalURL
             )

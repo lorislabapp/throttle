@@ -16,7 +16,7 @@ final class ProjectWindowController: NSObject {
     private var window: NSWindow?
     private weak var appState: AppState?
 
-    private override init() {}
+    override private init() {}
 
     func show(appState: AppState, projectID: String? = nil) {
         self.appState = appState

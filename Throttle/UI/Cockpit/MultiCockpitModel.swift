@@ -484,6 +484,16 @@ final class CockpitTab: Identifiable {
         if questions.last?.text == q { return }
         questions.append(Question(text: q))
         if questions.count > 8 { questions.removeFirst(questions.count - 8) }
+
+        // Answer it ourselves only when a rule can PROVE the command has no
+        // lasting effect. Everything else still wakes the user — the feature is
+        // "stop asking me about `git status`", not "decide for me".
+        if AutoApproval.enabled, case .approve(let rule) = ApprovalRuleService.decide(prompt: q, projectRoot: cwd) {
+            ApprovalRuleService.recordApproval(project: projectName, command: q, rule: rule)
+            terminal?.send(txt: "1\r")
+            return
+        }
+
         needsInput = true
         onQuestion?(self, q)
     }
@@ -769,7 +779,7 @@ final class MultiCockpitModel {
 
     /// Freeze / unfreeze every live session (SIGSTOP/SIGCONT) — the reversible
     /// pause exposed to App Intents / Shortcuts. No-op on dormant tabs.
-    func pauseAll()  { for s in sessions { s.pauseProcess(reason: .user) } }
+    func pauseAll() { for s in sessions { s.pauseProcess(reason: .user) } }
     func resumeAll() { for s in sessions { s.resumeProcess() } }
 
     // MARK: - Auto-pause ACT (opt-in, ≥97% binding AND ETA<5min, cancelable)
@@ -860,8 +870,8 @@ final class MultiCockpitModel {
         lastEffCheck = Date()
         guard let db = appState?.database else { return }
         Task.detached(priority: .utility) {
-            guard let e24 = try? await db.read({ try StatsDataService.cacheEfficiency(in: $0, range: .last24h) }) ?? nil,
-                  let e7 = try? await db.read({ try StatsDataService.cacheEfficiency(in: $0, range: .last7d) }) ?? nil,
+            guard let e24 = try? await db.read({ try StatsDataService.cacheEfficiency(in: $0, range: .last24h) }),
+                  let e7 = try? await db.read({ try StatsDataService.cacheEfficiency(in: $0, range: .last7d) }),
                   e7 > 0.3, e24 < e7 - 0.2 else { return }
             let last = UserDefaults.standard.double(forKey: "throttleCacheEffDropNotifiedAt")
             guard Date().timeIntervalSince1970 - last > 24 * 3600 else { return }
@@ -1236,8 +1246,7 @@ final class MultiCockpitModel {
                 guard let action = note.userInfo?["action"] as? String else { return }
                 Task { @MainActor in
                     guard let self else { return }
-                    if action == ThrottleAction.pauseAll.rawValue { self.pauseAll() }
-                    else if action == ThrottleAction.resumeAll.rawValue { self.resumeAll() }
+                    if action == ThrottleAction.pauseAll.rawValue { self.pauseAll() } else if action == ThrottleAction.resumeAll.rawValue { self.resumeAll() }
                 }
             }
         }
@@ -1367,7 +1376,7 @@ final class MultiCockpitModel {
         }
     }
 
-    private nonisolated static func modelName(_ tier: ModelTier) -> String? {
+    nonisolated private static func modelName(_ tier: ModelTier) -> String? {
         switch tier {
         case .opus:   return "Opus"
         case .sonnet: return "Sonnet"
@@ -1624,6 +1633,20 @@ final class MultiCockpitModel {
     }
 
     /// Drag-reorder: move `dragged` to where `target` sits. Persists the order.
+    /// Label the per-model weekly cap with the model Anthropic actually scoped it
+    /// to. It used to say "Sonnet" unconditionally: measured 2026-08-22, the cap
+    /// at 100% was scoped to Fable, and the loudest number in the app named the
+    /// wrong model. The name is in the payload; the only reason it was ever
+    /// wrong is that it was thrown away.
+    static func scopedLabel(_ w: ExactSnapshot.Window) -> String {
+        w.scopedModel.map { "Weekly · \($0)" } ?? "Weekly · scoped"
+    }
+
+    /// The local/mirrored shape carries no model name of its own, so it uses the
+    /// last name the server stated on this Mac. That is a fact we were told, not
+    /// a guess — and the guess is exactly what was wrong.
+    static var scopedLabelMirror: String { ScopedCapModel.bindingLabel }
+
     func move(dragged: UUID, onto target: UUID) {
         guard dragged != target,
               let from = sessions.firstIndex(where: { $0.id == dragged }) else { return }
@@ -1655,7 +1678,7 @@ final class MultiCockpitModel {
             let ws: [(String, Int, Date?)] = [
                 ("Session", ex.fiveHour.utilization, ex.fiveHour.resetsAt),
                 ("Weekly", ex.sevenDay.utilization, ex.sevenDay.resetsAt),
-                ("Weekly · Sonnet", ex.sevenDaySonnet.utilization, ex.sevenDaySonnet.resetsAt),
+                (Self.scopedLabel(ex.sevenDayScoped), ex.sevenDayScoped.utilization, ex.sevenDaySonnet.resetsAt)
             ]
             for window in ws {
                 candidates.append(Binding(
@@ -1671,7 +1694,7 @@ final class MultiCockpitModel {
             let local: [(String, Double, Int64)] = [
                 ("Session", snap.session5h.percentUsed ?? -1, snap.session5h.resetInSeconds),
                 ("Weekly", snap.weeklyAll.percentUsed ?? -1, snap.weeklyAll.resetInSeconds),
-                ("Weekly · Sonnet", snap.weeklySonnet.percentUsed ?? -1, snap.weeklySonnet.resetInSeconds),
+                (Self.scopedLabelMirror, snap.weeklySonnet.percentUsed ?? -1, snap.weeklySonnet.resetInSeconds)
             ].filter { $0.1 >= 0 }
             candidates.append(contentsOf: local.map { value in
                 Binding(

@@ -403,7 +403,7 @@ enum MissionRuntimeService {
     }
 
     nonisolated private static func dictionaryKeys(_ value: Any?) -> Set<String> {
-        Set((value as? [String: Any])?.keys ?? Dictionary<String, Any>().keys)
+        Set((value as? [String: Any])?.keys ?? [String: Any]().keys)
     }
 
     /// Build a bounded snapshot without evaluating shell text from the repository.

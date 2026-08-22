@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// The golden-dataset benchmark must MEASURE real savings on compressible outputs
 /// AND prove the safety invariants (failing run + JSON array = no-op). A regression

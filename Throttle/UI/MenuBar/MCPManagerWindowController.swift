@@ -17,7 +17,7 @@ final class MCPManagerWindowController: NSObject {
 
     private var window: NSWindow?
 
-    private override init() {}
+    override private init() {}
 
     func show() {
         if let window {

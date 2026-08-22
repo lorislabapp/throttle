@@ -73,7 +73,7 @@ enum StatuslineService {
         let prev = dict["statusLine"]
         let prevJSON = prev.flatMap { encodeJSON($0) }
         let already = (prev as? [String: Any])?["command"] as? String
-        var backup: URL? = nil
+        var backup: URL?
         if already?.contains("throttle-statusline.sh") != true {
             backup = try backupSettings()
             dict["statusLine"] = ["type": "command", "command": "~/.claude/throttle-statusline.sh"]
@@ -105,40 +105,30 @@ enum StatuslineService {
 
     /// Render + atomically write the pre-rendered line the script `cat`s.
     /// Cheap (~tens of bytes); safe to call on every refresh.
-    static func update(snapshot: UsageSnapshot, exact: ExactSnapshot?, savedTokens: Int) {
-        let line = render(snapshot: snapshot, exact: exact, savedTokens: savedTokens)
+    static func update(snapshot: UsageSnapshot, exact: ExactSnapshot?,
+                       codex: CodexUsageSnapshot?, savedEUR: Double) {
+        let line = render(snapshot: snapshot, exact: exact, codex: codex, savedEUR: savedEUR)
         try? line.write(to: lineFile, atomically: true, encoding: .utf8)
     }
 
-    /// The binding window (highest utilization) → a compact, colour-by-pressure
-    /// line. Prefers exact (claude.ai) data when present.
-    static func render(snapshot: UsageSnapshot, exact: ExactSnapshot?, savedTokens: Int) -> String {
-        var pct: Int?
-        var reset: Date?
-        var exactMark = ""
-
-        // Use exact ONLY when fresh — exactly the rule the menu-bar popover uses,
-        // so the statusline never disagrees with the app.
-        if let ex = exact, ex.isFresh() {
-            let ws = [ex.fiveHour, ex.sevenDay, ex.sevenDaySonnet]
-            if let b = ws.max(by: { $0.utilization < $1.utilization }) {
-                pct = b.utilization; reset = b.resetsAt; exactMark = " ✓"
-            }
-        } else {
-            let candidates: [(Double, Int64)] = [snapshot.session5h, snapshot.weeklyAll, snapshot.weeklySonnet]
-                .compactMap { w in w.percentUsed.map { ($0, w.resetInSeconds) } }
-            if let b = candidates.max(by: { $0.0 < $1.0 }) {
-                pct = Int((b.0 * 100).rounded())
-                reset = Date().addingTimeInterval(TimeInterval(b.1))
-            }
+    /// The binding window → a compact, colour-by-pressure line.
+    ///
+    /// Pressure comes from `UsagePressure`, the same function the menu-bar label
+    /// uses. It used to be computed here separately and included the per-model
+    /// weekly cap, which the menu bar excludes on purpose — so on 2026-08-22
+    /// every terminal on this Mac showed a red `100%` for a cap that was not
+    /// blocking anything, under a comment promising the two could never disagree.
+    static func render(snapshot: UsageSnapshot, exact: ExactSnapshot?,
+                       codex: CodexUsageSnapshot?, savedEUR: Double) -> String {
+        guard let reading = UsagePressure.binding(snapshot: snapshot, exact: exact, codex: codex) else {
+            return "throttle ▸ —"
         }
-
-        guard let p = pct else { return "throttle ▸ —" }
-        var s = "throttle ▸ \(colour(p))%\(exactMark)"
-        if let r = reset { s += " · reset \(hm(r))" }
-        let eur = Double(savedTokens) / 1_000_000 * 6.0
-        if eur >= 1 { s += " · ≈€\(Int(eur))" }
-        return s
+        var line = "throttle ▸ \(colour(reading.percent))%\(reading.isExact ? " ✓" : "")"
+        if let reset = reading.resetsAt { line += " · reset \(hm(reset))" }
+        // The euro value is priced by the caller from the models actually used;
+        // this line does not carry a rate of its own.
+        if savedEUR >= 1 { line += " · ≈€\(Int(savedEUR))" }
+        return line
     }
 
     /// ANSI: red ≥95, yellow ≥80, dim otherwise (matches the cockpit's

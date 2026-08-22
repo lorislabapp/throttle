@@ -185,7 +185,7 @@ enum AutopilotService {
         let docs = [
             home.appendingPathComponent(".claude/CLAUDE.md"),
             home.appendingPathComponent(".claude/CLAUDE-reference.md"),
-            home.appendingPathComponent("CLAUDE.md"),
+            home.appendingPathComponent("CLAUDE.md")
         ]
         var blob = ""
         for d in docs { if let t = try? String(contentsOf: d, encoding: .utf8) { blob += "\n" + t } }

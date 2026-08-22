@@ -30,10 +30,10 @@ enum PlanAdvisor {
     }
 
     // Official Anthropic API rates (USD × 0.92), refreshed 2026-06-11.
-    static let fable5   = ModelRate(inputPerM:  9.20, outputPerM: 46.00)   // $10 / $50  (Fable 5 / Mythos 5)
-    static let opus47   = ModelRate(inputPerM:  4.60, outputPerM: 23.00)   // $5  / $25  (Opus 4.5–4.8)
-    static let sonnet46 = ModelRate(inputPerM:  2.76, outputPerM: 13.80)   // $3  / $15  (Sonnet 4.5/4.6)
-    static let haiku45  = ModelRate(inputPerM:  0.92, outputPerM:  4.60)   // $1  / $5   (Haiku 4.5)
+    static let fable5   = ModelRate(inputPerM: 9.20, outputPerM: 46.00)   // $10 / $50  (Fable 5 / Mythos 5)
+    static let opus47   = ModelRate(inputPerM: 4.60, outputPerM: 23.00)   // $5  / $25  (Opus 4.5–4.8)
+    static let sonnet46 = ModelRate(inputPerM: 2.76, outputPerM: 13.80)   // $3  / $15  (Sonnet 4.5/4.6)
+    static let haiku45  = ModelRate(inputPerM: 0.92, outputPerM: 4.60)   // $1  / $5   (Haiku 4.5)
 
     /// Subscription tiers, monthly EUR (USD × 0.92). Anthropic's published
     /// caps are per 5-hour window with a weekly ceiling. We translate to
@@ -49,10 +49,10 @@ enum PlanAdvisor {
     }
 
     static let plans: [Plan] = [
-        Plan(id: "free",    label: "Free",       monthlyEUR:   0.0, weeklyTokenCapacity:  10_000_000),
-        Plan(id: "pro",     label: "Pro $20",    monthlyEUR:  18.40, weeklyTokenCapacity:  50_000_000),
-        Plan(id: "max5x",   label: "Max 5×",     monthlyEUR:  92.00, weeklyTokenCapacity: 250_000_000),
-        Plan(id: "max20x",  label: "Max 20×",    monthlyEUR: 184.00, weeklyTokenCapacity: 1_000_000_000)
+        Plan(id: "free", label: "Free", monthlyEUR: 0.0, weeklyTokenCapacity: 10_000_000),
+        Plan(id: "pro", label: "Pro $20", monthlyEUR: 18.40, weeklyTokenCapacity: 50_000_000),
+        Plan(id: "max5x", label: "Max 5×", monthlyEUR: 92.00, weeklyTokenCapacity: 250_000_000),
+        Plan(id: "max20x", label: "Max 20×", monthlyEUR: 184.00, weeklyTokenCapacity: 1_000_000_000)
     ]
 
     struct Verdict: Sendable {

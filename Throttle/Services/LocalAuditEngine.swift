@@ -183,7 +183,7 @@ enum LocalAuditEngine {
             category: .cost,
             title: "Opus set as the default model",
             quote: "\"model\": \"\(model)\"",
-            message: "Opus bills roughly 5× Sonnet on Claude Code workloads. For 90% of code edits, Sonnet's accuracy gap is small enough that the model split alone moves your weekly cost the most. Reserve Opus for architecture sessions via `--model claude-opus-4-7` when you need it.",
+            message: "Opus bills about 1.7× Sonnet on Claude Code workloads ($5 vs $3 per million input, $25 vs $15 output). For routine code edits the accuracy gap is usually small enough that the model split still moves your weekly cost. Reserve Opus for architecture sessions via `--model` when you need it.",
             fixHint: "Change the field to `\"model\": \"claude-sonnet-4-6\"` or remove it (Claude Code's default is already Sonnet). Spot-spike Opus per session via the CLI flag.",
             macAppCanFix: true
         )
@@ -224,7 +224,7 @@ enum LocalAuditEngine {
         // "consult <file>.md before".
         let patterns: [(NSRegularExpression.Options, String)] = [
             ([.anchorsMatchLines], #"^[^\n]*\bRead\s+([A-Za-z0-9_./-]+\.(md|txt|json))\b"#),
-            ([.caseInsensitive],    #"\bconsult\s+([A-Za-z0-9_./-]+\.(md|txt|json))\s+before\b"#)
+            ([.caseInsensitive], #"\bconsult\s+([A-Za-z0-9_./-]+\.(md|txt|json))\s+before\b"#)
         ]
         var refs: Set<String> = []
         for (opts, pattern) in patterns {
@@ -264,9 +264,9 @@ enum LocalAuditEngine {
         let medium = findings.filter { $0.severity == .medium }.count
         let low    = findings.filter { $0.severity == .low }.count
         var summary: [String] = []
-        if high > 0   { summary.append("\(high) high") }
+        if high > 0 { summary.append("\(high) high") }
         if medium > 0 { summary.append("\(medium) medium") }
-        if low > 0    { summary.append("\(low) low") }
+        if low > 0 { summary.append("\(low) low") }
         lines.append("**Local audit — \(summary.joined(separator: ", "))** _(deterministic, no AI tokens)_")
         lines.append("")
         for (i, f) in findings.enumerated() {

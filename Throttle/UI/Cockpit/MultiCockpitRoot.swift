@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 import ThrottleShared
 
 /// The multi-session Cockpit: several real `claude` sessions (one per project)
@@ -54,8 +54,7 @@ struct MultiCockpitRoot: View {
             if showNotifBanner { notifDeniedBanner }
             if !model.duplicateCwds.isEmpty { duplicateBanner }
             if !model.rateLimitedSessions.isEmpty { rateLimitBanner }
-            if let n = model.autoPauseCountdown { autoPauseBanner(n) }
-            else if let hint = model.pacingHint { pacingBanner(hint) }
+            if let n = model.autoPauseCountdown { autoPauseBanner(n) } else if let hint = model.pacingHint { pacingBanner(hint) }
             if let loop = model.loopSessions.first { loopBanner(loop) }
             if let leak = model.leakSessions.first { leakBanner(leak) }
             HStack(spacing: 0) {
@@ -604,7 +603,21 @@ struct MultiCockpitRoot: View {
             }
         }
         .onChange(of: model.activeID) { selectedRemoteID = nil }
-        .onAppear { if remoteSvc.isConfigured { remoteSvc.startPolling() } }
+        .onAppear {
+            guard remoteSvc.isConfigured else { return }
+            // Tell the user when a session on the box ends, instead of removing a
+            // row and hoping they notice. The box has its own memory limits, and
+            // an OOM there looks exactly like nothing happening here.
+            remoteSvc.onSessionVanished = { session in
+                CockpitNotifier.shared.notifyRemoteSessionEnded(
+                    project: session.project)
+            }
+            remoteSvc.onTranscriptTooLarge = { session, why in
+                CockpitNotifier.shared.notifyWaiting(project: session.project,
+                                                     question: why, tabID: UUID())
+            }
+            remoteSvc.startPolling()
+        }
         // Sits ABOVE the pane on purpose. The whole failure is that the pane looks
         // unchanged when the agent has gone and the shell underneath is taking
         // keystrokes; a marker in the rail would be exactly the sign the user
@@ -801,8 +814,7 @@ struct MultiCockpitRoot: View {
                 Button {
                     model.sortMode = mode
                 } label: {
-                    if model.sortMode == mode { Label(mode.label, systemImage: "checkmark") }
-                    else { Text(mode.label) }
+                    if model.sortMode == mode { Label(mode.label, systemImage: "checkmark") } else { Text(mode.label) }
                 }
             }
         } label: {
@@ -850,10 +862,10 @@ struct MultiCockpitRoot: View {
         Divider()
         if s.isSpawned {
             Menu("Switch Claude model") {
-                Button("Fable")  { requestModelSwitch(s, to: "fable") }
-                Button("Opus")   { requestModelSwitch(s, to: "opus") }
+                Button("Fable") { requestModelSwitch(s, to: "fable") }
+                Button("Opus") { requestModelSwitch(s, to: "opus") }
                 Button("Sonnet") { requestModelSwitch(s, to: "sonnet") }
-                Button("Haiku")  { requestModelSwitch(s, to: "haiku") }
+                Button("Haiku") { requestModelSwitch(s, to: "haiku") }
             }
             .disabled(s.runtime != .claudeCode)
         }
@@ -1092,9 +1104,7 @@ struct MultiCockpitRoot: View {
                     Text(s.projectName).font(.system(size: 12.5, weight: .medium))
                         .foregroundStyle(on ? .primary : .secondary).lineLimit(1)
                     Spacer(minLength: 0)
-                    if liveRemoteID != nil { remoteChip }
-                    else if s.isHibernated { hibernatedChip }
-                    else if s.needsInput { waitingChip() }
+                    if liveRemoteID != nil { remoteChip } else if s.isHibernated { hibernatedChip } else if s.needsInput { waitingChip() }
                     if let model = s.model { modelChip(model) }
                 }
                 if s.needsInput, let q = s.latestQuestion {
@@ -1919,7 +1929,7 @@ private struct ToolbarToggle: View {
 private struct ToolbarUtil: View {
     let icon: String
     let help: String
-    var tint: Color? = nil
+    var tint: Color?
     let action: () -> Void
     @State private var hover = false
 

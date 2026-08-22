@@ -109,6 +109,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // queue precisely because the failure it guards against wedges the main
         // thread, so it must not be scheduled behind any other startup work.
         MenuBarUpdateGuard.start()
+        // Reclaim what Throttle itself keeps. Measured 2026-08-22: 3.8 GB of
+        // never-expiring caches on a Mac whose disk hit zero twice that day —
+        // the tool reporting memory pressure was a cause of it.
+        RetentionService.startPeriodicSweeps()
+        // Serves build/test requests from the box only if the user turned it on.
+        CapabilityHostService.shared.restoreIfEnabled()
         let isDemoMode = CommandLine.arguments.contains("-demo")
 
         // In demo mode, skip all background services and just show the UI with fake data
@@ -206,6 +212,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task { @MainActor in
                 self?.appState.exactSnapshot = snap
                 self?.appState.exactModeError = nil
+                // Learn which model the per-model weekly cap belongs to, so the
+                // label and the offline estimate stop assuming Sonnet.
+                ScopedCapModel.remember(snap.sevenDayScoped.scopedModel)
                 self?.appState.anchorCalibration(from: snap)   // make the local estimate track server truth
                 self?.appState.refreshStatusline()   // keep the terminal line in sync with exact
             }
@@ -265,6 +274,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if UserDefaults.standard.bool(forKey: "throttleAutoTrimEnabled") {
             Task.detached(priority: .utility) {
                 let r = ContextTrimmerService.autoTrimIdle()
+                // `r` is a tuple whose first member is named `count`, not a
+                // collection. SwiftLint's empty_count autocorrect rewrote this
+                // to `!r.isEmpty` and broke the build.
+                // swiftlint:disable:next empty_count
                 if r.count > 0 {
                     await CockpitNotifier.shared.notifyAutoTrim(count: r.count, tokensSaved: r.tokensSaved)
                 }

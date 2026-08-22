@@ -73,8 +73,8 @@ struct ProjectChatContext: Sendable {
     /// at the same time as `claudeMd` / `settingsJSON` / `hookScripts` so
     /// the system prompt can advertise them without inlining their bytes.
     /// Empty or missing → omit from the prompt's "available files" list.
-    var claudeMdPath: String? = nil
-    var settingsJSONPath: String? = nil
+    var claudeMdPath: String?
+    var settingsJSONPath: String?
     var hookScriptPaths: [String: String] = [:]
 
     /// Render the context as a system-prompt-friendly string. We DO NOT

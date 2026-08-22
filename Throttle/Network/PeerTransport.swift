@@ -1,6 +1,6 @@
 import Foundation
-import ThrottleShared
 import ThrottlePeer
+import ThrottleShared
 
 /// Mac-side LAN mirror transport: wraps `PeerAdvertiser` and conforms to
 /// `MirrorTransport` so `MirrorFanout` treats it like any other sink. Opt-in and
@@ -13,7 +13,9 @@ import ThrottlePeer
 final class PeerTransport: MirrorTransport {
     static let shared = PeerTransport()
 
+    /// Legacy UserDefaults key, read once for migration then deleted.
     private static let secretKey = "throttlePeerPairingSecretV1"
+    private static let secretAccount = "peerPairingSecret"
     private static let fallbackHostKey = "throttlePeerFallbackHostV1"
     private let secret: PeerPairingSecret
     private var advertiser: PeerAdvertiser?
@@ -34,12 +36,26 @@ final class PeerTransport: MirrorTransport {
     }
 
     private init() {
-        if let b64 = UserDefaults.standard.string(forKey: Self.secretKey),
+        // Keychain, not UserDefaults. This secret authorises a device to receive
+        // the mirror of every session, and it lived in a plist any process
+        // running as this user could read — while the edge-agent bearer token,
+        // twenty lines away in another file, was already in the Keychain with
+        // the comment "Bearer token controls a remote session → Keychain, not
+        // UserDefaults". The same sentence applies here and was not followed.
+        if let b64 = KeychainStore.get(account: Self.secretAccount),
            let existing = PeerPairingSecret(base64: b64) {
+            secret = existing
+        } else if let legacy = UserDefaults.standard.string(forKey: Self.secretKey),
+                  let existing = PeerPairingSecret(base64: legacy) {
+            // Migrate in place, then remove the plaintext copy. Keeping the pair
+            // would leave the weaker of the two as the real security boundary.
+            _ = KeychainStore.set(legacy, account: Self.secretAccount)
+            UserDefaults.standard.removeObject(forKey: Self.secretKey)
             secret = existing
         } else {
             let fresh = PeerPairingSecret.generate()
-            UserDefaults.standard.set(fresh.base64, forKey: Self.secretKey)
+            _ = KeychainStore.set(fresh.base64, account: Self.secretAccount)
+            UserDefaults.standard.removeObject(forKey: Self.secretKey)
             secret = fresh
         }
     }

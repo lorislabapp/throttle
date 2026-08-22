@@ -6,6 +6,11 @@ struct MenuBarLabel: View {
     var body: some View {
         // Counted here, inside the pass being measured: a runaway is a render
         // RATE, and no observer outside the view can see it.
+        // `let _ =` on purpose: inside a @ViewBuilder this is a declaration and
+        // contributes no view, while a bare `_ =` is an expression the builder
+        // tries to turn into one. SwiftLint's redundant_discardable_let
+        // autocorrect made that change and broke the build.
+        // swiftlint:disable:next redundant_discardable_let
         let _ = MenuBarUpdateGuard.noteRender()
 
         // A runaway update loop on this label swap-locked a 16 GB Mac (3.2.88).
@@ -95,34 +100,14 @@ struct MenuBarLabel: View {
         return "\(tokens)"
     }
 
+    /// Delegates to `UsagePressure` — the same function the statusline uses.
+    /// The two used to compute this separately and disagreed about whether the
+    /// per-model weekly cap counts (it does not: exhausting it forces a model
+    /// fallback, it does not lock you out).
     private func highestPressurePercent() -> Double? {
-        // Only count caps that gate *all* usage: the 5h session and the
-        // all-models weekly cap. The Sonnet-only weekly cap is deliberately
-        // excluded — hitting it doesn't lock you out, it just forces a
-        // fallback to Opus, so surfacing it as a 100% headline made users
-        // think they were throttled when they still had headroom.
-        //
-        // Prefer exact-mode data when fresh — those are the numbers Anthropic
-        // is actually rate-limiting against. Fall back to local rolling-window
-        // math otherwise.
-        var providerPressures: [Double] = []
-        if let ex = appState.exactSnapshot, ex.isFresh() {
-            let exactPcts = [
-                Double(ex.fiveHour.utilization),
-                Double(ex.sevenDay.utilization)
-            ].max() ?? 0
-            providerPressures.append(exactPcts / 100.0)
-        } else {
-            providerPressures.append(contentsOf: [
-                appState.snapshot.session5h.percentUsed,
-                appState.snapshot.weeklyAll.percentUsed
-            ].compactMap { $0 })
-        }
-        if let codex = appState.codexUsageSnapshot, codex.isFresh(),
-           let pressure = codex.highestPressure {
-            providerPressures.append(pressure)
-        }
-        return providerPressures.max()
+        UsagePressure.binding(snapshot: appState.snapshot,
+                              exact: appState.exactSnapshot,
+                              codex: appState.codexUsageSnapshot)?.fraction
     }
 
     /// The reset moment of the most-binding saturated window, when known.

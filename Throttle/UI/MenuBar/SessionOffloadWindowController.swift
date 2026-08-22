@@ -11,7 +11,7 @@ final class SessionOffloadWindowController: NSObject {
 
     private var window: NSWindow?
 
-    private override init() {}
+    override private init() {}
 
     func show() {
         if let window {

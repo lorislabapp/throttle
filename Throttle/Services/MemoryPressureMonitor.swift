@@ -38,9 +38,7 @@ final class MemoryPressureMonitor {
             guard let self, let event = src?.data else { return }
             let old = self.level
             // Kernel reports the current pressure level on each event.
-            if event.contains(.critical) { self.level = .critical }
-            else if event.contains(.warning) { self.level = .warning }
-            else { self.level = .normal }
+            if event.contains(.critical) { self.level = .critical } else if event.contains(.warning) { self.level = .warning } else { self.level = .normal }
             // Fire reclaimers only when pressure actually worsened.
             if self.level.rawValue > old.rawValue {
                 for cb in self.onRise { cb(self.level) }

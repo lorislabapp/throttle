@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// The at-cap menu-bar countdown must stay compact (the menu bar is precious
 /// real estate) and never show a negative time when a stale snapshot still
