@@ -18,7 +18,24 @@ enum TokoptHook {
         // Any failure → silent no-op (Claude keeps the original output).
         let data = FileHandle.standardInput.readDataToEndOfFile()
         guard let payload = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
-              (payload["tool_name"] as? String) == "Bash",
+              let toolName = payload["tool_name"] as? String else { return }
+
+        // MCP tools: measure, never rewrite. Every hook here was scoped to Bash,
+        // so Throttle optimised the one tool it watched — 0.7 MB kept out of
+        // context over thirty days, against 71 MB that MCP answers put in over
+        // the same period. Measuring live is the prerequisite for any rule; the
+        // effect of trimming tool results on task success is unquantified, and
+        // this file does not guess.
+        if toolName.hasPrefix("mcp__") {
+            let response = payload["tool_response"]
+            let whole = (try? JSONSerialization.data(withJSONObject: response ?? [:]))?.count ?? 0
+            MCPResponseLedger.record(tool: toolName,
+                                     bytes: whole,
+                                     textBytes: MCPResponseLedger.textBytes(of: response))
+            return   // the model sees the answer exactly as the server sent it
+        }
+
+        guard toolName == "Bash",
               let resp = payload["tool_response"] as? [String: Any] else { return }
 
         let stdout = resp["stdout"] as? String ?? ""
