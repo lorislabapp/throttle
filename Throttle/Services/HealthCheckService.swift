@@ -48,8 +48,61 @@ enum HealthCheckService {
             items.append(exactMode(exact: exact, isPro: isPro))
             items.append(cacheHygiene())
             items.append(memoryIndexCap())
+            items.append(oversizedTranscripts())
             return items
         }.value
+    }
+
+    /// Transcripts big enough to be a hazard rather than a cost.
+    ///
+    /// A harness holds its rollout in memory. Measured 2026-08-22: a codex
+    /// session whose rollout had reached 275 MB was killed by the OOM killer on
+    /// the 2 GB edge container, and the largest on this Mac is 595 MB. On a
+    /// laptop that is slow; on the box it is fatal, and the session dies with no
+    /// warning and no obvious cause.
+    ///
+    /// The check is deliberately blunt — a byte count, no interpretation. It does
+    /// not offer to delete anything: a transcript is the conversation, and the
+    /// answer is to start a fresh session, not to truncate history under the
+    /// process that is reading it.
+    private static func oversizedTranscripts() -> HealthItem {
+        let title = "Session transcripts"
+        let fm = FileManager.default
+        let home = fm.homeDirectoryForCurrentUser
+        let roots = [home.appendingPathComponent(".codex/sessions", isDirectory: true),
+                     home.appendingPathComponent(".claude/projects", isDirectory: true)]
+        // 128 MB is where the box died with room to spare; 512 MB is where even a
+        // 16 GB laptop starts paying for it in resident memory.
+        let warnAt = 128 * 1024 * 1024
+        let failAt = 512 * 1024 * 1024
+
+        var worst = 0
+        var worstName = ""
+        var over = 0
+        for root in roots {
+            guard let walker = fm.enumerator(at: root,
+                                             includingPropertiesForKeys: [.fileSizeKey],
+                                             options: [.skipsHiddenFiles]) else { continue }
+            for case let url as URL in walker {
+                guard url.pathExtension == "jsonl",
+                      let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+                      size >= warnAt else { continue }
+                over += 1
+                if size > worst { worst = size; worstName = url.deletingPathExtension().lastPathComponent }
+            }
+        }
+        guard over > 0 else {
+            return HealthItem(title: title, status: .ok, detail: "No transcript is large enough to threaten a session.")
+        }
+        let biggest = ByteCountFormatter.string(fromByteCount: Int64(worst), countStyle: .file)
+        let where_ = worstName.count > 12 ? String(worstName.prefix(12)) + "…" : worstName
+        return HealthItem(
+            title: title,
+            status: worst >= failAt ? .fail : .warn,
+            detail: "\(over) transcript\(over == 1 ? "" : "s") over 128 MB, largest \(biggest) (\(where_)). "
+                  + "A harness keeps its transcript in memory: this size is slow here and fatal on the 2 GB box, "
+                  + "where a 275 MB session was OOM-killed on 2026-08-22. Start a fresh session rather than "
+                  + "truncating one that is open.")
     }
 
     /// Execute a fix and return a short result line for the UI.

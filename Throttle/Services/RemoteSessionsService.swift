@@ -22,6 +22,9 @@ final class RemoteSessionsService {
     // Bearer token controls a remote session → Keychain, not UserDefaults.
     var token: String { didSet { KeychainStore.set(token, account: Self.tokenAccount) } }
     private static let tokenAccount = "edgeAgentToken"
+    /// Above this, moving a session to the box is a way to lose it. Set below the
+    /// 275 MB that was actually killed there, not at it.
+    static let transcriptOffloadLimit = 128 * 1024 * 1024
 
     private(set) var sessions: [EdgeAgentService.RemoteSession] = []
     private(set) var lastVerify: EdgeAgentService.VerifyResult?
@@ -198,6 +201,21 @@ final class RemoteSessionsService {
             offloadStatus = "No transcript found for this session yet — say something to \(runtimeName) first."
             return nil
         }
+        // Refuse to move a transcript the box cannot hold. A harness keeps its
+        // rollout in memory, and the edge container has 2 GB: measured
+        // 2026-08-22, a 275 MB codex session was OOM-killed there minutes after
+        // the file crossed that mark, taking the agent unit down with it. The
+        // session simply vanished from the rail, which is the worst possible way
+        // to be told. Better to refuse the move than to lose the session on the
+        // other side.
+        if size >= Self.transcriptOffloadLimit {
+            let mb = ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file)
+            offloadStatus = "This session's transcript is \(mb). The box has 2 GB of memory and would "
+                + "run out loading it — a session that size was killed there on 2026-08-22. "
+                + "Start a fresh session on the box instead; the code goes over either way."
+            return nil
+        }
+
         let remoteCwd = "/root/offload/\(projectName)"
         // Offload moves the conversation and the code. It does NOT move
         // capabilities: MCP servers, plugins and provider credentials belong to
