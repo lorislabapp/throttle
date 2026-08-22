@@ -37,6 +37,8 @@
 #   throttle-sync.sh fetch [repo]    fetch everything, show what the other side has
 #   throttle-sync.sh status [repo]   what exists where, no network writes
 #   throttle-sync.sh diff <machine> [repo]   your tree vs that machine's snapshot
+#   throttle-sync.sh merge <machine> [repo]  reconcile the other machine's snapshot
+#                                            into yours, in a scratch worktree
 #
 # CONFIG (env)
 #   THROTTLE_SYNC_HOST    ssh destination holding the bare mirrors
@@ -246,7 +248,140 @@ cmd_diff() {
     git -C "$repo" diff "HEAD" "refs/wip/$who/$branch"
 }
 
+
+# MARK: - Reconciliation
+
+# Bring another machine's snapshot into yours and report what needs a human.
+#
+# Measured on Eclair, 2026-08-22, Mac against box134: 468 files merged with no
+# help at all, 53 files conflicted across 96 hunks. Of those hunks only 7 were
+# two agents phrasing one idea differently; 89 were genuinely different
+# decisions. That ratio is why this command refuses to "just merge": resolving
+# 89 real disagreements by picking a side is discarding work silently, which is
+# the exact failure this tool exists to prevent.
+#
+# So the split is by evidence, not by hope:
+#   • files only one side touched      → taken, silently
+#   • hunks whose code skeleton matches → resolved, they differ only in strings
+#                                          and comments
+#   • everything else                   → left conflicted, listed, yours to decide
+#
+# Nothing happens in your working tree. The merge runs in a scratch worktree, so
+# a session editing the repo right now is undisturbed and you can walk away from
+# the result without cleaning anything up.
+cmd_merge() {
+    local who="${1:?usage: merge <machine> [repo]}" repo branch me url ref work
+    repo=$(repo_root "${2:-$PWD}")
+    branch=$(current_branch "$repo")
+    me=$(machine_id)
+    ref="refs/wip/$who/$branch"
+
+    echo "merge $(mirror_name "$repo")  [$branch]  ← $who"
+    url=$(remote_url "$(mirror_name "$repo")" "$repo") || die "no mirror reachable"
+    GIT_SSH_COMMAND=$(git_ssh) git -C "$repo" fetch --quiet "$url" '+refs/wip/*:refs/wip/*'
+    git -C "$repo" rev-parse --verify --quiet "$ref" >/dev/null \
+        || die "no snapshot at $ref — has $who run 'push'?"
+
+    local ours
+    ours=$(snapshot_wip "$repo" "$branch")
+    [ -z "$ours" ] && ours=$(git -C "$repo" rev-parse HEAD)
+
+    work="${TMPDIR:-/tmp}/throttle-merge-$(basename "$repo")-$$"
+    rm -rf "$work"
+    git -C "$repo" worktree add --quiet --detach "$work" "$ours" 2>/dev/null \
+        || die "could not create the scratch worktree at $work"
+
+    local merged=0 conflicted=0
+    if git -C "$work" merge --no-commit --no-ff "$ref" >/dev/null 2>&1; then
+        merged=$(git -C "$work" diff --cached --name-only | wc -l | tr -d ' ')
+        note "$merged file(s) merged cleanly — nothing needs you"
+        note "result is in $work (not committed, your tree untouched)"
+        return 0
+    fi
+    merged=$(git -C "$work" diff --cached --name-only | wc -l | tr -d ' ')
+    conflicted=$(git -C "$work" diff --name-only --diff-filter=U | wc -l | tr -d ' ')
+    note "$merged file(s) merged with no help"
+    note "$conflicted file(s) still conflict — classifying the hunks"
+
+    git -C "$work" diff --name-only --diff-filter=U > "$work/.throttle-conflicts"
+    resolve_cosmetic "$work"
+
+    echo
+    echo "  scratch worktree : $work"
+    echo "  decisions listed : $work/.throttle-decisions.md"
+    echo "  nothing was committed, and $repo was never touched."
+    echo "  when done:  git -C \"$work\" diff --cached   then push from there"
+    echo "  to discard: git -C \"$repo\" worktree remove --force \"$work\""
+}
+
+# Auto-resolve only the hunks that are provably the same code, and write every
+# remaining decision to a report with both sides side by side.
+resolve_cosmetic() {
+    local work="$1"
+    python3 - "$work" <<'PYEOF'
+import re, os, sys
+
+work = sys.argv[1]
+skeleton = lambda s: re.sub(r'\s+', ' ', re.sub(r'//.*', '', re.sub(r'"[^"]*"', '""', s))).strip()
+
+cosmetic = 0
+decisions = []
+for path in open(os.path.join(work, '.throttle-conflicts'), encoding='utf-8'):
+    path = path.strip()
+    full = os.path.join(work, path)
+    if not path or not os.path.exists(full):
+        continue
+    try:
+        lines = open(full, encoding='utf-8', errors='replace').read().split('\n')
+    except Exception:
+        continue
+
+    out, i, changed = [], 0, False
+    while i < len(lines):
+        if not lines[i].startswith('<<<<<<<'):
+            out.append(lines[i]); i += 1; continue
+        j = i + 1
+        ours = []
+        while j < len(lines) and not lines[j].startswith('======='):
+            ours.append(lines[j]); j += 1
+        j += 1
+        theirs = []
+        while j < len(lines) and not lines[j].startswith('>>>>>>>'):
+            theirs.append(lines[j]); j += 1
+        a = [x for x in map(skeleton, ours) if x]
+        b = [x for x in map(skeleton, theirs) if x]
+        if a == b:
+            # Same code, different wording. Keep this machine's text: either is
+            # correct, and keeping ours minimises churn in the diff you review.
+            out.extend(ours); cosmetic += 1; changed = True
+        else:
+            out.extend(lines[i:j + 1])
+            decisions.append((path, ours, theirs))
+        i = j + 1
+
+    if changed:
+        open(full, 'w', encoding='utf-8').write('\n'.join(out))
+
+report = [
+    "# Réconciliation — décisions qui te reviennent", "",
+    f"{cosmetic} bloc(s) résolus automatiquement : même code, formulation différente.",
+    f"{len(decisions)} bloc(s) demandent une vraie décision.", "",
+    "Aucun n'a été tranché à ta place : ce sont deux agents qui ont choisi",
+    "différemment, et prendre un côté au hasard jetterait du travail en silence.", "",
+]
+for n, (path, ours, theirs) in enumerate(decisions, 1):
+    report += [f"## {n}. `{path}`", "", "**ici :**", "```", *ours[:40], "```", "",
+               "**là-bas :**", "```", *theirs[:40], "```", ""]
+open(os.path.join(work, '.throttle-decisions.md'), 'w', encoding='utf-8').write('\n'.join(report))
+
+print(f"  {cosmetic} hunk(s) resolved automatically (same code, different words)")
+print(f"  {len(decisions)} hunk(s) need a real decision")
+PYEOF
+    rm -f "$work/.throttle-conflicts"
+}
+
 case "${1:-}" in
+    merge)  shift; cmd_merge "$@" ;;
     push)   shift; cmd_push "$@" ;;
     fetch)  shift; cmd_fetch "$@" ;;
     status) shift; cmd_status "$@" ;;
