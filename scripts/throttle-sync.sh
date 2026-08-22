@@ -43,11 +43,19 @@
 #   THROTTLE_SYNC_ROOT    directory of the bare mirrors on that host
 #   THROTTLE_SYNC_KEY     ssh identity file (optional)
 #   THROTTLE_SYNC_MACHINE stable label for this machine (default: hostname)
+#   THROTTLE_SYNC_HOST_ALT second address to try when the first does not answer
 set -euo pipefail
 
-SYNC_HOST="${THROTTLE_SYNC_HOST-root@100.123.83.107}"   # no colon: an explicitly empty value means "local path"
+SYNC_HOST="${THROTTLE_SYNC_HOST-git@100.123.83.107}"   # no colon: an explicitly empty value means "local path"
 SYNC_ROOT="${THROTTLE_SYNC_ROOT:-/datapool/git/repos}"
 SYNC_KEY="${THROTTLE_SYNC_KEY:-$HOME/.ssh/proxmox_nopass}"
+# Fallback path. Measured 2026-08-22: with the Proxmox host at load average 16
+# (transcoding + a runaway sensor), tailscaled starves and the tailnet address
+# stops answering ICMP and SSH entirely while the LAN address stays healthy —
+# a large push then dies mid-transfer. Losing work because the box was busy is
+# exactly what this tool exists to prevent, so it tries the second address
+# rather than failing.
+SYNC_HOST_ALT="${THROTTLE_SYNC_HOST_ALT-git@10.9.8.88}"
 
 die() { printf 'throttle-sync: %s\n' "$*" >&2; exit 1; }
 note() { printf '  %s\n' "$*"; }
@@ -61,6 +69,25 @@ machine_id() {
     # must not move under work that is already stored there.
     h="${THROTTLE_SYNC_MACHINE:-$(hostname -s 2>/dev/null || hostname)}"
     printf '%s' "$h" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9-' '-' | sed 's/-*$//'
+}
+
+# The mirror's basename. Deriving it from the directory name looks obvious and
+# is a trap: `iconv -t ASCII//TRANSLIT` on "Éclair" yields "'Eclair" on macOS and
+# "?clair" on Linux, so the two machines would address two different mirrors and
+# each would think the other had pushed nothing. The name is therefore read from
+# git config `throttle-sync.mirror`, which lives in the repo and reads the same
+# everywhere. A non-ASCII directory name without that key is refused, not guessed.
+mirror_name() {
+    local repo="$1" name
+    name=$(git -C "$repo" config --get throttle-sync.mirror 2>/dev/null) && [ -n "$name" ] && {
+        printf '%s' "$name"; return 0; }
+    name=$(basename "$repo")
+    case "$name" in
+        *[!A-Za-z0-9._-]*)
+            die "repo directory '$name' is not plain ASCII — pick the mirror name explicitly:
+    git -C '$repo' config throttle-sync.mirror <name>" ;;
+    esac
+    printf '%s' "$name"
 }
 
 repo_root() {
@@ -78,12 +105,35 @@ current_branch() {
 
 # An empty THROTTLE_SYNC_HOST means the mirrors are on a local path — used by
 # the test harness, and valid for an attached disk.
-remote_url() {
-    if [ -z "$SYNC_HOST" ]; then printf '%s/%s.git' "$SYNC_ROOT" "$1"
-    else printf 'ssh://%s%s/%s.git' "$SYNC_HOST" "$SYNC_ROOT" "$1"; fi
+url_for() {
+    local host="$1" name="$2"
+    if [ -z "$host" ]; then printf '%s/%s.git' "$SYNC_ROOT" "$name"
+    else printf 'ssh://%s%s/%s.git' "$host" "$SYNC_ROOT" "$name"; fi
 }
 
-git_ssh() { printf 'ssh -o ConnectTimeout=10 -o BatchMode=yes -i %s' "$SYNC_KEY"; }
+# Pick the first address whose mirror actually answers, and say which one when
+# it is not the primary — a silent fallback hides a degraded box.
+remote_url() {
+    local name="$1" repo="${2:-$PWD}" url
+    url=$(url_for "$SYNC_HOST" "$name")
+    GIT_SSH_COMMAND=$(git_ssh) git -C "$repo" ls-remote "$url" >/dev/null 2>&1 && { printf '%s' "$url"; return 0; }
+    if [ -n "$SYNC_HOST_ALT" ] && [ "$SYNC_HOST_ALT" != "$SYNC_HOST" ]; then
+        url=$(url_for "$SYNC_HOST_ALT" "$name")
+        if GIT_SSH_COMMAND=$(git_ssh) git -C "$repo" ls-remote "$url" >/dev/null 2>&1; then
+            note "primary host unreachable — using $SYNC_HOST_ALT" >&2   # stdout is the URL
+            printf '%s' "$url"; return 0
+        fi
+    fi
+    return 1
+}
+
+# ServerAlive keepalives matter here: a first push of a large repo can spend
+# minutes uploading one sideband packet, and without them the link is torn down
+# mid-transfer ("unexpected disconnect while reading sideband packet") — measured
+# on Eclair, 464 MB of history over the tailnet.
+git_ssh() {
+    printf 'ssh -o ConnectTimeout=10 -o BatchMode=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=20 -i %s' "$SYNC_KEY"
+}
 
 # Build a commit containing the working tree exactly as it stands right now.
 # Prints the new commit sha, or nothing when the tree matches HEAD (no work to
@@ -111,15 +161,12 @@ snapshot_wip() {
 cmd_push() {
     local repo name branch url wip me
     repo=$(repo_root "${1:-$PWD}")
-    name=$(basename "$repo")
+    name=$(mirror_name "$repo")
     branch=$(current_branch "$repo")
     me=$(machine_id)
-    url=$(remote_url "$name")
-
     echo "push  $name  [$branch]  from $me"
-
-    GIT_SSH_COMMAND=$(git_ssh) git -C "$repo" ls-remote "$url" >/dev/null 2>&1 \
-        || die "no mirror at $url — create it with: git init --bare --initial-branch=main $SYNC_ROOT/$name.git"
+    url=$(remote_url "$name" "$repo") \
+        || die "no mirror reachable for $name (tried $SYNC_HOST${SYNC_HOST_ALT:+ and $SYNC_HOST_ALT}) — create it with: git init --bare --initial-branch=main $SYNC_ROOT/$name.git"
 
     # Committed history first: it is the part both machines agree on.
     if GIT_SSH_COMMAND=$(git_ssh) git -C "$repo" push --quiet "$url" \
@@ -145,11 +192,10 @@ cmd_push() {
 cmd_fetch() {
     local repo name url me
     repo=$(repo_root "${1:-$PWD}")
-    name=$(basename "$repo")
+    name=$(mirror_name "$repo")
     me=$(machine_id)
-    url=$(remote_url "$name")
-
     echo "fetch $name  into $me"
+    url=$(remote_url "$name" "$repo") || die "no mirror reachable for $name"
     # Every ref, including other machines' WIP. Nothing is merged or checked
     # out — this only makes the other side's work visible and local.
     GIT_SSH_COMMAND=$(git_ssh) git -C "$repo" fetch --quiet --prune "$url" \
@@ -175,21 +221,21 @@ cmd_fetch() {
 cmd_status() {
     local repo name url me
     repo=$(repo_root "${1:-$PWD}")
-    name=$(basename "$repo")
+    name=$(mirror_name "$repo")
     me=$(machine_id)
-    url=$(remote_url "$name")
+    url=$(remote_url "$name" "$repo") || url=""
 
     echo "$name  on $me  [$(current_branch "$repo")]"
     local dirty
     dirty=$(git -C "$repo" status --porcelain | wc -l | tr -d ' ')
     note "$dirty uncommitted path(s) locally"
 
-    if GIT_SSH_COMMAND=$(git_ssh) git -C "$repo" ls-remote "$url" >/dev/null 2>&1; then
+    if [ -n "$url" ]; then
         note "mirror reachable at $url"
         GIT_SSH_COMMAND=$(git_ssh) git -C "$repo" ls-remote "$url" 'refs/wip/*' \
             | while read -r _ ref; do note "remote snapshot: ${ref#refs/wip/}"; done
     else
-        note "mirror NOT reachable at $url"
+        note "mirror NOT reachable (tried $SYNC_HOST${SYNC_HOST_ALT:+ and $SYNC_HOST_ALT})"
     fi
 }
 
