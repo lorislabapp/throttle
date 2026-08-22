@@ -26,7 +26,28 @@ jobs:
           xcode-version: latest-stable
 
       - name: Install XcodeGen
-        run: brew install xcodegen swiftlint
+        run: brew install xcodegen
+
+      # SwiftLint is PINNED on purpose. A baseline is a snapshot of known
+      # violations keyed by rule and message, so a linter upgrade invalidates it
+      # wholesale. `brew install swiftlint` floats to whatever is current: it
+      # moved 0.63.2 -> 0.65.x, the baseline stopped matching, and every run
+      # since 3.2.96 failed with ~2 700 pre-existing violations. The ratchet was
+      # silently down for days, and the security gates below it never ran.
+      - name: Install SwiftLint (pinned)
+        env:
+          SWIFTLINT_VERSION: 0.65.1
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/swiftlint.zip \
+            "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/portable_swiftlint.zip"
+          unzip -q -o /tmp/swiftlint.zip -d /tmp/swiftlint
+          sudo install -m 0755 /tmp/swiftlint/swiftlint /usr/local/bin/swiftlint
+          INSTALLED="$(swiftlint version)"
+          if [ "$INSTALLED" != "$SWIFTLINT_VERSION" ]; then
+            echo "SwiftLint $INSTALLED != pinned $SWIFTLINT_VERSION — regenerate .swiftlint-baseline.json with the pinned version" >&2
+            exit 1
+          fi
 
       - name: Generate project
         run: xcodegen generate
@@ -73,9 +94,32 @@ jobs:
 
       - name: Reject accidental broad transport or runtime exceptions
         run: |
-          ! rg -n 'NSAllowsArbitraryLoads' project.yml ThrottleiOS/Info.plist
+          set -euo pipefail
+          # Per-target, not per-file. The macOS app REQUIRES NSAllowsArbitraryLoads:
+          # NSAllowsLocalNetworking covers only .local, link-local and RFC1918, so
+          # every request to a tailnet address (100.64/10) failed with -1022 before
+          # a socket was opened. What must never carry it is a shipped iOS or
+          # visionOS target. Grepping the whole file conflated the two and failed
+          # on a correct config.
+          python3 - <<'PY'
+          import sys, yaml
+          targets = (yaml.safe_load(open('project.yml')).get('targets') or {})
+          bad = [
+              name for name, t in targets.items()
+              if str(t.get('platform', '')) in {'iOS', 'visionOS', 'tvOS', 'watchOS'}
+              and ((t.get('info') or {}).get('properties') or {})
+                  .get('NSAppTransportSecurity', {}).get('NSAllowsArbitraryLoads')
+          ]
+          if bad:
+              sys.exit('broad ATS exception on shipped target(s): ' + ', '.join(bad))
+          print('ATS: arbitrary loads confined to macOS')
+          PY
+          ! rg -n 'NSAllowsArbitraryLoads' ThrottleiOS/Info.plist
           ! rg -n 'allow-unsigned-executable-memory|disable-library-validation' Throttle/Throttle.entitlements
-          ! rg -n 'THROTTLE_AGENT_TOKEN=' edge-agent ThrottleShared/Sources/ThrottleShared/EdgeAgentService.swift
+          # A token VALUE, not the variable name. `throttle-ask` legitimately reads
+          # THROTTLE_AGENT_TOKEN from an env file, so matching the bare name failed
+          # on every script that consumes the token correctly.
+          ! rg -n 'THROTTLE_AGENT_TOKEN=[A-Za-z0-9+/_-]{8,}' edge-agent ThrottleShared/Sources/ThrottleShared/EdgeAgentService.swift
 
       - name: Enforce App Store LAN-only boundary
         run: |
