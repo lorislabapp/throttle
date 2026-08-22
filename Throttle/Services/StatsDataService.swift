@@ -984,7 +984,7 @@ enum StatsDataService {
                    COALESCE(SUM(MAX(0, baseline_bytes - actual_bytes)), 0) AS bytes,
                    COUNT(*) AS n
             FROM tokopt_savings
-            WHERE timestamp >= ?
+            WHERE timestamp >= ? AND hook NOT IN (\(TokoptSavingsRow.injectingHooks.map { "'\($0)'" }.joined(separator: ", ")))
             GROUP BY hook
             HAVING bytes > 0
             ORDER BY bytes DESC
@@ -992,12 +992,22 @@ enum StatsDataService {
         return rows.map { HookSaving(hook: $0["hook"] ?? "?", bytes: $0["bytes"] ?? 0, records: $0["n"] ?? 0) }
     }
 
+    /// Bytes kept out of context this week.
+    ///
+    /// Excludes hooks that ADD context. `session-start-router` emits memory files
+    /// it selected; its recorded "baseline" is every file it *could* have emitted,
+    /// a counterfactual nobody would have lived. Counting it inflated this figure
+    /// by roughly 26× — measured 2026-08-22, 291 KB claimed per session against
+    /// 226 bytes actually emitted, on top of an index Claude Code loads either
+    /// way. Routing is worth doing; it is not a saving, and a tool that overstates
+    /// its own gains cannot be trusted on anything else it reports.
     static func savedBytesThisWeek(in db: Database, now: Date = Date()) throws -> Int {
         let cutoff = Int64(now.timeIntervalSince1970) - 7 * 24 * 3600
+        let injecting = TokoptSavingsRow.injectingHooks.map { "'\($0)'" }.joined(separator: ", ")
         let row = try Row.fetchOne(db, sql: """
             SELECT COALESCE(SUM(MAX(0, baseline_bytes - actual_bytes)), 0) AS saved
             FROM tokopt_savings
-            WHERE timestamp >= ?
+            WHERE timestamp >= ? AND hook NOT IN (\(injecting))
             """, arguments: [cutoff])
         return row?["saved"] ?? 0
     }
@@ -1029,7 +1039,7 @@ enum StatsDataService {
                 CAST(strftime('%s', date(timestamp, 'unixepoch', 'localtime')) AS INTEGER) AS day_start,
                 SUM(MAX(0, baseline_bytes - actual_bytes)) AS saved
             FROM tokopt_savings
-            WHERE timestamp >= ?
+            WHERE timestamp >= ? AND hook NOT IN (\(TokoptSavingsRow.injectingHooks.map { "'\($0)'" }.joined(separator: ", ")))
             GROUP BY day_start
             ORDER BY day_start ASC
             """
