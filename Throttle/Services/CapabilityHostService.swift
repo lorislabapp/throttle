@@ -84,7 +84,7 @@ final class CapabilityHostService: ObservableObject {
     nonisolated static let outputCap = 64_000
     nonisolated static let timeout: TimeInterval = 15 * 60
 
-    private var timer: Timer?
+    private var pollTask: Task<Void, Never>?
 
     /// Where the box lives. Owned by `RemoteSessionsService` — one place holds the
     /// host and the bearer token, and it is not this file.
@@ -100,22 +100,42 @@ final class CapabilityHostService: ObservableObject {
     /// Called once at launch. A no-op unless the user previously turned it on.
     func restoreIfEnabled() { if enabled { start() } }
 
+    /// A `Task` loop rather than a `Timer`.
+    ///
+    /// The first version used `Timer.scheduledTimer`, and it never fired once in
+    /// production: the request sat pending on the box for 35 minutes with the
+    /// feature enabled, the route reachable and the code present in the shipped
+    /// binary. `RemoteSessionsService` polls the same agent with a task loop and
+    /// has always worked, so this now does what is known to work in this app
+    /// instead of what should work in principle.
     func start(poll every: TimeInterval = 20) {
         stop()
         guard enabled else { return }
-        timer = Timer.scheduledTimer(withTimeInterval: every, repeats: true) { [weak self] _ in
-            Task { @MainActor in await self?.pollOnce() }
+        Self.log.info("capability host started, polling every \(Int(every))s")
+        pollTask = Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.pollOnce()
+                try? await Task.sleep(nanoseconds: UInt64(every * 1_000_000_000))
+            }
         }
     }
 
-    func stop() { timer?.invalidate(); timer = nil }
+    func stop() { pollTask?.cancel(); pollTask = nil }
 
     /// One pass: ask the box what it needs, serve at most one request. One at a
     /// time on purpose — a build already saturates this machine, and the reason
     /// the session moved to the box was that the Mac had nothing left to give.
     func pollOnce() async {
         guard enabled, !running else { return }
-        guard let pending = await fetchPending(), let req = pending.first else { return }
+        guard let pending = await fetchPending() else {
+            // Silence here is what made the first version undiagnosable from the
+            // outside: enabled, reachable, shipped — and no way to tell it never
+            // asked.
+            Self.log.debug("capability poll: the box did not answer")
+            return
+        }
+        guard let req = pending.first else { return }
+        Self.log.info("capability poll: \(pending.count, privacy: .public) request(s) waiting")
         guard let capability = Capability(rawValue: req.capability) else {
             await report(req.id, exitCode: nil, output: "", error: "capability '\(req.capability)' is not offered by this Mac")
             return
