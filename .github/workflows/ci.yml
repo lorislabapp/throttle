@@ -68,6 +68,12 @@ jobs:
       - name: Enforce SwiftLint ratchet
         run: swiftlint lint --strict
 
+      # The plugin/macro validation flags mirror scripts/build-dmg.sh. mlx-swift
+      # ships a `CudaBuild` build-tool plugin, and Xcode refuses to run an
+      # unvalidated plugin in a non-interactive session — the build dies at
+      # "Validate plug-in" before a single file compiles. The release script has
+      # carried these flags for a while; this step never got them because it has
+      # not executed since the linter started failing above it.
       - name: Build macOS app with hardened runtime
         run: |
           xcodebuild build \
@@ -76,6 +82,8 @@ jobs:
             -configuration Release \
             -destination 'platform=macOS' \
             -disableAutomaticPackageResolution \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Test iOS security state
@@ -88,6 +96,8 @@ jobs:
             -destination "platform=iOS Simulator,id=$DEVICE_ID" \
             -only-testing:ThrottleiOSTests \
             -disableAutomaticPackageResolution \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
             CODE_SIGN_STYLE=Automatic \
             CODE_SIGN_IDENTITY=- \
             PROVISIONING_PROFILE_SPECIFIER=
