@@ -1419,6 +1419,8 @@ private struct InlineGeneralPane: View {
     @Environment(AppState.self) private var appState
     @State private var loginItemsEnabled: Bool = LoginItemService.isEnabled
     @State private var cockpitOnTop: Bool = CockpitWindowController.alwaysOnTop
+    @State private var autoApproveReadOnly = AutoApproval.enabled
+    @State private var hostCapabilities = CapabilityHostService.shared.enabled
     @State private var notificationsOn: Bool = ThresholdNotifier.shared.isEnabled
     @State private var calendarStatus: String = ""
     @State private var conciseClaudeCode: Bool =
@@ -1513,6 +1515,18 @@ private struct InlineGeneralPane: View {
                         sub: "Float the Cockpit window above other apps — a companion you watch while working.") {
                 Toggle("", isOn: $cockpitOnTop).labelsHidden().toggleStyle(.switch).tint(.accentColor)
                     .onChange(of: cockpitOnTop) { _, new in CockpitWindowController.alwaysOnTop = new }
+            }
+            SettingsHair()
+            SettingsRow(title: "Answer read-only permission prompts",
+                        sub: "Auto-approve only commands a rule can prove leave nothing behind — `git status`, `ls`, `grep` inside the project. Never `rm`, never a chained command, never a path outside the project. Every answer is logged.") {
+                Toggle("", isOn: $autoApproveReadOnly).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                    .onChange(of: autoApproveReadOnly) { _, new in AutoApproval.enabled = new }
+            }
+            SettingsHair()
+            SettingsRow(title: "Build for sessions on the box",
+                        sub: "A session offloaded to the server has no Xcode. Let it ask this Mac to build, test or lint — a named capability, never a command.") {
+                Toggle("", isOn: $hostCapabilities).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                    .onChange(of: hostCapabilities) { _, new in CapabilityHostService.shared.enabled = new }
             }
             SettingsHair()
             SettingsRow(title: "Notify at 80% and 95%",

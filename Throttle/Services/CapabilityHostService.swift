@@ -65,11 +65,20 @@ final class CapabilityHostService: ObservableObject {
         }
     }
 
+    static let shared = CapabilityHostService()
+
     @Published private(set) var lastRun: String?
     @Published private(set) var running = false
-    /// Off unless the user turns it on. Executing anything on behalf of another
-    /// machine is a decision, not a default.
-    @Published var enabled = false
+    /// Off unless the user turns it on, and off again on a fresh install.
+    /// Executing anything on behalf of another machine is a decision, not a
+    /// default.
+    @Published var enabled: Bool {
+        didSet {
+            UserDefaults.standard.set(enabled, forKey: Self.enabledKey)
+            enabled ? start() : stop()
+        }
+    }
+    private static let enabledKey = "capabilityHostEnabled"
 
     private static let log = Logger(subsystem: "com.lorislab.throttle", category: "capability-host")
     nonisolated static let outputCap = 64_000
@@ -79,10 +88,17 @@ final class CapabilityHostService: ObservableObject {
 
     /// Where the box lives. Owned by `RemoteSessionsService` — one place holds the
     /// host and the bearer token, and it is not this file.
-    private var remote: (String, String) { (remoteSvc.baseURL, remoteSvc.token) }
-    private let remoteSvc: RemoteSessionsService
+    private var remote: (String, String) {
+        let svc = RemoteSessionsService.shared
+        return (svc.baseURL, svc.token)
+    }
 
-    init(remote: RemoteSessionsService) { self.remoteSvc = remote }
+    private init() {
+        enabled = UserDefaults.standard.bool(forKey: Self.enabledKey)
+    }
+
+    /// Called once at launch. A no-op unless the user previously turned it on.
+    func restoreIfEnabled() { if enabled { start() } }
 
     func start(poll every: TimeInterval = 20) {
         stop()

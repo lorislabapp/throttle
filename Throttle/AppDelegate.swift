@@ -109,6 +109,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // queue precisely because the failure it guards against wedges the main
         // thread, so it must not be scheduled behind any other startup work.
         MenuBarUpdateGuard.start()
+        // Serves build/test requests from the box only if the user turned it on.
+        CapabilityHostService.shared.restoreIfEnabled()
         let isDemoMode = CommandLine.arguments.contains("-demo")
 
         // In demo mode, skip all background services and just show the UI with fake data
