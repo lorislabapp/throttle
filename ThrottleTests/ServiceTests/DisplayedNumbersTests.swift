@@ -108,4 +108,28 @@ final class DisplayedNumbersTests: XCTestCase {
                                         baselineBytes: 101_000, actualBytes: 100_000)
         XCTAssertEqual(marginal.cacheAwareSavedBytes, 0)
     }
+
+    // MARK: - The indexer must not embed somebody else's library
+
+    /// Exact-name matching let a Python virtualenv into the semantic index: the
+    /// directory was `venv312` and its sibling `.venv312-preserve`, so neither
+    /// matched `venv` nor `.venv`. Measured 2026-08-22, that one repository held
+    /// 1.8 GB of the 3.0 GB the index occupied — torch, scipy and sympy embedded
+    /// as if they were the user's code, on a Mac whose disk hit zero twice that
+    /// day.
+    func testIndexerPrunesVirtualenvsWhateverTheyAreCalled() {
+        for name in ["venv", ".venv", "venv312", ".venv312-preserve", "virtualenv", "env-3.12", ".tox"] {
+            XCTAssertTrue(RepoIndexer.isExcluded(directoryNamed: name), "\(name) should be pruned")
+        }
+        XCTAssertTrue(RepoIndexer.isExcluded(directoryNamed: "site-packages"))
+        XCTAssertTrue(RepoIndexer.isExcluded(directoryNamed: "node_modules"))
+    }
+
+    /// Source directories whose names merely start with the same letters must
+    /// survive — a prefix rule that eats real code is worse than the leak.
+    func testIndexerKeepsSourceDirectoriesThatLookAlike() {
+        for name in ["Environment", "Views", "envelope", "Services", "Endpoints"] {
+            XCTAssertFalse(RepoIndexer.isExcluded(directoryNamed: name), "\(name) is source, keep it")
+        }
+    }
 }

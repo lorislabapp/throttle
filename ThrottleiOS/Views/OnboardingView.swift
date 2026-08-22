@@ -19,7 +19,11 @@ struct OnboardingView: View {
                     // through the remote terminal on a Mac session, so that half
                     // stays. Promising a capability the binary does not contain is
                     // the kind of thing a reviewer opens the app to check.
-                    Text("A private mirror of your Mac’s live coding-agent usage, synced through your own iCloud account. Sessions on a paired Mac stay controllable from here.")
+                    Text("""
+                    A private mirror of your Mac’s live coding-agent usage, synced \
+                    through your own iCloud account. Sessions on a paired Mac stay \
+                    controllable from here.
+                    """)
                         .foregroundStyle(.secondary)
                 }
                 .padding(.top, 8)
