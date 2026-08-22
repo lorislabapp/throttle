@@ -46,7 +46,7 @@ final class ThresholdNotifier {
                 return [
                     ("Session 5h",    Double(ex.fiveHour.utilization) / 100.0,      ex.fiveHour.resetsAt?.timeIntervalSinceNow ?? -1),
                     ("Weekly all",    Double(ex.sevenDay.utilization) / 100.0,      ex.sevenDay.resetsAt?.timeIntervalSinceNow ?? -1),
-                    ("Weekly Sonnet", Double(ex.sevenDaySonnet.utilization) / 100.0, ex.sevenDaySonnet.resetsAt?.timeIntervalSinceNow ?? -1)
+                    (ex.sevenDayScoped.scopedModel.map { "Weekly \($0)" } ?? "Weekly (scoped)", Double(ex.sevenDayScoped.utilization) / 100.0, ex.sevenDaySonnet.resetsAt?.timeIntervalSinceNow ?? -1)
                 ]
             }
             return [

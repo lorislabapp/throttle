@@ -59,7 +59,9 @@ enum WebResearchCache {
     /// semantic corpus for later meaning-based recall. Best-effort / fail-open.
     static func record(url: String, text: String, title: String, renderMs: Int, sessionId: String?, writer: any DatabaseWriter) {
         guard !text.isEmpty else { return }
-        let hash = ContentStore.put(Data(text.utf8))   // content-addressed; identical pages dedupe to one blob
+        // A failed store means no blob to point at. Recording the row anyway
+        // would leave a cache entry whose content cannot be fetched back.
+        guard let hash = ContentStore.put(Data(text.utf8)) else { return }
         let norm = normalize(url)
         let now = Int(Date().timeIntervalSince1970)
         try? writer.write { db in

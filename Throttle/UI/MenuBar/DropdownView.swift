@@ -1423,8 +1423,13 @@ private struct InlineGeneralPane: View {
     @State private var hostCapabilities = CapabilityHostService.shared.enabled
     @State private var notificationsOn: Bool = ThresholdNotifier.shared.isEnabled
     @State private var calendarStatus: String = ""
-    @State private var conciseClaudeCode: Bool =
-        FileManager.default.fileExists(atPath: InlineGeneralPane.conciseFlagPath)
+    // Read the EFFECT, not a proxy for it. This switch used to report the flag
+    // file it writes, so it showed "on" for months while the hooks that carry
+    // the feature had never been installed — the install threw, `try?` ate it,
+    // and the flag was written regardless. A switch that reports its own
+    // intention rather than its result cannot be trusted to mean anything.
+    @State private var conciseClaudeCode: Bool = BrevityHookService.isInstalled()
+    @State private var conciseError: String?
     @AppStorage("throttleLowMemoryMode") private var lowMemoryMode = false
     @AppStorage("throttleAutoPauseEnabled") private var autoPauseEnabled = false
     @AppStorage("throttleOpusTokenCapEnabled") private var opusCapEnabled = false
@@ -1461,15 +1466,28 @@ private struct InlineGeneralPane: View {
             .appendingPathComponent(".claude/throttle-concise").path
     }
     private func setConciseFlag(_ on: Bool) {
-        if on {
-            FileManager.default.createFile(atPath: Self.conciseFlagPath, contents: Data())
-            // The hooks are the reliable carrier: a one-line directive per prompt
-            // + re-injection after compaction. The SessionStart router alone only
-            // reaches sessions started AFTER the toggle.
-            try? BrevityHookService.install()
-        } else {
+        conciseError = nil
+        guard on else {
             try? FileManager.default.removeItem(atPath: Self.conciseFlagPath)
             try? BrevityHookService.remove()
+            conciseClaudeCode = BrevityHookService.isInstalled()
+            return
+        }
+        // The hooks are the reliable carrier: a one-line directive per prompt +
+        // re-injection after compaction. The output style alone is read once at
+        // session start, so it is invisible to open sessions and gone after the
+        // first compaction — which is most of a long session.
+        do {
+            try BrevityHookService.install()
+            FileManager.default.createFile(atPath: Self.conciseFlagPath, contents: Data())
+        } catch {
+            // Say so. The previous version swallowed this and wrote the flag
+            // anyway, so the switch read "on" while nothing had been installed.
+            conciseError = "Could not install the brevity hooks: \(error.localizedDescription)"
+        }
+        conciseClaudeCode = BrevityHookService.isInstalled()
+        if conciseClaudeCode == false && conciseError == nil {
+            conciseError = "The brevity hooks did not take. Check ~/.claude/settings.json."
         }
     }
 
@@ -1591,7 +1609,8 @@ private struct InlineGeneralPane: View {
             }
             SettingsHair()
             SettingsRow(title: "Concise Claude Code replies",
-                        sub: "Injects a one-line be-brief directive beside every prompt and after compaction (hooks) — reaches sessions already open, where an output style can't. Honest ceiling: output tokens are typically 7–16% of total spend.") {
+                        sub: conciseError
+                            ?? "Injects a one-line be-brief directive beside every prompt and after compaction (hooks) — reaches sessions already open, where an output style can't. Honest ceiling: output tokens are typically 7–16% of total spend.") {
                 Toggle("", isOn: $conciseClaudeCode).labelsHidden().toggleStyle(.switch).tint(.accentColor)
                     .onChange(of: conciseClaudeCode) { _, on in setConciseFlag(on) }
             }

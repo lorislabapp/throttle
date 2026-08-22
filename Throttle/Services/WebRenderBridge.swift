@@ -137,7 +137,7 @@ final class WebRenderBridge: @unchecked Sendable {
             send(conn, status: "200 OK", json: [
                 "ok": true, "text": packet.text, "title": "", "finalURL": url,
                 "renderMs": 0, "truncated": packet.returnedCharacters < packet.originalCharacters,
-                "originalID": packet.originalID, "waitReason": "cache",
+                "originalID": packet.originalID ?? NSNull(), "waitReason": "cache",
                 "cacheHit": true, "cacheAgeSec": hit.ageSeconds, "error": NSNull(),
             ])
             return

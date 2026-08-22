@@ -1634,6 +1634,19 @@ final class MultiCockpitModel {
     }
 
     /// Drag-reorder: move `dragged` to where `target` sits. Persists the order.
+    /// Label the per-model weekly cap with the model Anthropic actually scoped it
+    /// to. It used to say "Sonnet" unconditionally: measured 2026-08-22, the cap
+    /// at 100% was scoped to Fable, and the loudest number in the app named the
+    /// wrong model. The name is in the payload; the only reason it was ever
+    /// wrong is that it was thrown away.
+    static func scopedLabel(_ w: ExactSnapshot.Window) -> String {
+        w.scopedModel.map { "Weekly · \($0)" } ?? "Weekly · scoped"
+    }
+
+    /// The mirrored shape does not carry the model name, so it says what it
+    /// knows rather than guessing one — the guess is exactly what was wrong.
+    static let scopedLabelMirror = "Weekly · scoped"
+
     func move(dragged: UUID, onto target: UUID) {
         guard dragged != target,
               let from = sessions.firstIndex(where: { $0.id == dragged }) else { return }
@@ -1665,7 +1678,7 @@ final class MultiCockpitModel {
             let ws: [(String, Int, Date?)] = [
                 ("Session", ex.fiveHour.utilization, ex.fiveHour.resetsAt),
                 ("Weekly", ex.sevenDay.utilization, ex.sevenDay.resetsAt),
-                ("Weekly · Sonnet", ex.sevenDaySonnet.utilization, ex.sevenDaySonnet.resetsAt),
+                (Self.scopedLabel(ex.sevenDayScoped), ex.sevenDayScoped.utilization, ex.sevenDaySonnet.resetsAt),
             ]
             for window in ws {
                 candidates.append(Binding(
@@ -1681,7 +1694,7 @@ final class MultiCockpitModel {
             let local: [(String, Double, Int64)] = [
                 ("Session", snap.session5h.percentUsed ?? -1, snap.session5h.resetInSeconds),
                 ("Weekly", snap.weeklyAll.percentUsed ?? -1, snap.weeklyAll.resetInSeconds),
-                ("Weekly · Sonnet", snap.weeklySonnet.percentUsed ?? -1, snap.weeklySonnet.resetInSeconds),
+                (Self.scopedLabelMirror, snap.weeklySonnet.percentUsed ?? -1, snap.weeklySonnet.resetInSeconds),
             ].filter { $0.1 >= 0 }
             candidates.append(contentsOf: local.map { value in
                 Binding(

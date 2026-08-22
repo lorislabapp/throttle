@@ -6,7 +6,10 @@ import Foundation
 enum ContextFirewall {
     struct Packet: Sendable {
         let text: String
-        let originalID: String
+        /// Pointer to the stored original, or nil when the store could not write it.
+    /// A packet without one is still a valid packet — it simply cannot be
+    /// rehydrated, and says so rather than printing a hash that leads nowhere.
+    let originalID: String?
         let originalCharacters: Int
         let returnedCharacters: Int
         let excerptCount: Int
@@ -27,6 +30,9 @@ enum ContextFirewall {
         untrusted: Bool = false
     ) -> Packet {
         let boundedMax = min(max(maxCharacters, 1_000), 64_000)
+        // nil when the store could not write. The packet still goes out — the
+        // firewall's job is to bound what enters context, and it can do that
+        // without a rehydration pointer — but it must not claim one it lacks.
         let originalID = ContentStore.put(Data(text.utf8))
         let terms = searchTerms(query ?? "")
         let chunks = makeChunks(text).map { chunk -> Chunk in
@@ -41,7 +47,7 @@ enum ContextFirewall {
         let header = """
         # Throttle Context Firewall
         Source: \(source)
-        Original: \(text.count) characters · throttle_id: \(originalID)
+        Original: \(text.count) characters\(originalID.map { " · throttle_id: \($0)" } ?? " · not stored")
         \(warning)
         """
 

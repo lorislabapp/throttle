@@ -23,9 +23,11 @@ final class ContentStoreTests: XCTestCase {
 
     // MARK: - Store primitives
 
-    func test_put_get_roundtrip() {
+    func test_put_get_roundtrip() throws {
         let data = Data("hello world payload".utf8)
-        let hash = ContentStore.put(data)
+        // `put` now returns nil when the bytes did not land, so a successful
+        // store must be unwrapped rather than assumed.
+        let hash = try XCTUnwrap(ContentStore.put(data))
         XCTAssertEqual(hash.count, 64)
         XCTAssertEqual(ContentStore.get(hash), data)
     }

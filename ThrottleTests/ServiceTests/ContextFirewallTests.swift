@@ -29,9 +29,9 @@ final class ContextFirewallTests: XCTestCase {
 
         XCTAssertTrue(packet.text.contains("signature verification failed"))
         XCTAssertTrue(packet.text.contains("[lines "))
-        XCTAssertTrue(packet.text.contains(packet.originalID))
+        XCTAssertTrue(packet.text.contains(try XCTUnwrap(packet.originalID)))
         XCTAssertLessThan(packet.returnedCharacters, packet.originalCharacters)
-        XCTAssertEqual(String(data: try XCTUnwrap(ContentStore.get(packet.originalID)), encoding: .utf8), original)
+        XCTAssertEqual(String(data: try XCTUnwrap(ContentStore.get(try XCTUnwrap(packet.originalID))), encoding: .utf8), original)
     }
 
     func testWebPacketCarriesPromptInjectionBoundary() {

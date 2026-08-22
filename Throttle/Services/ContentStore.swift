@@ -23,14 +23,35 @@ enum ContentStore {
     /// the same blob and are written once. Best-effort — a write failure still
     /// returns the hash (the pointer text stays informative even if a later
     /// expand misses).
-    @discardableResult
-    static func put(_ data: Data) -> String {
+    /// Store `data` and return its hash, or `nil` when the bytes did NOT land.
+    ///
+    /// This used to return the hash unconditionally, swallowing the write error.
+    /// The trimmer then wrote that pointer into a transcript and replaced the
+    /// file — so on a full disk, which happened twice on 2026-08-22, the pointer
+    /// referred to nothing and the only sign was an `expand` failing much later.
+    /// The service header promises "rehydratable pointers"; a caller cannot keep
+    /// that promise if it is never told the store failed.
+    ///
+    /// The write is verified by reading the file back: a create that reports
+    /// success and leaves a truncated file is exactly the failure this guards.
+    static func put(_ data: Data) -> String? {
         let hash = sha256Hex(data)
         let url = baseDir.appendingPathComponent("\(hash).blob")
         let fm = FileManager.default
-        if !fm.fileExists(atPath: url.path) {
-            try? fm.createDirectory(at: baseDir, withIntermediateDirectories: true)
-            try? data.write(to: url, options: .atomic)
+        if fm.fileExists(atPath: url.path) {
+            // Content-addressed: an existing blob with this hash IS this data.
+            return hash
+        }
+        do {
+            try fm.createDirectory(at: baseDir, withIntermediateDirectories: true)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            return nil
+        }
+        guard let size = try? fm.attributesOfItem(atPath: url.path)[.size] as? Int,
+              size == data.count else {
+            try? fm.removeItem(at: url)   // never leave a half blob under a valid hash
+            return nil
         }
         return hash
     }

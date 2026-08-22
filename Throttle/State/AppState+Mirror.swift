@@ -47,7 +47,10 @@ extension AppState {
             deviceName: Host.current().localizedName ?? "Mac",
             fiveHour: win(ex?.fiveHour),
             sevenDay: win(ex?.sevenDay),
-            sevenDaySonnet: win(ex?.sevenDaySonnet),
+            // The wire name stays `sevenDaySonnet`: it is a cross-device contract
+            // with the iPhone mirror, and renaming it would break decoding on a
+            // build we do not ship in lockstep. The value is the scoped window.
+            sevenDaySonnet: win(ex?.sevenDayScoped),
             weeklyTokens: weeklyTokens,
             weeklyCostEUR: weeklyCostEUR,
             savedTokensThisWeek: savedTokensThisWeek,

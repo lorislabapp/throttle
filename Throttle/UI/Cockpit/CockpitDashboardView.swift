@@ -121,7 +121,7 @@ struct CockpitDashboardView: View {
     // MARK: - MODEL MIX (the real cost lever)
 
     /// Where the plan actually goes, priced honestly. Unlike the token-count split,
-    /// this weights each model by its real price (Opus 5× Sonnet), so a user running
+    /// this weights each model by its real price (Opus 1.67× Sonnet), so a user running
     /// Opus for everything sees the truth: it's the dominant line, and moving routine
     /// work to Sonnet is a far bigger lever than trimming output.
     private var modelMixPanel: some View {
@@ -148,7 +148,7 @@ struct CockpitDashboardView: View {
             // The honest nudge — a what-if, not a claim. Only worth showing when Opus
             // dominates AND the estimated saving is material.
             if data.opusShare >= 0.6 && data.sonnetSaving >= 0.05 {
-                Text("Opus is \(Int(data.opusShare * 100))% of your cost — it bills the same context at 5× Sonnet. Starting routine work (edits, builds, greps) in a Sonnet session could cut ≈\(Int(data.sonnetSaving * 100))% of your plan usage. Switch at a new session, not mid-task (per-model caches).")
+                Text("Opus is \(Int(data.opusShare * 100))% of your cost — it bills the same context at 1.7× Sonnet. Starting routine work (edits, builds, greps) in a Sonnet session could cut ≈\(Int(data.sonnetSaving * 100))% of your plan usage. Switch at a new session, not mid-task (per-model caches).")
                     .font(.system(size: 10.5)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 4)

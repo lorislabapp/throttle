@@ -139,10 +139,16 @@ enum OAuthUsageProvider {
         if let limits = root["limits"] as? [[String: Any]],
            let entry = limits.first(where: { ($0["kind"] as? String) == "weekly_scoped" }),
            let pct = entry["percent"] as? Double {
+            // Carry the model name. It is right there in the payload, and
+            // dropping it is how a cap scoped to Fable came to be displayed as
+            // "Weekly · Sonnet" — the loudest number in the app naming the
+            // wrong model, for as long as this field has existed.
+            let model = ((entry["scope"] as? [String: Any])?["model"] as? [String: Any])?["display_name"] as? String
             scoped = ExactSnapshot.Window(utilization: Int(pct.rounded()),
-                                          resetsAt: iso(entry["resets_at"] as? String))
+                                          resetsAt: iso(entry["resets_at"] as? String),
+                                          scopedModel: model)
         }
-        return ExactSnapshot(fiveHour: five, sevenDay: seven, sevenDaySonnet: scoped, fetchedAt: fetchedAt)
+        return ExactSnapshot(fiveHour: five, sevenDay: seven, sevenDayScoped: scoped, fetchedAt: fetchedAt)
     }
 
     private static func window(_ any: Any?) -> ExactSnapshot.Window? {

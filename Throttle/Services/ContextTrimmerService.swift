@@ -173,7 +173,17 @@ enum ContextTrimmerService {
     @discardableResult
     static func writeSnapshot(_ url: URL, options: Options = .safe) throws -> (url: URL, plan: Plan) {
         // Persist trimmed originals so the snapshot's pointers stay expandable.
-        let (lines, plan) = try buildTrimmed(url, options, sink: { _, data in ContentStore.put(data) })
+        // Fail the whole apply if a payload could not be stored: the pointer we
+        // are about to write into the transcript would refer to nothing, and the
+        // trim advertises itself as reversible. Better to refuse than to leave a
+        // transcript that cannot be rehydrated.
+        var storeFailed = false
+        let (lines, plan) = try buildTrimmed(url, options, sink: { _, data in
+            if ContentStore.put(data) == nil { storeFailed = true }
+        })
+        if storeFailed {
+            throw TrimError.validationFailed("content store write failed (disk full?); nothing was changed")
+        }
         guard !plan.isEmpty else { throw TrimError.nothingToTrim }
         let out = url.deletingPathExtension()
             .appendingPathExtension("throttle-trimmed.jsonl")
@@ -194,7 +204,17 @@ enum ContextTrimmerService {
 
         // Persist each trimmed payload to the content store BEFORE replacing the
         // file, so every pointer in the new transcript is rehydratable.
-        let (lines, plan) = try buildTrimmed(url, options, sink: { _, data in ContentStore.put(data) })
+        // Fail the whole apply if a payload could not be stored: the pointer we
+        // are about to write into the transcript would refer to nothing, and the
+        // trim advertises itself as reversible. Better to refuse than to leave a
+        // transcript that cannot be rehydrated.
+        var storeFailed = false
+        let (lines, plan) = try buildTrimmed(url, options, sink: { _, data in
+            if ContentStore.put(data) == nil { storeFailed = true }
+        })
+        if storeFailed {
+            throw TrimError.validationFailed("content store write failed (disk full?); nothing was changed")
+        }
         guard !plan.isEmpty else { throw TrimError.nothingToTrim }
 
         // 1) Back up the original BEFORE touching it.

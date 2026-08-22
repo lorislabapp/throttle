@@ -183,7 +183,7 @@ enum LocalAuditEngine {
             category: .cost,
             title: "Opus set as the default model",
             quote: "\"model\": \"\(model)\"",
-            message: "Opus bills roughly 5× Sonnet on Claude Code workloads. For 90% of code edits, Sonnet's accuracy gap is small enough that the model split alone moves your weekly cost the most. Reserve Opus for architecture sessions via `--model claude-opus-4-7` when you need it.",
+            message: "Opus bills about 1.7× Sonnet on Claude Code workloads ($5 vs $3 per million input, $25 vs $15 output). For routine code edits the accuracy gap is usually small enough that the model split still moves your weekly cost. Reserve Opus for architecture sessions via `--model` when you need it.",
             fixHint: "Change the field to `\"model\": \"claude-sonnet-4-6\"` or remove it (Claude Code's default is already Sonnet). Spot-spike Opus per session via the CLI flag.",
             macAppCanFix: true
         )

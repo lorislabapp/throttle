@@ -150,9 +150,9 @@ enum StatsDataService {
 
     /// One tier's share of the TRUE weighted cost — unlike `modelSplit`, this applies
     /// the per-token price ratios (output 5× input, cache-read 0.1×, cache-write 1.25×)
-    /// AND the model price multiplier (Opus 5× Sonnet, Haiku ~0.27×). `modelSplit`
-    /// counts every model's token equally, which hides the fact that an Opus token
-    /// costs 5× a Sonnet token against the plan — the single biggest usage lever.
+    /// AND the model price multiplier (Opus 1.67× Sonnet, Fable 3.33×, Haiku 0.33×).
+    /// `modelSplit` counts every model's token equally, which hides the fact that an
+    /// Opus token costs more than a Sonnet one against the plan.
     struct ModelCostSlice: Hashable, Sendable, Identifiable {
         let tier: ModelTier
         let cost: Double            // arbitrary units, relative to Sonnet input = 1
@@ -182,19 +182,30 @@ enum StatsDataService {
         let cutoff = range.cutoff(now: now)
         let where_ = cutoff > 0 ? "WHERE timestamp >= ?" : ""
         // Per-token weights are relative to Sonnet input price; the outer multiplier
-        // is the model's input price relative to Sonnet ($15 Opus / $3 Sonnet = 5,
-        // $0.80 Haiku / $3 ≈ 0.27). Fable/other default to 1 (conservative).
+        // is the model's input price relative to Sonnet.
+        //
+        // These were Claude 3 numbers ($15 Opus / $3 Sonnet = 5). Opus 4.5–4.8 and
+        // Opus 5 bill $5, so the true ratio is 1.67 and this readout overstated
+        // Opus's share of cost by three. Fable bills $10 — 3.33× Sonnet — and was
+        // left at the 1.0 default, understating it by the same factor. Found by a
+        // second audit on 2026-08-22, in a different function from the euro
+        // figures fixed the same day: the stale table had two homes.
+        //
+        //   Opus  $5  / $3 = 1.67      Fable $10 / $3 = 3.33
+        //   Haiku $1  / $3 = 0.33      Sonnet         = 1.00
         let sql = """
             SELECT bucket, SUM(cost) AS cost, SUM(cache_read) AS cr FROM (
               SELECT
-                CASE WHEN lower(model) LIKE '%opus%'   THEN 'opus'
+                CASE WHEN lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%' THEN 'fable'
+                     WHEN lower(model) LIKE '%opus%'   THEN 'opus'
                      WHEN lower(model) LIKE '%sonnet%' THEN 'sonnet'
                      WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
                      ELSE 'other' END AS bucket,
                 cache_read,
                 (input_tokens + output_tokens * 5.0 + cache_read * 0.1 + cache_create * 1.25)
-                  * (CASE WHEN lower(model) LIKE '%opus%'  THEN 5.0
-                          WHEN lower(model) LIKE '%haiku%' THEN 0.27
+                  * (CASE WHEN lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%' THEN 3.33
+                          WHEN lower(model) LIKE '%opus%'  THEN 1.67
+                          WHEN lower(model) LIKE '%haiku%' THEN 0.33
                           ELSE 1.0 END) AS cost
               FROM usage_events
               \(where_)
@@ -557,6 +568,7 @@ enum StatsDataService {
         let sql = """
             SELECT
                 CASE
+                    WHEN lower(e.model) LIKE '%fable%' OR lower(e.model) LIKE '%mythos%' THEN 'fable'
                     WHEN lower(e.model) LIKE '%opus%'   THEN 'opus'
                     WHEN lower(e.model) LIKE '%sonnet%' THEN 'sonnet'
                     WHEN lower(e.model) LIKE '%haiku%'  THEN 'haiku'
@@ -582,10 +594,18 @@ enum StatsDataService {
             let cr: Int = row["cr"] ?? 0
             let (inRate, outRate): (Double, Double)
             switch bucket {
-            case "opus":   (inRate, outRate) = (15, 75)
+            // These were Claude 3 Opus prices ($15/$75) applied to every model
+            // matching "%opus%" — including Opus 4.8 and Opus 5, which bill at
+            // $5/$25 — while the two other cost functions in this same file
+            // already carried the right numbers. Measured 2026-08-22: euro
+            // figures came out 2.3× high, 35 388 EUR too much over thirty days.
+            // Fable matched no pattern at all and fell through to the Sonnet
+            // default while billing $10/$50, so it was understated 3×.
+            case "fable":  (inRate, outRate) = (10, 50)
+            case "opus":   (inRate, outRate) = (5, 25)
             case "sonnet": (inRate, outRate) = (3, 15)
-            case "haiku":  (inRate, outRate) = (0.80, 4)
-            default:       (inRate, outRate) = (3, 15)
+            case "haiku":  (inRate, outRate) = (1, 5)
+            default:       (inRate, outRate) = (3, 15)   // unknown → assume Sonnet
             }
             let perMillion = 1_000_000.0
             totalUsd += Double(i) / perMillion * inRate
