@@ -98,6 +98,7 @@ private struct MacEdgeTerminalView: NSViewRepresentable {
         CockpitTerminalTheme.apply(to: tv)
         tv.terminalDelegate = context.coordinator
         context.coordinator.terminal = tv
+        context.coordinator.installPreciseScroll(on: tv)
         startAttach(context.coordinator, geometry: tv.getTerminal())
         return tv
     }
@@ -116,7 +117,10 @@ private struct MacEdgeTerminalView: NSViewRepresentable {
     static func dismantleNSView(_ nsView: TerminalView, coordinator: Coordinator) {
         coordinator.attachTask?.cancel()
         coordinator.client?.disconnect()
+        coordinator.removePreciseScroll()
     }
+
+    // MARK: - Trackpad scrolling
 
     private func startAttach(_ coord: Coordinator, geometry: Terminal) {
         connection.state = .connecting
@@ -159,6 +163,50 @@ private struct MacEdgeTerminalView: NSViewRepresentable {
 
     @MainActor
     final class Coordinator: NSObject, @preconcurrency TerminalViewDelegate {
+
+        /// SwiftTerm's `scrollWheel` reads only the legacy line-based `deltaY`,
+        /// which is 0 for trackpad gestures on recent macOS — so a trackpad never
+        /// scrolls a remote pane, while a mouse does. The local cockpit terminal
+        /// has carried a fix for this since 3.2.84 (`DroppableTerminalView`); this
+        /// pane never got it, so the failure only shows up once you start living
+        /// in remote sessions.
+        private var scrollMonitor: Any?
+        private var scrollAccumulator: CGFloat = 0
+
+        func installPreciseScroll(on view: TerminalView) {
+            removePreciseScroll()
+            scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: [.scrollWheel]) { [weak self, weak view] event in
+                guard let self, let view, event.hasPreciseScrollingDeltas,
+                      let window = view.window, event.window === window,
+                      view.convert(event.locationInWindow, from: nil).isInside(view.bounds)
+                else { return event }
+                // Consume it: SwiftTerm's own handler would ignore the gesture and
+                // the pane would sit still.
+                self.applyPreciseScroll(event, to: view)
+                return nil
+            }
+        }
+
+        func removePreciseScroll() {
+            if let scrollMonitor { NSEvent.removeMonitor(scrollMonitor) }
+            scrollMonitor = nil
+        }
+
+        /// Turn pixel deltas into whole rows, carrying the remainder so a slow
+        /// swipe still moves. Positive deltaY = fingers down = earlier content,
+        /// matching SwiftTerm's convention for mice.
+        private func applyPreciseScroll(_ event: NSEvent, to view: TerminalView) {
+            if event.phase == .began { scrollAccumulator = 0 }
+            let terminal = view.getTerminal()
+            let rows = max(terminal.rows, 1)
+            let cellHeight = max(view.frame.height / CGFloat(rows), 1)
+            scrollAccumulator += event.scrollingDeltaY
+            let lines = Int(scrollAccumulator / cellHeight)
+            guard lines != 0 else { return }
+            scrollAccumulator -= CGFloat(lines) * cellHeight
+            if lines > 0 { view.scrollUp(lines: lines) } else { view.scrollDown(lines: -lines) }
+        }
+
         weak var terminal: TerminalView?
         var client: TtydClient?
         var attachTask: Task<Void, Never>?
@@ -179,4 +227,8 @@ private struct MacEdgeTerminalView: NSViewRepresentable {
         func bell(source: TerminalView) {}
         func iTermContent(source: TerminalView, content: ArraySlice<UInt8>) {}
     }
+}
+
+private extension CGPoint {
+    func isInside(_ rect: CGRect) -> Bool { rect.contains(self) }
 }

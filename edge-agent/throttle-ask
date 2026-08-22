@@ -20,7 +20,13 @@
 set -euo pipefail
 
 AGENT="${THROTTLE_AGENT_URL:-http://127.0.0.1:8787}"
-TOKEN_FILE="${THROTTLE_AGENT_TOKEN_FILE:-/etc/throttle-agent.token}"
+# The token lives wherever the deploy put it, and the two shapes are not
+# interchangeable: a systemd LoadCredential deployment writes a bare token file,
+# while an EnvironmentFile deployment writes THROTTLE_AGENT_TOKEN=... inside an
+# env file. Reading only the first is why this tool reported "token absent" on a
+# box where the agent itself was authenticating fine.
+TOKEN_FILE="${THROTTLE_AGENT_TOKEN_FILE:-}"
+ENV_FILE="${THROTTLE_AGENT_ENV_FILE:-/etc/throttle-agent.env}"
 POLL=5
 DEADLINE=$((20 * 60))
 
@@ -46,8 +52,22 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$repo" ] || die "--repo is required (the mirror name, e.g. Eclair)"
 
-[ -r "$TOKEN_FILE" ] || die "cannot read the agent token at $TOKEN_FILE"
-TOKEN=$(cat "$TOKEN_FILE")
+read_token() {
+    if [ -n "$TOKEN_FILE" ]; then
+        [ -r "$TOKEN_FILE" ] || die "cannot read the agent token at $TOKEN_FILE"
+        cat "$TOKEN_FILE"; return
+    fi
+    if [ -r "$ENV_FILE" ] && grep -q '^THROTTLE_AGENT_TOKEN=' "$ENV_FILE"; then
+        sed -n 's/^THROTTLE_AGENT_TOKEN=//p' "$ENV_FILE" | head -1 | tr -d '"'"'"'\r'
+        return
+    fi
+    if [ -r /etc/throttle-agent.token ]; then
+        cat /etc/throttle-agent.token; return
+    fi
+    die "no agent token found — looked in $ENV_FILE (THROTTLE_AGENT_TOKEN=) and /etc/throttle-agent.token"
+}
+TOKEN=$(read_token)
+[ -n "$TOKEN" ] || die "the agent token is empty"
 
 # Build the args object without a JSON library — values are already constrained
 # to scalars by the agent, and re-validating here keeps a typo from travelling.
