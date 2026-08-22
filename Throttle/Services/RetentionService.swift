@@ -41,6 +41,21 @@ enum RetentionService {
         var isEmpty: Bool { backupsDeleted == 0 && indexesDeleted == 0 }
     }
 
+    /// Sweep now, then once a day for as long as the app runs.
+    ///
+    /// This used to be a single call at launch. Throttle is a menu-bar app that
+    /// stays open for weeks, so on the Mac where the disk hit zero twice in one
+    /// day the sweep had last run three weeks earlier — the cleanup existed and
+    /// was almost never reached.
+    static func startPeriodicSweeps() {
+        Task.detached(priority: .background) {
+            while !Task.isCancelled {
+                sweep()
+                try? await Task.sleep(for: .seconds(24 * 3600))
+            }
+        }
+    }
+
     /// Run both sweeps. Never throws: reclaiming disk is best-effort, and a
     /// failure here must not take anything else down with it.
     @discardableResult

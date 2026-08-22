@@ -28,6 +28,14 @@ enum PortfolioMapService {
         pattern: #"(View|Service|Manager|Store|Provider|Kit|Helper|Client|Engine|Card|State|Theme|Paywall|Onboarding)\.swift$"#)
     private static let skipDirs: Set<String> = [".git", "node_modules", ".build", "Pods",
                                                 "DerivedData", ".worktrees", "build", ".swiftpm"]
+
+    /// Shares `RepoIndexer`'s virtualenv rule rather than keeping a second list.
+    /// Impact here is small (this walker only reads `*.swift`), but two
+    /// divergent exclusion lists is how the semantic index came to embed 1.8 GB
+    /// of torch and scipy.
+    private static func shouldSkip(_ name: String) -> Bool {
+        skipDirs.contains(name) || RepoIndexer.isExcluded(directoryNamed: name)
+    }
     private static let stop: Set<String> = [
         "the", "and", "for", "with", "from", "into", "claude", "code", "app", "apps", "ios", "macos", "mac",
         "swift", "research", "deep", "readme", "index", "notes", "note", "doc", "docs", "plan", "plans",
@@ -58,7 +66,7 @@ enum PortfolioMapService {
             guard let en = fm.enumerator(at: repoURL, includingPropertiesForKeys: nil,
                                          options: [.skipsHiddenFiles]) else { continue }
             for case let url as URL in en {
-                if skipDirs.contains(url.lastPathComponent),
+                if shouldSkip(url.lastPathComponent),
                    (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true {
                     en.skipDescendants(); continue
                 }
