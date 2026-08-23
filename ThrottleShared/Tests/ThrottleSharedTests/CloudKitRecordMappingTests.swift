@@ -83,7 +83,7 @@ final class MirrorSecretHygieneTests: XCTestCase {
     /// bytes: a field renamed or re-added would slip past a property check.
     func testEncodedStrippedSnapshotContainsNoSecretMaterial() throws {
         let data = try snapshot().withoutSecrets.encoded()
-        let text = String(decoding: data, as: UTF8.self)
+        let text = try XCTUnwrap(String(bytes: data, encoding: .utf8))
         XCTAssertFalse(text.contains("PSK-THAT-GRANTS-TERMINAL-INJECTION"))
         XCTAssertFalse(text.contains("BEARER-THAT-STARTS-SESSIONS"))
     }
