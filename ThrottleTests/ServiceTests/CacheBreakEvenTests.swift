@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// The break-even number decides whether the user should trim now or leave the
 /// session alone, so a wrong verdict costs them real money. The cases that matter

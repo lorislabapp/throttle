@@ -29,7 +29,16 @@ enum MenuBarUpdateGuard {
 
     /// Footprint above which a fast climb is treated as a runaway. Normal
     /// Throttle with a full rail of hibernated tabs sits far below this.
-    private static let softFloorBytes: UInt64 = 2 * 1024 * 1024 * 1024
+    ///
+    /// Derived from the machine rather than fixed. The constants here were 2 GB
+    /// and 8 GB regardless of hardware; on the 16 GB Mac this feature exists to
+    /// protect — where Throttle's normal resident size is ~110 MB — the hard
+    /// ceiling was half the machine's RAM, reached only once the damage was done.
+    /// An eighth of physical memory to start degrading, a quarter to stop
+    /// entirely, with the old values as the floor so a large machine keeps the
+    /// same generous headroom it had.
+    private static let physicalMemory = ProcessInfo.processInfo.physicalMemory
+    private static let softFloorBytes: UInt64 = max(physicalMemory / 8, 512 * 1024 * 1024)
     /// Growth within one sampling interval that no legitimate work produces.
     /// The observed runaway allocated ~160 MB/s (≈320 MB per interval).
     private static let softGrowthBytes: UInt64 = 200 * 1024 * 1024
@@ -43,15 +52,15 @@ enum MenuBarUpdateGuard {
     /// degrade can no longer be picked up, so the only lever left is to stop
     /// taking the machine down. A dead menu-bar icon beats a Mac that needs a
     /// power cycle.
-    private static let hardCeilingBytes: UInt64 = 8 * 1024 * 1024 * 1024
+    private static let hardCeilingBytes: UInt64 = max(physicalMemory / 4, 2 * 1024 * 1024 * 1024)
     private static let interval: DispatchTimeInterval = .seconds(2)
 
     private static let lock = OSAllocatedUnfairLock(initialState: false)
     private static let queue = DispatchQueue(label: "com.lorislab.throttle.menubar-guard",
                                              qos: .utility)
-    private nonisolated(unsafe) static var timer: DispatchSourceTimer?
-    private nonisolated(unsafe) static var lastFootprint: UInt64 = 0
-    private nonisolated(unsafe) static var consecutiveBreaches = 0
+    nonisolated(unsafe) private static var timer: DispatchSourceTimer?
+    nonisolated(unsafe) private static var lastFootprint: UInt64 = 0
+    nonisolated(unsafe) private static var consecutiveBreaches = 0
 
     /// Renders of `MenuBarLabel.body` since the last sample.
     ///
@@ -121,6 +130,12 @@ enum MenuBarUpdateGuard {
                 menu-bar update runaway: footprint \(footprint / 1_048_576, privacy: .public) MB \
                 past the hard ceiling — terminating instead of swap-locking the Mac
                 """)
+            // Take the agent subtrees down FIRST. `exit()` skips
+            // `applicationWillTerminate`, so the cockpit's own cleanup never
+            // runs and every `claude`/`node` under a session shell reparents to
+            // launchd still holding its memory — the exact outcome this guard
+            // exists to prevent, achieved by the guard itself.
+            LiveAgentRoots.terminateAll()
             // Give the log a moment to flush; the main thread cannot help here.
             queue.asyncAfter(deadline: .now() + 0.2) { exit(EXIT_FAILURE) }
             return

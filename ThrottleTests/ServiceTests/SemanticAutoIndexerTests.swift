@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// SemanticAutoIndexer gating + incremental drive over multiple repos.
 final class SemanticAutoIndexerTests: XCTestCase {

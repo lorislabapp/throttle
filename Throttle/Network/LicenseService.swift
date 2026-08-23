@@ -276,7 +276,7 @@ private enum LicenseKeychain {
     static func save(_ stored: StoredLicense) throws {
         let data = try JSONEncoder().encode(stored)
         let base: [String: Any] = [
-            kSecClass as String:       kSecClassGenericPassword,
+            kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account
         ]
@@ -292,11 +292,11 @@ private enum LicenseKeychain {
 
     static func load() -> StoredLicense? {
         let query: [String: Any] = [
-            kSecClass as String:       kSecClassGenericPassword,
+            kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
-            kSecReturnData as String:  true,
-            kSecMatchLimit as String:  kSecMatchLimitOne
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
         ]
         var result: CFTypeRef?
         guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
@@ -306,7 +306,7 @@ private enum LicenseKeychain {
 
     static func clear() {
         let query: [String: Any] = [
-            kSecClass as String:       kSecClassGenericPassword,
+            kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account
         ]
@@ -334,8 +334,8 @@ private enum LicensePublicKey {
         // (24 bytes for 2048-bit RSA) to get to the raw RSAPublicKey.
         let rsaKeyData = stripSPKIHeader(derSPKI) ?? derSPKI
         let attrs: [String: Any] = [
-            kSecAttrKeyType as String:   kSecAttrKeyTypeRSA,
-            kSecAttrKeyClass as String:  kSecAttrKeyClassPublic,
+            kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
+            kSecAttrKeyClass as String: kSecAttrKeyClassPublic,
             kSecAttrKeySizeInBits as String: 2048
         ]
         return SecKeyCreateWithData(rsaKeyData as CFData, attrs as CFDictionary, nil)

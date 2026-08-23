@@ -1,5 +1,5 @@
-import Foundation
 import Darwin
+import Foundation
 
 /// Live host metrics for the cockpit Overview — CPU (overall + per-core), disk
 /// free, and network throughput. Memory/swap stays in `SystemMemoryService`

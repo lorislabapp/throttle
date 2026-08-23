@@ -477,10 +477,11 @@ struct StatsInline: View {
     private func tierMonthlyEUR(_ slice: StatsDataService.ModelSlice) -> Double {
         let rate: Double
         switch slice.tier {
-        case .opus:   rate = PlanAdvisor.opus47.weightedPerM
-        case .sonnet: rate = PlanAdvisor.sonnet46.weightedPerM
-        case .haiku:  rate = PlanAdvisor.haiku45.weightedPerM
-        case .other:  rate = PlanAdvisor.sonnet46.weightedPerM
+        case .fable:  rate = PlanAdvisor.fable.weightedPerM
+        case .opus:   rate = PlanAdvisor.opus.weightedPerM
+        case .sonnet: rate = PlanAdvisor.sonnet.weightedPerM
+        case .haiku:  rate = PlanAdvisor.haiku.weightedPerM
+        case .other:  rate = PlanAdvisor.sonnet.weightedPerM
         }
         let share = Double(slice.weightedTokens) / Double(max(1, totalTokens))
         let monthlyTokens = Double(weeklyTokens) * share * 4.33
@@ -489,6 +490,8 @@ struct StatsInline: View {
 
     private func modelColor(_ tier: ModelTier) -> Color {
         switch tier {
+        // Fable bills more per token than Opus, so it reads as the densest ink.
+        case .fable:  return Color.primary.opacity(0.88)
         case .opus:   return Color.primary.opacity(0.72)
         case .sonnet: return Color.primary.opacity(0.42)
         case .haiku:  return Color.primary.opacity(0.20)
@@ -499,7 +502,7 @@ struct StatsInline: View {
     // MARK: - Period strip
 
     private var periodStrip: some View {
-        let savedEUR = Double(max(savedTokens, appState.savedTokensThisWeek)) / 1_000_000 * 6.00
+        let savedEUR = MilestoneTracker.shared.eurFor(tokens: max(savedTokens, appState.savedTokensThisWeek))
         return HStack(spacing: 0) {
             periodCell("Today", "\(est ? "≈" : "")\(formatTokens(todayTokens))", muted: false, leading: false)
             periodCell("This week", "\(est ? "≈" : "")\(formatTokens(thisWeekTokens))", muted: false, leading: true)
@@ -690,23 +693,17 @@ struct StatsInline: View {
 
         let bundle: Bundle = await Task.detached {
             var b = Bundle()
-            do { b.line = try database.read { try StatsDataService.linePoints(in: $0, range: r) } }
-            catch { b.firstError = "linePoints: \(error)" }
+            do { b.line = try database.read { try StatsDataService.linePoints(in: $0, range: r) } } catch { b.firstError = "linePoints: \(error)" }
 
-            do { b.heat = try database.read { try StatsDataService.heatmap(in: $0, range: r) } }
-            catch { if b.firstError == nil { b.firstError = "heatmap: \(error)" } }
+            do { b.heat = try database.read { try StatsDataService.heatmap(in: $0, range: r) } } catch { if b.firstError == nil { b.firstError = "heatmap: \(error)" } }
 
-            do { b.model = try database.read { try StatsDataService.modelSplit(in: $0, range: r) } }
-            catch { if b.firstError == nil { b.firstError = "modelSplit: \(error)" } }
+            do { b.model = try database.read { try StatsDataService.modelSplit(in: $0, range: r) } } catch { if b.firstError == nil { b.firstError = "modelSplit: \(error)" } }
 
-            do { b.cost = try database.read { try StatsDataService.extrapolatedCostEUR(in: $0, range: r) } }
-            catch { if b.firstError == nil { b.firstError = "cost: \(error)" } }
+            do { b.cost = try database.read { try StatsDataService.extrapolatedCostEUR(in: $0, range: r) } } catch { if b.firstError == nil { b.firstError = "cost: \(error)" } }
 
-            do { b.saved = try database.read { try StatsDataService.savedTokensThisWeek(in: $0) } }
-            catch { if b.firstError == nil { b.firstError = "saved: \(error)" } }
+            do { b.saved = try database.read { try StatsDataService.savedTokensThisWeek(in: $0) } } catch { if b.firstError == nil { b.firstError = "saved: \(error)" } }
 
-            do { b.projects = try database.read { try StatsDataService.topProjects(in: $0, range: r) } }
-            catch { if b.firstError == nil { b.firstError = "projects: \(error)" } }
+            do { b.projects = try database.read { try StatsDataService.topProjects(in: $0, range: r) } } catch { if b.firstError == nil { b.firstError = "projects: \(error)" } }
 
             do { b.today = try database.read {
                 try StatsDataService.tokensBetween(in: $0, from: 0, to: 24)
@@ -745,6 +742,7 @@ struct StatsInline: View {
 
     private func tierLabel(_ t: ModelTier) -> String {
         switch t {
+        case .fable:  return "Fable"
         case .opus:   return "Opus"
         case .sonnet: return "Sonnet"
         case .haiku:  return "Haiku"
@@ -754,7 +752,7 @@ struct StatsInline: View {
 
     private func formatTokens(_ n: Int) -> String {
         if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
-        if n >= 1_000     { return String(format: "%.0fk", Double(n) / 1_000) }
+        if n >= 1_000 { return String(format: "%.0fk", Double(n) / 1_000) }
         return "\(n)"
     }
 }
@@ -841,9 +839,9 @@ private struct LineChart: View {
 
     private func computeYMax() -> Double {
         let maxPct = points.map { $0.percent * 100 }.max() ?? 0
-        if maxPct >= 50  { return 100 }
-        if maxPct >= 25  { return 50 }
-        if maxPct >= 10  { return 25 }
+        if maxPct >= 50 { return 100 }
+        if maxPct >= 25 { return 50 }
+        if maxPct >= 10 { return 25 }
         return 10
     }
 }

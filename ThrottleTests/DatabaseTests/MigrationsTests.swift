@@ -1,6 +1,6 @@
-import XCTest
 import GRDB
 @testable import Throttle
+import XCTest
 
 final class MigrationsTests: XCTestCase {
     func test_freshDatabase_appliesAllMigrations() throws {

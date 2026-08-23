@@ -107,7 +107,7 @@ enum WebRenderClient {
         var body: [String: Any] = [
             "throttleID": throttleID,
             "objective": objective,
-            "kind": kind,
+            "kind": kind
         ]
         if let maxTokens { body["maxTokens"] = maxTokens }
         guard let response = post(path: "/delegate", body: body, timeout: 90) else {

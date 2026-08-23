@@ -1,7 +1,7 @@
-import Foundation
-import Network
 import Compression
+import Foundation
 import GRDB
+import Network
 
 /// In-process OTLP/HTTP receiver on 127.0.0.1:4318. Accepts Claude Code's
 /// telemetry export (`POST /v1/logs`, `POST /v1/metrics`), decodes the logs
@@ -91,8 +91,7 @@ final class TraycerReceiver: @unchecked Sendable {
             if let data { buffer.append(data) }
 
             guard let headerEnd = Self.range(of: Data("\r\n\r\n".utf8), in: buffer) else {
-                if isComplete || error != nil { conn.cancel() }
-                else { self.serve(conn, carry: buffer) }
+                if isComplete || error != nil { conn.cancel() } else { self.serve(conn, carry: buffer) }
                 return
             }
             let header = String(decoding: buffer[buffer.startIndex..<headerEnd.lowerBound], as: UTF8.self)
@@ -100,8 +99,7 @@ final class TraycerReceiver: @unchecked Sendable {
 
             // Frame the body: Content-Length OR chunked. Returns nil until complete.
             guard let (body, leftover) = self.framedBody(header: header, buffer: buffer, bodyStart: bodyStart) else {
-                if isComplete || error != nil { conn.cancel() }
-                else { self.serve(conn, carry: buffer) }
+                if isComplete || error != nil { conn.cancel() } else { self.serve(conn, carry: buffer) }
                 return
             }
 

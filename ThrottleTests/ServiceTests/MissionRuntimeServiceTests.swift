@@ -306,4 +306,19 @@ final class CodexRolloutLocatorTests: XCTestCase {
             .appendingPathComponent("codex-empty-\(UUID().uuidString)", isDirectory: true)
         XCTAssertNil(MissionRuntimeService.codexRolloutURL(id: "does-not-exist", sessionsRoot: root))
     }
+    /// The hand-written newline scan replaces `Data.split(separator:)`, which the
+    /// stable toolchain rejects as ambiguous however the separator is spelled.
+    /// Since only CI can compile that path, the behaviour is pinned here.
+    func testNewlineScanMatchesSplitSemantics() {
+        func chunks(_ text: String) -> [String] {
+            MissionRuntimeService.newlineSeparatedChunksForTesting(Data(text.utf8))
+                .compactMap { String(bytes: $0, encoding: .utf8) }
+        }
+        XCTAssertEqual(chunks("a\nb\nc"), ["a", "b", "c"])
+        XCTAssertEqual(chunks("a\nb\n"), ["a", "b"], "a trailing newline yields no empty line")
+        XCTAssertEqual(chunks("\n\na"), ["a"], "empty lines are omitted, as split did")
+        XCTAssertEqual(chunks(""), [])
+        XCTAssertEqual(chunks("solo"), ["solo"])
+    }
+
 }

@@ -28,18 +28,21 @@ final class MilestoneTracker {
     }
 
     static let ladder: [Milestone] = [
-        Milestone(id: "day_pro",    thresholdEUR:   0.65, label: String(localized: "1 day of Pro paid back"),     emoji: "🌱"),
-        Milestone(id: "week_pro",   thresholdEUR:   4.50, label: String(localized: "1 week of Pro paid back"),    emoji: "🌿"),
-        Milestone(id: "month_pro",  thresholdEUR:  18.00, label: String(localized: "1 month of Pro paid back"),   emoji: "🍀"),
-        Milestone(id: "month_max5", thresholdEUR:  92.00, label: String(localized: "1 month of Max 5× paid back"), emoji: "🌳"),
+        Milestone(id: "day_pro", thresholdEUR: 0.65, label: String(localized: "1 day of Pro paid back"), emoji: "🌱"),
+        Milestone(id: "week_pro", thresholdEUR: 4.50, label: String(localized: "1 week of Pro paid back"), emoji: "🌿"),
+        Milestone(id: "month_pro", thresholdEUR: 18.00, label: String(localized: "1 month of Pro paid back"), emoji: "🍀"),
+        Milestone(id: "month_max5", thresholdEUR: 92.00, label: String(localized: "1 month of Max 5× paid back"), emoji: "🌳"),
         Milestone(id: "month_max20", thresholdEUR: 184.00, label: String(localized: "1 month of Max 20× paid back"), emoji: "🏆")
     ]
 
-    /// Realistic blended €/M weighted-tokens rate. Based on typical Claude
-    /// Code usage patterns (70-80% input, 20-30% output), using Sonnet 4.6
-    /// pricing: €2.76/M input + €13.80/M output → ~€6/M blended average.
-    /// This represents actual API costs rather than input-only rate.
-    private let blendedRatePerM: Double = 6.00
+    /// EUR per million saved tokens, supplied by the caller from the models the
+    /// account actually ran. This was a hardcoded `6.00`, derived by blending an
+    /// input and an output rate — but a saving is context never sent, which has
+    /// no output component. See `StatsDataService.savedValueEURPerMillion`.
+    private var ratePerM: Double = ModelPricing.sonnet.input * ModelPricing.usdToEur
+
+    /// Set once per refresh from the measured mix.
+    func setRatePerMillion(_ rate: Double) { if rate > 0 { ratePerM = rate } }
 
     /// Lifetime weighted tokens saved across all weeks since install.
     /// Persisted across launches.
@@ -70,9 +73,12 @@ final class MilestoneTracker {
     /// after the user dismisses or after 12 s of display.
     var pendingCelebration: Milestone?
 
+    /// EUR for a token count, at the account's measured input rate.
+    func eurFor(tokens: Int) -> Double { Double(tokens) / 1_000_000 * ratePerM }
+
     /// Computed lifetime EUR saved.
     var lifetimeEUR: Double {
-        Double(lifetimeTokens) / 1_000_000 * blendedRatePerM
+        Double(lifetimeTokens) / 1_000_000 * ratePerM
     }
 
     /// Call whenever `appState.savedTokensThisWeek` changes. Updates the
@@ -102,7 +108,7 @@ final class MilestoneTracker {
         // checks. This way the user gets the celebration the moment they
         // cross — even if the week hasn't rolled over yet.
         let liveTokens = lifetimeTokens + currentWeekly
-        let liveEUR = Double(liveTokens) / 1_000_000 * blendedRatePerM
+        let liveEUR = Double(liveTokens) / 1_000_000 * ratePerM
 
         // Find the highest unfired milestone the user has crossed.
         let crossed = Self.ladder

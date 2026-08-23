@@ -154,6 +154,10 @@ enum MCPHealthService {
                 try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
                 return nil
             }
+            // `group.next()` yields `Int??` — the group's element type is already
+            // optional — so the coalescing flattens it. SwiftLint's
+            // redundant_nil_coalescing autocorrect removed it and broke the build.
+            // swiftlint:disable:next redundant_nil_coalescing
             let first: Int? = await group.next() ?? nil
             group.cancelAll()
             return first

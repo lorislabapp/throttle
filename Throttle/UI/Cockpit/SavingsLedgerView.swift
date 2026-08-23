@@ -17,6 +17,7 @@ struct SavingsLedgerView: View {
     @State private var skills = SkillReport.empty
     @State private var toon = TOONTranspiler.Potential()
     @State private var rmcEUR: Double = 0
+    @State private var cacheAwareBytes = 0
     @State private var archiving = false
     @State private var loaded = false
 
@@ -62,6 +63,13 @@ struct SavingsLedgerView: View {
                 totalRow("Realized total",
                          bytes: realized.reduce(0) { $0 + $1.bytes },
                          exact: realized.allSatisfy { Self.isMeasured($0.hook) })
+                // The floor, stated next to the total rather than instead of it.
+                // A trim rewrites the prefix, so the NEXT turn re-pays the cache
+                // write price on what's left. The rest of the total is still
+                // real — it is earned over the following turns.
+                row(label: "…of which survives the next turn",
+                    method: "after the 1.25× cache re-write on the remaining prefix · floor, not the whole gain",
+                    bytes: cacheAwareBytes, exact: true)
             }
 
             if deadSkillTokens > 0 || toon.hasData {
@@ -109,6 +117,9 @@ struct SavingsLedgerView: View {
         }.value) ?? []
         rmcEUR = (try? await Task.detached(priority: .utility) {
             try db.read { try StatsDataService.recoverableMissCostEUR(in: $0).eur }
+        }.value) ?? 0
+        cacheAwareBytes = (try? await Task.detached(priority: .utility) {
+            try db.read { try StatsDataService.cacheAwareSavedBytesThisWeek(in: $0) }
         }.value) ?? 0
         skills = await Task.detached(priority: .utility) { SkillUsageService.scan() }.value
         toon = await Task.detached(priority: .utility) { TOONTranspiler.potentialSummary() }.value
@@ -196,7 +207,7 @@ struct SavingsLedgerView: View {
     /// was emitting nothing at all. Anything resting on an assumed baseline is
     /// labelled as the estimate it is.
     private static let assumedBaselineHooks: Set<String> = [
-        "session-start-router", "pre-compact",
+        "session-start-router", "pre-compact"
     ]
 
     static func isMeasured(_ hook: String) -> Bool { !assumedBaselineHooks.contains(hook) }

@@ -16,7 +16,7 @@ struct DeadSkillRow: Sendable, Identifiable {
     let uses: Int             // tool_use count over the window
     let lastUsed: Date?
     let loaded: Bool          // present in the current loadout
-    var schemaTokensEst: Int? = nil   // ~schema-token tax (filled from a live probe)
+    var schemaTokensEst: Int?   // ~schema-token tax (filled from a live probe)
     enum Kind: String, Sendable { case mcp = "MCP server", skill = "Skill" }
     var isDead: Bool { loaded && uses == 0 }
 }
@@ -89,7 +89,7 @@ enum DeadSkillService {
         var files: [(path: String, mtime: Date)] = []
         for case let rel as String in en where rel.hasSuffix(".jsonl") {
             let full = (root as NSString).appendingPathComponent(rel)
-            let mt = (try? fm.attributesOfItem(atPath: full)[.modificationDate] as? Date) ?? nil
+            let mt = (try? fm.attributesOfItem(atPath: full)[.modificationDate] as? Date)
             if let mt, mt >= cutoff { files.append((full, mt)) }
         }
         files.sort { $0.mtime > $1.mtime }

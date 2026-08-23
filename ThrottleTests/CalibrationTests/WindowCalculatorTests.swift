@@ -1,6 +1,6 @@
-import XCTest
 import GRDB
 @testable import Throttle
+import XCTest
 
 final class WindowCalculatorTests: XCTestCase {
     private func makeDatabase(events: [(seconds_ago: Int, model: String, tokens: Int)]) throws -> DatabaseQueue {

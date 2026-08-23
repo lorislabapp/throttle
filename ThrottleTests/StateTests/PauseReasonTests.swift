@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// A freeze carries WHY it happened, because two policies hang off it: does
 /// focusing the tab undo it, and may memory pressure escalate it to a hibernate.

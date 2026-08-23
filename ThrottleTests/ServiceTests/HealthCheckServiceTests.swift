@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 final class HealthCheckServiceTests: XCTestCase {
     func testTrackingOldEventIsHealthyWhenTranscriptOffsetsAreCaughtUp() {
@@ -76,7 +76,7 @@ final class HealthCheckServiceTests: XCTestCase {
             ("Sort sessions", "Trier les sessions"),
             ("Terminal theme", "Thème du terminal"),
             ("On", "Activé"),
-            ("Off", "Désactivé"),
+            ("Off", "Désactivé")
         ]
 
         for (key, translation) in expected {

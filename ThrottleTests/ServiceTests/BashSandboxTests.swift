@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// Sandbox tests for the AI's `bash` tool. Critical: a bug in the
 /// allowlist or arg validation lets a prompt-injected response read
@@ -117,9 +117,28 @@ final class BashSandboxTests: XCTestCase {
         XCTAssertTrue(out.contains("exit 0"))
     }
 
-    func test_run_swiftVersionSucceeds() {
-        let out = BashSandbox.run(command: "swift --version")
-        XCTAssertFalse(out.hasPrefix("Error:"))
-        XCTAssertTrue(out.lowercased().contains("swift"))
+    /// `swift` and `xcodebuild` used to be on the allowlist, and this test
+    /// asserted `swift --version` worked. They are arbitrary-code-execution
+    /// engines: `swift build` compiles and RUNS `Package.swift` at manifest-load
+    /// time, `xcodebuild` runs a project's Run Script phases. Either turns any
+    /// cloned repository into a payload, which makes the file's own promise
+    /// ("cannot exfiltrate", "cannot escalate to write") false. Refusing them is
+    /// the fix; this test now guards the refusal.
+    func test_run_codeExecutionEnginesAreRefused() {
+        for command in ["swift --version", "swift build", "xcodebuild -list"] {
+            let out = BashSandbox.run(command: command)
+            XCTAssertTrue(out.hasPrefix("Error:"), "`\(command)` must be refused, got: \(out)")
+        }
+    }
+
+    /// The deny-list only ran on arguments starting with `/`, `~`, `./` or
+    /// `../`. The child's working directory is HOME, so a bare relative path
+    /// reached the private key without ever being checked.
+    func test_run_relativeCredentialPathIsRefused() {
+        for command in [".ssh/id_rsa", ".aws/credentials", ".claude/.credentials.json"] {
+            let out = BashSandbox.run(command: "cat \(command)")
+            XCTAssertTrue(out.hasPrefix("Error:"),
+                          "`cat \(command)` must be refused — cwd is HOME, got: \(out)")
+        }
     }
 }

@@ -93,8 +93,8 @@ struct DropdownView: View {
             } else {
                 providerMeterReadout
             }
-            if !appState.isPro && appState.snapshot.hasAnyData {
-                ProUpsellBanner(configSize: 95, savings: 40)
+            if !appState.isPro && appState.snapshot.hasAnyData && !ProUpsellBanner.isSuppressed {
+                ProUpsellBanner()
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
             }
@@ -241,14 +241,14 @@ struct DropdownView: View {
 
     private func formatTokens(_ n: Int) -> String {
         if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
-        if n >= 1_000     { return String(format: "%.0fk", Double(n) / 1_000) }
+        if n >= 1_000 { return String(format: "%.0fk", Double(n) / 1_000) }
         return "\(n)"
     }
 
     /// Total EUR saved (lifetime + this week) using MilestoneTracker's conversion rate.
     private var lifetimeAndWeeklyEUR: Double {
         let liveTokens = MilestoneTracker.shared.lifetimeTokens + appState.savedTokensThisWeek
-        return Double(liveTokens) / 1_000_000 * 6.00
+        return MilestoneTracker.shared.eurFor(tokens: liveTokens)
     }
 
     /// Banner shown when the user has enabled exact mode but the latest poll
@@ -410,9 +410,16 @@ struct DropdownView: View {
             displayMetric(for: .weeklyAll),
             displayMetric(for: .weeklySonnet)
         ]
+        // The hero obeys the same rule as the menu bar and the statusline: the
+        // per-model weekly cap is shown as a ROW, never promoted to the headline.
+        // Exhausting it forces a model fallback; it does not stop you. This was
+        // the one surface `UsagePressure` did not reach, so the popover could
+        // announce "Binding now · Weekly · Fable — 100%" in red while the menu
+        // bar one click away read 62%.
         let binding = metrics
-            .filter { $0.percent != nil }
+            .filter { $0.percent != nil && $0.kind != .weeklySonnet }
             .max { ($0.percent ?? 0) < ($1.percent ?? 0) }
+            ?? metrics.filter { $0.percent != nil }.max { ($0.percent ?? 0) < ($1.percent ?? 0) }
         if let binding {
             bindingHero(binding)
             hairline
@@ -459,9 +466,11 @@ struct DropdownView: View {
             subtitle = String(localized: "all models")
             bindingLabel = String(localized: "Weekly · all models")
         case .weeklySonnet:
+            // Named after the model the server scoped the cap to. This row read
+            // "Sonnet only" unconditionally while the cap at 100% was Fable's.
             title = String(localized: "Weekly")
-            subtitle = String(localized: "Sonnet only")
-            bindingLabel = String(localized: "Weekly · Sonnet only")
+            subtitle = ScopedCapModel.subtitle
+            bindingLabel = ScopedCapModel.bindingLabel
         }
         let local: UsageSnapshot.Window
         switch kind {
@@ -746,7 +755,6 @@ struct DropdownView: View {
         }
     }
 
-
     /// Direction A — "The Dock". Four destinations as a compact icon row over
     /// one quiet meta line carrying sign-in STATUS and demoted chrome. Replaces
     /// the old flat 10-row menu (incl. the two inert Run Optimizer / Manage
@@ -774,8 +782,7 @@ struct DropdownView: View {
                 }
                 DockTile(icon: "chevron.left.forwardslash.chevron.right", label: "Commands",
                          badgeText: appState.isPro ? nil : "PRO", badgeStyle: .pro) {
-                    if appState.isPro { CommandRunnerWindowController.shared.show() }
-                    else { mode = .settings(.pro) }
+                    if appState.isPro { CommandRunnerWindowController.shared.show() } else { mode = .settings(.pro) }
                 }
                 DockTile(icon: "magnifyingglass", label: "Search") {
                     TranscriptSearchWindowController.shared.show()
@@ -973,7 +980,7 @@ private struct DockBadgeView: View {
 private struct DockTile: View {
     let icon: String
     let label: LocalizedStringKey
-    var badgeText: String? = nil
+    var badgeText: String?
     var badgeStyle: DockBadgeStyle = .beta
     let action: () -> Void
     @State private var hover = false
@@ -1016,7 +1023,7 @@ private struct SettingsHair: View {
 
 private struct SettingsGroupHeader: View {
     let label: String
-    var desc: String? = nil
+    var desc: String?
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(LocalizedStringKey(label)).font(.system(size: 10.5, weight: .semibold))
@@ -1033,7 +1040,7 @@ private struct SettingsGroupHeader: View {
 /// Flat ≥44pt settings row: title (+ optional sub) left, a trailing control right.
 private struct SettingsRow<Trailing: View>: View {
     let title: String
-    var sub: String? = nil
+    var sub: String?
     @ViewBuilder var trailing: Trailing
     var body: some View {
         HStack(spacing: 12) {
@@ -1067,9 +1074,9 @@ private struct SettingsNote: View {
 /// Bordered settings button (`.primary` = accent fill). Calm, native-ish.
 private struct SettingsButton: View {
     let title: String
-    var systemImage: String? = nil
+    var systemImage: String?
     var primary: Bool = false
-    var role: ButtonRole? = nil
+    var role: ButtonRole?
     let action: () -> Void
     var body: some View {
         Button(role: role, action: action) {
@@ -1082,8 +1089,7 @@ private struct SettingsButton: View {
             .foregroundStyle(primary ? AnyShapeStyle(Color.white)
                              : AnyShapeStyle(role == .destructive ? Color.red : Color.primary))
             .background {
-                if primary { RoundedRectangle(cornerRadius: 8).fill(Color.accentColor) }
-                else { RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.12), lineWidth: 1) }
+                if primary { RoundedRectangle(cornerRadius: 8).fill(Color.accentColor) } else { RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.12), lineWidth: 1) }
             }
         }
         .buttonStyle(.plain)
@@ -1132,7 +1138,7 @@ private struct FirstRunInline: View {
         }
     }
 
-    @State private var pick: PlanChoice? = nil
+    @State private var pick: PlanChoice?
     @State private var enableLoginItems: Bool = true
     @State private var signedIn: Bool = false
     /// Conversational step: 0 = ask plan, 1 = ask launch, 2 = done.
@@ -1188,7 +1194,7 @@ private struct FirstRunInline: View {
             meterDivider
             meterRow("Weekly", "all models", cap: pick?.weekly, pct: demo.weekly, auto: auto, filled: filled)
             meterDivider
-            meterRow("Weekly", "Sonnet only", cap: pick?.weekly, pct: demo.sonnet, auto: auto, filled: filled)
+            meterRow("Weekly", ScopedCapModel.subtitle, cap: pick?.weekly, pct: demo.sonnet, auto: auto, filled: filled)
         }
         .padding(13)
         .background(RoundedRectangle(cornerRadius: 13).fill(Color(nsColor: .controlBackgroundColor)))
@@ -1419,10 +1425,17 @@ private struct InlineGeneralPane: View {
     @Environment(AppState.self) private var appState
     @State private var loginItemsEnabled: Bool = LoginItemService.isEnabled
     @State private var cockpitOnTop: Bool = CockpitWindowController.alwaysOnTop
+    @State private var autoApproveReadOnly = AutoApproval.enabled
+    @State private var hostCapabilities = CapabilityHostService.shared.enabled
     @State private var notificationsOn: Bool = ThresholdNotifier.shared.isEnabled
     @State private var calendarStatus: String = ""
-    @State private var conciseClaudeCode: Bool =
-        FileManager.default.fileExists(atPath: InlineGeneralPane.conciseFlagPath)
+    // Read the EFFECT, not a proxy for it. This switch used to report the flag
+    // file it writes, so it showed "on" for months while the hooks that carry
+    // the feature had never been installed — the install threw, `try?` ate it,
+    // and the flag was written regardless. A switch that reports its own
+    // intention rather than its result cannot be trusted to mean anything.
+    @State private var conciseClaudeCode: Bool = BrevityHookService.isInstalled()
+    @State private var conciseError: String?
     @AppStorage("throttleLowMemoryMode") private var lowMemoryMode = false
     @AppStorage("throttleAutoPauseEnabled") private var autoPauseEnabled = false
     @AppStorage("throttleOpusTokenCapEnabled") private var opusCapEnabled = false
@@ -1459,15 +1472,28 @@ private struct InlineGeneralPane: View {
             .appendingPathComponent(".claude/throttle-concise").path
     }
     private func setConciseFlag(_ on: Bool) {
-        if on {
-            FileManager.default.createFile(atPath: Self.conciseFlagPath, contents: Data())
-            // The hooks are the reliable carrier: a one-line directive per prompt
-            // + re-injection after compaction. The SessionStart router alone only
-            // reaches sessions started AFTER the toggle.
-            try? BrevityHookService.install()
-        } else {
+        conciseError = nil
+        guard on else {
             try? FileManager.default.removeItem(atPath: Self.conciseFlagPath)
             try? BrevityHookService.remove()
+            conciseClaudeCode = BrevityHookService.isInstalled()
+            return
+        }
+        // The hooks are the reliable carrier: a one-line directive per prompt +
+        // re-injection after compaction. The output style alone is read once at
+        // session start, so it is invisible to open sessions and gone after the
+        // first compaction — which is most of a long session.
+        do {
+            try BrevityHookService.install()
+            FileManager.default.createFile(atPath: Self.conciseFlagPath, contents: Data())
+        } catch {
+            // Say so. The previous version swallowed this and wrote the flag
+            // anyway, so the switch read "on" while nothing had been installed.
+            conciseError = "Could not install the brevity hooks: \(error.localizedDescription)"
+        }
+        conciseClaudeCode = BrevityHookService.isInstalled()
+        if conciseClaudeCode == false && conciseError == nil {
+            conciseError = "The brevity hooks did not take. Check ~/.claude/settings.json."
         }
     }
 
@@ -1513,6 +1539,18 @@ private struct InlineGeneralPane: View {
                         sub: "Float the Cockpit window above other apps — a companion you watch while working.") {
                 Toggle("", isOn: $cockpitOnTop).labelsHidden().toggleStyle(.switch).tint(.accentColor)
                     .onChange(of: cockpitOnTop) { _, new in CockpitWindowController.alwaysOnTop = new }
+            }
+            SettingsHair()
+            SettingsRow(title: "Answer read-only permission prompts",
+                        sub: "Auto-approve only commands a rule can prove leave nothing behind — `git status`, `ls`, `grep` inside the project. Never `rm`, never a chained command, never a path outside the project. Every answer is logged.") {
+                Toggle("", isOn: $autoApproveReadOnly).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                    .onChange(of: autoApproveReadOnly) { _, new in AutoApproval.enabled = new }
+            }
+            SettingsHair()
+            SettingsRow(title: "Build for sessions on the box",
+                        sub: "A session offloaded to the server has no Xcode. Let it ask this Mac to build, test or lint — a named capability, never a command.") {
+                Toggle("", isOn: $hostCapabilities).labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                    .onChange(of: hostCapabilities) { _, new in CapabilityHostService.shared.enabled = new }
             }
             SettingsHair()
             SettingsRow(title: "Notify at 80% and 95%",
@@ -1577,7 +1615,8 @@ private struct InlineGeneralPane: View {
             }
             SettingsHair()
             SettingsRow(title: "Concise Claude Code replies",
-                        sub: "Injects a one-line be-brief directive beside every prompt and after compaction (hooks) — reaches sessions already open, where an output style can't. Honest ceiling: output tokens are typically 7–16% of total spend.") {
+                        sub: conciseError
+                            ?? "Injects a one-line be-brief directive beside every prompt and after compaction (hooks) — reaches sessions already open, where an output style can't. Honest ceiling: output tokens are typically 7–16% of total spend.") {
                 Toggle("", isOn: $conciseClaudeCode).labelsHidden().toggleStyle(.switch).tint(.accentColor)
                     .onChange(of: conciseClaudeCode) { _, on in setConciseFlag(on) }
             }
@@ -1647,8 +1686,7 @@ private struct InlineGeneralPane: View {
                         .onChange(of: tokoptOn) { _, on in
                             guard appState.isPro else { return }
                             Task.detached(priority: .utility) {
-                                if on { _ = try? TokoptHookInstaller.install() }
-                                else { try? TokoptHookInstaller.remove() }
+                                if on { _ = try? TokoptHookInstaller.install() } else { try? TokoptHookInstaller.remove() }
                             }
                             tokoptNote = on
                                 ? "Installed — restart Claude Code to start compressing."
@@ -1676,8 +1714,7 @@ private struct InlineGeneralPane: View {
                             Task {
                                 let failure: String? = await Task.detached(priority: .utility) {
                                     do {
-                                        if on { _ = try TranscriptMemoryInstaller.install() }
-                                        else { try TranscriptMemoryInstaller.remove() }
+                                        if on { _ = try TranscriptMemoryInstaller.install() } else { try TranscriptMemoryInstaller.remove() }
                                         return nil
                                     } catch {
                                         return error.localizedDescription
@@ -2231,8 +2268,7 @@ private struct InlineProPane: View {
                     get: { appState.exactModeEnabled },
                     set: { on in
                         appState.setExactModeEnabled(on)
-                        if on { ExactModeService.shared.start() }
-                        else { ExactModeService.shared.stop(); appState.exactSnapshot = nil }
+                        if on { ExactModeService.shared.start() } else { ExactModeService.shared.stop(); appState.exactSnapshot = nil }
                     }
                 )).labelsHidden().toggleStyle(.switch).tint(.accentColor)
             }
@@ -2304,7 +2340,7 @@ private struct InlineProPane: View {
         .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 12)
     }
 
-    private func testConnection() {
+    func testConnection() {
         testing = true
         connectionStatus = ""
         Task {
@@ -2335,7 +2371,7 @@ private struct InlineProPane: View {
 
 /// Shared file-private formatter for ExactModeError messages, used by both
 /// InlineGeneralPane (Settings) and DropdownView (the meter banner).
-fileprivate func describe(_ err: ExactModeError) -> String {
+private func describe(_ err: ExactModeError) -> String {
     switch err {
     case .notSignedIn:        return "Not signed in to claude.ai inside Throttle. Sign in and re-test."
     case .httpError(let code): return "HTTP \(code)"
@@ -2358,17 +2394,17 @@ private struct InlineCalibrationPane: View {
     /// once Apple ships a fix or we move calibration into a dedicated NSWindow.
     private static let presets: [WindowKind: [(label: String, tokens: Int)]] = [
         .session5h: [
-            ("4M",  4_000_000),
-            ("8M",  8_000_000),
+            ("4M", 4_000_000),
+            ("8M", 8_000_000),
             ("20M", 20_000_000)
         ],
         .weeklyAll: [
-            ("60M",  60_000_000),
+            ("60M", 60_000_000),
             ("200M", 200_000_000),
             ("800M", 800_000_000)
         ],
         .weeklySonnet: [
-            ("60M",  60_000_000),
+            ("60M", 60_000_000),
             ("200M", 200_000_000),
             ("800M", 800_000_000)
         ]
@@ -2383,7 +2419,7 @@ private struct InlineCalibrationPane: View {
             SettingsHair()
             calWindow(.weeklyAll, "Weekly", "all models")
             SettingsHair()
-            calWindow(.weeklySonnet, "Weekly", "Sonnet only")
+            calWindow(.weeklySonnet, "Weekly", ScopedCapModel.subtitle)
             SettingsHair()
             recalBlock
             SettingsHair()
@@ -2505,7 +2541,7 @@ private struct InlineCalibrationPane: View {
     private func formatTokens(_ n: Int) -> String {
         if n == 0 { return "—" }
         if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
-        if n >= 1_000     { return String(format: "%.0fK", Double(n) / 1_000) }
+        if n >= 1_000 { return String(format: "%.0fK", Double(n) / 1_000) }
         return "\(n)"
     }
 
@@ -3089,7 +3125,7 @@ private struct InlineAssistantPane: View {
         }
     }
 
-    private func testLocalWorkerServer() {
+    func testLocalWorkerServer() {
         guard !localWorkerProbing else { return }
         localWorkerProbing = true
         localWorkerStatus = LocalWorkerStatus(state: .probing)

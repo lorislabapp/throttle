@@ -10,7 +10,7 @@ import SwiftUI
 final class CommandRunnerWindowController: NSObject {
     static let shared = CommandRunnerWindowController()
     private var window: NSWindow?
-    private override init() {}
+    override private init() {}
 
     func show() {
         if let window {

@@ -57,8 +57,8 @@ enum TokoptHookInstaller {
             "hooks": [[
                 "type": "command",
                 "command": hookCommand,
-                "timeout": 10,
-            ]],
+                "timeout": 10
+            ]]
         ]
         post.append(entry)
         hooks["PostToolUse"] = post

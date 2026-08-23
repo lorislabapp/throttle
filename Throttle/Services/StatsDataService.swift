@@ -150,9 +150,9 @@ enum StatsDataService {
 
     /// One tier's share of the TRUE weighted cost — unlike `modelSplit`, this applies
     /// the per-token price ratios (output 5× input, cache-read 0.1×, cache-write 1.25×)
-    /// AND the model price multiplier (Opus 5× Sonnet, Haiku ~0.27×). `modelSplit`
-    /// counts every model's token equally, which hides the fact that an Opus token
-    /// costs 5× a Sonnet token against the plan — the single biggest usage lever.
+    /// AND the model price multiplier (Opus 1.67× Sonnet, Fable 3.33×, Haiku 0.33×).
+    /// `modelSplit` counts every model's token equally, which hides the fact that an
+    /// Opus token costs more than a Sonnet one against the plan.
     struct ModelCostSlice: Hashable, Sendable, Identifiable {
         let tier: ModelTier
         let cost: Double            // arbitrary units, relative to Sonnet input = 1
@@ -182,20 +182,24 @@ enum StatsDataService {
         let cutoff = range.cutoff(now: now)
         let where_ = cutoff > 0 ? "WHERE timestamp >= ?" : ""
         // Per-token weights are relative to Sonnet input price; the outer multiplier
-        // is the model's input price relative to Sonnet ($15 Opus / $3 Sonnet = 5,
-        // $0.80 Haiku / $3 ≈ 0.27). Fable/other default to 1 (conservative).
+        // is the model's input price relative to Sonnet.
+        //
+        // These were Claude 3 numbers ($15 Opus / $3 Sonnet = 5). Opus 4.5–4.8 and
+        // Opus 5 bill $5, so the true ratio is 1.67 and this readout overstated
+        // Opus's share of cost by three. Fable bills $10 — 3.33× Sonnet — and was
+        // left at the 1.0 default, understating it by the same factor. Found by a
+        // second audit on 2026-08-22, in a different function from the euro
+        // figures fixed the same day: the stale table had two homes.
+        //
+        //   Opus  $5  / $3 = 1.67      Fable $10 / $3 = 3.33
+        //   Haiku $1  / $3 = 0.33      Sonnet         = 1.00
         let sql = """
             SELECT bucket, SUM(cost) AS cost, SUM(cache_read) AS cr FROM (
               SELECT
-                CASE WHEN lower(model) LIKE '%opus%'   THEN 'opus'
-                     WHEN lower(model) LIKE '%sonnet%' THEN 'sonnet'
-                     WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
-                     ELSE 'other' END AS bucket,
+                \(ModelPricing.sqlBucketExpr()) AS bucket,
                 cache_read,
                 (input_tokens + output_tokens * 5.0 + cache_read * 0.1 + cache_create * 1.25)
-                  * (CASE WHEN lower(model) LIKE '%opus%'  THEN 5.0
-                          WHEN lower(model) LIKE '%haiku%' THEN 0.27
-                          ELSE 1.0 END) AS cost
+                  * \(ModelPricing.sqlPriceMultiplierExpr()) AS cost
               FROM usage_events
               \(where_)
             ) GROUP BY bucket
@@ -257,7 +261,7 @@ enum StatsDataService {
         let nowEpoch = Int64(now.timeIntervalSince1970)
         let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
         let startTs = nowEpoch - Int64(toHoursAgo) * 3600
-        let _ = encodedName  // see fs.encoded_project filter below
+        _ = encodedName  // see fs.encoded_project filter below
         let sql = """
             SELECT COALESCE(SUM(e.input_tokens + e.output_tokens + e.cache_create + (e.cache_read / 10)), 0) AS w
             FROM usage_events e
@@ -491,7 +495,7 @@ enum StatsDataService {
         let nowEpoch = Int64(now.timeIntervalSince1970)
         let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
         let startTs = nowEpoch - Int64(toHoursAgo) * 3600
-        let _ = encodedName  // see fs.encoded_project filter below
+        _ = encodedName  // see fs.encoded_project filter below
         let sql = """
             SELECT
                 COUNT(DISTINCT e.session_id) AS sessions,
@@ -518,7 +522,7 @@ enum StatsDataService {
         let nowEpoch = Int64(now.timeIntervalSince1970)
         let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
         let startTs = nowEpoch - Int64(toHoursAgo) * 3600
-        let _ = encodedName  // see fs.encoded_project filter below
+        _ = encodedName  // see fs.encoded_project filter below
         let sql = """
             SELECT
                 CASE
@@ -553,15 +557,10 @@ enum StatsDataService {
         let nowEpoch = Int64(now.timeIntervalSince1970)
         let endTs = nowEpoch - Int64(fromHoursAgo) * 3600
         let startTs = nowEpoch - Int64(toHoursAgo) * 3600
-        let _ = encodedName  // see fs.encoded_project filter below
+        _ = encodedName  // see fs.encoded_project filter below
         let sql = """
             SELECT
-                CASE
-                    WHEN lower(e.model) LIKE '%opus%'   THEN 'opus'
-                    WHEN lower(e.model) LIKE '%sonnet%' THEN 'sonnet'
-                    WHEN lower(e.model) LIKE '%haiku%'  THEN 'haiku'
-                    ELSE 'other'
-                END AS bucket,
+                \(ModelPricing.sqlBucketExpr("e.model")) AS bucket,
                 SUM(e.input_tokens) AS i,
                 SUM(e.output_tokens) AS o,
                 SUM(e.cache_create) AS cc,
@@ -572,7 +571,7 @@ enum StatsDataService {
             GROUP BY bucket
             """
         let rows = try Row.fetchAll(db, sql: sql, arguments: [startTs, endTs, encodedName])
-        let usdToEur: Double = 0.93
+        let usdToEur = ModelPricing.usdToEur
         var totalUsd: Double = 0
         for row in rows {
             let bucket: String = row["bucket"] ?? ""
@@ -580,18 +579,8 @@ enum StatsDataService {
             let o: Int = row["o"] ?? 0
             let cc: Int = row["cc"] ?? 0
             let cr: Int = row["cr"] ?? 0
-            let (inRate, outRate): (Double, Double)
-            switch bucket {
-            case "opus":   (inRate, outRate) = (15, 75)
-            case "sonnet": (inRate, outRate) = (3, 15)
-            case "haiku":  (inRate, outRate) = (0.80, 4)
-            default:       (inRate, outRate) = (3, 15)
-            }
-            let perMillion = 1_000_000.0
-            totalUsd += Double(i) / perMillion * inRate
-            totalUsd += Double(o) / perMillion * outRate
-            totalUsd += Double(cc) / perMillion * inRate * 1.25
-            totalUsd += Double(cr) / perMillion * inRate * 0.10
+            totalUsd += ModelPricing.eur(bucket: bucket, input: i, output: o,
+                                         cacheCreate: cc, cacheRead: cr)
         }
         return totalUsd * usdToEur
     }
@@ -634,13 +623,7 @@ enum StatsDataService {
         let where_ = cutoff > 0 ? "WHERE timestamp >= ?" : ""
         let sql = """
             SELECT
-                CASE
-                    WHEN lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%' THEN 'fable'
-                    WHEN lower(model) LIKE '%opus%'   THEN 'opus'
-                    WHEN lower(model) LIKE '%sonnet%' THEN 'sonnet'
-                    WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
-                    ELSE 'other'
-                END AS bucket,
+                \(ModelPricing.sqlBucketExpr("model")) AS bucket,
                 SUM(input_tokens) AS i,
                 SUM(output_tokens) AS o,
                 SUM(cache_create) AS cc,
@@ -660,18 +643,10 @@ enum StatsDataService {
             let o: Int = row["o"] ?? 0
             let cc: Int = row["cc"] ?? 0
             let cr: Int = row["cr"] ?? 0
-            let (inRate, outRate): (Double, Double)
-            switch bucket {
-            case "fable":  (inRate, outRate) = (10, 50)
-            case "opus":   (inRate, outRate) = (5, 25)
-            case "sonnet": (inRate, outRate) = (3, 15)
-            case "haiku":  (inRate, outRate) = (1, 5)
-            default:       (inRate, outRate) = (3, 15)
-            }
-            let m = 1_000_000.0
-            let out = Double(o) / m * outRate
-            outputUsd += out
-            totalUsd += Double(i)/m*inRate + out + Double(cc)/m*inRate*1.25 + Double(cr)/m*inRate*0.10
+            let rate = ModelPricing.rate(forBucket: bucket)
+            outputUsd += Double(o) / 1_000_000.0 * rate.output
+            totalUsd += ModelPricing.eur(bucket: bucket, input: i, output: o,
+                                         cacheCreate: cc, cacheRead: cr) / ModelPricing.usdToEur
         }
         guard totalUsd > 0 else { return nil }
         return outputUsd / totalUsd
@@ -691,13 +666,7 @@ enum StatsDataService {
         let where_ = cutoff > 0 ? "WHERE timestamp >= ?" : ""
         let sql = """
             SELECT
-                CASE
-                    WHEN lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%' THEN 'fable'
-                    WHEN lower(model) LIKE '%opus%'   THEN 'opus'
-                    WHEN lower(model) LIKE '%sonnet%' THEN 'sonnet'
-                    WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
-                    ELSE 'other'
-                END AS bucket,
+                \(ModelPricing.sqlBucketExpr("model")) AS bucket,
                 SUM(input_tokens) AS i,
                 SUM(output_tokens) AS o,
                 SUM(cache_create) AS cc,
@@ -709,7 +678,7 @@ enum StatsDataService {
         let rows = cutoff > 0
             ? try Row.fetchAll(db, sql: sql, arguments: [cutoff])
             : try Row.fetchAll(db, sql: sql)
-        let usdToEur: Double = 0.93
+        let usdToEur = ModelPricing.usdToEur
         var totalUsd: Double = 0
         for row in rows {
             let bucket: String = row["bucket"] ?? ""
@@ -717,20 +686,8 @@ enum StatsDataService {
             let o: Int = row["o"] ?? 0
             let cc: Int = row["cc"] ?? 0
             let cr: Int = row["cr"] ?? 0
-            let (inRate, outRate): (Double, Double)
-            switch bucket {   // official USD/MTok rates, refreshed 2026-06-11
-            case "fable":  (inRate, outRate) = (10, 50)
-            case "opus":   (inRate, outRate) = (5, 25)
-            case "sonnet": (inRate, outRate) = (3, 15)
-            case "haiku":  (inRate, outRate) = (1, 5)
-            default:       (inRate, outRate) = (3, 15)  // unknown → assume Sonnet rates
-            }
-            let perMillion = 1_000_000.0
-            let input = Double(i) / perMillion * inRate
-            let output = Double(o) / perMillion * outRate
-            let cacheWrite = Double(cc) / perMillion * inRate * 1.25
-            let cacheRead = Double(cr) / perMillion * inRate * 0.10
-            totalUsd += input + output + cacheWrite + cacheRead
+            totalUsd += ModelPricing.eur(bucket: bucket, input: i, output: o,
+                                         cacheCreate: cc, cacheRead: cr) / ModelPricing.usdToEur
         }
         return totalUsd * usdToEur
     }
@@ -746,13 +703,7 @@ enum StatsDataService {
         let startTs = nowEpoch - Int64(hoursAgoEnd) * 3600
         let sql = """
             SELECT
-                CASE
-                    WHEN lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%' THEN 'fable'
-                    WHEN lower(model) LIKE '%opus%'   THEN 'opus'
-                    WHEN lower(model) LIKE '%sonnet%' THEN 'sonnet'
-                    WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
-                    ELSE 'other'
-                END AS bucket,
+                \(ModelPricing.sqlBucketExpr("model")) AS bucket,
                 SUM(input_tokens) AS i, SUM(output_tokens) AS o,
                 SUM(cache_create) AS cc, SUM(cache_read) AS cr
             FROM usage_events
@@ -765,19 +716,10 @@ enum StatsDataService {
             let bucket: String = row["bucket"] ?? ""
             let i: Int = row["i"] ?? 0, o: Int = row["o"] ?? 0
             let cc: Int = row["cc"] ?? 0, cr: Int = row["cr"] ?? 0
-            let (inRate, outRate): (Double, Double)
-            switch bucket {
-            case "fable":  (inRate, outRate) = (10, 50)
-            case "opus":   (inRate, outRate) = (5, 25)
-            case "sonnet": (inRate, outRate) = (3, 15)
-            case "haiku":  (inRate, outRate) = (1, 5)
-            default:       (inRate, outRate) = (3, 15)
-            }
-            let m = 1_000_000.0
-            totalUsd += Double(i)/m*inRate + Double(o)/m*outRate
-                      + Double(cc)/m*inRate*1.25 + Double(cr)/m*inRate*0.10
+            totalUsd += ModelPricing.eur(bucket: bucket, input: i, output: o,
+                                         cacheCreate: cc, cacheRead: cr) / ModelPricing.usdToEur
         }
-        return totalUsd * 0.93
+        return totalUsd * ModelPricing.usdToEur
     }
 
     /// This-week-vs-last-week comparison: exact weighted tokens + model-weighted EUR
@@ -855,13 +797,7 @@ enum StatsDataService {
             WITH per_session AS (
                 SELECT
                     session_id,
-                    CASE
-                        WHEN lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%' THEN 'fable'
-                        WHEN lower(model) LIKE '%opus%'   THEN 'opus'
-                        WHEN lower(model) LIKE '%sonnet%' THEN 'sonnet'
-                        WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
-                        ELSE 'other'
-                    END AS bucket,
+                    \(ModelPricing.sqlBucketExpr("model")) AS bucket,
                     SUM(cache_create) AS written,
                     SUM(cache_read)   AS read_back
                 FROM usage_events
@@ -874,20 +810,16 @@ enum StatsDataService {
             GROUP BY bucket
             """
         let rows = try Row.fetchAll(db, sql: sql, arguments: [cutoff])
-        let perMillion = 1_000_000.0, usdToEur = 0.93
+        let perMillion = 1_000_000.0, usdToEur = ModelPricing.usdToEur
         var usd: Double = 0, tokens = 0
         for row in rows {
             let bucket: String = row["bucket"] ?? ""
             let cc: Int = row["recoverable"] ?? 0
-            let inRate: Double
-            switch bucket {
-            case "fable":  inRate = 10
-            case "opus":   inRate = 5
-            case "sonnet": inRate = 3
-            case "haiku":  inRate = 1
-            default:       inRate = 3
-            }
-            usd += Double(cc) / perMillion * inRate * 1.15   // write 1.25× → read 0.10× delta
+            let inRate = ModelPricing.rate(forBucket: bucket).input
+            // A busted prefix is re-billed at the write rate where a warm cache
+            // would have been read: the recoverable delta is (1.25 − 0.10)×.
+            let delta = ModelPricing.cacheWriteMultiplier - ModelPricing.cacheReadMultiplier
+            usd += Double(cc) / perMillion * inRate * delta
             tokens += cc
         }
         return (usd * usdToEur, tokens)
@@ -984,7 +916,7 @@ enum StatsDataService {
                    COALESCE(SUM(MAX(0, baseline_bytes - actual_bytes)), 0) AS bytes,
                    COUNT(*) AS n
             FROM tokopt_savings
-            WHERE timestamp >= ?
+            WHERE timestamp >= ? AND \(TokoptSavingsRow.notInjectingSQL)
             GROUP BY hook
             HAVING bytes > 0
             ORDER BY bytes DESC
@@ -992,14 +924,83 @@ enum StatsDataService {
         return rows.map { HookSaving(hook: $0["hook"] ?? "?", bytes: $0["bytes"] ?? 0, records: $0["n"] ?? 0) }
     }
 
+    /// Bytes kept out of context this week.
+    ///
+    /// Excludes hooks that ADD context. `session-start-router` emits memory files
+    /// it selected; its recorded "baseline" is every file it *could* have emitted,
+    /// a counterfactual nobody would have lived. Counting it inflated this figure
+    /// by roughly 26× — measured 2026-08-22, 291 KB claimed per session against
+    /// 226 bytes actually emitted, on top of an index Claude Code loads either
+    /// way. Routing is worth doing; it is not a saving, and a tool that overstates
+    /// its own gains cannot be trusted on anything else it reports.
     static func savedBytesThisWeek(in db: Database, now: Date = Date()) throws -> Int {
         let cutoff = Int64(now.timeIntervalSince1970) - 7 * 24 * 3600
         let row = try Row.fetchOne(db, sql: """
             SELECT COALESCE(SUM(MAX(0, baseline_bytes - actual_bytes)), 0) AS saved
             FROM tokopt_savings
-            WHERE timestamp >= ?
+            WHERE timestamp >= ? AND \(TokoptSavingsRow.notInjectingSQL)
             """, arguments: [cutoff])
         return row?["saved"] ?? 0
+    }
+
+    /// The part of this week's saving that survives the prompt-cache penalty on
+    /// the very next turn.
+    ///
+    /// Trimming rewrites the prompt prefix, so the turn after a trim pays the
+    /// cache WRITE price (1.25×) on what remains, where the untrimmed session
+    /// would have paid the READ price (0.10×). `UsageSnapshotRow` has carried
+    /// this arithmetic since 2026-08-22 and nothing displayed it — the honest
+    /// number existed and never reached a screen, which is the same defect as a
+    /// label fixed on one surface out of two.
+    ///
+    /// This is a FLOOR, not the whole truth: the rest of the saving is real, it
+    /// is just earned over the following turns rather than immediately. CMV puts
+    /// break-even near 10 turns for tool-heavy sessions and 40 for conversational
+    /// ones.
+    static func cacheAwareSavedBytesThisWeek(in db: Database, now: Date = Date()) throws -> Int {
+        let cutoff = Int64(now.timeIntervalSince1970) - 7 * 24 * 3600
+        let rows = try TokoptSavingsRow
+            .filter(sql: "timestamp >= ?", arguments: [cutoff])
+            .fetchAll(db)
+        return rows.reduce(0) { $0 + $1.cacheAwareSavedBytes }
+    }
+
+    /// EUR per million saved tokens, priced from the models this account
+    /// actually ran over the window.
+    ///
+    /// Three call sites used a flat `€6.00/M`, documented as
+    /// "€2.76/M input + €13.80/M output → ~€6/M blended average". A saving is
+    /// context that was never SENT — it is input, and only input; there is no
+    /// output component to blend in. For a Sonnet-only user that constant
+    /// overstated the value by 2.15×. It happened to land within 7% for this
+    /// account (measured 2026-08-22: €5.62/M across opus 6352 Mtok, fable 1950,
+    /// sonnet 369) purely because the mix is Opus-heavy — right by coincidence,
+    /// wrong by construction, and it would drift the moment the mix changed.
+    ///
+    /// Falls back to Sonnet's input rate when the window holds no events: the
+    /// cheapest of the three plausible answers, so an empty database cannot
+    /// flatter the figure.
+    static func savedValueEURPerMillion(in db: Database, days: Int = 7, now: Date = Date()) throws -> Double {
+        let cutoff = Int64(now.timeIntervalSince1970) - Int64(days) * 24 * 3600
+        let rows = try Row.fetchAll(db, sql: """
+            SELECT \(ModelPricing.sqlBucketExpr()) AS bucket,
+                   SUM(input_tokens + cache_create + cache_read) AS input_tokens
+            FROM usage_events WHERE timestamp >= ? GROUP BY bucket
+            """, arguments: [cutoff])
+        var weighted = 0.0, total = 0.0
+        for row in rows {
+            let tokens = Double(row["input_tokens"] as Int? ?? 0)
+            guard tokens > 0 else { continue }
+            weighted += tokens * ModelPricing.rate(forBucket: row["bucket"] ?? "").input
+            total += tokens
+        }
+        guard total > 0 else { return ModelPricing.sonnet.input * ModelPricing.usdToEur }
+        return weighted / total * ModelPricing.usdToEur
+    }
+
+    /// EUR value of a token count, at this account's observed input rate.
+    static func savedValueEUR(tokens: Int, in db: Database, now: Date = Date()) throws -> Double {
+        Double(tokens) / 1_000_000 * (try savedValueEURPerMillion(in: db, now: now))
     }
 
     /// Approximate token savings. Trimmed content is code / tool-output, so it uses
@@ -1029,7 +1030,7 @@ enum StatsDataService {
                 CAST(strftime('%s', date(timestamp, 'unixepoch', 'localtime')) AS INTEGER) AS day_start,
                 SUM(MAX(0, baseline_bytes - actual_bytes)) AS saved
             FROM tokopt_savings
-            WHERE timestamp >= ?
+            WHERE timestamp >= ? AND \(TokoptSavingsRow.notInjectingSQL)
             GROUP BY day_start
             ORDER BY day_start ASC
             """

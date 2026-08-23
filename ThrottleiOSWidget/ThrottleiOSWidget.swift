@@ -1,6 +1,6 @@
-import WidgetKit
 import SwiftUI
 import ThrottleShared
+import WidgetKit
 
 /// Reads the latest mirror snapshot the iOS app wrote to the App Group.
 struct Provider: TimelineProvider {

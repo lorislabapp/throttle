@@ -1,6 +1,6 @@
 import Foundation
-import ThrottleShared
 import ThrottlePeer
+import ThrottleShared
 
 /// iOS side of the LAN mirror fast path. Learns the pairing secret from the first
 /// CloudKit-synced snapshot (`peerPairingSecret`), then browses for the Mac and

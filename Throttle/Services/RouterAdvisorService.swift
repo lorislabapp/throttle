@@ -37,17 +37,17 @@ enum RouterAdvisorService {
     private static let criticalityMarkers = [
         "security", "sécurité", "credential", "secret", "deploy", "publish",
         "notarize", "migration", "migrate", "drop table", "delete", "supprime",
-        "production", "release", "signing", "keychain",
+        "production", "release", "signing", "keychain"
     ]
     private static let breadthMarkers = [
         "refactor", "repo", "codebase", "all files", "tous les fichiers",
         "across", "architecture", "debug", "diagnose", "pourquoi", "why",
-        "race condition", "crash", "multi-file", "migrate", "investigate",
+        "race condition", "crash", "multi-file", "migrate", "investigate"
     ]
     private static let artifactMarkers = [
         "summarize", "summary", "résume", "résumé", "tl;dr", "extract",
         "extrais", "classify", "classifie", "title", "titre", "commit message",
-        "list the", "liste les", "normalize", "convert", "json",
+        "list the", "liste les", "normalize", "convert", "json"
     ]
 
     /// Pure and fast — safe to call on every keystroke of an objective field.

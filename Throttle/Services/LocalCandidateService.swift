@@ -87,7 +87,7 @@ enum LocalCandidateService {
             """
         let rows = try Row.fetchAll(db, sql: sql, arguments: [
             windowStart, settledBefore, maxTurns, minOutputTokens, maxOutputTokens,
-            maxFreshInputTokens, maxDurationSeconds,
+            maxFreshInputTokens, maxDurationSeconds
         ])
         let candidates: [Candidate] = try rows.compactMap { row in
             guard let sid: String = row["session_id"] else { return nil }

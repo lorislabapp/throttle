@@ -1,5 +1,5 @@
-import Foundation
 import AppKit
+import Foundation
 import GRDB
 
 // Tokopt hook mode: Claude Code invokes `Throttle --tokopt-hook` as a

@@ -7,7 +7,7 @@ final class CodexProgressServiceTests: XCTestCase {
             #"{"type":"event_msg","payload":{"type":"task_started"}}"#,
             #"{"type":"response_item","payload":{"type":"custom_tool_call","name":"exec_command","arguments":"secret"}}"#,
             #"{"type":"event_msg","payload":{"type":"item_completed"}}"#,
-            #"{"type":"event_msg","payload":{"type":"task_complete"}}"#,
+            #"{"type":"event_msg","payload":{"type":"task_complete"}}"#
         ].map { Data($0.utf8) }
         let result = try XCTUnwrap(CodexProgressService.decode(lines))
         XCTAssertEqual(result.phase, .completed)
@@ -26,7 +26,7 @@ final class CodexProgressServiceTests: XCTestCase {
     func testFailureWinsAfterWork() throws {
         let lines = [
             Data(#"{"type":"event_msg","payload":{"type":"task_started"}}"#.utf8),
-            Data(#"{"type":"event_msg","payload":{"type":"turn_aborted"}}"#.utf8),
+            Data(#"{"type":"event_msg","payload":{"type":"turn_aborted"}}"#.utf8)
         ]
         XCTAssertEqual(CodexProgressService.decode(lines)?.phase, .failed)
     }

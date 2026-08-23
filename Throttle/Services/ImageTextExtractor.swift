@@ -9,7 +9,7 @@ import Vision
 enum ImageTextExtractor {
 
     static let imageExtensions: Set<String> = [
-        "png", "jpg", "jpeg", "gif", "webp", "bmp", "tiff", "tif", "heic", "heif",
+        "png", "jpg", "jpeg", "gif", "webp", "bmp", "tiff", "tif", "heic", "heif"
     ]
 
     static func isImage(_ url: URL) -> Bool {

@@ -49,8 +49,7 @@ enum TOONTranspiler {
         switch v {
         case let s as String: raw = s
         case let n as NSNumber:
-            if CFGetTypeID(n) == CFBooleanGetTypeID() { raw = n.boolValue ? "true" : "false" }
-            else { raw = n.stringValue }
+            if CFGetTypeID(n) == CFBooleanGetTypeID() { raw = n.boolValue ? "true" : "false" } else { raw = n.stringValue }
         case is NSNull, nil: raw = ""
         default: return nil   // array / dictionary → not flat
         }
@@ -85,7 +84,7 @@ enum TOONTranspiler {
             "tool": tool,
             "json_bytes": before,
             "toon_bytes": after,
-            "would_save_bytes": before - after,
+            "would_save_bytes": before - after
         ]
         guard let line = try? JSONSerialization.data(withJSONObject: rec) else { return true }
         if let h = try? FileHandle(forWritingTo: url) {

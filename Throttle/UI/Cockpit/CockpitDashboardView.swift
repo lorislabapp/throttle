@@ -27,7 +27,7 @@ struct CockpitDashboardView: View {
     struct DashData: Equatable {
         var cap5h: Double = 0, cap7d: Double = 0
         var costEUR: Double = 0, rmcEUR: Double = 0
-    var cacheEff: Double? = nil   // prompt-cache hit rate 0…1 (plan-yield score)
+    var cacheEff: Double?   // prompt-cache hit rate 0…1 (plan-yield score)
         var activeWeekHours: Double = 0
         var projects: [Proj] = []          // top by active time this week
         var spark: [Double] = []           // daily active seconds, last 7d
@@ -121,7 +121,7 @@ struct CockpitDashboardView: View {
     // MARK: - MODEL MIX (the real cost lever)
 
     /// Where the plan actually goes, priced honestly. Unlike the token-count split,
-    /// this weights each model by its real price (Opus 5× Sonnet), so a user running
+    /// this weights each model by its real price (Opus 1.67× Sonnet), so a user running
     /// Opus for everything sees the truth: it's the dominant line, and moving routine
     /// work to Sonnet is a far bigger lever than trimming output.
     private var modelMixPanel: some View {
@@ -148,7 +148,7 @@ struct CockpitDashboardView: View {
             // The honest nudge — a what-if, not a claim. Only worth showing when Opus
             // dominates AND the estimated saving is material.
             if data.opusShare >= 0.6 && data.sonnetSaving >= 0.05 {
-                Text("Opus is \(Int(data.opusShare * 100))% of your cost — it bills the same context at 5× Sonnet. Starting routine work (edits, builds, greps) in a Sonnet session could cut ≈\(Int(data.sonnetSaving * 100))% of your plan usage. Switch at a new session, not mid-task (per-model caches).")
+                Text("Opus is \(Int(data.opusShare * 100))% of your cost — it bills the same context at 1.7× Sonnet. Starting routine work (edits, builds, greps) in a Sonnet session could cut ≈\(Int(data.sonnetSaving * 100))% of your plan usage. Switch at a new session, not mid-task (per-model caches).")
                     .font(.system(size: 10.5)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 4)
@@ -296,8 +296,7 @@ struct CockpitDashboardView: View {
         }
         benchBusy = true; localMixNote = nil
         Task {
-            do { benchProfile = try await LocalModelBenchService.run() }
-            catch { localMixNote = "Benchmark failed: \(error.localizedDescription)" }
+            do { benchProfile = try await LocalModelBenchService.run() } catch { localMixNote = "Benchmark failed: \(error.localizedDescription)" }
             benchBusy = false
         }
     }
@@ -403,7 +402,7 @@ struct CockpitDashboardView: View {
         Task.detached(priority: .utility) {
             let cost = (try? await db.read { try StatsDataService.extrapolatedCostEUR(in: $0, range: .last7d) }) ?? 0
             let rmc = (try? await db.read { try StatsDataService.recoverableMissCostEUR(in: $0).eur }) ?? 0
-            let eff = (try? await db.read { try StatsDataService.cacheEfficiency(in: $0, range: .last7d) }) ?? nil
+            let eff = (try? await db.read { try StatsDataService.cacheEfficiency(in: $0, range: .last7d) })
             let wa = (try? await db.read { try StatsDataService.workActivity(in: $0) }) ?? .init()
             let projects = wa.topProjects.prefix(5).map { DashData.Proj(name: $0.name, hours: $0.seconds / 3600) }
             let spark = wa.daily.map { $0.seconds }

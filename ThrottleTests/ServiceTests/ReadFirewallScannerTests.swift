@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 final class ReadFirewallScannerTests: XCTestCase {
     func test_flagsThreeSequentialReadsAcrossInterleavedResults() {
@@ -10,7 +10,7 @@ final class ReadFirewallScannerTests: XCTestCase {
             assistantRead(id: "r2", path: "/repo/B.swift"),
             result(id: "r2", text: "two"),
             assistantRead(id: "r3", path: "/repo/C.swift"),
-            result(id: "r3", text: "three"),
+            result(id: "r3", text: "three")
         ]
         let summary = ReadFirewallScanner.scan(lines: lines)
         XCTAssertTrue(summary.highWaste)
@@ -24,7 +24,7 @@ final class ReadFirewallScannerTests: XCTestCase {
             assistantRead(id: "r1", path: "/repo/A"),
             assistantTool(id: "g1", name: "Grep"),
             assistantRead(id: "r2", path: "/repo/B"),
-            assistantRead(id: "r3", path: "/repo/C"),
+            assistantRead(id: "r3", path: "/repo/C")
         ]
         XCTAssertEqual(ReadFirewallScanner.scan(lines: lines).heavyTurns, 0)
     }
@@ -33,7 +33,7 @@ final class ReadFirewallScannerTests: XCTestCase {
         let payload = String(repeating: "x", count: ReadFirewallScanner.byteThreshold + 1)
         let summary = ReadFirewallScanner.scan(lines: [
             user("read it"), assistantRead(id: "r1", path: "/repo/huge"),
-            result(id: "r1", text: payload),
+            result(id: "r1", text: payload)
         ])
         XCTAssertEqual(summary.oversizedTurns, 1)
         XCTAssertEqual(summary.loadedBytes, payload.utf8.count)
@@ -61,8 +61,8 @@ final class ReadFirewallScannerTests: XCTestCase {
         let data = try! JSONSerialization.data(withJSONObject: [
             "type": "user",
             "message": ["role": "user", "content": [
-                ["type": "tool_result", "tool_use_id": id, "content": text],
-            ]],
+                ["type": "tool_result", "tool_use_id": id, "content": text]
+            ]]
         ])
         return String(decoding: data, as: UTF8.self)
     }

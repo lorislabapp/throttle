@@ -1,6 +1,6 @@
-import XCTest
 import CryptoKit
 @testable import ThrottlePeer
+import XCTest
 
 final class PeerMessageTests: XCTestCase {
 

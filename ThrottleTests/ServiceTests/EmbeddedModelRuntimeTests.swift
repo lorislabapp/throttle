@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 final class EmbeddedModelRuntimeTests: XCTestCase {
     func testModelMetadataIsPinnedToHTTPS() {

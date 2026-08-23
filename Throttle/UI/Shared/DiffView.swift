@@ -28,9 +28,7 @@ enum LineDiff {
         var out: [DiffLine] = []
         var i = 0, j = 0
         while i < n && j < m {
-            if a[i] == b[j] { out.append(DiffLine(kind: .same, text: a[i])); i += 1; j += 1 }
-            else if dp[i + 1][j] >= dp[i][j + 1] { out.append(DiffLine(kind: .removed, text: a[i])); i += 1 }
-            else { out.append(DiffLine(kind: .added, text: b[j])); j += 1 }
+            if a[i] == b[j] { out.append(DiffLine(kind: .same, text: a[i])); i += 1; j += 1 } else if dp[i + 1][j] >= dp[i][j + 1] { out.append(DiffLine(kind: .removed, text: a[i])); i += 1 } else { out.append(DiffLine(kind: .added, text: b[j])); j += 1 }
         }
         while i < n { out.append(DiffLine(kind: .removed, text: a[i])); i += 1 }
         while j < m { out.append(DiffLine(kind: .added, text: b[j])); j += 1 }

@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// Edge vector store baseline: exact cosine ranking, id-dedup upsert, k-limit,
 /// dim-mismatch safety, Codable persistence. The on-device embedding provider is

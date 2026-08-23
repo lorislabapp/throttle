@@ -122,9 +122,7 @@ struct SemanticIndex {
             }
         }
         for (p, ln) in paras {
-            if cur.isEmpty { cur = p; curLine = ln }
-            else if cur.count + 2 + p.count <= maxChars { cur += "\n\n" + p }
-            else { chunks.append((cur, curLine)); cur = p; curLine = ln }
+            if cur.isEmpty { cur = p; curLine = ln } else if cur.count + 2 + p.count <= maxChars { cur += "\n\n" + p } else { chunks.append((cur, curLine)); cur = p; curLine = ln }
             flushOverlong()
         }
         if !cur.isEmpty { chunks.append((cur, curLine)) }

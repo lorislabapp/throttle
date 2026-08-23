@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 final class UsageExtractorTests: XCTestCase {
     func test_extractsUsageFromAssistantLine() throws {

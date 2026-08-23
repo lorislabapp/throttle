@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 final class ExactSnapshotTests: XCTestCase {
     func test_decodesCanonicalResponse() throws {

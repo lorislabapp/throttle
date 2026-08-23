@@ -54,7 +54,7 @@ struct WhatsNewView: View {
         .init(icon: "eurosign.circle", title: "Cost per outcome",
               blurb: "Project Stats shows ≈ cost per commit and per verify-run — honest workflow economics, never a faked pass/fail.", now: false),
         .init(icon: "wand.and.stars", title: "Autopilot + tool-output compression",
-              blurb: "Auto-applies the provably-safe optimizations (concise output style, usage statusline), opt-in archives stale memory / dead skills, and compresses verbose command output before Claude sees it. All reversible / fail-open.", now: false),
+              blurb: "Auto-applies the provably-safe optimizations (concise output style, usage statusline), opt-in archives stale memory / dead skills, and compresses verbose command output before Claude sees it. All reversible / fail-open.", now: false)
     ]
 
     var body: some View {

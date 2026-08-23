@@ -46,7 +46,6 @@ actor LocalWorkerRouter {
         set { UserDefaults.standard.set(min(max(newValue, 4096), 16384), forKey: contextCeilingKey) }
     }
 
-
     /// The configured Ollama endpoint, or nil when the feature is off. Only
     /// private/loopback-style HTTP endpoints make sense here; the user owns the
     /// value and no default ships.
@@ -208,9 +207,9 @@ actor LocalWorkerRouter {
         "properties": [
             "result": ["type": "string"],
             "evidence": ["type": "array", "items": ["type": "string"]],
-            "confidence": ["type": "string", "enum": ["high", "medium", "low"]],
+            "confidence": ["type": "string", "enum": ["high", "medium", "low"]]
         ],
-        "required": ["result", "evidence", "confidence"],
+        "required": ["result", "evidence", "confidence"]
     ] }
 
     /// Context window sized to THIS request instead of to the 48k-char worst
@@ -275,7 +274,7 @@ actor LocalWorkerRouter {
         Self.log.info("ollama generate: num_ctx \(window, privacy: .public) (ceiling \(Self.contextCeiling, privacy: .public))")
         var options: [String: Any] = [
             "num_predict": budget + reasoningHeadroom,
-            "num_ctx": window,
+            "num_ctx": window
         ]
         options["temperature"] = 0.2   // extraction, not prose
         var payload: [String: Any] = [
@@ -312,7 +311,7 @@ actor LocalWorkerRouter {
             // arrives — in bursts inside one working session — and costs the
             // LXC nothing it was not already spending during that burst.
             "keep_alive": "30m",
-            "options": options,
+            "options": options
         ]
         if let schema { payload["format"] = schema }
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
@@ -379,7 +378,7 @@ actor LocalWorkerRouter {
         }
     }
 
-    private nonisolated static func bump(_ key: String) {
+    nonisolated private static func bump(_ key: String) {
         let defaults = UserDefaults.standard
         defaults.set(defaults.integer(forKey: key) + 1, forKey: key)
     }

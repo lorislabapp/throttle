@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 final class BrevityHookServiceTests: XCTestCase {
     func test_hookSettingsGenerateBothRequiredEvents() throws {
@@ -22,9 +22,9 @@ final class BrevityHookServiceTests: XCTestCase {
             "theme": "dark",
             "hooks": [
                 "UserPromptSubmit": [
-                    ["hooks": [["type": "command", "command": "/usr/local/bin/user-hook"]]],
-                ],
-            ],
+                    ["hooks": [["type": "command", "command": "/usr/local/bin/user-hook"]]]
+                ]
+            ]
         ]
 
         let once = BrevityHookService.settingsByInstallingHooks(in: original)

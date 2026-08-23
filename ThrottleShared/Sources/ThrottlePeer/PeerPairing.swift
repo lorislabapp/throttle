@@ -1,5 +1,5 @@
-import Foundation
 import CryptoKit
+import Foundation
 
 /// The 32-byte pairing secret both devices read from the shared CloudKit **private**
 /// DB (a record only the iCloud account owner can read). Because both ends already

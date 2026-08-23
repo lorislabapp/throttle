@@ -33,7 +33,7 @@ enum TraycerEnvInstaller {
             "OTEL_EXPORTER_OTLP_PROTOCOL": "http/json",
             "OTEL_EXPORTER_OTLP_ENDPOINT": endpoint,
             "OTEL_EXPORTER_OTLP_COMPRESSION": "none",
-            "OTEL_LOG_TOOL_DETAILS": "1",
+            "OTEL_LOG_TOOL_DETAILS": "1"
         ]
     }
 

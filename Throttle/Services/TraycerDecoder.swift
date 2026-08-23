@@ -74,10 +74,7 @@ enum TraycerDecoder {
         var d: [String: Any] = [:]
         for item in list {
             guard let k = item["key"] as? String, let v = item["value"] as? [String: Any] else { continue }
-            if let s = v["stringValue"] { d[k] = s }
-            else if let i = v["intValue"] { d[k] = i }
-            else if let b = v["boolValue"] { d[k] = b }
-            else if let n = v["doubleValue"] { d[k] = n }
+            if let s = v["stringValue"] { d[k] = s } else if let i = v["intValue"] { d[k] = i } else if let b = v["boolValue"] { d[k] = b } else if let n = v["doubleValue"] { d[k] = n }
         }
         return d
     }

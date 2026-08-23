@@ -77,7 +77,7 @@ public struct ThrottleMirrorSnapshot: Codable, Sendable, Equatable {
     /// blob so the phone can bootstrap the P2P fast path from the first CloudKit
     /// sync — no separate CloudKit record, no schema redeploy. Optional/nil when the
     /// peer mirror is off or the publisher is an older build.
-    public let peerPairingSecret: String?
+    public private(set) var peerPairingSecret: String?
 
     /// Off-LAN fallback: a tailnet host (IP or MagicDNS name) the Mac is reachable
     /// at on `PeerPairing.fallbackPort`, so the phone can still reach the peer link
@@ -92,7 +92,29 @@ public struct ThrottleMirrorSnapshot: Codable, Sendable, Equatable {
     /// retype a 32-char token on a phone keyboard. nil when the Mac has no agent.
     public let edgeHost: String?
     public let edgePort: Int?
-    public let edgeToken: String?
+    public private(set) var edgeToken: String?
+
+    /// The same snapshot with every credential removed.
+    ///
+    /// These four fields must ride CloudKit's `encryptedValues` in the private
+    /// database — and nowhere else. `peerPairingSecret` is what completes the
+    /// TLS-PSK handshake that grants `termAttach` + `termIn`, i.e. **keystroke
+    /// injection into any live cockpit terminal on the Mac**. There is no second
+    /// factor and no per-attach confirmation, so possession of this string is
+    /// remote code execution as the user.
+    ///
+    /// The Mac deliberately migrated it out of a plist and into the Keychain
+    /// (`PeerTransport`: "it lived in a plist any process running as this user
+    /// could read"). The phone then wrote it straight back into an App Group
+    /// plist — which is `CompleteUntilFirstUserAuthentication` and **included in
+    /// device backups** — and kept up to 1500 more copies in the history array.
+    /// Use this projection for anything that touches disk.
+    public var withoutSecrets: ThrottleMirrorSnapshot {
+        var copy = self
+        copy.peerPairingSecret = nil
+        copy.edgeToken = nil
+        return copy
+    }
 
     public init(publishedAt: Date, deviceName: String,
                 fiveHour: WindowMirror, sevenDay: WindowMirror, sevenDaySonnet: WindowMirror,

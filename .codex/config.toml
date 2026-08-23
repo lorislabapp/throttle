@@ -1,0 +1,9 @@
+[mcp_servers.throttle-refinery]
+command = "/Users/kevinnadjarian/.nvm/versions/node/v24.18.1/bin/node"
+args = ["/Users/kevinnadjarian/GitHub/Throttle/experiments/local-context-refinery/mcp-server.mjs"]
+env = { THROTTLE_REFINERY_MODEL = "qwen3.5:4b", THROTTLE_REFINERY_OLLAMA_URL = "http://127.0.0.1:11434", THROTTLE_REFINERY_ROOTS = "/Users/kevinnadjarian/GitHub/Throttle:/private/tmp/throttle-refinery" }
+enabled_tools = ["refine_log", "refinery_health"]
+default_tools_approval_mode = "auto"
+startup_timeout_sec = 10
+tool_timeout_sec = 45
+enabled = true

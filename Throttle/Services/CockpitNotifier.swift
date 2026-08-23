@@ -31,7 +31,7 @@ final class CockpitNotifier: NSObject {
 
     private weak var appState: AppState?
 
-    private override init() {
+    override private init() {
         super.init()
         let center = UNUserNotificationCenter.current()
         center.delegate = self
@@ -41,7 +41,7 @@ final class CockpitNotifier: NSObject {
             options: [.foreground])
         center.setNotificationCategories([
             UNNotificationCategory(identifier: Self.readFirewallCategory,
-                                   actions: [deploy], intentIdentifiers: []),
+                                   actions: [deploy], intentIdentifiers: [])
         ])
     }
 
@@ -51,6 +51,16 @@ final class CockpitNotifier: NSObject {
     /// system dialog appears in-context rather than on cockpit open.
     func activate(appState: AppState) {
         self.appState = appState
+    }
+
+    /// A session that was running on the edge box is no longer reported by it.
+    /// Reuses the question path so the message lands wherever the user already
+    /// watches for attention — the failure mode being fixed is silence, so this
+    /// deliberately does not invent a quieter channel of its own.
+    func notifyRemoteSessionEnded(project: String) {
+        notifyWaiting(project: project,
+                      question: "Session ended on the box — its work is still on disk there.",
+                      tabID: UUID())
     }
 
     func notifyWaiting(project: String, question: String, tabID: UUID) {

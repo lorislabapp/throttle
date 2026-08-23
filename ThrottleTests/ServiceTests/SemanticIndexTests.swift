@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// SemanticIndex orchestration: chunking, embed→upsert→query, persistence. Uses a
 /// deterministic stub embedder so ranking is host-independent (no NL model needed).
@@ -72,7 +72,7 @@ final class SemanticIndexTests: XCTestCase {
     func test_search_returnsSemanticallyNearestChunk() {
         var idx = SemanticIndex(embedder: StubEmbedder())
         idx.index(docId: "near", text: "alpha alpha beta", maxChars: 100)
-        idx.index(docId: "far",  text: "zeta omega kappa", maxChars: 100)
+        idx.index(docId: "far", text: "zeta omega kappa", maxChars: 100)
         let hits = idx.search("alpha beta", k: 2)
         XCTAssertEqual(hits.first?.metadata["doc"], "near", "closest word-set ranks first")
     }

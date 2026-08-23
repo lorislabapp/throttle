@@ -53,8 +53,7 @@ final class ExactModeService {
             while !Task.isCancelled {
                 await self?.pollOnce()
                 if let self {
-                    if self.lastError == nil, self.hasFreshSnapshot { self.consecutiveFailures = 0 }
-                    else { self.consecutiveFailures = min(self.consecutiveFailures + 1, 6) }
+                    if self.lastError == nil, self.hasFreshSnapshot { self.consecutiveFailures = 0 } else { self.consecutiveFailures = min(self.consecutiveFailures + 1, 6) }
                 }
                 let interval = self?.nextPollInterval() ?? .seconds(5 * 60)
                 try? await Task.sleep(for: interval)

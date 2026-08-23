@@ -237,6 +237,42 @@ enum Migrations {
             try db.create(index: "idx_codex_usage_at", on: "codex_usage", columns: ["observed_at"])
         }
 
+        // A streaming response is written twice: once partial, once final. The two
+        // rows share session, timestamp, model AND both cache figures, and differ
+        // only in output_tokens — so the v6 unique index, which includes
+        // output_tokens, sees two distinct rows and lets both through. Every cache
+        // number in the pair is then counted twice.
+        //
+        // Measured 2026-08-22: 18 380 such groups holding 1 438 011 853 duplicated
+        // cache tokens, roughly 0.9% of everything in the table. v6 removed a ~12%
+        // full-row duplication; this is the remainder it could not see.
+        //
+        // The FINAL row is the one to keep — it carries the complete
+        // output_tokens — so this deletes by MAX(output_tokens), not MIN(id).
+        // Input tokens are part of the key: a genuine second call in the same
+        // second with different inputs is real traffic, not a duplicate.
+        migrator.registerMigration("v10_dedupe_streaming_partials") { db in
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_usage_stream_tmp
+                ON usage_events(session_id, timestamp, model,
+                                input_tokens, cache_create, cache_read, output_tokens)
+                """)
+            try db.execute(sql: """
+                DELETE FROM usage_events
+                WHERE (cache_create > 0 OR cache_read > 0)
+                  AND id NOT IN (
+                    SELECT id FROM usage_events e
+                    WHERE e.output_tokens = (
+                        SELECT MAX(output_tokens) FROM usage_events x
+                        WHERE x.session_id = e.session_id AND x.timestamp = e.timestamp
+                          AND x.model = e.model AND x.input_tokens = e.input_tokens
+                          AND x.cache_create = e.cache_create AND x.cache_read = e.cache_read
+                    )
+                  )
+                """)
+            try db.execute(sql: "DROP INDEX IF EXISTS idx_usage_stream_tmp")
+        }
+
         try migrator.migrate(writer)
     }
 }

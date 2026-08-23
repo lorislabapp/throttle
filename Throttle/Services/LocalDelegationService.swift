@@ -42,7 +42,7 @@ enum LocalDelegationService {
                 "Source: \(sourceCharacters) characters · returned: \(returnedCharacters) characters",
                 "Reason: \(reason)",
                 "",
-                result,
+                result
             ]
             if !evidence.isEmpty {
                 lines.append("\n## Exact evidence quoted from the source")
@@ -110,7 +110,7 @@ enum LocalDelegationService {
             "apply the patch", "modify the file", "write the file", "delete ",
             "run the command", "execute the command", "commit ", "push ",
             "deploy ", "publish ", "notarize ", "send the message", "log in",
-            "purchase ", "rotate the key", "change permissions",
+            "purchase ", "rotate the key", "change permissions"
         ]
         if actionPatterns.contains(where: normalized.contains) {
             return .escalate("state-changing work stays with Claude/Codex and the deterministic tool layer")
@@ -221,7 +221,7 @@ enum LocalDelegationService {
                  #"{"result":"The build succeeded in 41.2s with one unused-variable warning at Foo.swift:12.","evidence":["Build succeeded in 41.2s","warning: unused variable 'tmp' at Foo.swift:12"],"confidence":"high"}"#),
                 ("deploy step skipped\nreason: no credentials configured",
                  "Extract why the deploy did not run.",
-                 #"{"result":"The deploy step was skipped because no credentials were configured.","evidence":["deploy step skipped","reason: no credentials configured"],"confidence":"high"}"#),
+                 #"{"result":"The deploy step was skipped because no credentials were configured.","evidence":["deploy step skipped","reason: no credentials configured"],"confidence":"high"}"#)
             ]
         case .classify:
             pairs = [
@@ -230,14 +230,14 @@ enum LocalDelegationService {
                  #"{"result":"success","evidence":["all 42 checks passed"],"confidence":"high"}"#),
                 ("3 of 9 uploads completed\n6 timed out",
                  "Classify the outcome as one of: success, failure, partial.",
-                 #"{"result":"partial","evidence":["3 of 9 uploads completed","6 timed out"],"confidence":"high"}"#),
+                 #"{"result":"partial","evidence":["3 of 9 uploads completed","6 timed out"],"confidence":"high"}"#)
             ]
         case .normalize:
             pairs = [
                 ("due 03/04/2026 14:30 CET", "Normalise the timestamp to ISO-8601 UTC.",
                  #"{"result":"2026-04-03T13:30:00Z","evidence":["due 03/04/2026 14:30 CET"],"confidence":"high"}"#),
                 ("size 1.5 GiB", "Normalise the size to bytes.",
-                 #"{"result":"1610612736","evidence":["size 1.5 GiB"],"confidence":"high"}"#),
+                 #"{"result":"1610612736","evidence":["size 1.5 GiB"],"confidence":"high"}"#)
             ]
         case .summarize:
             pairs = [
@@ -246,7 +246,7 @@ enum LocalDelegationService {
                  #"{"result":"Migration v6 ran in 3.1s and removed 12% duplicate rows without changing the schema.","evidence":["migration v6 ran in 3.1s","12% duplicate rows removed"],"confidence":"high"}"#),
                 ("retry 1 failed\nretry 2 failed\nretry 3 succeeded after 40s",
                  "Summarise the retry outcome.",
-                 #"{"result":"The operation failed twice and succeeded on the third retry after 40s.","evidence":["retry 3 succeeded after 40s"],"confidence":"high"}"#),
+                 #"{"result":"The operation failed twice and succeeded on the third retry after 40s.","evidence":["retry 3 succeeded after 40s"],"confidence":"high"}"#)
             ]
         case .draft:
             pairs = [
@@ -255,7 +255,7 @@ enum LocalDelegationService {
                  #"{"result":"Fixed an issue where logging out did not work on iPad.","evidence":[],"confidence":"medium"}"#),
                 ("perf: cold start 2.4s -> 0.9s",
                  "Draft a one-line release note.",
-                 #"{"result":"Cold start is now about two and a half times faster.","evidence":[],"confidence":"medium"}"#),
+                 #"{"result":"Cold start is now about two and a half times faster.","evidence":[],"confidence":"medium"}"#)
             ]
         }
         let blocks = pairs.map { source, objective, output in

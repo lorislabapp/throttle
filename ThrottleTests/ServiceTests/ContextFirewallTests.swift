@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 final class ContextFirewallTests: XCTestCase {
     private var temporary: URL!
@@ -29,9 +29,9 @@ final class ContextFirewallTests: XCTestCase {
 
         XCTAssertTrue(packet.text.contains("signature verification failed"))
         XCTAssertTrue(packet.text.contains("[lines "))
-        XCTAssertTrue(packet.text.contains(packet.originalID))
+        XCTAssertTrue(packet.text.contains(try XCTUnwrap(packet.originalID)))
         XCTAssertLessThan(packet.returnedCharacters, packet.originalCharacters)
-        XCTAssertEqual(String(data: try XCTUnwrap(ContentStore.get(packet.originalID)), encoding: .utf8), original)
+        XCTAssertEqual(String(data: try XCTUnwrap(ContentStore.get(try XCTUnwrap(packet.originalID))), encoding: .utf8), original)
     }
 
     func testWebPacketCarriesPromptInjectionBoundary() {
@@ -74,7 +74,7 @@ final class WebNavigationPlannerTests: XCTestCase {
         let links = [
             WebPageLink(url: "https://docs.example.com/install?utm_source=x", label: "Install guide"),
             WebPageLink(url: "https://docs.example.com/install", label: "Duplicate"),
-            WebPageLink(url: "https://docs.example.com/api", label: "API reference"),
+            WebPageLink(url: "https://docs.example.com/api", label: "API reference")
         ]
         let ranked = WebNavigationPlanner.ranked(links, query: "install", baseURL: "https://docs.example.com/start")
         XCTAssertEqual(ranked.first?.url, "https://docs.example.com/install")
@@ -85,7 +85,7 @@ final class WebNavigationPlannerTests: XCTestCase {
         let links = [
             WebPageLink(url: "javascript:alert(1)", label: "bad"),
             WebPageLink(url: "http://127.0.0.1/admin", label: "local"),
-            WebPageLink(url: "https://example.com/public", label: "public"),
+            WebPageLink(url: "https://example.com/public", label: "public")
         ]
         XCTAssertEqual(WebNavigationPlanner.ranked(links, query: nil, baseURL: "https://example.com").map(\.url),
                        ["https://example.com/public"])

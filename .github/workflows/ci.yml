@@ -26,7 +26,38 @@ jobs:
           xcode-version: latest-stable
 
       - name: Install XcodeGen
-        run: brew install xcodegen swiftlint
+        run: brew install xcodegen
+
+      # Every assertion below uses `grep`, never `rg`. ripgrep is NOT installed
+      # on the macOS runner, and a missing binary exits 127 — which `! rg …`
+      # turns into success. Five security assertions were passing because the
+      # tool that would have failed them did not exist. A gate that cannot run
+      # must fail loudly, so this asserts the tool it depends on.
+      - name: Assert gate tooling is present
+        run: |
+          command -v grep >/dev/null || { echo "grep missing — gates below cannot run" >&2; exit 1; }
+          command -v ruby >/dev/null || { echo "ruby missing — the ATS gate cannot run" >&2; exit 1; }
+
+      # SwiftLint is PINNED on purpose. A baseline is a snapshot of known
+      # violations keyed by rule and message, so a linter upgrade invalidates it
+      # wholesale. `brew install swiftlint` floats to whatever is current: it
+      # moved 0.63.2 -> 0.65.x, the baseline stopped matching, and every run
+      # since 3.2.96 failed with ~2 700 pre-existing violations. The ratchet was
+      # silently down for days, and the security gates below it never ran.
+      - name: Install SwiftLint (pinned)
+        env:
+          SWIFTLINT_VERSION: 0.65.1
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/swiftlint.zip \
+            "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/portable_swiftlint.zip"
+          unzip -q -o /tmp/swiftlint.zip -d /tmp/swiftlint
+          sudo install -m 0755 /tmp/swiftlint/swiftlint /usr/local/bin/swiftlint
+          INSTALLED="$(swiftlint version)"
+          if [ "$INSTALLED" != "$SWIFTLINT_VERSION" ]; then
+            echo "SwiftLint $INSTALLED != pinned $SWIFTLINT_VERSION — regenerate .swiftlint-baseline.json with the pinned version" >&2
+            exit 1
+          fi
 
       - name: Generate project
         run: xcodegen generate
@@ -47,6 +78,12 @@ jobs:
       - name: Enforce SwiftLint ratchet
         run: swiftlint lint --strict
 
+      # The plugin/macro validation flags mirror scripts/build-dmg.sh. mlx-swift
+      # ships a `CudaBuild` build-tool plugin, and Xcode refuses to run an
+      # unvalidated plugin in a non-interactive session — the build dies at
+      # "Validate plug-in" before a single file compiles. The release script has
+      # carried these flags for a while; this step never got them because it has
+      # not executed since the linter started failing above it.
       - name: Build macOS app with hardened runtime
         run: |
           xcodebuild build \
@@ -55,6 +92,8 @@ jobs:
             -configuration Release \
             -destination 'platform=macOS' \
             -disableAutomaticPackageResolution \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Test iOS security state
@@ -67,32 +106,57 @@ jobs:
             -destination "platform=iOS Simulator,id=$DEVICE_ID" \
             -only-testing:ThrottleiOSTests \
             -disableAutomaticPackageResolution \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
             CODE_SIGN_STYLE=Automatic \
             CODE_SIGN_IDENTITY=- \
             PROVISIONING_PROFILE_SPECIFIER=
 
       - name: Reject accidental broad transport or runtime exceptions
         run: |
-          ! rg -n 'NSAllowsArbitraryLoads' project.yml ThrottleiOS/Info.plist
-          ! rg -n 'allow-unsigned-executable-memory|disable-library-validation' Throttle/Throttle.entitlements
-          ! rg -n 'THROTTLE_AGENT_TOKEN=' edge-agent ThrottleShared/Sources/ThrottleShared/EdgeAgentService.swift
+          set -euo pipefail
+          # Per-target, not per-file. The macOS app REQUIRES NSAllowsArbitraryLoads:
+          # NSAllowsLocalNetworking covers only .local, link-local and RFC1918, so
+          # every request to a tailnet address (100.64/10) failed with -1022 before
+          # a socket was opened. What must never carry it is a shipped iOS or
+          # visionOS target. Grepping the whole file conflated the two and failed
+          # on a correct config.
+          # Ruby, not Python: PyYAML is not installed on the runner and pulling
+          # it in would add a network dependency to a security gate. Ruby ships
+          # with macOS and has YAML in its standard library.
+          ruby -ryaml -e '
+            targets = (YAML.load_file("project.yml")["targets"] || {})
+            shipped = %w[iOS visionOS tvOS watchOS]
+            bad = targets.select do |_, t|
+              shipped.include?(t["platform"].to_s) &&
+                t.dig("info", "properties", "NSAppTransportSecurity", "NSAllowsArbitraryLoads")
+            end.keys
+            abort("broad ATS exception on shipped target(s): #{bad.join(", ")}") unless bad.empty?
+            puts "ATS: arbitrary loads confined to macOS"
+          '
+          ! grep -REn 'NSAllowsArbitraryLoads' ThrottleiOS/Info.plist
+          ! grep -REn 'allow-unsigned-executable-memory|disable-library-validation' Throttle/Throttle.entitlements
+          # A token VALUE, not the variable name. `throttle-ask` legitimately reads
+          # THROTTLE_AGENT_TOKEN from an env file, so matching the bare name failed
+          # on every script that consumes the token correctly.
+          ! grep -REn 'THROTTLE_AGENT_TOKEN=[A-Za-z0-9+/_-]{8,}' edge-agent ThrottleShared/Sources/ThrottleShared/EdgeAgentService.swift
 
       - name: Enforce App Store LAN-only boundary
         run: |
-          ! rg -n 'EdgeSessionsService.swift|EdgeSessionListView.swift|EdgeTerminalView.swift' Throttle.xcodeproj/project.pbxproj
-          rg -n 'peerFallbackHost: nil' Throttle/State/AppState+Mirror.swift
-          rg -n 'edgeHost: nil' Throttle/State/AppState+Mirror.swift
-          rg -n 'edgePort: nil' Throttle/State/AppState+Mirror.swift
-          rg -n 'edgeToken: nil' Throttle/State/AppState+Mirror.swift
+          ! grep -REn 'EdgeSessionsService.swift|EdgeSessionListView.swift|EdgeTerminalView.swift' Throttle.xcodeproj/project.pbxproj
+          grep -REn 'peerFallbackHost: nil' Throttle/State/AppState+Mirror.swift
+          grep -REn 'edgeHost: nil' Throttle/State/AppState+Mirror.swift
+          grep -REn 'edgePort: nil' Throttle/State/AppState+Mirror.swift
+          grep -REn 'edgeToken: nil' Throttle/State/AppState+Mirror.swift
 
       - name: Enforce fail-closed release scripts
         run: |
           bash -n scripts/build-dmg.sh scripts/finalize-dmg.sh scripts/smoke-test.sh
-          rg -n 'NOTARIZE=false' scripts/build-dmg.sh scripts/finalize-dmg.sh
-          rg -n -- '--notarize' scripts/build-dmg.sh scripts/finalize-dmg.sh
-          ! rg -n 'mirrored — read-only|Your data never leaves your iCloud|Vos données ne quittent jamais' \
+          grep -REn 'NOTARIZE=false' scripts/build-dmg.sh scripts/finalize-dmg.sh
+          grep -REn -- '--notarize' scripts/build-dmg.sh scripts/finalize-dmg.sh
+          ! grep -REn 'mirrored — read-only|Your data never leaves your iCloud|Vos données ne quittent jamais' \
             design/appstore/make-screenshots.py design/appstore/listing.md
-          rg -n 'same local network|même réseau local' design/appstore/listing.md
+          grep -REn 'same local network|même réseau local' design/appstore/listing.md
 
       - name: Check generated and source drift
         run: git diff --check

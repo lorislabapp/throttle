@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// Path-healing for the throttle-memory MCP entry — the fix that auto-repoints a
 /// stale exec path (dev DerivedData build → /Applications, or a Sparkle move) so
@@ -25,7 +25,6 @@ final class TranscriptMemoryInstallerTests: XCTestCase {
         let config = "[mcp_servers.throttle-memory]\ncommand = \"custom\"\n"
         XCTAssertThrowsError(try TranscriptMemoryInstaller.codexConfigInstalling(in: config, execPath: "/Throttle"))
     }
-
 
     private let appPath = "/Applications/Throttle.app/Contents/MacOS/Throttle"
     private let oldPath = "/Users/x/Library/Developer/Xcode/DerivedData/Throttle-abc/Build/Products/Debug/Throttle.app/Contents/MacOS/Throttle"

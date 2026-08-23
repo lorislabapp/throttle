@@ -1,6 +1,6 @@
 import SwiftUI
-import UserNotifications
 import ThrottleShared
+import UserNotifications
 
 /// A small Settings surface so notification permission and iCloud state aren't
 /// dead-ends: the one-shot onboarding used to be the only place to grant
@@ -61,10 +61,14 @@ struct SettingsView: View {
                     Text(accountFooter)
                 }
 
-                Section("Edge sessions") {
-                    Label("Configure the agent host + token in the Edge tab.", systemImage: "server.rack")
-                        .foregroundStyle(.secondary).font(.footnote)
-                }
+                // No Edge section, and no pointer to one. This used to read
+                // "configure the agent host + token in the Edge tab" while
+                // `RootTabView` has only Usage, Sessions and History — the Edge
+                // views are excluded from this target on purpose (App Review
+                // 4.2.7: the companion is a LAN client for the user's Mac, not an
+                // off-LAN thin client). Sending someone to a tab that cannot
+                // exist here is a dead end an App Review pass would find, and it
+                // described a capability the app deliberately does not have.
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)

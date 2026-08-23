@@ -230,7 +230,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         super.send(source: source, data: data)
     }
 
-    nonisolated(unsafe) private static var ptyLogEnabled: Bool? = nil
+    nonisolated(unsafe) private static var ptyLogEnabled: Bool?
     private static func logPtyInput(_ data: ArraySlice<UInt8>) {
         if ptyLogEnabled == nil {
             ptyLogEnabled = UserDefaults.standard.bool(forKey: "throttlePtyInputLog")
@@ -424,14 +424,10 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         for b in bytes {
             switch escState {
             case .normal:
-                if b == 0x1B { escState = .esc }
-                else if b == 0x07 { /* BEL */ }
-                else if b == 0x08 { if !visible.isEmpty { visible.removeLast() } }  // backspace
+                if b == 0x1B { escState = .esc } else if b == 0x07 { /* BEL */ } else if b == 0x08 { if !visible.isEmpty { visible.removeLast() } }  // backspace
                 else if b >= 0x20 || b == 0x0A || b == 0x09 { visible.append(b) }
             case .esc:
-                if b == UInt8(ascii: "[") { escState = .csi }
-                else if b == UInt8(ascii: "]") { escState = .osc }
-                else { escState = .normal }                                       // 2-byte/other escape
+                if b == UInt8(ascii: "[") { escState = .csi } else if b == UInt8(ascii: "]") { escState = .osc } else { escState = .normal }                                       // 2-byte/other escape
             case .csi:
                 if (0x40...0x7E).contains(b) { escState = .normal }               // final byte
             case .osc:
@@ -642,8 +638,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
             let text = XcodeBuildErrorsService.distilledErrors(projectHint: nil)
             DispatchQueue.main.async {
                 guard let self else { return }
-                if let text { self.paste(text + "\n") }
-                else { NSSound.beep() }
+                if let text { self.paste(text + "\n") } else { NSSound.beep() }
                 self.window?.makeFirstResponder(self)
             }
         }
@@ -832,7 +827,7 @@ final class DroppableTerminalView: LocalProcessTerminalView {
     nonisolated static func terminalEscape(_ path: String) -> String {
         let special: Set<Character> = [
             " ", "\t", "\"", "'", "\\", "(", ")", "[", "]", "{", "}",
-            "<", ">", "|", ";", "&", "$", "`", "*", "?", "!", "#", "~",
+            "<", ">", "|", ";", "&", "$", "`", "*", "?", "!", "#", "~"
         ]
         var out = ""
         out.reserveCapacity(path.count + 8)

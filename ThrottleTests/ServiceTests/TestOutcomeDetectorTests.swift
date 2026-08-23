@@ -1,5 +1,5 @@
-import XCTest
 @testable import Throttle
+import XCTest
 
 /// Locks the test-runner summary regexes — the fragile part of the eval-ROI signal.
 /// A false positive here would pollute the "green runs" count; a miss would undercount.

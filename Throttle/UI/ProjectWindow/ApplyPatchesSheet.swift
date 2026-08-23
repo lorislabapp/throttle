@@ -19,7 +19,7 @@ struct ApplyPatchesSheet: View {
     /// follow-up assistant message confirming the apply + suggesting a
     /// next step, so the user doesn't have to read backwards through
     /// the chat to verify what was done.
-    var onCompleted: ((Int, Int) -> Void)? = nil
+    var onCompleted: ((Int, Int) -> Void)?
 
     @State private var index: Int = 0
     @State private var status: String = ""

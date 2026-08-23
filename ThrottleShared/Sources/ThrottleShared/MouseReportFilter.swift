@@ -50,8 +50,7 @@ public struct MouseReportFilter: Sendable {
 
             // held starts with ESC
             if held.count == 1 {
-                if b == UInt8(ascii: "[") { held.append(b) }
-                else { out.append(contentsOf: held); held = []; out.append(b) } // ESC + other: Alt-key etc.
+                if b == UInt8(ascii: "[") { held.append(b) } else { out.append(contentsOf: held); held = []; out.append(b) } // ESC + other: Alt-key etc.
                 continue
             }
 

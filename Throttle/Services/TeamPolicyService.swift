@@ -22,9 +22,9 @@ enum TeamPolicyService {
                 "deny": [
                     "Read(./.env)", "Read(./.env.*)",
                     "Read(./node_modules/**)", "Read(./dist/**)", "Read(./build/**)",
-                    "Bash(git push *)", "Bash(rm -rf *)",
-                ],
-            ],
+                    "Bash(git push *)", "Bash(rm -rf *)"
+                ]
+            ]
         ]
         guard let data = try? JSONSerialization.data(
             withJSONObject: policy, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]),

@@ -94,7 +94,13 @@ struct MCPManagerSheet: View {
             HStack(spacing: 8) {
                 Image(systemName: "gauge.with.dots.needle.33percent").font(.system(size: 12)).foregroundStyle(.secondary)
                 let ram = ByteCountFormatter.string(fromByteCount: Int64(localRSS), countStyle: .memory)
-                Text("Local MCP ≈ \(ram) · \(disableable.count) unused")
+                // Total answer weight is the headline: it is where MCP actually
+                // spends context, by three orders of magnitude over tool lists.
+                let answers = recs.values.reduce(0) { $0 + $1.responseBytes }
+                let ansText = answers > 0
+                    ? " · \(ByteCountFormatter.string(fromByteCount: Int64(answers), countStyle: .file)) answered in 30d"
+                    : ""
+                Text("Local MCP ≈ \(ram) · \(disableable.count) unused\(ansText)")
                     .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 Spacer()
                 if !disableable.isEmpty {
@@ -141,14 +147,30 @@ struct MCPManagerSheet: View {
                     Text(entry.name).font(.system(size: 13, weight: .medium))
                         .foregroundStyle(entry.disabled ? .secondary : .primary)
                     if entry.disabled { tag("OFF") }
-                    if let r = recs[entry.id] { advisorChip(r.verdict) }
+                    if let r = recs[entry.id] {
+                        advisorChip(r.verdict)
+                        // Context weight is the cost you pay every turn even when
+                        // the server is never called — show it next to the verdict.
+                        // The floor (names only) is what Claude Code actually
+                        // injects; the ceiling lives in the reason line below.
+                        if let c = r.context, !entry.disabled {
+                            tag("~\(kTokens(c.nameTokensEst ?? c.tokensEst)) CTX")
+                        }
+                        // Answers dwarf tool lists — measured 2026-08-22 on this
+                        // Mac: 18 KB of tool names against 71 MB of responses in
+                        // 30 days. Give the bigger number the louder chip.
+                        if r.responseBytes > 0, !entry.disabled {
+                            tag(ByteCountFormatter.string(fromByteCount: Int64(r.responseBytes),
+                                                          countStyle: .file).uppercased() + " ANS")
+                        }
+                    }
                 }
                 Text(entry.transport).font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 if let r = recs[entry.id] {
                     Text(MCPAdvisorService.explain(r))
                         .font(.system(size: 10.5)).foregroundStyle(.tertiary)
-                        .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(3).fixedSize(horizontal: false, vertical: true)
                 }
             }
             Spacer(minLength: 6)
@@ -156,6 +178,11 @@ struct MCPManagerSheet: View {
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
         .contentShape(Rectangle())
+    }
+
+    /// "1.4k" / "820" — the chip has room for a magnitude, not a precise count.
+    private func kTokens(_ n: Int) -> String {
+        n >= 1000 ? String(format: "%.1fk", Double(n) / 1000) : "\(n)"
     }
 
     private func tag(_ text: String) -> some View {
@@ -247,8 +274,7 @@ struct MCPManagerSheet: View {
     }
 
     private func run(_ op: () throws -> Void) {
-        do { try op(); errorText = nil; reload() }
-        catch { errorText = "\(error)" }
+        do { try op(); errorText = nil; reload() } catch { errorText = "\(error)" }
     }
 
     private func moveToPickedProject(_ entry: MCPConfigService.Entry, shared: Bool) {

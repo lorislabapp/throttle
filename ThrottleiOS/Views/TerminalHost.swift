@@ -12,6 +12,12 @@ final class ResigningTerminalView: TerminalView {
 
 enum TerminalRendering {
     /// Avoid transparent gaps and stale cells while the keyboard changes geometry.
+    ///
+    /// `@MainActor` because every property it touches is a `UIView` property and
+    /// therefore main-actor isolated. Under Swift 6 complete concurrency this
+    /// was three hard errors; every caller is already a SwiftUI representable on
+    /// the main actor, so the annotation costs nothing and states the truth.
+    @MainActor
     static func applyOpaqueBackground(_ terminal: TerminalView) {
         terminal.isOpaque = true
         terminal.backgroundColor = .black
@@ -46,7 +52,7 @@ struct TerminalHost<Terminal: View>: View {
     let lockState: TerminalLockState
     let keySender: TerminalKeySender
     let connection: TerminalConnection
-    var onRetry: (() -> Void)? = nil
+    var onRetry: (() -> Void)?
     @ViewBuilder var terminal: () -> Terminal
 
     @State private var unlocking = false

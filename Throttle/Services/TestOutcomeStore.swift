@@ -21,7 +21,7 @@ enum TestOutcomeStore {
             "project": project,
             "fw": outcome.framework,
             "passed": outcome.passed,
-            "failed": outcome.failed,
+            "failed": outcome.failed
         ]
         if let sessionId { rec["sid"] = sessionId }
         if let costEUR { rec["eur"] = costEUR }
