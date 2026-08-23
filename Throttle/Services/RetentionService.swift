@@ -116,22 +116,29 @@ enum RetentionService {
     private static func pruneDiagnostics(now: Date, into result: inout Result) -> Int {
         let files = FileManager.default
         guard let entries = try? files.contentsOfDirectory(
-            at: CrashReporter.payloadsDirectory, includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey])
+            at: CrashReporter.payloadsDirectory,
+            includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey])
         else { return 0 }
 
-        let dated = entries.compactMap { url -> (URL, Date, Int)? in
+        struct Payload {
+            let url: URL
+            let modified: Date
+            let bytes: Int
+        }
+
+        let dated = entries.compactMap { url -> Payload? in
             guard let values = try? url.resourceValues(
                 forKeys: [.contentModificationDateKey, .fileSizeKey]),
                   let modified = values.contentModificationDate else { return nil }
-            return (url, modified, values.fileSize ?? 0)
-        }.sorted { $0.1 > $1.1 }          // newest first
+            return Payload(url: url, modified: modified, bytes: values.fileSize ?? 0)
+        }.sorted { $0.modified > $1.modified }          // newest first
 
         let cutoff = now.addingTimeInterval(-Double(diagnosticRetentionDays) * 86_400)
         var freed = 0
-        for (index, entry) in dated.enumerated()
-        where index >= diagnosticKeepNewest && entry.1 < cutoff {
-            guard (try? files.removeItem(at: entry.0)) != nil else { continue }
-            freed += entry.2
+        for (index, payload) in dated.enumerated()
+        where index >= diagnosticKeepNewest && payload.modified < cutoff {
+            guard (try? files.removeItem(at: payload.url)) != nil else { continue }
+            freed += payload.bytes
             result.diagnosticsDeleted += 1
         }
         return freed
