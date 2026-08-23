@@ -52,8 +52,15 @@ enum BashSandbox {
     /// destructive tools (rm, mv, chmod, chown, kill).
     private static let allowlist: [String: String] = [
         "git": "/usr/bin/git",
-        "swift": "/usr/bin/swift",
-        "xcodebuild": "/usr/bin/xcodebuild",
+        // `swift` and `xcodebuild` were here. Both are arbitrary-code-execution
+        // engines wearing the costume of a build tool: `swift build` compiles
+        // and RUNS Package.swift at manifest-load time, and `xcodebuild` runs a
+        // project's Run Script phases. Either one turns any repository the user
+        // has ever cloned into a payload the assistant only has to name — which
+        // makes the promise 20 lines above ("cannot exfiltrate", "cannot
+        // escalate to write") false for both. Removed rather than argument-
+        // constrained: a safe shape for them is a smaller allowlist than the
+        // whole tool, and nothing here needed them.
         "ls": "/bin/ls",
         "cat": "/bin/cat",
         "find": "/usr/bin/find",
@@ -73,6 +80,16 @@ enum BashSandbox {
         "/.gnupg",
         "/.netrc",
         "/.npmrc",
+        // Claude Code's own OAuth credentials and MCP server env blocks. The
+        // list guarded ssh, aws and gnupg but not the file belonging to the
+        // agent this app exists to instrument — `~/.claude/.credentials.json`
+        // holds the session token, and `~/.claude.json` carries every MCP
+        // server's environment, which is where API keys live.
+        "/.claude/.credentials.json",
+        "/.claude.json",
+        "/.config/gh/hosts.yml",
+        "/.docker/config.json",
+        "/.kube/config",
         "/Library/Keychains",
         "/Library/Application Support/com.apple.TCC",
         "/Library/Cookies",
@@ -128,17 +145,15 @@ enum BashSandbox {
         // with `/`, `~`, or `.`) AND resolves under one of the deny
         // paths. We do the check on every arg defensively: even args
         // that look harmless might be paths.
+        // The child runs with its cwd at HOME, so a bare `.ssh/id_rsa` is a
+        // real path even though it starts with no `/`, `~` or `.`. Resolve
+        // every argument against that cwd before comparing.
+        let cwd = FileManager.default.homeDirectoryForCurrentUser
         for arg in rawArgs {
-            if let denyError = pathDenyCheck(arg) {
+            if let denyError = pathDenyCheck(arg, cwd: cwd.path) {
                 return denyError
             }
         }
-
-        // We don't restrict the working directory beyond "user-runnable
-        // by Throttle". The AI assistant runs as the user, so it can
-        // already see what's under `~`. The deny-path check is what
-        // keeps credentials out of reach.
-        let cwd = FileManager.default.homeDirectoryForCurrentUser
 
         // Build a minimal env. `PATH` is sanitized so the subprocess
         // can't shadow our explicit-path binaries. `HOME` is preserved
@@ -215,25 +230,44 @@ enum BashSandbox {
         return lines.joined(separator: "\n")
     }
 
-    /// Returns an `Error: ...` string if `arg` references one of the
-    /// `denyPaths`, or `nil` if it's safe (or doesn't look like a path
-    /// at all).
+    /// Returns an `Error: ...` string if `arg` resolves under one of the
+    /// `denyPaths`, or `nil` if it is safe.
     ///
-    /// The check runs against the *expanded* path (`~` → home), so
-    /// `~/.ssh/id_rsa` gets caught even if the user's home isn't
-    /// hard-coded in the deny list. We also resolve `..` segments and
-    /// symlinks via `URL.standardizedFileURL`, defeating
-    /// `~/Documents/../.ssh` style traversal attempts.
-    private static func pathDenyCheck(_ arg: String) -> String? {
-        // Cheap heuristic: only path-like args go through realpath.
-        // Plain tokens like `--filter` or `HEAD~5` skip the check.
-        let looksLikePath = arg.hasPrefix("/") || arg.hasPrefix("~") || arg.hasPrefix("./") || arg.hasPrefix("../")
-        guard looksLikePath else { return nil }
+    /// ## Two defects this had, both live
+    ///
+    /// The old version skipped the check entirely unless the argument began
+    /// with `/`, `~`, `./` or `..`/. The child runs with its cwd set to the
+    /// user's HOME, so **`cat .ssh/id_rsa` was never checked at all** — it is
+    /// not "path-like" by that rule, and it reads the private key. Same for
+    /// `.aws/credentials`, `.netrc`, `.npmrc`, `.claude/.credentials.json`.
+    /// The tests covered `~/.ssh/id_rsa`, `~/.aws/credentials` and
+    /// `~/Documents/../.ssh/id_rsa` — precisely the three spellings that were
+    /// already caught. The bypass lived in the untested gap.
+    ///
+    /// And the doc comment claimed the comparison ran against a
+    /// realpath-resolved path. It did not: `standardizedFileURL` is purely
+    /// textual, so a symlink anywhere under HOME pointing at `.ssh` defeated
+    /// even the spellings that were checked.
+    ///
+    /// Now: every argument is treated as a candidate path, resolved relative to
+    /// the working directory, with symlinks followed.
+    private static func pathDenyCheck(_ arg: String, cwd: String) -> String? {
+        // A leading `-` is a flag, but `--file=<path>` carries one. Take the
+        // value after the first `=` as a candidate too.
+        var candidates = [arg]
+        if arg.hasPrefix("-"), let equals = arg.firstIndex(of: "=") {
+            candidates.append(String(arg[arg.index(after: equals)...]))
+        }
 
-        let expanded = (arg as NSString).expandingTildeInPath
-        let standardized = URL(fileURLWithPath: expanded).standardizedFileURL.path
-        for deny in denyPaths {
-            if standardized.contains(deny) {
+        for candidate in candidates where !candidate.isEmpty {
+            let expanded = (candidate as NSString).expandingTildeInPath
+            let base = expanded.hasPrefix("/")
+                ? URL(fileURLWithPath: expanded)
+                : URL(fileURLWithPath: cwd).appendingPathComponent(expanded)
+            // resolvingSymlinksInPath follows links that exist; standardizing
+            // afterwards collapses any `..` the link did not resolve.
+            let resolved = base.resolvingSymlinksInPath().standardizedFileURL.path
+            for deny in denyPaths where resolved.contains(deny) {
                 return "Error: refusing to access \(arg) — path resolves under a credential-bearing location (\(deny)). Throttle's bash tool blocks reads of keychains, SSH keys, and other secrets even read-only."
             }
         }

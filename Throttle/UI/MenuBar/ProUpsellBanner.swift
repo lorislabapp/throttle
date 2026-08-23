@@ -9,8 +9,6 @@
 import SwiftUI
 
 struct ProUpsellBanner: View {
-    let configSize: Int  // Size of user's config in KB
-    let savings: Int     // Potential savings %
 
     @State private var dismissed: Bool = false
 
@@ -27,11 +25,16 @@ struct ProUpsellBanner: View {
                     .foregroundStyle(.orange)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Your config is bloated")
+                    Text("Your config may be carrying dead weight")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
 
-                    Text("**\(configSize)KB** could be \(savings)% smaller with Pro Optimizer")
+                    // No number here on purpose. This said "**95KB** could be 40%
+                    // smaller" to every free user — two literals passed at the call
+                    // site, in a paid-upgrade prompt, by the app whose entire pitch
+                    // is that its numbers are measured. Pro Optimizer measures the
+                    // real config; until it has, the banner claims nothing.
+                    Text("Pro Optimizer measures it and shows you what is safe to cut")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -71,8 +74,7 @@ struct ProUpsellBanner: View {
                         .foregroundStyle(.secondary.opacity(0.5))
                 }
                 .buttonStyle(.plain)
-                .keyboardShortcut(.cancelAction)
-                .accessibilityLabel(String(localized: "Dismiss banner"))
+                                .accessibilityLabel(String(localized: "Dismiss banner"))
             }
             .padding(12)
             .background(
@@ -94,9 +96,21 @@ struct ProUpsellBanner: View {
         }
     }
 
+    /// True while the user's last dismissal is still in effect.
+    ///
+    /// `dismissed` is `@State`, so it resets every time the popover is rebuilt —
+    /// the 3-day window was computed, stored, and never read, and the banner
+    /// reappeared on every launch. The view now consults this before rendering.
+    static var isSuppressed: Bool {
+        guard let until = UserDefaults.standard.object(forKey: dismissKey) as? Double else { return false }
+        return Date().timeIntervalSince1970 < until
+    }
+
+    private static let dismissKey = "throttle.upsell.dismissedUntil"
+
     private func saveDismissalDate() {
         let date = Date().addingTimeInterval(3 * 86400)
-        UserDefaults.standard.set(date.timeIntervalSince1970, forKey: "throttle.upsell.dismissedUntil")
+        UserDefaults.standard.set(date.timeIntervalSince1970, forKey: Self.dismissKey)
     }
 
     // Persistence: don't nag more than once every 3 days
@@ -124,8 +138,6 @@ Add to DropdownView.swift after windowsList:
 
 if !appState.isPro {
     ProUpsellBanner(
-        configSize: estimatedConfigSize(),
-        savings: estimatedSavings()
     )
 }
 
@@ -146,7 +158,7 @@ private func estimatedSavings() -> Int {
 
 // MARK: - Preview
 #Preview {
-    ProUpsellBanner(configSize: 95, savings: 70)
+    ProUpsellBanner()
         .padding()
         .frame(width: 340)
 }

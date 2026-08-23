@@ -93,8 +93,8 @@ struct DropdownView: View {
             } else {
                 providerMeterReadout
             }
-            if !appState.isPro && appState.snapshot.hasAnyData {
-                ProUpsellBanner(configSize: 95, savings: 40)
+            if !appState.isPro && appState.snapshot.hasAnyData && !ProUpsellBanner.isSuppressed {
+                ProUpsellBanner()
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
             }
@@ -410,9 +410,16 @@ struct DropdownView: View {
             displayMetric(for: .weeklyAll),
             displayMetric(for: .weeklySonnet)
         ]
+        // The hero obeys the same rule as the menu bar and the statusline: the
+        // per-model weekly cap is shown as a ROW, never promoted to the headline.
+        // Exhausting it forces a model fallback; it does not stop you. This was
+        // the one surface `UsagePressure` did not reach, so the popover could
+        // announce "Binding now · Weekly · Fable — 100%" in red while the menu
+        // bar one click away read 62%.
         let binding = metrics
-            .filter { $0.percent != nil }
+            .filter { $0.percent != nil && $0.kind != .weeklySonnet }
             .max { ($0.percent ?? 0) < ($1.percent ?? 0) }
+            ?? metrics.filter { $0.percent != nil }.max { ($0.percent ?? 0) < ($1.percent ?? 0) }
         if let binding {
             bindingHero(binding)
             hairline
