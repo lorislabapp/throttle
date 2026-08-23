@@ -53,6 +53,30 @@ enum MCPConfigService {
         var id: String { "\(scope.key)/\(name)" }
     }
 
+    /// Whether Claude Code has approved this project-scope server for execution.
+    ///
+    /// A `.mcp.json` is committed INTO a repository, so its `command` is written
+    /// by whoever wrote the repo. Claude Code gates that behind an explicit
+    /// per-project approval (`enabledMcpjsonServers`) for exactly this reason.
+    /// Throttle enumerated every project it had ever seen and spawned those
+    /// commands through `zsh -lc` — a login shell, so with the user's full PATH
+    /// and whatever secrets `.zshrc` exports. Cloning a repo and opening it once
+    /// with `claude` was enough to arm it; the next health probe pulled the
+    /// trigger.
+    ///
+    /// User- and local-scope servers are the user's own config and stay allowed.
+    static func isApprovedForExecution(_ entry: Entry) -> Bool {
+        guard case .project(let projectPath) = entry.scope else { return true }
+        guard let root = readJSON(claudeJSON),
+              let projects = root["projects"] as? [String: Any],
+              let project = projects[projectPath] as? [String: Any]
+        else { return false }
+        if let disabled = project["disabledMcpjsonServers"] as? [String],
+           disabled.contains(entry.name) { return false }
+        let enabled = project["enabledMcpjsonServers"] as? [String] ?? []
+        return enabled.contains(entry.name)
+    }
+
     private static let disabledKey = "throttleDisabledMcpServers"
     private static let activeKey = "mcpServers"
 

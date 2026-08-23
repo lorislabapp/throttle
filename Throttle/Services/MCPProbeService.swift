@@ -272,7 +272,14 @@ enum MCPProbeService {
     private static func configuredServers() -> [Server] {
         var byName: [String: Server] = [:]
         var fromUserScope: Set<String> = []
-        for entry in MCPConfigService.list() where !entry.disabled {
+        // A project `.mcp.json` is committed INTO a repository, so its `command`
+        // is written by whoever wrote the repo — and probing means running it
+        // through a login shell, with the user's PATH and whatever `.zshrc`
+        // exports. Claude Code gates that behind an explicit per-project
+        // approval; Throttle did not, so cloning a repo and opening it once was
+        // enough to arm an execution the user never consented to.
+        for entry in MCPConfigService.list()
+        where !entry.disabled && MCPConfigService.isApprovedForExecution(entry) {
             let isUser = entry.scope == .user
             // Same name in several scopes: the global (user) definition is the one
             // that applies everywhere, so it wins over a per-project variant.

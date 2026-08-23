@@ -50,7 +50,11 @@ final class MirrorStore {
     /// Latest snapshot only — a single small blob, cheap enough to write synchronously
     /// so the widget always sees the freshest value.
     private func persistLatest(_ snap: ThrottleMirrorSnapshot) {
-        if let data = try? snap.encoded() {
+        // Credentials are stripped before anything reaches the App Group plist.
+        // See `ThrottleMirrorSnapshot.withoutSecrets`: the pairing secret grants
+        // keystroke injection into the Mac's terminals, and this container is
+        // backed up. The widget needs the numbers, never the secrets.
+        if let data = try? snap.withoutSecrets.encoded() {
             defaults.set(data, forKey: MirrorStorage.latestSnapshotKey)
         }
     }
@@ -60,7 +64,7 @@ final class MirrorStore {
     /// Debounce to 3s and encode off-main; the on-device charts don't need it instant.
     private func scheduleHistoryFlush() {
         historyFlush?.cancel()
-        let snapshot = history
+        let snapshot = history.map(\.withoutSecrets)
         historyFlush = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 3_000_000_000)
             guard !Task.isCancelled else { return }

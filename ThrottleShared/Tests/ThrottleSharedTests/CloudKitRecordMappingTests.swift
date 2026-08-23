@@ -53,3 +53,45 @@ final class CloudKitRecordMappingTests: XCTestCase {
         XCTAssertEqual(snap.bindingWindow.utilization, 42) // 5h=42 > 7d=7 > sonnet=0
     }
 }
+
+/// The pairing secret grants keystroke injection into the Mac's terminals, so
+/// it must never reach a plist, a backup, or an on-disk history array.
+final class MirrorSecretHygieneTests: XCTestCase {
+
+    private func snapshot() -> ThrottleMirrorSnapshot {
+        ThrottleMirrorSnapshot(
+            publishedAt: Date(), deviceName: "Mac",
+            fiveHour: .init(utilization: 10, resetsAt: nil),
+            sevenDay: .init(utilization: 20, resetsAt: nil),
+            sevenDaySonnet: .init(utilization: 0, resetsAt: nil),
+            weeklyTokens: 1_000, weeklyCostEUR: 1.5, savedTokensThisWeek: 10,
+            sessionCount: 1, tabs: [],
+            peerPairingSecret: "PSK-THAT-GRANTS-TERMINAL-INJECTION",
+            edgeHost: "agent.example.ts.net", edgePort: 443,
+            edgeToken: "BEARER-THAT-STARTS-SESSIONS")
+    }
+
+    func testWithoutSecretsDropsCredentialsAndKeepsNumbers() {
+        let stripped = snapshot().withoutSecrets
+        XCTAssertNil(stripped.peerPairingSecret)
+        XCTAssertNil(stripped.edgeToken)
+        XCTAssertEqual(stripped.fiveHour.utilization, 10, "the widget still needs the figures")
+        XCTAssertEqual(stripped.sevenDay.utilization, 20)
+    }
+
+    /// The encoded form is what lands in the App Group plist. Assert on the
+    /// bytes: a field renamed or re-added would slip past a property check.
+    func testEncodedStrippedSnapshotContainsNoSecretMaterial() throws {
+        let data = try snapshot().withoutSecrets.encoded()
+        let text = String(decoding: data, as: UTF8.self)
+        XCTAssertFalse(text.contains("PSK-THAT-GRANTS-TERMINAL-INJECTION"))
+        XCTAssertFalse(text.contains("BEARER-THAT-STARTS-SESSIONS"))
+    }
+
+    /// And the un-stripped snapshot must still carry them — CloudKit's
+    /// encryptedValues is the one place they legitimately travel.
+    func testUnstrippedSnapshotStillCarriesThemForCloudKit() {
+        XCTAssertNotNil(snapshot().peerPairingSecret)
+        XCTAssertNotNil(snapshot().edgeToken)
+    }
+}
