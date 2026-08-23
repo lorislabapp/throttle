@@ -28,6 +28,16 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      # Every assertion below uses `grep`, never `rg`. ripgrep is NOT installed
+      # on the macOS runner, and a missing binary exits 127 — which `! rg …`
+      # turns into success. Five security assertions were passing because the
+      # tool that would have failed them did not exist. A gate that cannot run
+      # must fail loudly, so this asserts the tool it depends on.
+      - name: Assert gate tooling is present
+        run: |
+          command -v grep >/dev/null || { echo "grep missing — gates below cannot run" >&2; exit 1; }
+          command -v ruby >/dev/null || { echo "ruby missing — the ATS gate cannot run" >&2; exit 1; }
+
       # SwiftLint is PINNED on purpose. A baseline is a snapshot of known
       # violations keyed by rule and message, so a linter upgrade invalidates it
       # wholesale. `brew install swiftlint` floats to whatever is current: it
@@ -124,29 +134,29 @@ jobs:
             abort("broad ATS exception on shipped target(s): #{bad.join(", ")}") unless bad.empty?
             puts "ATS: arbitrary loads confined to macOS"
           '
-          ! rg -n 'NSAllowsArbitraryLoads' ThrottleiOS/Info.plist
-          ! rg -n 'allow-unsigned-executable-memory|disable-library-validation' Throttle/Throttle.entitlements
+          ! grep -REn 'NSAllowsArbitraryLoads' ThrottleiOS/Info.plist
+          ! grep -REn 'allow-unsigned-executable-memory|disable-library-validation' Throttle/Throttle.entitlements
           # A token VALUE, not the variable name. `throttle-ask` legitimately reads
           # THROTTLE_AGENT_TOKEN from an env file, so matching the bare name failed
           # on every script that consumes the token correctly.
-          ! rg -n 'THROTTLE_AGENT_TOKEN=[A-Za-z0-9+/_-]{8,}' edge-agent ThrottleShared/Sources/ThrottleShared/EdgeAgentService.swift
+          ! grep -REn 'THROTTLE_AGENT_TOKEN=[A-Za-z0-9+/_-]{8,}' edge-agent ThrottleShared/Sources/ThrottleShared/EdgeAgentService.swift
 
       - name: Enforce App Store LAN-only boundary
         run: |
-          ! rg -n 'EdgeSessionsService.swift|EdgeSessionListView.swift|EdgeTerminalView.swift' Throttle.xcodeproj/project.pbxproj
-          rg -n 'peerFallbackHost: nil' Throttle/State/AppState+Mirror.swift
-          rg -n 'edgeHost: nil' Throttle/State/AppState+Mirror.swift
-          rg -n 'edgePort: nil' Throttle/State/AppState+Mirror.swift
-          rg -n 'edgeToken: nil' Throttle/State/AppState+Mirror.swift
+          ! grep -REn 'EdgeSessionsService.swift|EdgeSessionListView.swift|EdgeTerminalView.swift' Throttle.xcodeproj/project.pbxproj
+          grep -REn 'peerFallbackHost: nil' Throttle/State/AppState+Mirror.swift
+          grep -REn 'edgeHost: nil' Throttle/State/AppState+Mirror.swift
+          grep -REn 'edgePort: nil' Throttle/State/AppState+Mirror.swift
+          grep -REn 'edgeToken: nil' Throttle/State/AppState+Mirror.swift
 
       - name: Enforce fail-closed release scripts
         run: |
           bash -n scripts/build-dmg.sh scripts/finalize-dmg.sh scripts/smoke-test.sh
-          rg -n 'NOTARIZE=false' scripts/build-dmg.sh scripts/finalize-dmg.sh
-          rg -n -- '--notarize' scripts/build-dmg.sh scripts/finalize-dmg.sh
-          ! rg -n 'mirrored — read-only|Your data never leaves your iCloud|Vos données ne quittent jamais' \
+          grep -REn 'NOTARIZE=false' scripts/build-dmg.sh scripts/finalize-dmg.sh
+          grep -REn -- '--notarize' scripts/build-dmg.sh scripts/finalize-dmg.sh
+          ! grep -REn 'mirrored — read-only|Your data never leaves your iCloud|Vos données ne quittent jamais' \
             design/appstore/make-screenshots.py design/appstore/listing.md
-          rg -n 'same local network|même réseau local' design/appstore/listing.md
+          grep -REn 'same local network|même réseau local' design/appstore/listing.md
 
       - name: Check generated and source drift
         run: git diff --check
