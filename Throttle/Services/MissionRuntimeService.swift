@@ -616,7 +616,7 @@ enum MissionRuntimeService {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
         defer { try? handle.close() }
         let data = (try? handle.read(upToCount: byteLimit)) ?? Data()
-        return data.split(separator: 0x0A).map(Data.init)
+        return data.split(separator: UInt8(0x0A)).map(Data.init)
     }
 
     nonisolated private static func tailJSONLines(url: URL, byteLimit: UInt64) -> [Data]? {
@@ -626,7 +626,7 @@ enum MissionRuntimeService {
         let start = end > byteLimit ? end - byteLimit : 0
         guard (try? handle.seek(toOffset: start)) != nil,
               let data = try? handle.readToEnd() else { return nil }
-        var lines = data.split(separator: 0x0A).map(Data.init)
+        var lines = data.split(separator: UInt8(0x0A)).map(Data.init)
         if start > 0, !lines.isEmpty { lines.removeFirst() }
         return lines
     }
