@@ -312,7 +312,7 @@ final class CodexRolloutLocatorTests: XCTestCase {
     func testNewlineScanMatchesSplitSemantics() {
         func chunks(_ text: String) -> [String] {
             MissionRuntimeService.newlineSeparatedChunksForTesting(Data(text.utf8))
-                .map { String(decoding: $0, as: UTF8.self) }
+                .compactMap { String(bytes: $0, encoding: .utf8) }
         }
         XCTAssertEqual(chunks("a\nb\nc"), ["a", "b", "c"])
         XCTAssertEqual(chunks("a\nb\n"), ["a", "b"], "a trailing newline yields no empty line")
