@@ -36,9 +36,10 @@ enum RetentionService {
     struct Result: Sendable, Equatable {
         var backupsDeleted = 0
         var indexesDeleted = 0
+        var diagnosticsDeleted = 0
         var bytesReclaimed = 0
 
-        var isEmpty: Bool { backupsDeleted == 0 && indexesDeleted == 0 }
+        var isEmpty: Bool { backupsDeleted == 0 && indexesDeleted == 0 && diagnosticsDeleted == 0 }
     }
 
     /// Sweep now, then once a day for as long as the app runs.
@@ -63,6 +64,7 @@ enum RetentionService {
         var result = Result()
         result.bytesReclaimed += pruneTrimBackups(now: now, into: &result)
         result.bytesReclaimed += pruneOrphanIndexes(into: &result)
+        result.bytesReclaimed += pruneDiagnostics(now: now, into: &result)
         if !result.isEmpty {
             log.info("retention: freed \(result.bytesReclaimed / 1_048_576, privacy: .public) MB")
         }
@@ -92,6 +94,45 @@ enum RetentionService {
             guard (try? files.removeItem(at: url)) != nil else { continue }
             freed += size
             result.backupsDeleted += 1
+        }
+        return freed
+    }
+
+    // MARK: - Crash / MetricKit diagnostics
+
+    /// How long a MetricKit payload stays useful, and how many to keep whatever
+    /// their age. A diagnostic explains a crash you are investigating now; one
+    /// from four months ago explains a binary that no longer exists.
+    static let diagnosticRetentionDays = 30
+    static let diagnosticKeepNewest = 20
+
+    /// `CrashReporter.persist` wrote every MetricKit payload and never removed
+    /// one — no cap, no age limit, and this sweep did not know the directory
+    /// existed. Measured 2026-08-23: **195 MB across 221 files, the oldest from
+    /// 29 April**, on the Mac whose disk hit zero twice in a day.
+    ///
+    /// Keeps the newest `diagnosticKeepNewest` regardless of age, so a burst of
+    /// crashes today survives even if every one is older than the window.
+    private static func pruneDiagnostics(now: Date, into result: inout Result) -> Int {
+        let files = FileManager.default
+        guard let entries = try? files.contentsOfDirectory(
+            at: CrashReporter.payloadsDirectory, includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey])
+        else { return 0 }
+
+        let dated = entries.compactMap { url -> (URL, Date, Int)? in
+            guard let values = try? url.resourceValues(
+                forKeys: [.contentModificationDateKey, .fileSizeKey]),
+                  let modified = values.contentModificationDate else { return nil }
+            return (url, modified, values.fileSize ?? 0)
+        }.sorted { $0.1 > $1.1 }          // newest first
+
+        let cutoff = now.addingTimeInterval(-Double(diagnosticRetentionDays) * 86_400)
+        var freed = 0
+        for (index, entry) in dated.enumerated()
+        where index >= diagnosticKeepNewest && entry.1 < cutoff {
+            guard (try? files.removeItem(at: entry.0)) != nil else { continue }
+            freed += entry.2
+            result.diagnosticsDeleted += 1
         }
         return freed
     }

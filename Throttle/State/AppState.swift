@@ -194,13 +194,19 @@ final class AppState {
                     let session = try Self.computeWindow(in: db, kind: .session5h)
                     let weekAll = try Self.computeWindow(in: db, kind: .weeklyAll)
                     let weekSonnet = try Self.computeWindow(in: db, kind: .weeklySonnet)
-                    let count = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM usage_events") ?? 0
+                    // EXISTS, not COUNT(*): the value is only ever used as the
+                    // boolean `hasAnyData`. Measured on this Mac's 682 k-row
+                    // table — COUNT(*) 438 ms cold / 3.3-6.2 ms warm, EXISTS
+                    // 0.05 ms — and `refresh()` is driven by the file watcher,
+                    // so it runs several times a second while sessions write.
+                    let hasAny = try Bool.fetchOne(
+                        db, sql: "SELECT EXISTS(SELECT 1 FROM usage_events)") ?? false
                     return UsageSnapshot(
                         session5h: session,
                         weeklyAll: weekAll,
                         weeklySonnet: weekSonnet,
                         computedAt: Date(),
-                        hasAnyData: count > 0
+                        hasAnyData: hasAny
                     )
                 }
             }.value) ?? .empty

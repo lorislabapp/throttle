@@ -53,6 +53,8 @@ enum DatabaseQueries {
             """
         let args: [(any DatabaseValueConvertible)] = [sinceTimestamp]
         switch modelTier {
+        case .fable:
+            sql += " AND (lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%')"
         case .opus:
             sql += " AND lower(model) LIKE '%opus%'"
         case .sonnet:

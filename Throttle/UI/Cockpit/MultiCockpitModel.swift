@@ -291,7 +291,16 @@ final class CockpitTab: Identifiable {
         guard terminal == nil else { return }
         isHibernated = false
         let term = DroppableTerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 480))
-        term.onActivity = { [weak self] in self?.lastActivityAt = Date() }
+        // Coalesced to one write per second. `lastActivityAt` feeds `state`,
+        // which every session row reads, so writing it per PTY chunk published
+        // an @Observable mutation ~40×/s per streaming session — and the rows
+        // are functions inlined into `MultiCockpitRoot.body`, so each one
+        // invalidated the WHOLE cockpit. Same discipline as `waitingCount`
+        // above: assign only when the value would actually move the UI.
+        term.onActivity = { [weak self] in
+            guard let self, Date().timeIntervalSince(self.lastActivityAt) >= 1 else { return }
+            self.lastActivityAt = Date()
+        }
         term.onPrompt = { [weak self] q in self?.handlePrompt(q) }
         term.onRateLimit = { [weak self] reset in self?.handleRateLimit(reset) }
         term.onTestOutcome = { [weak self] out in
@@ -1378,6 +1387,7 @@ final class MultiCockpitModel {
 
     nonisolated private static func modelName(_ tier: ModelTier) -> String? {
         switch tier {
+        case .fable:  return "Fable"
         case .opus:   return "Opus"
         case .sonnet: return "Sonnet"
         case .haiku:  return "Haiku"

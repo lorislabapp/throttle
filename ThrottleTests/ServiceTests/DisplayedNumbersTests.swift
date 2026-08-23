@@ -224,6 +224,32 @@ final class DisplayedNumbersTests: XCTestCase {
         XCTAssertFalse(ModelPricing.sqlRowEurExpr().contains("*75"), "Claude 3 Opus pricing must be gone")
     }
 
+    /// Fable existed in the SQL bucket expression but not in the Swift enum the
+    /// Stats UI reads, so every Fable event arrived as `.other` and was priced
+    /// at the Sonnet rate — understated 3.3× on an account where Fable is the
+    /// second-largest tier by input tokens.
+    func testFableIsATierAndNotOther() {
+        XCTAssertEqual(ModelTier.from(modelString: "claude-fable-5"), .fable)
+        XCTAssertEqual(ModelTier.from(modelString: "mythos-5"), .fable)
+        XCTAssertEqual(ModelTier.from(modelString: "claude-opus-5"), .opus)
+        XCTAssertEqual(ModelTier.from(modelString: "who-knows"), .other)
+        // The enum and the SQL CASE must agree on every bucket name.
+        for tier in ModelTier.allCases where tier != .other {
+            XCTAssertEqual(ModelPricing.bucket(forModel: "claude-\(tier.rawValue)-1"), tier.rawValue)
+        }
+    }
+
+    /// `PlanAdvisor` kept a second rate table converted at 0.92 while
+    /// `ModelPricing.usdToEur` is 0.93, and had no Fable branch at all.
+    func testPlanAdvisorDerivesItsRatesFromTheOneTable() {
+        XCTAssertEqual(PlanAdvisor.opus.inputPerM,
+                       ModelPricing.opus.input * ModelPricing.usdToEur, accuracy: 0.0001)
+        XCTAssertEqual(PlanAdvisor.fable.outputPerM,
+                       ModelPricing.fable.output * ModelPricing.usdToEur, accuracy: 0.0001)
+        XCTAssertGreaterThan(PlanAdvisor.fable.inputPerM, PlanAdvisor.opus.inputPerM,
+                             "Fable bills more per token than Opus")
+    }
+
     // MARK: - An empty exclusion set must not break the SQL
 
     func testInjectingHookPredicateIsAlwaysValidSQL() {

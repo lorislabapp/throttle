@@ -29,11 +29,24 @@ enum PlanAdvisor {
         }
     }
 
-    // Official Anthropic API rates (USD × 0.92), refreshed 2026-06-11.
-    static let fable5   = ModelRate(inputPerM: 9.20, outputPerM: 46.00)   // $10 / $50  (Fable 5 / Mythos 5)
-    static let opus47   = ModelRate(inputPerM: 4.60, outputPerM: 23.00)   // $5  / $25  (Opus 4.5–4.8)
-    static let sonnet46 = ModelRate(inputPerM: 2.76, outputPerM: 13.80)   // $3  / $15  (Sonnet 4.5/4.6)
-    static let haiku45  = ModelRate(inputPerM: 0.92, outputPerM: 4.60)   // $1  / $5   (Haiku 4.5)
+    /// Derived from `ModelPricing`, never typed out again.
+    ///
+    /// These were four hardcoded constants converted at **0.92** while
+    /// `ModelPricing.usdToEur` is 0.93 — two euro rates in one app — and the
+    /// names were generation-locked (`opus47`, `sonnet46`), the same
+    /// label-names-the-wrong-model class fixed elsewhere today. `ModelPricing`
+    /// was created with the header "one table, one conversion"; this is the copy
+    /// that survived it.
+    private static func rate(_ bucket: String) -> ModelRate {
+        let base = ModelPricing.rate(forBucket: bucket)
+        return ModelRate(inputPerM: base.input * ModelPricing.usdToEur,
+                         outputPerM: base.output * ModelPricing.usdToEur)
+    }
+
+    static var fable: ModelRate { rate("fable") }
+    static var opus: ModelRate { rate("opus") }
+    static var sonnet: ModelRate { rate("sonnet") }
+    static var haiku: ModelRate { rate("haiku") }
 
     /// Subscription tiers, monthly EUR (USD × 0.92). Anthropic's published
     /// caps are per 5-hour window with a weekly ceiling. We translate to
@@ -97,8 +110,8 @@ enum PlanAdvisor {
 
         // API equivalent EUR/mo. Mix Opus + Sonnet by the user's split.
         let opusFraction = max(0, min(1, opusFraction))
-        let apiPerM = opusFraction * opus47.weightedPerM
-                    + (1 - opusFraction) * sonnet46.weightedPerM
+        let apiPerM = opusFraction * opus.weightedPerM
+                    + (1 - opusFraction) * sonnet.weightedPerM
         let apiEquivalentMonthlyEUR = monthlyTokens / 1_000_000 * apiPerM
 
         // Find the cheapest plan that covers the weekly capacity.

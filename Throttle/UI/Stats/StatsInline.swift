@@ -477,10 +477,11 @@ struct StatsInline: View {
     private func tierMonthlyEUR(_ slice: StatsDataService.ModelSlice) -> Double {
         let rate: Double
         switch slice.tier {
-        case .opus:   rate = PlanAdvisor.opus47.weightedPerM
-        case .sonnet: rate = PlanAdvisor.sonnet46.weightedPerM
-        case .haiku:  rate = PlanAdvisor.haiku45.weightedPerM
-        case .other:  rate = PlanAdvisor.sonnet46.weightedPerM
+        case .fable:  rate = PlanAdvisor.fable.weightedPerM
+        case .opus:   rate = PlanAdvisor.opus.weightedPerM
+        case .sonnet: rate = PlanAdvisor.sonnet.weightedPerM
+        case .haiku:  rate = PlanAdvisor.haiku.weightedPerM
+        case .other:  rate = PlanAdvisor.sonnet.weightedPerM
         }
         let share = Double(slice.weightedTokens) / Double(max(1, totalTokens))
         let monthlyTokens = Double(weeklyTokens) * share * 4.33
@@ -489,6 +490,8 @@ struct StatsInline: View {
 
     private func modelColor(_ tier: ModelTier) -> Color {
         switch tier {
+        // Fable bills more per token than Opus, so it reads as the densest ink.
+        case .fable:  return Color.primary.opacity(0.88)
         case .opus:   return Color.primary.opacity(0.72)
         case .sonnet: return Color.primary.opacity(0.42)
         case .haiku:  return Color.primary.opacity(0.20)
@@ -739,6 +742,7 @@ struct StatsInline: View {
 
     private func tierLabel(_ t: ModelTier) -> String {
         switch t {
+        case .fable:  return "Fable"
         case .opus:   return "Opus"
         case .sonnet: return "Sonnet"
         case .haiku:  return "Haiku"
