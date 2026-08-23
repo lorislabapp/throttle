@@ -1404,8 +1404,25 @@ struct MultiCockpitRoot: View {
     /// claude answered & waiting for you, gray=idle at prompt, hollow=dormant/
     /// hibernated. Replaces the binary live/gray flicker.
     @ViewBuilder
-    private func stateDot(_ s: CockpitTab) -> some View {
-        switch s.state {
+    private func stateDot(_ s: CockpitTab) -> some View { SessionStateDot(tab: s) }
+}
+
+/// The session's state dot, as its own View.
+///
+/// It was a `private func … -> some View` on the root, which means the read of
+/// `tab.state` happened inside `MultiCockpitRoot.body`'s observation scope. And
+/// `state` reads `lastActivityAt`, which the PTY writes on every chunk — so one
+/// streaming session invalidated the entire cockpit: top bar, banners, rail,
+/// split view, inspector. This is the same defect that once made the menu bar
+/// eat 42 GB, relocated.
+///
+/// A real View type scopes the observation to the dot. Creating it from the
+/// parent reads nothing; SwiftUI evaluates this body in its own scope.
+private struct SessionStateDot: View {
+    let tab: CockpitTab
+
+    var body: some View {
+        switch tab.state {
         case .working:
             Circle().fill(Color.green).frame(width: 6, height: 6)
         case .rateLimited:
@@ -1421,6 +1438,9 @@ struct MultiCockpitRoot: View {
             Circle().strokeBorder(Color.secondary.opacity(0.4), lineWidth: 1).frame(width: 6, height: 6)
         }
     }
+}
+
+extension MultiCockpitRoot {
 
     private func stateDotHelp(_ s: CockpitTab) -> String {
         switch s.state {

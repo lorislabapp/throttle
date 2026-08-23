@@ -89,10 +89,14 @@ struct SavingsLedgerView: View {
                             .buttonStyle(.plain).font(.system(size: 10.5, weight: .semibold))
                             .foregroundStyle(Color.accentColor).disabled(archiving)
                             .help("Reversible move of every unused skill out of the load path, then rescan")
-                        VStack(alignment: .trailing, spacing: 1) {
-                            Text("≈\(byteStr(deadSkillTokens))").font(.system(size: 12, weight: .semibold).monospacedDigit())
-                            Text("≈\(tokenStr(TokenEstimate.fromBytes(deadSkillTokens, kind: .dense))) tok").font(.system(size: 9.5).monospacedDigit()).foregroundStyle(.tertiary)
-                        }
+                        // `deadTokens` is already a TOKEN count. It was printed
+                        // through `byteStr` — labelled KB — and then a second
+                        // line ran it through `fromBytes`, dividing it again. The
+                        // same quantity read ≈40K tok in the audit inspector and
+                        // ≈13K tok / ≈40 KB here: a 3× disagreement between two
+                        // panes of one window, with a bytes unit on a token count.
+                        Text("≈\(tokenStr(deadSkillTokens)) tok")
+                            .font(.system(size: 12, weight: .semibold).monospacedDigit())
                     }
                     .padding(.horizontal, 14).padding(.vertical, 7)
                 }
@@ -177,11 +181,17 @@ struct SavingsLedgerView: View {
         .padding(.horizontal, 14).padding(.vertical, 7)
     }
 
+    /// The `exact` flag was computed by the caller and then ignored, so a total
+    /// made of estimated rows printed as a bare bold fact directly beneath rows
+    /// individually stamped `≈EST`. The total is the number a user screenshots;
+    /// it was the one that lost its confidence tag.
     private func totalRow(_ label: String, bytes: Int, exact: Bool) -> some View {
         HStack {
             Text(label).font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+            if !exact { tag(false) }
             Spacer()
-            Text("\(byteStr(bytes)) · ≈\(tokenStr(TokenEstimate.fromBytes(bytes, kind: .dense))) tok")
+            let tokens = tokenStr(TokenEstimate.fromBytes(bytes, kind: .dense))
+            Text("\(exact ? "" : "≈")\(byteStr(bytes)) · ≈\(tokens) tok")
                 .font(.system(size: 11, weight: .semibold).monospacedDigit())
         }
         .padding(.horizontal, 14).padding(.top, 2).padding(.bottom, 8)
