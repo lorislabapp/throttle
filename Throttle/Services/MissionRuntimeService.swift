@@ -612,11 +612,40 @@ enum MissionRuntimeService {
         return text.isEmpty ? nil : (role, text)
     }
 
+    /// Split on `\n` without touching `split(separator:)`.
+    ///
+    /// `Data` picks up that method from both `Sequence` and `Collection`, and
+    /// the stable toolchain calls the call ambiguous no matter how the separator
+    /// is spelled — `0x0A` and `UInt8(0x0A)` both fail. Xcode-beta resolves it,
+    /// so this only ever broke on CI. A hand-written scan has no overload set to
+    /// be ambiguous about, and it allocates one `Data` per line either way.
+    #if DEBUG
+    /// Test seam — the production entry point stays private.
+    nonisolated static func newlineSeparatedChunksForTesting(_ data: Data) -> [Data] {
+        newlineSeparatedChunks(data)
+    }
+    #endif
+
+    nonisolated private static func newlineSeparatedChunks(_ data: Data) -> [Data] {
+        var lines: [Data] = []
+        var start = data.startIndex
+        var index = data.startIndex
+        while index < data.endIndex {
+            if data[index] == 0x0A {
+                if index > start { lines.append(data[start ..< index]) }
+                start = data.index(after: index)
+            }
+            index = data.index(after: index)
+        }
+        if start < data.endIndex { lines.append(data[start ..< data.endIndex]) }
+        return lines
+    }
+
     nonisolated private static func prefixJSONLines(url: URL, byteLimit: Int) -> [Data]? {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
         defer { try? handle.close() }
         let data = (try? handle.read(upToCount: byteLimit)) ?? Data()
-        return data.split(separator: UInt8(0x0A)).map(Data.init)
+        return newlineSeparatedChunks(data)
     }
 
     nonisolated private static func tailJSONLines(url: URL, byteLimit: UInt64) -> [Data]? {
@@ -626,7 +655,7 @@ enum MissionRuntimeService {
         let start = end > byteLimit ? end - byteLimit : 0
         guard (try? handle.seek(toOffset: start)) != nil,
               let data = try? handle.readToEnd() else { return nil }
-        var lines = data.split(separator: UInt8(0x0A)).map(Data.init)
+        var lines = newlineSeparatedChunks(data)
         if start > 0, !lines.isEmpty { lines.removeFirst() }
         return lines
     }
