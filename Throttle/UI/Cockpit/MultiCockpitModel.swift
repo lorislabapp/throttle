@@ -302,6 +302,10 @@ final class CockpitTab: Identifiable {
             self.lastActivityAt = Date()
         }
         term.onPrompt = { [weak self] q in self?.handlePrompt(q) }
+        // Mirror the shell PID somewhere the OOM guard can reach from its own
+        // queue — it kills the app with `exit()`, which skips every MainActor
+        // cleanup path. See `LiveAgentRoots`.
+        if let pid = term.process?.shellPid, pid > 0 { LiveAgentRoots.register(pid) }
         term.onRateLimit = { [weak self] reset in self?.handleRateLimit(reset) }
         term.onTestOutcome = { [weak self] out in
             guard let self else { return }
@@ -452,7 +456,10 @@ final class CockpitTab: Identifiable {
     func terminate() {
         let pid = shellPid
         terminal?.send(txt: "\u{04}\nexit\n")
-        if let pid { SystemMemoryService.killSubtree(rootPid: pid) }
+        if let pid {
+            LiveAgentRoots.unregister(pid)
+            SystemMemoryService.killSubtree(rootPid: pid)
+        }
     }
 
     /// Free this session's RAM: snapshot the resume-id, terminate the process
@@ -1175,12 +1182,17 @@ final class MultiCockpitModel {
         let spawnedCount = sessions.filter { $0.isSpawned && !$0.isHibernated }.count
         let crowded = maxLiveSessions > 0 && spawnedCount > maxLiveSessions
         guard autoHibernateEnabled, machine.critical || crowded else { return }
+        // Debounce FIRST. This guard used to sit *after* `refreshActivityFromCPU()`,
+        // which forks `/bin/ps` and reads 64 KB of JSONL per Claude tab — on the
+        // main actor. So the full sweep ran on every 10 s tick and on every
+        // memory-pressure rise, and its result was then usually thrown away by
+        // this very check. Worse, those reads land as page-ins precisely when the
+        // Mac is swapping: the code that exists to relieve pressure was adding to
+        // it, on the thread that draws.
+        guard Date().timeIntervalSince(lastAutoHibernateAt) > 120 else { return }
         // Must run before victim selection, including on the out-of-band pressure-rise
         // path — otherwise a build that has been silent for 5 minutes is a victim.
         refreshActivityFromCPU()
-        // Debounce: at most once every 2 min so a sustained trigger doesn't churn
-        // reclaim attempts every tick.
-        guard Date().timeIntervalSince(lastAutoHibernateAt) > 120 else { return }
         let now = Date()
         let idleLongEnough: (CockpitTab) -> Bool = { [autoHibIdleSeconds] in
             now.timeIntervalSince($0.lastActivityAt) >= autoHibIdleSeconds

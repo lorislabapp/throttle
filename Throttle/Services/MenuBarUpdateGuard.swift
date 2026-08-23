@@ -130,6 +130,12 @@ enum MenuBarUpdateGuard {
                 menu-bar update runaway: footprint \(footprint / 1_048_576, privacy: .public) MB \
                 past the hard ceiling — terminating instead of swap-locking the Mac
                 """)
+            // Take the agent subtrees down FIRST. `exit()` skips
+            // `applicationWillTerminate`, so the cockpit's own cleanup never
+            // runs and every `claude`/`node` under a session shell reparents to
+            // launchd still holding its memory — the exact outcome this guard
+            // exists to prevent, achieved by the guard itself.
+            LiveAgentRoots.terminateAll()
             // Give the log a moment to flush; the main thread cannot help here.
             queue.asyncAfter(deadline: .now() + 0.2) { exit(EXIT_FAILURE) }
             return
