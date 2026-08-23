@@ -111,19 +111,19 @@ jobs:
           # a socket was opened. What must never carry it is a shipped iOS or
           # visionOS target. Grepping the whole file conflated the two and failed
           # on a correct config.
-          python3 - <<'PY'
-          import sys, yaml
-          targets = (yaml.safe_load(open('project.yml')).get('targets') or {})
-          bad = [
-              name for name, t in targets.items()
-              if str(t.get('platform', '')) in {'iOS', 'visionOS', 'tvOS', 'watchOS'}
-              and ((t.get('info') or {}).get('properties') or {})
-                  .get('NSAppTransportSecurity', {}).get('NSAllowsArbitraryLoads')
-          ]
-          if bad:
-              sys.exit('broad ATS exception on shipped target(s): ' + ', '.join(bad))
-          print('ATS: arbitrary loads confined to macOS')
-          PY
+          # Ruby, not Python: PyYAML is not installed on the runner and pulling
+          # it in would add a network dependency to a security gate. Ruby ships
+          # with macOS and has YAML in its standard library.
+          ruby -ryaml -e '
+            targets = (YAML.load_file("project.yml")["targets"] || {})
+            shipped = %w[iOS visionOS tvOS watchOS]
+            bad = targets.select do |_, t|
+              shipped.include?(t["platform"].to_s) &&
+                t.dig("info", "properties", "NSAppTransportSecurity", "NSAllowsArbitraryLoads")
+            end.keys
+            abort("broad ATS exception on shipped target(s): #{bad.join(", ")}") unless bad.empty?
+            puts "ATS: arbitrary loads confined to macOS"
+          '
           ! rg -n 'NSAllowsArbitraryLoads' ThrottleiOS/Info.plist
           ! rg -n 'allow-unsigned-executable-memory|disable-library-validation' Throttle/Throttle.entitlements
           # A token VALUE, not the variable name. `throttle-ask` legitimately reads
