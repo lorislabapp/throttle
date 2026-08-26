@@ -224,4 +224,16 @@ final class PromptRefinerServiceTests: XCTestCase {
         }
     }
 
+    func test_insertionPayload_thenValidate_isTheExactContractInsertRelieson() throws {
+        // What Insert actually does, in order: strip the trailing Enter, then
+        // refuse control bytes. A model that emits an ANSI escape must not reach
+        // a live PTY even though the payload looks otherwise fine.
+        let clean = PromptRefinerService.insertionPayload("refactor auth\n")
+        XCTAssertNoThrow(try PromptRefinerService.validate(clean))
+
+        let dirty = PromptRefinerService.insertionPayload("refactor \u{1b}[2J auth\n")
+        XCTAssertEqual(dirty, "refactor \u{1b}[2J auth")
+        XCTAssertThrowsError(try PromptRefinerService.validate(dirty))
+    }
+
 }
