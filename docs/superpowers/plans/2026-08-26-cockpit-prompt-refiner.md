@@ -968,9 +968,14 @@ git commit -m "[throttle] feat: the draft outlives the pane that renders it"
 ### Task 4: Insertion path — bracketed paste that never presses Enter
 
 **Files:**
-- Modify: `Throttle/UI/Cockpit/DroppableTerminalView.swift` (add a method near the existing `sendProgrammatic(txt:)` at line 198)
+- Create: `Throttle/UI/Cockpit/DroppableTerminalView+ComposedText.swift`
 - Modify: `Throttle/UI/Cockpit/MultiCockpitModel.swift` (add to `MultiCockpitModel`, near `active`)
 - Test: `ThrottleTests/ServiceTests/PromptRefinerServiceTests.swift`
+
+**Do NOT edit `DroppableTerminalView.swift`.** It carries the user's uncommitted
+work (13 insertions, 9 deletions at the time of writing), and staging it would
+sweep their in-progress changes into this task's commit. The new method goes in
+its own extension file instead.
 
 **Interfaces:**
 - Consumes: `PromptRefinerService.insertionPayload(_:)`, `.validate(_:)` (Task 1); `DroppableTerminalView.paste(_:trailingSpace:)` (private, same file, line 821).
@@ -1002,20 +1007,38 @@ implement the callers.
 
 - [ ] **Step 3: Write the implementation**
 
-In `Throttle/UI/Cockpit/DroppableTerminalView.swift`, add directly after
-`sendProgrammatic(txt:)` (which ends at line 202):
+Create `Throttle/UI/Cockpit/DroppableTerminalView+ComposedText.swift`:
 
 ```swift
+import SwiftTerm
+
+/// Deliberately a separate file: `DroppableTerminalView.swift` carries the
+/// user's uncommitted work, and editing it here would force this task's commit
+/// to either sweep in their changes or leave the file half-staged.
+extension DroppableTerminalView {
+
     /// Paste a Throttle-composed prompt into the foreground program. Bracketed
     /// paste when the TUI supports it, so a multi-line prompt arrives as ONE
     /// paste instead of N Enter presses. No newline is ever appended — the user
     /// presses Return.
+    ///
+    /// This repeats three lines of the private `paste(_:trailingSpace:)` in the
+    /// main file rather than calling it, because that method is private and this
+    /// extension lives outside its file. Fold the two together once the user's
+    /// in-flight edits to that file have landed.
     func insertComposedText(_ text: String) {
-        programmaticDepth += 1
-        defer { programmaticDepth -= 1 }
-        paste(text)
+        if getTerminal().bracketedPasteMode {
+            sendProgrammatic(txt: "\u{1b}[200~" + text + "\u{1b}[201~")
+        } else {
+            sendProgrammatic(txt: text)
+        }
     }
+}
 ```
+
+`sendProgrammatic(txt:)` is internal (not private), so it is reachable from this
+extension, and it already handles the `programmaticDepth` bookkeeping that keeps
+the injected text from being dropped by the `inputSuspended` guard.
 
 In `Throttle/UI/Cockpit/MultiCockpitModel.swift`, add to `MultiCockpitModel`:
 
@@ -1041,9 +1064,12 @@ Expected: build succeeds, all `PromptRefinerServiceTests` PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Throttle/UI/Cockpit/DroppableTerminalView.swift Throttle/UI/Cockpit/MultiCockpitModel.swift ThrottleTests/ServiceTests/PromptRefinerServiceTests.swift
+git add Throttle/UI/Cockpit/DroppableTerminalView+ComposedText.swift Throttle/UI/Cockpit/MultiCockpitModel.swift ThrottleTests/ServiceTests/PromptRefinerServiceTests.swift
 git commit -m "[throttle] feat: a refined prompt arrives as one paste, never as N returns"
 ```
+
+Note the absence of `DroppableTerminalView.swift` from that list. If you find
+yourself wanting to add it, stop — the user's work is in there.
 
 ---
 
