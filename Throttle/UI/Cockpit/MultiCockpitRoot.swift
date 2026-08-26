@@ -14,7 +14,8 @@ import ThrottleShared
 struct MultiCockpitRoot: View {
     @Environment(AppState.self) private var appState
     @State private var model = MultiCockpitModel.shared   // singleton: sessions outlive the window
-    @State private var showInspector = false
+    @State private var showSidebar = false
+    @State private var sidebarTab: CockpitSidebar.Tab = .audit
     @State private var activeStyle = OutputStyleManager.activeName()
     @State private var hoveredSession: UUID?
     @State private var expandedFeed: UUID?
@@ -59,9 +60,9 @@ struct MultiCockpitRoot: View {
             if let leak = model.leakSessions.first { leakBanner(leak) }
             HStack(spacing: 0) {
                 content
-                if showInspector {
+                if showSidebar {
                     Rectangle().fill(hair).frame(width: 1)
-                    CockpitAuditInspector()
+                    CockpitSidebar(tab: $sidebarTab)
                 }
             }
         }
@@ -131,8 +132,11 @@ struct MultiCockpitRoot: View {
             zsep
             viewSwitcher(iconsOnly: narrow)
             Spacer(minLength: 6)
-            ToolbarToggle(icon: "sidebar.trailing", label: String(localized: "Audit"), isOn: showInspector,
-                          iconOnly: narrow, help: String(localized: "Audit inspector")) { showInspector.toggle() }
+            ToolbarToggle(icon: "sidebar.trailing", label: String(localized: "Panel"), isOn: showSidebar,
+                          iconOnly: narrow,
+                          help: String(localized: "Audit metrics and the prompt refiner")) {
+                showSidebar.toggle()
+            }
             ToolbarToggle(icon: "terminal", label: String(localized: "Shell"), isOn: model.showShell,
                           iconOnly: narrow,
                           help: String(localized: "Side shell (⌘⇧T) — a zsh in this project's folder, beside claude")) {
@@ -928,7 +932,8 @@ struct MultiCockpitRoot: View {
                 source: source,
                 target: target,
                 sourceSessionID: sourceSessionID,
-                objective: "Continue the current work at the next unfinished task.",
+                objective: PromptRefinerModel.shared.pendingMissionObjective
+                    ?? "Continue the current work at the next unfinished task.",
                 context: MissionHandoffContext(
                     completed: "", remaining: "", validation: "", blockers: "",
                     recentConversation: snapshot.1

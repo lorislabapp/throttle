@@ -33,8 +33,6 @@ struct CockpitAuditInspector: View {
                 }
             }
         }
-        .frame(width: 280)
-        .background(.regularMaterial)
         .onAppear { vm.start(appState: appState) }
         .onDisappear { vm.stop() }
         .sheet(isPresented: $showTrim) { trimSheet }
