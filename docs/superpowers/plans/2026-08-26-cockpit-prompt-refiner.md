@@ -831,25 +831,31 @@ enum RefinerRationale: String, CaseIterable, Identifiable, Sendable {
 /// Persisted refiner preferences. Model choice and quality deliberately reuse
 /// `AIProviderRegistry` rather than duplicating a second set of controls.
 enum RefinerSettings {
-    private static let outputKey = "throttleRefinerOutput"
-    private static let forceLocalKey = "throttleRefinerForceLocal"
-    private static let rationaleKey = "throttleRefinerRationale"
+    static let outputKey = "throttleRefinerOutput"
+    static let forceLocalKey = "throttleRefinerForceLocal"
+    static let rationaleKey = "throttleRefinerRationale"
+
+    /// Injectable ON PURPOSE. The macOS test bundle is app-hosted
+    /// (`TEST_HOST` is Throttle.app), so `.standard` inside a test is the user's
+    /// LIVE preference domain — a test that clears these keys would silently
+    /// reset the settings of whoever ran it. Tests point this at their own suite.
+    nonisolated(unsafe) static var defaults: UserDefaults = .standard
 
     static var output: RefinerOutput {
-        get { RefinerOutput(rawValue: UserDefaults.standard.string(forKey: outputKey) ?? "") ?? .insert }
-        set { UserDefaults.standard.set(newValue.rawValue, forKey: outputKey) }
+        get { RefinerOutput(rawValue: defaults.string(forKey: outputKey) ?? "") ?? .insert }
+        set { defaults.set(newValue.rawValue, forKey: outputKey) }
     }
 
     /// Defaults ON: paying frontier tokens to save frontier tokens is the trap
     /// this product refuses elsewhere.
     static var forceLocal: Bool {
-        get { UserDefaults.standard.object(forKey: forceLocalKey) as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: forceLocalKey) }
+        get { defaults.object(forKey: forceLocalKey) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: forceLocalKey) }
     }
 
     static var rationale: RefinerRationale {
-        get { RefinerRationale(rawValue: UserDefaults.standard.string(forKey: rationaleKey) ?? "") ?? .missionOnly }
-        set { UserDefaults.standard.set(newValue.rawValue, forKey: rationaleKey) }
+        get { RefinerRationale(rawValue: defaults.string(forKey: rationaleKey) ?? "") ?? .missionOnly }
+        set { defaults.set(newValue.rawValue, forKey: rationaleKey) }
     }
 }
 
@@ -1789,14 +1795,26 @@ preference — which is the point of the seam.
 Append to `PromptRefinerModelTests`:
 
 ```swift
-    func test_refinerSettings_defaultToInsertLocalAndMissionOnly() {
-        let defaults = UserDefaults.standard
-        defaults.removeObject(forKey: "throttleRefinerOutput")
-        defaults.removeObject(forKey: "throttleRefinerForceLocal")
-        defaults.removeObject(forKey: "throttleRefinerRationale")
+    func test_refinerSettings_defaultToInsertLocalAndMissionOnly() throws {
+        // NEVER UserDefaults.standard here: this bundle is hosted by the real
+        // Throttle.app, so clearing these keys in `.standard` would wipe the
+        // preferences of whoever ran the suite.
+        let suiteName = "throttle.refiner.tests.\(UUID().uuidString)"
+        let suite = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        RefinerSettings.defaults = suite
+        defer {
+            RefinerSettings.defaults = .standard
+            suite.removePersistentDomain(forName: suiteName)
+        }
+
         XCTAssertEqual(RefinerSettings.output, .insert)
         XCTAssertTrue(RefinerSettings.forceLocal)
         XCTAssertEqual(RefinerSettings.rationale, .missionOnly)
+
+        RefinerSettings.output = .send
+        XCTAssertEqual(RefinerSettings.output, .send)
+        XCTAssertNil(UserDefaults.standard.string(forKey: RefinerSettings.outputKey),
+                     "the write must not have leaked into the user's live domain")
     }
 ```
 
@@ -2777,7 +2795,7 @@ and add the shared row builder:
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(p.name).font(.system(size: 11)).foregroundStyle(.primary).lineLimit(1)
                         Spacer(minLength: 4)
-                        Text(model.query.isEmpty ? "\(p.uses) uses" : "\(Int(hit.score * 100))%")
+                        Text(model.query.isEmpty ? "\(p.uses) uses" : "\(min(100, Int(hit.score * 100)))%")
                             .font(.system(size: 10.5).monospacedDigit())
                             .foregroundStyle(.secondary)
                             .help(model.query.isEmpty
@@ -2939,7 +2957,7 @@ Append to `PromptLibraryStoreTests`:
     }
 
     func test_pendingTrigger_ignoresTextAfterTheCaret() {
-        XCTAssertEqual(TriggerScanner.pendingTrigger(in: ";;bu trailing", caret: 4), "b")
+        XCTAssertEqual(TriggerScanner.pendingTrigger(in: ";;bu trailing", caret: 4), "bu")
     }
 
     func test_expand_replacesTheTriggerTokenAndReportsTheNewCaret() {
@@ -3077,6 +3095,10 @@ In `PromptRefinerPane.swift`, add state:
     @State private var expanderSelection = 0
     @State private var flash: String?
 ```
+
+Remove `.keyboardShortcut(.return, modifiers: .command)` from the Refine button
+in `compose` — the composer now owns ⌘⏎ via `onCommandReturn`, and leaving both
+in place fires the refinement twice.
 
 Replace the `TextEditor` in `compose` with:
 
