@@ -28,7 +28,12 @@ xcodebuild build -project Throttle.xcodeproj -scheme Throttle \
   -skipMacroValidation CODE_SIGNING_ALLOWED=NO
 ```
 
-Test command (**needs user approval first** — launches an app host):
+The build action does NOT compile `ThrottleTests`. Any step that expects a test
+to fail must use the scoped test command below with that task's test class, or
+it will observe a green build and prove nothing.
+
+Test command (the user authorised running this for this session — it launches an
+app host):
 
 ```bash
 xcodebuild test -project Throttle.xcodeproj -scheme Throttle \
@@ -133,7 +138,9 @@ final class PromptRefinerServiceTests: XCTestCase {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run the build command from Global Constraints.
+Run the **scoped test command** for this task's test class — NOT the build
+command. The `Throttle` scheme's build action does not compile `ThrottleTests`,
+so a red step verified with a build shows nothing at all (found in Task 1).
 Expected: FAIL — "cannot find 'PromptRefinerService' in scope".
 
 - [ ] **Step 3: Write the implementation**
@@ -267,7 +274,7 @@ enum PromptRefinerService {
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run `xcodegen generate`, then the build command. Then request approval for the test command and run it.
-Expected: 6 tests PASS.
+Expected: 7 tests PASS.
 
 - [ ] **Step 5: Commit**
 
@@ -465,7 +472,9 @@ Append to `ThrottleTests/ServiceTests/PromptRefinerServiceTests.swift`, inside t
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run the build command.
+Run the **scoped test command** for this task's test class — NOT the build
+command. The `Throttle` scheme's build action does not compile `ThrottleTests`,
+so a red step verified with a build shows nothing at all (found in Task 1).
 Expected: FAIL — "type 'PromptRefinerService' has no member 'parse'".
 
 - [ ] **Step 3: Write the implementation**
@@ -773,7 +782,9 @@ final class PromptRefinerModelTests: XCTestCase {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run the build command.
+Run the **scoped test command** for this task's test class — NOT the build
+command. The `Throttle` scheme's build action does not compile `ThrottleTests`,
+so a red step verified with a build shows nothing at all (found in Task 1).
 Expected: FAIL — "cannot find 'PromptRefinerModel' in scope".
 
 - [ ] **Step 3: Write the implementation**
@@ -2036,7 +2047,9 @@ final class PromptLibraryStoreTests: XCTestCase {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run the build command.
+Run the **scoped test command** for this task's test class — NOT the build
+command. The `Throttle` scheme's build action does not compile `ThrottleTests`,
+so a red step verified with a build shows nothing at all (found in Task 1).
 Expected: FAIL — "cannot find 'PromptLibraryStore' in scope".
 
 - [ ] **Step 3: Write the implementation**
@@ -2273,7 +2286,9 @@ Append to `PromptLibraryStoreTests`:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run the build command.
+Run the **scoped test command** for this task's test class — NOT the build
+command. The `Throttle` scheme's build action does not compile `ThrottleTests`,
+so a red step verified with a build shows nothing at all (found in Task 1).
 Expected: FAIL — "value of type 'PromptLibraryStore' has no member 'rebuildIndex'".
 
 - [ ] **Step 3: Write the implementation**
@@ -2435,7 +2450,9 @@ Append to `PromptRefinerModelTests`:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run the build command.
+Run the **scoped test command** for this task's test class — NOT the build
+command. The `Throttle` scheme's build action does not compile `ThrottleTests`,
+so a red step verified with a build shows nothing at all (found in Task 1).
 Expected: FAIL — "value of type 'PromptRefinerModel' has no member 'beginSave'".
 
 - [ ] **Step 3: Extend the model**
@@ -2975,7 +2992,9 @@ Append to `PromptLibraryStoreTests`:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run the build command.
+Run the **scoped test command** for this task's test class — NOT the build
+command. The `Throttle` scheme's build action does not compile `ThrottleTests`,
+so a red step verified with a build shows nothing at all (found in Task 1).
 Expected: FAIL — "cannot find 'TriggerScanner' in scope".
 
 - [ ] **Step 3: Write the scanner and the composer**
