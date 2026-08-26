@@ -349,6 +349,7 @@ struct PromptRefinerPane: View {
     }
 
     private var appliedLabel: String {
+        if model.mode == .mission { return "Saved as the next mission objective." }
         switch RefinerSettings.output {
         case .insert: return "In the terminal — you press ⏎."
         case .copy:   return "Copied to the clipboard."
@@ -386,6 +387,7 @@ struct PromptRefinerPane: View {
     }
 
     private var applyLabel: String {
+        if model.mode == .mission { return "Set as mission objective" }
         switch RefinerSettings.output {
         case .insert: return "Insert — you fire"
         case .copy: return "Copy"
@@ -394,6 +396,9 @@ struct PromptRefinerPane: View {
     }
 
     private var applyHelp: String {
+        if model.mode == .mission {
+            return "Fills the objective of the next mission handoff. Nothing is launched."
+        }
         switch RefinerSettings.output {
         case .insert: return "Pastes into the terminal input. Never presses Enter."
         case .copy:   return "Puts the proposal on the clipboard."
@@ -405,19 +410,24 @@ struct PromptRefinerPane: View {
 
     private func apply() {
         guard let text = model.proposal?.proposed else { return }
+        if model.mode == .mission {
+            model.pendingMissionObjective = text
+            model.screen = .applied
+            return
+        }
         switch RefinerSettings.output {
         case .copy:
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
         case .insert, .send:
-            if model.mode == .mission {
-                model.pendingMissionObjective = text
-            } else {
-                _ = cockpit.insertDraft(text)
-                if RefinerSettings.output == .send,
-                   let term = cockpit.active?.terminal as? DroppableTerminalView {
-                    term.sendProgrammatic(txt: "\r")
-                }
+            let inserted = cockpit.insertDraft(text)
+            guard inserted else {
+                model.fail("Nothing was inserted — the proposal was empty or contained a control sequence.")
+                return
+            }
+            if RefinerSettings.output == .send,
+               let term = cockpit.active?.terminal as? DroppableTerminalView {
+                term.sendProgrammatic(txt: "\r")
             }
         }
         model.screen = .applied
