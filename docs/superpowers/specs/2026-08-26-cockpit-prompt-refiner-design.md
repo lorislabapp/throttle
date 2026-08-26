@@ -1,6 +1,6 @@
 # Cockpit prompt refiner + prompt library — design
 
-Date: 2026-08-26 · Status: design approved, implementation not started
+Date: 2026-08-26 · Status: design approved (both passes), implementation not started
 Repo state at authoring: HEAD `0de8b5a` (3.2.106 / build 205)
 
 ## 1. What this is
@@ -105,8 +105,8 @@ filled primaries keep `#0071E3`. Both ship as named tokens.
 - The brief allowed the column to widen while drafting. All three directions
   declined; 1c instead takes over the column with focus screens. Accepted — no
   widening is implemented.
-- No direction included the prompt library. It is deferred to a second Design
-  pass (§8, M2); 1c's `HISTORY` list is the seam it will extend.
+- Turn 1 included no prompt library; the second pass (§6) added it inside locked
+  1c, extending the `HISTORY` list rather than introducing a new navigation layer.
 
 ## 4. Architecture
 
@@ -199,7 +199,14 @@ larger corpus.
 
 Scope: save a proposal under a name, list and manage saved prompts, semantic
 search over them, and a typed trigger (e.g. `;;bug`) that expands a saved prompt
-at the cursor in the Compose screen. Visuals pending the second Design pass.
+at the cursor in the Compose screen.
+
+Visuals locked 2026-08-26 by the second Design pass ("Turn 2 — Prompt Library
+inside locked 1c"). Its binding decisions: Library and History are two sections
+of the Home scroll, `All N ›` drills into a Library focus screen where search
+lives, there are no tabs inside tabs, and saving is a verb on the Result screen
+rather than a button competing with Insert. The match floor is 40%, and a hit
+whose words the query does not share is footnoted as matched by meaning.
 
 ## 7. Doctrine
 
@@ -219,9 +226,13 @@ Consistent with `docs/TODO.md`:
 `PromptRefinerService`, `PromptRefinerPane` with all six 1c screens, the three
 settings, and the service tests. Ships useful on its own.
 
-**M2 — prompt library (blocked on the second Design pass).** Saving, library
-screen, semantic search, expander, and the Home navigation that reconciles
-History with Library.
+**M2 — prompt library (unblocked 2026-08-26).** Saving, library screen, semantic
+search, expander, and the Home sections that hold History and Library together.
+
+One implementation consequence of the expander: it inserts at the caret, and
+SwiftUI's `TextEditor` reports neither the caret nor the key events the popup
+needs, so the composer becomes an `NSTextView`-backed view. That cost is real and
+is not optional if the expander is to behave as drawn.
 
 ## 9. Tests
 
@@ -238,6 +249,5 @@ shares no words with the stored prompt, and trigger expansion at a cursor offset
 
 ## 10. Open
 
-- Second Design pass for M2 (brief issued 2026-08-26).
 - Whether History persists across app launches or is session-scoped — decide
   when M2's Home navigation is designed, since the two lists are shown together.
