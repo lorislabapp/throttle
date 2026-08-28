@@ -10,6 +10,7 @@ struct DropdownView: View {
         case settings(SettingsTab)
         case stats
         case projects
+        case researchVault
     }
 
     enum SettingsTab: String, CaseIterable {
@@ -50,6 +51,8 @@ struct DropdownView: View {
                     StatsInline(onBack: { mode = .meter })
                 case .projects:
                     ProjectWindowRoot(onBack: { mode = .meter })
+                case .researchVault:
+                    ResearchVaultWorkbenchView(onBack: { mode = .meter })
                 }
             }
         }
@@ -72,10 +75,12 @@ struct DropdownView: View {
     /// the SwiftUI content's frame, so we adjust width + height per mode.
     private var dropdownWidth: CGFloat {
         if case .projects = mode { return 860 }
+        if case .researchVault = mode { return 860 }
         return 440
     }
     private var dropdownHeight: CGFloat? {
         if case .projects = mode { return 540 }
+        if case .researchVault = mode { return 540 }
         return nil
     }
 
@@ -839,6 +844,7 @@ struct DropdownView: View {
                             NSWorkspace.openInBackground(url)
                         }
                     }
+                    metaLink("Vault") { mode = .researchVault }
                     metaLink("About") { mode = .settings(.about) }
                     metaLink("Quit") { NSApp.terminate(nil) }
                         .keyboardShortcut("q")
@@ -2910,6 +2916,7 @@ private struct InlineAssistantPane: View {
     @State private var embeddedInstalling = false
     @State private var embeddedProgress = 0.0
     @AppStorage(LocalWorkerRouter.endpointKey) private var localWorkerServerURL = ""
+    @AppStorage(LocalWorkerRouter.modelKey) private var localWorkerServerModel = LocalWorkerRouter.defaultServerModel
     @State private var localWorkerStatus = LocalWorkerStatus()
     @State private var localWorkerProbing = false
     @State private var embeddedStatus = ""
@@ -3029,8 +3036,43 @@ private struct InlineAssistantPane: View {
                 }
             }
             localWorkerServerRow
+            localModelCatalog
         }
         .padding(.horizontal, 16).padding(.vertical, 9)
+    }
+
+    private var localModelCatalog: some View {
+        DisclosureGroup("Recommended local models") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Catalog only: links open model cards. Throttle downloads only the supported embedded model when you press Install; selecting an Ollama model never pulls or starts it.")
+                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(LocalModelRecommendation.catalog) { item in
+                    HStack(alignment: .top, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) {
+                                Text(item.name).font(.system(size: 11, weight: .medium))
+                                Text(item.runtime.rawValue.uppercased())
+                                    .font(.system(size: 8.5, weight: .bold))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Text(item.fit).font(.system(size: 10.5)).foregroundStyle(.secondary)
+                            Text(item.note).font(.system(size: 10)).foregroundStyle(.tertiary)
+                        }
+                        Spacer()
+                        Link("Model card", destination: item.modelURL).font(.system(size: 10))
+                    }
+                    .padding(8)
+                    .background(Color.primary.opacity(0.025), in: RoundedRectangle(cornerRadius: 7))
+                }
+                Text("Local provider routing: selected Ollama model → embedded MLX fallback only. It never falls back to Claude, Codex or another cloud provider.")
+                    .font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, 7)
+        }
+        .font(.system(size: 11, weight: .medium))
+        .padding(.top, 6)
     }
 
     /// Optional self-hosted Ollama endpoint for delegated tasks (e.g. a Proxmox
@@ -3072,6 +3114,22 @@ private struct InlineAssistantPane: View {
                 }
             }
             if localWorkerStatus.state == .reachable {
+                if !localWorkerStatus.installedModels.isEmpty {
+                    Picker("Model", selection: $localWorkerServerModel) {
+                        ForEach(localWorkerStatus.installedModels, id: \.self) { model in
+                            Text(model).tag(model)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .onChange(of: localWorkerServerModel) { _, _ in
+                        localWorkerStatus = LocalWorkerStatus(state: .unconfigured)
+                        testLocalWorkerServer()
+                    }
+                    Text("Only models reported by this Ollama server are selectable. Throttle never pulls or runs a model just by selecting it.")
+                        .font(.system(size: 10)).foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 HStack(spacing: 6) {
                     Text(LocalWorkerRouter.serverModel)
                         .font(.system(size: 10.5, design: .monospaced)).foregroundStyle(.secondary)

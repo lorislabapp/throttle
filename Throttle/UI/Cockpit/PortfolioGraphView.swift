@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Obsidian-style force-directed map of the ~/GitHub portfolio, in the cockpit.
@@ -9,6 +10,8 @@ struct PortfolioGraphView: View {
     @State private var loading = true
     @State private var sim = PortfolioSim()
     @State private var hover: String?
+    @State private var selected: String?
+    @State private var search = ""
     @State private var mouse: CGPoint = .init(x: -1, y: -1)
     /// Mirrors `sim.settled` so the timeline can stop. Flipped at most twice per
     /// load, never per frame.
@@ -43,8 +46,17 @@ struct PortfolioGraphView: View {
                         case .ended:         hover = nil; mouse = .init(x: -1, y: -1)
                         }
                     }
+                    .onTapGesture {
+                        if let hover { selected = selected == hover ? nil : hover }
+                    }
                     if loading { ProgressView("Scanning ~/GitHub…").controlSize(.small).padding(20) }
                     if let h = hover, let n = sim.node(h) { tooltip(n).offset(tooltipOffset(h, geo.size)) }
+                    if let selected, let node = sim.node(selected) {
+                        inspector(node)
+                            .frame(width: min(330, max(250, geo.size.width * 0.34)))
+                            .padding(12)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                    }
                 }
             }
         }
@@ -63,6 +75,10 @@ struct PortfolioGraphView: View {
                 }
             }
             Spacer()
+            TextField("Find app, code or research", text: $search)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 210)
+                .onSubmit { selectFirstMatch() }
             legendDot("app", .accentColor); legendDot("duplicated code", code); legendDot("shared research", research)
             Button { Task { await load() } } label: { Image(systemName: "arrow.clockwise") }
                 .buttonStyle(.plain).help("Rescan ~/GitHub").disabled(loading)
@@ -86,6 +102,7 @@ struct PortfolioGraphView: View {
     private func draw(_ ctx: GraphicsContext, size: CGSize) {
         let hv = hover
         let nb = hv.map { sim.neighbours(of: $0) } ?? []
+        let matches = matchingIDs
         // edges
         for e in sim.edges {
             guard let a = sim.pos[e.from], let b = sim.pos[e.to] else { continue }
@@ -97,7 +114,9 @@ struct PortfolioGraphView: View {
         // nodes
         for n in sim.nodes {
             guard let p = sim.pos[n.id] else { continue }
-            let dim = hv != nil && n.id != hv && !nb.contains(n.id)
+            let dimForHover = hv != nil && n.id != hv && !nb.contains(n.id)
+            let dimForSearch = !search.isEmpty && !matches.contains(n.id)
+            let dim = dimForHover || dimForSearch
             let r = sim.radius(n)
             let ring = Path(ellipseIn: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2))
             ctx.fill(ring, with: .color(color(n).opacity(dim ? 0.2 : 1)))
@@ -131,6 +150,74 @@ struct PortfolioGraphView: View {
         .fixedSize()
     }
 
+    private var matchingIDs: Set<String> {
+        let needle = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !needle.isEmpty else { return [] }
+        return Set(sim.nodes.lazy.filter {
+            $0.label.localizedCaseInsensitiveContains(needle)
+                || $0.locations.contains(where: { $0.localizedCaseInsensitiveContains(needle) })
+        }.map(\.id))
+    }
+
+    private func selectFirstMatch() {
+        selected = sim.nodes.first(where: { matchingIDs.contains($0.id) })?.id
+    }
+
+    private func inspector(_ node: PortfolioNode) -> some View {
+        let neighbours = sim.neighbours(of: node.id)
+            .compactMap(sim.node)
+            .sorted { $0.label.localizedStandardCompare($1.label) == .orderedAscending }
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(node.kind.rawValue.uppercased())
+                        .font(.caption2.weight(.bold)).foregroundStyle(color(node))
+                    Text(node.label).font(.headline).textSelection(.enabled)
+                }
+                Spacer()
+                Button { selected = nil } label: { Image(systemName: "xmark") }
+                    .buttonStyle(.plain).accessibilityLabel("Close inspector")
+            }
+            Text("\(neighbours.count) backlinks · \(node.locations.count) source locations")
+                .font(.caption).foregroundStyle(.secondary)
+
+            if !neighbours.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("BACKLINKS").font(.caption2.weight(.bold)).foregroundStyle(.tertiary)
+                    Text(neighbours.prefix(12).map(\.label).joined(separator: " · "))
+                        .font(.caption).textSelection(.enabled)
+                }
+            }
+            if !node.locations.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("SOURCES").font(.caption2.weight(.bold)).foregroundStyle(.tertiary)
+                    ForEach(Array(node.locations.prefix(6)), id: \.self) { location in
+                        Button {
+                            let root = FileManager.default.homeDirectoryForCurrentUser
+                                .appendingPathComponent("GitHub", isDirectory: true)
+                            NSWorkspace.shared.open(root.appendingPathComponent(location))
+                        } label: {
+                            Text(location).lineLimit(1).truncationMode(.middle)
+                                .font(.caption.monospaced()).frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain).help("Open local source")
+                    }
+                }
+            }
+            Button {
+                ResearchVaultWindowController.shared.show(query: node.label)
+            } label: {
+                Label("Search this in Research Vault", systemImage: "lock.doc")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding(14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.quaternary))
+        .shadow(radius: 12, y: 4)
+    }
+
     private func tooltipOffset(_ id: String, _ size: CGSize) -> CGSize {
         guard let p = sim.pos[id] else { return .zero }
         let x = p.x + 14 > size.width - 200 ? p.x - 200 : p.x + 14
@@ -142,6 +229,7 @@ struct PortfolioGraphView: View {
         let g = await PortfolioMapService.scan()
         graph = g
         sim.seed(g)
+        selected = nil
         settled = false
         loading = false
     }

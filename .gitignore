@@ -13,6 +13,7 @@ build/
 # Swift Package Manager
 .build/
 Package.resolved
+!Packages/ResearchVaultKit/Package.resolved
 *.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 
 # XcodeGen's project is generated, but the SwiftPM lock is source-controlled so

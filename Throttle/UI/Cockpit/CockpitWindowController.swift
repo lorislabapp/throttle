@@ -63,6 +63,48 @@ final class CockpitWindowController: NSObject {
     }
 }
 
+/// Dedicated evidence window used by the Portfolio inspector. Keeping this out
+/// of the menu-bar navigation means a graph node can open a Vault query without
+/// dismissing or rebuilding the cockpit and its live terminals.
+@MainActor
+final class ResearchVaultWindowController: NSObject, NSWindowDelegate {
+    static let shared = ResearchVaultWindowController()
+    private var window: NSWindow?
+
+    override private init() {}
+
+    func show(query: String) {
+        let host = NSHostingController(
+            rootView: ResearchVaultWorkbenchView(initialQuery: query, onBack: { [weak self] in
+                self?.window?.performClose(nil)
+            })
+        )
+        if let window {
+            window.contentViewController = host
+            window.makeKeyAndOrderFront(nil)
+        } else {
+            let created = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 860, height: 540),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                backing: .buffered,
+                defer: false
+            )
+            created.title = "Throttle — Research Vault"
+            created.minSize = NSSize(width: 720, height: 460)
+            created.contentViewController = host
+            created.delegate = self
+            created.center()
+            created.makeKeyAndOrderFront(nil)
+            window = created
+        }
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    nonisolated func windowWillClose(_ notification: Notification) {
+        Task { @MainActor in self.window = nil }
+    }
+}
+
 extension CockpitWindowController: NSWindowDelegate {
     nonisolated func windowWillClose(_ notification: Notification) {
         Task { @MainActor in

@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let logger = AppLogger.app
     private var licenseRenewalTimer: Timer?
     private var codexUsageTimer: Timer?
+    private var researchVaultWorkbenchTestWindow: NSWindow?
 
     /// App-hosted tests already initialize the state/database they exercise, but
     /// must not start production listeners, CloudKit, login items or singleton
@@ -123,6 +124,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         guard !Self.isRunningTests else {
+            if CommandLine.arguments.contains("-researchVaultWorkbenchTest") {
+                let controller = NSHostingController(
+                    rootView: ResearchVaultWorkbenchView(onBack: {})
+                )
+                let window = NSWindow(contentViewController: controller)
+                window.title = "Research Vault Workbench Test Host"
+                window.setContentSize(NSSize(width: 860, height: 540))
+                window.center()
+                window.makeKeyAndOrderFront(nil)
+                researchVaultWorkbenchTestWindow = window
+            }
             logger.notice("XCTest host detected: skipping production background services")
             return
         }
