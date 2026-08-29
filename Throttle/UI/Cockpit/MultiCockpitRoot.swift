@@ -15,6 +15,7 @@ struct MultiCockpitRoot: View {
     @Environment(AppState.self) private var appState
     @State private var model = MultiCockpitModel.shared   // singleton: sessions outlive the window
     @State private var showInspector = false
+    @State private var planModel = PlanModel()
     @State private var activeStyle = OutputStyleManager.activeName()
     @State private var hoveredSession: UUID?
     @State private var expandedFeed: UUID?
@@ -327,6 +328,7 @@ struct MultiCockpitRoot: View {
         case .rail:      return "sidebar.left"
         case .mission:   return "rectangle.3.group"
         case .portfolio: return "point.3.filled.connected.trianglepath.dotted"
+        case .plan:      return "list.bullet.indent"
         }
     }
 
@@ -565,6 +567,10 @@ struct MultiCockpitRoot: View {
             // Obsidian-style map of the whole ~/GitHub portfolio: what's duplicated
             // (code) and re-researched (deep-research topics) across apps.
             PortfolioGraphView()
+        } else if model.viewMode == .plan {
+            // A plan belongs to a repository, not to a live session, so this
+            // renders whether or not anything is running in it.
+            planLayout
         } else if model.sessions.isEmpty {
             emptyState
         } else {
@@ -572,9 +578,23 @@ struct MultiCockpitRoot: View {
             case .tabs:    tabsLayout
             case .rail:    railLayout
             case .mission: missionLayout
-            case .dashboard, .portfolio: EmptyView()   // handled above
+            case .dashboard, .portfolio, .plan: EmptyView()   // handled above
             }
         }
+    }
+
+    /// Reads the plan of whichever project the active tab sits in. Rebinding is a
+    /// no-op when the path has not changed, so switching tabs inside one repository
+    /// costs nothing.
+    private var planLayout: some View {
+        PlanTreeView(model: planModel)
+            .onAppear { planModel.bind(to: activeProjectRoot) }
+            .onChange(of: model.activeID) { _, _ in planModel.bind(to: activeProjectRoot) }
+    }
+
+    private var activeProjectRoot: URL? {
+        guard let cwd = model.active?.cwd, !cwd.isEmpty else { return nil }
+        return URL(fileURLWithPath: cwd, isDirectory: true)
     }
 
     private var terminal: some View {

@@ -1,0 +1,222 @@
+import Foundation
+
+/// The three plan tools exposed over MCP, kept out of `ThrottleMCPServer` so that
+/// file stays a router rather than a grab bag.
+///
+/// Every call names its project explicitly or falls back to the agent's working
+/// directory, because one Throttle process serves sessions sitting in different
+/// repositories at the same time.
+enum PlanMCPTools {
+
+    private static func store(_ project: String?) -> PlanStore {
+        let path = project ?? FileManager.default.currentDirectoryPath
+        return PlanStore(projectRoot: URL(fileURLWithPath: path, isDirectory: true))
+    }
+
+    // MARK: - Schemas
+
+    private static func projectProperty() -> [String: Any] {
+        ["type": "string",
+         "description": "Absolute path to the project. Defaults to the working directory."]
+    }
+
+    static func planReadSchema() -> [String: Any] {
+        ["name": "throttle_plan_read",
+         "description": """
+         Read this project's plan: the task tree with status and progress, plus \
+         exactly which tasks are actionable right now — dependencies met and \
+         nobody holding them. Call this before picking up work.
+         """,
+         "inputSchema": ["type": "object",
+                         "properties": ["project": projectProperty()],
+                         "required": [] as [String]]]
+    }
+
+    static func taskClaimSchema() -> [String: Any] {
+        ["name": "throttle_task_claim",
+         "description": """
+         Take ownership of one task before working on it. Refused if another \
+         agent already holds it. Only the holder may report progress afterwards.
+         """,
+         "inputSchema": ["type": "object",
+                         "properties": [
+                            "project": projectProperty(),
+                            "task_id": ["type": "string"],
+                            "by": ["type": "string",
+                                   "description": "runtime:session, e.g. codex:sess_ab"],
+                            "mission_id": ["type": "string"]
+                         ],
+                         "required": ["task_id", "by"]]]
+    }
+
+    static func taskEventSchema() -> [String: Any] {
+        ["name": "throttle_task_event",
+         "description": """
+         Report on a task you hold: progress, evidence, blocked, unblocked, \
+         completed, failed or released. Evidence should be checkable — a commit \
+         sha, a test count, a file path.
+         """,
+         "inputSchema": ["type": "object",
+                         "properties": [
+                            "project": projectProperty(),
+                            "task_id": ["type": "string"],
+                            "by": ["type": "string"],
+                            "type": ["type": "string",
+                                     "enum": ["progress", "evidence", "blocked", "unblocked",
+                                              "completed", "failed", "released"]],
+                            "pct": ["type": "integer"],
+                            "note": ["type": "string"],
+                            "kind": ["type": "string", "description": "evidence kind: commit, test, file"],
+                            "ref": ["type": "string"],
+                            "reason": ["type": "string"],
+                            "summary": ["type": "string"]
+                         ],
+                         "required": ["task_id", "by", "type"]]]
+    }
+
+    static var schemas: [[String: Any]] {
+        [planReadSchema(), taskClaimSchema(), taskEventSchema()]
+    }
+
+    /// Advertised only where a plan exists, so a session in an unplanned repo pays
+    /// nothing in schema tokens for three tools it cannot use.
+    static func hasPlan() -> Bool {
+        store(nil).planExists()
+    }
+
+    // MARK: - Read
+
+    static func planReadText(project: String?) -> String {
+        let store = store(project)
+        guard let resolved = try? store.resolveAll() else {
+            return "No plan here. Throttle expects .throttle/plan.json at the project root."
+        }
+        var out = ["PLAN — \(resolved.plan.title)"]
+        appendTree(resolved.plan, resolved.states, parent: nil, depth: 0, into: &out)
+
+        let actionable = self.actionable(resolved.plan, resolved.states)
+        out.append("")
+        if actionable.isEmpty {
+            out.append("ACTIONABLE NOW: none — every unblocked task is already held or finished.")
+        } else {
+            out.append("ACTIONABLE NOW:")
+            out.append(contentsOf: actionable.map { "  \($0.id)  \($0.title)"
+                + ($0.runtimeHint.map { "  (suggested: \($0))" } ?? "") })
+        }
+        return out.joined(separator: "\n")
+    }
+
+    private static func appendTree(_ plan: Plan, _ states: [String: TaskState],
+                                   parent: String?, depth: Int, into out: inout [String]) {
+        for task in plan.children(of: parent) {
+            let state = states[task.id] ?? TaskState()
+            let indent = String(repeating: "  ", count: depth)
+            var line = "\(indent)\(task.id)  \(task.title)  [\(state.status.rawValue) \(state.pct)%]"
+            if let owner = state.owner { line += "  held by \(owner)" }
+            if let blocked = state.blockedReason, state.status == .blocked { line += "  waiting on \(blocked)" }
+            if !state.chainValid { line += "  ⚠︎ log chain broken" }
+            out.append(line)
+            appendTree(plan, states, parent: task.id, depth: depth + 1, into: &out)
+        }
+    }
+
+    /// A task is actionable when it is a leaf, unheld, unfinished, and every
+    /// dependency is done. Parents are never actionable — you do the leaves.
+    private static func actionable(_ plan: Plan, _ states: [String: TaskState]) -> [PlanTask] {
+        let isLeaf = plan.isLeafByID
+        return plan.tasks.filter { task in
+            guard isLeaf[task.id] == true else { return false }
+            let state = states[task.id] ?? TaskState()
+            guard state.owner == nil, state.status == .pending || state.status == .blocked else { return false }
+            return task.dependsOn.allSatisfy { states[$0]?.status == .done }
+        }.sorted { ($0.order, $0.id) < ($1.order, $1.id) }
+    }
+
+    // MARK: - Write
+
+    static func claimText(project: String?, taskID: String,
+                          author: String, missionID: String?) -> String {
+        let store = store(project)
+        guard let plan = try? store.loadPlan() else { return "Refused: no plan at this project root." }
+        guard let task = plan.task(taskID) else { return "Refused: no task \(taskID) in this plan." }
+
+        guard let current = try? store.state(for: taskID) else {
+            return "Refused: could not read the log for \(taskID)."
+        }
+        if let owner = current.owner {
+            return "Refused: \(taskID) is already held by \(owner). Pick another task from throttle_plan_read."
+        }
+        let unmet = task.dependsOn.filter { (try? store.state(for: $0))?.status != .done }
+        if !unmet.isEmpty {
+            return "Refused: \(taskID) depends on \(unmet.joined(separator: ", ")), which is not done."
+        }
+
+        let event = TaskEvent(seq: 0, timestamp: Date(), author: author,
+                              type: .claimed, missionID: missionID)
+        guard let written = try? store.append(event, to: taskID) else {
+            return "Refused: could not write the log for \(taskID)."
+        }
+        var out = """
+        Claimed \(taskID) — \(task.title) (seq \(written.seq)).
+        You now own it: report with throttle_task_event, and release it if you stop.
+        """
+        if task.sotaGate {
+            out += "\nThis task is SOTA-gated: `completed` parks it in review for"
+                + " counter-analysis, it does not finish it."
+        }
+        return out
+    }
+
+    /// Grouped rather than passed loose: the tool takes ten fields, and a long
+    /// positional signature is exactly where a `reason` quietly lands in `ref`.
+    struct EventRequest {
+        var project: String?
+        var taskID: String
+        var author: String
+        var type: String
+        var pct: Int?
+        var note: String?
+        var kind: String?
+        var ref: String?
+        var reason: String?
+        var summary: String?
+    }
+
+    static func eventText(_ request: EventRequest) -> String {
+        let taskID = request.taskID
+        let author = request.author
+        guard let eventType = TaskEventType(rawValue: request.type), eventType != .claimed else {
+            return "Refused: unknown event type '\(request.type)'."
+                + " Use throttle_task_claim to take a task."
+        }
+        let store = store(request.project)
+        guard let plan = try? store.loadPlan(), plan.task(taskID) != nil else {
+            return "Refused: no task \(taskID) in this plan."
+        }
+        guard let current = try? store.state(for: taskID) else {
+            return "Refused: could not read the log for \(taskID)."
+        }
+        guard let owner = current.owner else {
+            return "Refused: nobody holds \(taskID). Claim it first."
+        }
+        guard owner == author else {
+            return "Refused: \(taskID) is held by \(owner), not \(author)."
+        }
+
+        let event = TaskEvent(seq: 0, timestamp: Date(), author: author, type: eventType,
+                              pct: request.pct, note: request.note, kind: request.kind,
+                              ref: request.ref, reason: request.reason, summary: request.summary)
+        guard (try? store.append(event, to: taskID)) != nil,
+              let after = try? store.state(for: taskID) else {
+            return "Refused: could not write the log for \(taskID)."
+        }
+        var out = "\(taskID) → \(after.status.rawValue) (\(after.pct)%)."
+        if after.status == .review {
+            out += " Gated, so it is parked for counter-analysis rather than done."
+        }
+        if !after.chainValid {
+            out += " ⚠︎ This log's hash chain does not verify — something wrote it outside Throttle."
+        }
+        return out
+    }
+}

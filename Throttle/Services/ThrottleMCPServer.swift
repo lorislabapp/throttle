@@ -41,6 +41,9 @@ enum ThrottleMCPServer {
             // web_render is opt-in: only advertised when the user enabled Web
             // research, so a disabled capability costs zero schema tokens.
             if UserDefaults.standard.bool(forKey: "throttleWebEnabled") { tools.append(webRenderSchema()); tools.append(researchGroundedSchema()) }
+            // Same rule for the plan tools: only where the session's project
+            // actually has a .throttle/plan.json to act on.
+            if PlanMCPTools.hasPlan() { tools.append(contentsOf: PlanMCPTools.schemas) }
             respond(id: id, result: ["tools": tools])
         case "tools/call":
             let params = req["params"] as? [String: Any]
@@ -67,6 +70,30 @@ enum ThrottleMCPServer {
                     respond(id: id, result: textResult(expandPointerText(throttleID)))
                 } else {
                     respond(id: id, error: [-32602, "Missing throttle_id"])
+                }
+            case "throttle_plan_read":
+                respond(id: id, result: textResult(PlanMCPTools.planReadText(
+                    project: args?["project"] as? String)))
+            case "throttle_task_claim":
+                if let taskID = args?["task_id"] as? String, let author = args?["by"] as? String {
+                    respond(id: id, result: textResult(PlanMCPTools.claimText(
+                        project: args?["project"] as? String, taskID: taskID, author: author,
+                        missionID: args?["mission_id"] as? String)))
+                } else {
+                    respond(id: id, error: [-32602, "Missing task_id or by"])
+                }
+            case "throttle_task_event":
+                if let taskID = args?["task_id"] as? String, let author = args?["by"] as? String,
+                   let type = args?["type"] as? String {
+                    respond(id: id, result: textResult(PlanMCPTools.eventText(
+                        PlanMCPTools.EventRequest(
+                            project: args?["project"] as? String, taskID: taskID, author: author,
+                            type: type, pct: args?["pct"] as? Int, note: args?["note"] as? String,
+                            kind: args?["kind"] as? String, ref: args?["ref"] as? String,
+                            reason: args?["reason"] as? String,
+                            summary: args?["summary"] as? String))))
+                } else {
+                    respond(id: id, error: [-32602, "Missing task_id, by or type"])
                 }
             case "throttle_recall":
                 if let topic = args?["topic"] as? String {
