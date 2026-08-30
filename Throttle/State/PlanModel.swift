@@ -20,6 +20,17 @@ final class PlanModel {
 
     var selection: String?
 
+    /// One advice per actionable task. Computed on reload rather than on every
+    /// draw, because it samples memory and reads usage snapshots.
+    private(set) var advice: [String: DispatchAdvice] = [:]
+
+    /// The single visible knob: what one task may cost. Conservative by default —
+    /// a fan-out should be something the user chose, never a surprise on the bill.
+    var spendCapEUR: Double {
+        get { UserDefaults.standard.object(forKey: "planSpendCapEUR") as? Double ?? 1.0 }
+        set { UserDefaults.standard.set(newValue, forKey: "planSpendCapEUR"); refreshAdvice() }
+    }
+
     private var root: URL?
     private var store: PlanStore?
     private var watcher: PlanWatcher?
@@ -63,9 +74,45 @@ final class PlanModel {
             plan = resolved.plan
             states = resolved.states
             loadError = nil
+            refreshAdvice()
         } catch {
             loadError = String(describing: error)
         }
+    }
+
+    /// Advises only on tasks that could actually start. Advising on a task nobody
+    /// can pick up would be noise dressed as guidance.
+    func refreshAdvice() {
+        guard let plan, let root else { advice = [:]; return }
+        let memory = SystemMemoryService.sample()
+        let budgets = DispatchBudget.current()
+        let capabilities = Dictionary(uniqueKeysWithValues: [AgentRuntime.claudeCode, .codex].map {
+            ($0, MissionRuntimeService.capabilityInventory(runtime: $0, cwd: root.path))
+        })
+        let cost = DispatchBudget.estimatedAgentCostEUR(sessionsLastWeek: max(1, memory.claudeCount))
+        let isLeaf = plan.isLeafByID
+        let cap = spendCapEUR
+
+        var next: [String: DispatchAdvice] = [:]
+        for task in plan.tasks where isLeaf[task.id] == true {
+            let state = self.state(task.id)
+            guard state.owner == nil, state.status == .pending else { continue }
+            next[task.id] = DispatchAdvisor.advise(DispatchInputs(
+                task: task, capabilities: capabilities, budgets: budgets, memory: memory,
+                spendCapEUR: cap, estimatedAgentCostEUR: cost, now: Date()))
+        }
+        advice = next
+    }
+
+    /// Prepares a task for launch. Returns the plan for the cockpit to open —
+    /// this model never opens a session itself.
+    func prepareLaunch(taskID: String, runtime: AgentRuntime) throws -> TaskLauncher.LaunchPlan {
+        guard let root else { throw TaskLauncher.LaunchError.unknownTask(taskID) }
+        let author = "\(runtime.rawValue):\(UUID().uuidString.prefix(8))"
+        let launch = try TaskLauncher.prepare(taskID: taskID, runtime: runtime,
+                                              repo: root, author: author)
+        reload()
+        return launch
     }
 
     /// The log behind one task, for the inspector. Read on demand rather than kept

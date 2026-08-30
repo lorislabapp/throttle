@@ -587,7 +587,11 @@ struct MultiCockpitRoot: View {
     /// no-op when the path has not changed, so switching tabs inside one repository
     /// costs nothing.
     private var planLayout: some View {
-        PlanTreeView(model: planModel)
+        PlanTreeView(model: planModel) { launch in
+            model.newSession(projectName: launch.taskID, cwd: launch.workingDirectory.path,
+                             runtime: launch.runtime, missionID: launch.missionID,
+                             initialPrompt: launch.kickoff)
+        }
             .onAppear { planModel.bind(to: activeProjectRoot) }
             .onChange(of: model.activeID) { _, _ in planModel.bind(to: activeProjectRoot) }
     }
