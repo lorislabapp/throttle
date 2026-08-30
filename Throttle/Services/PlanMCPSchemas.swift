@@ -84,8 +84,54 @@ extension PlanMCPTools {
                          "required": ["task_id", "by", "verdict"]]]
     }
 
+    static func planBootstrapSchema() -> [String: Any] {
+        ["name": "throttle_plan_bootstrap",
+         "description": """
+         Create a starting plan for a project that has none. Throttle surveys the \
+         directory first and proposes a different tree for an empty project than \
+         for one that already has code. Refuses if a plan already exists.
+         """,
+         "inputSchema": ["type": "object",
+                         "properties": ["project": projectProperty()],
+                         "required": [] as [String]]]
+    }
+
+    static func researchRecordSchema() -> [String: Any] {
+        ["name": "throttle_research_record",
+         "description": """
+         File one sourced finding into the project's viability dossier. Every \
+         finding needs a checkable source — a URL, a file path, a local corpus id \
+         — and a rating from 0 (hostile to the project) to 3 (favourable). \
+         Throttle refuses to score viability while any pillar has no finding.
+         """,
+         "inputSchema": ["type": "object",
+                         "properties": [
+                            "project": projectProperty(),
+                            "pillar": ["type": "string",
+                                       "enum": ViabilityPillar.allCases.map(\.rawValue)],
+                            "claim": ["type": "string"],
+                            "source": ["type": "string"],
+                            "rating": ["type": "integer", "minimum": 0, "maximum": 3],
+                            "by": ["type": "string"]
+                         ],
+                         "required": ["pillar", "claim", "source", "rating", "by"]]]
+    }
+
+    static func viabilitySchema() -> [String: Any] {
+        ["name": "throttle_viability_read",
+         "description": """
+         Read the viability dossier and its verdict. Returns "insufficient \
+         evidence" and names the empty pillars rather than a score, whenever \
+         research is incomplete.
+         """,
+         "inputSchema": ["type": "object",
+                         "properties": ["project": projectProperty()],
+                         "required": [] as [String]]]
+    }
+
     static var schemas: [[String: Any]] {
-        [planReadSchema(), taskClaimSchema(), taskEventSchema(), taskVerdictSchema()]
+        [planReadSchema(), taskClaimSchema(), taskEventSchema(), taskVerdictSchema(),
+         researchRecordSchema(), viabilitySchema()]
     }
 
     /// Advertised only where a plan exists, so a session in an unplanned repo pays

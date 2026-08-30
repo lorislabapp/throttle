@@ -43,7 +43,12 @@ enum ThrottleMCPServer {
             if UserDefaults.standard.bool(forKey: "throttleWebEnabled") { tools.append(webRenderSchema()); tools.append(researchGroundedSchema()) }
             // Same rule for the plan tools: only where the session's project
             // actually has a .throttle/plan.json to act on.
-            if PlanMCPTools.hasPlan() { tools.append(contentsOf: PlanMCPTools.schemas) }
+            if PlanMCPTools.hasPlan() {
+                tools.append(contentsOf: PlanMCPTools.schemas)
+            } else {
+                // The one plan tool that is useful precisely when no plan exists.
+                tools.append(PlanMCPTools.planBootstrapSchema())
+            }
             respond(id: id, result: ["tools": tools])
         case "tools/call":
             let params = req["params"] as? [String: Any]
@@ -71,6 +76,23 @@ enum ThrottleMCPServer {
                 } else {
                     respond(id: id, error: [-32602, "Missing throttle_id"])
                 }
+            case "throttle_plan_bootstrap":
+                respond(id: id, result: textResult(PlanMCPTools.bootstrapText(
+                    project: args?["project"] as? String)))
+            case "throttle_research_record":
+                if let pillar = args?["pillar"] as? String, let claim = args?["claim"] as? String,
+                   let source = args?["source"] as? String, let author = args?["by"] as? String {
+                    respond(id: id, result: textResult(PlanMCPTools.researchRecordText(
+                        PlanMCPTools.FindingRequest(
+                            project: args?["project"] as? String, pillar: pillar, claim: claim,
+                            source: source, rating: (args?["rating"] as? Int) ?? 0,
+                            author: author))))
+                } else {
+                    respond(id: id, error: [-32602, "Missing pillar, claim, source or by"])
+                }
+            case "throttle_viability_read":
+                respond(id: id, result: textResult(PlanMCPTools.viabilityText(
+                    project: args?["project"] as? String)))
             case "throttle_task_verdict":
                 if let taskID = args?["task_id"] as? String, let author = args?["by"] as? String,
                    let verdict = args?["verdict"] as? String {

@@ -5,6 +5,7 @@ enum PlanStoreError: Error, Equatable {
     case unsafeTaskID(String)
     case unknownTask(String)
     case missingPlan(String)
+    case planAlreadyExists(String)
 }
 
 /// Reads and writes a project's `.throttle/` directory.
@@ -101,6 +102,17 @@ final class PlanStore: @unchecked Sendable {
             throw PlanStoreError.missingPlan(planURL.path)
         }
         return try Self.decoder.decode(Plan.self, from: data)
+    }
+
+    /// Writes a starting plan, and refuses if one already exists. Bootstrapping
+    /// over a live plan would discard tasks agents are holding.
+    func bootstrap(_ plan: Plan) throws {
+        lock.lock(); defer { lock.unlock() }
+        guard !files.fileExists(atPath: planURL.path) else {
+            throw PlanStoreError.planAlreadyExists(planURL.path)
+        }
+        try files.createDirectory(at: throttleDir, withIntermediateDirectories: true)
+        try Self.encoder.encode(plan).write(to: planURL, options: .atomic)
     }
 
     func planExists() -> Bool {

@@ -150,6 +150,26 @@ final class PlanModel {
         return launch
     }
 
+    /// What Throttle sees in this project before any plan exists — used to say
+    /// what kind of starting plan it would propose, rather than offering a
+    /// generic button.
+    var survey: ProjectIntakeService.Survey? {
+        guard let root, !hasPlan else { return nil }
+        return ProjectIntakeService.survey(repo: root)
+    }
+
+    /// Writes a starting plan shaped by the survey. Refuses over an existing plan
+    /// at the store level, so a double click cannot discard held tasks.
+    func bootstrap() {
+        guard let root, let survey else { return }
+        do {
+            try PlanStore(projectRoot: root).bootstrap(PlanTemplate.starter(for: survey))
+            reload()
+        } catch {
+            loadError = String(describing: error)
+        }
+    }
+
     /// The log behind one task, for the inspector. Read on demand rather than kept
     /// in memory: a plan can hold hundreds of tasks and the user looks at one.
     func events(for taskID: String) -> [TaskEvent] {
