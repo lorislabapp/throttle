@@ -31,6 +31,14 @@ final class PlanModel {
         set { UserDefaults.standard.set(newValue, forKey: "planSpendCapEUR"); refreshAdvice() }
     }
 
+    /// Fires when a rejected task is picked up again automatically. Set by the
+    /// cockpit, which is the only thing that can open a session.
+    var onAutoRelaunch: ((TaskLauncher.LaunchPlan) -> Void)?
+
+    /// Rejection count last acted on, per task, so a relaunch happens once per
+    /// verdict and not once per filesystem event.
+    private var actedOnRejection: [String: Int] = [:]
+
     private var root: URL?
     private var store: PlanStore?
     private var watcher: PlanWatcher?
@@ -75,6 +83,7 @@ final class PlanModel {
             states = resolved.states
             loadError = nil
             refreshAdvice()
+            autoRelaunchRejectedTasks()
         } catch {
             loadError = String(describing: error)
         }
@@ -102,6 +111,32 @@ final class PlanModel {
                 spendCapEUR: cap, estimatedAgentCostEUR: cost, now: Date()))
         }
         advice = next
+    }
+
+    /// The one automatic session start in the app, gated by the spend cap rather
+    /// than by a judgement call. Skips any task the advisor is unsure about:
+    /// spending money on a guess is worse than waiting for the user.
+    private func autoRelaunchRejectedTasks() {
+        guard let plan, let store, onAutoRelaunch != nil else { return }
+        let cost = DispatchBudget.estimatedAgentCostEUR(
+            sessionsLastWeek: max(1, SystemMemoryService.sample().claudeCount))
+
+        for task in plan.tasks {
+            let taskState = state(task.id)
+            guard taskState.rejectionCount > 0,
+                  actedOnRejection[task.id] != taskState.rejectionCount else { continue }
+
+            let attempts = ((try? store.events(for: task.id).events) ?? [])
+                .filter { $0.type == .claimed }.count
+            let decision = AutoRelaunchPolicy.decide(state: taskState, attemptsSoFar: attempts,
+                                                     spendCapEUR: spendCapEUR,
+                                                     estimatedAgentCostEUR: cost)
+            actedOnRejection[task.id] = taskState.rejectionCount
+            guard decision.relaunch, let runtime = advice[task.id]?.runtime else { continue }
+            if let launch = try? prepareLaunch(taskID: task.id, runtime: runtime) {
+                onAutoRelaunch?(launch)
+            }
+        }
     }
 
     /// Prepares a task for launch. Returns the plan for the cockpit to open —

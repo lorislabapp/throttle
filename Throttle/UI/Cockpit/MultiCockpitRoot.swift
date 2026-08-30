@@ -592,7 +592,15 @@ struct MultiCockpitRoot: View {
                              runtime: launch.runtime, missionID: launch.missionID,
                              initialPrompt: launch.kickoff)
         }
-            .onAppear { planModel.bind(to: activeProjectRoot) }
+            .onAppear {
+                planModel.onAutoRelaunch = { launch in
+                    model.newSession(projectName: launch.taskID,
+                                     cwd: launch.workingDirectory.path,
+                                     runtime: launch.runtime, missionID: launch.missionID,
+                                     initialPrompt: launch.kickoff)
+                }
+                planModel.bind(to: activeProjectRoot)
+            }
             .onChange(of: model.activeID) { _, _ in planModel.bind(to: activeProjectRoot) }
     }
 

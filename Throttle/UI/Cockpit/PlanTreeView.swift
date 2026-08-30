@@ -189,6 +189,10 @@ struct PlanTreeView: View {
             if task.sotaGate { fact("Gate", "SOTA — completion parks in review") }
             if !task.dependsOn.isEmpty { fact("Depends on", task.dependsOn.joined(separator: ", ")) }
             if let summary = state.summary { fact("Summary", summary) }
+            if state.rejectionCount > 0 {
+                fact("Rejected", "\(state.rejectionCount)× of \(PlanProjection.maxRejections)")
+            }
+            if let judge = state.verdictBy { fact("Verdict by", judge) }
             if !state.chainValid { fact("Chain", "does not verify") }
         }
     }

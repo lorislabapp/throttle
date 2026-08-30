@@ -71,6 +71,18 @@ enum ThrottleMCPServer {
                 } else {
                     respond(id: id, error: [-32602, "Missing throttle_id"])
                 }
+            case "throttle_task_verdict":
+                if let taskID = args?["task_id"] as? String, let author = args?["by"] as? String,
+                   let verdict = args?["verdict"] as? String {
+                    respond(id: id, result: textResult(PlanMCPTools.verdictText(
+                        PlanMCPTools.VerdictRequest(
+                            project: args?["project"] as? String, taskID: taskID,
+                            author: author, verdict: verdict,
+                            reason: args?["reason"] as? String,
+                            summary: args?["summary"] as? String))))
+                } else {
+                    respond(id: id, error: [-32602, "Missing task_id, by or verdict"])
+                }
             case "throttle_plan_read":
                 respond(id: id, result: textResult(PlanMCPTools.planReadText(
                     project: args?["project"] as? String)))

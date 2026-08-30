@@ -8,80 +8,66 @@ import Foundation
 /// repositories at the same time.
 enum PlanMCPTools {
 
-    private static func store(_ project: String?) -> PlanStore {
+    static func store(_ project: String?) -> PlanStore {
         let path = project ?? FileManager.default.currentDirectoryPath
         return PlanStore(projectRoot: URL(fileURLWithPath: path, isDirectory: true))
     }
 
-    // MARK: - Schemas
+    // MARK: - Verdict
 
-    private static func projectProperty() -> [String: Any] {
-        ["type": "string",
-         "description": "Absolute path to the project. Defaults to the working directory."]
+    struct VerdictRequest {
+        var project: String?
+        var taskID: String
+        var author: String
+        var verdict: String
+        var reason: String?
+        var summary: String?
     }
 
-    static func planReadSchema() -> [String: Any] {
-        ["name": "throttle_plan_read",
-         "description": """
-         Read this project's plan: the task tree with status and progress, plus \
-         exactly which tasks are actionable right now — dependencies met and \
-         nobody holding them. Call this before picking up work.
-         """,
-         "inputSchema": ["type": "object",
-                         "properties": ["project": projectProperty()],
-                         "required": [] as [String]]]
-    }
+    static func verdictText(_ request: VerdictRequest) -> String {
+        let taskID = request.taskID
+        let author = request.author
+        let verdict = request.verdict
+        let reason = request.reason
+        let summary = request.summary
+        guard let type = TaskEventType(rawValue: verdict),
+              type == .verified || type == .rejected else {
+            return "Refused: verdict must be 'verified' or 'rejected'."
+        }
+        if type == .rejected, (reason ?? "").trimmingCharacters(in: .whitespaces).isEmpty {
+            return "Refused: a rejection has to say what is missing, or the next agent repeats the same work."
+        }
+        let store = store(request.project)
+        guard let plan = try? store.loadPlan(), plan.task(taskID) != nil else {
+            return "Refused: no task \(taskID) in this plan."
+        }
+        guard let current = try? store.state(for: taskID) else {
+            return "Refused: could not read the log for \(taskID)."
+        }
+        guard current.status == .review else {
+            return "Refused: \(taskID) is \(current.status.rawValue), not awaiting review."
+        }
+        let judge = String(author.prefix(while: { $0 != ":" }))
+        if judge == current.runtime {
+            return "Refused: \(judge) did this work. A judge from the same model family rates it"
+                + " higher than it should — the verdict has to come from the other runtime."
+        }
 
-    static func taskClaimSchema() -> [String: Any] {
-        ["name": "throttle_task_claim",
-         "description": """
-         Take ownership of one task before working on it. Refused if another \
-         agent already holds it. Only the holder may report progress afterwards.
-         """,
-         "inputSchema": ["type": "object",
-                         "properties": [
-                            "project": projectProperty(),
-                            "task_id": ["type": "string"],
-                            "by": ["type": "string",
-                                   "description": "runtime:session, e.g. codex:sess_ab"],
-                            "mission_id": ["type": "string"]
-                         ],
-                         "required": ["task_id", "by"]]]
-    }
-
-    static func taskEventSchema() -> [String: Any] {
-        ["name": "throttle_task_event",
-         "description": """
-         Report on a task you hold: progress, evidence, blocked, unblocked, \
-         completed, failed or released. Evidence should be checkable — a commit \
-         sha, a test count, a file path.
-         """,
-         "inputSchema": ["type": "object",
-                         "properties": [
-                            "project": projectProperty(),
-                            "task_id": ["type": "string"],
-                            "by": ["type": "string"],
-                            "type": ["type": "string",
-                                     "enum": ["progress", "evidence", "blocked", "unblocked",
-                                              "completed", "failed", "released"]],
-                            "pct": ["type": "integer"],
-                            "note": ["type": "string"],
-                            "kind": ["type": "string", "description": "evidence kind: commit, test, file"],
-                            "ref": ["type": "string"],
-                            "reason": ["type": "string"],
-                            "summary": ["type": "string"]
-                         ],
-                         "required": ["task_id", "by", "type"]]]
-    }
-
-    static var schemas: [[String: Any]] {
-        [planReadSchema(), taskClaimSchema(), taskEventSchema()]
-    }
-
-    /// Advertised only where a plan exists, so a session in an unplanned repo pays
-    /// nothing in schema tokens for three tools it cannot use.
-    static func hasPlan() -> Bool {
-        store(nil).planExists()
+        let event = TaskEvent(seq: 0, timestamp: Date(), author: author, type: type,
+                              reason: reason, summary: summary)
+        guard (try? store.append(event, to: taskID)) != nil,
+              let after = try? store.state(for: taskID) else {
+            return "Refused: could not write the log for \(taskID)."
+        }
+        if after.status == .failed {
+            return "\(taskID) → failed after \(after.rejectionCount) rejections. The loop stops here;"
+                + " it needs a human, or a smaller task."
+        }
+        if after.status == .pending {
+            return "\(taskID) → back to pending (rejection \(after.rejectionCount)"
+                + " of \(PlanProjection.maxRejections))."
+        }
+        return "\(taskID) → \(after.status.rawValue)."
     }
 
     // MARK: - Read

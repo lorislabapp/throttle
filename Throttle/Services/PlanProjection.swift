@@ -38,11 +38,19 @@ enum PlanProjection {
         return state
     }
 
+    /// After three rejections the task stops rather than looping. The cap is the
+    /// difference between a refinement loop and a paid infinite one.
+    static let maxRejections = 3
+
     private static func isTerminal(_ status: TaskStatus) -> Bool {
         switch status {
-        case .done, .failed, .review: return true
-        case .pending, .blocked, .claimed, .running: return false
+        case .done, .failed: return true
+        case .pending, .blocked, .claimed, .running, .review: return false
         }
+    }
+
+    private static func isVerdict(_ type: TaskEventType) -> Bool {
+        type == .verified || type == .rejected
     }
 
     private static func rejection(for event: TaskEvent, given state: TaskState) -> RejectedEvent.Reason? {
@@ -50,51 +58,49 @@ enum PlanProjection {
         // duplicate, or an edit — never new information.
         if event.seq <= state.lastSeq { return .outOfOrder }
         if isTerminal(state.status) { return .terminal }
-
-        if event.type == .claimed {
-            return state.owner == nil ? nil : .alreadyOwned
-        }
+        if isVerdict(event.type) { return verdictRejection(for: event, given: state) }
+        // A task in review belongs to nobody: its author is done, and only a
+        // verdict moves it.
+        if state.status == .review { return .terminal }
+        if event.type == .claimed { return state.owner == nil ? nil : .alreadyOwned }
         // Anything else is a report about work in progress, and only the agent
         // holding the task may report on it.
         guard let owner = state.owner, owner == event.author else { return .notOwner }
         return nil
     }
 
+    /// A verdict only means something on work that is actually awaiting review,
+    /// and only from a different model family than the one that produced it.
+    private static func verdictRejection(for event: TaskEvent,
+                                         given state: TaskState) -> RejectedEvent.Reason? {
+        guard state.status == .review else { return .notOwner }
+        guard event.runtime != state.runtime else { return .sameFamily }
+        return nil
+    }
+
     private static func apply(_ event: TaskEvent, to state: inout TaskState, gated: Bool) {
+        if applyVerdict(event, to: &state) { return }
+
+        if applyOwnerReport(event, to: &state) { return }
+
         switch event.type {
-        case .claimed:
-            state.owner = event.author
-            state.runtime = event.runtime
-            state.status = .claimed
-            state.startedAt = state.startedAt ?? event.timestamp
-            if let mission = event.missionID { state.missionID = mission }
-
-        case .progress:
-            state.status = .running
-            if let pct = event.pct { state.pct = min(max(pct, 0), 100) }
-
-        case .evidence:
-            state.evidence.append(TaskEvidence(kind: event.kind ?? "note",
-                                               ref: event.ref ?? "", timestamp: event.timestamp))
-
-        case .blocked:
-            state.status = .blocked
-            state.blockedReason = event.reason
-
-        case .unblocked:
-            state.status = .running
-            state.blockedReason = nil
+        case .blocked, .unblocked:
+            state.status = event.type == .blocked ? .blocked : .running
+            state.blockedReason = event.type == .blocked ? event.reason : nil
 
         case .completed:
             state.pct = 100
             state.summary = event.summary
             // A gated task is never finished on its own agent's word; it parks in
-            // review until the counter-analysis (lot E) rules on it.
+            // review until counter-analysis rules on it.
             state.status = gated ? .review : .done
 
         case .failed:
             state.status = .failed
             state.summary = event.reason
+
+        case .claimed, .progress, .evidence, .verified, .rejected:
+            break   // handled by applyOwnerReport / applyVerdict, before this switch
 
         case .released:
             // The lease ends, the work done under it does not.
@@ -150,6 +156,54 @@ enum PlanProjection {
         state.status = .blocked
         state.blockedReason = unmet
         states[task.id] = state
+    }
+
+    /// The three events an owner emits while working. Split out so the main
+    /// switch stays inside a size a reader can hold at once.
+    private static func applyOwnerReport(_ event: TaskEvent, to state: inout TaskState) -> Bool {
+        switch event.type {
+        case .claimed:
+            state.owner = event.author
+            state.runtime = event.runtime
+            state.status = .claimed
+            state.startedAt = state.startedAt ?? event.timestamp
+            if let mission = event.missionID { state.missionID = mission }
+            return true
+        case .progress:
+            state.status = .running
+            if let pct = event.pct { state.pct = min(max(pct, 0), 100) }
+            return true
+        case .evidence:
+            state.evidence.append(TaskEvidence(kind: event.kind ?? "note",
+                                               ref: event.ref ?? "", timestamp: event.timestamp))
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Split out of `apply` so the main switch stays readable: a verdict changes
+    /// ownership and the retry count, which none of the other events touch.
+    private static func applyVerdict(_ event: TaskEvent, to state: inout TaskState) -> Bool {
+        switch event.type {
+        case .verified:
+            state.status = .done
+            state.verdictBy = event.author
+            state.summary = event.summary ?? state.summary
+            return true
+        case .rejected:
+            state.rejectionCount += 1
+            state.verdictBy = event.author
+            state.owner = nil
+            state.runtime = nil
+            // The work done is still real; only the claim that it was finished
+            // was wrong. pct is left as reported and the status carries the truth.
+            state.status = state.rejectionCount >= maxRejections ? .failed : .pending
+            state.blockedReason = event.reason
+            return true
+        default:
+            return false
+        }
     }
 
     private static func rollupStatus(_ children: [TaskState]) -> TaskStatus {

@@ -251,3 +251,87 @@ final class PlanProjectionTests: XCTestCase {
         XCTAssertEqual(states["P1"]?.status, .failed)
     }
 }
+
+/// Counter-analysis is the only thing that finishes a gated task, and the rules
+/// around it are the ones that stop the loop from lying or running forever.
+extension PlanProjectionTests {
+
+    private func gated() -> PlanTask {
+        PlanTask(id: "T1", title: "T1", sotaGate: true)
+    }
+
+    private func completedByCodex() -> [TaskEvent] {
+        [TaskEvent(seq: 1, timestamp: at(0), author: "codex:a", type: .claimed),
+         TaskEvent(seq: 2, timestamp: at(1), author: "codex:a", type: .completed)]
+    }
+
+    func testVerdictFromTheOtherFamilyFinishesTheTask() {
+        let projected = PlanProjection.project(task: gated(), events: completedByCodex() + [
+            TaskEvent(seq: 3, timestamp: at(2), author: "claudeCode:b", type: .verified)
+        ])
+        XCTAssertEqual(projected.status, .done)
+        XCTAssertEqual(projected.verdictBy, "claudeCode:b")
+    }
+
+    /// A judge from the same family rates its own work higher, so this is refused
+    /// mechanically rather than trusted.
+    func testVerdictFromTheSameFamilyIsRefused() {
+        let projected = PlanProjection.project(task: gated(), events: completedByCodex() + [
+            TaskEvent(seq: 3, timestamp: at(2), author: "codex:b", type: .verified)
+        ])
+        XCTAssertEqual(projected.status, .review, "it stays in review, unfinished")
+        XCTAssertEqual(projected.rejected.first?.reason, .sameFamily)
+    }
+
+    func testRejectionSendsTheTaskBackAndFreesIt() {
+        let projected = PlanProjection.project(task: gated(), events: completedByCodex() + [
+            TaskEvent(seq: 3, timestamp: at(2), author: "claudeCode:b",
+                      type: .rejected, reason: "no tests")
+        ])
+        XCTAssertEqual(projected.status, .pending)
+        XCTAssertNil(projected.owner)
+        XCTAssertEqual(projected.rejectionCount, 1)
+        XCTAssertEqual(projected.blockedReason, "no tests")
+    }
+
+    /// "Loop until SOTA" without a ceiling is an infinite paid loop.
+    func testThirdRejectionStopsTheLoop() {
+        var events = completedByCodex()
+        var seq = 3
+        for round in 0..<3 {
+            events.append(TaskEvent(seq: seq, timestamp: at(seq), author: "claudeCode:b",
+                                    type: .rejected, reason: "round \(round)"))
+            seq += 1
+            if round < 2 {
+                events.append(TaskEvent(seq: seq, timestamp: at(seq), author: "codex:a",
+                                        type: .claimed))
+                seq += 1
+                events.append(TaskEvent(seq: seq, timestamp: at(seq), author: "codex:a",
+                                        type: .completed))
+                seq += 1
+            }
+        }
+        let projected = PlanProjection.project(task: gated(), events: events)
+        XCTAssertEqual(projected.status, .failed)
+        XCTAssertEqual(projected.rejectionCount, PlanProjection.maxRejections)
+    }
+
+    /// An agent must not be able to keep working on something it already declared
+    /// finished — only a verdict moves a task out of review.
+    func testTheAuthorCannotKeepReportingAfterCompleting() {
+        let projected = PlanProjection.project(task: gated(), events: completedByCodex() + [
+            TaskEvent(seq: 3, timestamp: at(2), author: "codex:a", type: .progress, pct: 50)
+        ])
+        XCTAssertEqual(projected.status, .review)
+        XCTAssertEqual(projected.rejected.first?.reason, .terminal)
+    }
+
+    func testVerdictOnAnUngatedTaskIsRefused() {
+        let projected = PlanProjection.project(task: PlanTask(id: "T1", title: "T1"),
+                                               events: completedByCodex() + [
+            TaskEvent(seq: 3, timestamp: at(2), author: "claudeCode:b", type: .rejected)
+        ])
+        XCTAssertEqual(projected.status, .done, "an ungated task was already finished")
+        XCTAssertEqual(projected.rejected.first?.reason, .terminal)
+    }
+}

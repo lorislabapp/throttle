@@ -111,6 +111,10 @@ struct Plan: Codable, Sendable, Equatable {
 
 enum TaskEventType: String, Codable, Sendable {
     case claimed, progress, evidence, blocked, unblocked, completed, failed, released
+    /// Counter-analysis verdicts. Only a runtime from a different family may emit
+    /// them: a judge scoring its own family rates it higher, and self-refinement
+    /// by the same model amplifies that bias rather than cancelling it.
+    case verified, rejected
 }
 
 /// One line of a task's NDJSON log. Flat rather than a payload union, because the
@@ -185,7 +189,7 @@ struct TaskEvidence: Codable, Sendable, Equatable, Hashable {
 /// when two agents fight over one task.
 struct RejectedEvent: Codable, Sendable, Equatable {
     enum Reason: String, Codable, Sendable {
-        case notOwner, alreadyOwned, outOfOrder, terminal
+        case notOwner, alreadyOwned, outOfOrder, terminal, sameFamily
     }
     var seq: Int
     var author: String
@@ -209,6 +213,10 @@ struct TaskState: Codable, Sendable, Equatable {
     var evidence: [TaskEvidence] = []
     var blockedReason: String?
     var summary: String?
+    /// How many times counter-analysis sent this task back. The loop is capped,
+    /// because "iterate until SOTA" without a ceiling is an infinite paid loop.
+    var rejectionCount: Int = 0
+    var verdictBy: String?
     /// False when a `prev` hash did not match — someone wrote the log without
     /// going through Throttle. A signal to surface, not a corruption to hide.
     var chainValid: Bool = true
