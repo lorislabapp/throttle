@@ -112,7 +112,7 @@ struct PlanTreeView: View {
 
             Spacer(minLength: 8)
 
-            if let runtime = state.runtime {
+            if let runtime = state.runtime, state.status != .done, state.status != .failed {
                 Text(runtime.uppercased())
                     .font(.system(size: 9, weight: .medium)).kerning(0.4)
                     .foregroundStyle(.secondary)

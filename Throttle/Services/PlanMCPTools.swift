@@ -98,7 +98,12 @@ enum PlanMCPTools {
             let state = states[task.id] ?? TaskState()
             let indent = String(repeating: "  ", count: depth)
             var line = "\(indent)\(task.id)  \(task.title)  [\(state.status.rawValue) \(state.pct)%]"
-            if let owner = state.owner { line += "  held by \(owner)" }
+            // Only while it is actually being worked on: "held by" next to a
+            // finished task reads as if someone is still on it.
+            if let owner = state.owner, state.status == .claimed || state.status == .running
+                || state.status == .blocked || state.status == .review {
+                line += "  held by \(owner)"
+            }
             if let blocked = state.blockedReason, state.status == .blocked { line += "  waiting on \(blocked)" }
             if !state.chainValid { line += "  ⚠︎ log chain broken" }
             out.append(line)

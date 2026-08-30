@@ -244,6 +244,20 @@ final class PlanProjectionTests: XCTestCase {
         XCTAssertEqual(full["P1"]?.pct, 100)
     }
 
+    /// Found by running the real thing: a phase whose first task was ready read
+    /// as "blocked" because a later task waited on it, which tells the user there
+    /// is nothing to do at the exact moment there is.
+    func testPhaseIsBlockedOnlyWhenNothingInItCanMove() {
+        var blocked = TaskState()
+        blocked.status = .blocked
+        let mixed = PlanProjection.resolve(plan: twoPhasePlan, leafStates: ["T1.2": blocked])
+        XCTAssertEqual(mixed["P1"]?.status, .pending, "T1.1 is still actionable")
+
+        let stuck = PlanProjection.resolve(plan: twoPhasePlan,
+                                           leafStates: ["T1.1": blocked, "T1.2": blocked])
+        XCTAssertEqual(stuck["P1"]?.status, .blocked)
+    }
+
     func testFailedLeafSurfacesOnTheParent() {
         var failed = TaskState()
         failed.status = .failed

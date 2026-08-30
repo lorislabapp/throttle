@@ -211,7 +211,10 @@ enum PlanProjection {
         if children.contains(where: { $0.status == .failed }) { return .failed }
         if children.contains(where: { $0.status == .running || $0.status == .claimed
                                        || $0.status == .review }) { return .running }
-        if children.contains(where: { $0.status == .blocked }) { return .blocked }
+        // Blocked only when nothing in it can move. A phase with one actionable
+        // leaf and one waiting on it is not blocked — reading it that way tells
+        // the user there is nothing to do at the exact moment there is.
+        if children.allSatisfy({ $0.status == .blocked || $0.status == .done }) { return .blocked }
         return .pending
     }
 }
