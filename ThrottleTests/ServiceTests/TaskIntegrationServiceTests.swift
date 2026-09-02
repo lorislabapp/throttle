@@ -167,4 +167,56 @@ final class TaskIntegrationServiceTests: XCTestCase {
         XCTAssertNotEqual(a, .gitFailed("CONFLICT (content): Merge conflict in file.txt"),
                           "distinct from a plain gitFailed even with the same rebase output")
     }
+
+    // MARK: - verify
+
+    private func store() -> PlanStore {
+        let store = PlanStore(projectRoot: repo)
+        try? store.bootstrap(Plan(projectId: "p", title: "P",
+                                  tasks: [PlanTask(id: "t1", title: "T1")]))
+        return store
+    }
+
+    private func finishTask(_ id: String, in store: PlanStore) throws {
+        try store.append(TaskEvent(seq: 0, timestamp: Date(), author: "claude:a", type: .claimed), to: id)
+        try store.append(TaskEvent(seq: 0, timestamp: Date(), author: "claude:a", type: .completed), to: id)
+    }
+
+    func test_verify_recordsAGreenCheckStampedWithBothSHAs() throws {
+        try worktree("t1", file: "task.txt", contents: "work\n")
+        let store = store()
+        try finishTask("t1", in: store)
+
+        let verdict = try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                                        store: store, author: "throttle:test")
+        XCTAssertTrue(verdict.ok)
+        let state = try store.state(for: "t1")
+        XCTAssertEqual(state.lastCheck?.ok, true)
+        XCTAssertEqual(state.lastCheck?.stamp, verdict.stamp)
+        XCTAssertEqual(state.status, .done, "verifying does not finish a task")
+    }
+
+    func test_verify_recordsAFailureWithItsOutput() throws {
+        try worktree("t1", file: "task.txt", contents: "work\n")
+        let store = store()
+        try finishTask("t1", in: store)
+
+        let verdict = try TaskIntegrationService.verify(taskID: "t1", in: repo,
+                                                        command: "echo boom >&2; exit 3",
+                                                        store: store, author: "throttle:test")
+        XCTAssertFalse(verdict.ok)
+        XCTAssertTrue(verdict.output.contains("boom"))
+        XCTAssertEqual(try store.state(for: "t1").lastCheck?.ok, false)
+    }
+
+    func test_verify_runsInsideTheWorktreeNotTheRepo() throws {
+        try worktree("t1", file: "only-here.txt", contents: "task work\n")
+        let store = store()
+        try finishTask("t1", in: store)
+
+        let verdict = try TaskIntegrationService.verify(taskID: "t1", in: repo,
+                                                        command: "test -f only-here.txt",
+                                                        store: store, author: "throttle:test")
+        XCTAssertTrue(verdict.ok, "the command sees the task's tree, not the base's")
+    }
 }

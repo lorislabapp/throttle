@@ -139,6 +139,68 @@ enum TaskIntegrationService {
         return try assess(taskID: taskID, in: repo)
     }
 
+    // MARK: - Verify
+
+    struct Verdict: Sendable, Equatable {
+        let ok: Bool
+        let output: String
+        let stamp: String
+    }
+
+    /// The longest a verification may run before it is killed. A project whose suite
+    /// takes longer than this should say so in its own command.
+    static let defaultTimeout: TimeInterval = 900
+    private static let outputLimit = 4000
+
+    /// Runs the project's verification command in the task's worktree and writes the
+    /// `checked` event for it.
+    ///
+    /// It runs *after* the rebase, on the combined tree, because a semantic conflict
+    /// passes the textual merge and only shows up when the two sides are executed
+    /// together — evidence produced by the agent before the rebase says nothing about
+    /// what is about to be merged.
+    ///
+    /// Consent is the caller's to obtain: this function runs what it is given.
+    @discardableResult
+    static func verify(taskID: String, in repo: URL, command: String,
+                       timeout: TimeInterval = defaultTimeout,
+                       store: PlanStore?, author: String) throws -> Verdict {
+        let worktree = try existingWorktree(taskID, in: repo)
+        let stamp = try assess(taskID: taskID, in: repo).stamp
+        let result = shell(command, in: worktree, timeout: timeout)
+        let verdict = Verdict(ok: result.ok, output: String(result.output.suffix(outputLimit)),
+                              stamp: stamp)
+
+        try store?.append(TaskEvent(seq: 0, timestamp: Date(), author: author, type: .checked,
+                                    ref: stamp, reason: verdict.ok ? nil : verdict.output,
+                                    summary: command, ok: verdict.ok),
+                          to: taskID)
+        return verdict
+    }
+
+    private static func shell(_ command: String, in directory: URL,
+                              timeout: TimeInterval) -> (ok: Bool, output: String) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", command]
+        process.currentDirectoryURL = directory
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+        do {
+            try process.run()
+        } catch {
+            return (false, String(describing: error))
+        }
+
+        let deadline = DispatchWorkItem { if process.isRunning { process.terminate() } }
+        DispatchQueue.global().asyncAfter(deadline: .now() + timeout, execute: deadline)
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        deadline.cancel()
+        return (process.terminationStatus == 0, String(bytes: data, encoding: .utf8) ?? "")
+    }
+
     // MARK: - git
 
     private static func existingWorktree(_ taskID: String, in repo: URL) throws -> URL {
