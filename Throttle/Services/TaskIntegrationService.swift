@@ -154,6 +154,12 @@ enum TaskIntegrationService {
     /// Grace period between SIGTERM and SIGKILL. A process that traps or ignores
     /// SIGTERM would otherwise sail past its own timeout with no way out.
     private static let killGracePeriod: TimeInterval = 2
+    /// How long `shell` waits for the readability handler to report EOF after the
+    /// process has already exited, before reading whatever output was collected.
+    /// Bounded, not forever: a leaked grandchild can hold the pipe's write end
+    /// open past the process's own exit, and this file already removed one
+    /// unbounded wait this run — it is not adding another.
+    private static let drainGrace: TimeInterval = 2
 
     /// Runs the project's verification command in the task's worktree and writes the
     /// `checked` event for it.
@@ -204,15 +210,27 @@ enum TaskIntegrationService {
         process.standardError = pipe
 
         let collector = OutputCollector()
+        // `readabilityHandler` reports EOF as one final call with empty data.
+        // `waitUntilExit()` below returns on its own, independent mechanism, so
+        // nothing otherwise guarantees the handler has drained the last chunk by
+        // the time the process is observed to have exited — this group is what
+        // closes that gap.
+        let drained = DispatchGroup()
+        drained.enter()
         pipe.fileHandleForReading.readabilityHandler = { handle in
             let chunk = handle.availableData
-            if !chunk.isEmpty { collector.append(chunk) }
+            if chunk.isEmpty {
+                if collector.consumeEOF() { drained.leave() }
+            } else {
+                collector.append(chunk)
+            }
         }
         defer { pipe.fileHandleForReading.readabilityHandler = nil }
 
         do {
             try process.run()
         } catch {
+            drained.leave()
             return (false, String(describing: error))
         }
 
@@ -233,6 +251,12 @@ enum TaskIntegrationService {
         sendTerm.cancel()
         sendKill.cancel()
 
+        // Bounded: a grandchild that leaked the write end of the pipe can hold it
+        // open past the process's own exit, and this file already removed one
+        // unbounded wait this run. On expiry this is a truncation, not a hang —
+        // the timeout message above already covers the killed case.
+        _ = drained.wait(timeout: .now() + drainGrace)
+
         var output = collector.output
         if collector.timedOut {
             output += "\n[throttle] verification timed out after \(Int(timeout))s and was killed"
@@ -247,6 +271,7 @@ enum TaskIntegrationService {
         private let lock = NSLock()
         private var buffer = Data()
         private var hasTimedOut = false
+        private var eofSeen = false
 
         func append(_ chunk: Data) {
             lock.lock(); defer { lock.unlock() }
@@ -256,6 +281,15 @@ enum TaskIntegrationService {
         func markTimedOut() {
             lock.lock(); defer { lock.unlock() }
             hasTimedOut = true
+        }
+
+        /// True only the first call — `readabilityHandler` can fire again after
+        /// reporting EOF, and the drain group must be left exactly once.
+        func consumeEOF() -> Bool {
+            lock.lock(); defer { lock.unlock() }
+            if eofSeen { return false }
+            eofSeen = true
+            return true
         }
 
         var timedOut: Bool {
