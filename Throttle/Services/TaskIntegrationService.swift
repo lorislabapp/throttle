@@ -303,6 +303,51 @@ enum TaskIntegrationService {
         }
     }
 
+    // MARK: - Integrate
+
+    /// Fast-forwards the base branch onto a finished task, and writes `integrated`.
+    ///
+    /// Four refusals, in the order that makes the message useful: a worktree still
+    /// holding loose work, a task not sitting on the current base, a SOTA-gated task
+    /// counter-analysis has not ruled on, and a check that is not green for these
+    /// exact two SHAs.
+    ///
+    /// The gate is checked before the green check, not after: `checked` is only ever
+    /// accepted on a task that has reached `.done` (see `PlanProjection`), and a
+    /// gated task only reaches `.done` through a `.verified` verdict — so a gated
+    /// task awaiting that verdict can never carry a green check in the first place.
+    /// Reporting `.unverified` on it would be true but useless; `.ungated` says the
+    /// thing that is actually blocking it.
+    ///
+    /// The merge itself is `--ff-only` on purpose: after a rebase the task's tip is a
+    /// descendant of the base, so the merge cannot invent a conflict the shown diff
+    /// did not contain. A failing fast-forward means one thing — the base moved between
+    /// the diff and the click — and that is a refusal, not a merge commit.
+    @discardableResult
+    static func integrate(taskID: String, in repo: URL, store: PlanStore,
+                          task: PlanTask, author: String) throws -> String {
+        let assessment = try assess(taskID: taskID, in: repo)
+        guard !assessment.isDirty else { throw TaskIntegrationError.refused(.dirty) }
+        guard assessment.behindBy == 0 else { throw TaskIntegrationError.refused(.behind) }
+
+        let state = try store.state(for: taskID)
+        if task.sotaGate {
+            guard state.verdictBy != nil else { throw TaskIntegrationError.refused(.ungated) }
+        }
+        guard let check = state.lastCheck, check.passed, check.stamp == assessment.stamp else {
+            throw TaskIntegrationError.refused(.unverified)
+        }
+
+        let branch = try TaskWorktreeService.branchName(for: taskID)
+        let merge = git(["merge", "--ff-only", branch], in: repo)
+        guard merge.ok else { throw TaskIntegrationError.gitFailed(merge.output) }
+
+        let sha = try self.sha("HEAD", in: repo)
+        try store.append(TaskEvent(seq: 0, timestamp: Date(), author: author,
+                                   type: .integrated, ref: sha), to: taskID)
+        return sha
+    }
+
     // MARK: - git
 
     private static func existingWorktree(_ taskID: String, in repo: URL) throws -> URL {

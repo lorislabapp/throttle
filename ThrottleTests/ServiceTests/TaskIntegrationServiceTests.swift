@@ -243,3 +243,94 @@ final class TaskIntegrationServiceTests: XCTestCase {
         XCTAssertEqual(try store.state(for: "t1").lastCheck?.passed, false)
     }
 }
+
+// MARK: - integrate
+
+/// Split from the class body to stay under SwiftLint's `type_body_length` — `private`
+/// helpers declared on the class (`repo`, `run`, `worktree`, `headSHA`, `store`,
+/// `finishTask`) stay visible here because Swift's `private` extends to same-file
+/// extensions of the same type.
+extension TaskIntegrationServiceTests {
+
+    func test_integrate_fastForwardsTheBaseAndLogsTheSHA() throws {
+        let path = try worktree("t1", file: "task.txt", contents: "work\n")
+        let store = store()
+        try finishTask("t1", in: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                          store: store, author: "throttle:test")
+
+        let sha = try TaskIntegrationService.integrate(taskID: "t1", in: repo, store: store,
+                                                       task: PlanTask(id: "t1", title: "T1"),
+                                                       author: "throttle:test")
+        XCTAssertEqual(sha, headSHA(path), "the base is now exactly the task's tip")
+        XCTAssertEqual(headSHA(), sha)
+        let state = try store.state(for: "t1")
+        XCTAssertEqual(state.status, .integrated)
+        XCTAssertEqual(state.integratedSHA, sha)
+    }
+
+    func test_integrate_refusesAnUnverifiedTask() throws {
+        try worktree("t1", file: "task.txt", contents: "work\n")
+        let store = store()
+        try finishTask("t1", in: store)
+        XCTAssertThrowsError(try TaskIntegrationService.integrate(
+            taskID: "t1", in: repo, store: store,
+            task: PlanTask(id: "t1", title: "T1"), author: "throttle:test")) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.unverified))
+        }
+        XCTAssertEqual(try store.state(for: "t1").status, .done, "nothing moved")
+    }
+
+    func test_integrate_refusesWhenTheBaseMovedAfterTheCheck() throws {
+        try worktree("t1", file: "task.txt", contents: "work\n")
+        let store = store()
+        try finishTask("t1", in: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                          store: store, author: "throttle:test")
+
+        try "elsewhere\n".write(to: repo.appendingPathComponent("other.txt"),
+                                atomically: true, encoding: .utf8)
+        run(["add", "."]); run(["commit", "-q", "-m", "base moves after the check"])
+        let baseBefore = headSHA()
+
+        XCTAssertThrowsError(try TaskIntegrationService.integrate(
+            taskID: "t1", in: repo, store: store,
+            task: PlanTask(id: "t1", title: "T1"), author: "throttle:test")) {
+            // Behind the base is the first thing that is wrong, and the stale check
+            // the second — either refusal is correct, an integration is not.
+            XCTAssertNotNil($0 as? TaskIntegrationError)
+        }
+        XCTAssertEqual(headSHA(), baseBefore, "the base was not written to")
+    }
+
+    func test_integrate_refusesAGatedTaskWithoutAVerdict() throws {
+        try worktree("t1", file: "task.txt", contents: "work\n")
+        let store = PlanStore(projectRoot: repo)
+        try store.bootstrap(Plan(projectId: "p", title: "P",
+                                 tasks: [PlanTask(id: "t1", title: "T1", sotaGate: true)]))
+        try store.append(TaskEvent(seq: 0, timestamp: Date(), author: "claude:a", type: .claimed), to: "t1")
+        try store.append(TaskEvent(seq: 0, timestamp: Date(), author: "claude:a", type: .completed), to: "t1")
+
+        XCTAssertThrowsError(try TaskIntegrationService.integrate(
+            taskID: "t1", in: repo, store: store,
+            task: PlanTask(id: "t1", title: "T1", sotaGate: true), author: "throttle:test")) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.ungated))
+        }
+    }
+
+    func test_integrate_refusesADirtyWorktree() throws {
+        let path = try worktree("t1", file: "task.txt", contents: "work\n")
+        let store = store()
+        try finishTask("t1", in: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                          store: store, author: "throttle:test")
+        try "scratch\n".write(to: path.appendingPathComponent("notes.txt"),
+                              atomically: true, encoding: .utf8)
+
+        XCTAssertThrowsError(try TaskIntegrationService.integrate(
+            taskID: "t1", in: repo, store: store,
+            task: PlanTask(id: "t1", title: "T1"), author: "throttle:test")) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.dirty))
+        }
+    }
+}
