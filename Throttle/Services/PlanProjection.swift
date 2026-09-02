@@ -42,9 +42,16 @@ enum PlanProjection {
     /// difference between a refinement loop and a paid infinite one.
     static let maxRejections = 3
 
+    /// A task whose work has landed, whichever end of the pipeline it stopped at.
+    /// Dependencies and rollups ask this rather than comparing to `.done`, so an
+    /// integrated task does not silently un-satisfy what it unblocked.
+    static func isFinished(_ status: TaskStatus) -> Bool {
+        status == .done || status == .integrated
+    }
+
     private static func isTerminal(_ status: TaskStatus) -> Bool {
         switch status {
-        case .done, .failed: return true
+        case .done, .failed, .integrated: return true
         case .pending, .blocked, .claimed, .running, .review: return false
         }
     }
@@ -57,6 +64,12 @@ enum PlanProjection {
         // A log is append-only, so a seq that does not advance is a replay, a
         // duplicate, or an edit — never new information.
         if event.seq <= state.lastSeq { return .outOfOrder }
+        // Throttle's own bookkeeping on a finished task. Neither is an agent's report,
+        // so neither goes through ownership — and neither is accepted before the task
+        // is actually done.
+        if event.type == .checked || event.type == .integrated {
+            return state.status == .done ? nil : .terminal
+        }
         if isTerminal(state.status) { return .terminal }
         if isVerdict(event.type) { return verdictRejection(for: event, given: state) }
         // A task in review belongs to nobody: its author is done, and only a
@@ -101,6 +114,15 @@ enum PlanProjection {
 
         case .claimed, .progress, .evidence, .verified, .rejected:
             break   // handled by applyOwnerReport / applyVerdict, before this switch
+
+        case .checked:
+            state.lastCheck = TaskCheck(ok: event.ok ?? false,
+                                        stamp: event.ref ?? "",
+                                        at: event.timestamp)
+
+        case .integrated:
+            state.status = .integrated
+            state.integratedSHA = event.ref
 
         case .released:
             // The lease ends, the work done under it does not.
@@ -152,7 +174,8 @@ enum PlanProjection {
     private static func applyDependencyBlock(_ task: PlanTask, in plan: Plan,
                                              states: inout [String: TaskState]) {
         guard var state = states[task.id], state.status == .pending else { return }
-        guard let unmet = task.dependsOn.first(where: { states[$0]?.status != .done }) else { return }
+        guard let unmet = task.dependsOn.first(where: { !isFinished(states[$0]?.status ?? .pending) })
+        else { return }
         state.status = .blocked
         state.blockedReason = unmet
         states[task.id] = state
@@ -207,14 +230,14 @@ enum PlanProjection {
     }
 
     private static func rollupStatus(_ children: [TaskState]) -> TaskStatus {
-        if children.allSatisfy({ $0.status == .done }) { return .done }
+        if children.allSatisfy({ isFinished($0.status) }) { return .done }
         if children.contains(where: { $0.status == .failed }) { return .failed }
         if children.contains(where: { $0.status == .running || $0.status == .claimed
                                        || $0.status == .review }) { return .running }
         // Blocked only when nothing in it can move. A phase with one actionable
         // leaf and one waiting on it is not blocked — reading it that way tells
         // the user there is nothing to do at the exact moment there is.
-        if children.allSatisfy({ $0.status == .blocked || $0.status == .done }) { return .blocked }
+        if children.allSatisfy({ $0.status == .blocked || isFinished($0.status) }) { return .blocked }
         return .pending
     }
 }

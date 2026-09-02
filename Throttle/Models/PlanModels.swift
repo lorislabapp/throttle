@@ -35,10 +35,12 @@ struct PlanTask: Codable, Sendable, Equatable, Identifiable {
     /// Read and displayed by lot A, interpreted by lot E (counter-analysis).
     /// When set, `completed` lands the task in `.review` rather than `.done`.
     var sotaGate: Bool
+    /// Overrides `Plan.verify` for this task, when set.
+    var verify: String?
 
     init(id: String, parent: String? = nil, order: Int = 0, title: String,
          kind: TaskKind = .build, dependsOn: [String] = [],
-         runtimeHint: String? = nil, sotaGate: Bool = false) {
+         runtimeHint: String? = nil, sotaGate: Bool = false, verify: String? = nil) {
         self.id = id
         self.parent = parent
         self.order = order
@@ -47,6 +49,7 @@ struct PlanTask: Codable, Sendable, Equatable, Identifiable {
         self.dependsOn = dependsOn
         self.runtimeHint = runtimeHint
         self.sotaGate = sotaGate
+        self.verify = verify
     }
 
     // Hand-written so a plan authored by a human or by an agent survives missing
@@ -61,6 +64,7 @@ struct PlanTask: Codable, Sendable, Equatable, Identifiable {
         dependsOn = try box.decodeIfPresent([String].self, forKey: .dependsOn) ?? []
         runtimeHint = try box.decodeIfPresent(String.self, forKey: .runtimeHint)
         sotaGate = try box.decodeIfPresent(Bool.self, forKey: .sotaGate) ?? false
+        verify = try box.decodeIfPresent(String.self, forKey: .verify)
     }
 }
 
@@ -68,12 +72,17 @@ struct Plan: Codable, Sendable, Equatable {
     var schema: Int
     var projectId: String
     var title: String
+    /// The shell command lot F runs to verify a task before integrating it.
+    /// A task's own `verify` overrides this when set.
+    var verify: String?
     var tasks: [PlanTask]
 
-    init(schema: Int = 1, projectId: String, title: String, tasks: [PlanTask]) {
+    init(schema: Int = 1, projectId: String, title: String,
+         verify: String? = nil, tasks: [PlanTask]) {
         self.schema = schema
         self.projectId = projectId
         self.title = title
+        self.verify = verify
         self.tasks = tasks
     }
 
@@ -82,6 +91,7 @@ struct Plan: Codable, Sendable, Equatable {
         schema = try box.decodeIfPresent(Int.self, forKey: .schema) ?? 1
         projectId = try box.decodeIfPresent(String.self, forKey: .projectId) ?? ""
         title = try box.decodeIfPresent(String.self, forKey: .title) ?? ""
+        verify = try box.decodeIfPresent(String.self, forKey: .verify)
         tasks = try box.decodeIfPresent([PlanTask].self, forKey: .tasks) ?? []
     }
 
@@ -115,6 +125,10 @@ enum TaskEventType: String, Codable, Sendable {
     /// them: a judge scoring its own family rates it higher, and self-refinement
     /// by the same model amplifies that bias rather than cancelling it.
     case verified, rejected
+    /// Written by Throttle, never by an agent: the verification it ran itself, and
+    /// the fast-forward it performed. They are facts about a finished task, so they
+    /// do not go through ownership.
+    case checked, integrated
 }
 
 /// One line of a task's NDJSON log. Flat rather than a payload union, because the
@@ -136,10 +150,13 @@ struct TaskEvent: Codable, Sendable, Equatable {
     var reason: String?
     var summary: String?
     var missionID: String?
+    /// Set only on `checked`: whether Throttle's own verify command passed.
+    var ok: Bool?
 
     init(seq: Int, timestamp: Date, author: String, type: TaskEventType, prev: String? = nil,
          pct: Int? = nil, note: String? = nil, kind: String? = nil, ref: String? = nil,
-         reason: String? = nil, summary: String? = nil, missionID: String? = nil) {
+         reason: String? = nil, summary: String? = nil, missionID: String? = nil,
+         ok: Bool? = nil) {
         self.seq = seq
         self.timestamp = timestamp
         self.author = author
@@ -152,6 +169,7 @@ struct TaskEvent: Codable, Sendable, Equatable {
         self.reason = reason
         self.summary = summary
         self.missionID = missionID
+        self.ok = ok
     }
 
     /// The runtime half of `by`, used for display and for lot E's
@@ -161,7 +179,7 @@ struct TaskEvent: Codable, Sendable, Equatable {
     // The wire format keeps the short keys: an NDJSON log is read by humans and
     // grepped by agents, where `at`/`by` earn their brevity.
     enum CodingKeys: String, CodingKey {
-        case seq, prev, pct, note, kind, ref, reason, summary, missionID, type
+        case seq, prev, pct, note, kind, ref, reason, summary, missionID, type, ok
         case timestamp = "at"
         case author = "by"
     }
@@ -170,7 +188,16 @@ struct TaskEvent: Codable, Sendable, Equatable {
 // MARK: - Projection
 
 enum TaskStatus: String, Codable, Sendable {
-    case pending, blocked, claimed, running, review, done, failed
+    case pending, blocked, claimed, running, review, done, failed, integrated
+}
+
+/// The verification Throttle ran, stamped with the two SHAs it was true for. It
+/// stops being green on its own the moment either side moves — which is the merge
+/// queue's guarantee without the queue.
+struct TaskCheck: Codable, Sendable, Equatable {
+    let ok: Bool
+    let stamp: String
+    let at: Date
 }
 
 struct TaskEvidence: Codable, Sendable, Equatable, Hashable {
@@ -221,4 +248,6 @@ struct TaskState: Codable, Sendable, Equatable {
     /// going through Throttle. A signal to surface, not a corruption to hide.
     var chainValid: Bool = true
     var rejected: [RejectedEvent] = []
+    var lastCheck: TaskCheck?
+    var integratedSHA: String?
 }

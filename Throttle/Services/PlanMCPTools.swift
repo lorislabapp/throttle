@@ -176,9 +176,10 @@ enum PlanMCPTools {
     static func eventText(_ request: EventRequest) -> String {
         let taskID = request.taskID
         let author = request.author
-        guard let eventType = TaskEventType(rawValue: request.type), eventType != .claimed else {
+        guard let eventType = TaskEventType(rawValue: request.type),
+              eventType != .claimed, eventType != .checked, eventType != .integrated else {
             return "Refused: unknown event type '\(request.type)'."
-                + " Use throttle_task_claim to take a task."
+                + " Use throttle_task_claim to take a task; checks and integrations are Throttle's to write."
         }
         let store = store(request.project)
         guard let plan = try? store.loadPlan(), plan.task(taskID) != nil else {

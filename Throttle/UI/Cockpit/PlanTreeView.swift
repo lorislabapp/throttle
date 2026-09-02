@@ -144,7 +144,7 @@ struct PlanTreeView: View {
 
     private func color(_ status: TaskStatus) -> Color {
         switch status {
-        case .done:                 return .green
+        case .done, .integrated:    return .green
         case .failed:               return .red
         case .running, .claimed:    return .blue
         case .review:               return .purple
