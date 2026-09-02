@@ -3,6 +3,11 @@ import Foundation
 enum TaskIntegrationError: Error, Equatable {
     case noWorktree(String)
     case gitFailed(String)
+    /// A conflicting rebase failed to abort. The worktree may still be mid-rebase —
+    /// this is deliberately distinct from `gitFailed` so a caller can tell "restored,
+    /// and it conflicted" apart from "may still be half-done". Carries both outputs:
+    /// the original rebase failure and the abort's own failure.
+    case rebaseAbortFailed(rebaseOutput: String, abortOutput: String)
     /// A guard that held. Rendered to the user as-is, so each case says which one.
     case refused(Refusal)
 
@@ -124,7 +129,11 @@ enum TaskIntegrationService {
 
         let result = git(["rebase", before.baseSHA], in: worktree)
         guard result.ok else {
-            git(["rebase", "--abort"], in: worktree)
+            let abort = git(["rebase", "--abort"], in: worktree)
+            guard abort.ok else {
+                throw TaskIntegrationError.rebaseAbortFailed(rebaseOutput: result.output,
+                                                              abortOutput: abort.output)
+            }
             throw TaskIntegrationError.gitFailed(result.output)
         }
         return try assess(taskID: taskID, in: repo)

@@ -144,4 +144,27 @@ final class TaskIntegrationServiceTests: XCTestCase {
             XCTAssertEqual($0 as? TaskIntegrationError, .refused(.dirty))
         }
     }
+
+    /// Forcing a real `git rebase --abort` to fail requires deliberately corrupting
+    /// a worktree's git state, which isn't worth contorting the test setup for — so
+    /// this is unit-level coverage of the error case itself: it carries both outputs
+    /// distinctly, and stays distinct from a plain `gitFailed`. The `guard abort.ok
+    /// else { throw .rebaseAbortFailed(...) }` branch inside `rebase` itself is not
+    /// exercised by any test.
+    func test_rebaseAbortFailed_carriesBothOutputsAndComparesByValue() {
+        let a = TaskIntegrationError.rebaseAbortFailed(
+            rebaseOutput: "CONFLICT (content): Merge conflict in file.txt",
+            abortOutput: "fatal: no rebase in progress?")
+        let b = TaskIntegrationError.rebaseAbortFailed(
+            rebaseOutput: "CONFLICT (content): Merge conflict in file.txt",
+            abortOutput: "fatal: no rebase in progress?")
+        let differentAbortOutput = TaskIntegrationError.rebaseAbortFailed(
+            rebaseOutput: "CONFLICT (content): Merge conflict in file.txt",
+            abortOutput: "a different failure")
+
+        XCTAssertEqual(a, b)
+        XCTAssertNotEqual(a, differentAbortOutput)
+        XCTAssertNotEqual(a, .gitFailed("CONFLICT (content): Merge conflict in file.txt"),
+                          "distinct from a plain gitFailed even with the same rebase output")
+    }
 }
