@@ -44,72 +44,69 @@
 
 - [ ] **Step 1: Écrire les tests qui échouent**
 
-Ajouter à `ThrottleTests/ServiceTests/PlanProjectionTests.swift`. Le helper `event(...)` et `task(...)` existent déjà dans ce fichier — les réutiliser tels quels; s'ils portent d'autres noms, s'aligner sur ceux du fichier.
+Ajouter à `ThrottleTests/ServiceTests/PlanProjectionTests.swift`. Ce fichier a deux helpers, et deux seulement: `at(_ seconds: Int) -> Date` et `task(_ id:parent:order:dependsOn:sotaGate:)`. Les événements s'y écrivent en toutes lettres, `TaskEvent(seq:timestamp:author:type:…)` — garder ce style.
 
 ```swift
 // MARK: - Lot F: checked / integrated
 
-func test_checked_isAcceptedOnDoneTaskFromAnyAuthor() {
-    let events = [
-        event(1, "claude:a", .claimed),
-        event(2, "claude:a", .completed),
-        TaskEvent(seq: 3, timestamp: Date(), author: "throttle:app", type: .checked,
+func testCheckedIsAcceptedOnADoneTaskWhoeverWroteIt() {
+    let projected = PlanProjection.project(task: task("T1"), events: [
+        TaskEvent(seq: 1, timestamp: at(0), author: "codex:a", type: .claimed),
+        TaskEvent(seq: 2, timestamp: at(1), author: "codex:a", type: .completed),
+        TaskEvent(seq: 3, timestamp: at(2), author: "throttle:app", type: .checked,
                   ref: "abc+def", ok: true)
-    ]
-    let state = PlanProjection.project(task: task(), events: events)
-    XCTAssertTrue(state.rejected.isEmpty, "Throttle's own check is not an agent report")
-    XCTAssertEqual(state.lastCheck?.stamp, "abc+def")
-    XCTAssertEqual(state.lastCheck?.ok, true)
-    XCTAssertEqual(state.status, .done, "a check does not move the task")
+    ])
+    XCTAssertTrue(projected.rejected.isEmpty, "Throttle's own check is not an agent report")
+    XCTAssertEqual(projected.lastCheck?.stamp, "abc+def")
+    XCTAssertEqual(projected.lastCheck?.ok, true)
+    XCTAssertEqual(projected.status, .done, "a check does not move the task")
 }
 
-func test_checked_isRefusedBeforeTheTaskIsDone() {
-    let events = [
-        event(1, "claude:a", .claimed),
-        TaskEvent(seq: 2, timestamp: Date(), author: "throttle:app", type: .checked,
+func testCheckedIsRefusedBeforeTheTaskIsDone() {
+    let projected = PlanProjection.project(task: task("T1"), events: [
+        TaskEvent(seq: 1, timestamp: at(0), author: "codex:a", type: .claimed),
+        TaskEvent(seq: 2, timestamp: at(1), author: "throttle:app", type: .checked,
                   ref: "abc+def", ok: true)
-    ]
-    let state = PlanProjection.project(task: task(), events: events)
-    XCTAssertEqual(state.rejected.first?.reason, .terminal)
-    XCTAssertNil(state.lastCheck)
+    ])
+    XCTAssertEqual(projected.rejected.first?.reason, .terminal)
+    XCTAssertNil(projected.lastCheck)
 }
 
-func test_integrated_movesADoneTaskAndIsItselfTerminal() {
-    let events = [
-        event(1, "claude:a", .claimed),
-        event(2, "claude:a", .completed),
-        TaskEvent(seq: 3, timestamp: Date(), author: "throttle:app", type: .integrated,
+func testIntegratedMovesADoneTaskAndIsItselfTerminal() {
+    let projected = PlanProjection.project(task: task("T1"), events: [
+        TaskEvent(seq: 1, timestamp: at(0), author: "codex:a", type: .claimed),
+        TaskEvent(seq: 2, timestamp: at(1), author: "codex:a", type: .completed),
+        TaskEvent(seq: 3, timestamp: at(2), author: "throttle:app", type: .integrated,
                   ref: "deadbeef"),
-        event(4, "claude:a", .progress)
-    ]
-    let state = PlanProjection.project(task: task(), events: events)
-    XCTAssertEqual(state.status, .integrated)
-    XCTAssertEqual(state.integratedSHA, "deadbeef")
-    XCTAssertEqual(state.rejected.last?.reason, .terminal,
+        TaskEvent(seq: 4, timestamp: at(3), author: "codex:a", type: .progress, pct: 50)
+    ])
+    XCTAssertEqual(projected.status, .integrated)
+    XCTAssertEqual(projected.integratedSHA, "deadbeef")
+    XCTAssertEqual(projected.rejected.last?.reason, .terminal,
                    "nothing follows an integration")
 }
 
-func test_integratedTaskSatisfiesADependency() {
+func testIntegratedDependencyDoesNotBlockItsDependent() {
     let plan = Plan(projectId: "p", title: "P", tasks: [
-        PlanTask(id: "a", title: "A"),
-        PlanTask(id: "b", title: "B", dependsOn: ["a"])
+        task("A"),
+        task("B", dependsOn: ["A"])
     ])
     var integrated = TaskState()
     integrated.status = .integrated
-    let states = PlanProjection.resolve(plan: plan, leafStates: ["a": integrated])
-    XCTAssertEqual(states["b"]?.status, .pending,
+    let states = PlanProjection.resolve(plan: plan, leafStates: ["A": integrated])
+    XCTAssertEqual(states["B"]?.status, .pending,
                    "an integrated dependency is finished, so B is not blocked")
 }
 
-func test_rollupCountsIntegratedChildrenAsFinished() {
+func testRollupCountsIntegratedChildrenAsFinished() {
     let plan = Plan(projectId: "p", title: "P", tasks: [
-        PlanTask(id: "phase", title: "Phase"),
-        PlanTask(id: "a", parent: "phase", title: "A"),
-        PlanTask(id: "b", parent: "phase", title: "B")
+        task("phase"),
+        task("A", parent: "phase"),
+        task("B", parent: "phase")
     ])
     var done = TaskState(); done.status = .done
     var integrated = TaskState(); integrated.status = .integrated
-    let states = PlanProjection.resolve(plan: plan, leafStates: ["a": done, "b": integrated])
+    let states = PlanProjection.resolve(plan: plan, leafStates: ["A": done, "B": integrated])
     XCTAssertEqual(states["phase"]?.status, .done)
 }
 ```
@@ -605,9 +602,10 @@ func test_rebase_abortsAndRestoresTheOriginalSHAOnConflict() throws {
 
     XCTAssertThrowsError(try TaskIntegrationService.rebase(taskID: "t1", in: repo))
     XCTAssertEqual(headSHA(path), before, "an aborted rebase leaves the SHA where it was")
-    XCTAssertFalse(FileManager.default.fileExists(
-        atPath: path.appendingPathComponent(".git").path + "/rebase-merge"),
-                   "no rebase is left in progress")
+    // `.git` is a file inside a worktree, so probing for a `rebase-merge` directory
+    // there would pass no matter what. git's own status is the honest witness.
+    XCTAssertFalse(run(["status"], in: path).contains("rebase in progress"),
+                   "no rebase is left half-done")
     XCTAssertTrue(run(["status", "--porcelain"], in: path)
         .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 }
