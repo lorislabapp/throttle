@@ -78,7 +78,18 @@ extension PlanTreeView {
         HStack(spacing: 8) {
             Button(model.integrationStep == .idle
                    ? "Integrate" : model.integrationStep.rawValue.capitalized) {
-                Task { integrationError = await model.integrate(taskID: taskID) }
+                // The previous refusal goes before the new attempt, not after it:
+                // old red text under a button reading "Rebasing" describes nothing.
+                integrationError = nil
+                Task {
+                    let outcome = await model.integrate(taskID: taskID)
+                    // A verification runs for minutes, and the user is free to look
+                    // elsewhere meanwhile. A refusal that belongs to a card nobody
+                    // is on is dropped rather than pinned under the next task — the
+                    // failed `checked` event is in that task's own log either way.
+                    guard model.selection == taskID else { return }
+                    integrationError = outcome
+                }
             }
             .controlSize(.small)
             .disabled(model.integrationStep != .idle || blocked(assessment))
