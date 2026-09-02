@@ -13,6 +13,10 @@ struct PlanTreeView: View {
     var onLaunch: ((TaskLauncher.LaunchPlan) -> Void)?
 
     @State var launchError: String?
+    @State var integrationError: String?
+    /// The task whose diff is open, if any. Kept here rather than in the model:
+    /// which disclosure is unfolded is a property of this view, not of the plan.
+    @State var expandedDiff: String?
 
     private let hair = Color.primary.opacity(0.10)
 
@@ -185,6 +189,8 @@ struct PlanTreeView: View {
 
                     if let advice = model.advice[id] { recommendation(advice, taskID: id) }
 
+                    integration(task, state)
+
                     section("LOG")
                     ForEach(model.events(for: id), id: \.seq) { event in
                         Text("\(event.seq)  \(event.author)  \(event.type.rawValue)"
@@ -196,6 +202,14 @@ struct PlanTreeView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(14)
             }
+            // Assessing shells out to git, so it happens once when the selection or
+            // the task's status changes — never while the inspector is drawing.
+            .task(id: "\(id)/\(state.status.rawValue)") {
+                await model.refreshAssessment(for: id)
+            }
+            // A refusal belongs to the task it was refused on, so it does not
+            // follow the selection onto the next one.
+            .onChange(of: id) { _, _ in integrationError = nil }
         } else {
             message("Select a task.", detail: nil)
         }

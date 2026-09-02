@@ -203,4 +203,169 @@ final class PlanModel {
         let pcts = plan.roots.map { Double(state($0.id).pct) }
         return Int((pcts.reduce(0, +) / Double(pcts.count)).rounded())
     }
+
+    // MARK: - Integration
+
+    /// What the button is doing right now, so the card can say which step it
+    /// stopped at rather than only that something failed.
+    enum IntegrationStep: String, Sendable {
+        case idle, rebasing, verifying, merging
+    }
+
+    private(set) var integrationStep: IntegrationStep = .idle
+    /// The command the user has been asked to allow, if any.
+    private(set) var pendingVerifyCommand: String?
+
+    /// Assessing a task shells out to git half a dozen times, so it is computed
+    /// when the inspector's selection changes and cached here — never read from a
+    /// SwiftUI `body`, which would run git on every draw of a scrolling list.
+    private(set) var assessments: [String: Assessment] = [:]
+    /// Same for the diff, fetched only when the user opens the disclosure.
+    private(set) var diffs: [String: String] = [:]
+
+    /// Where consent to run a verify command is stored. Injectable so a test suite
+    /// never grants itself anything in the user's real defaults.
+    var verifyConsentDefaults: UserDefaults = .standard
+}
+
+// MARK: - Integration
+
+/// Split from the class body to stay under SwiftLint's `type_body_length`. The
+/// stored properties above cannot move — `@Observable` only rewrites the class
+/// body — but the sequence itself can, and `private` still reaches `root` and
+/// `store` from a same-file extension.
+extension PlanModel {
+
+    private static var author: String { "throttle:app" }
+
+    /// The task's own command wins over the project's: a task that needs a
+    /// narrower check should not be forced through the whole suite.
+    func verifyCommand(for taskID: String) -> String? {
+        plan?.task(taskID)?.verify ?? plan?.verify
+    }
+
+    func assessment(for taskID: String) -> Assessment? { assessments[taskID] }
+
+    func integrationDiff(for taskID: String) -> String { diffs[taskID] ?? "" }
+
+    /// Reads what the task would merge, off the main actor. Only a `.done` task has
+    /// anything to assess; anything else drops the cached entry, which is what
+    /// clears the card once the merge landed.
+    func refreshAssessment(for taskID: String) async {
+        guard let root, state(taskID).status == .done else {
+            assessments[taskID] = nil
+            return
+        }
+        assessments[taskID] = try? await Self.offMain {
+            try TaskIntegrationService.assess(taskID: taskID, in: root)
+        }
+    }
+
+    func refreshDiff(for taskID: String) async {
+        guard let root else { return }
+        diffs[taskID] = (try? await Self.offMain {
+            try TaskIntegrationService.diff(taskID: taskID, in: root)
+        }) ?? ""
+    }
+
+    /// Runs rebase → verify → merge and returns nil on success, or the refusal to
+    /// show. Stops at the first thing that says no; nothing is written to the base
+    /// branch unless all three passed.
+    ///
+    /// Async because the middle step runs the project's own check command, which
+    /// can take minutes — on the actor that draws, that is a frozen app.
+    func integrate(taskID: String) async -> String? {
+        guard integrationStep == .idle else {
+            return "An integration is already running."
+        }
+        guard let root, let store, let task = plan?.task(taskID) else {
+            return "This project has no plan to integrate against."
+        }
+        guard let command = verifyCommand(for: taskID) else {
+            return "No verify command in this plan — add `verify` to the plan or the task."
+        }
+        guard VerifyConsent.isGranted(project: root, command: command,
+                                      defaults: verifyConsentDefaults) else {
+            pendingVerifyCommand = command
+            return "Throttle has not been allowed to run `\(command)` in this project yet."
+        }
+        pendingVerifyCommand = nil
+
+        integrationStep = .rebasing
+        let outcome = await runSequence(taskID: taskID, task: task, root: root,
+                                        store: store, command: command)
+        integrationStep = .idle
+        reload()
+        await refreshAssessment(for: taskID)
+        return outcome
+    }
+
+    /// The three steps themselves, each one off the main actor with the step
+    /// published between them. Split from `integrate` so the guards, the step
+    /// reset and the reload all happen on exactly one path.
+    private func runSequence(taskID: String, task: PlanTask, root: URL,
+                             store: PlanStore, command: String) async -> String? {
+        let author = Self.author
+        do {
+            _ = try await Self.offMain {
+                try TaskIntegrationService.rebase(taskID: taskID, in: root)
+            }
+            integrationStep = .verifying
+            let verdict = try await Self.offMain {
+                try TaskIntegrationService.verify(taskID: taskID, in: root, command: command,
+                                                  store: store, author: author)
+            }
+            guard verdict.passed else {
+                return "The verification failed, so nothing was merged.\n"
+                    + String(verdict.output.suffix(600))
+            }
+            integrationStep = .merging
+            _ = try await Self.offMain {
+                try TaskIntegrationService.integrate(taskID: taskID, in: root, store: store,
+                                                     task: task, author: author)
+            }
+            return nil
+        } catch let error as TaskIntegrationError {
+            return Self.explain(error)
+        } catch {
+            return String(describing: error)
+        }
+    }
+
+    func allowVerifyCommand() {
+        guard let root, let command = pendingVerifyCommand else { return }
+        VerifyConsent.grant(project: root, command: command, defaults: verifyConsentDefaults)
+        pendingVerifyCommand = nil
+    }
+
+    /// One blocking git or shell call, run off the main actor. `PlanStore` guards
+    /// itself with a lock and `TaskIntegrationService` is a stateless enum, so both
+    /// are safe here; what is not safe is holding the drawing actor for minutes.
+    private static func offMain<T: Sendable>(
+        _ work: @escaping @Sendable () throws -> T) async throws -> T {
+        try await Task.detached(priority: .userInitiated, operation: work).value
+    }
+
+    private static func explain(_ error: TaskIntegrationError) -> String {
+        switch error {
+        case .noWorktree(let id):
+            return "\(id) has no worktree — nothing to integrate."
+        case .gitFailed(let output):
+            return String(output.suffix(600))
+        case .rebaseAbortFailed(let rebaseOutput, let abortOutput):
+            // The one case where the worktree may be left mid-rebase, so it names
+            // the command that gets the agent's own state back.
+            return "The rebase conflicted and could not be undone — the worktree may still "
+                + "be mid-rebase. Run `git rebase --abort` in it.\n"
+                + String(rebaseOutput.suffix(300)) + "\n" + String(abortOutput.suffix(300))
+        case .refused(.dirty):
+            return "The worktree still holds uncommitted changes."
+        case .refused(.behind):
+            return "The base moved — rebase again before integrating."
+        case .refused(.unverified):
+            return "No green check for these exact commits."
+        case .refused(.ungated):
+            return "SOTA-gated: counter-analysis has not ruled on it."
+        }
+    }
 }
