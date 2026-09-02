@@ -104,4 +104,44 @@ final class TaskIntegrationServiceTests: XCTestCase {
         let text = try TaskIntegrationService.diff(taskID: "t1", in: repo)
         XCTAssertTrue(text.contains("+line two"))
     }
+
+    // MARK: - rebase
+
+    func test_rebase_replaysTheTaskOnTheAdvancedBase() throws {
+        try worktree("t1", file: "task.txt", contents: "task work\n")
+        try "base work\n".write(to: repo.appendingPathComponent("base.txt"),
+                                atomically: true, encoding: .utf8)
+        run(["add", "."]); run(["commit", "-q", "-m", "base moves"])
+
+        let after = try TaskIntegrationService.rebase(taskID: "t1", in: repo)
+        XCTAssertEqual(after.behindBy, 0, "the task now sits on top of the base")
+        XCTAssertEqual(after.aheadBy, 1)
+        XCTAssertEqual(after.mergeability, .clean)
+    }
+
+    func test_rebase_abortsAndRestoresTheOriginalSHAOnConflict() throws {
+        let path = try worktree("t1", contents: "task side\n")
+        try "base side\n".write(to: repo.appendingPathComponent("file.txt"),
+                                atomically: true, encoding: .utf8)
+        run(["add", "."]); run(["commit", "-q", "-m", "base moves"])
+        let before = headSHA(path)
+
+        XCTAssertThrowsError(try TaskIntegrationService.rebase(taskID: "t1", in: repo))
+        XCTAssertEqual(headSHA(path), before, "an aborted rebase leaves the SHA where it was")
+        // `.git` is a file inside a worktree, so probing for a `rebase-merge` directory
+        // there would pass no matter what. git's own status is the honest witness.
+        XCTAssertFalse(run(["status"], in: path).contains("rebase in progress"),
+                       "no rebase is left half-done")
+        XCTAssertTrue(run(["status", "--porcelain"], in: path)
+            .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    }
+
+    func test_rebase_refusesADirtyWorktree() throws {
+        let path = try worktree("t1", file: "task.txt", contents: "task work\n")
+        try "scratch\n".write(to: path.appendingPathComponent("notes.txt"),
+                              atomically: true, encoding: .utf8)
+        XCTAssertThrowsError(try TaskIntegrationService.rebase(taskID: "t1", in: repo)) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.dirty))
+        }
+    }
 }

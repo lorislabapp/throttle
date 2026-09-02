@@ -110,6 +110,26 @@ enum TaskIntegrationService {
             }
     }
 
+    // MARK: - Rebase
+
+    /// Replays the task's commits on top of the current base, inside the task's own
+    /// worktree. Refuses to touch a worktree holding uncommitted work, and aborts at
+    /// the first conflict so a failure leaves the agent's state exactly as it was.
+    @discardableResult
+    static func rebase(taskID: String, in repo: URL) throws -> Assessment {
+        let worktree = try existingWorktree(taskID, in: repo)
+        let before = try assess(taskID: taskID, in: repo)
+        guard !before.isDirty else { throw TaskIntegrationError.refused(.dirty) }
+        guard before.behindBy > 0 else { return before }
+
+        let result = git(["rebase", before.baseSHA], in: worktree)
+        guard result.ok else {
+            git(["rebase", "--abort"], in: worktree)
+            throw TaskIntegrationError.gitFailed(result.output)
+        }
+        return try assess(taskID: taskID, in: repo)
+    }
+
     // MARK: - git
 
     private static func existingWorktree(_ taskID: String, in repo: URL) throws -> URL {
