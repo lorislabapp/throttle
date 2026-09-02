@@ -152,19 +152,19 @@ final class TaskIntegrationServiceTests: XCTestCase {
     /// else { throw .rebaseAbortFailed(...) }` branch inside `rebase` itself is not
     /// exercised by any test.
     func test_rebaseAbortFailed_carriesBothOutputsAndComparesByValue() {
-        let a = TaskIntegrationError.rebaseAbortFailed(
+        let first = TaskIntegrationError.rebaseAbortFailed(
             rebaseOutput: "CONFLICT (content): Merge conflict in file.txt",
             abortOutput: "fatal: no rebase in progress?")
-        let b = TaskIntegrationError.rebaseAbortFailed(
+        let identical = TaskIntegrationError.rebaseAbortFailed(
             rebaseOutput: "CONFLICT (content): Merge conflict in file.txt",
             abortOutput: "fatal: no rebase in progress?")
         let differentAbortOutput = TaskIntegrationError.rebaseAbortFailed(
             rebaseOutput: "CONFLICT (content): Merge conflict in file.txt",
             abortOutput: "a different failure")
 
-        XCTAssertEqual(a, b)
-        XCTAssertNotEqual(a, differentAbortOutput)
-        XCTAssertNotEqual(a, .gitFailed("CONFLICT (content): Merge conflict in file.txt"),
+        XCTAssertEqual(first, identical)
+        XCTAssertNotEqual(first, differentAbortOutput)
+        XCTAssertNotEqual(first, .gitFailed("CONFLICT (content): Merge conflict in file.txt"),
                           "distinct from a plain gitFailed even with the same rebase output")
     }
 
@@ -189,9 +189,9 @@ final class TaskIntegrationServiceTests: XCTestCase {
 
         let verdict = try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
                                                         store: store, author: "throttle:test")
-        XCTAssertTrue(verdict.ok)
+        XCTAssertTrue(verdict.passed)
         let state = try store.state(for: "t1")
-        XCTAssertEqual(state.lastCheck?.ok, true)
+        XCTAssertEqual(state.lastCheck?.passed, true)
         XCTAssertEqual(state.lastCheck?.stamp, verdict.stamp)
         XCTAssertEqual(state.status, .done, "verifying does not finish a task")
     }
@@ -204,9 +204,9 @@ final class TaskIntegrationServiceTests: XCTestCase {
         let verdict = try TaskIntegrationService.verify(taskID: "t1", in: repo,
                                                         command: "echo boom >&2; exit 3",
                                                         store: store, author: "throttle:test")
-        XCTAssertFalse(verdict.ok)
+        XCTAssertFalse(verdict.passed)
         XCTAssertTrue(verdict.output.contains("boom"))
-        XCTAssertEqual(try store.state(for: "t1").lastCheck?.ok, false)
+        XCTAssertEqual(try store.state(for: "t1").lastCheck?.passed, false)
     }
 
     func test_verify_runsInsideTheWorktreeNotTheRepo() throws {
@@ -217,6 +217,29 @@ final class TaskIntegrationServiceTests: XCTestCase {
         let verdict = try TaskIntegrationService.verify(taskID: "t1", in: repo,
                                                         command: "test -f only-here.txt",
                                                         store: store, author: "throttle:test")
-        XCTAssertTrue(verdict.ok, "the command sees the task's tree, not the base's")
+        XCTAssertTrue(verdict.passed, "the command sees the task's tree, not the base's")
+    }
+
+    /// The regression test for the hang `shell()` used to be able to get stuck in:
+    /// `readDataToEndOfFile()` blocked on the pipe closing, which a scheduled
+    /// `terminate()` alone did not guarantee. A command that would otherwise run
+    /// for 30s must come back — failed, with output that says why — close to its
+    /// own short timeout, never anywhere near the command's own duration.
+    func test_verify_killsAHungCommandAtTheTimeoutAndReportsIt() throws {
+        try worktree("t1", file: "task.txt", contents: "work\n")
+        let store = store()
+        try finishTask("t1", in: store)
+
+        let started = Date()
+        let verdict = try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "sleep 30",
+                                                        timeout: 1.5, store: store,
+                                                        author: "throttle:test")
+        let elapsed = Date().timeIntervalSince(started)
+
+        XCTAssertFalse(verdict.passed)
+        XCTAssertTrue(verdict.output.lowercased().contains("timed out"),
+                      "a timeout must say so, not fail silently or come back empty")
+        XCTAssertLessThan(elapsed, 10, "verify must not wait anywhere near the command's own 30s")
+        XCTAssertEqual(try store.state(for: "t1").lastCheck?.passed, false)
     }
 }

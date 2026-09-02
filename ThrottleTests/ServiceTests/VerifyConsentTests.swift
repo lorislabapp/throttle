@@ -10,7 +10,11 @@ final class VerifyConsentTests: XCTestCase {
     private let project = URL(fileURLWithPath: "/tmp/some-project")
 
     override func setUpWithError() throws {
-        defaults = UserDefaults(suiteName: "verify-consent-\(UUID().uuidString)")!
+        guard let suite = UserDefaults(suiteName: "verify-consent-\(UUID().uuidString)") else {
+            XCTFail("could not create an isolated UserDefaults suite for this test")
+            return
+        }
+        defaults = suite
     }
 
     func test_aCommandIsNotGrantedUntilItIsGranted() {

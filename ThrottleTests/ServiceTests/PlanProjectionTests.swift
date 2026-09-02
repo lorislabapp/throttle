@@ -356,11 +356,11 @@ extension PlanProjectionTests {
             TaskEvent(seq: 1, timestamp: at(0), author: "codex:a", type: .claimed),
             TaskEvent(seq: 2, timestamp: at(1), author: "codex:a", type: .completed),
             TaskEvent(seq: 3, timestamp: at(2), author: "throttle:app", type: .checked,
-                      ref: "abc+def", ok: true)
+                      ref: "abc+def", passed: true)
         ])
         XCTAssertTrue(projected.rejected.isEmpty, "Throttle's own check is not an agent report")
         XCTAssertEqual(projected.lastCheck?.stamp, "abc+def")
-        XCTAssertEqual(projected.lastCheck?.ok, true)
+        XCTAssertEqual(projected.lastCheck?.passed, true)
         XCTAssertEqual(projected.status, .done, "a check does not move the task")
     }
 
@@ -368,7 +368,7 @@ extension PlanProjectionTests {
         let projected = PlanProjection.project(task: task("T1"), events: [
             TaskEvent(seq: 1, timestamp: at(0), author: "codex:a", type: .claimed),
             TaskEvent(seq: 2, timestamp: at(1), author: "throttle:app", type: .checked,
-                      ref: "abc+def", ok: true)
+                      ref: "abc+def", passed: true)
         ])
         XCTAssertEqual(projected.rejected.first?.reason, .terminal)
         XCTAssertNil(projected.lastCheck)

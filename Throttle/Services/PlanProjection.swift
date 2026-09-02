@@ -116,9 +116,9 @@ enum PlanProjection {
             break   // handled by applyOwnerReport / applyVerdict, before this switch
 
         case .checked:
-            state.lastCheck = TaskCheck(ok: event.ok ?? false,
+            state.lastCheck = TaskCheck(passed: event.passed ?? false,
                                         stamp: event.ref ?? "",
-                                        at: event.timestamp)
+                                        ranAt: event.timestamp)
 
         case .integrated:
             state.status = .integrated

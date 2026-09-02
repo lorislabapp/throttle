@@ -150,13 +150,16 @@ struct TaskEvent: Codable, Sendable, Equatable {
     var reason: String?
     var summary: String?
     var missionID: String?
-    /// Set only on `checked`: whether Throttle's own verify command passed.
-    var ok: Bool?
+    /// Set only on `checked`: whether Throttle's own verify command passed. The
+    /// wire key stays the short `ok` (log brevity is a spec decision); the Swift
+    /// name is spelled out because SwiftLint's `identifier_name` floors at 3
+    /// characters.
+    var passed: Bool?
 
     init(seq: Int, timestamp: Date, author: String, type: TaskEventType, prev: String? = nil,
          pct: Int? = nil, note: String? = nil, kind: String? = nil, ref: String? = nil,
          reason: String? = nil, summary: String? = nil, missionID: String? = nil,
-         ok: Bool? = nil) {
+         passed: Bool? = nil) {
         self.seq = seq
         self.timestamp = timestamp
         self.author = author
@@ -169,7 +172,7 @@ struct TaskEvent: Codable, Sendable, Equatable {
         self.reason = reason
         self.summary = summary
         self.missionID = missionID
-        self.ok = ok
+        self.passed = passed
     }
 
     /// The runtime half of `by`, used for display and for lot E's
@@ -177,9 +180,11 @@ struct TaskEvent: Codable, Sendable, Equatable {
     var runtime: String { String(author.prefix(while: { $0 != ":" })) }
 
     // The wire format keeps the short keys: an NDJSON log is read by humans and
-    // grepped by agents, where `at`/`by` earn their brevity.
+    // grepped by agents, where `at`/`by`/`ok` earn their brevity even though the
+    // Swift-side names spell them out.
     enum CodingKeys: String, CodingKey {
-        case seq, prev, pct, note, kind, ref, reason, summary, missionID, type, ok
+        case seq, prev, pct, note, kind, ref, reason, summary, missionID, type
+        case passed = "ok"
         case timestamp = "at"
         case author = "by"
     }
@@ -195,9 +200,16 @@ enum TaskStatus: String, Codable, Sendable {
 /// stops being green on its own the moment either side moves — which is the merge
 /// queue's guarantee without the queue.
 struct TaskCheck: Codable, Sendable, Equatable {
-    let ok: Bool
+    let passed: Bool
     let stamp: String
-    let at: Date
+    let ranAt: Date
+
+    // The wire format keeps `ok`/`at`, matching the NDJSON log's own short keys.
+    enum CodingKeys: String, CodingKey {
+        case stamp
+        case passed = "ok"
+        case ranAt = "at"
+    }
 }
 
 struct TaskEvidence: Codable, Sendable, Equatable, Hashable {
