@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 enum TaskIntegrationError: Error, Equatable {
     case noWorktree(String)
@@ -39,7 +40,14 @@ struct Assessment: Sendable, Equatable {
     /// Commits the base has that the task branch does not — what a rebase would replay onto.
     let behindBy: Int
     let aheadBy: Int
+    /// Anything at all in the worktree that git would report, untracked files
+    /// included. Shown, never used to refuse: a `.build/` directory is not work.
     let isDirty: Bool
+    /// Tracked files with uncommitted modifications — the narrower question, and the
+    /// only one any step here refuses on. A verification runs an arbitrary project
+    /// command in that worktree, and the artefacts it leaves behind must not dead-end
+    /// the next click.
+    let hasLooseWork: Bool
     let files: [FileChange]
     let mergeability: Mergeability
 
@@ -54,6 +62,9 @@ struct Assessment: Sendable, Equatable {
 /// Reading never writes: `assess` computes the merge in git's object database and
 /// leaves the worktree at the exact SHA the agent left it on.
 enum TaskIntegrationService {
+
+    private static let logger = Logger(subsystem: "com.lorislab.throttle",
+                                       category: "TaskIntegration")
 
     // MARK: - Assess
 
@@ -80,12 +91,14 @@ enum TaskIntegrationService {
         }
 
         let dirty = isDirty(worktree, includingUntracked: true)
+        let loose = dirty && isDirty(worktree, includingUntracked: false)
 
         let ahead = count(["rev-list", "--count", "\(base)..\(task)"], in: repo)
         let behind = count(["rev-list", "--count", "\(task)..\(base)"], in: repo)
 
         return Assessment(baseSHA: base, taskSHA: task,
                           behindBy: behind, aheadBy: ahead, isDirty: dirty,
+                          hasLooseWork: loose,
                           files: numstat(base: base, task: task, in: repo),
                           mergeability: mergeability(base: base, task: task, in: repo))
     }
@@ -158,11 +171,19 @@ enum TaskIntegrationService {
     /// Replays the task's commits on top of the current base, inside the task's own
     /// worktree. Refuses to touch a worktree holding uncommitted work, and aborts at
     /// the first conflict so a failure leaves the agent's state exactly as it was.
+    ///
+    /// Tracked modifications only, like `integrate`. The strict, untracked-inclusive
+    /// check bought a dead end and nothing else: a `.build/` directory or a coverage
+    /// file left by the verification that just ran in this worktree blocked the *next*
+    /// click's rebase, with no click that could clear it. git refuses a rebase by
+    /// itself when an untracked file would actually be overwritten, and the
+    /// `--abort` path below restores the worktree cleanly when it does — so the real
+    /// hazard is already covered by the tool that knows which files are at stake.
     @discardableResult
     static func rebase(taskID: String, in repo: URL) throws -> Assessment {
         let worktree = try existingWorktree(taskID, in: repo)
         let before = try assess(taskID: taskID, in: repo)
-        guard !before.isDirty else { throw TaskIntegrationError.refused(.dirty) }
+        guard !before.hasLooseWork else { throw TaskIntegrationError.refused(.dirty) }
         guard before.behindBy > 0 else { return before }
 
         let result = git(["rebase", before.baseSHA], in: worktree)
@@ -201,7 +222,7 @@ enum TaskIntegrationService {
     @discardableResult
     static func integrate(taskID: String, in repo: URL, store: PlanStore,
                           task: PlanTask, author: String) throws -> String {
-        let worktree = try existingWorktree(taskID, in: repo)
+        _ = try existingWorktree(taskID, in: repo)
         // A detached repo HEAD would let `merge --ff-only` succeed and advance
         // nothing a branch points at: `integrated` would be logged for a merge that
         // moved no branch. Checked before the assessment and every refusal under it,
@@ -211,13 +232,11 @@ enum TaskIntegrationService {
                 "The repository is on a detached HEAD — check out the base branch before integrating.")
         }
         let assessment = try assess(taskID: taskID, in: repo)
-        // Tracked modifications only, unlike `rebase`'s strict check. The verification
-        // this integration depends on just ran an arbitrary project command in that
-        // worktree, and a build or coverage artefact it left behind would otherwise
-        // turn a green minutes-long check into a refusal with no way forward. A rebase
-        // really can be derailed by untracked files; a fast-forward that happens in the
-        // main repo and never reads this worktree cannot.
-        guard !isDirty(worktree, includingUntracked: false) else {
+        // Tracked modifications only. The verification this integration depends on
+        // just ran an arbitrary project command in that worktree, and a build or
+        // coverage artefact it left behind would otherwise turn a green minutes-long
+        // check into a refusal with no way forward.
+        guard !assessment.hasLooseWork else {
             throw TaskIntegrationError.refused(.dirty)
         }
         guard assessment.behindBy == 0 else { throw TaskIntegrationError.refused(.behind) }
@@ -237,7 +256,30 @@ enum TaskIntegrationService {
         let sha = try self.sha("HEAD", in: repo)
         try store.append(TaskEvent(seq: 0, timestamp: Date(), author: author,
                                    type: .integrated, ref: sha), to: taskID)
+        cleanUp(taskID: taskID, in: repo)
         return sha
+    }
+
+    /// Removes the task's worktree now that its commits are in the base. This is the
+    /// end of the accumulation this lot's scope opens by complaining about: without
+    /// it, every finished task leaves a full checkout behind for ever.
+    ///
+    /// Never with `force`, and never fatal. `TaskWorktreeService.remove` refuses
+    /// whenever the worktree still holds uncommitted changes or unmerged commits, and
+    /// that refusal stays authoritative — an integration that succeeded is not a
+    /// licence to delete something unexpected. Nor is a worktree left standing a
+    /// reason to report a merge that already happened as a failure: the reason is
+    /// logged, the caller is told nothing, and the directory stays for the user to
+    /// look at.
+    private static func cleanUp(taskID: String, in repo: URL) {
+        do {
+            try TaskWorktreeService.remove(taskID: taskID, in: repo)
+        } catch {
+            logger.notice("""
+                worktree for \(taskID, privacy: .public) left standing after integration: \
+                \(String(describing: error), privacy: .public)
+                """)
+        }
     }
 
     // MARK: - git

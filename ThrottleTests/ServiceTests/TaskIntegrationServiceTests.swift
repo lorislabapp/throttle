@@ -34,7 +34,10 @@ final class TaskIntegrationServiceTests: XCTestCase {
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
-        try? process.run()
+        // Not `try?`: a launch that throws (a working directory that no longer
+        // exists, say) leaves this process holding the pipe's write end, and the read
+        // below then blocks for ever with nothing to show for it.
+        do { try process.run() } catch { return String(describing: error) }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
         return String(bytes: data, encoding: .utf8) ?? ""
@@ -134,15 +137,6 @@ final class TaskIntegrationServiceTests: XCTestCase {
                        "no rebase is left half-done")
         XCTAssertTrue(run(["status", "--porcelain"], in: path)
             .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-    }
-
-    func test_rebase_refusesADirtyWorktree() throws {
-        let path = try worktree("t1", file: "task.txt", contents: "task work\n")
-        try "scratch\n".write(to: path.appendingPathComponent("notes.txt"),
-                              atomically: true, encoding: .utf8)
-        XCTAssertThrowsError(try TaskIntegrationService.rebase(taskID: "t1", in: repo)) {
-            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.dirty))
-        }
     }
 
     /// Forcing a real `git rebase --abort` to fail requires deliberately corrupting
@@ -259,10 +253,14 @@ extension TaskIntegrationServiceTests {
         try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
                                           store: store, author: "throttle:test")
 
+        // Read before, not after: a successful integration removes the worktree, so
+        // there is no `path` left to ask once the merge has landed.
+        let taskTip = headSHA(path)
+
         let sha = try TaskIntegrationService.integrate(taskID: "t1", in: repo, store: store,
                                                        task: PlanTask(id: "t1", title: "T1"),
                                                        author: "throttle:test")
-        XCTAssertEqual(sha, headSHA(path), "the base is now exactly the task's tip")
+        XCTAssertEqual(sha, taskTip, "the base is now exactly the task's tip")
         XCTAssertEqual(headSHA(), sha)
         let state = try store.state(for: "t1")
         XCTAssertEqual(state.status, .integrated)

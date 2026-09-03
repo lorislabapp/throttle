@@ -38,7 +38,10 @@ final class TaskIntegrationRefusalTests: XCTestCase {
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
-        try? process.run()
+        // Not `try?`: a launch that throws (a working directory that no longer
+        // exists, say) leaves this process holding the pipe's write end, and the read
+        // below then blocks for ever with nothing to show for it.
+        do { try process.run() } catch { return String(describing: error) }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
         return String(bytes: data, encoding: .utf8) ?? ""
@@ -186,8 +189,10 @@ extension TaskIntegrationRefusalTests {
                                           store: store, author: "throttle:test")
         XCTAssertTrue(FileManager.default.fileExists(
             atPath: path.appendingPathComponent(".build/artefact").path))
-        XCTAssertTrue(try TaskIntegrationService.assess(taskID: "t1", in: repo).isDirty,
-                      "the strict view still calls this dirty — that is what rebase reads")
+        let assessment = try TaskIntegrationService.assess(taskID: "t1", in: repo)
+        XCTAssertTrue(assessment.isDirty, "the untracked-inclusive view still calls this dirty")
+        XCTAssertFalse(assessment.hasLooseWork,
+                       "and the view every refusal reads does not — no tracked file moved")
 
         let merged = try integrate(store)
         XCTAssertEqual(sha("HEAD"), merged)
@@ -286,5 +291,51 @@ extension TaskIntegrationRefusalTests {
         XCTAssertThrowsError(try TaskIntegrationService.assess(taskID: "t1", in: repo)) {
             XCTAssertEqual($0 as? TaskIntegrationError, .refused(.detached))
         }
+    }
+}
+
+// MARK: - Cleaning up after a merge
+
+/// The worktree accumulation this lot's scope opens by complaining about. A third
+/// same-file extension, for the same `type_body_length` reason as the second.
+extension TaskIntegrationRefusalTests {
+
+    /// `TaskWorktreeService.remove` had no production caller at all, so every
+    /// integrated task left a full checkout behind for ever.
+    func test_integrate_removesTheWorktreeItJustMerged() throws {
+        let store = try makeStore()
+        let path = try finishedTask("t1", store: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                          store: store, author: "throttle:test")
+
+        let merged = try integrate(store)
+
+        XCTAssertEqual(sha("HEAD"), merged)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: path.path),
+                       "an integrated task's worktree is gone")
+        XCTAssertFalse(run(["worktree", "list"]).contains(path.path),
+                       "and git no longer lists it either")
+    }
+
+    /// The other direction, and the more important one: the refusal inside `remove`
+    /// stays authoritative. A worktree still holding something nobody integrated is
+    /// left standing — and a merge that already happened is still reported as the
+    /// success it was, never turned into a failure by the cleanup behind it.
+    func test_integrate_leavesAWorktreeThatStillHoldsWorkStanding() throws {
+        let store = try makeStore()
+        let path = try finishedTask("t1", store: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo,
+                                          command: "mkdir -p .build && touch .build/artefact",
+                                          store: store, author: "throttle:test")
+        XCTAssertTrue(try TaskWorktreeService.status(taskID: "t1", in: repo).holdsWork,
+                      "the worktree holds something remove refuses to drop")
+
+        let merged = try integrate(store)
+
+        XCTAssertEqual(sha("HEAD"), merged, "the integration succeeded")
+        XCTAssertEqual(try store.state(for: "t1").status, .integrated,
+                       "and is reported as such, cleanup or no cleanup")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path.path),
+                      "while the worktree it would not delete is still there")
     }
 }

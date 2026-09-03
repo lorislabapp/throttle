@@ -132,9 +132,13 @@ contre l'arbre du worktree pendant que l'estampille décrit la branche, et
 rebase(taskID, repo, onto) -> Result
 ```
 
-Refusé si le worktree porte des modifications non committées. `git rebase
---abort` au premier conflit, donc un échec laisse le worktree au sha exact où il
-était.
+Refusé si le worktree porte des modifications non committées **sur des fichiers
+suivis** — comme `integrate`. La vue stricte, qui comptait aussi les fichiers non
+suivis, ne faisait qu'ouvrir une impasse: un `.build/` laissé par la vérification
+précédente bloquait le rebase du clic suivant, sans aucun clic capable de le
+lever. git refuse le rebase de lui-même quand un fichier non suivi serait
+réellement écrasé. `git rebase --abort` au premier conflit, donc un échec laisse
+le worktree au sha exact où il était.
 
 ```
 verify(taskID, repo, command) -> Verdict
@@ -142,6 +146,15 @@ verify(taskID, repo, command) -> Verdict
 
 Lance la commande dans le worktree, avec un timeout et une sortie tronquée,
 puis écrit le `checked` correspondant.
+
+Le processus est lancé par `posix_spawn` avec `POSIX_SPAWN_SETPGROUP`, donc il
+**mène son propre groupe de processus**, et le timeout signale le groupe
+(SIGTERM puis SIGKILL). `Process` ne peut pas: il donne à l'enfant le groupe de
+Throttle, et seul le pid du shell pouvait être signalé — un `swift test` tué à
+son deadline laissait derrière lui le compilateur et les binaires de test, qui
+tenaient le pipe et la RAM. Le groupe n'est jamais supposé: `getpgid` est
+interrogé, et `kill(-pid, …)` n'est employé que si le noyau confirme que ce pid
+mène un groupe qui n'est pas celui de Throttle.
 
 ```
 integrate(taskID, repo) -> String   // sha de fusion
@@ -180,13 +193,14 @@ précédente, et découper le geste ferait porter à l'utilisateur un ordre
 d'opérations que le service connaît mieux que lui. Ce qui reste visible, c'est
 où ça s'est arrêté.
 
-Après intégration, le diff de la tâche devient vide, donc le worktree devient
-éligible au nettoyage que `TaskWorktreeService.remove` sait déjà refuser à bon
-escient. **Mais rien ne l'appelle**: câbler ce nettoyage n'est pas dans ce lot.
-La phrase précédente de cette spec prétendait le contraire — c'était faux, et
-l'accumulation de worktrees que le périmètre annonce reste entière après F. Un
-lot ultérieur le fait, sur un geste, jamais en supprimant du travail non
-intégré.
+Après une intégration réussie, `integrate` appelle `TaskWorktreeService.remove`
+sur la tâche: c'est ce qui ferme l'accumulation de worktrees annoncée par le
+périmètre. **Jamais avec `force`**, et le refus de `remove` reste souverain — un
+worktree qui porte encore des modifications non committées ou des commits non
+fusionnés est laissé debout, la raison est journalisée, et l'intégration reste
+rapportée comme le succès qu'elle est. Une intégration réussie n'est pas un
+permis de supprimer quelque chose d'inattendu, et un échec de nettoyage ne
+transforme jamais une fusion qui a eu lieu en échec.
 
 ## Tests
 
@@ -207,9 +221,17 @@ Sur de vrais dépôts git jetables, comme le lot D — les refus sont ce qui com
   avant lui, `integrated` est le seul accepté sur une tâche `done`.
 - **Consentement**: une commande jamais confirmée n'est pas exécutée; la même
   commande reconfirmée l'est; une commande modifiée redemande.
+- **Groupe de processus**: une commande qui lance un enfant survivant à son
+  parent ne laisse **aucun descendant vivant** après le timeout — assertion sur
+  `kill(pid, 0)` et sur le fichier témoin que l'orphelin n'a pas écrit.
+- **Artefact de build**: un `.build/` non suivi ne bloque ni le rebase ni la
+  carte, alors qu'un fichier suivi modifié bloque toujours les deux.
+- **Nettoyage**: le worktree d'une tâche intégrée disparaît; un worktree qui
+  porte encore du travail reste debout et l'intégration reste un succès.
 
 ## Ce que le lot F ne fait pas
 
 Résoudre un conflit, merger sans clic, pousser quoi que ce soit, ouvrir une PR,
 intégrer plusieurs tâches d'un geste, exécuter une commande jamais confirmée, ou
-supprimer un worktree dont le travail n'est pas dans la base.
+supprimer un worktree dont le travail n'est pas dans la base — le nettoyage
+d'après-intégration s'arrête exactement là où `remove` refuse.

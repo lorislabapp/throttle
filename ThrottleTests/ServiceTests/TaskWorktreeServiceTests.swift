@@ -35,7 +35,10 @@ final class TaskWorktreeServiceTests: XCTestCase {
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
-        try? process.run()
+        // Not `try?`: a launch that throws (a working directory that no longer
+        // exists, say) leaves this process holding the pipe's write end, and the read
+        // below then blocks for ever with nothing to show for it.
+        do { try process.run() } catch { return String(describing: error) }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
         return String(bytes: data, encoding: .utf8) ?? ""
