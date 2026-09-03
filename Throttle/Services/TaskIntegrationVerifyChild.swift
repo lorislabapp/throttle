@@ -64,6 +64,22 @@ extension TaskIntegrationService {
         }
     }
 
+    /// What one signal from `ChildControl` did: whether anything received it, and
+    /// whether the child itself was still running when it went out.
+    ///
+    /// A sibling of `ChildControl` rather than a member of it, only because
+    /// SwiftLint's `nesting` allows one level and this file is already one deep.
+    struct SignalOutcome {
+        let sent: Bool
+        /// The child had not been reaped, so this interrupted a run in progress rather
+        /// than chasing what that run left behind. Only this may be read as a timeout:
+        /// a timeout is a statement about the run, and a run that had already finished
+        /// did not time out however many stragglers it left.
+        let interruptedTheRun: Bool
+
+        static let nothing = SignalOutcome(sent: false, interruptedTheRun: false)
+    }
+
     /// Owns a spawned child's pid, and the one rule that keeps this file safe: a
     /// signal and the `waitpid` that reaps that pid are mutually exclusive, so a
     /// signal can never land on a pid the kernel has already handed to something else.
@@ -86,24 +102,31 @@ extension TaskIntegrationService {
         }
 
         /// Signals the child's whole process group when it leads one, and the child
-        /// alone when it does not. Returns whether anything was signalled.
+        /// alone when it does not.
         ///
         /// The group form outlives the reap on purpose. POSIX keeps a process group id
         /// out of circulation for as long as the group still has members, so `-pid`
         /// cannot land on a stranger once the leader has been reaped — and after the
         /// leader has been reaped is exactly when the survivors are what matters. The
         /// pid form still stops at the reap, because a bare pid *is* reusable.
+        ///
+        /// That is why the reaped flag comes back in the result rather than gating the
+        /// signal. The escalation must still reach a group whose leader is gone; the
+        /// *timeout verdict* must not be pronounced over one. Both are read from the
+        /// same lock, so the answer cannot change between deciding to signal and
+        /// deciding what the signal meant.
         @discardableResult
-        func signal(_ sig: Int32) -> Bool {
+        func signal(_ sig: Int32) -> SignalOutcome {
             lock.lock(); defer { lock.unlock() }
+            let running = !reaped
             guard leadsOwnGroup else {
-                guard !reaped else { return false }
+                guard running else { return .nothing }
                 kill(pid, sig)
-                return true
+                return SignalOutcome(sent: true, interruptedTheRun: true)
             }
-            guard kill(-pid, 0) == 0 else { return false }
+            guard kill(-pid, 0) == 0 else { return .nothing }
             kill(-pid, sig)
-            return true
+            return SignalOutcome(sent: true, interruptedTheRun: running)
         }
 
         /// True when nothing is left in the child's process group — or when there was
@@ -160,9 +183,6 @@ extension TaskIntegrationService {
             return (raw & 0x7f) == 0 ? (raw >> 8) & 0xff : 128 + (raw & 0x7f)
         }
     }
-
-    /// Buffers a subprocess's output as the read source delivers it — on its own
-    /// queue, distinct from the queue the timeout escalation runs on — so both sides
 
     /// Buffers a subprocess's output as the read source delivers it — on its own
     /// queue, distinct from the queue the timeout escalation runs on — so both sides

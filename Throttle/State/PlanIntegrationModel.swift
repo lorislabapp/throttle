@@ -33,10 +33,14 @@ extension PlanModel {
         var errors: [String: String] = [:]
         /// Same as the assessment, fetched only when the user opens the disclosure.
         var diffs: [String: String] = [:]
-        /// Why an integrated task's worktree is still on disk, when it is. A
-        /// directory left behind after a merge is something the user has to be able
-        /// to see; absent means it went away, which needs no words.
-        var worktreeNotes: [String: String] = [:]
+        /// Where an integrated task's worktree still is, when it still is.
+        ///
+        /// Derived from the filesystem on every refresh, never remembered from the
+        /// run that produced it. It was a note the cleanup wrote, which meant any
+        /// rebind — `forgetCaches` below — or a relaunch left the directory sitting
+        /// there with nothing on the card to explain it. A fact about disk survives
+        /// both, and stops being true by itself the day the directory goes.
+        var keptWorktreePaths: [String: String] = [:]
         /// The command the user has been asked to allow, if any.
         var pendingVerifyCommand: String?
 
@@ -47,7 +51,7 @@ extension PlanModel {
             assessments = [:]
             errors = [:]
             diffs = [:]
-            worktreeNotes = [:]
+            keptWorktreePaths = [:]
             pendingVerifyCommand = nil
         }
     }
@@ -74,8 +78,10 @@ extension PlanModel {
     /// place of the controls rather than drawing nothing.
     func assessmentError(for taskID: String) -> String? { integration.errors[taskID] }
 
-    /// Why an integrated task's worktree is still on disk, when it is.
-    func worktreeNote(for taskID: String) -> String? { integration.worktreeNotes[taskID] }
+    /// Where an integrated task's worktree still is, when it still is.
+    func keptWorktreePath(for taskID: String) -> String? {
+        integration.keptWorktreePaths[taskID]
+    }
 
     func integrationDiff(for taskID: String) -> String { integration.diffs[taskID] ?? "" }
 
@@ -88,7 +94,15 @@ extension PlanModel {
     /// put one project's assessment into another project's cache — task ids are only
     /// unique inside one plan. Guarding before the `await` checked the wrong instant.
     func refreshAssessment(for taskID: String) async {
-        guard let root, state(taskID).status == .done else {
+        guard let root else {
+            integration.assessments[taskID] = nil
+            integration.errors[taskID] = nil
+            integration.keptWorktreePaths[taskID] = nil
+            return
+        }
+        let status = state(taskID).status
+        integration.keptWorktreePaths[taskID] = survivingWorktree(taskID, in: root, status: status)
+        guard status == .done else {
             integration.assessments[taskID] = nil
             integration.errors[taskID] = nil
             return
@@ -226,21 +240,28 @@ extension PlanModel {
     /// where the card can show it.
     private func cleanUpWorktree(taskID: String, in root: URL) async {
         guard let worktree = try? TaskWorktreeService.path(for: taskID, in: root) else { return }
-        if isDirectoryHeldBySession?(worktree) == true {
-            integration.worktreeNotes[taskID] =
-                "Worktree kept: a cockpit session is still working in it."
-            return
+        guard isDirectoryHeldBySession?(worktree) != true else { return }
+        // The reason a removal declined is logged by the service. It is deliberately
+        // not kept here: what the card shows is read back off disk afterwards, so it
+        // says the same thing after a tab switch and after a relaunch.
+        _ = try? await Self.offMain {
+            TaskIntegrationService.removeWorktree(taskID: taskID, in: root)
         }
-        let kept: String?
-        do {
-            kept = try await Self.offMain {
-                TaskIntegrationService.removeWorktree(taskID: taskID, in: root)
-            }
-        } catch {
-            kept = String(describing: error)
-        }
-        guard self.root?.path == root.path else { return }
-        integration.worktreeNotes[taskID] = kept.map { "Worktree kept: \($0)" }
+    }
+
+    /// Where an integrated task's worktree still is, when it still is — one `stat`,
+    /// on the selection changing rather than on every draw.
+    ///
+    /// A directory left behind after a merge is something the user has to be able to
+    /// see, whether it stayed because a cockpit session was working in it or because
+    /// the service refused to drop it. Both look the same from here, and both are
+    /// answered by the same question: is it still there.
+    private func survivingWorktree(_ taskID: String, in root: URL,
+                                   status: TaskStatus) -> String? {
+        guard status == .integrated,
+              let worktree = try? TaskWorktreeService.path(for: taskID, in: root),
+              FileManager.default.fileExists(atPath: worktree.path) else { return nil }
+        return worktree.path
     }
 
     /// One blocking git or shell call, run off the main actor. `PlanStore` guards

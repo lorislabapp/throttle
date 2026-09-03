@@ -91,10 +91,17 @@ extension TaskIntegrationService {
         let reader = PipeReader(descriptor: child.readFD, into: collector, drained: drained)
 
         let queue = DispatchQueue.global()
+        // `interruptedTheRun`, not merely `sent`. This item can execute in the
+        // microseconds between the child exiting and `sendTerm.cancel()` landing, and
+        // if the run left anything alive in its group the signal still goes out and
+        // still reports as sent — marking a timeout on that would turn a verification
+        // that passed into a failure that claims it ran out of time.
         let sendTerm = DispatchWorkItem {
-            if child.signal(SIGTERM) { collector.markTimedOut() }
+            if child.signal(SIGTERM).interruptedTheRun { collector.markTimedOut() }
         }
-        let sendKill = DispatchWorkItem { _ = child.signal(SIGKILL) }
+        // No such condition here: a genuine timeout's escalation must reach a group
+        // whose leader has already died of the SIGTERM, which is the whole point.
+        let sendKill = DispatchWorkItem { child.signal(SIGKILL) }
         queue.asyncAfter(deadline: .now() + timeout, execute: sendTerm)
         queue.asyncAfter(deadline: .now() + timeout + killGracePeriod, execute: sendKill)
 

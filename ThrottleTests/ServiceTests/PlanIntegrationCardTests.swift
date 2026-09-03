@@ -262,7 +262,7 @@ extension PlanIntegrationCardTests {
         XCTAssertEqual(model.state("t1").status, .integrated)
         XCTAssertFalse(FileManager.default.fileExists(atPath: path.path),
                        "the worktree went away with the merge")
-        XCTAssertNil(model.worktreeNote(for: "t1"), "a worktree that is gone needs no words")
+        XCTAssertNil(model.keptWorktreePath(for: "t1"), "a worktree that is gone needs no words")
     }
 
     /// `TaskLauncher.LaunchPlan.workingDirectory` *is* this directory, and the
@@ -287,8 +287,46 @@ extension PlanIntegrationCardTests {
                        "keeping the directory never demotes a merge that happened")
         XCTAssertTrue(FileManager.default.fileExists(atPath: path.path),
                       "the session's working directory is still there")
-        let note = try XCTUnwrap(model.worktreeNote(for: "t1"))
-        XCTAssertTrue(note.contains("session"), note)
+        XCTAssertEqual(model.keptWorktreePath(for: "t1"), path.path,
+                       "and the card can name the directory that stayed")
+    }
+
+    /// The message used to be a note the cleanup wrote, and `bind` clears the caches:
+    /// switching projects and back — or relaunching — left the directory on disk with
+    /// nothing on the card to explain it. It is read back off disk now, so it comes
+    /// back with the card.
+    func test_theKeptWorktreeIsStillReportedAfterATabSwitch() async throws {
+        let model = try makeModel(verify: "true")
+        VerifyConsent.grant(project: repo, command: "true", defaults: try consentDefaults())
+        let path = try TaskWorktreeService.path(for: "t1", in: repo)
+        model.isDirectoryHeldBySession = { $0.standardizedFileURL == path.standardizedFileURL }
+        _ = await model.integrate(taskID: "t1")
+        XCTAssertNotNil(model.keptWorktreePath(for: "t1"))
+
+        model.bind(to: try secondProject())
+        model.bind(to: repo)
+        XCTAssertNil(model.keptWorktreePath(for: "t1"), "the caches went with the rebind")
+
+        await model.refreshAssessment(for: "t1")
+
+        XCTAssertEqual(model.keptWorktreePath(for: "t1"), path.path,
+                       "and the fact came back, because it was never a memory")
+    }
+
+    /// The other direction of the same derivation: remove the directory by hand and
+    /// the card stops claiming it is there, with nothing to invalidate.
+    func test_theReportStopsTheDayTheDirectoryGoes() async throws {
+        let model = try makeModel(verify: "true")
+        VerifyConsent.grant(project: repo, command: "true", defaults: try consentDefaults())
+        let path = try TaskWorktreeService.path(for: "t1", in: repo)
+        model.isDirectoryHeldBySession = { _ in true }
+        _ = await model.integrate(taskID: "t1")
+        XCTAssertNotNil(model.keptWorktreePath(for: "t1"))
+
+        run(["worktree", "remove", "--force", path.path])
+        await model.refreshAssessment(for: "t1")
+
+        XCTAssertNil(model.keptWorktreePath(for: "t1"))
     }
 
     /// The rule the cockpit hands the model, tested without a cockpit around it.

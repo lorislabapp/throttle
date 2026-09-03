@@ -18,10 +18,15 @@ extension PlanTreeView {
                     .font(.system(size: 11, design: .monospaced))
                     .textSelection(.enabled)
                 // A worktree that did not go away is a directory still on disk after
-                // the merge, and the user is the one who has to deal with it.
-                if let note = model.worktreeNote(for: task.id) {
-                    Text(note).font(.system(size: 11)).foregroundStyle(.secondary)
+                // the merge, and the user is the one who has to deal with it. Read
+                // back off disk rather than remembered from the run, so it still says
+                // this after a tab switch and after a relaunch.
+                if let kept = model.keptWorktreePath(for: task.id) {
+                    Text("Worktree kept").font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text(kept).font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(.tertiary)
                         .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
                 }
             }
         } else if state.status == .done, let assessment = model.assessment(for: task.id) {

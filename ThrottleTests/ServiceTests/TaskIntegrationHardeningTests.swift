@@ -175,6 +175,33 @@ final class TaskIntegrationHardeningTests: XCTestCase {
                        "a killed descendant writes nothing after its deadline")
     }
 
+    /// The mirror image of the two timeout tests, and the reason the timeout verdict
+    /// is fenced separately from the signal itself. A command that exits cleanly and
+    /// deliberately leaves something running has not timed out, however non-empty its
+    /// process group is when the deadline machinery is torn down — and it must not be
+    /// waited on either, because nothing here asked it to stop.
+    func test_verify_passesWhenASuccessfulCommandLeavesSomethingRunning() throws {
+        let path = try worktree("t1", file: "task.txt", contents: "work\n")
+        let store = store()
+        try finishTask("t1", in: store)
+        let command = "sleep 30 & echo $! > survivor.pid; echo done; exit 0"
+
+        let started = Date()
+        let verdict = try TaskIntegrationService.verify(taskID: "t1", in: repo, command: command,
+                                                        timeout: 30, store: store,
+                                                        author: "throttle:test")
+        let elapsed = Date().timeIntervalSince(started)
+
+        // The survivor holds the pipe's write end, so the bounded drain is what ends
+        // this — not the survivor, and not the timeout.
+        let survivor = try XCTUnwrap(pid(at: path.appendingPathComponent("survivor.pid")))
+        defer { kill(survivor, SIGKILL) }
+        XCTAssertTrue(verdict.passed, verdict.output)
+        XCTAssertFalse(verdict.output.lowercased().contains("timed out"), verdict.output)
+        XCTAssertLessThan(elapsed, 15, "and it did not wait for what the command left behind")
+        XCTAssertEqual(try store.state(for: "t1").lastCheck?.passed, true)
+    }
+
     /// The pid the backgrounded grandchild wrote, once it has written it.
     private func pid(at file: URL) -> pid_t? {
         for _ in 0..<100 {
