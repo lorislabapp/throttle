@@ -326,9 +326,15 @@ final class AppState {
     }
 
     nonisolated private static func computeWindow(in db: Database, kind: WindowKind) throws -> UsageSnapshot.Window {
-        let used = try WindowCalculator.totalForWindow(in: db, kind: kind)
+        // Resolved once and passed to both: the default argument reads
+        // `UserDefaults`, so evaluating it twice lets a `remember()` landing
+        // between the two calls compute the total for one model and the reset
+        // for another. It also stops the two unscoped kinds reading a
+        // preference they never use.
+        let scoped = kind == .weeklySonnet ? ScopedCapModel.match : .family(.sonnet)
+        let used = try WindowCalculator.totalForWindow(in: db, kind: kind, scoped: scoped)
         let cap = try DatabaseQueries.calibration(in: db, kind: kind)?.capTokens
-        let reset = try WindowCalculator.secondsUntilReset(in: db, kind: kind)
+        let reset = try WindowCalculator.secondsUntilReset(in: db, kind: kind, scoped: scoped)
         return UsageSnapshot.Window(
             kind: kind, usedTokens: used, capTokens: cap, resetInSeconds: reset
         )

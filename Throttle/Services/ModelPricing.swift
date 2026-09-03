@@ -112,6 +112,12 @@ enum ModelPricing {
     /// the scoped weekly window came to match a server *display name* against a
     /// model *id* and select nothing at all — reporting an empty week for a cap
     /// that was full.
+    ///
+    /// Unlike `sqlBucketExpr`, this is a single predicate and therefore *not*
+    /// priority-ordered. For any real id the two agree, because an id names one
+    /// family; for a hypothetical id containing two family words they would
+    /// not — `sqlBucketExpr` returns the first branch that matches, while this
+    /// returns true for either family asked about.
     static func sqlFamilyPredicate(forBucket bucket: String, column: String = "model") -> String? {
         switch bucket {
         case "fable":  return "(lower(\(column)) LIKE '%fable%' OR lower(\(column)) LIKE '%mythos%')"

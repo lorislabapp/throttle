@@ -99,19 +99,71 @@ final class WindowCalculatorTests: XCTestCase {
         }
     }
 
-    /// A family Throttle has no rule for yet must still be counted — falling back
-    /// to the name inside the id beats reporting an untouched week.
+    /// A family Throttle has no rule for yet must still be counted. The token is
+    /// *derived*, never the whole display name: `"Claude Zephyr 1.0"` used
+    /// literally would be `LIKE '%claude zephyr 1.0%'` against `claude-zephyr-1`
+    /// — the same silent zero this window was fixed for, kept alive for the next
+    /// family Throttle meets.
     func test_weeklySonnet_unknownFamily_fallsBackToMatchingTheName() throws {
         let queue = try makeDatabase(events: [
             (3600, "claude-zephyr-1", 400),
             (3600, "claude-sonnet-4-6", 500)
         ])
-        let match = ScopedCapModel.match(forDisplayName: "Zephyr")
-        XCTAssertEqual(match, .nameToken("zephyr"))
-        let total = try queue.read { database in
-            try WindowCalculator.totalForWindow(in: database, kind: .weeklySonnet, scoped: match)
+        for name in ["Zephyr", "Claude Zephyr 1.0", "Zephyr 1.0", "claude-zephyr-1"] {
+            let match = ScopedCapModel.match(forDisplayName: name)
+            XCTAssertEqual(match, .nameToken("zephyr"), name)
+            let total = try queue.read { database in
+                try WindowCalculator.totalForWindow(in: database, kind: .weeklySonnet, scoped: match)
+            }
+            XCTAssertEqual(total, 400, "\(name) must reach the zephyr events")
         }
-        XCTAssertEqual(total, 400)
+    }
+
+    /// The other direction of the same hazard: a name that survives as a token
+    /// matching *everything* would charge the whole account against a per-model
+    /// cap. Nothing usable in the name means the documented default, never a
+    /// filter that matches every row.
+    func test_weeklySonnet_vendorOnlyName_doesNotMatchEveryModel() throws {
+        let queue = try makeDatabase(events: [
+            (3600, "claude-sonnet-4-6", 500),
+            (3600, "claude-opus-4-7", 1000),
+            (3600, "claude-haiku-4-5", 100)
+        ])
+        for name in ["Claude", "claude", "4.7", "—"] {
+            let match = ScopedCapModel.match(forDisplayName: name)
+            XCTAssertEqual(match, .family(.sonnet), name)
+            let total = try queue.read { database in
+                try WindowCalculator.totalForWindow(in: database, kind: .weeklySonnet, scoped: match)
+            }
+            XCTAssertEqual(total, 500, "\(name) must not sweep in every model")
+        }
+    }
+
+    /// The scoped window is a *filter*. If it ever equals the all-model total on
+    /// a fixture holding other families, it has stopped filtering — which is how
+    /// a name that matches everything, or a `.other` tier degrading to "no
+    /// clause", would present.
+    func test_weeklySonnet_isAlwaysNarrowerThanWeeklyAll() throws {
+        let queue = try makeDatabase(events: [
+            (3600, "claude-sonnet-4-6", 500),
+            (3600, "claude-opus-4-7", 1000),
+            (3600, "claude-fable-5", 700),
+            (3600, "claude-zephyr-1", 400)
+        ])
+        let all = try queue.read { database in
+            try WindowCalculator.totalForWindow(in: database, kind: .weeklyAll)
+        }
+        XCTAssertEqual(all, 2600)
+        let scopes: [ScopedCapModel.Match] = [
+            .family(.sonnet), .family(.opus), .family(.fable), .nameToken("zephyr")
+        ]
+        for scope in scopes {
+            let total = try queue.read { database in
+                try WindowCalculator.totalForWindow(in: database, kind: .weeklySonnet, scoped: scope)
+            }
+            XCTAssertGreaterThan(total, 0, "\(scope) must select its own events")
+            XCTAssertLessThan(total, all, "\(scope) must not select every model")
+        }
     }
 
     /// Nothing stated yet: keep computing the window this install always computed.

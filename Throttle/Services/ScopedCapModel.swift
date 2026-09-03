@@ -57,25 +57,58 @@ enum ScopedCapModel {
         /// A family Throttle knows, with its aliases — `fable` also covers
         /// `mythos`, which a substring of either name could never do.
         case family(ModelTier)
-        /// A family Throttle has no rule for yet: match the name inside the
-        /// model id, which is how ids are built. A cap on a model we cannot
-        /// name yet must still be counted, not dropped.
+        /// A family Throttle has no rule for yet: match one derived *word*
+        /// inside the model id. Never the whole display name — see
+        /// `familyToken(in:)`. A cap on a model we cannot name yet must still
+        /// be counted, not dropped.
         case nameToken(String)
     }
 
     /// The match for whatever the server last stated.
     static var match: Match { match(forDisplayName: displayName) }
 
-    /// Falls back to Sonnet when nothing has been stated, so an install that has
-    /// never run exact mode keeps computing the window it always computed.
+    /// Falls back to Sonnet when nothing usable has been stated, so an install
+    /// that has never run exact mode keeps computing the window it always
+    /// computed.
+    ///
+    /// ## The scope is family-level, deliberately
+    ///
+    /// A cap the server names `"Opus 4.7"` resolves to `.family(.opus)` and
+    /// therefore counts Opus 4.6 events too. Anthropic scopes these caps by
+    /// model *family*, ids do not carry a stable generation we could match on,
+    /// and the direction of error is over-report — the meter says you are
+    /// closer to the cap than you are. For a thing whose job is to stop you
+    /// hitting a wall, that is the safe direction; under-reporting is the one
+    /// that lies. Written down because it is a choice, not an accident.
     static func match(forDisplayName name: String?) -> Match {
         guard let name, !name.isEmpty else { return .family(.sonnet) }
         let tier = ModelTier.from(modelString: name)
         if tier != .other { return .family(tier) }
-        // `%` and `_` are stripped: the name is server-supplied, and a LIKE
-        // wildcard in it would silently widen the filter to uncapped models.
-        let safe = name.lowercased().filter { $0 != "%" && $0 != "_" }
-        return safe.isEmpty ? .family(.sonnet) : .nameToken(safe)
+        guard let token = familyToken(in: name) else { return .family(.sonnet) }
+        return .nameToken(token)
+    }
+
+    /// The one word from a display name that could plausibly appear in a model
+    /// id, or nil if none does.
+    ///
+    /// The whole name must never be used. `"Claude Zephyr 1.0"` as
+    /// `LIKE '%claude zephyr 1.0%'` matches nothing against `claude-zephyr-1`,
+    /// which is the silent-zero this type exists to end — 0 tokens used and a
+    /// full week remaining on the window that means "you are out". A bare
+    /// `"Claude"` is the opposite hazard: it matches every row and charges the
+    /// whole account against a per-model cap.
+    ///
+    /// So: lowercase, split on non-letters (which drops `4.7`, `1.0`, hyphens),
+    /// discard the vendor word and anything too short to be a family name, and
+    /// take the longest survivor. `%` and `_` cannot survive an
+    /// alphabetics-only filter, so a server-supplied LIKE wildcard cannot widen
+    /// the match.
+    static func familyToken(in name: String) -> String? {
+        name.lowercased()
+            .split(whereSeparator: { !$0.isLetter })
+            .map(String.init)
+            .filter { $0 != "claude" && $0 != "anthropic" && $0.count >= 3 }
+            .max(by: { $0.count < $1.count })
     }
 
     /// "Sonnet only" / "Fable only" — the row subtitle.

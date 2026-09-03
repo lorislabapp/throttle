@@ -41,7 +41,13 @@ enum DatabaseQueries {
             guard let predicate = family ?? fallback else { return ("", []) }
             return (" AND " + predicate, [])
         case .nameToken(let token):
-            return (" AND lower(\(column)) LIKE ?", ["%" + token + "%"])
+            // Re-stripped here, not only where the token is derived: the
+            // binding stops SQL injection, it does not stop LIKE wildcards, and
+            // a `Match` can be constructed directly. `%` would widen the filter
+            // to models that are not capped.
+            let safe = token.lowercased().filter { $0 != "%" && $0 != "_" }
+            guard !safe.isEmpty else { return scopedClause(.family(.sonnet), column: column) }
+            return (" AND lower(\(column)) LIKE ?", ["%" + safe + "%"])
         }
     }
 
