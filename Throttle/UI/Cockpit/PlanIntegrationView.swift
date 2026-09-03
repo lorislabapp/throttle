@@ -1,5 +1,57 @@
 import SwiftUI
 
+/// Repository-wide screens that do not require a live terminal session.
+struct CockpitSpecialView: View {
+    let cockpit: MultiCockpitModel
+
+    static func icon(for mode: MultiCockpitModel.ViewMode) -> String {
+        mode == .plan ? "list.bullet.indent" : "point.3.filled.connected.trianglepath.dotted"
+    }
+
+    @ViewBuilder var body: some View {
+        if cockpit.viewMode == .plan {
+            CockpitPlanView(cockpit: cockpit)
+        } else {
+            PortfolioGraphView()
+        }
+    }
+}
+
+/// A plan belongs to a repository, not to a live session. Keeping this binding
+/// outside `MultiCockpitRoot` also prevents one feature from growing that legacy
+/// view's already-large body.
+struct CockpitPlanView: View {
+    let cockpit: MultiCockpitModel
+    @State private var planModel = PlanModel()
+
+    var body: some View {
+        PlanTreeView(model: planModel, onLaunch: launch)
+            .onAppear {
+                planModel.onAutoRelaunch = launch
+                planModel.isDirectoryHeldBySession = {
+                    SessionWorkingDirectory.isSessionWorking(inside: $0, of: cockpit.sessions)
+                }
+                planModel.bind(to: activeProjectRoot)
+            }
+            .onChange(of: cockpit.activeID) { _, _ in planModel.bind(to: activeProjectRoot) }
+    }
+
+    private func launch(_ task: TaskLauncher.LaunchPlan) {
+        cockpit.newSession(
+            projectName: task.taskID,
+            cwd: task.workingDirectory.path,
+            runtime: task.runtime,
+            missionID: task.missionID,
+            initialPrompt: task.kickoff
+        )
+    }
+
+    private var activeProjectRoot: URL? {
+        guard let cwd = cockpit.active?.cwd, !cwd.isEmpty else { return nil }
+        return URL(fileURLWithPath: cwd, isDirectory: true)
+    }
+}
+
 // The block that writes to the base branch, kept out of the tree view for the same
 // reason as the recommendation: the part that changes the repository reads on its
 // own.

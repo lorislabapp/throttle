@@ -616,8 +616,7 @@ final class MultiCockpitModel {
             case .tabs:      return String(localized: "Tabs")
             case .rail:      return String(localized: "Rail")
             case .mission:   return String(localized: "Overview")
-            case .portfolio: return String(localized: "Portfolio")
-            case .plan:      return String(localized: "Plan")
+            case .portfolio, .plan: return self == .plan ? String(localized: "Plan") : String(localized: "Portfolio")
             }
         }
     }

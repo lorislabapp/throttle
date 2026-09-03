@@ -41,18 +41,10 @@ enum ThrottleMCPServer {
             // web_render is opt-in: only advertised when the user enabled Web
             // research, so a disabled capability costs zero schema tokens.
             if UserDefaults.standard.bool(forKey: "throttleWebEnabled") { tools.append(webRenderSchema()); tools.append(researchGroundedSchema()) }
-            // Same rule for the plan tools: only where the session's project
-            // actually has a .throttle/plan.json to act on.
-            if PlanMCPTools.hasPlan() {
-                tools.append(contentsOf: PlanMCPTools.schemas)
-            } else {
-                // The one plan tool that is useful precisely when no plan exists.
-                tools.append(PlanMCPTools.planBootstrapSchema())
-            }
+            tools.append(contentsOf: PlanMCPTools.advertisedSchemas)
             respond(id: id, result: ["tools": tools])
         case "tools/call":
-            let params = req["params"] as? [String: Any]
-            let args = params?["arguments"] as? [String: Any]
+            let params = req["params"] as? [String: Any]; let args = params?["arguments"] as? [String: Any]
             let name = params?["name"] as? String ?? ""
             switch name {
             case "search_sessions":
@@ -75,59 +67,6 @@ enum ThrottleMCPServer {
                     respond(id: id, result: textResult(expandPointerText(throttleID)))
                 } else {
                     respond(id: id, error: [-32602, "Missing throttle_id"])
-                }
-            case "throttle_plan_bootstrap":
-                respond(id: id, result: textResult(PlanMCPTools.bootstrapText(
-                    project: args?["project"] as? String)))
-            case "throttle_research_record":
-                if let pillar = args?["pillar"] as? String, let claim = args?["claim"] as? String,
-                   let source = args?["source"] as? String, let author = args?["by"] as? String {
-                    respond(id: id, result: textResult(PlanMCPTools.researchRecordText(
-                        PlanMCPTools.FindingRequest(
-                            project: args?["project"] as? String, pillar: pillar, claim: claim,
-                            source: source, rating: (args?["rating"] as? Int) ?? 0,
-                            author: author))))
-                } else {
-                    respond(id: id, error: [-32602, "Missing pillar, claim, source or by"])
-                }
-            case "throttle_viability_read":
-                respond(id: id, result: textResult(PlanMCPTools.viabilityText(
-                    project: args?["project"] as? String)))
-            case "throttle_task_verdict":
-                if let taskID = args?["task_id"] as? String, let author = args?["by"] as? String,
-                   let verdict = args?["verdict"] as? String {
-                    respond(id: id, result: textResult(PlanMCPTools.verdictText(
-                        PlanMCPTools.VerdictRequest(
-                            project: args?["project"] as? String, taskID: taskID,
-                            author: author, verdict: verdict,
-                            reason: args?["reason"] as? String,
-                            summary: args?["summary"] as? String))))
-                } else {
-                    respond(id: id, error: [-32602, "Missing task_id, by or verdict"])
-                }
-            case "throttle_plan_read":
-                respond(id: id, result: textResult(PlanMCPTools.planReadText(
-                    project: args?["project"] as? String)))
-            case "throttle_task_claim":
-                if let taskID = args?["task_id"] as? String, let author = args?["by"] as? String {
-                    respond(id: id, result: textResult(PlanMCPTools.claimText(
-                        project: args?["project"] as? String, taskID: taskID, author: author,
-                        missionID: args?["mission_id"] as? String)))
-                } else {
-                    respond(id: id, error: [-32602, "Missing task_id or by"])
-                }
-            case "throttle_task_event":
-                if let taskID = args?["task_id"] as? String, let author = args?["by"] as? String,
-                   let type = args?["type"] as? String {
-                    respond(id: id, result: textResult(PlanMCPTools.eventText(
-                        PlanMCPTools.EventRequest(
-                            project: args?["project"] as? String, taskID: taskID, author: author,
-                            type: type, pct: args?["pct"] as? Int, note: args?["note"] as? String,
-                            kind: args?["kind"] as? String, ref: args?["ref"] as? String,
-                            reason: args?["reason"] as? String,
-                            summary: args?["summary"] as? String))))
-                } else {
-                    respond(id: id, error: [-32602, "Missing task_id, by or type"])
                 }
             case "throttle_recall":
                 if let topic = args?["topic"] as? String {
@@ -189,7 +128,7 @@ enum ThrottleMCPServer {
                     respond(id: id, error: [-32602, "Missing query"])
                 }
             default:
-                respond(id: id, error: [-32602, "Unknown tool: \(name)"])
+                PlanMCPTools.routeCall(name: name, arguments: args, id: id)
             }
         case "ping":
             respond(id: id, result: [:] as [String: Any])
@@ -559,7 +498,7 @@ enum ThrottleMCPServer {
         return parts.joined(separator: "\n\n---\n\n")
     }
 
-    private static func textResult(_ text: String) -> [String: Any] {
+    static func textResult(_ text: String) -> [String: Any] {
         ["content": [["type": "text", "text": text]]]
     }
 
@@ -580,10 +519,10 @@ enum ThrottleMCPServer {
 
     // MARK: - JSON-RPC framing (newline-delimited)
 
-    private static func respond(id: Any?, result: [String: Any]) {
+    static func respond(id: Any?, result: [String: Any]) {
         write(["jsonrpc": "2.0", "id": id ?? NSNull(), "result": result])
     }
-    private static func respond(id: Any?, error: [Any]) {
+    static func respond(id: Any?, error: [Any]) {
         write(["jsonrpc": "2.0", "id": id ?? NSNull(),
                "error": ["code": error[0], "message": error[1]]])
     }

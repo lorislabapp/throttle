@@ -52,6 +52,31 @@ final class PlanMCPToolsTests: XCTestCase {
         return String(text[range.lowerBound...])
     }
 
+    func testRouterRecognizesEveryPlanToolAndRejectsUnknownOnes() {
+        let names = [
+            "throttle_plan_bootstrap", "throttle_research_record", "throttle_viability_read",
+            "throttle_task_verdict", "throttle_plan_read", "throttle_task_claim", "throttle_task_event"
+        ]
+        for name in names {
+            var response = ""
+            PlanMCPTools.routeCall(
+                name: name,
+                arguments: ["project": project],
+                onResult: { response = $0 },
+                onError: { response = String(describing: $0) }
+            )
+            XCTAssertFalse(response.contains("Unknown tool"), "known route rejected: \(name)")
+        }
+
+        var error = ""
+        PlanMCPTools.routeCall(
+            name: "not_a_tool", arguments: nil,
+            onResult: { _ in XCTFail("an unknown tool cannot return a result") },
+            onError: { error = String(describing: $0) }
+        )
+        XCTAssertTrue(error.contains("Unknown tool"))
+    }
+
     // MARK: - Claim
 
     func testClaimSucceedsThenBlocksASecondAgent() {

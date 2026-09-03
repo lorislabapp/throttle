@@ -99,3 +99,108 @@ extension PlanMCPTools {
     }
 
 }
+
+// MARK: - Transport routing
+
+extension PlanMCPTools {
+    /// Bootstrap is the sole useful plan command before a plan exists.
+    static var advertisedSchemas: [[String: Any]] {
+        hasPlan() ? schemas : [planBootstrapSchema()]
+    }
+
+    static func routeCall(
+        name: String,
+        arguments: [String: Any]?,
+        id: Any?
+    ) {
+        routeCall(
+            name: name,
+            arguments: arguments,
+            onResult: { ThrottleMCPServer.respond(id: id, result: ThrottleMCPServer.textResult($0)) },
+            onError: { ThrottleMCPServer.respond(id: id, error: $0) }
+        )
+    }
+
+    static func routeCall(
+        name: String, arguments: [String: Any]?,
+        onResult: (String) -> Void, onError: ([Any]) -> Void
+    ) {
+        switch name {
+        case "throttle_plan_bootstrap", "throttle_research_record", "throttle_viability_read":
+            routeIntakeCall(name, arguments, onResult, onError)
+        case "throttle_task_verdict", "throttle_plan_read", "throttle_task_claim", "throttle_task_event":
+            routeTaskCall(name, arguments, onResult, onError)
+        default:
+            onError([-32602, "Unknown tool: \(name)"])
+        }
+    }
+
+    private static func routeIntakeCall(
+        _ name: String, _ args: [String: Any]?,
+        _ result: (String) -> Void, _ error: ([Any]) -> Void
+    ) {
+        switch name {
+        case "throttle_plan_bootstrap":
+            result(bootstrapText(project: args?["project"] as? String))
+        case "throttle_research_record":
+            guard let pillar = args?["pillar"] as? String,
+                  let claim = args?["claim"] as? String,
+                  let source = args?["source"] as? String,
+                  let author = args?["by"] as? String else {
+                error([-32602, "Missing pillar, claim, source or by"]); return
+            }
+            result(researchRecordText(FindingRequest(
+                project: args?["project"] as? String, pillar: pillar, claim: claim,
+                source: source, rating: (args?["rating"] as? Int) ?? 0, author: author
+            )))
+        default:
+            result(viabilityText(project: args?["project"] as? String))
+        }
+    }
+
+    private static func routeTaskCall(
+        _ name: String, _ args: [String: Any]?,
+        _ result: (String) -> Void, _ error: ([Any]) -> Void
+    ) {
+        switch name {
+        case "throttle_task_verdict":
+            guard let taskID = args?["task_id"] as? String,
+                  let author = args?["by"] as? String,
+                  let verdict = args?["verdict"] as? String else {
+                error([-32602, "Missing task_id, by or verdict"]); return
+            }
+            result(verdictText(VerdictRequest(
+                project: args?["project"] as? String, taskID: taskID, author: author,
+                verdict: verdict, reason: args?["reason"] as? String,
+                summary: args?["summary"] as? String
+            )))
+        case "throttle_plan_read":
+            result(planReadText(project: args?["project"] as? String))
+        case "throttle_task_claim":
+            guard let taskID = args?["task_id"] as? String,
+                  let author = args?["by"] as? String else {
+                error([-32602, "Missing task_id or by"]); return
+            }
+            result(claimText(project: args?["project"] as? String, taskID: taskID,
+                             author: author, missionID: args?["mission_id"] as? String))
+        default:
+            routeEventCall(args, result, error)
+        }
+    }
+
+    private static func routeEventCall(
+        _ args: [String: Any]?, _ result: (String) -> Void, _ error: ([Any]) -> Void
+    ) {
+        guard let taskID = args?["task_id"] as? String,
+              let author = args?["by"] as? String,
+              let type = args?["type"] as? String else {
+            error([-32602, "Missing task_id, by or type"]); return
+        }
+        result(eventText(EventRequest(
+            project: args?["project"] as? String, taskID: taskID, author: author, type: type,
+            pct: args?["pct"] as? Int, note: args?["note"] as? String,
+            kind: args?["kind"] as? String, ref: args?["ref"] as? String,
+            reason: args?["reason"] as? String, summary: args?["summary"] as? String
+        )))
+    }
+}

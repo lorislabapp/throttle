@@ -15,7 +15,6 @@ struct MultiCockpitRoot: View {
     @Environment(AppState.self) private var appState
     @State private var model = MultiCockpitModel.shared   // singleton: sessions outlive the window
     @State private var showInspector = false
-    @State private var planModel = PlanModel()
     @State private var activeStyle = OutputStyleManager.activeName()
     @State private var hoveredSession: UUID?
     @State private var expandedFeed: UUID?
@@ -327,8 +326,7 @@ struct MultiCockpitRoot: View {
         case .tabs:      return "macwindow"
         case .rail:      return "sidebar.left"
         case .mission:   return "rectangle.3.group"
-        case .portfolio: return "point.3.filled.connected.trianglepath.dotted"
-        case .plan:      return "list.bullet.indent"
+        case .portfolio, .plan: return CockpitSpecialView.icon(for: model.viewMode)
         }
     }
 
@@ -563,14 +561,8 @@ struct MultiCockpitRoot: View {
         if model.viewMode == .dashboard {
             // The cover page — stats work even with no live session.
             CockpitDashboardView(machine: model.machine).environment(appState)
-        } else if model.viewMode == .portfolio {
-            // Obsidian-style map of the whole ~/GitHub portfolio: what's duplicated
-            // (code) and re-researched (deep-research topics) across apps.
-            PortfolioGraphView()
-        } else if model.viewMode == .plan {
-            // A plan belongs to a repository, not to a live session, so this
-            // renders whether or not anything is running in it.
-            planLayout
+        } else if model.viewMode == .portfolio || model.viewMode == .plan {
+            CockpitSpecialView(cockpit: model)
         } else if model.sessions.isEmpty {
             emptyState
         } else {
@@ -581,37 +573,6 @@ struct MultiCockpitRoot: View {
             case .dashboard, .portfolio, .plan: EmptyView()   // handled above
             }
         }
-    }
-
-    /// Reads the plan of whichever project the active tab sits in. Rebinding is a
-    /// no-op when the path has not changed, so switching tabs inside one repository
-    /// costs nothing.
-    private var planLayout: some View {
-        PlanTreeView(model: planModel) { launch in
-            model.newSession(projectName: launch.taskID, cwd: launch.workingDirectory.path,
-                             runtime: launch.runtime, missionID: launch.missionID,
-                             initialPrompt: launch.kickoff)
-        }
-            .onAppear {
-                planModel.onAutoRelaunch = { launch in
-                    model.newSession(projectName: launch.taskID,
-                                     cwd: launch.workingDirectory.path,
-                                     runtime: launch.runtime, missionID: launch.missionID,
-                                     initialPrompt: launch.kickoff)
-                }
-                // Same fact, other half: that cwd is the task's worktree, which an
-                // integration would otherwise delete under a live tab.
-                planModel.isDirectoryHeldBySession = {
-                    SessionWorkingDirectory.isSessionWorking(inside: $0, of: model.sessions)
-                }
-                planModel.bind(to: activeProjectRoot)
-            }
-            .onChange(of: model.activeID) { _, _ in planModel.bind(to: activeProjectRoot) }
-    }
-
-    private var activeProjectRoot: URL? {
-        guard let cwd = model.active?.cwd, !cwd.isEmpty else { return nil }
-        return URL(fileURLWithPath: cwd, isDirectory: true)
     }
 
     private var terminal: some View {
@@ -2023,5 +1984,7 @@ private struct RevealChevron: View {
         .help(isOpen ? String(localized: "Hide utilities")
                      : String(localized: "More controls — timeline, theme, activity, setup, health"))
         .accessibilityLabel(String(localized: "More controls"))
+
+        // Keep the button's interaction modifiers together above.
     }
 }
