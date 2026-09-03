@@ -106,28 +106,44 @@ enum WindowCalculator {
     ) throws -> ScopedCapModel.Match {
         guard kind == .weeklySonnet, case .nameToken = scoped else { return scoped }
         let cutoff = Int64(now.timeIntervalSince1970) - duration(of: kind)
-        // Anything selected in the window proves the token matches.
+        // Anything selected in the window proves the token matches — and is also
+        // how a token that only started matching recently re-earns its scope, so
+        // the memo below is refreshed here rather than pinned for the process.
         guard try DatabaseQueries.totalTokens(in: database, sinceTimestamp: cutoff, scoped: scoped) == 0
-        else { return scoped }
-        // An empty table proves nothing about the token either way.
+        else {
+            ScopeProbeMemo.store(true, for: scoped)
+            return scoped
+        }
+        if let remembered = ScopeProbeMemo.matched(for: scoped) {
+            return remembered ? scoped : .family(.sonnet)
+        }
+        // An empty table proves nothing about the token either way, and must not
+        // be memoised — the table fills up.
         guard try DatabaseQueries.hasAnyEvent(in: database, scoped: nil) else { return scoped }
-        // Matched at some point in history → a real zero this week, not a failure.
-        guard try !DatabaseQueries.hasAnyEvent(in: database, scoped: scoped) else { return scoped }
-        return .family(.sonnet)
+        let everMatched = try DatabaseQueries.hasAnyEvent(in: database, scoped: scoped)
+        ScopeProbeMemo.store(everMatched, for: scoped)
+        return everMatched ? scoped : .family(.sonnet)
     }
+
+    /// Forget the memoised probe answers. Tests only: each builds its own
+    /// database, and a process-lifetime memo would leak between them.
+    static func resetScopeProbeCache() { ScopeProbeMemo.reset() }
 
     /// The scope for `kind`, already checked against the database.
     ///
     /// One place, so a caller cannot compute a numerator under one scope while
     /// the cap it is divided by was calibrated under another — which is what
     /// `CalibrationEngine` was doing while `AppState` resolved and it did not.
+    /// Returns both the scope the server states and the one the database
+    /// supports, so a caller can tell the two apart without reading the global
+    /// a second time — the read the comment above was written to remove.
     static func resolvedScope(
         in database: Database,
         kind: WindowKind,
         now: Date = Date()
-    ) throws -> ScopedCapModel.Match {
+    ) throws -> (stated: ScopedCapModel.Match, resolved: ScopedCapModel.Match) {
         let stated = kind == .weeklySonnet ? ScopedCapModel.match : ScopedCapModel.Match.family(.sonnet)
-        return try resolveScope(in: database, kind: kind, now: now, scoped: stated)
+        return (stated, try resolveScope(in: database, kind: kind, now: now, scoped: stated))
     }
 
     static func duration(of kind: WindowKind) -> Int64 {
@@ -135,5 +151,37 @@ enum WindowCalculator {
         case .session5h: return session5hSeconds
         case .weeklyAll, .weeklySonnet: return weeklySeconds
         }
+    }
+}
+
+/// Memo for the unbounded existence probe.
+///
+/// `lower(model) LIKE '%…%'` cannot use the timestamp index, and for the broken
+/// token nothing matches, so `LIMIT 1` never short-circuits and the probe is a
+/// full table scan — measured elsewhere in this app at ~438 ms cold over 682 k
+/// rows. That user's windowed total is *always* zero, and `refresh()` is driven
+/// by the file watcher, so without this it would run on every transcript write.
+///
+/// "Has this token ever matched" does not change often enough to re-derive per
+/// write. A token that starts matching is caught by the windowed check ahead of
+/// the memo, which refreshes it.
+private enum ScopeProbeMemo {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var key: ScopedCapModel.Match?
+    nonisolated(unsafe) private static var value: Bool?
+
+    static func matched(for match: ScopedCapModel.Match) -> Bool? {
+        lock.lock(); defer { lock.unlock() }
+        return key == match ? value : nil
+    }
+
+    static func store(_ matched: Bool, for match: ScopedCapModel.Match) {
+        lock.lock(); defer { lock.unlock() }
+        key = match; value = matched
+    }
+
+    static func reset() {
+        lock.lock(); defer { lock.unlock() }
+        key = nil; value = nil
     }
 }

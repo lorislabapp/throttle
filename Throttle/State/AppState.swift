@@ -334,11 +334,15 @@ final class AppState {
         // A derived token can name a word no model id contains. Only the query
         // can tell, so ask once here and let the labels reflect the answer.
         // `CalibrationEngine` asks the same question, so the cap this number is
-        // divided by is calibrated under the same scope.
-        let scoped = try WindowCalculator.resolvedScope(in: db, kind: kind)
+        // divided by is calibrated under the same scope. Both halves come back
+        // from one read: comparing against `ScopedCapModel.match` again would
+        // re-read the global, and a `remember()` landing between the two reads
+        // would flip the label to the default over a correctly scoped number.
+        let scope = try WindowCalculator.resolvedScope(in: db, kind: kind)
         if kind == .weeklySonnet {
-            ScopedCapModel.recordTokenMatchedNothing(scoped != ScopedCapModel.match)
+            ScopedCapModel.recordTokenMatchedNothing(scope.resolved != scope.stated)
         }
+        let scoped = scope.resolved
         let used = try WindowCalculator.totalForWindow(in: db, kind: kind, scoped: scoped)
         let cap = try DatabaseQueries.calibration(in: db, kind: kind)?.capTokens
         let reset = try WindowCalculator.secondsUntilReset(in: db, kind: kind, scoped: scoped)

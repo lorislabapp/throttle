@@ -26,11 +26,12 @@ struct StatsInline: View {
     @State private var range: StatsDataService.Range = .last7d
     @State private var linePoints: [StatsDataService.LinePoint] = []
     @State private var heatCells: [StatsDataService.HeatCell] = []
-    @State private var modelSlices: [StatsDataService.ModelSlice] = []
     @State private var costEUR: Double = 0
     @State private var savedTokens: Int = 0
     @State private var topProjects: [StatsDataService.ProjectSlice] = []
-    @State private var composition: PlanAdvisor.TokenComposition = .empty
+    /// Slices and composition are one value: there is no second variable to
+    /// forget to pass, which is how this regressed twice.
+    @State private var advisor = PlanAdvisor.StatsInput()
 
     @State private var todayTokens: Int = 0
     @State private var yesterdayTokens: Int = 0
@@ -192,26 +193,10 @@ struct StatsInline: View {
         appState.exactModeEnabled && !(appState.exactSnapshot?.isFresh() ?? false)
     }
 
-    private var weeklyTokens: Int {
-        switch range {
-        case .last24h: return totalTokens * 7
-        case .last7d:  return totalTokens
-        case .last30d: return totalTokens * 7 / 30
-        case .all:     return 0
-        }
-    }
+    private var weeklyTokens: Int { advisor.weeklyTokens(range: range) }
 
     private var verdict: PlanAdvisor.Verdict? {
-        guard weeklyTokens > 0, range != .all else { return nil }
-        // Whole call lives in `PlanAdvisor.verdict` so it is reachable from a
-        // test; a regression here to an empty split now fails the suite.
-        return PlanAdvisor.verdict(
-            weeklyWeightedTokens: weeklyTokens,
-            slices: modelSlices,
-            composition: composition,
-            currentPlanID: currentPlanID,
-            dailyVarianceCoeff: 0
-        )
+        advisor.verdict(range: range, currentPlanID: currentPlanID)
     }
 
     private var ladderRows: [PlanAdvisor.LadderRow] {
@@ -335,6 +320,7 @@ struct StatsInline: View {
         case .boundedByMeasuredMix:         return String(localized: "UPPER BOUND")
         case .measuredMixWithUnratedFamily: return String(localized: "UNRATED MODELS")
         case .outputHeavyNotABound:         return String(localized: "MAY UNDER-REPORT")
+        case .compositionUnavailable:       return String(localized: "UNVERIFIED")
         case .assumedMix:                   return String(localized: "ASSUMED MIX")
         }
     }
@@ -343,9 +329,10 @@ struct StatsInline: View {
         switch basis {
         case .boundedByMeasuredMix:
             return String(localized: """
-                Priced from your measured model split. Weighted tokens charge cache \
-                writes and reads above what the API bills, so real API cost would be \
-                at or below this.
+                Priced from your measured model split, and checked against this \
+                range's token mix: weighted tokens over-charge input and cache \
+                relative to the API and under-charge generated output, and here \
+                the over-charge wins. Real API cost would be at or below this.
                 """)
         case .measuredMixWithUnratedFamily:
             return String(localized: """
@@ -359,6 +346,12 @@ struct StatsInline: View {
                 This range is output-heavy with little cache reuse. Weighted \
                 tokens under-charge generated output relative to the API, so \
                 real API cost could be higher than this.
+                """)
+        case .compositionUnavailable:
+            return String(localized: """
+                The per-model token breakdown for this range could not be read, so \
+                whether this figure is an upper bound could not be checked. It is \
+                shown without that claim rather than with an unchecked one.
                 """)
         case .assumedMix:
             return String(localized: """
@@ -435,16 +428,14 @@ struct StatsInline: View {
 
     // MARK: - Advisor inputs
 
-    private var totalTokens: Int {
-        modelSlices.reduce(0) { $0 + $1.weightedTokens }
-    }
+    private var totalTokens: Int { advisor.totalWeightedTokens }
 
     /// Still the right shape for the "Opus-heavy / Sonnet-heavy" line, which is
     /// a one-axis statement about Opus. It is no longer what prices anything.
     private func computeOpusFraction() -> Double {
         let total = totalTokens
         guard total > 0 else { return 0.30 }
-        let opus = modelSlices.filter { $0.tier == .opus }.reduce(0) { $0 + $1.weightedTokens }
+        let opus = advisor.slices.filter { $0.tier == .opus }.reduce(0) { $0 + $1.weightedTokens }
         return Double(opus) / Double(total)
     }
 
@@ -491,16 +482,14 @@ struct StatsInline: View {
 
     // MARK: - Model split
 
-    private var hasModelData: Bool {
-        !(modelSlices.isEmpty || modelSlices.allSatisfy { $0.weightedTokens == 0 })
-    }
+    private var hasModelData: Bool { advisor.hasModelData }
 
     private var modelSplitSection: some View {
         let total = max(1, totalTokens)
         return VStack(alignment: .leading, spacing: 11) {
             GeometryReader { geo in
                 HStack(spacing: 2) {
-                    ForEach(modelSlices) { slice in
+                    ForEach(advisor.slices) { slice in
                         let w = geo.size.width * (Double(slice.weightedTokens) / Double(total))
                         modelColor(slice.tier).frame(width: max(0, w))
                     }
@@ -512,7 +501,7 @@ struct StatsInline: View {
             .clipShape(RoundedRectangle(cornerRadius: 5))
 
             HStack(alignment: .top, spacing: 8) {
-                ForEach(modelSlices) { slice in
+                ForEach(advisor.slices) { slice in
                     let pct = Int((Double(slice.weightedTokens) / Double(total) * 100).rounded())
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
@@ -737,7 +726,7 @@ struct StatsInline: View {
             var cost: Double = 0
             var saved: Int = 0
             var projects: [StatsDataService.ProjectSlice] = []
-            var composition: PlanAdvisor.TokenComposition = .empty
+            var composition: [ModelTier: PlanAdvisor.TokenComposition]?
             var today: Int = 0
             var yesterday: Int = 0
             var thisWeek: Int = 0
@@ -785,11 +774,11 @@ struct StatsInline: View {
         await MainActor.run {
             self.linePoints = bundle.line
             self.heatCells = bundle.heat
-            self.modelSlices = bundle.model
             self.costEUR = bundle.cost
             self.savedTokens = bundle.saved
             self.topProjects = bundle.projects
-            self.composition = bundle.composition
+            self.advisor = PlanAdvisor.StatsInput(
+                slices: bundle.model, composition: bundle.composition)
             self.todayTokens = bundle.today
             self.yesterdayTokens = bundle.yesterday
             self.thisWeekTokens = bundle.thisWeek

@@ -10,7 +10,7 @@ enum CalibrationEngine {
         // zero and bailed on the guard below — exact mode silently declining to
         // re-anchor while the snapshot divided a Sonnet-scoped numerator by a cap
         // calibrated for a different model.
-        let scoped = try WindowCalculator.resolvedScope(in: db, kind: kind)
+        let scoped = try WindowCalculator.resolvedScope(in: db, kind: kind).resolved
         let total = try WindowCalculator.totalForWindow(in: db, kind: kind, scoped: scoped)
         let percent = max(1, min(99, observedPercent))
         let cap = Int(Double(total) / (Double(percent) / 100.0))
@@ -26,7 +26,7 @@ enum CalibrationEngine {
            existing.source != "auto" {
             return
         }
-        let scoped = try WindowCalculator.resolvedScope(in: db, kind: kind)
+        let scoped = try WindowCalculator.resolvedScope(in: db, kind: kind).resolved
         let total = try WindowCalculator.totalForWindow(in: db, kind: kind, scoped: scoped)
         guard total > 0 else { return }
         // Take the larger of (current observed) and (any prior auto cap).

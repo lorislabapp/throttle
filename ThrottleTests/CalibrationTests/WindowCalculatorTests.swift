@@ -3,6 +3,12 @@ import GRDB
 import XCTest
 
 final class WindowCalculatorTests: XCTestCase {
+    /// The scope probe memoises per process; each test builds its own database.
+    override func setUp() {
+        super.setUp()
+        WindowCalculator.resetScopeProbeCache()
+    }
+
     private func makeDatabase(events: [(seconds_ago: Int, model: String, tokens: Int)]) throws -> DatabaseQueue {
         let db = try DatabaseQueue()
         try Migrations.register(on: db)
