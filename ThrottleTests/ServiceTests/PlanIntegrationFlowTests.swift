@@ -18,20 +18,15 @@ final class PlanIntegrationFlowTests: XCTestCase {
     /// Consent is read from injected defaults, never `.standard`: a test suite has
     /// no business granting the user's real Throttle permission to run a command.
     private var consent: UserDefaults?
+    /// Extra projects a test bound the model to, removed with `repo`.
+    private var otherRoots: [URL] = []
 
     // The async spellings, not `setUpWithError`: XCTest's throwing overrides are
     // nonisolated, and this suite's stored state belongs to the main actor.
     override func setUp() async throws {
         repo = FileManager.default.temporaryDirectory
             .appendingPathComponent("flow-tests-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)
-        run(["init", "-q", "-b", "main"])
-        run(["config", "user.email", "test@example.com"])
-        run(["config", "user.name", "Test"])
-        try "seed\n".write(to: repo.appendingPathComponent("file.txt"),
-                           atomically: true, encoding: .utf8)
-        run(["add", "."])
-        run(["commit", "-q", "-m", "seed"])
+        try initRepository(at: repo)
 
         suiteName = "plan-integration-flow-\(UUID().uuidString)"
         consent = UserDefaults(suiteName: suiteName)
@@ -40,6 +35,8 @@ final class PlanIntegrationFlowTests: XCTestCase {
     override func tearDown() async throws {
         consent?.removePersistentDomain(forName: suiteName)
         try? FileManager.default.removeItem(at: repo)
+        for root in otherRoots { try? FileManager.default.removeItem(at: root) }
+        otherRoots = []
     }
 
     private func consentDefaults() throws -> UserDefaults {
@@ -62,13 +59,24 @@ final class PlanIntegrationFlowTests: XCTestCase {
         return String(bytes: data, encoding: .utf8) ?? ""
     }
 
-    /// A project holding one finished task in its own worktree, with `verify` as
+    private func initRepository(at root: URL) throws {
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        run(["init", "-q", "-b", "main"], in: root)
+        run(["config", "user.email", "test@example.com"], in: root)
+        run(["config", "user.name", "Test"], in: root)
+        try "seed\n".write(to: root.appendingPathComponent("file.txt"),
+                           atomically: true, encoding: .utf8)
+        run(["add", "."], in: root)
+        run(["commit", "-q", "-m", "seed"], in: root)
+    }
+
+    /// A one-task plan whose task is finished in its own worktree, with `verify` as
     /// the plan's check command.
-    private func makeModel(verify: String?) throws -> PlanModel {
-        let store = PlanStore(projectRoot: repo)
+    private func plantFinishedTask(in root: URL, verify: String?) throws {
+        let store = PlanStore(projectRoot: root)
         try store.bootstrap(Plan(projectId: "p", title: "P", verify: verify,
                                  tasks: [PlanTask(id: "t1", title: "T1")]))
-        let path = try TaskWorktreeService.create(taskID: "t1", in: repo)
+        let path = try TaskWorktreeService.create(taskID: "t1", in: root)
         try "task work\n".write(to: path.appendingPathComponent("task.txt"),
                                 atomically: true, encoding: .utf8)
         run(["add", "."], in: path)
@@ -77,10 +85,38 @@ final class PlanIntegrationFlowTests: XCTestCase {
                                    type: .claimed), to: "t1")
         try store.append(TaskEvent(seq: 0, timestamp: Date(), author: "claude:a",
                                    type: .completed), to: "t1")
+    }
+
+    /// A project holding one finished task in its own worktree, with `verify` as
+    /// the plan's check command.
+    private func makeModel(verify: String?) throws -> PlanModel {
+        try plantFinishedTask(in: repo, verify: verify)
         let model = PlanModel()
         model.verifyConsentDefaults = try consentDefaults()
         model.bind(to: repo)
         return model
+    }
+
+    /// A second project the model can be switched to mid-run. It holds its own
+    /// finished `t1` — same id, different plan, which is the whole hazard — so a
+    /// stray refresh against it would be visible rather than a silent no-op.
+    private func secondProject() throws -> URL {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("flow-tests-other-\(UUID().uuidString)", isDirectory: true)
+        try initRepository(at: root)
+        try plantFinishedTask(in: root, verify: "true")
+        otherRoots.append(root)
+        return root
+    }
+
+    /// Lets the sequence started with `async let` reach its first off-actor step.
+    /// Bounded and asserted on state, never on elapsed time.
+    private func waitUntilRunning(_ model: PlanModel) async {
+        var spins = 0
+        while model.integrationStep == .idle, spins < 10_000 {
+            spins += 1
+            await Task.yield()
+        }
     }
 
     private func exists(_ name: String) -> Bool {
@@ -235,5 +271,64 @@ extension PlanIntegrationFlowTests {
         await model.refreshDiff(for: "t1")
 
         XCTAssertTrue(model.integrationDiff(for: "t1").contains("task.txt"))
+    }
+}
+
+// MARK: - Switching tabs while it runs
+
+/// An integration is deliberately minutes long, and `bind` sits in the cockpit's
+/// `onChange(of: activeID)` — an ordinary tab switch. These two say what a tab
+/// switch is: not a cancellation, and not a licence to write this run's tail into
+/// whatever project is bound when it lands.
+///
+/// The verify command is a short `sleep`, which is only there to hold the window
+/// open; every assertion is on published state, none on elapsed time.
+extension PlanIntegrationFlowTests {
+
+    /// `bind` used to clear `integrationStep` along with the caches. That re-armed
+    /// this model's own `guard integrationStep == .idle` and the card's `disabled`,
+    /// so a second click ran `git rebase` in the same worktree as the first — two
+    /// processes over one `.git/worktrees/t1/rebase-merge` — and the project's
+    /// verify command twice at once.
+    func test_aTabSwitchMidIntegrationDoesNotReArmTheButton() async throws {
+        let model = try makeModel(verify: "sleep 2")
+        VerifyConsent.grant(project: repo, command: "sleep 2", defaults: try consentDefaults())
+        let other = try secondProject()
+
+        async let first: String? = model.integrate(taskID: "t1")
+        await waitUntilRunning(model)
+        XCTAssertNotEqual(model.integrationStep, .idle, "the sequence is in flight")
+
+        model.bind(to: other)
+        XCTAssertNotEqual(model.integrationStep, .idle, "binding away cancels nothing")
+        model.bind(to: repo)
+        XCTAssertNotEqual(model.integrationStep, .idle, "and coming back re-arms nothing")
+
+        let second = await model.integrate(taskID: "t1")
+        XCTAssertEqual(second, "An integration is already running.")
+
+        let outcome = await first
+        XCTAssertNil(outcome, outcome ?? "")
+        XCTAssertEqual(model.integrationStep, .idle, "the run that finished released it")
+        XCTAssertEqual(model.state("t1").status, .integrated, "and it merged exactly once")
+    }
+
+    /// The other half: a run that lands after the model moved on must not reload a
+    /// plan it says nothing about, nor cache its assessment under the same-named
+    /// task of another project.
+    func test_aRunLandingAfterATabSwitchWritesNothingIntoTheNewProject() async throws {
+        let model = try makeModel(verify: "sleep 2")
+        VerifyConsent.grant(project: repo, command: "sleep 2", defaults: try consentDefaults())
+        let other = try secondProject()
+
+        async let first: String? = model.integrate(taskID: "t1")
+        await waitUntilRunning(model)
+        model.bind(to: other)
+        let outcome = await first
+
+        XCTAssertNil(outcome, outcome ?? "")
+        XCTAssertNil(model.assessment(for: "t1"),
+                     "the finished run assessed nothing in the project it did not run in")
+        XCTAssertEqual(model.state("t1").status, .done, "which is the other project's own t1")
     }
 }

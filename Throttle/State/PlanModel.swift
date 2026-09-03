@@ -57,7 +57,11 @@ final class PlanModel {
         assessments = [:]
         diffs = [:]
         pendingVerifyCommand = nil
-        integrationStep = .idle
+        // `integrationStep` deliberately survives, unlike everything above it: those
+        // are caches describing a project, this describes work in flight, and a tab
+        // switch does not cancel a rebase already running in a worktree. Clearing it
+        // re-armed this model's `guard integrationStep == .idle` and the card's
+        // `disabled`, so a second click ran `git rebase` in the same worktree.
 
         guard let newRoot else {
             store = nil
@@ -308,7 +312,14 @@ extension PlanModel {
         integrationStep = .rebasing
         let outcome = await runSequence(taskID: taskID, task: task, root: root,
                                         store: store, command: command)
+        // Released whichever project is bound now: the work it stood for has ended.
         integrationStep = .idle
+        // The tail, however, belongs to the project the sequence ran in. A tab switch
+        // during those minutes rebinds the model, and reloading or caching an
+        // assessment then would write this run's conclusions into a plan it says
+        // nothing about — task ids are only unique inside one plan. The refusal string
+        // is still returned; the card drops it when the selection has moved.
+        guard self.root?.path == root.path else { return outcome }
         reload()
         await refreshAssessment(for: taskID)
         return outcome
@@ -380,6 +391,9 @@ extension PlanModel {
             return "No green check for these exact commits."
         case .refused(.ungated):
             return "SOTA-gated: counter-analysis has not ruled on it."
+        case .refused(.detached):
+            return "The task's worktree is not on its own branch — check `task/<id>` back out "
+                + "in it before integrating."
         }
     }
 }

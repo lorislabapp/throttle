@@ -123,6 +123,11 @@ sur laquelle le fast-forward se fera. Elle est relue à chaque `assess`, jamais
 mémorisée à la création du worktree, puisque c'est précisément son déplacement
 qui périme les verts.
 
+Le côté tâche est lu sur la ref `task/<id>`, et `assess` **refuse** (`détaché`)
+si le worktree n'est plus sur cette branche. Sinon `verify` produirait sa preuve
+contre l'arbre du worktree pendant que l'estampille décrit la branche, et
+`rebase` réécrirait les commits détachés en laissant la ref en arrière.
+
 ```
 rebase(taskID, repo, onto) -> Result
 ```
@@ -142,7 +147,8 @@ puis écrit le `checked` correspondant.
 integrate(taskID, repo) -> String   // sha de fusion
 ```
 
-Quatre refus, chacun avec sa raison rendue telle quelle à l'UI:
+Quatre refus propres, chacun avec sa raison rendue telle quelle à l'UI, plus
+celui que `assess` remonte:
 
 | Refus | Condition |
 |---|---|
@@ -150,6 +156,7 @@ Quatre refus, chacun avec sa raison rendue telle quelle à l'UI:
 | pas à jour | la branche de tâche n'est pas rebasée sur la base courante |
 | non vérifié | aucun `checked` vert estampillé aux sha courants |
 | non validé | `sotaGate` sans `verified` dans le log |
+| détaché | (via `assess`) le worktree n'est plus sur `task/<id>` |
 
 Puis `git merge --ff-only task/<id>` sur la base, et l'événement `integrated`.
 

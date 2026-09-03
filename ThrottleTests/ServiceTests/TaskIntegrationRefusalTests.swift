@@ -229,23 +229,62 @@ extension TaskIntegrationRefusalTests {
         XCTAssertEqual(try store.state(for: "t1").status, .done)
     }
 
-    /// The stamp has to describe what the merge will land, which is the branch ref —
-    /// `integrate` merges `task/<id>` and `diff` diffs against it. An agent that
-    /// checks out a SHA inside its own worktree used to make the stamp describe one
-    /// tree while the fast-forward landed another. The assessment follows the branch
-    /// rather than refusing, because the branch is what every other step already
-    /// reads; a detached worktree simply stops being what is assessed.
-    func test_assess_followsTheBranchWhenTheWorktreeHEADIsDetached() throws {
+    /// The ordinary case, and what the stamp has to describe: the branch ref, which
+    /// is what `integrate` merges and `diff` diffs against.
+    func test_assess_readsTheBranchOfAWorktreeSittingOnIt() throws {
         let store = try makeStore()
-        let path = try finishedTask("t1", store: store)
+        try finishedTask("t1", store: store)
         let tip = sha("task/t1")
-        run(["checkout", "-q", "--detach", "HEAD~1"], in: path)
-        XCTAssertNotEqual(sha("HEAD", in: path), tip, "the worktree is off the branch")
 
         let assessment = try TaskIntegrationService.assess(taskID: "t1", in: repo)
         XCTAssertEqual(assessment.taskSHA, tip)
         XCTAssertEqual(assessment.aheadBy, 1)
         XCTAssertEqual(assessment.stamp, "\(tip)+\(sha("HEAD"))")
         XCTAssertEqual(assessment.files, [FileChange(path: "task.txt", added: 1, removed: 0)])
+    }
+
+    /// Following the branch made `assess`, `diff` and `integrate` agree with each
+    /// other — and with nothing else. `verify` runs the project's command *in the
+    /// worktree*, whose content follows the worktree's own HEAD, so a detached
+    /// worktree produced evidence for one tree and had it stamped for another: the
+    /// same stale green, sides swapped. `rebase` was worse, rewriting the detached
+    /// commits and leaving the branch ref behind, so every later click refused
+    /// `.behind` after the worktree had already been written to. So it is refused,
+    /// once, at the assessment every other step goes through.
+    func test_assess_refusesAWorktreeThatLeftItsBranch() throws {
+        let store = try makeStore()
+        let path = try finishedTask("t1", store: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                          store: store, author: "throttle:test")
+        let tip = sha("task/t1")
+        run(["checkout", "-q", "--detach", "HEAD~1"], in: path)
+        XCTAssertNotEqual(sha("HEAD", in: path), tip, "the worktree is off the branch")
+
+        XCTAssertThrowsError(try TaskIntegrationService.assess(taskID: "t1", in: repo)) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.detached))
+        }
+        // Everything downstream inherits it, including the green check that would
+        // otherwise have been accepted for a tree nobody verified.
+        XCTAssertThrowsError(try TaskIntegrationService.rebase(taskID: "t1", in: repo)) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.detached))
+        }
+        XCTAssertThrowsError(try integrate(store)) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.detached))
+        }
+        XCTAssertEqual(try store.state(for: "t1").status, .done, "nothing moved")
+    }
+
+    /// A detached HEAD parked exactly on the branch tip is refused too: a SHA
+    /// comparison would call it fine, and a rebase would then move the commits
+    /// under it and leave `task/t1` pointing at the old tip.
+    func test_assess_refusesADetachedHEADEvenOnTheBranchTip() throws {
+        let store = try makeStore()
+        let path = try finishedTask("t1", store: store)
+        run(["checkout", "-q", "--detach", "HEAD"], in: path)
+        XCTAssertEqual(sha("HEAD", in: path), sha("task/t1"), "same commit, no branch")
+
+        XCTAssertThrowsError(try TaskIntegrationService.assess(taskID: "t1", in: repo)) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.detached))
+        }
     }
 }

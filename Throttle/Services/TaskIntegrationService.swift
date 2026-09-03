@@ -12,7 +12,9 @@ enum TaskIntegrationError: Error, Equatable {
     case refused(Refusal)
 
     enum Refusal: String, Sendable {
-        case dirty, behind, unverified, ungated
+        /// `detached` is raised by `assess`, so it reaches every step below it.
+        /// The other four are `integrate`'s own.
+        case dirty, behind, unverified, ungated, detached
     }
 }
 
@@ -55,17 +57,27 @@ enum TaskIntegrationService {
 
     // MARK: - Assess
 
-    /// The task's side is read from the branch ref, never from the worktree's own
-    /// HEAD. `integrate` fast-forwards `task/<id>` and `diff` diffs against it, so a
-    /// stamp taken from the worktree would describe one tree while the merge landed
-    /// another the moment an agent checked out a SHA inside its own worktree — the
-    /// one way a stale check could pass. Reading the ref makes all three agree by
-    /// construction; a detached worktree simply stops being what is assessed.
+    /// The task's side is read from the branch ref, and the worktree is required to
+    /// still be on it.
+    ///
+    /// Reading the ref alone only made three of the four steps agree. `integrate`
+    /// fast-forwards `task/<id>` and `diff` diffs against it, so the branch is the
+    /// right thing to stamp — but `verify` runs the project's command with the
+    /// *worktree* as its working directory, and a worktree on a detached HEAD would
+    /// produce evidence against one tree and have it recorded as green for another;
+    /// `rebase` would rewrite those detached commits and leave the branch ref where
+    /// it was, so every later click refused `.behind` after the worktree had already
+    /// been written to. A worktree that is not on its task branch is not a task this
+    /// service can reason about, so it is refused here, once, rather than meaning
+    /// something slightly different at each call site.
     static func assess(taskID: String, in repo: URL) throws -> Assessment {
         let worktree = try existingWorktree(taskID, in: repo)
         let base = try sha("HEAD", in: repo)
         let branch = try TaskWorktreeService.branchName(for: taskID)
         let task = try sha(branch, in: repo)
+        guard isOnItsBranch(worktree, branch: branch) else {
+            throw TaskIntegrationError.refused(.detached)
+        }
 
         let dirty = isDirty(worktree, includingUntracked: true)
 
@@ -165,15 +177,15 @@ enum TaskIntegrationService {
         return try assess(taskID: taskID, in: repo)
     }
 
-    // MARK: - Verify
     // MARK: - Integrate
 
     /// Fast-forwards the base branch onto a finished task, and writes `integrated`.
     ///
-    /// Four refusals, in the order that makes the message useful: a worktree still
-    /// holding loose work, a task not sitting on the current base, a SOTA-gated task
-    /// counter-analysis has not ruled on, and a check that is not green for these
-    /// exact two SHAs.
+    /// Four refusals of its own, in the order that makes the message useful: a
+    /// worktree still holding loose work, a task not sitting on the current base, a
+    /// SOTA-gated task counter-analysis has not ruled on, and a check that is not
+    /// green for these exact two SHAs. `assess`, called below, can add its own
+    /// `.detached` before any of them.
     ///
     /// The gate is checked before the green check, not after: `checked` is only ever
     /// accepted on a task that has reached `.done` (see `PlanProjection`), and a
@@ -192,8 +204,8 @@ enum TaskIntegrationService {
         let worktree = try existingWorktree(taskID, in: repo)
         // A detached repo HEAD would let `merge --ff-only` succeed and advance
         // nothing a branch points at: `integrated` would be logged for a merge that
-        // moved no branch. Checked before anything else, because no refusal further
-        // down would be the real reason.
+        // moved no branch. Checked before the assessment and every refusal under it,
+        // because no refusal further down would be the real reason.
         guard git(["symbolic-ref", "-q", "HEAD"], in: repo).ok else {
             throw TaskIntegrationError.gitFailed(
                 "The repository is on a detached HEAD — check out the base branch before integrating.")
@@ -237,6 +249,16 @@ enum TaskIntegrationService {
             throw TaskIntegrationError.noWorktree(taskID)
         }
         return path
+    }
+
+    /// Whether the worktree's own HEAD *is* the task branch — not merely parked at
+    /// the same commit. `symbolic-ref` answers what a SHA comparison cannot: a
+    /// detached HEAD sitting exactly on the tip would still let `rebase` rewrite the
+    /// commits under it and leave the branch ref behind.
+    private static func isOnItsBranch(_ worktree: URL, branch: String) -> Bool {
+        let head = git(["symbolic-ref", "-q", "HEAD"], in: worktree)
+        return head.ok
+            && head.output.trimmingCharacters(in: .whitespacesAndNewlines) == "refs/heads/\(branch)"
     }
 
     /// `includingUntracked: false` asks git the narrower question — are any *tracked*
