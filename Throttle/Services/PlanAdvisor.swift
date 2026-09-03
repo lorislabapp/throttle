@@ -48,6 +48,54 @@ enum PlanAdvisor {
     static var sonnet: ModelRate { rate("sonnet") }
     static var haiku: ModelRate { rate("haiku") }
 
+    /// Blended API rate, EUR per million weighted tokens, for an observed mix.
+    ///
+    /// Every family is priced at *its own* rate. This used to be a single
+    /// Opus-vs-Sonnet fraction, which charged the Sonnet rate to every family
+    /// that was neither — Fable most of all, at 3.33× under its real rate
+    /// (€20.46/M priced as €6.14/M), on an account where Fable is the
+    /// second-largest tier. This figure is the "vs API" number the plan
+    /// decision is made on, so it was the one number worth getting right.
+    ///
+    /// ## Assumptions, written here because this number is acted on
+    ///
+    /// * **A family with no published rate** (`ModelTier.other`, i.e. a model
+    ///   id Throttle could not classify) is priced through
+    ///   `ModelPricing.rate(forBucket:)`, whose `unknown` fallback is the
+    ///   Sonnet rate. That is the app-wide convention and is deliberately not
+    ///   re-decided here. **It is reachable**, and the error is one-directional:
+    ///   an unclassified id is usually a *new* frontier model, which bills
+    ///   above Sonnet, so this **understates** the API figure and therefore
+    ///   errs *against* the subscription — it makes paying per token look
+    ///   cheaper than it is. Nothing silently rounds up to flatter the plan.
+    /// * **An empty or all-zero mix** means the caller has no split to offer.
+    ///   It falls back to the long-standing 30% Opus / 70% Sonnet guess, so a
+    ///   caller without a split gets exactly the number it always got. A mix
+    ///   that *is* supplied is used whole; there is no partial blending.
+    /// * Negative counts are treated as zero rather than subtracting.
+    static func apiRateEURPerM(mix: [ModelTier: Int]) -> Double {
+        let total = mix.values.reduce(0) { $0 + max(0, $1) }
+        guard total > 0 else {
+            return 0.30 * opus.weightedPerM + 0.70 * sonnet.weightedPerM
+        }
+        return mix.reduce(0.0) { blended, entry in
+            let tokens = max(0, entry.value)
+            guard tokens > 0 else { return blended }
+            return blended + Double(tokens) / Double(total) * weightedEURPerM(for: entry.key)
+        }
+    }
+
+    /// One family's weighted API rate, EUR per million.
+    ///
+    /// The single place a `ModelTier` becomes money. `.other` resolves through
+    /// `ModelPricing`'s `unknown` fallback (the Sonnet rate) — see
+    /// `apiRateEURPerM(mix:)` for what that assumes and which way it errs.
+    /// Callers that spelled their own five-case switch got `.other` right by
+    /// copying it, which is not the same as deciding it.
+    static func weightedEURPerM(for tier: ModelTier) -> Double {
+        rate(tier.rawValue).weightedPerM
+    }
+
     /// Subscription tiers, monthly EUR (USD × 0.92). Anthropic's published
     /// caps are per 5-hour window with a weekly ceiling. We translate to
     /// "weighted tokens / week" using publicly observed numbers.
@@ -92,8 +140,8 @@ enum PlanAdvisor {
     /// Compute the verdict.
     /// - weeklyWeightedTokens: from `costForProject(...)` — the same
     ///   number Throttle already shows in the Stats card.
-    /// - opusFraction: 0…1 share of usage on Opus models. Defaults to
-    ///   0.30 if unknown.
+    /// - mix: weighted tokens per family, straight from the model split.
+    ///   Empty means "no split available" — see `apiRateEURPerM(mix:)`.
     /// - currentPlanID: optional id of the plan the user is on today
     ///   (free / pro / max5x / max20x).
     /// - dailyVarianceCoeff: 0…2 — coefficient of variation of daily
@@ -101,18 +149,13 @@ enum PlanAdvisor {
     ///   credits could beat a higher flat tier.
     static func recommend(
         weeklyWeightedTokens: Int,
-        opusFraction: Double = 0.30,
+        mix: [ModelTier: Int] = [:],
         currentPlanID: String? = nil,
         dailyVarianceCoeff: Double = 0.0
     ) -> Verdict {
         // Project to monthly (4.33 weeks/month average).
         let monthlyTokens = Double(weeklyWeightedTokens) * 4.33
-
-        // API equivalent EUR/mo. Mix Opus + Sonnet by the user's split.
-        let opusFraction = max(0, min(1, opusFraction))
-        let apiPerM = opusFraction * opus.weightedPerM
-                    + (1 - opusFraction) * sonnet.weightedPerM
-        let apiEquivalentMonthlyEUR = monthlyTokens / 1_000_000 * apiPerM
+        let apiEquivalentMonthlyEUR = monthlyTokens / 1_000_000 * apiRateEURPerM(mix: mix)
 
         // Find the cheapest plan that covers the weekly capacity.
         let weeklyTokens = max(0, weeklyWeightedTokens)
