@@ -188,6 +188,19 @@ diff en monospace scrollable, et **un seul bouton « Intégrer »**. Il enchaîn
 rebase → vérif → merge en montrant l'étape courante, et s'arrête au premier
 refus en nommant lequel.
 
+Trois règles sur ce que la carte a le droit de taire — c'est-à-dire rien:
+
+- Quand le bouton est désactivé, la ligne en dessous **dit pourquoi**. La carte
+  lit la même vue « fichiers suivis seulement » que le service, donc un artefact
+  de build ne désactive plus rien.
+- Quand `assess` refuse (worktree détaché, par exemple), la carte affiche ce
+  refus **à la place** des contrôles. L'erreur est mémorisée par tâche et purgée
+  comme les caches; auparavant un `try?` la jetait et la carte se réduisait à un
+  espace vide.
+- L'étape en cours est **indexée par racine de projet**: une intégration dans le
+  projet A ne grise plus le bouton du projet B, alors que le modèle est unique et
+  suit l'onglet actif.
+
 Un bouton plutôt que trois: chaque étape est une conséquence mécanique de la
 précédente, et découper le geste ferait porter à l'utilisateur un ordre
 d'opérations que le service connaît mieux que lui. Ce qui reste visible, c'est

@@ -37,6 +37,16 @@ extension PlanTreeView {
                 }
                 diffDisclosure(task.id)
             }
+        } else if state.status == .done, let reason = model.assessmentError(for: task.id) {
+            // A `done` task the user is looking for the button on, and there is a
+            // reason there isn't one. Saying it is the whole point: the card used to
+            // render as an empty space, which reads as Throttle having forgotten.
+            VStack(alignment: .leading, spacing: 4) {
+                section("INTEGRATION")
+                Text(reason).font(.system(size: 11)).foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
         }
     }
 
@@ -76,8 +86,20 @@ extension PlanTreeView {
     }
 
     /// One button. It names the step it is on, so a verification that takes minutes
-    /// reads as work rather than as a hang.
+    /// reads as work rather than as a hang — and when it is disabled, the line under
+    /// it says why. A disabled control with no reason is the one thing this card
+    /// avoids everywhere else.
     private func controls(_ taskID: String, _ assessment: Assessment) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            buttons(taskID, assessment)
+            if let reason = Self.blockReason(assessment) {
+                Text(reason).font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func buttons(_ taskID: String, _ assessment: Assessment) -> some View {
         HStack(spacing: 8) {
             Button(model.integrationStep == .idle
                    ? "Integrate" : model.integrationStep.rawValue.capitalized) {
@@ -95,7 +117,7 @@ extension PlanTreeView {
                 }
             }
             .controlSize(.small)
-            .disabled(model.integrationStep != .idle || blocked(assessment))
+            .disabled(model.integrationStep != .idle || Self.blocked(assessment))
 
             // Only on the tasks that would actually face this prompt — the pending
             // command is one value, but it is not every task's command.
@@ -131,8 +153,23 @@ extension PlanTreeView {
     }
 
     /// Conflicts and loose changes are the two things no click can push through.
-    func blocked(_ assessment: Assessment) -> Bool {
-        if case .conflicted = assessment.mergeability { return true }
-        return assessment.isDirty
+    static func blocked(_ assessment: Assessment) -> Bool { blockReason(assessment) != nil }
+
+    /// Why the button is disabled, in the user's terms — nil when it is not.
+    ///
+    /// `hasLooseWork`, not `isDirty`: the untracked-inclusive view is what a `.build/`
+    /// directory left by the last verification trips, and reading it here disabled the
+    /// button with no explanation and nothing the user could do from the card. The
+    /// service refuses on tracked modifications only, so this reads the same thing.
+    static func blockReason(_ assessment: Assessment) -> String? {
+        if case .conflicted = assessment.mergeability {
+            return "Blocked: the files above conflict with the base. Resolve them in the "
+                + "worktree and commit, then this can merge."
+        }
+        if assessment.hasLooseWork {
+            return "Blocked: the worktree has uncommitted changes to tracked files. "
+                + "Commit or discard them in it first."
+        }
+        return nil
     }
 }
