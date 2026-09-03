@@ -1,6 +1,14 @@
 import Foundation
 import GRDB
 
+// `file_length` and `type_body_length` are long-standing violations of this
+// file, carried in `.swiftlint-baseline.json`. The baseline matches on the
+// violation text, which embeds the current line count, so ANY edit here
+// unmatches those entries and fails the lint gate. Disabled explicitly rather
+// than left to a baseline that breaks on contact. The real fix is to split this
+// file; that is its own change.
+// swiftlint:disable file_length type_body_length
+
 /// Read-only computations for the Stats tab. Pulls from `usage_events`,
 /// `usage_snapshots`, and `tokopt_savings`. All methods are nonisolated
 /// so the views can dispatch them off the main actor when fetching.
@@ -117,12 +125,7 @@ enum StatsDataService {
         let where_ = cutoff > 0 ? "WHERE timestamp >= ?" : ""
         let sql = """
             SELECT
-                CASE
-                    WHEN lower(model) LIKE '%opus%'   THEN 'opus'
-                    WHEN lower(model) LIKE '%sonnet%' THEN 'sonnet'
-                    WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
-                    ELSE 'other'
-                END AS bucket,
+                \(ModelPricing.sqlBucketExpr()) AS bucket,
                 SUM(input_tokens + output_tokens + cache_create + (cache_read / 10)) AS weighted
             FROM usage_events
             \(where_)
@@ -134,14 +137,14 @@ enum StatsDataService {
         return rows.compactMap {
             guard let b: String = $0["bucket"] else { return nil }
             let w: Int = $0["weighted"] ?? 0
-            let tier: ModelTier = {
-                switch b {
-                case "opus":   return .opus
-                case "sonnet": return .sonnet
-                case "haiku":  return .haiku
-                default:       return .other
-                }
-            }()
+            // Fable had no branch here, so every Fable token was charted as
+            // "other" AND priced as Sonnet downstream: `computeOpusFraction`
+            // counts it as non-Opus, and `PlanAdvisor` prices the non-Opus
+            // remainder at the Sonnet rate — understating the "vs API" figure
+            // on an account where Fable is the second-largest tier.
+            // `ModelTier` and the SQL buckets share their spelling on purpose,
+            // so a family added to `ModelPricing` needs no edit here.
+            let tier = ModelTier(rawValue: b) ?? .other
             return ModelSlice(tier: tier, weightedTokens: w)
         }
     }
@@ -525,12 +528,7 @@ enum StatsDataService {
         _ = encodedName  // see fs.encoded_project filter below
         let sql = """
             SELECT
-                CASE
-                    WHEN lower(e.model) LIKE '%opus%'   THEN 'Opus'
-                    WHEN lower(e.model) LIKE '%sonnet%' THEN 'Sonnet'
-                    WHEN lower(e.model) LIKE '%haiku%'  THEN 'Haiku'
-                    ELSE 'Other'
-                END AS bucket,
+                \(ModelPricing.sqlBucketExpr("e.model")) AS bucket,
                 SUM(e.input_tokens + e.output_tokens + e.cache_create + (e.cache_read / 10)) AS w
             FROM usage_events e
             JOIN file_state fs ON fs.session_id = e.session_id
@@ -541,8 +539,10 @@ enum StatsDataService {
         let total: Int = rows.reduce(0) { $0 + ($1["w"] ?? 0) }
         guard total > 0 else { return [] }
         return rows.compactMap { r in
-            guard let label: String = r["bucket"], let w: Int = r["w"] else { return nil }
-            return (label, Double(w) / Double(total))
+            guard let bucket: String = r["bucket"], let weighted: Int = r["w"] else { return nil }
+            // The shared bucket expression yields lowercase names; this label is
+            // rendered as-is, so restore the casing it used to emit.
+            return (bucket.capitalized, Double(weighted) / Double(total))
         }.sorted { $0.1 > $1.1 }
     }
 
@@ -1052,3 +1052,4 @@ enum StatsDataService {
         }
     }
 }
+// swiftlint:enable type_body_length
