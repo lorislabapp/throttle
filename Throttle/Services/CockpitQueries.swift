@@ -68,12 +68,7 @@ extension StatsDataService {
     static func cockpitModelSplitForSession(in db: Database, sessionId: String) throws -> [ModelSlice] {
         let sql = """
             SELECT
-                CASE
-                    WHEN lower(model) LIKE '%opus%'   THEN 'opus'
-                    WHEN lower(model) LIKE '%sonnet%' THEN 'sonnet'
-                    WHEN lower(model) LIKE '%haiku%'  THEN 'haiku'
-                    ELSE 'other'
-                END AS bucket,
+                \(ModelPricing.sqlBucketExpr()) AS bucket,
                 SUM(\(weightedExpr)) AS weighted
             FROM usage_events WHERE session_id = ? GROUP BY bucket
             """
@@ -81,13 +76,7 @@ extension StatsDataService {
         return rows.compactMap { row in
             guard let b: String = row["bucket"] else { return nil }
             let w: Int = row["weighted"] ?? 0
-            let tier: ModelTier
-            switch b {
-            case "opus":   tier = .opus
-            case "sonnet": tier = .sonnet
-            case "haiku":  tier = .haiku
-            default:       tier = .other
-            }
+            let tier = ModelTier(rawValue: b) ?? .other
             return ModelSlice(tier: tier, weightedTokens: w)
         }
     }

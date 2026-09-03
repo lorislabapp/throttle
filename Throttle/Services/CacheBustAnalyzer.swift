@@ -105,16 +105,9 @@ enum CacheBustAnalyzer {
     }
 
     /// SQL that buckets a model-name column into a rate class (nil/unknown → 'other').
+    /// Delegates: this was a verbatim fourth copy of the family rule.
     private static func bucketSQL(_ col: String) -> String {
-        """
-        CASE
-            WHEN lower(\(col)) LIKE '%fable%' OR lower(\(col)) LIKE '%mythos%' THEN 'fable'
-            WHEN lower(\(col)) LIKE '%opus%'   THEN 'opus'
-            WHEN lower(\(col)) LIKE '%sonnet%' THEN 'sonnet'
-            WHEN lower(\(col)) LIKE '%haiku%'  THEN 'haiku'
-            ELSE 'other'
-        END
-        """
+        ModelPricing.sqlBucketExpr(col)
     }
 }
 
