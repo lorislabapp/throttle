@@ -154,10 +154,19 @@ enum PlanAdvisor {
         let total = mix.values.reduce(0) { $0 + max(0, $1) }
         guard total > 0 else { return .assumedMix }
         let unrated = max(0, mix[.other] ?? 0)
+        // LOAD-BEARING ORDER. `.other` is priced at the Sonnet fallback, which
+        // is the *unsafe* direction — a new family bills above Sonnet — and the
+        // inequality below knows nothing about that, because it compares
+        // published rates and an unrated family has none. This check is the only
+        // thing keeping an unrated mix out of the bound. Do not move it after.
         if Double(unrated) / Double(total) > unratedShareTolerance {
             return .measuredMixWithUnratedFamily
         }
-        guard let composition else { return .compositionUnavailable }
+        // An empty dictionary is the second value that means both "no tokens"
+        // and "nothing to check": `isUpperBound([:])` is `0 >= 0`, i.e. the
+        // strongest claim from no evidence. Deleting `TokenComposition.empty`
+        // closed that one caller away; this closes it here.
+        guard let composition, !composition.isEmpty else { return .compositionUnavailable }
         return isUpperBound(composition) ? .boundedByMeasuredMix : .outputHeavyNotABound
     }
 
@@ -208,7 +217,7 @@ enum PlanAdvisor {
         }
     }
 
-    /// One family's weighted API rate, EUR per million.    /// One family's weighted API rate, EUR per million.
+    /// One family's weighted API rate, EUR per million.
     ///
     /// The single place a `ModelTier` becomes money. `.other` resolves through
     /// `ModelPricing`'s `unknown` fallback (the Sonnet rate) — see
@@ -217,16 +226,13 @@ enum PlanAdvisor {
         rate(tier.rawValue).weightedPerM
     }
 
-    /// Subscription tiers, monthly EUR (USD × 0.92). Anthropic's published
-    /// caps are per 5-hour window with a weekly ceiling. We translate to
-    /// "weighted tokens / week" using publicly observed numbers.
+    /// Subscription tiers, monthly EUR. Anthropic publishes a message cap and a
+    /// 5-hour window, not a token cap; these are publicly observed numbers.
     struct Plan: Sendable, Hashable {
         let id: String
         let label: String
         let monthlyEUR: Double
-        /// Approximate weekly weighted-token capacity. Empirical, not
-        /// official — Anthropic doesn't publish a token cap, only a
-        /// message cap and 5h window.
+        /// Approximate weekly weighted-token capacity. Empirical, not official.
         let weeklyTokenCapacity: Int
     }
 
@@ -262,15 +268,12 @@ enum PlanAdvisor {
     }
 
     /// Compute the verdict.
-    /// - weeklyWeightedTokens: from `costForProject(...)` — the same
-    ///   number Throttle already shows in the Stats card.
-    /// - mix: weighted tokens per family, straight from the model split.
-    ///   Empty means "no split available" — see `apiRateEURPerM(mix:)`.
-    /// - currentPlanID: optional id of the plan the user is on today
-    ///   (free / pro / max5x / max20x).
-    /// - dailyVarianceCoeff: 0…2 — coefficient of variation of daily
-    ///   usage over the last 7d. >0.6 means spiky usage where Pro +
-    ///   credits could beat a higher flat tier.
+    /// - weeklyWeightedTokens: the number the Stats card already shows.
+    /// - mix: weighted tokens per family, from the model split. Empty means
+    ///   "no split available" — see `apiRateEURPerM(mix:)`.
+    /// - currentPlanID: plan the user is on today (free/pro/max5x/max20x).
+    /// - dailyVarianceCoeff: 0…2, coefficient of variation of daily usage over
+    ///   7d. >0.6 is spiky, where Pro + credits can beat a higher flat tier.
     static func recommend(
         weeklyWeightedTokens: Int,
         mix: [ModelTier: Int],
@@ -344,10 +347,8 @@ enum PlanAdvisor {
 
     // MARK: - Per-plan fit (Stats "statement" table)
 
-    /// A plan's consequence given the user's weekly burn. Honest by design:
-    /// no specific throttle-day forecast — the caps are empirical, so a
-    /// confident "throttles Thursday" would be exactly the over-claim
-    /// Throttle refuses. Words only.
+    /// A plan's consequence given the weekly burn. No throttle-day forecast:
+    /// the caps are empirical, so "throttles Thursday" would be an over-claim.
     enum Fit: Sendable {
         case throttled, tight, comfortable, overProvisioned
 
