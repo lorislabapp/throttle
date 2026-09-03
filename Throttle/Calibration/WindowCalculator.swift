@@ -77,14 +77,27 @@ enum WindowCalculator {
     /// display name produces a token that cannot occur in an ASCII id at all.
     /// No amount of string work can tell — only the database can.
     ///
-    /// So: if the token selects nothing over a window that *does* hold events,
-    /// it matched nothing, and reporting an untouched week would be the exact
-    /// lie this window was fixed for. Fall back to the default, and let
-    /// `ScopedCapModel` say so rather than swallowing it.
+    /// ## The question this asks, and the one it must not ask
     ///
-    /// Cost is one COUNT-shaped SUM over a timestamp-indexed window, and only
-    /// for `.nameToken` — the case that exists solely because Throttle met a
-    /// family it does not know. It runs on the snapshot timer, not per frame.
+    /// "Selected nothing *this week* while other models did" does not mean the
+    /// token is broken. It is exactly what a real user on an unknown-family cap
+    /// looks like when they simply did not touch that model for seven days.
+    /// Treating that as a token failure would hand them the whole week's Sonnet
+    /// total under a cap scoped to something else — trading a silent zero for a
+    /// loud wrong percentage — and it would flap: seven quiet days would flip
+    /// the scope on a file-watcher tick and jump the bar from ~0 to the Sonnet
+    /// total.
+    ///
+    /// The question that actually separates the two cases is unbounded: has
+    /// this token **ever** matched a row? "Never, in the whole table" is a
+    /// broken token. "Matched before, not this week" is a genuine zero and must
+    /// render as one. That also removes the flap by construction — the answer
+    /// cannot change because a week went quiet.
+    ///
+    /// Cost: the windowed total is checked first, so the unbounded existence
+    /// probe only runs on a window that is already empty for this scope, and
+    /// only for `.nameToken` — the case that exists solely because Throttle met
+    /// a family it does not know. `LIMIT 1` stops at the first match.
     static func resolveScope(
         in database: Database,
         kind: WindowKind,
@@ -93,12 +106,28 @@ enum WindowCalculator {
     ) throws -> ScopedCapModel.Match {
         guard kind == .weeklySonnet, case .nameToken = scoped else { return scoped }
         let cutoff = Int64(now.timeIntervalSince1970) - duration(of: kind)
+        // Anything selected in the window proves the token matches.
         guard try DatabaseQueries.totalTokens(in: database, sinceTimestamp: cutoff, scoped: scoped) == 0
         else { return scoped }
-        // An empty window is empty for every scope; that is not a failed match.
-        guard try DatabaseQueries.totalTokens(in: database, sinceTimestamp: cutoff) > 0
-        else { return scoped }
+        // An empty table proves nothing about the token either way.
+        guard try DatabaseQueries.hasAnyEvent(in: database, scoped: nil) else { return scoped }
+        // Matched at some point in history → a real zero this week, not a failure.
+        guard try !DatabaseQueries.hasAnyEvent(in: database, scoped: scoped) else { return scoped }
         return .family(.sonnet)
+    }
+
+    /// The scope for `kind`, already checked against the database.
+    ///
+    /// One place, so a caller cannot compute a numerator under one scope while
+    /// the cap it is divided by was calibrated under another — which is what
+    /// `CalibrationEngine` was doing while `AppState` resolved and it did not.
+    static func resolvedScope(
+        in database: Database,
+        kind: WindowKind,
+        now: Date = Date()
+    ) throws -> ScopedCapModel.Match {
+        let stated = kind == .weeklySonnet ? ScopedCapModel.match : ScopedCapModel.Match.family(.sonnet)
+        return try resolveScope(in: database, kind: kind, now: now, scoped: stated)
     }
 
     static func duration(of kind: WindowKind) -> Int64 {

@@ -30,6 +30,7 @@ struct StatsInline: View {
     @State private var costEUR: Double = 0
     @State private var savedTokens: Int = 0
     @State private var topProjects: [StatsDataService.ProjectSlice] = []
+    @State private var composition: PlanAdvisor.TokenComposition = .empty
 
     @State private var todayTokens: Int = 0
     @State private var yesterdayTokens: Int = 0
@@ -202,9 +203,12 @@ struct StatsInline: View {
 
     private var verdict: PlanAdvisor.Verdict? {
         guard weeklyTokens > 0, range != .all else { return nil }
-        return PlanAdvisor.recommend(
+        // Whole call lives in `PlanAdvisor.verdict` so it is reachable from a
+        // test; a regression here to an empty split now fails the suite.
+        return PlanAdvisor.verdict(
             weeklyWeightedTokens: weeklyTokens,
-            mix: computeMix(),
+            slices: modelSlices,
+            composition: composition,
             currentPlanID: currentPlanID,
             dailyVarianceCoeff: 0
         )
@@ -330,6 +334,7 @@ struct StatsInline: View {
         switch basis {
         case .boundedByMeasuredMix:         return String(localized: "UPPER BOUND")
         case .measuredMixWithUnratedFamily: return String(localized: "UNRATED MODELS")
+        case .outputHeavyNotABound:         return String(localized: "MAY UNDER-REPORT")
         case .assumedMix:                   return String(localized: "ASSUMED MIX")
         }
     }
@@ -348,6 +353,12 @@ struct StatsInline: View {
                 Throttle has no published rate for. Those tokens are charged at the \
                 Sonnet rate, and a newer model bills more — so this figure may be \
                 too low.
+                """)
+        case .outputHeavyNotABound:
+            return String(localized: """
+                This range is output-heavy with little cache reuse. Weighted \
+                tokens under-charge generated output relative to the API, so \
+                real API cost could be higher than this.
                 """)
         case .assumedMix:
             return String(localized: """
@@ -426,14 +437,6 @@ struct StatsInline: View {
 
     private var totalTokens: Int {
         modelSlices.reduce(0) { $0 + $1.weightedTokens }
-    }
-
-    /// Weighted tokens per family, for pricing. The split already carries these;
-    /// collapsing them to a single Opus fraction was what forced every other
-    /// family through the Sonnet rate. The computation itself lives on
-    /// `PlanAdvisor` so a test can reach it — it was unassertable here.
-    private func computeMix() -> [ModelTier: Int] {
-        PlanAdvisor.mix(from: modelSlices)
     }
 
     /// Still the right shape for the "Opus-heavy / Sonnet-heavy" line, which is
@@ -719,6 +722,9 @@ struct StatsInline: View {
 
     // MARK: - Data load
 
+    // One more `do`/`catch` per fetched series; the shape is the point (each
+    // query fails independently) and splitting it would hide that.
+    // swiftlint:disable:next cyclomatic_complexity function_body_length
     private func reload() async {
         let database = appState.database
         let r = range
@@ -731,6 +737,7 @@ struct StatsInline: View {
             var cost: Double = 0
             var saved: Int = 0
             var projects: [StatsDataService.ProjectSlice] = []
+            var composition: PlanAdvisor.TokenComposition = .empty
             var today: Int = 0
             var yesterday: Int = 0
             var thisWeek: Int = 0
@@ -750,6 +757,10 @@ struct StatsInline: View {
             do { b.saved = try database.read { try StatsDataService.savedTokensThisWeek(in: $0) } } catch { if b.firstError == nil { b.firstError = "saved: \(error)" } }
 
             do { b.projects = try database.read { try StatsDataService.topProjects(in: $0, range: r) } } catch { if b.firstError == nil { b.firstError = "projects: \(error)" } }
+
+            do { b.composition = try database.read {
+                try StatsDataService.composition(in: $0, range: r)
+            } } catch { if b.firstError == nil { b.firstError = "composition: \(error)" } }
 
             do { b.today = try database.read {
                 try StatsDataService.tokensBetween(in: $0, from: 0, to: 24)
@@ -778,6 +789,7 @@ struct StatsInline: View {
             self.costEUR = bundle.cost
             self.savedTokens = bundle.saved
             self.topProjects = bundle.projects
+            self.composition = bundle.composition
             self.todayTokens = bundle.today
             self.yesterdayTokens = bundle.yesterday
             self.thisWeekTokens = bundle.thisWeek

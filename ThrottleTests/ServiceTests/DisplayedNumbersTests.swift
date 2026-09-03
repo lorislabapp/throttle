@@ -269,101 +269,6 @@ final class DisplayedNumbersTests: XCTestCase {
                              "Fable bills more per token than Opus")
     }
 
-    // MARK: - The "vs API" figure prices every family at its own rate
-
-    /// Published USD/M — opus 5/25, sonnet 3/15, fable 10/50 — converted at
-    /// 0.93 and weighted 70% input / 30% output. Spelled out so the expected
-    /// number is arithmetic a reader can check, not a value copied out of the
-    /// implementation.
-    private var opusEURPerM: Double { 0.70 * 5 * 0.93 + 0.30 * 25 * 0.93 }    // 10.230
-    private var sonnetEURPerM: Double { 0.70 * 3 * 0.93 + 0.30 * 15 * 0.93 }  //  6.138
-    private var fableEURPerM: Double { 0.70 * 10 * 0.93 + 0.30 * 50 * 0.93 }  // 20.460
-
-    /// The advisor blended Opus against Sonnet on one fraction, so every family
-    /// that was neither — Fable above all — was priced at the Sonnet rate. This
-    /// is the "vs API" figure the plan decision is made on.
-    func testAPIEquivalentPricesAThreeFamilyMixAtEachFamilysOwnRate() {
-        // 10M weighted tokens/wk, split 50% Opus / 30% Sonnet / 20% Fable.
-        let weekly = 10_000_000
-        let mix: [ModelTier: Int] = [.opus: 5_000_000, .sonnet: 3_000_000, .fable: 2_000_000]
-
-        let blendedPerM = 0.5 * opusEURPerM + 0.3 * sonnetEURPerM + 0.2 * fableEURPerM
-        XCTAssertEqual(blendedPerM, 11.0484, accuracy: 0.0001)
-
-        let expected = Double(weekly) * 4.33 / 1_000_000 * blendedPerM  // ≈ 478.40
-        XCTAssertEqual(expected, 478.3957, accuracy: 0.001)
-
-        let verdict = PlanAdvisor.recommend(weeklyWeightedTokens: weekly, mix: mix)
-        XCTAssertEqual(verdict.apiEquivalentMonthlyEUR, expected, accuracy: 0.01)
-
-        // What the old two-family blend produced for the same usage: Fable
-        // charged at the Sonnet rate. It must be materially lower, and it is
-        // the direction that matters — it made paying per token look cheaper.
-        let oldWay = Double(weekly) * 4.33 / 1_000_000
-            * (0.5 * opusEURPerM + 0.5 * sonnetEURPerM)
-        XCTAssertLessThan(oldWay, verdict.apiEquivalentMonthlyEUR)
-        // 43.3 Mtok/mo × (11.0484 − 8.1840) €/M = €124.03/mo of hidden burn.
-        XCTAssertEqual(verdict.apiEquivalentMonthlyEUR - oldWay, 124.03, accuracy: 0.05,
-                       "Fable priced as Sonnet understated this mix by ~€124/mo")
-    }
-
-    /// A family with no published rate is reachable, and what it does is a
-    /// decision rather than an accident: it takes `ModelPricing.unknown`, which
-    /// is the Sonnet rate, so an unrecognised (usually newer, dearer) model
-    /// understates the API figure and errs against the subscription.
-    func testUnratedFamilyIsPricedAsUnknownAndNotRoundedUp() {
-        XCTAssertEqual(PlanAdvisor.weightedEURPerM(for: .other),
-                       PlanAdvisor.weightedEURPerM(for: .sonnet), accuracy: 0.0001)
-        XCTAssertLessThan(PlanAdvisor.weightedEURPerM(for: .other),
-                          PlanAdvisor.weightedEURPerM(for: .fable),
-                          "an unknown family must not be rounded up to flatter the plan")
-        XCTAssertEqual(PlanAdvisor.weightedEURPerM(for: .fable), fableEURPerM, accuracy: 0.0001)
-    }
-
-    /// No split to offer must keep producing the number it always produced.
-    func testEmptyMixKeepsTheDocumentedThirtySeventyGuess() {
-        let expected = 0.30 * opusEURPerM + 0.70 * sonnetEURPerM
-        XCTAssertEqual(PlanAdvisor.apiRateEURPerM(mix: [:]), expected, accuracy: 0.0001)
-        XCTAssertEqual(PlanAdvisor.apiRateEURPerM(mix: [.opus: 0, .sonnet: 0]),
-                       expected, accuracy: 0.0001)
-        XCTAssertEqual(PlanAdvisor.apiRateEURPerM(mix: [.fable: -5]),
-                       expected, accuracy: 0.0001, "a negative count must not subtract")
-    }
-
-    /// Pins the wiring the view used to hide: the split's per-tier counts must
-    /// reach `recommend`. While `computeMix` was private to a `View`, a
-    /// regression to an empty mix would have printed the 30/70 guess in the same
-    /// row and typeface as a measurement, with the suite green.
-    func testTheModelSplitReachesTheAdvisorRatherThanTheGuess() {
-        let slices = [
-            StatsDataService.ModelSlice(tier: .opus, weightedTokens: 5_000_000),
-            StatsDataService.ModelSlice(tier: .sonnet, weightedTokens: 3_000_000),
-            StatsDataService.ModelSlice(tier: .fable, weightedTokens: 2_000_000)
-        ]
-        let mix = PlanAdvisor.mix(from: slices)
-        XCTAssertEqual(mix, [.opus: 5_000_000, .sonnet: 3_000_000, .fable: 2_000_000])
-
-        let measured = PlanAdvisor.recommend(weeklyWeightedTokens: 10_000_000, mix: mix)
-        let guessed = PlanAdvisor.recommend(weeklyWeightedTokens: 10_000_000, mix: [:])
-        XCTAssertNotEqual(measured.apiEquivalentMonthlyEUR, guessed.apiEquivalentMonthlyEUR,
-                          "a measured split must not land on the guess's number")
-        XCTAssertEqual(measured.apiBasis, .boundedByMeasuredMix)
-        XCTAssertEqual(guessed.apiBasis, .assumedMix)
-    }
-
-    /// The badge must not outrun the figure. "UPPER BOUND" was unconditional
-    /// while the same file documented the unrated path as understating; both
-    /// could not be true, and the doc is the one that was right.
-    func testAPIBasisDistinguishesAMeasurementFromAGuessAndFromAnUnratedMix() {
-        XCTAssertEqual(PlanAdvisor.apiBasis(for: [:]), .assumedMix)
-        XCTAssertEqual(PlanAdvisor.apiBasis(for: [.opus: 0]), .assumedMix)
-        XCTAssertEqual(PlanAdvisor.apiBasis(for: [.opus: 10, .sonnet: 5]), .boundedByMeasuredMix)
-        XCTAssertEqual(PlanAdvisor.apiBasis(for: [.opus: 10, .other: 1]),
-                       .measuredMixWithUnratedFamily,
-                       "unrated tokens are priced as Sonnet, so the figure can understate")
-        XCTAssertEqual(PlanAdvisor.apiBasis(for: [.opus: 10, .other: 0]), .boundedByMeasuredMix)
-    }
-
     // MARK: - An empty exclusion set must not break the SQL
 
     func testInjectingHookPredicateIsAlwaysValidSQL() {
@@ -393,5 +298,103 @@ final class DisplayedNumbersTests: XCTestCase {
         for name in ["Environment", "Views", "envelope", "Services", "Endpoints"] {
             XCTAssertFalse(RepoIndexer.isExcluded(directoryNamed: name), "\(name) is source, keep it")
         }
+    }
+}
+
+/// The "vs API" figure and the claim printed beside it. Its own class so
+/// neither type body outgrows the limit; same bundle, same run.
+final class PlanAdvisorAPIFigureTests: XCTestCase {
+    /// Published USD/M (opus 5/25, sonnet 3/15, fable 10/50) at 0.93, weighted
+    /// 70/30 — so expectations are arithmetic a reader can check.
+    private var opusEURPerM: Double { 0.70 * 5 * 0.93 + 0.30 * 25 * 0.93 }    // 10.230
+    private var sonnetEURPerM: Double { 0.70 * 3 * 0.93 + 0.30 * 15 * 0.93 }  //  6.138
+    private var fableEURPerM: Double { 0.70 * 10 * 0.93 + 0.30 * 50 * 0.93 }  // 20.460
+
+    /// Cache-heavy: the shape the bound argument assumes.
+    private var cacheHeavy: PlanAdvisor.TokenComposition {
+        .init(input: 10_000, output: 500, cacheCreate: 40_000, cacheRead: 200_000)
+    }
+
+    /// The badge asserted the conclusion of an inequality nobody evaluated:
+    /// weighted tokens over-charge input and cache, under-charge output (2.2 vs 5).
+    func testUpperBoundIsEvaluatedFromCompositionAndNotAssumed() {
+        XCTAssertTrue(PlanAdvisor.isUpperBound(cacheHeavy))
+
+        // 2 000 in, 8 000 out, no cache: charged (2 000 + 8 000) x 2.2 = 22 000
+        // input-units against a true 2 000 + 8 000 x 5 = 42 000. Barely half.
+        let generationHeavy = PlanAdvisor.TokenComposition(
+            input: 2_000, output: 8_000, cacheCreate: 0, cacheRead: 0)
+        XCTAssertFalse(PlanAdvisor.isUpperBound(generationHeavy))
+        XCTAssertEqual((2_000.0 + 8_000.0) * 2.2, 22_000, accuracy: 0.001)
+        XCTAssertEqual(2_000.0 * 1.0 + 8_000.0 * 5.0, 42_000, accuracy: 0.001)
+        XCTAssertEqual(PlanAdvisor.apiBasis(for: [.opus: 10], composition: generationHeavy),
+                       .outputHeavyNotABound, "output-heavy must not be badged a bound")
+        // At the boundary it still bounds: 1.2 x in == 2.8 x out at in == 7/3 out.
+        XCTAssertTrue(PlanAdvisor.isUpperBound(
+            .init(input: 7_000, output: 3_000, cacheCreate: 0, cacheRead: 0)))
+    }
+
+    /// Goes through `PlanAdvisor.verdict` — the call the Stats view makes — so a
+    /// regression to an empty split fails here instead of printing the guess as a
+    /// measurement. The advisor used to blend Opus against Sonnet on one
+    /// fraction, pricing Fable at the Sonnet rate.
+    func testTheSplitReachesTheAdvisorAndEachFamilyIsPricedAtItsOwnRate() {
+        // 10M weighted tokens/wk, split 50% Opus / 30% Sonnet / 20% Fable.
+        let slices = [
+            StatsDataService.ModelSlice(tier: .opus, weightedTokens: 5_000_000),
+            StatsDataService.ModelSlice(tier: .sonnet, weightedTokens: 3_000_000),
+            StatsDataService.ModelSlice(tier: .fable, weightedTokens: 2_000_000)
+        ]
+        XCTAssertEqual(PlanAdvisor.mix(from: slices),
+                       [.opus: 5_000_000, .sonnet: 3_000_000, .fable: 2_000_000])
+        let blendedPerM = 0.5 * opusEURPerM + 0.3 * sonnetEURPerM + 0.2 * fableEURPerM
+        let expected = 10_000_000.0 * 4.33 / 1_000_000 * blendedPerM
+        XCTAssertEqual(blendedPerM, 11.0484, accuracy: 0.0001)
+        XCTAssertEqual(expected, 478.3957, accuracy: 0.001)
+        let wired = PlanAdvisor.verdict(
+            weeklyWeightedTokens: 10_000_000, slices: slices, composition: cacheHeavy)
+        XCTAssertEqual(wired.apiEquivalentMonthlyEUR, expected, accuracy: 0.01)
+        XCTAssertEqual(wired.apiBasis, .boundedByMeasuredMix)
+        // The old blend, Fable charged at Sonnet: lower, in the direction that
+        // made per-token look cheap. 43.3 Mtok x (11.0484 - 8.1840) = EUR 124.03.
+        let oldWay = 10_000_000.0 * 4.33 / 1_000_000 * (0.5 * opusEURPerM + 0.5 * sonnetEURPerM)
+        XCTAssertLessThan(oldWay, wired.apiEquivalentMonthlyEUR)
+        XCTAssertEqual(wired.apiEquivalentMonthlyEUR - oldWay, 124.03, accuracy: 0.05)
+        let guessed = PlanAdvisor.verdict(
+            weeklyWeightedTokens: 10_000_000, slices: [], composition: cacheHeavy)
+        XCTAssertEqual(guessed.apiBasis, .assumedMix, "an empty split is a guess, labelled one")
+        XCTAssertNotEqual(wired.apiEquivalentMonthlyEUR, guessed.apiEquivalentMonthlyEUR)
+    }
+
+    /// An unrated family takes `ModelPricing.unknown` (the Sonnet rate), so an
+    /// unrecognised, dearer model understates. And no split keeps the old guess.
+    func testUnratedFamilyTakesTheSonnetFallbackAndAnEmptyMixKeepsTheGuess() {
+        let other = PlanAdvisor.weightedEURPerM(for: .other)
+        XCTAssertEqual(other, PlanAdvisor.weightedEURPerM(for: .sonnet), accuracy: 0.0001)
+        XCTAssertLessThan(other, PlanAdvisor.weightedEURPerM(for: .fable),
+                          "an unknown family must not be rounded up to flatter the plan")
+        XCTAssertEqual(PlanAdvisor.weightedEURPerM(for: .fable), fableEURPerM, accuracy: 0.0001)
+        let guess = 0.30 * opusEURPerM + 0.70 * sonnetEURPerM
+        XCTAssertEqual(PlanAdvisor.apiRateEURPerM(mix: [:]), guess, accuracy: 0.0001)
+        XCTAssertEqual(PlanAdvisor.apiRateEURPerM(mix: [.opus: 0]), guess, accuracy: 0.0001)
+        XCTAssertEqual(PlanAdvisor.apiRateEURPerM(mix: [.fable: -5]), guess, accuracy: 0.0001,
+                       "a negative count must not subtract")
+    }
+
+    /// "UPPER BOUND" was unconditional while the same file documented the
+    /// unrated path as understating. Both could not be true.
+    func testAPIBasisDistinguishesAMeasurementFromAGuessAndFromAnUnratedMix() {
+        func basis(_ mix: [ModelTier: Int]) -> PlanAdvisor.APIBasis {
+            PlanAdvisor.apiBasis(for: mix, composition: cacheHeavy)
+        }
+        XCTAssertEqual(basis([:]), .assumedMix)
+        XCTAssertEqual(basis([.opus: 0]), .assumedMix)
+        XCTAssertEqual(basis([.opus: 10, .sonnet: 5]), .boundedByMeasuredMix)
+        XCTAssertEqual(basis([.opus: 10, .other: 0]), .boundedByMeasuredMix)
+        XCTAssertEqual(basis([.opus: 100, .other: 50]), .measuredMixWithUnratedFamily,
+                       "unrated tokens are priced as Sonnet, so the figure can understate")
+        // A single stray unclassified row must not retire the badge forever.
+        XCTAssertEqual(basis([.opus: 1_000_000, .other: 1]), .boundedByMeasuredMix,
+                       "one junk row is below the tolerance and cannot move the figure")
     }
 }

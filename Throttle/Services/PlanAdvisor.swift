@@ -12,23 +12,13 @@ import Foundation
 /// ## Whether the API equivalent is an upper bound — conditionally
 ///
 /// It used to say, flatly, that the advisor errs toward "yes, a flat sub still
-/// pays off". That holds *only when every family in the mix has a published
-/// rate*, and it holds for a real reason: weighted tokens fold a cache write in
-/// at 1.0 and a cache read at 0.1, then charge both at the blended
-/// input/output rate, which is above the 1.25x-input and 0.1x-input the API
-/// actually bills. On cache-heavy Claude Code usage that overstatement
-/// dominates, so the figure sits above true API cost.
-///
-/// It does **not** hold when the mix contains tokens Throttle could not
-/// classify. Those are priced at the Sonnet fallback, and an unrecognised id is
-/// usually a *new* frontier family that bills above Sonnet — Fable did, at
-/// 3.33x, and was the second-largest tier on this account while it went
-/// unrecognised. That understatement is proportional to the unrated share and
-/// can exceed the cache-weighting overstatement outright.
+/// pays off". Two things can make that false, and neither was checked:
+/// *composition* (output is under-charged — see `isUpperBound(_:)`) and
+/// *unrated families* (priced at Sonnet while a new family bills above it, as
+/// Fable did at 3.33× when it was this account's second-largest tier).
 ///
 /// So the claim is carried in the data, not in prose: `Verdict.apiBasis` says
-/// which case a given figure is in, and the badge beside it must not claim more
-/// than that. See `APIBasis`.
+/// which case a figure is in, and the badge must not claim more. See `APIBasis`.
 enum PlanAdvisor {
 
     /// Anthropic API per-million-token pricing in EUR. Cached reads bill
@@ -77,19 +67,14 @@ enum PlanAdvisor {
     ///
     /// ## Assumptions, written here because this number is acted on
     ///
-    /// * **A family with no published rate** (`ModelTier.other`, i.e. a model
-    ///   id Throttle could not classify) is priced through
-    ///   `ModelPricing.rate(forBucket:)`, whose `unknown` fallback is the
-    ///   Sonnet rate. That is the app-wide convention and is deliberately not
-    ///   re-decided here. **It is reachable**, and the error is one-directional:
-    ///   an unclassified id is usually a *new* frontier model, which bills
-    ///   above Sonnet, so this **understates** the API figure and therefore
-    ///   errs *against* the subscription — it makes paying per token look
-    ///   cheaper than it is. Nothing silently rounds up to flatter the plan.
-    /// * **An empty or all-zero mix** means the caller has no split to offer.
-    ///   It falls back to the long-standing 30% Opus / 70% Sonnet guess, so a
-    ///   caller without a split gets exactly the number it always got. A mix
-    ///   that *is* supplied is used whole; there is no partial blending.
+    /// * **A family with no published rate** (`ModelTier.other`) is priced
+    ///   through `ModelPricing.rate(forBucket:)`, whose `unknown` fallback is
+    ///   the Sonnet rate — the app-wide convention, not re-decided here. **It is
+    ///   reachable**, and the error is one-directional: an unclassified id is
+    ///   usually a *new*, dearer model, so this **understates** the figure and
+    ///   errs *against* the subscription. Nothing rounds up to flatter the plan.
+    /// * **An empty or all-zero mix** falls back to the 30% Opus / 70% Sonnet
+    ///   guess, so a caller without a split gets the number it always got.
     /// * Negative counts are treated as zero rather than subtracting.
     static func apiRateEURPerM(mix: [ModelTier: Int]) -> Double {
         let total = mix.values.reduce(0) { $0 + max(0, $1) }
@@ -104,41 +89,113 @@ enum PlanAdvisor {
     }
 
     /// What the "API equivalent" figure rests on. The badge beside it must not
-    /// claim more than this — the three cases are not interchangeable, and a
-    /// guess wearing the same label as a measurement is the whole failure this
-    /// area keeps repeating.
+    /// claim more than this — the cases are not interchangeable, and a guess
+    /// wearing the same label as a measurement is the failure this area keeps
+    /// repeating.
     enum APIBasis: String, Sendable, Equatable {
-        /// Every family in the mix has a published rate. Weighted tokens charge
-        /// cache writes and reads above what the API bills, so the figure sits
-        /// above true API cost. A genuine upper bound.
+        /// Measured mix, fully rated, and the composition inequality holds. A
+        /// genuine upper bound on API cost.
         case boundedByMeasuredMix
-        /// The mix carries tokens Throttle could not classify, priced at the
-        /// Sonnet fallback. A new family bills above Sonnet, so this can
-        /// understate by more than the cache weighting overstates. Not a bound.
+        /// The mix carries a material share of tokens Throttle could not
+        /// classify, priced at the Sonnet fallback. A new family bills above
+        /// Sonnet, so this can understate. Not a bound.
         case measuredMixWithUnratedFamily
+        /// Fully rated, but output-heavy enough that the under-charge on output
+        /// beats the over-charge on input and cache. Not a bound.
+        case outputHeavyNotABound
         /// No split was available: the 30% Opus / 70% Sonnet guess. Not
         /// measured, and not a bound either.
         case assumedMix
     }
 
-    /// Which case a mix falls into. Kept beside `apiRateEURPerM(mix:)` so the
-    /// figure and the claim about it are decided from the same input.
-    static func apiBasis(for mix: [ModelTier: Int]) -> APIBasis {
+    /// The four raw token columns over the range a figure covers. Needed
+    /// because the bound is a property of the *composition*, not of the total.
+    struct TokenComposition: Sendable, Equatable {
+        let input: Int
+        let output: Int
+        let cacheCreate: Int
+        let cacheRead: Int
+
+        static let empty = TokenComposition(input: 0, output: 0, cacheCreate: 0, cacheRead: 0)
+    }
+
+    /// Whether the weighted-token figure really is an upper bound on API cost.
+    ///
+    /// Evaluated, never assumed. `weightedPerM = 0.70·input + 0.30·output`, and
+    /// every family bills output at exactly 5× input, so one weighted unit costs
+    /// 2.2× the family's input rate. Against what the API bills, per *real*
+    /// token, in units of that input rate:
+    ///
+    ///     input         2.20  vs  1.00   over
+    ///     cache_create  2.20  vs  1.25   over
+    ///     cache_read    0.22  vs  0.10   over
+    ///     output        2.20  vs  5.00   UNDER
+    ///
+    /// So the figure bounds API cost only while the overs cover the under:
+    ///
+    ///     1.2·input + 0.95·cache_create + 0.12·cache_read  ≥  2.8·output
+    ///
+    /// The 5× output multiple is family-independent, so this is one inequality,
+    /// and the mix cannot change it. It holds comfortably for cache-heavy Claude
+    /// Code but not for a low-cache generation-heavy week: 2 000 input and 8 000
+    /// output with no cache is charged 22 000 input-units against a true 42 000,
+    /// barely half. The old badge asserted this conclusion without evaluating it.
+    static func isUpperBound(_ composition: TokenComposition) -> Bool {
+        let over = 1.20 * Double(composition.input)
+                 + 0.95 * Double(composition.cacheCreate)
+                 + 0.12 * Double(composition.cacheRead)
+        let under = 2.80 * Double(composition.output)
+        return over >= under
+    }
+
+    /// Unrated share below which the rate table's gap cannot matter.
+    ///
+    /// Without one, a single stray unclassified row permanently retires the
+    /// badge. At 1%, even if every unrated token were the dearest family
+    /// Throttle knows (Fable, 3.33× Sonnet), the figure moves under 2.4% —
+    /// which the composition overstatement covers many times over.
+    static let unratedShareTolerance = 0.01
+
+    /// Which case a figure falls into, decided beside the figure itself.
+    ///
+    /// Unrated is reported ahead of output-heavy when both apply: both mean
+    /// "not a bound", but an unrated family is a gap Throttle can close, while
+    /// an output-heavy week is a property of the user's own usage.
+    static func apiBasis(for mix: [ModelTier: Int], composition: TokenComposition) -> APIBasis {
         let total = mix.values.reduce(0) { $0 + max(0, $1) }
         guard total > 0 else { return .assumedMix }
         let unrated = max(0, mix[.other] ?? 0)
-        return unrated > 0 ? .measuredMixWithUnratedFamily : .boundedByMeasuredMix
+        if Double(unrated) / Double(total) > unratedShareTolerance {
+            return .measuredMixWithUnratedFamily
+        }
+        return isUpperBound(composition) ? .boundedByMeasuredMix : .outputHeavyNotABound
     }
 
     /// Weighted tokens per family from a model split.
-    ///
-    /// Lives here rather than inline in the view because nothing could assert
-    /// the advisor actually *received* the split while this was private to a
-    /// `View`: a regression to an empty mix would print the 30/70 guess in the
-    /// same row and the same typeface as a measured figure, and the suite would
-    /// stay green.
     static func mix(from slices: [StatsDataService.ModelSlice]) -> [ModelTier: Int] {
         Dictionary(slices.map { ($0.tier, $0.weightedTokens) }, uniquingKeysWith: +)
+    }
+
+    /// The whole call the Stats view used to make inline.
+    ///
+    /// It was a private computed property on a `View`, so the line turning a
+    /// split into a mix was unreachable from a test: changing it to `mix: [:]`
+    /// left the suite green while the app printed the guess as a measurement.
+    /// Moving only the *builder* did not fix that — the call is what regresses.
+    static func verdict(
+        weeklyWeightedTokens: Int,
+        slices: [StatsDataService.ModelSlice],
+        composition: TokenComposition,
+        currentPlanID: String? = nil,
+        dailyVarianceCoeff: Double = 0.0
+    ) -> Verdict {
+        recommend(
+            weeklyWeightedTokens: weeklyWeightedTokens,
+            mix: mix(from: slices),
+            composition: composition,
+            currentPlanID: currentPlanID,
+            dailyVarianceCoeff: dailyVarianceCoeff
+        )
     }
 
     /// One family's weighted API rate, EUR per million.
@@ -146,8 +203,6 @@ enum PlanAdvisor {
     /// The single place a `ModelTier` becomes money. `.other` resolves through
     /// `ModelPricing`'s `unknown` fallback (the Sonnet rate) — see
     /// `apiRateEURPerM(mix:)` for what that assumes and which way it errs.
-    /// Callers that spelled their own five-case switch got `.other` right by
-    /// copying it, which is not the same as deciding it.
     static func weightedEURPerM(for tier: ModelTier) -> Double {
         rate(tier.rawValue).weightedPerM
     }
@@ -208,7 +263,8 @@ enum PlanAdvisor {
     ///   credits could beat a higher flat tier.
     static func recommend(
         weeklyWeightedTokens: Int,
-        mix: [ModelTier: Int] = [:],
+        mix: [ModelTier: Int],
+        composition: TokenComposition,
         currentPlanID: String? = nil,
         dailyVarianceCoeff: Double = 0.0
     ) -> Verdict {
@@ -272,7 +328,7 @@ enum PlanAdvisor {
             monthlyDeltaEUR: monthlyDeltaEUR,
             reasoning: reasoning,
             extraCreditHint: extra,
-            apiBasis: apiBasis(for: mix)
+            apiBasis: apiBasis(for: mix, composition: composition)
         )
     }
 

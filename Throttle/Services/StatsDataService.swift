@@ -120,6 +120,35 @@ enum StatsDataService {
         var id: ModelTier { tier }
     }
 
+    /// The four raw token columns over a range.
+    ///
+    /// Whether the "API equivalent" figure is an upper bound depends on the
+    /// *shape* of the usage, not its total — output is under-charged while
+    /// input and cache are over-charged. `PlanAdvisor.isUpperBound(_:)` needs
+    /// these sums to evaluate that rather than assert it.
+    static func composition(
+        in database: Database, range: Range, now: Date = Date()
+    ) throws -> PlanAdvisor.TokenComposition {
+        let cutoff = range.cutoff(now: now)
+        let sql = """
+            SELECT COALESCE(SUM(input_tokens), 0) AS inp,
+                   COALESCE(SUM(output_tokens), 0) AS outp,
+                   COALESCE(SUM(cache_create), 0) AS cc,
+                   COALESCE(SUM(cache_read), 0) AS cr
+            FROM usage_events
+            \(cutoff > 0 ? "WHERE timestamp >= ?" : "")
+            """
+        let row = cutoff > 0
+            ? try Row.fetchOne(database, sql: sql, arguments: [cutoff])
+            : try Row.fetchOne(database, sql: sql)
+        return PlanAdvisor.TokenComposition(
+            input: row?["inp"] ?? 0,
+            output: row?["outp"] ?? 0,
+            cacheCreate: row?["cc"] ?? 0,
+            cacheRead: row?["cr"] ?? 0
+        )
+    }
+
     static func modelSplit(in db: Database, range: Range, now: Date = Date()) throws -> [ModelSlice] {
         let cutoff = range.cutoff(now: now)
         let where_ = cutoff > 0 ? "WHERE timestamp >= ?" : ""

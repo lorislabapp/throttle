@@ -188,6 +188,29 @@ final class WindowCalculatorTests: XCTestCase {
         }
     }
 
+    /// The case the first version of this guard got wrong. A user on an
+    /// unknown-family cap who used that model before this week and none of it
+    /// this week is indistinguishable, within the window, from a broken token —
+    /// and rewriting their scope would hand them the whole week's Sonnet total
+    /// under a cap scoped to something else. A loud wrong percentage is worse
+    /// than the silent zero it replaced. The unbounded question separates them.
+    func test_weeklySonnet_usedBeforeButNotThisWeek_isARealZeroNotABrokenToken() throws {
+        let day: Int = 24 * 3600
+        let queue = try makeDatabase(events: [
+            (10 * day, "claude-zephyr-1", 900),   // used, but outside the window
+            (3600, "claude-sonnet-4-6", 500)      // this week, a different model
+        ])
+        let stated = ScopedCapModel.match(forDisplayName: "Zephyr")
+        let resolved = try queue.read { database in
+            try WindowCalculator.resolveScope(in: database, kind: .weeklySonnet, scoped: stated)
+        }
+        XCTAssertEqual(resolved, stated, "a quiet week is not a broken token")
+        let total = try queue.read { database in
+            try WindowCalculator.totalForWindow(in: database, kind: .weeklySonnet, scoped: resolved)
+        }
+        XCTAssertEqual(total, 0, "0% of Zephyr used — not the Sonnet total under a Zephyr cap")
+    }
+
     /// A token that DOES match must not be second-guessed into the default.
     func test_weeklySonnet_tokenThatMatches_isKept() throws {
         let queue = try makeDatabase(events: [

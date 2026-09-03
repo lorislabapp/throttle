@@ -51,6 +51,22 @@ enum DatabaseQueries {
         }
     }
 
+    /// Does any event in the whole table match this scope? `nil` asks whether
+    /// the table holds anything at all.
+    ///
+    /// Unbounded on purpose. "Never matched anything, ever" is a broken token;
+    /// "matched before, not this week" is a real zero. A windowed question
+    /// cannot tell those apart — see `WindowCalculator.resolveScope`.
+    static func hasAnyEvent(in database: Database, scoped: ScopedCapModel.Match?) throws -> Bool {
+        let clause = scoped.map { scopedClause($0) } ?? (sql: "", args: [])
+        // `1=1` so the scope's " AND …" fragment appends without a special case.
+        let row = try Row.fetchOne(
+            database,
+            sql: "SELECT 1 FROM usage_events WHERE 1=1\(clause.sql) LIMIT 1",
+            arguments: StatementArguments(clause.args))
+        return row != nil
+    }
+
     /// Weighted token total for the model the scoped weekly cap belongs to.
     ///
     /// The scoped cap is not always Sonnet — on this account it was scoped to

@@ -5,7 +5,13 @@ enum CalibrationEngine {
     /// Anchor calibration: user (or detected warning) tells us they're at observedPercent.
     /// We compute cap = currentTotal / (observedPercent / 100), with a minimum guard.
     static func anchor(in db: Database, kind: WindowKind, observedPercent: Int) throws {
-        let total = try WindowCalculator.totalForWindow(in: db, kind: kind)
+        // The SAME resolved scope the snapshot uses. These called `totalForWindow`
+        // with the unresolved default, so with the fallback engaged they computed
+        // zero and bailed on the guard below — exact mode silently declining to
+        // re-anchor while the snapshot divided a Sonnet-scoped numerator by a cap
+        // calibrated for a different model.
+        let scoped = try WindowCalculator.resolvedScope(in: db, kind: kind)
+        let total = try WindowCalculator.totalForWindow(in: db, kind: kind, scoped: scoped)
         let percent = max(1, min(99, observedPercent))
         let cap = Int(Double(total) / (Double(percent) / 100.0))
         guard cap > 0 else { return }
@@ -20,7 +26,8 @@ enum CalibrationEngine {
            existing.source != "auto" {
             return
         }
-        let total = try WindowCalculator.totalForWindow(in: db, kind: kind)
+        let scoped = try WindowCalculator.resolvedScope(in: db, kind: kind)
+        let total = try WindowCalculator.totalForWindow(in: db, kind: kind, scoped: scoped)
         guard total > 0 else { return }
         // Take the larger of (current observed) and (any prior auto cap).
         let prior = try DatabaseQueries.calibration(in: db, kind: kind)?.capTokens ?? 0
