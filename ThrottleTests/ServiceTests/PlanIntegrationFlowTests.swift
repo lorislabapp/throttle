@@ -53,7 +53,10 @@ final class PlanIntegrationFlowTests: XCTestCase {
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
-        try? process.run()
+        // Not `try?`: a launch that throws (a working directory that no longer
+        // exists, say) leaves this process holding the pipe's write end, and the read
+        // below then blocks for ever with nothing to show for it.
+        do { try process.run() } catch { return String(describing: error) }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
         return String(bytes: data, encoding: .utf8) ?? ""
@@ -300,9 +303,11 @@ extension PlanIntegrationFlowTests {
         XCTAssertNotEqual(model.integrationStep, .idle, "the sequence is in flight")
 
         model.bind(to: other)
-        XCTAssertNotEqual(model.integrationStep, .idle, "binding away cancels nothing")
+        XCTAssertEqual(model.integrationStep, .idle,
+                       "the other project's own button is not greyed out by this run")
         model.bind(to: repo)
-        XCTAssertNotEqual(model.integrationStep, .idle, "and coming back re-arms nothing")
+        XCTAssertNotEqual(model.integrationStep, .idle,
+                          "and the project that is integrating still says so — nothing re-armed")
 
         let second = await model.integrate(taskID: "t1")
         XCTAssertEqual(second, "An integration is already running.")

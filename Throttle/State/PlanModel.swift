@@ -4,6 +4,13 @@ import SwiftUI
 /// Backs the cockpit's Plan segment: holds one project's plan and derived state,
 /// and reloads whenever an agent appends to a log.
 ///
+/// This file owns the plan itself — binding to a project, loading it, the tree the
+/// list draws, dispatch advice, and auto-relaunch. Everything about *integrating* a
+/// finished task lives in `PlanIntegrationModel.swift`: the rebase → verify → merge
+/// sequence, the caches the card reads, and consent. The only piece of that half
+/// which has to stay here is its stored state, because `@Observable` rewrites the
+/// class body and nothing else.
+///
 /// Read-only by design in lot A. Nothing here writes — the only writes to
 /// `.throttle/` come from agents through `PlanMCPTools`, which keeps a single
 /// story about who changed what.
@@ -39,8 +46,10 @@ final class PlanModel {
     /// verdict and not once per filesystem event.
     private var actedOnRejection: [String: Int] = [:]
 
-    private var root: URL?
-    private var store: PlanStore?
+    /// `private(set)` rather than `private`: the integration half reads both, and
+    /// Swift's access control has no "this type, across files" level.
+    private(set) var root: URL?
+    private(set) var store: PlanStore?
     private var watcher: PlanWatcher?
 
     /// Points the model at a project. Cheap to call repeatedly — rebinding to the
@@ -52,16 +61,11 @@ final class PlanModel {
         root = newRoot
         selection = nil
         // Task ids are only unique inside one plan, so everything keyed by task id
-        // has to go with the project — a cached assessment or diff from the previous
-        // project would otherwise be shown under a same-named task in this one.
-        assessments = [:]
-        diffs = [:]
-        pendingVerifyCommand = nil
-        // `integrationStep` deliberately survives, unlike everything above it: those
-        // are caches describing a project, this describes work in flight, and a tab
-        // switch does not cancel a rebase already running in a worktree. Clearing it
-        // re-armed this model's `guard integrationStep == .idle` and the card's
-        // `disabled`, so a second click ran `git rebase` in the same worktree.
+        // has to go with the project — a cached assessment, error or diff from the
+        // previous project would otherwise be shown under a same-named task in this
+        // one. The steps in flight are keyed by project root and survive: a tab
+        // switch does not cancel a rebase already running in a worktree.
+        integration.forgetCaches()
 
         guard let newRoot else {
             store = nil
@@ -215,185 +219,19 @@ final class PlanModel {
         return Int((pcts.reduce(0, +) / Double(pcts.count)).rounded())
     }
 
-    // MARK: - Integration
+    // MARK: - Integration state
 
-    /// What the button is doing right now, so the card can say which step it
-    /// stopped at rather than only that something failed.
-    enum IntegrationStep: String, Sendable {
-        case idle, rebasing, verifying, merging
-    }
-
-    private(set) var integrationStep: IntegrationStep = .idle
-    /// The command the user has been asked to allow, if any.
-    private(set) var pendingVerifyCommand: String?
-
-    /// Assessing a task shells out to git half a dozen times, so it is computed
-    /// when the inspector's selection changes and cached here — never read from a
-    /// SwiftUI `body`, which would run git on every draw of a scrolling list.
-    private(set) var assessments: [String: Assessment] = [:]
-    /// Same for the diff, fetched only when the user opens the disclosure.
-    private(set) var diffs: [String: String] = [:]
+    /// The whole of the integration half's state, in one property rather than five.
+    ///
+    /// It has to be stored here — `@Observable` only rewrites the class body — while
+    /// everything that reads and writes it lives in `PlanIntegrationModel.swift`, so
+    /// it cannot be `private(set)`. Keeping it as one value is what stops that file
+    /// boundary from widening five separate properties: the accessors the rest of
+    /// the app uses (`integrationStep`, `assessment(for:)`, …) are still narrow, and
+    /// they are all in that file.
+    var integration = IntegrationState()
 
     /// Where consent to run a verify command is stored. Injectable so a test suite
     /// never grants itself anything in the user's real defaults.
     var verifyConsentDefaults: UserDefaults = .standard
-}
-
-// MARK: - Integration
-
-/// Split from the class body to stay under SwiftLint's `type_body_length`. The
-/// stored properties above cannot move — `@Observable` only rewrites the class
-/// body — but the sequence itself can, and `private` still reaches `root` and
-/// `store` from a same-file extension.
-extension PlanModel {
-
-    private static var author: String { "throttle:app" }
-
-    /// The task's own command wins over the project's: a task that needs a
-    /// narrower check should not be forced through the whole suite.
-    func verifyCommand(for taskID: String) -> String? {
-        plan?.task(taskID)?.verify ?? plan?.verify
-    }
-
-    func assessment(for taskID: String) -> Assessment? { assessments[taskID] }
-
-    func integrationDiff(for taskID: String) -> String { diffs[taskID] ?? "" }
-
-    /// Reads what the task would merge, off the main actor. Only a `.done` task has
-    /// anything to assess; anything else drops the cached entry, which is what
-    /// clears the card once the merge landed.
-    func refreshAssessment(for taskID: String) async {
-        guard let root, state(taskID).status == .done else {
-            assessments[taskID] = nil
-            return
-        }
-        assessments[taskID] = try? await Self.offMain {
-            try TaskIntegrationService.assess(taskID: taskID, in: root)
-        }
-    }
-
-    func refreshDiff(for taskID: String) async {
-        guard let root else { return }
-        diffs[taskID] = (try? await Self.offMain {
-            try TaskIntegrationService.diff(taskID: taskID, in: root)
-        }) ?? ""
-    }
-
-    /// Runs rebase → verify → merge and returns nil on success, or the refusal to
-    /// show. Stops at the first thing that says no; nothing is written to the base
-    /// branch unless all three passed.
-    ///
-    /// Async because the middle step runs the project's own check command, which
-    /// can take minutes — on the actor that draws, that is a frozen app.
-    func integrate(taskID: String) async -> String? {
-        guard integrationStep == .idle else {
-            return "An integration is already running."
-        }
-        guard let root, let store, let task = plan?.task(taskID) else {
-            return "This project has no plan to integrate against."
-        }
-        // Only the card gated this before. A `.review` task would have run the
-        // project's verify command for nothing: `checked` is accepted only on a task
-        // that reached `.done`, so the event would have been silently rejected and
-        // the integration refused as unverified — after minutes of shelling out.
-        guard state(taskID).status == .done else {
-            return "\(taskID) is \(state(taskID).status.rawValue), not done — nothing to integrate yet."
-        }
-        guard let command = verifyCommand(for: taskID) else {
-            return "No verify command in this plan — add `verify` to the plan or the task."
-        }
-        guard VerifyConsent.isGranted(project: root, command: command,
-                                      defaults: verifyConsentDefaults) else {
-            pendingVerifyCommand = command
-            return "Throttle has not been allowed to run `\(command)` in this project yet."
-        }
-        pendingVerifyCommand = nil
-
-        integrationStep = .rebasing
-        let outcome = await runSequence(taskID: taskID, task: task, root: root,
-                                        store: store, command: command)
-        // Released whichever project is bound now: the work it stood for has ended.
-        integrationStep = .idle
-        // The tail, however, belongs to the project the sequence ran in. A tab switch
-        // during those minutes rebinds the model, and reloading or caching an
-        // assessment then would write this run's conclusions into a plan it says
-        // nothing about — task ids are only unique inside one plan. The refusal string
-        // is still returned; the card drops it when the selection has moved.
-        guard self.root?.path == root.path else { return outcome }
-        reload()
-        await refreshAssessment(for: taskID)
-        return outcome
-    }
-
-    /// The three steps themselves, each one off the main actor with the step
-    /// published between them. Split from `integrate` so the guards, the step
-    /// reset and the reload all happen on exactly one path.
-    private func runSequence(taskID: String, task: PlanTask, root: URL,
-                             store: PlanStore, command: String) async -> String? {
-        let author = Self.author
-        do {
-            _ = try await Self.offMain {
-                try TaskIntegrationService.rebase(taskID: taskID, in: root)
-            }
-            integrationStep = .verifying
-            let verdict = try await Self.offMain {
-                try TaskIntegrationService.verify(taskID: taskID, in: root, command: command,
-                                                  store: store, author: author)
-            }
-            guard verdict.passed else {
-                return "The verification failed, so nothing was merged.\n"
-                    + String(verdict.output.suffix(600))
-            }
-            integrationStep = .merging
-            _ = try await Self.offMain {
-                try TaskIntegrationService.integrate(taskID: taskID, in: root, store: store,
-                                                     task: task, author: author)
-            }
-            return nil
-        } catch let error as TaskIntegrationError {
-            return Self.explain(error)
-        } catch {
-            return String(describing: error)
-        }
-    }
-
-    func allowVerifyCommand() {
-        guard let root, let command = pendingVerifyCommand else { return }
-        VerifyConsent.grant(project: root, command: command, defaults: verifyConsentDefaults)
-        pendingVerifyCommand = nil
-    }
-
-    /// One blocking git or shell call, run off the main actor. `PlanStore` guards
-    /// itself with a lock and `TaskIntegrationService` is a stateless enum, so both
-    /// are safe here; what is not safe is holding the drawing actor for minutes.
-    private static func offMain<T: Sendable>(
-        _ work: @escaping @Sendable () throws -> T) async throws -> T {
-        try await Task.detached(priority: .userInitiated, operation: work).value
-    }
-
-    private static func explain(_ error: TaskIntegrationError) -> String {
-        switch error {
-        case .noWorktree(let id):
-            return "\(id) has no worktree — nothing to integrate."
-        case .gitFailed(let output):
-            return String(output.suffix(600))
-        case .rebaseAbortFailed(let rebaseOutput, let abortOutput):
-            // The one case where the worktree may be left mid-rebase, so it names
-            // the command that gets the agent's own state back.
-            return "The rebase conflicted and could not be undone — the worktree may still "
-                + "be mid-rebase. Run `git rebase --abort` in it.\n"
-                + String(rebaseOutput.suffix(300)) + "\n" + String(abortOutput.suffix(300))
-        case .refused(.dirty):
-            return "The worktree still holds uncommitted changes."
-        case .refused(.behind):
-            return "The base moved — rebase again before integrating."
-        case .refused(.unverified):
-            return "No green check for these exact commits."
-        case .refused(.ungated):
-            return "SOTA-gated: counter-analysis has not ruled on it."
-        case .refused(.detached):
-            return "The task's worktree is not on its own branch — check `task/<id>` back out "
-                + "in it before integrating."
-        }
-    }
 }
