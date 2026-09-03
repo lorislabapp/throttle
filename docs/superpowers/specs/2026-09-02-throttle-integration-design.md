@@ -165,7 +165,7 @@ celui que `assess` remonte:
 
 | Refus | Condition |
 |---|---|
-| worktree sale | modifications non committées |
+| worktree sale | modifications non committées **sur des fichiers suivis** |
 | pas à jour | la branche de tâche n'est pas rebasée sur la base courante |
 | non vérifié | aucun `checked` vert estampillé aux sha courants |
 | non validé | `sotaGate` sans `verified` dans le log |
@@ -206,14 +206,23 @@ précédente, et découper le geste ferait porter à l'utilisateur un ordre
 d'opérations que le service connaît mieux que lui. Ce qui reste visible, c'est
 où ça s'est arrêté.
 
-Après une intégration réussie, `integrate` appelle `TaskWorktreeService.remove`
-sur la tâche: c'est ce qui ferme l'accumulation de worktrees annoncée par le
-périmètre. **Jamais avec `force`**, et le refus de `remove` reste souverain — un
-worktree qui porte encore des modifications non committées ou des commits non
-fusionnés est laissé debout, la raison est journalisée, et l'intégration reste
-rapportée comme le succès qu'elle est. Une intégration réussie n'est pas un
-permis de supprimer quelque chose d'inattendu, et un échec de nettoyage ne
-transforme jamais une fusion qui a eu lieu en échec.
+Après une intégration réussie, le worktree est retiré: c'est ce qui ferme
+l'accumulation annoncée par le périmètre. **Jamais avec `force`**, et le refus de
+`TaskWorktreeService.remove` reste souverain — un worktree qui porte encore des
+modifications non committées ou des commits non fusionnés est laissé debout, la
+raison est rapportée, et l'intégration reste le succès qu'elle est. Un échec de
+nettoyage ne transforme jamais une fusion qui a eu lieu en échec.
+
+Le retrait n'est **pas** dans `integrate`. Le worktree d'une tâche est aussi le
+répertoire de travail de son agent: le cockpit ouvre l'onglet de la tâche avec ce
+chemin comme cwd, et une tâche finie et committée est précisément le cas que le
+nettoyage vise. Supprimer sous un onglet vivant laisse ce shell avec un cwd
+effacé et fait échouer obscurément toute commande tapée ensuite. Le service ne
+voit pas les onglets, donc il ne décide pas: il expose
+`removeWorktree(taskID:in:)`, qui retire et **dit pourquoi** quand il ne peut
+pas, et c'est la séquence d'intégration dans `PlanModel` qui l'appelle — seulement
+si aucune session du cockpit n'a ce répertoire (ou un sous-répertoire) pour cwd.
+Sinon le worktree reste debout et la carte le dit sous le sha intégré.
 
 ## Tests
 
@@ -240,7 +249,9 @@ Sur de vrais dépôts git jetables, comme le lot D — les refus sont ce qui com
 - **Artefact de build**: un `.build/` non suivi ne bloque ni le rebase ni la
   carte, alors qu'un fichier suivi modifié bloque toujours les deux.
 - **Nettoyage**: le worktree d'une tâche intégrée disparaît; un worktree qui
-  porte encore du travail reste debout et l'intégration reste un succès.
+  porte encore du travail reste debout et l'intégration reste un succès; un
+  worktree dans lequel une session du cockpit travaille encore reste debout lui
+  aussi, et la carte dit pourquoi.
 
 ## Ce que le lot F ne fait pas
 

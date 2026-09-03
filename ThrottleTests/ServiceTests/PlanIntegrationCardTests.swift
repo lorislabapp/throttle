@@ -242,3 +242,68 @@ extension PlanIntegrationCardTests {
                    mergeability: mergeability)
     }
 }
+
+// MARK: - What happens to the worktree afterwards
+
+/// The removal is the model's call, not the service's: a task's worktree is also
+/// the cwd the cockpit opened that task's session in, and the service cannot see
+/// tabs. Both branches are here, because deleting under a live tab and never
+/// deleting at all are equally wrong.
+extension PlanIntegrationCardTests {
+
+    func test_anIntegratedWorktreeIsRemovedWhenNothingIsLivingInIt() async throws {
+        let model = try makeModel(verify: "true")
+        VerifyConsent.grant(project: repo, command: "true", defaults: try consentDefaults())
+        let path = try TaskWorktreeService.path(for: "t1", in: repo)
+
+        let refusal = await model.integrate(taskID: "t1")
+
+        XCTAssertNil(refusal, refusal ?? "")
+        XCTAssertEqual(model.state("t1").status, .integrated)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: path.path),
+                       "the worktree went away with the merge")
+        XCTAssertNil(model.worktreeNote(for: "t1"), "a worktree that is gone needs no words")
+    }
+
+    /// `TaskLauncher.LaunchPlan.workingDirectory` *is* this directory, and the
+    /// cockpit opens the agent's tab with it as cwd. Deleting it under that tab
+    /// leaves the shell with a working directory that no longer exists and makes
+    /// every later command in it fail obscurely — so it is kept, and said.
+    func test_aWorktreeACockpitSessionIsWorkingInIsKeptAndTheCardSaysSo() async throws {
+        let model = try makeModel(verify: "true")
+        VerifyConsent.grant(project: repo, command: "true", defaults: try consentDefaults())
+        let path = try TaskWorktreeService.path(for: "t1", in: repo)
+        // A session sitting one level *inside* the worktree, which is as much of a
+        // problem as one sitting exactly on it.
+        let sessionCWD = path.appendingPathComponent("nested", isDirectory: true)
+        model.isDirectoryHeldBySession = { directory in
+            sessionCWD.path.hasPrefix(directory.standardizedFileURL.path + "/")
+        }
+
+        let refusal = await model.integrate(taskID: "t1")
+
+        XCTAssertNil(refusal, refusal ?? "")
+        XCTAssertEqual(model.state("t1").status, .integrated,
+                       "keeping the directory never demotes a merge that happened")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path.path),
+                      "the session's working directory is still there")
+        let note = try XCTUnwrap(model.worktreeNote(for: "t1"))
+        XCTAssertTrue(note.contains("session"), note)
+    }
+
+    /// The rule the cockpit hands the model, tested without a cockpit around it.
+    func test_aSessionIsFoundWhetherItSitsOnTheDirectoryOrInsideIt() {
+        let worktree = URL(fileURLWithPath: "/tmp/wt", isDirectory: true)
+        XCTAssertTrue(SessionWorkingDirectory.isSessionWorking(inside: worktree, of: [tab("/tmp/wt")]))
+        XCTAssertTrue(SessionWorkingDirectory.isSessionWorking(inside: worktree, of: [tab("/tmp/wt/deep")]))
+        XCTAssertFalse(SessionWorkingDirectory.isSessionWorking(inside: worktree, of: [tab("/tmp/other")]),
+                       "a sibling is not inside it")
+        XCTAssertFalse(SessionWorkingDirectory.isSessionWorking(inside: worktree, of: [tab("/tmp/wt-2")]),
+                       "and neither is a directory that merely starts with its name")
+        XCTAssertFalse(SessionWorkingDirectory.isSessionWorking(inside: worktree, of: [tab("")]))
+    }
+
+    private func tab(_ cwd: String) -> CockpitTab {
+        CockpitTab(projectName: "p", cwd: cwd)
+    }
+}

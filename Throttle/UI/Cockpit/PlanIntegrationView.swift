@@ -17,6 +17,12 @@ extension PlanTreeView {
                 Text(state.integratedSHA.map { String($0.prefix(10)) } ?? "—")
                     .font(.system(size: 11, design: .monospaced))
                     .textSelection(.enabled)
+                // A worktree that did not go away is a directory still on disk after
+                // the merge, and the user is the one who has to deal with it.
+                if let note = model.worktreeNote(for: task.id) {
+                    Text(note).font(.system(size: 11)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         } else if state.status == .done, let assessment = model.assessment(for: task.id) {
             VStack(alignment: .leading, spacing: 6) {

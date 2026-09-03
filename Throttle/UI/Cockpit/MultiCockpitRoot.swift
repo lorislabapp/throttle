@@ -599,6 +599,11 @@ struct MultiCockpitRoot: View {
                                      runtime: launch.runtime, missionID: launch.missionID,
                                      initialPrompt: launch.kickoff)
                 }
+                // Same fact, other half: that cwd is the task's worktree, which an
+                // integration would otherwise delete under a live tab.
+                planModel.isDirectoryHeldBySession = {
+                    SessionWorkingDirectory.isSessionWorking(inside: $0, of: model.sessions)
+                }
                 planModel.bind(to: activeProjectRoot)
             }
             .onChange(of: model.activeID) { _, _ in planModel.bind(to: activeProjectRoot) }

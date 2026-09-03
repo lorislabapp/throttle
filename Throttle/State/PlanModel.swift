@@ -42,6 +42,12 @@ final class PlanModel {
     /// cockpit, which is the only thing that can open a session.
     var onAutoRelaunch: ((TaskLauncher.LaunchPlan) -> Void)?
 
+    /// Whether any open cockpit session is working inside this directory. Set by the
+    /// cockpit next to `onAutoRelaunch`, because tabs are the only thing it knows
+    /// that this model does not. Nil is the honest answer for a model with no
+    /// cockpit behind it — a test, or the MCP side — which has no tab to protect.
+    var isDirectoryHeldBySession: ((URL) -> Bool)?
+
     /// Rejection count last acted on, per task, so a relaunch happens once per
     /// verdict and not once per filesystem event.
     private var actedOnRejection: [String: Int] = [:]

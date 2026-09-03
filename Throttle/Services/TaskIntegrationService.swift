@@ -256,29 +256,44 @@ enum TaskIntegrationService {
         let sha = try self.sha("HEAD", in: repo)
         try store.append(TaskEvent(seq: 0, timestamp: Date(), author: author,
                                    type: .integrated, ref: sha), to: taskID)
-        cleanUp(taskID: taskID, in: repo)
         return sha
     }
 
-    /// Removes the task's worktree now that its commits are in the base. This is the
-    /// end of the accumulation this lot's scope opens by complaining about: without
-    /// it, every finished task leaves a full checkout behind for ever.
+    /// Removes an integrated task's worktree, and returns the reason it is still
+    /// standing when it is — nil means it is gone. This is the end of the
+    /// accumulation this lot's scope opens by complaining about: without it, every
+    /// finished task leaves a full checkout behind for ever.
     ///
-    /// Never with `force`, and never fatal. `TaskWorktreeService.remove` refuses
+    /// Never with `force`, and never throwing. `TaskWorktreeService.remove` refuses
     /// whenever the worktree still holds uncommitted changes or unmerged commits, and
     /// that refusal stays authoritative — an integration that succeeded is not a
     /// licence to delete something unexpected. Nor is a worktree left standing a
-    /// reason to report a merge that already happened as a failure: the reason is
-    /// logged, the caller is told nothing, and the directory stays for the user to
-    /// look at.
-    private static func cleanUp(taskID: String, in repo: URL) {
+    /// reason to report a merge that already happened as a failure: the reason comes
+    /// back as text for whoever asked, and the directory stays for the user to look at.
+    ///
+    /// *Whether* to call this is deliberately not `integrate`'s decision, which is
+    /// why it is a separate function. A task's worktree is also its agent's working
+    /// directory, and the cockpit opens that tab with this very path as its cwd:
+    /// deleting it under a live session leaves that shell with a working directory
+    /// that no longer exists, and every command typed into it afterwards fails
+    /// obscurely. This service cannot see tabs, so it does not get to choose. The
+    /// caller that can — `PlanModel` — does.
+    static func removeWorktree(taskID: String, in repo: URL) -> String? {
         do {
             try TaskWorktreeService.remove(taskID: taskID, in: repo)
+            return nil
         } catch {
+            let reason: String
+            if case TaskWorktreeError.hasUnintegratedWork(let detail) = error {
+                reason = detail
+            } else {
+                reason = String(describing: error)
+            }
             logger.notice("""
                 worktree for \(taskID, privacy: .public) left standing after integration: \
-                \(String(describing: error), privacy: .public)
+                \(reason, privacy: .public)
                 """)
+            return reason
         }
     }
 

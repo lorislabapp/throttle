@@ -33,6 +33,10 @@ extension PlanModel {
         var errors: [String: String] = [:]
         /// Same as the assessment, fetched only when the user opens the disclosure.
         var diffs: [String: String] = [:]
+        /// Why an integrated task's worktree is still on disk, when it is. A
+        /// directory left behind after a merge is something the user has to be able
+        /// to see; absent means it went away, which needs no words.
+        var worktreeNotes: [String: String] = [:]
         /// The command the user has been asked to allow, if any.
         var pendingVerifyCommand: String?
 
@@ -43,6 +47,7 @@ extension PlanModel {
             assessments = [:]
             errors = [:]
             diffs = [:]
+            worktreeNotes = [:]
             pendingVerifyCommand = nil
         }
     }
@@ -68,6 +73,9 @@ extension PlanModel {
     /// Why this task cannot be assessed, when it cannot be. The card shows it in
     /// place of the controls rather than drawing nothing.
     func assessmentError(for taskID: String) -> String? { integration.errors[taskID] }
+
+    /// Why an integrated task's worktree is still on disk, when it is.
+    func worktreeNote(for taskID: String) -> String? { integration.worktreeNotes[taskID] }
 
     func integrationDiff(for taskID: String) -> String { integration.diffs[taskID] ?? "" }
 
@@ -193,12 +201,46 @@ extension PlanModel {
                 try TaskIntegrationService.integrate(taskID: taskID, in: root, store: store,
                                                      task: task, author: author)
             }
+            await cleanUpWorktree(taskID: taskID, in: root)
             return nil
         } catch let error as TaskIntegrationError {
             return Self.explain(error)
         } catch {
             return String(describing: error)
         }
+    }
+
+    /// Removes the worktree of a task that has just been integrated — but only when
+    /// nothing is living in it.
+    ///
+    /// The gate is here rather than in the service because it is about tabs, which
+    /// the service cannot see. `TaskLauncher.LaunchPlan.workingDirectory` *is* the
+    /// worktree, and the cockpit opens a task's session with it as cwd; a finished,
+    /// committed task is exactly the case the removal wants, and deleting it under a
+    /// live tab leaves that shell with a working directory that no longer exists.
+    /// The service's own refusal still decides whether a removal is *allowed* — this
+    /// only decides whether to ask.
+    ///
+    /// Nothing here can fail the integration. A merge that happened is reported as
+    /// the success it was, and every reason the worktree is still standing is written
+    /// where the card can show it.
+    private func cleanUpWorktree(taskID: String, in root: URL) async {
+        guard let worktree = try? TaskWorktreeService.path(for: taskID, in: root) else { return }
+        if isDirectoryHeldBySession?(worktree) == true {
+            integration.worktreeNotes[taskID] =
+                "Worktree kept: a cockpit session is still working in it."
+            return
+        }
+        let kept: String?
+        do {
+            kept = try await Self.offMain {
+                TaskIntegrationService.removeWorktree(taskID: taskID, in: root)
+            }
+        } catch {
+            kept = String(describing: error)
+        }
+        guard self.root?.path == root.path else { return }
+        integration.worktreeNotes[taskID] = kept.map { "Worktree kept: \($0)" }
     }
 
     /// One blocking git or shell call, run off the main actor. `PlanStore` guards

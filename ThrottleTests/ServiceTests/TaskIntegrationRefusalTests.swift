@@ -300,9 +300,12 @@ extension TaskIntegrationRefusalTests {
 /// same-file extension, for the same `type_body_length` reason as the second.
 extension TaskIntegrationRefusalTests {
 
-    /// `TaskWorktreeService.remove` had no production caller at all, so every
-    /// integrated task left a full checkout behind for ever.
-    func test_integrate_removesTheWorktreeItJustMerged() throws {
+    /// `integrate` deliberately does not clean up. A task's worktree is also its
+    /// agent's working directory, and the cockpit opens that tab with this exact path
+    /// as its cwd — deleting it is a decision that needs to see the tabs, which this
+    /// service cannot. It merges; somebody with more context decides what happens to
+    /// the directory.
+    func test_integrate_leavesTheWorktreeForItsCallerToDecideOn() throws {
         let store = try makeStore()
         let path = try finishedTask("t1", store: store)
         try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
@@ -311,6 +314,21 @@ extension TaskIntegrationRefusalTests {
         let merged = try integrate(store)
 
         XCTAssertEqual(sha("HEAD"), merged)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path.path),
+                      "the merge does not delete anything by itself")
+    }
+
+    /// `TaskWorktreeService.remove` had no production caller at all, so every
+    /// integrated task left a full checkout behind for ever.
+    func test_removeWorktree_dropsTheWorktreeOfAnIntegratedTask() throws {
+        let store = try makeStore()
+        let path = try finishedTask("t1", store: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                          store: store, author: "throttle:test")
+        _ = try integrate(store)
+
+        XCTAssertNil(TaskIntegrationService.removeWorktree(taskID: "t1", in: repo),
+                     "nothing stands in the way, so nothing is reported")
         XCTAssertFalse(FileManager.default.fileExists(atPath: path.path),
                        "an integrated task's worktree is gone")
         XCTAssertFalse(run(["worktree", "list"]).contains(path.path),
@@ -319,23 +337,23 @@ extension TaskIntegrationRefusalTests {
 
     /// The other direction, and the more important one: the refusal inside `remove`
     /// stays authoritative. A worktree still holding something nobody integrated is
-    /// left standing — and a merge that already happened is still reported as the
-    /// success it was, never turned into a failure by the cleanup behind it.
-    func test_integrate_leavesAWorktreeThatStillHoldsWorkStanding() throws {
+    /// left standing, and the reason comes back as text rather than as a throw — so a
+    /// merge that already happened can never be demoted by what follows it.
+    func test_removeWorktree_keepsAWorktreeThatStillHoldsWorkAndSaysWhy() throws {
         let store = try makeStore()
         let path = try finishedTask("t1", store: store)
         try TaskIntegrationService.verify(taskID: "t1", in: repo,
                                           command: "mkdir -p .build && touch .build/artefact",
                                           store: store, author: "throttle:test")
-        XCTAssertTrue(try TaskWorktreeService.status(taskID: "t1", in: repo).holdsWork,
-                      "the worktree holds something remove refuses to drop")
-
         let merged = try integrate(store)
-
         XCTAssertEqual(sha("HEAD"), merged, "the integration succeeded")
-        XCTAssertEqual(try store.state(for: "t1").status, .integrated,
-                       "and is reported as such, cleanup or no cleanup")
+        XCTAssertEqual(try store.state(for: "t1").status, .integrated)
+
+        let kept = try XCTUnwrap(TaskIntegrationService.removeWorktree(taskID: "t1", in: repo),
+                                 "a worktree that still holds work says why it stands")
+
+        XCTAssertTrue(kept.contains("uncommitted changes"), kept)
         XCTAssertTrue(FileManager.default.fileExists(atPath: path.path),
-                      "while the worktree it would not delete is still there")
+                      "and it is still there")
     }
 }
