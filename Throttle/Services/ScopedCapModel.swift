@@ -111,9 +111,44 @@ enum ScopedCapModel {
             .max(by: { $0.count < $1.count })
     }
 
-    /// "Sonnet only" / "Fable only" — the row subtitle.
-    static var subtitle: String { "\(displayName ?? "Sonnet") only" }
+    private static let unmatchedKey = "scopedCapTokenMatchedNothing"
+
+    /// True when the derived token was checked against the database and
+    /// selected nothing over a window that had events — see
+    /// `WindowCalculator.resolveScope`. The window then computes the documented
+    /// default, and the labels below say so instead of naming a model whose
+    /// events were never counted.
+    static var tokenMatchedNothing: Bool {
+        get { UserDefaults.standard.bool(forKey: unmatchedKey) }
+        set { UserDefaults.standard.set(newValue, forKey: unmatchedKey) }
+    }
+
+    /// Record the outcome of that check. Cheap and idempotent; only writes on a
+    /// change so it does not churn the defaults file on every snapshot tick.
+    static func recordTokenMatchedNothing(_ value: Bool) {
+        guard value != tokenMatchedNothing else { return }
+        tokenMatchedNothing = value
+        let state = value ? "matched nothing — using default Sonnet scope" : "matches events again"
+        AppLogger.app.notice("scoped cap token \(state, privacy: .public)")
+    }
+
+    /// The name to put on the window, or nil when the window is computing the
+    /// default rather than the model the server named.
+    private static var effectiveName: String? {
+        guard let displayName, !tokenMatchedNothing else { return nil }
+        return displayName
+    }
+
+    /// "Sonnet only" / "Fable only" — the row subtitle. When the named model
+    /// matched no event, this says the default is what is being measured; a row
+    /// that keeps a name it is not counting is what started all of this.
+    static var subtitle: String {
+        guard let name = effectiveName else {
+            return tokenMatchedNothing ? "Sonnet only (default)" : "Sonnet only"
+        }
+        return "\(name) only"
+    }
 
     /// "Weekly · Sonnet" / "Weekly · Fable" — the binding label.
-    static var bindingLabel: String { "Weekly · \(displayName ?? "Sonnet")" }
+    static var bindingLabel: String { "Weekly · \(effectiveName ?? "Sonnet")" }
 }

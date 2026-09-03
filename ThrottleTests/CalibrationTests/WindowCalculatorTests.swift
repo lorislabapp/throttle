@@ -166,6 +166,52 @@ final class WindowCalculatorTests: XCTestCase {
         }
     }
 
+    /// Deriving a token narrows the silent zero; it cannot close it. `"Claude
+    /// Zephyr Preview"` yields `preview`, which is a real word absent from every
+    /// model id, and a non-Latin name yields a token that cannot occur in an
+    /// ASCII id at all. Only the query can tell, so the query decides.
+    func test_weeklySonnet_tokenThatMatchesNothing_fallsBackToTheDefault() throws {
+        let queue = try makeDatabase(events: [
+            (3600, "claude-sonnet-4-6", 500),
+            (3600, "claude-opus-4-7", 1000)
+        ])
+        for name in ["Claude Zephyr Preview", "Claude Zen Extended", "クロード"] {
+            let stated = ScopedCapModel.match(forDisplayName: name)
+            let resolved = try queue.read { database in
+                try WindowCalculator.resolveScope(in: database, kind: .weeklySonnet, scoped: stated)
+            }
+            XCTAssertEqual(resolved, .family(.sonnet), "\(name) matched nothing; use the default")
+            let total = try queue.read { database in
+                try WindowCalculator.totalForWindow(in: database, kind: .weeklySonnet, scoped: resolved)
+            }
+            XCTAssertEqual(total, 500, "\(name) must not report an untouched week")
+        }
+    }
+
+    /// A token that DOES match must not be second-guessed into the default.
+    func test_weeklySonnet_tokenThatMatches_isKept() throws {
+        let queue = try makeDatabase(events: [
+            (3600, "claude-zephyr-1", 400),
+            (3600, "claude-sonnet-4-6", 500)
+        ])
+        let stated = ScopedCapModel.match(forDisplayName: "Claude Zephyr 1.0")
+        let resolved = try queue.read { database in
+            try WindowCalculator.resolveScope(in: database, kind: .weeklySonnet, scoped: stated)
+        }
+        XCTAssertEqual(resolved, stated)
+    }
+
+    /// An empty window is empty for every scope. That is not a failed match, and
+    /// treating it as one would rewrite the scope of every quiet week.
+    func test_weeklySonnet_emptyWindow_doesNotCountAsAFailedMatch() throws {
+        let queue = try makeDatabase(events: [])
+        let stated = ScopedCapModel.match(forDisplayName: "Claude Zephyr Preview")
+        let resolved = try queue.read { database in
+            try WindowCalculator.resolveScope(in: database, kind: .weeklySonnet, scoped: stated)
+        }
+        XCTAssertEqual(resolved, stated)
+    }
+
     /// Nothing stated yet: keep computing the window this install always computed.
     func test_weeklySonnet_unstatedScope_defaultsToSonnet() {
         XCTAssertEqual(ScopedCapModel.match(forDisplayName: nil), .family(.sonnet))

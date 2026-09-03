@@ -67,6 +67,40 @@ enum WindowCalculator {
         return max(0, (earliest + windowSec) - nowSec)
     }
 
+    /// The scope that actually selects rows, falling back to the documented
+    /// default when a derived token selects none.
+    ///
+    /// Deriving a token from a display name narrows the silent zero but cannot
+    /// close it: `"Claude Zephyr Preview"` yields `preview`, `"Claude Zen
+    /// Extended"` yields `extended`, and neither word appears in any model id.
+    /// `Character.isLetter` is true for CJK and Cyrillic too, so a non-Latin
+    /// display name produces a token that cannot occur in an ASCII id at all.
+    /// No amount of string work can tell — only the database can.
+    ///
+    /// So: if the token selects nothing over a window that *does* hold events,
+    /// it matched nothing, and reporting an untouched week would be the exact
+    /// lie this window was fixed for. Fall back to the default, and let
+    /// `ScopedCapModel` say so rather than swallowing it.
+    ///
+    /// Cost is one COUNT-shaped SUM over a timestamp-indexed window, and only
+    /// for `.nameToken` — the case that exists solely because Throttle met a
+    /// family it does not know. It runs on the snapshot timer, not per frame.
+    static func resolveScope(
+        in database: Database,
+        kind: WindowKind,
+        now: Date = Date(),
+        scoped: ScopedCapModel.Match
+    ) throws -> ScopedCapModel.Match {
+        guard kind == .weeklySonnet, case .nameToken = scoped else { return scoped }
+        let cutoff = Int64(now.timeIntervalSince1970) - duration(of: kind)
+        guard try DatabaseQueries.totalTokens(in: database, sinceTimestamp: cutoff, scoped: scoped) == 0
+        else { return scoped }
+        // An empty window is empty for every scope; that is not a failed match.
+        guard try DatabaseQueries.totalTokens(in: database, sinceTimestamp: cutoff) > 0
+        else { return scoped }
+        return .family(.sonnet)
+    }
+
     static func duration(of kind: WindowKind) -> Int64 {
         switch kind {
         case .session5h: return session5hSeconds

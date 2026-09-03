@@ -71,7 +71,15 @@ final class DisplayedNumbersTests: XCTestCase {
     /// different model's events than the cap it claimed to track.
     func testScopedCapNamesAndFiltersTheModelTheServerStated() {
         let saved = ScopedCapModel.displayName
-        defer { ScopedCapModel.displayName = saved }
+        // The labels now also depend on whether the token was found in the
+        // database, and that flag lives in the same real preferences domain.
+        // Pin it, or a previous app run decides this test.
+        let savedUnmatched = ScopedCapModel.tokenMatchedNothing
+        defer {
+            ScopedCapModel.displayName = saved
+            ScopedCapModel.tokenMatchedNothing = savedUnmatched
+        }
+        ScopedCapModel.tokenMatchedNothing = false
 
         ScopedCapModel.displayName = nil
         XCTAssertEqual(ScopedCapModel.subtitle, "Sonnet only",
@@ -88,6 +96,13 @@ final class DisplayedNumbersTests: XCTestCase {
         XCTAssertEqual(ScopedCapModel.match(forDisplayName: "Mythos"), .family(.fable))
         XCTAssertEqual(ScopedCapModel.match(forDisplayName: "Claude Opus 4.7"), .family(.opus))
         XCTAssertEqual(MultiCockpitModel.scopedLabelMirror, "Weekly · Fable")
+
+        // A name whose token found no event is not the model being measured, so
+        // the row must stop wearing it — keeping a name it is not counting is
+        // exactly what started this.
+        ScopedCapModel.tokenMatchedNothing = true
+        XCTAssertEqual(ScopedCapModel.subtitle, "Sonnet only (default)")
+        XCTAssertEqual(ScopedCapModel.bindingLabel, "Weekly · Sonnet")
     }
 
     /// A payload that omits the scope must not erase a name we were already
@@ -313,6 +328,40 @@ final class DisplayedNumbersTests: XCTestCase {
                        expected, accuracy: 0.0001)
         XCTAssertEqual(PlanAdvisor.apiRateEURPerM(mix: [.fable: -5]),
                        expected, accuracy: 0.0001, "a negative count must not subtract")
+    }
+
+    /// Pins the wiring the view used to hide: the split's per-tier counts must
+    /// reach `recommend`. While `computeMix` was private to a `View`, a
+    /// regression to an empty mix would have printed the 30/70 guess in the same
+    /// row and typeface as a measurement, with the suite green.
+    func testTheModelSplitReachesTheAdvisorRatherThanTheGuess() {
+        let slices = [
+            StatsDataService.ModelSlice(tier: .opus, weightedTokens: 5_000_000),
+            StatsDataService.ModelSlice(tier: .sonnet, weightedTokens: 3_000_000),
+            StatsDataService.ModelSlice(tier: .fable, weightedTokens: 2_000_000)
+        ]
+        let mix = PlanAdvisor.mix(from: slices)
+        XCTAssertEqual(mix, [.opus: 5_000_000, .sonnet: 3_000_000, .fable: 2_000_000])
+
+        let measured = PlanAdvisor.recommend(weeklyWeightedTokens: 10_000_000, mix: mix)
+        let guessed = PlanAdvisor.recommend(weeklyWeightedTokens: 10_000_000, mix: [:])
+        XCTAssertNotEqual(measured.apiEquivalentMonthlyEUR, guessed.apiEquivalentMonthlyEUR,
+                          "a measured split must not land on the guess's number")
+        XCTAssertEqual(measured.apiBasis, .boundedByMeasuredMix)
+        XCTAssertEqual(guessed.apiBasis, .assumedMix)
+    }
+
+    /// The badge must not outrun the figure. "UPPER BOUND" was unconditional
+    /// while the same file documented the unrated path as understating; both
+    /// could not be true, and the doc is the one that was right.
+    func testAPIBasisDistinguishesAMeasurementFromAGuessAndFromAnUnratedMix() {
+        XCTAssertEqual(PlanAdvisor.apiBasis(for: [:]), .assumedMix)
+        XCTAssertEqual(PlanAdvisor.apiBasis(for: [.opus: 0]), .assumedMix)
+        XCTAssertEqual(PlanAdvisor.apiBasis(for: [.opus: 10, .sonnet: 5]), .boundedByMeasuredMix)
+        XCTAssertEqual(PlanAdvisor.apiBasis(for: [.opus: 10, .other: 1]),
+                       .measuredMixWithUnratedFamily,
+                       "unrated tokens are priced as Sonnet, so the figure can understate")
+        XCTAssertEqual(PlanAdvisor.apiBasis(for: [.opus: 10, .other: 0]), .boundedByMeasuredMix)
     }
 
     // MARK: - An empty exclusion set must not break the SQL

@@ -5,12 +5,30 @@ import Foundation
 /// figures out which Anthropic offering is the best fit and whether
 /// flat subscription or pay-as-you-go-with-credits would save them money.
 ///
-/// Prices are 2026-01 Anthropic public rates expressed in EUR using a
-/// stable 0.92 USD→EUR conversion. The advisor is intentionally
-/// conservative — it underestimates cache savings (real users hit more
-/// cache than the model split alone reveals), so its recommendations
-/// err on the side of "yes, a flat sub still pays off." We surface the
-/// raw API equivalent so the user can sanity-check the math.
+/// Prices come from `ModelPricing` and are converted at its `usdToEur`
+/// (0.93). This header used to name 0.92 and a second rate table; both are
+/// gone.
+///
+/// ## Whether the API equivalent is an upper bound — conditionally
+///
+/// It used to say, flatly, that the advisor errs toward "yes, a flat sub still
+/// pays off". That holds *only when every family in the mix has a published
+/// rate*, and it holds for a real reason: weighted tokens fold a cache write in
+/// at 1.0 and a cache read at 0.1, then charge both at the blended
+/// input/output rate, which is above the 1.25x-input and 0.1x-input the API
+/// actually bills. On cache-heavy Claude Code usage that overstatement
+/// dominates, so the figure sits above true API cost.
+///
+/// It does **not** hold when the mix contains tokens Throttle could not
+/// classify. Those are priced at the Sonnet fallback, and an unrecognised id is
+/// usually a *new* frontier family that bills above Sonnet — Fable did, at
+/// 3.33x, and was the second-largest tier on this account while it went
+/// unrecognised. That understatement is proportional to the unrated share and
+/// can exceed the cache-weighting overstatement outright.
+///
+/// So the claim is carried in the data, not in prose: `Verdict.apiBasis` says
+/// which case a given figure is in, and the badge beside it must not claim more
+/// than that. See `APIBasis`.
 enum PlanAdvisor {
 
     /// Anthropic API per-million-token pricing in EUR. Cached reads bill
@@ -85,6 +103,44 @@ enum PlanAdvisor {
         }
     }
 
+    /// What the "API equivalent" figure rests on. The badge beside it must not
+    /// claim more than this — the three cases are not interchangeable, and a
+    /// guess wearing the same label as a measurement is the whole failure this
+    /// area keeps repeating.
+    enum APIBasis: String, Sendable, Equatable {
+        /// Every family in the mix has a published rate. Weighted tokens charge
+        /// cache writes and reads above what the API bills, so the figure sits
+        /// above true API cost. A genuine upper bound.
+        case boundedByMeasuredMix
+        /// The mix carries tokens Throttle could not classify, priced at the
+        /// Sonnet fallback. A new family bills above Sonnet, so this can
+        /// understate by more than the cache weighting overstates. Not a bound.
+        case measuredMixWithUnratedFamily
+        /// No split was available: the 30% Opus / 70% Sonnet guess. Not
+        /// measured, and not a bound either.
+        case assumedMix
+    }
+
+    /// Which case a mix falls into. Kept beside `apiRateEURPerM(mix:)` so the
+    /// figure and the claim about it are decided from the same input.
+    static func apiBasis(for mix: [ModelTier: Int]) -> APIBasis {
+        let total = mix.values.reduce(0) { $0 + max(0, $1) }
+        guard total > 0 else { return .assumedMix }
+        let unrated = max(0, mix[.other] ?? 0)
+        return unrated > 0 ? .measuredMixWithUnratedFamily : .boundedByMeasuredMix
+    }
+
+    /// Weighted tokens per family from a model split.
+    ///
+    /// Lives here rather than inline in the view because nothing could assert
+    /// the advisor actually *received* the split while this was private to a
+    /// `View`: a regression to an empty mix would print the 30/70 guess in the
+    /// same row and the same typeface as a measured figure, and the suite would
+    /// stay green.
+    static func mix(from slices: [StatsDataService.ModelSlice]) -> [ModelTier: Int] {
+        Dictionary(slices.map { ($0.tier, $0.weightedTokens) }, uniquingKeysWith: +)
+    }
+
     /// One family's weighted API rate, EUR per million.
     ///
     /// The single place a `ModelTier` becomes money. `.other` resolves through
@@ -135,6 +191,9 @@ enum PlanAdvisor {
         let reasoning: String
         /// Optional hint about extra-credit / Console pay-as-you-go.
         let extraCreditHint: String?
+        /// What `apiEquivalentMonthlyEUR` rests on. Read it before labelling
+        /// that number anything.
+        let apiBasis: APIBasis
     }
 
     /// Compute the verdict.
@@ -212,7 +271,8 @@ enum PlanAdvisor {
             currentMonthlyEUR: currentMonthlyEUR,
             monthlyDeltaEUR: monthlyDeltaEUR,
             reasoning: reasoning,
-            extraCreditHint: extra
+            extraCreditHint: extra,
+            apiBasis: apiBasis(for: mix)
         )
     }
 

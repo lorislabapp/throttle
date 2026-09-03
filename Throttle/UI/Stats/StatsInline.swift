@@ -326,13 +326,48 @@ struct StatsInline: View {
         }
     }
 
+    private func apiBadge(_ basis: PlanAdvisor.APIBasis) -> String {
+        switch basis {
+        case .boundedByMeasuredMix:         return String(localized: "UPPER BOUND")
+        case .measuredMixWithUnratedFamily: return String(localized: "UNRATED MODELS")
+        case .assumedMix:                   return String(localized: "ASSUMED MIX")
+        }
+    }
+
+    private func apiBadgeExplanation(_ basis: PlanAdvisor.APIBasis) -> String {
+        switch basis {
+        case .boundedByMeasuredMix:
+            return String(localized: """
+                Priced from your measured model split. Weighted tokens charge cache \
+                writes and reads above what the API bills, so real API cost would be \
+                at or below this.
+                """)
+        case .measuredMixWithUnratedFamily:
+            return String(localized: """
+                Priced from your measured split, but some usage is on a model \
+                Throttle has no published rate for. Those tokens are charged at the \
+                Sonnet rate, and a newer model bills more — so this figure may be \
+                too low.
+                """)
+        case .assumedMix:
+            return String(localized: """
+                No model split available for this range, so this assumes 30% Opus / \
+                70% Sonnet. It is a guess, not a measurement.
+                """)
+        }
+    }
+
     @ViewBuilder
     private func apiRow(_ v: PlanAdvisor.Verdict) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 7) {
                 Text("API equivalent").font(.system(size: 12.5, weight: .medium))
-                Text("UPPER BOUND").font(.system(size: 8, weight: .bold)).tracking(0.5)
+                // The badge says only what the figure supports. "UPPER BOUND"
+                // was unconditional while the code's own docs said the unrated
+                // path understates; both could not be true.
+                Text(apiBadge(v.apiBasis)).font(.system(size: 8, weight: .bold)).tracking(0.5)
                     .foregroundStyle(.tertiary)
+                    .help(apiBadgeExplanation(v.apiBasis))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Text("\(est ? "≈" : "")\(eur(v.apiEquivalentMonthlyEUR))")
@@ -395,9 +430,10 @@ struct StatsInline: View {
 
     /// Weighted tokens per family, for pricing. The split already carries these;
     /// collapsing them to a single Opus fraction was what forced every other
-    /// family through the Sonnet rate.
+    /// family through the Sonnet rate. The computation itself lives on
+    /// `PlanAdvisor` so a test can reach it — it was unassertable here.
     private func computeMix() -> [ModelTier: Int] {
-        Dictionary(modelSlices.map { ($0.tier, $0.weightedTokens) }, uniquingKeysWith: +)
+        PlanAdvisor.mix(from: modelSlices)
     }
 
     /// Still the right shape for the "Opus-heavy / Sonnet-heavy" line, which is

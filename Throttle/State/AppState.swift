@@ -331,7 +331,13 @@ final class AppState {
         // between the two calls compute the total for one model and the reset
         // for another. It also stops the two unscoped kinds reading a
         // preference they never use.
-        let scoped = kind == .weeklySonnet ? ScopedCapModel.match : .family(.sonnet)
+        let stated = kind == .weeklySonnet ? ScopedCapModel.match : ScopedCapModel.Match.family(.sonnet)
+        // A derived token can name a word no model id contains. Only the query
+        // can tell, so ask once here and let the labels reflect the answer.
+        let scoped = try WindowCalculator.resolveScope(in: db, kind: kind, scoped: stated)
+        if kind == .weeklySonnet {
+            ScopedCapModel.recordTokenMatchedNothing(scoped != stated)
+        }
         let used = try WindowCalculator.totalForWindow(in: db, kind: kind, scoped: scoped)
         let cap = try DatabaseQueries.calibration(in: db, kind: kind)?.capTokens
         let reset = try WindowCalculator.secondsUntilReset(in: db, kind: kind, scoped: scoped)
