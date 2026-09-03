@@ -173,8 +173,13 @@ précédente, et découper le geste ferait porter à l'utilisateur un ordre
 d'opérations que le service connaît mieux que lui. Ce qui reste visible, c'est
 où ça s'est arrêté.
 
-Après intégration, le diff de la tâche devient vide: le nettoyage de worktree
-déjà écrit au lot D s'applique sans modification.
+Après intégration, le diff de la tâche devient vide, donc le worktree devient
+éligible au nettoyage que `TaskWorktreeService.remove` sait déjà refuser à bon
+escient. **Mais rien ne l'appelle**: câbler ce nettoyage n'est pas dans ce lot.
+La phrase précédente de cette spec prétendait le contraire — c'était faux, et
+l'accumulation de worktrees que le périmètre annonce reste entière après F. Un
+lot ultérieur le fait, sur un geste, jamais en supprimant du travail non
+intégré.
 
 ## Tests
 
