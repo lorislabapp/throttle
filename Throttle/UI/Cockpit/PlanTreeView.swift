@@ -208,8 +208,12 @@ struct PlanTreeView: View {
                 await model.refreshAssessment(for: id)
             }
             // A refusal belongs to the task it was refused on, so it does not
-            // follow the selection onto the next one.
-            .onChange(of: id) { _, _ in integrationError = nil }
+            // follow the selection onto the next one. Both refusals: a failed launch
+            // is no more the next task's business than a failed integration.
+            .onChange(of: id) { _, _ in
+                integrationError = nil
+                launchError = nil
+            }
         } else {
             message("Select a task.", detail: nil)
         }

@@ -7,14 +7,22 @@ import XCTest
 final class VerifyConsentTests: XCTestCase {
 
     private var defaults = UserDefaults.standard
+    private var suiteName = ""
     private let project = URL(fileURLWithPath: "/tmp/some-project")
 
     override func setUpWithError() throws {
-        guard let suite = UserDefaults(suiteName: "verify-consent-\(UUID().uuidString)") else {
+        suiteName = "verify-consent-\(UUID().uuidString)"
+        guard let suite = UserDefaults(suiteName: suiteName) else {
             XCTFail("could not create an isolated UserDefaults suite for this test")
             return
         }
         defaults = suite
+    }
+
+    /// A named suite is a real plist in the user's preferences directory. Without
+    /// this the suite created for every test of every run stayed there forever.
+    override func tearDownWithError() throws {
+        defaults.removePersistentDomain(forName: suiteName)
     }
 
     func test_aCommandIsNotGrantedUntilItIsGranted() {

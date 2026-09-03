@@ -51,6 +51,13 @@ final class PlanModel {
         watcher = nil
         root = newRoot
         selection = nil
+        // Task ids are only unique inside one plan, so everything keyed by task id
+        // has to go with the project — a cached assessment or diff from the previous
+        // project would otherwise be shown under a same-named task in this one.
+        assessments = [:]
+        diffs = [:]
+        pendingVerifyCommand = nil
+        integrationStep = .idle
 
         guard let newRoot else {
             store = nil
@@ -280,6 +287,13 @@ extension PlanModel {
         }
         guard let root, let store, let task = plan?.task(taskID) else {
             return "This project has no plan to integrate against."
+        }
+        // Only the card gated this before. A `.review` task would have run the
+        // project's verify command for nothing: `checked` is accepted only on a task
+        // that reached `.done`, so the event would have been silently rejected and
+        // the integration refused as unverified — after minutes of shelling out.
+        guard state(taskID).status == .done else {
+            return "\(taskID) is \(state(taskID).status.rawValue), not done — nothing to integrate yet."
         }
         guard let command = verifyCommand(for: taskID) else {
             return "No verify command in this plan — add `verify` to the plan or the task."

@@ -67,6 +67,9 @@ extension PlanTreeView {
                     .foregroundStyle(.orange)
             }
         case .unknown:
+            // Says so without disabling the button: the sequence always rebases
+            // first, and a rebase is git's own answer to the question this git
+            // could not precompute.
             Text("This git cannot say whether it merges cleanly (needs 2.38).")
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         }

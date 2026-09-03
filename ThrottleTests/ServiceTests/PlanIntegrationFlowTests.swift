@@ -180,6 +180,40 @@ extension PlanIntegrationFlowTests {
         XCTAssertTrue(exists("other.txt"), "and the base's own commit survived it")
     }
 
+    /// Only the card gated this before. A task still in review would have run the
+    /// project's verify command — minutes of shelling out — for a `checked` event
+    /// the projection then rejects, ending in `.unverified`. The guard is in the
+    /// model now, and the proof is that the command left no trace.
+    func test_integrateRefusesATaskThatIsNotDone() async throws {
+        let command = "touch ran-anyway.txt"
+        let store = PlanStore(projectRoot: repo)
+        try store.bootstrap(Plan(projectId: "p", title: "P", verify: command,
+                                 tasks: [PlanTask(id: "t1", title: "T1", sotaGate: true)]))
+        let path = try TaskWorktreeService.create(taskID: "t1", in: repo)
+        try "task work\n".write(to: path.appendingPathComponent("task.txt"),
+                                atomically: true, encoding: .utf8)
+        run(["add", "."], in: path)
+        run(["commit", "-q", "-m", "work"], in: path)
+        try store.append(TaskEvent(seq: 0, timestamp: Date(), author: "claude:a",
+                                   type: .claimed), to: "t1")
+        try store.append(TaskEvent(seq: 0, timestamp: Date(), author: "claude:a",
+                                   type: .completed), to: "t1")
+        let model = PlanModel()
+        model.verifyConsentDefaults = try consentDefaults()
+        model.bind(to: repo)
+        VerifyConsent.grant(project: repo, command: command, defaults: try consentDefaults())
+        XCTAssertEqual(model.state("t1").status, .review, "gated, so it is not done yet")
+
+        let refusal = await model.integrate(taskID: "t1")
+
+        XCTAssertNotNil(refusal)
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: path.appendingPathComponent("ran-anyway.txt").path),
+                       "the verify command never ran")
+        XCTAssertNil(model.state("t1").lastCheck, "and no check was written")
+        XCTAssertEqual(model.integrationStep, .idle)
+    }
+
     // MARK: - What the card reads
 
     func test_theAssessmentIsCachedRatherThanReadOnEveryDraw() async throws {
