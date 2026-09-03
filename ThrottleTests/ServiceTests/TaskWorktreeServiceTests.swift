@@ -137,4 +137,26 @@ final class TaskWorktreeServiceTests: XCTestCase {
         XCTAssertFalse(committed.isDirty)
         XCTAssertEqual(committed.unmergedCommits, 1)
     }
+
+    /// The default `base` is "HEAD", which used to be evaluated *inside* the
+    /// worktree: `HEAD..HEAD` counts zero whatever the branch holds, so `holdsWork`
+    /// silently collapsed to `isDirty` and this call deleted a committed task.
+    func testTheDefaultBaseStillSeesUnmergedCommits() throws {
+        let path = try TaskWorktreeService.create(taskID: "T1.1", in: repo)
+        try "work\n".write(to: path.appendingPathComponent("work.txt"),
+                           atomically: true, encoding: .utf8)
+        run(["add", "."], in: path)
+        run(["commit", "-q", "-m", "work"], in: path)
+
+        let state = try TaskWorktreeService.status(taskID: "T1.1", in: repo)
+        XCTAssertFalse(state.isDirty, "the work is committed, so only the count can catch it")
+        XCTAssertEqual(state.unmergedCommits, 1)
+
+        XCTAssertThrowsError(try TaskWorktreeService.remove(taskID: "T1.1", in: repo)) {
+            XCTAssertEqual($0 as? TaskWorktreeError,
+                           .hasUnintegratedWork(
+                            "T1.1 still has 1 unmerged commit(s) — look at the diff before it goes away"))
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path.path))
+    }
 }

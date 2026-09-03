@@ -318,14 +318,17 @@ extension TaskIntegrationServiceTests {
         }
     }
 
+    /// A *tracked* modification — `integrate` deliberately ignores untracked files,
+    /// which the verification it just ran is free to leave behind
+    /// (`TaskIntegrationRefusalTests` holds both halves of that distinction).
     func test_integrate_refusesADirtyWorktree() throws {
         let path = try worktree("t1", file: "task.txt", contents: "work\n")
         let store = store()
         try finishTask("t1", in: store)
         try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
                                           store: store, author: "throttle:test")
-        try "scratch\n".write(to: path.appendingPathComponent("notes.txt"),
-                              atomically: true, encoding: .utf8)
+        try "edited after the check\n".write(to: path.appendingPathComponent("task.txt"),
+                                             atomically: true, encoding: .utf8)
 
         XCTAssertThrowsError(try TaskIntegrationService.integrate(
             taskID: "t1", in: repo, store: store,

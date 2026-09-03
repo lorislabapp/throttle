@@ -81,7 +81,15 @@ enum TaskWorktreeService {
         }
         let dirty = !git(["status", "--porcelain"], in: destination).output
             .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let ahead = git(["rev-list", "--count", "\(base)..HEAD"], in: destination)
+        // `base` is resolved in the *repo*, then the rev-list runs in the worktree.
+        // The default is "HEAD", and "HEAD" names two different commits in those two
+        // directories: counting `HEAD..HEAD` inside the worktree was always 0, so
+        // `holdsWork` collapsed to `isDirty` and a default-argument `remove` would
+        // happily drop unmerged commits. Resolving first makes the count mean its name.
+        let lookup = git(["rev-parse", base], in: repo)
+        let resolved = lookup.ok
+            ? lookup.output.trimmingCharacters(in: .whitespacesAndNewlines) : base
+        let ahead = git(["rev-list", "--count", "\(resolved)..HEAD"], in: destination)
         let unmerged = Int(ahead.output.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
         return Status(exists: true, isDirty: dirty, unmergedCommits: unmerged)
     }

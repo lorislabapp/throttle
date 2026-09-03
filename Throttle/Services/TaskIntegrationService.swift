@@ -55,13 +55,19 @@ enum TaskIntegrationService {
 
     // MARK: - Assess
 
+    /// The task's side is read from the branch ref, never from the worktree's own
+    /// HEAD. `integrate` fast-forwards `task/<id>` and `diff` diffs against it, so a
+    /// stamp taken from the worktree would describe one tree while the merge landed
+    /// another the moment an agent checked out a SHA inside its own worktree — the
+    /// one way a stale check could pass. Reading the ref makes all three agree by
+    /// construction; a detached worktree simply stops being what is assessed.
     static func assess(taskID: String, in repo: URL) throws -> Assessment {
         let worktree = try existingWorktree(taskID, in: repo)
         let base = try sha("HEAD", in: repo)
-        let task = try sha("HEAD", in: worktree)
+        let branch = try TaskWorktreeService.branchName(for: taskID)
+        let task = try sha(branch, in: repo)
 
-        let dirty = !git(["status", "--porcelain"], in: worktree).output
-            .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let dirty = isDirty(worktree, includingUntracked: true)
 
         let ahead = count(["rev-list", "--count", "\(base)..\(task)"], in: repo)
         let behind = count(["rev-list", "--count", "\(task)..\(base)"], in: repo)
@@ -91,16 +97,36 @@ enum TaskIntegrationService {
     private static func mergeability(base: String, task: String, in repo: URL) -> Mergeability {
         let result = git(["merge-tree", "--write-tree", "--name-only", base, task], in: repo)
         if result.ok { return .clean }
-        guard let firstSection = result.output.components(separatedBy: "\n\n").first else {
+        return conflictedPaths(inMergeTreeFailure: result.output)
+    }
+
+    /// Reads a failed `merge-tree` as either a real conflict or "git did not answer".
+    ///
+    /// A non-zero exit is not proof of a conflict: git older than 2.38 does not know
+    /// `--write-tree` and exits non-zero having printed `error: unknown option …`
+    /// followed by its own usage block. Treating that as a path list rendered git's
+    /// usage text to the user as "Conflicts with the base in:" and disabled the
+    /// button. The conflict shape is recognised by its first line — a tree object id
+    /// — and everything else is `.unknown`, which is what the spec asks for on a git
+    /// that cannot answer.
+    static func conflictedPaths(inMergeTreeFailure output: String) -> Mergeability {
+        guard let firstSection = output.components(separatedBy: "\n\n").first else {
             return .unknown
         }
         let lines = firstSection.split(separator: "\n").map(String.init)
-        guard lines.count > 1 else { return .unknown }
+        guard let first = lines.first,
+              isObjectID(first.trimmingCharacters(in: .whitespaces)) else { return .unknown }
         // First line is the tree OID; the rest are the conflicting paths.
         let paths = lines.dropFirst()
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
         return paths.isEmpty ? .unknown : .conflicted(Array(paths))
+    }
+
+    /// A git object id: 40 hex digits under SHA-1, 64 under SHA-256.
+    private static func isObjectID(_ candidate: String) -> Bool {
+        (candidate.count == 40 || candidate.count == 64)
+            && candidate.allSatisfy { $0.isHexDigit }
     }
 
     private static func numstat(base: String, task: String, in repo: URL) -> [FileChange] {
@@ -140,169 +166,6 @@ enum TaskIntegrationService {
     }
 
     // MARK: - Verify
-
-    struct Verdict: Sendable, Equatable {
-        let passed: Bool
-        let output: String
-        let stamp: String
-    }
-
-    /// The longest a verification may run before it is killed. A project whose suite
-    /// takes longer than this should say so in its own command.
-    static let defaultTimeout: TimeInterval = 900
-    private static let outputLimit = 4000
-    /// Grace period between SIGTERM and SIGKILL. A process that traps or ignores
-    /// SIGTERM would otherwise sail past its own timeout with no way out.
-    private static let killGracePeriod: TimeInterval = 2
-    /// How long `shell` waits for the readability handler to report EOF after the
-    /// process has already exited, before reading whatever output was collected.
-    /// Bounded, not forever: a leaked grandchild can hold the pipe's write end
-    /// open past the process's own exit, and this file already removed one
-    /// unbounded wait this run — it is not adding another.
-    private static let drainGrace: TimeInterval = 2
-
-    /// Runs the project's verification command in the task's worktree and writes the
-    /// `checked` event for it.
-    ///
-    /// It runs *after* the rebase, on the combined tree, because a semantic conflict
-    /// passes the textual merge and only shows up when the two sides are executed
-    /// together — evidence produced by the agent before the rebase says nothing about
-    /// what is about to be merged.
-    ///
-    /// Consent is the caller's to obtain: this function runs what it is given.
-    @discardableResult
-    static func verify(taskID: String, in repo: URL, command: String,
-                       timeout: TimeInterval = defaultTimeout,
-                       store: PlanStore?, author: String) throws -> Verdict {
-        let worktree = try existingWorktree(taskID, in: repo)
-        let stamp = try assess(taskID: taskID, in: repo).stamp
-        let result = shell(command, in: worktree, timeout: timeout)
-        let verdict = Verdict(passed: result.ok, output: String(result.output.suffix(outputLimit)),
-                              stamp: stamp)
-
-        try store?.append(TaskEvent(seq: 0, timestamp: Date(), author: author, type: .checked,
-                                    ref: stamp, reason: verdict.passed ? nil : verdict.output,
-                                    summary: command, passed: verdict.passed),
-                          to: taskID)
-        return verdict
-    }
-
-    /// Runs `command` and collects its combined output without ever blocking on the
-    /// pipe closing. `readDataToEndOfFile()` only returns once *every* writer of the
-    /// pipe has closed it — a child that ignores SIGTERM, or one that backgrounds a
-    /// grandchild holding the inherited stdout/stderr fd, would block that read
-    /// forever regardless of any scheduled timeout. Collecting through
-    /// `readabilityHandler` instead means this function only ever waits on the
-    /// process it launched, never on the pipe draining.
-    ///
-    /// The deadline escalates: SIGTERM at `timeout`, then SIGKILL after
-    /// `killGracePeriod` more if the process is still alive. A killed process comes
-    /// back as a failed verdict that says so in its output — never a silent pass,
-    /// never an empty failure.
-    private static func shell(_ command: String, in directory: URL,
-                              timeout: TimeInterval) -> (ok: Bool, output: String) {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        process.arguments = ["-c", command]
-        process.currentDirectoryURL = directory
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-
-        let collector = OutputCollector()
-        // `readabilityHandler` reports EOF as one final call with empty data.
-        // `waitUntilExit()` below returns on its own, independent mechanism, so
-        // nothing otherwise guarantees the handler has drained the last chunk by
-        // the time the process is observed to have exited — this group is what
-        // closes that gap.
-        let drained = DispatchGroup()
-        drained.enter()
-        pipe.fileHandleForReading.readabilityHandler = { handle in
-            let chunk = handle.availableData
-            if chunk.isEmpty {
-                if collector.consumeEOF() { drained.leave() }
-            } else {
-                collector.append(chunk)
-            }
-        }
-        defer { pipe.fileHandleForReading.readabilityHandler = nil }
-
-        do {
-            try process.run()
-        } catch {
-            drained.leave()
-            return (false, String(describing: error))
-        }
-
-        let queue = DispatchQueue.global()
-        let sendTerm = DispatchWorkItem {
-            guard process.isRunning else { return }
-            collector.markTimedOut()
-            process.terminate()
-        }
-        let sendKill = DispatchWorkItem {
-            guard process.isRunning else { return }
-            kill(process.processIdentifier, SIGKILL)
-        }
-        queue.asyncAfter(deadline: .now() + timeout, execute: sendTerm)
-        queue.asyncAfter(deadline: .now() + timeout + killGracePeriod, execute: sendKill)
-
-        process.waitUntilExit()
-        sendTerm.cancel()
-        sendKill.cancel()
-
-        // Bounded: a grandchild that leaked the write end of the pipe can hold it
-        // open past the process's own exit, and this file already removed one
-        // unbounded wait this run. On expiry this is a truncation, not a hang —
-        // the timeout message above already covers the killed case.
-        _ = drained.wait(timeout: .now() + drainGrace)
-
-        var output = collector.output
-        if collector.timedOut {
-            output += "\n[throttle] verification timed out after \(Int(timeout))s and was killed"
-        }
-        return (process.terminationStatus == 0 && !collector.timedOut, output)
-    }
-
-    /// Buffers a subprocess's output as `readabilityHandler` delivers it — on its
-    /// own queue, distinct from the queue the timeout escalation runs on — so both
-    /// sides go through a lock rather than a plain var.
-    private final class OutputCollector: @unchecked Sendable {
-        private let lock = NSLock()
-        private var buffer = Data()
-        private var hasTimedOut = false
-        private var eofSeen = false
-
-        func append(_ chunk: Data) {
-            lock.lock(); defer { lock.unlock() }
-            buffer.append(chunk)
-        }
-
-        func markTimedOut() {
-            lock.lock(); defer { lock.unlock() }
-            hasTimedOut = true
-        }
-
-        /// True only the first call — `readabilityHandler` can fire again after
-        /// reporting EOF, and the drain group must be left exactly once.
-        func consumeEOF() -> Bool {
-            lock.lock(); defer { lock.unlock() }
-            if eofSeen { return false }
-            eofSeen = true
-            return true
-        }
-
-        var timedOut: Bool {
-            lock.lock(); defer { lock.unlock() }
-            return hasTimedOut
-        }
-
-        var output: String {
-            lock.lock(); defer { lock.unlock() }
-            return String(bytes: buffer, encoding: .utf8) ?? ""
-        }
-    }
-
     // MARK: - Integrate
 
     /// Fast-forwards the base branch onto a finished task, and writes `integrated`.
@@ -326,8 +189,25 @@ enum TaskIntegrationService {
     @discardableResult
     static func integrate(taskID: String, in repo: URL, store: PlanStore,
                           task: PlanTask, author: String) throws -> String {
+        let worktree = try existingWorktree(taskID, in: repo)
+        // A detached repo HEAD would let `merge --ff-only` succeed and advance
+        // nothing a branch points at: `integrated` would be logged for a merge that
+        // moved no branch. Checked before anything else, because no refusal further
+        // down would be the real reason.
+        guard git(["symbolic-ref", "-q", "HEAD"], in: repo).ok else {
+            throw TaskIntegrationError.gitFailed(
+                "The repository is on a detached HEAD — check out the base branch before integrating.")
+        }
         let assessment = try assess(taskID: taskID, in: repo)
-        guard !assessment.isDirty else { throw TaskIntegrationError.refused(.dirty) }
+        // Tracked modifications only, unlike `rebase`'s strict check. The verification
+        // this integration depends on just ran an arbitrary project command in that
+        // worktree, and a build or coverage artefact it left behind would otherwise
+        // turn a green minutes-long check into a refusal with no way forward. A rebase
+        // really can be derailed by untracked files; a fast-forward that happens in the
+        // main repo and never reads this worktree cannot.
+        guard !isDirty(worktree, includingUntracked: false) else {
+            throw TaskIntegrationError.refused(.dirty)
+        }
         guard assessment.behindBy == 0 else { throw TaskIntegrationError.refused(.behind) }
 
         let state = try store.state(for: taskID)
@@ -350,12 +230,24 @@ enum TaskIntegrationService {
 
     // MARK: - git
 
-    private static func existingWorktree(_ taskID: String, in repo: URL) throws -> URL {
+    /// Not `private`: the verify half lives in `TaskIntegrationServiceVerify.swift`.
+    static func existingWorktree(_ taskID: String, in repo: URL) throws -> URL {
         let path = try TaskWorktreeService.path(for: taskID, in: repo)
         guard FileManager.default.fileExists(atPath: path.path) else {
             throw TaskIntegrationError.noWorktree(taskID)
         }
         return path
+    }
+
+    /// `includingUntracked: false` asks git the narrower question — are any *tracked*
+    /// files modified — which is the only one a fast-forward performed elsewhere cares
+    /// about.
+    private static func isDirty(_ worktree: URL, includingUntracked: Bool) -> Bool {
+        let args = includingUntracked
+            ? ["status", "--porcelain"]
+            : ["status", "--porcelain", "--untracked-files=no"]
+        return !git(args, in: worktree).output
+            .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private static func sha(_ rev: String, in directory: URL) throws -> String {
