@@ -100,6 +100,19 @@ extension TaskIntegrationService {
 
         let status = child.waitUntilExit()
         sendTerm.cancel()
+        // The escalation is released when the *group* is empty, not when its leader
+        // exits. SIGTERM that kills the shell but is trapped or ignored by something
+        // it started left that survivor running the moment this cancelled here — the
+        // compiler still holding the RAM, which is the case the whole mechanism
+        // exists to close. So after a timeout the SIGKILL already scheduled for
+        // `killGracePeriod` later is left to fire, and this waits for it to work.
+        //
+        // Only after a timeout. A command that exited on its own and deliberately
+        // left something running behind it has not misbehaved, and killing or waiting
+        // for that would be this function inventing a policy nobody asked it for.
+        let emptied = collector.timedOut
+            ? child.awaitEmptyGroup(within: killGracePeriod + drainGrace)
+            : true
         sendKill.cancel()
 
         // Bounded: see `drainGrace`. On expiry this is a truncation, not a hang.
@@ -110,74 +123,28 @@ extension TaskIntegrationService {
         // whichever side gets there first.
         if collector.consumeEOF() { drained.leave() }
 
-        return verdictText(collector, child: child, status: status, timeout: timeout)
-    }
-
-    /// Drains the read end of the pipe on its own queue until EOF, and owns that
-    /// descriptor's lifetime.
-    ///
-    /// A `DispatchSource` rather than `FileHandle.readabilityHandler`: the handler can
-    /// fire once more after being cleared, and `availableData` on a descriptor that
-    /// has since been closed raises `NSFileHandleOperationException` — an uncatchable
-    /// Objective-C exception in the middle of a verification.
-    private final class PipeReader {
-        private let descriptor: Int32
-        private let source: DispatchSourceRead
-        private let stopped: DispatchSemaphore
-
-        init(descriptor: Int32, into collector: OutputCollector, drained: DispatchGroup) {
-            self.descriptor = descriptor
-            let stopped = DispatchSemaphore(value: 0)
-            self.stopped = stopped
-            let queue = DispatchQueue(label: "com.lorislab.throttle.verify-output")
-            let source = DispatchSource.makeReadSource(fileDescriptor: descriptor, queue: queue)
-            self.source = source
-            source.setEventHandler {
-                var buffer = [UInt8](repeating: 0, count: 64 * 1024)
-                let count = read(descriptor, &buffer, buffer.count)
-                if count > 0 {
-                    collector.append(Data(buffer[0..<count]))
-                    return
-                }
-                if count < 0 && (errno == EINTR || errno == EAGAIN) { return }
-                if collector.consumeEOF() { drained.leave() }
-                source.cancel()
-            }
-            source.setCancelHandler { stopped.signal() }
-            source.resume()
-        }
-
-        /// Stops reading and closes the descriptor — on the caller's thread, and only
-        /// once libdispatch has confirmed through the cancel handler that the event
-        /// handler will not run again.
-        ///
-        /// The confirmation is the whole point. Closing *from* the cancel handler let
-        /// the close land after `shell` had already returned, by which time the process
-        /// had handed that descriptor number to the next `Pipe` git was reading — and
-        /// a `read` blocked on a descriptor closed under it never returns on Darwin.
-        /// The symptom was a later, unrelated git call hanging for ever, with nothing
-        /// in its own stack to explain why.
-        ///
-        /// On the timeout the descriptor is leaked rather than closed: one leaked
-        /// descriptor is cheaper than closing somebody else's.
-        func finish(within grace: TimeInterval) {
-            source.cancel()
-            guard stopped.wait(timeout: .now() + grace) == .success else { return }
-            close(descriptor)
-        }
+        return verdictText(collector, child: child, status: status,
+                           timeout: timeout, emptied: emptied)
     }
 
     /// Turns what the child left behind into the pair `shell` returns. Split out only
     /// so `shell` stays one readable sequence.
     private static func verdictText(_ collector: OutputCollector, child: ChildControl,
-                                    status: Int32?,
-                                    timeout: TimeInterval) -> (ok: Bool, output: String) {
+                                    status: Int32?, timeout: TimeInterval,
+                                    emptied: Bool) -> (ok: Bool, output: String) {
         var output = collector.output
         if collector.timedOut {
             output += "\n[throttle] verification timed out after \(Int(timeout))s and was killed"
-            output += child.leadsOwnGroup
-                ? " — the command and every process it started went with it."
-                : " — only the shell could be signalled, so processes it started may still be running."
+            switch (child.leadsOwnGroup, emptied) {
+            case (false, _):
+                output += " — only the shell could be signalled,"
+                    + " so processes it started may still be running."
+            case (true, true):
+                output += " — the command and every process it started went with it."
+            case (true, false):
+                output += " — its process group would not empty, so something that left"
+                    + " that group may still be running."
+            }
         }
         guard let status else {
             output += "\n[throttle] the verification process could not be waited for,"
@@ -210,144 +177,78 @@ extension TaskIntegrationService {
         """
 
     /// Spawns `/bin/sh` as the leader of a brand-new process group, with both output
-    /// streams on one pipe.
-    ///
-    /// `POSIX_SPAWN_SETPGROUP` with a pgroup of 0 is the supported way to say "the
-    /// child leads its own group". Whether the kernel actually did it is *asked*, not
-    /// assumed — see `ChildControl.leadsOwnGroup`.
+    /// streams on one pipe, and owns the pipe's two descriptors on every path out.
     private static func spawn(_ command: String, in directory: URL) throws -> ChildControl {
         var fds: [Int32] = [-1, -1]
         guard pipe(&fds) == 0 else { throw SpawnFailure(what: "pipe", code: errno) }
         let readFD = fds[0]
         let writeFD = fds[1]
+        do {
+            let pid = try launch(command, in: directory, writeFD: writeFD)
+            // The parent's copy of the write end must go, or the pipe never reports EOF.
+            close(writeFD)
+            return ChildControl(pid: pid, readFD: readFD)
+        } catch {
+            close(writeFD)
+            close(readFD)
+            throw error
+        }
+    }
 
+    /// The `posix_spawn` itself.
+    ///
+    /// `POSIX_SPAWN_SETPGROUP` with a pgroup of 0 is the supported way to say "the
+    /// child leads its own group". Whether the kernel actually did it is *asked*, not
+    /// assumed — see `ChildControl.leadsOwnGroup`.
+    ///
+    /// `POSIX_SPAWN_CLOEXEC_DEFAULT` closes everything the file actions do not name,
+    /// which is what `Foundation.Process` does and what this had been missing.
+    /// Without it the project's own command — arbitrary, user-supplied, running for
+    /// minutes — inherits every non-close-on-exec descriptor the app holds. The sharp
+    /// edge is not privacy but liveness: two projects can integrate at once now, and
+    /// project B's child inheriting project A's pipe *write* end means A's pipe never
+    /// reports EOF, so a run that succeeded stalls and comes back truncated.
+    ///
+    /// Every return code is checked. A file action that silently failed to be
+    /// recorded would leave the child with the wrong descriptors and nothing but
+    /// downstream confusion to say so.
+    private static func launch(_ command: String, in directory: URL,
+                               writeFD: Int32) throws -> pid_t {
         var actions: posix_spawn_file_actions_t?
-        posix_spawn_file_actions_init(&actions)
-        posix_spawn_file_actions_addclose(&actions, readFD)
-        posix_spawn_file_actions_adddup2(&actions, writeFD, STDOUT_FILENO)
-        posix_spawn_file_actions_adddup2(&actions, writeFD, STDERR_FILENO)
-        posix_spawn_file_actions_addclose(&actions, writeFD)
+        try check("file_actions_init", posix_spawn_file_actions_init(&actions))
+        defer { posix_spawn_file_actions_destroy(&actions) }
+        // Named explicitly rather than inherited: under `CLOEXEC_DEFAULT` an
+        // unspecified descriptor 0 simply would not exist in the child, and a command
+        // that reads standard input would see `EBADF` instead of end-of-input. It is
+        // also not this app's stdin — a verification has no business consuming it.
+        try check("addopen stdin", posix_spawn_file_actions_addopen(
+            &actions, STDIN_FILENO, "/dev/null", O_RDONLY, 0))
+        try check("adddup2 stdout",
+                  posix_spawn_file_actions_adddup2(&actions, writeFD, STDOUT_FILENO))
+        try check("adddup2 stderr",
+                  posix_spawn_file_actions_adddup2(&actions, writeFD, STDERR_FILENO))
 
         var attributes: posix_spawnattr_t?
-        posix_spawnattr_init(&attributes)
-        posix_spawnattr_setflags(&attributes, Int16(POSIX_SPAWN_SETPGROUP))
-        posix_spawnattr_setpgroup(&attributes, 0)
+        try check("spawnattr_init", posix_spawnattr_init(&attributes))
+        defer { posix_spawnattr_destroy(&attributes) }
+        let flags = Int16(POSIX_SPAWN_SETPGROUP | POSIX_SPAWN_CLOEXEC_DEFAULT)
+        try check("setflags", posix_spawnattr_setflags(&attributes, flags))
+        try check("setpgroup", posix_spawnattr_setpgroup(&attributes, 0))
 
         var argv: [UnsafeMutablePointer<CChar>?] =
             [shellPath, "-c", chdirWrapper, "throttle-verify", directory.path, command]
                 .map { strdup($0) }
         argv.append(nil)
+        defer { for argument in argv { free(argument) } }
 
         var pid: pid_t = -1
         let code = posix_spawn(&pid, shellPath, &actions, &attributes, &argv, environ)
-
-        posix_spawn_file_actions_destroy(&actions)
-        posix_spawnattr_destroy(&attributes)
-        for argument in argv { free(argument) }
-        // The parent's copy of the write end must go, or the pipe never reports EOF.
-        close(writeFD)
-
-        guard code == 0 else {
-            close(readFD)
-            throw SpawnFailure(what: "posix_spawn", code: code)
-        }
-        return ChildControl(pid: pid, readFD: readFD)
+        guard code == 0 else { throw SpawnFailure(what: "posix_spawn", code: code) }
+        return pid
     }
 
-    /// Owns a spawned child's pid, and the one rule that keeps this file safe: a
-    /// signal and the `waitpid` that reaps that pid are mutually exclusive, so a
-    /// signal can never land on a pid the kernel has already handed to something else.
-    private final class ChildControl: @unchecked Sendable {
-        let readFD: Int32
-        /// True only when the kernel confirmed this pid leads a process group of its
-        /// own, and that group is not Throttle's. `kill(-pid, …)` is used only then:
-        /// negating a pid that had merely inherited the launching process's group
-        /// would signal Throttle itself, and kill the app.
-        let leadsOwnGroup: Bool
-        private let pid: pid_t
-        private let lock = NSLock()
-        private var reaped = false
-
-        init(pid: pid_t, readFD: Int32) {
-            self.pid = pid
-            self.readFD = readFD
-            let group = getpgid(pid)
-            leadsOwnGroup = pid > 1 && group == pid && group != getpgrp()
-        }
-
-        /// Signals the child's whole process group when it leads one, and the child
-        /// alone when it does not. Returns whether anything was signalled.
-        @discardableResult
-        func signal(_ sig: Int32) -> Bool {
-            lock.lock(); defer { lock.unlock() }
-            guard !reaped else { return false }
-            kill(leadsOwnGroup ? -pid : pid, sig)
-            return true
-        }
-
-        /// Blocks until the child exits, then reaps it. Nil when it could not be
-        /// waited for at all, which the caller reports rather than reading as a pass.
-        ///
-        /// `waitid(…, WNOWAIT)` waits *without* consuming the child, so the pid stays
-        /// this process's for the whole wait and `signal` above stays safe throughout.
-        /// The reap that follows is fenced by the same lock, after which `signal`
-        /// declines — there is no window in which both could run.
-        func waitUntilExit() -> Int32? {
-            var info = siginfo_t()
-            var waited = waitid(P_PID, id_t(pid), &info, WEXITED | WNOWAIT)
-            while waited == -1 && errno == EINTR {
-                waited = waitid(P_PID, id_t(pid), &info, WEXITED | WNOWAIT)
-            }
-            lock.lock()
-            reaped = true
-            lock.unlock()
-            guard waited == 0 else { return nil }
-
-            var raw: Int32 = 0
-            while waitpid(pid, &raw, 0) == -1 && errno == EINTR {}
-            // `WIFEXITED`/`WEXITSTATUS` are C macros with no Swift counterpart: the
-            // low seven bits carry the terminating signal, and are zero on a normal
-            // exit, in which case the status is the next eight.
-            return (raw & 0x7f) == 0 ? (raw >> 8) & 0xff : 128 + (raw & 0x7f)
-        }
-    }
-
-    /// Buffers a subprocess's output as the read source delivers it — on its own
-    /// queue, distinct from the queue the timeout escalation runs on — so both sides
-    /// go through a lock rather than a plain var.
-    private final class OutputCollector: @unchecked Sendable {
-        private let lock = NSLock()
-        private var buffer = Data()
-        private var hasTimedOut = false
-        private var eofSeen = false
-
-        func append(_ chunk: Data) {
-            lock.lock(); defer { lock.unlock() }
-            buffer.append(chunk)
-        }
-
-        func markTimedOut() {
-            lock.lock(); defer { lock.unlock() }
-            hasTimedOut = true
-        }
-
-        /// True only the first call. Both the read source and `shell`'s own tail
-        /// reach for it, and the drain group must be left exactly once.
-        func consumeEOF() -> Bool {
-            lock.lock(); defer { lock.unlock() }
-            if eofSeen { return false }
-            eofSeen = true
-            return true
-        }
-
-        var timedOut: Bool {
-            lock.lock(); defer { lock.unlock() }
-            return hasTimedOut
-        }
-
-        var output: String {
-            lock.lock(); defer { lock.unlock() }
-            return String(bytes: buffer, encoding: .utf8) ?? ""
-        }
+    /// These all report an errno as their return value rather than through `errno`.
+    private static func check(_ what: String, _ code: Int32) throws {
+        guard code == 0 else { throw SpawnFailure(what: what, code: code) }
     }
 }

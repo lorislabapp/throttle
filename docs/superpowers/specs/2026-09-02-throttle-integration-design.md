@@ -156,6 +156,17 @@ tenaient le pipe et la RAM. Le groupe n'est jamais supposé: `getpgid` est
 interrogé, et `kill(-pid, …)` n'est employé que si le noyau confirme que ce pid
 mène un groupe qui n'est pas celui de Throttle.
 
+Le spawn porte aussi `POSIX_SPAWN_CLOEXEC_DEFAULT`, comme `Foundation.Process`:
+sans lui, la commande du projet hérite de tous les descripteurs non
+close-on-exec de l'application — et, deux projets pouvant s'intégrer en même
+temps, l'enfant du projet B tenait le côté écriture du pipe du projet A, dont le
+pipe ne signalait alors jamais l'EOF. L'entrée standard est explicitement
+`/dev/null`, pas celle de l'app.
+
+L'escalade SIGKILL n'est annulée que lorsque le **groupe est vide**, jamais à la
+sortie du seul leader: un membre qui ignore SIGTERM survivait exactement au cas
+que ce mécanisme existe pour fermer.
+
 ```
 integrate(taskID, repo) -> String   // sha de fusion
 ```
@@ -252,6 +263,9 @@ Sur de vrais dépôts git jetables, comme le lot D — les refus sont ce qui com
   porte encore du travail reste debout et l'intégration reste un succès; un
   worktree dans lequel une session du cockpit travaille encore reste debout lui
   aussi, et la carte dit pourquoi.
+- **Groupe non vidé**: un descendant qui **ignore** SIGTERM est tout de même
+  parti après le timeout — l'escalade SIGKILL n'est relâchée que quand le groupe
+  est vide, pas quand son leader est sorti.
 
 ## Ce que le lot F ne fait pas
 

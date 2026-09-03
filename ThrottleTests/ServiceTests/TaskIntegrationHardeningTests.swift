@@ -142,6 +142,39 @@ final class TaskIntegrationHardeningTests: XCTestCase {
                        "a killed descendant writes nothing after its deadline")
     }
 
+    /// The half the SIGTERM-obeying test above passes straight over. The escalation
+    /// used to be cancelled the instant the group *leader* exited, so a descendant
+    /// that traps or ignores SIGTERM outlived the shell and nothing ever sent it the
+    /// SIGKILL — the compiler still holding the RAM, which is the whole point of
+    /// putting the child in its own group. The escalation is released on the group
+    /// being empty now, not on the leader being gone.
+    ///
+    /// `trap "" TERM` is inherited across fork and exec, so the whole background
+    /// subtree ignores SIGTERM; only SIGKILL can end it.
+    func test_verify_killsADescendantThatIgnoresSIGTERM() throws {
+        let path = try worktree("t1", file: "task.txt", contents: "work\n")
+        let store = store()
+        try finishTask("t1", in: store)
+        let command = "sh -c 'trap \"\" TERM; echo $$ > orphan.pid; sleep 4;"
+            + " touch orphan.marker' & echo started; wait"
+
+        let verdict = try TaskIntegrationService.verify(taskID: "t1", in: repo, command: command,
+                                                        timeout: 1, store: store,
+                                                        author: "throttle:test")
+        XCTAssertFalse(verdict.passed)
+
+        let orphan = try XCTUnwrap(pid(at: path.appendingPathComponent("orphan.pid")),
+                                   "the command must actually have started a grandchild")
+        XCTAssertTrue(waitUntilGone(orphan),
+                      "SIGTERM was ignored, so the escalation had to reach it — and did")
+        // SIGKILL lands at timeout + killGracePeriod, a second before the marker was
+        // due; wait past that due time rather than concluding from its absence early.
+        Thread.sleep(forTimeInterval: 2)
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: path.appendingPathComponent("orphan.marker").path),
+                       "a killed descendant writes nothing after its deadline")
+    }
+
     /// The pid the backgrounded grandchild wrote, once it has written it.
     private func pid(at file: URL) -> pid_t? {
         for _ in 0..<100 {
