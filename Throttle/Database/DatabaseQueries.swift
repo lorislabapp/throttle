@@ -19,25 +19,50 @@ enum DatabaseQueries {
         return row?["total"] ?? 0
     }
 
-    /// Weighted token total for events whose model name contains `modelToken`.
+    /// The `AND …` fragment, and its bindings, restricting a query to the model
+    /// the weekly cap is scoped to.
     ///
-    /// The scoped weekly cap is not always Sonnet — on this account it was
-    /// scoped to Fable — so the caller supplies the model to match rather than
-    /// the query hardcoding one. `%` and `_` are stripped: the token comes from
-    /// a server-supplied display name, and a name containing a LIKE wildcard
-    /// would silently widen the filter to models that are not capped.
+    /// One definition, so the window's total and its reset time cannot disagree
+    /// about which events are billable. They previously built the filter
+    /// separately from the same raw display name, and both got it wrong the
+    /// same way.
+    static func scopedClause(
+        _ match: ScopedCapModel.Match,
+        column: String = "model"
+    ) -> (sql: String, args: [any DatabaseValueConvertible]) {
+        switch match {
+        case .family(let tier):
+            let family = ModelPricing.sqlFamilyPredicate(forBucket: tier.rawValue, column: column)
+            // `.other` is unreachable via `ScopedCapModel.match(forDisplayName:)`.
+            // Should a future caller build one, restricting to the documented
+            // default beats counting *every* model against a per-model cap.
+            let fallback = ModelPricing.sqlFamilyPredicate(
+                forBucket: ModelTier.sonnet.rawValue, column: column)
+            guard let predicate = family ?? fallback else { return ("", []) }
+            return (" AND " + predicate, [])
+        case .nameToken(let token):
+            return (" AND lower(\(column)) LIKE ?", ["%" + token + "%"])
+        }
+    }
+
+    /// Weighted token total for the model the scoped weekly cap belongs to.
+    ///
+    /// The scoped cap is not always Sonnet — on this account it was scoped to
+    /// Fable — so the caller supplies the match rather than the query
+    /// hardcoding a family.
     static func totalTokens(
         in db: Database,
         sinceTimestamp: Int64,
-        modelToken: String
+        scoped: ScopedCapModel.Match
     ) throws -> Int {
-        let safe = modelToken.lowercased().filter { $0 != "%" && $0 != "_" }
-        guard !safe.isEmpty else { return 0 }
+        let clause = scopedClause(scoped)
+        var args: [any DatabaseValueConvertible] = [sinceTimestamp]
+        args += clause.args
         let row = try Row.fetchOne(db, sql: """
             SELECT COALESCE(SUM(\(weightedTokenSumExpr)), 0) AS total
             FROM usage_events
-            WHERE timestamp > ? AND lower(model) LIKE ?
-            """, arguments: [sinceTimestamp, "%" + safe + "%"])
+            WHERE timestamp > ?\(clause.sql)
+            """, arguments: StatementArguments(args))
         return row?["total"] ?? 0
     }
 
@@ -52,17 +77,8 @@ enum DatabaseQueries {
             WHERE timestamp > ?
             """
         let args: [(any DatabaseValueConvertible)] = [sinceTimestamp]
-        switch modelTier {
-        case .fable:
-            sql += " AND (lower(model) LIKE '%fable%' OR lower(model) LIKE '%mythos%')"
-        case .opus:
-            sql += " AND lower(model) LIKE '%opus%'"
-        case .sonnet:
-            sql += " AND lower(model) LIKE '%sonnet%'"
-        case .haiku:
-            sql += " AND lower(model) LIKE '%haiku%'"
-        case .other:
-            break
+        if let predicate = ModelPricing.sqlFamilyPredicate(forBucket: modelTier.rawValue) {
+            sql += " AND " + predicate
         }
         let row = try Row.fetchOne(db, sql: sql, arguments: StatementArguments(args))
         return row?["total"] ?? 0

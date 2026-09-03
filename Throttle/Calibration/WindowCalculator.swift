@@ -9,16 +9,27 @@ enum WindowCalculator {
     /// All windows are true rolling: cutoff = now - windowDuration.
     /// (The previous fixed-anchor model for weekly windows produced reset
     ///  times that drifted from claude.ai's rolling-window semantics.)
-    static func totalForWindow(in db: Database, kind: WindowKind, now: Date = Date()) throws -> Int {
+    /// `scoped` defaults to whatever the server last told this install, but is a
+    /// parameter rather than a global read: the window is otherwise a pure
+    /// function of the database, and a number this load-bearing should not
+    /// silently depend on a preferences file. (It did — and because the test
+    /// bundle is hosted by the app, these tests were reading the developer's
+    /// real `com.lorislab.throttle` domain and computing a Fable-scoped window
+    /// over Sonnet fixtures.)
+    static func totalForWindow(
+        in database: Database,
+        kind: WindowKind,
+        now: Date = Date(),
+        scoped: ScopedCapModel.Match = ScopedCapModel.match
+    ) throws -> Int {
         let cutoff = Int64(now.timeIntervalSince1970) - duration(of: kind)
         switch kind {
         case .session5h, .weeklyAll:
-            return try DatabaseQueries.totalTokens(in: db, sinceTimestamp: cutoff)
+            return try DatabaseQueries.totalTokens(in: database, sinceTimestamp: cutoff)
         case .weeklySonnet:
             // Whichever model the account's scoped cap belongs to — not a
             // constant. See `ScopedCapModel`.
-            return try DatabaseQueries.totalTokens(
-                in: db, sinceTimestamp: cutoff, modelToken: ScopedCapModel.matchToken)
+            return try DatabaseQueries.totalTokens(in: database, sinceTimestamp: cutoff, scoped: scoped)
         }
     }
 
@@ -26,27 +37,30 @@ enum WindowCalculator {
     /// For every window: reset = (earliest billable event in window) + windowDuration - now.
     /// For the scoped weekly window, "billable" is filtered to the model the
     /// server scoped the cap to (`ScopedCapModel`); otherwise, any model.
-    static func secondsUntilReset(in db: Database, kind: WindowKind, now: Date = Date()) throws -> Int64 {
+    static func secondsUntilReset(
+        in database: Database,
+        kind: WindowKind,
+        now: Date = Date(),
+        scoped: ScopedCapModel.Match = ScopedCapModel.match
+    ) throws -> Int64 {
         let nowSec = Int64(now.timeIntervalSince1970)
         let windowSec = duration(of: kind)
         let cutoff = nowSec - windowSec
 
-        let modelClause: String
+        // Same clause builder the total uses, so the two cannot disagree about
+        // which events are billable.
+        let clause: (sql: String, args: [any DatabaseValueConvertible])
         switch kind {
         case .session5h, .weeklyAll:
-            modelClause = ""
+            clause = ("", [])
         case .weeklySonnet:
-            modelClause = " AND lower(model) LIKE ?"
+            clause = DatabaseQueries.scopedClause(scoped)
         }
 
         var args: [any DatabaseValueConvertible] = [cutoff]
-        if kind == .weeklySonnet {
-            let safe = ScopedCapModel.matchToken.filter { $0 != "%" && $0 != "_" }
-            guard !safe.isEmpty else { return windowSec }
-            args.append("%" + safe + "%")
-        }
-        let earliest = try Int64.fetchOne(db, sql: """
-            SELECT MIN(timestamp) FROM usage_events WHERE timestamp > ?\(modelClause)
+        args += clause.args
+        let earliest = try Int64.fetchOne(database, sql: """
+            SELECT MIN(timestamp) FROM usage_events WHERE timestamp > ?\(clause.sql)
             """, arguments: StatementArguments(args))
 
         guard let earliest, earliest > 0 else { return windowSec }

@@ -76,13 +76,17 @@ final class DisplayedNumbersTests: XCTestCase {
         ScopedCapModel.displayName = nil
         XCTAssertEqual(ScopedCapModel.subtitle, "Sonnet only",
                        "before the server states a model, say what is actually measured")
-        XCTAssertEqual(ScopedCapModel.matchToken, "sonnet")
+        XCTAssertEqual(ScopedCapModel.match, .family(.sonnet))
 
         ScopedCapModel.remember("Fable")
         XCTAssertEqual(ScopedCapModel.subtitle, "Fable only")
         XCTAssertEqual(ScopedCapModel.bindingLabel, "Weekly · Fable")
-        XCTAssertEqual(ScopedCapModel.matchToken, "fable",
+        XCTAssertEqual(ScopedCapModel.match, .family(.fable),
                        "the local estimate must count the capped model, not Sonnet")
+        // Resolved to a family, not to the literal word: the name is prose and
+        // the column holds ids, so "Fable" must also reach `claude-mythos-*`.
+        XCTAssertEqual(ScopedCapModel.match(forDisplayName: "Mythos"), .family(.fable))
+        XCTAssertEqual(ScopedCapModel.match(forDisplayName: "Claude Opus 4.7"), .family(.opus))
         XCTAssertEqual(MultiCockpitModel.scopedLabelMirror, "Weekly · Fable")
     }
 

@@ -103,6 +103,25 @@ enum ModelPricing {
         """
     }
 
+    /// A `lower(col) LIKE …` predicate restricting a query to ONE family,
+    /// aliases included. `nil` for a bucket that names no family (`other`),
+    /// because "no family" is not a filter.
+    ///
+    /// The family rule now has exactly one spelling, here, beside
+    /// `sqlBucketExpr`. A caller that writes its own `LIKE '%sonnet%'` is how
+    /// the scoped weekly window came to match a server *display name* against a
+    /// model *id* and select nothing at all — reporting an empty week for a cap
+    /// that was full.
+    static func sqlFamilyPredicate(forBucket bucket: String, column: String = "model") -> String? {
+        switch bucket {
+        case "fable":  return "(lower(\(column)) LIKE '%fable%' OR lower(\(column)) LIKE '%mythos%')"
+        case "opus":   return "lower(\(column)) LIKE '%opus%'"
+        case "sonnet": return "lower(\(column)) LIKE '%sonnet%'"
+        case "haiku":  return "lower(\(column)) LIKE '%haiku%'"
+        default:       return nil
+        }
+    }
+
     /// `CASE … END` yielding the per-token price multiplier relative to Sonnet.
     static func sqlPriceMultiplierExpr(_ column: String = "model") -> String {
         """
