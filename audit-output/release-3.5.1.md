@@ -34,7 +34,7 @@
 - [x] Snapshot secret scan passed with Gitleaks; 141 source files were captured, excluding `.install-backups/`.
 - [x] Three merge conflicts resolved in `WindowCalculator.swift`, `ScopedCapModel.swift`, and `WindowCalculatorTests.swift`; retained weighted per-family pricing, fail-closed unknown composition, memoized probing, and comprehensive tests.
 - [x] Final reconciliation committed locally; validation follow-up commit recorded after the checks below.
-- [ ] Confirm Developer ID identity and required provisioning profiles live before archive.
+- [x] Confirmed Developer ID Application identity `8333AB7C…` and the `Throttle DevID iCloud` / `Throttle Widget DevID` profiles live before archive.
 
 ## Build / archive
 
@@ -49,12 +49,12 @@
 - [ ] Requalify the live DeepSearsh benchmark after its corpus is stabilized: expected corpus hash `e8ac68ed…`, current dirty corpus hash `1d75eb7b…`.
 - [ ] Retry the hosted macOS XCTest suite with a stable runner: compilation succeeded, but Xcode 27 beta stalled before XCTest workers materialized and was interrupted after 168 seconds.
 - [ ] Run the full release preflight and test suite.
-- [ ] Archive and export the signed Developer ID app.
+- [x] Archived and exported the universal signed Developer ID app after recovering from a disk-full infrastructure failure.
 
 ## Assets
 
 - [ ] Preserve the previous public DMG/appcast/page as rollback inputs.
-- [ ] Prepare a 3.5.1 DMG containing the exact exported app and `/Applications` symlink.
+- [x] Prepared a 3.5.1 DMG containing the exact exported app and `/Applications` symlink.
 
 ## Metadata
 
@@ -63,14 +63,14 @@
 
 ## Assemble
 
-- [ ] Sign the app, nested code and DMG with secure timestamps.
-- [ ] Record exact sizes and SHA-256 values.
+- [x] Signed the app, nested code and DMG with secure timestamps.
+- [x] Pre-notarization DMG: 31,537,943 bytes; SHA-256 `a89838c176023d319d2b3013892057cf4754ca94dd74d806d740394f7fce1114`.
 
 ## Validate
 
-- [ ] Strict nested signature verification.
-- [ ] Release smoke tests and Research Vault signed-bundle verification.
-- [ ] Mounted DMG payload verification.
+- [x] Strict nested signature verification passed for the exported app, widget, Sparkle components and Research Vault helper.
+- [x] Release smoke test passed 6/6 and Research Vault signed-bundle verification passed.
+- [x] Mounted DMG payload verification passed; version/build are 3.5.1 (217), executable architectures are x86_64 and arm64.
 - [ ] Local runtime validation without replacing the installed app.
 
 ## Submit
@@ -88,4 +88,4 @@
 
 ## Current verdict
 
-Preparation is **IN PROGRESS**. The source is integrated and the unsigned Release build passes. Full clean-tree lint/tests and signed packaging remain before any notarization or publication gate.
+Preparation is **READY FOR NOTARIZATION WITH CAVEATS**. The source is integrated at `0bc2ebfa39b029c14109d019be5fcf6db8068e4c`, and the signed local DMG is validated. Gatekeeper rejection is expected until notarization/stapling. The hosted macOS XCTest runner and the drifting DeepSearsh corpus remain open requalification items; no upload, publication, installation or push has occurred.
