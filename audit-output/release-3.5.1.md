@@ -33,7 +33,7 @@
 - [x] User explicitly authorized integrating all 137 current changes into 3.5.1; source snapshot commit: `ee1d9b7bb034d1d0f8398ad278a8d497836f4907`.
 - [x] Snapshot secret scan passed with Gitleaks; 141 source files were captured, excluding `.install-backups/`.
 - [x] Three merge conflicts resolved in `WindowCalculator.swift`, `ScopedCapModel.swift`, and `WindowCalculatorTests.swift`; retained weighted per-family pricing, fail-closed unknown composition, memoized probing, and comprehensive tests.
-- [ ] Confirm the final reconciled commit and clean status after validation fixes.
+- [x] Final reconciliation committed locally; validation follow-up commit recorded after the checks below.
 - [ ] Confirm Developer ID identity and required provisioning profiles live before archive.
 
 ## Build / archive
@@ -42,7 +42,12 @@
 - [x] Generated the Xcode project from the reconciled source.
 - [x] Unsigned Release build succeeded with Xcode 27 beta after qualifying the colliding `ResearchVaultModel.ResearchFinding` type.
 - [x] Research Vault dependency-boundary verification passed.
-- [x] SwiftLint baseline rebuilt with the CI-pinned SwiftLint 0.65.1 for the integrated tree (3,035 known violations); clean-tree ratchet validation remains pending.
+- [x] Reproduced the SwiftLint 0.65.1 baseline-generation regression with both Homebrew and the exact portable CI binary.
+- [x] Restored the ratchet on SwiftLint 0.63.2, regenerated 3,064 known violations, and verified zero unsuppressed violations with that pinned binary.
+- [x] CI privacy manifests, edge-agent self-test, shared Swift packages (42 tests), iOS security state (3 tests), ATS/LAN boundaries, fail-closed release scripts and source-drift checks passed.
+- [x] Research Vault full product validation passed with 90 release tests across 21 suites; the differential reasoning oracle passed 10,000 programs against Lemmalog `7d6f1541130aba53949a2da90cc3e134cb0aac01`.
+- [ ] Requalify the live DeepSearsh benchmark after its corpus is stabilized: expected corpus hash `e8ac68ed…`, current dirty corpus hash `1d75eb7b…`.
+- [ ] Retry the hosted macOS XCTest suite with a stable runner: compilation succeeded, but Xcode 27 beta stalled before XCTest workers materialized and was interrupted after 168 seconds.
 - [ ] Run the full release preflight and test suite.
 - [ ] Archive and export the signed Developer ID app.
 

@@ -38,15 +38,12 @@ jobs:
           command -v grep >/dev/null || { echo "grep missing — gates below cannot run" >&2; exit 1; }
           command -v ruby >/dev/null || { echo "ruby missing — the ATS gate cannot run" >&2; exit 1; }
 
-      # SwiftLint is PINNED on purpose. A baseline is a snapshot of known
-      # violations keyed by rule and message, so a linter upgrade invalidates it
-      # wholesale. `brew install swiftlint` floats to whatever is current: it
-      # moved 0.63.2 -> 0.65.x, the baseline stopped matching, and every run
-      # since 3.2.96 failed with ~2 700 pre-existing violations. The ratchet was
-      # silently down for days, and the security gates below it never ran.
+      # SwiftLint is PINNED on purpose. Version 0.65.x has a baseline-generation
+      # regression: a freshly written baseline cannot be read back reliably.
+      # Keep the last verified compatible version until the upstream fix ships.
       - name: Install SwiftLint (pinned)
         env:
-          SWIFTLINT_VERSION: 0.65.1
+          SWIFTLINT_VERSION: 0.63.2
         run: |
           set -euo pipefail
           curl -fsSL -o /tmp/swiftlint.zip \
