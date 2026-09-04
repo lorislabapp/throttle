@@ -79,16 +79,16 @@
 ## Submit
 
 - [x] Apple notarization accepted; submission `9e455bb1-56ee-4585-8b30-b3718b745f9d`, status `Ready for distribution`, no reported issues. Ticket stapled successfully.
-- [ ] NOT AUTHORIZED: public DMG upload. Require a separate fresh exact GO naming the artifact and destination.
+- [x] Public DMG upload authorized and completed for exactly `https://lorislab.fr/throttle/Throttle-3.5.1.dmg`.
 - [ ] NOT AUTHORIZED: Sparkle appcast/page mutation. Publish DMG first, verify public bytes, then appcast, then page.
 
 ## Post-release
 
-- [ ] Verify public HTTP status, content length and downloaded SHA-256.
-- [ ] Verify Sparkle EdDSA signature against the downloaded DMG.
+- [x] Public URL verified through normal and cache-busted requests: HTTP 200, content length 31,540,263 bytes; downloaded SHA-256 exactly `796da4eff8ebeb53f167198fc0fc4de3addc8ce1414bfa6a970680cfa6eb8693`.
+- [x] Sparkle EdDSA signature verified successfully against a fresh download from the public URL.
 - [ ] Verify the appcast top item and product-page link.
 - [ ] Installation/relaunch remains a separate gate.
 
 ## Current verdict
 
-Preparation is **NOTARIZED AND READY FOR PUBLIC-UPLOAD AUTHORIZATION WITH CAVEATS**. The source is integrated at `0bc2ebfa39b029c14109d019be5fcf6db8068e4c`; the final stapled DMG and its local Sparkle entry are validated. The hosted macOS XCTest runner and the drifting DeepSearsh corpus remain open requalification items. No public upload, appcast/page publication, installation or push has occurred.
+Preparation is **PUBLIC DMG VERIFIED; APPCAST PUBLICATION NOT AUTHORIZED**. The source is integrated at `0bc2ebfa39b029c14109d019be5fcf6db8068e4c`; the notarized DMG is publicly retrievable byte-for-byte and its Sparkle signature verifies. The hosted macOS XCTest runner and the drifting DeepSearsh corpus remain open requalification items. No appcast/page publication, installation or push has occurred.
