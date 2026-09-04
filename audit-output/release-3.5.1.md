@@ -58,24 +58,27 @@
 
 ## Metadata
 
-- [ ] Prepare a Sparkle entry for 3.5.1 (217), minimum macOS 14.0.
+- [x] Prepared the non-published Sparkle entry for 3.5.1 (217), minimum macOS 14.0, from the final stapled DMG.
 - [ ] Prepare the product-page version/link update without publishing it.
 
 ## Assemble
 
 - [x] Signed the app, nested code and DMG with secure timestamps.
 - [x] Pre-notarization DMG: 31,537,943 bytes; SHA-256 `a89838c176023d319d2b3013892057cf4754ca94dd74d806d740394f7fce1114`.
+- [x] Final stapled DMG: 31,540,263 bytes; SHA-256 `796da4eff8ebeb53f167198fc0fc4de3addc8ce1414bfa6a970680cfa6eb8693`.
 
 ## Validate
 
 - [x] Strict nested signature verification passed for the exported app, widget, Sparkle components and Research Vault helper.
 - [x] Release smoke test passed 6/6 and Research Vault signed-bundle verification passed.
 - [x] Mounted DMG payload verification passed; version/build are 3.5.1 (217), executable architectures are x86_64 and arm64.
+- [x] Apple staple validation and Gatekeeper assessment passed as `Notarized Developer ID`.
+- [x] Sparkle EdDSA signature was generated from the final stapled DMG and verified successfully.
 - [ ] Local runtime validation without replacing the installed app.
 
 ## Submit
 
-- [ ] NOT AUTHORIZED: Apple notarization upload. Require a fresh exact GO naming the artifact, size and SHA-256.
+- [x] Apple notarization accepted; submission `9e455bb1-56ee-4585-8b30-b3718b745f9d`, status `Ready for distribution`, no reported issues. Ticket stapled successfully.
 - [ ] NOT AUTHORIZED: public DMG upload. Require a separate fresh exact GO naming the artifact and destination.
 - [ ] NOT AUTHORIZED: Sparkle appcast/page mutation. Publish DMG first, verify public bytes, then appcast, then page.
 
@@ -88,4 +91,4 @@
 
 ## Current verdict
 
-Preparation is **READY FOR NOTARIZATION WITH CAVEATS**. The source is integrated at `0bc2ebfa39b029c14109d019be5fcf6db8068e4c`, and the signed local DMG is validated. Gatekeeper rejection is expected until notarization/stapling. The hosted macOS XCTest runner and the drifting DeepSearsh corpus remain open requalification items; no upload, publication, installation or push has occurred.
+Preparation is **NOTARIZED AND READY FOR PUBLIC-UPLOAD AUTHORIZATION WITH CAVEATS**. The source is integrated at `0bc2ebfa39b029c14109d019be5fcf6db8068e4c`; the final stapled DMG and its local Sparkle entry are validated. The hosted macOS XCTest runner and the drifting DeepSearsh corpus remain open requalification items. No public upload, appcast/page publication, installation or push has occurred.
