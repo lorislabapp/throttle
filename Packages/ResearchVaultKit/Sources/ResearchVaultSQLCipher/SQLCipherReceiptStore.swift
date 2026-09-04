@@ -1172,6 +1172,45 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
         return (placeholders.joined(separator: ", "), sorted.map(SQLCipherBind.text))
     }
 
+    /// Function words that must not reach the FTS query.
+    ///
+    /// `unicode61` carries no stoplist and every token is OR'd, so a written
+    /// question lets BM25 favour whichever long document happens to contain the
+    /// most common words, whatever its subject. Measured on the sibling
+    /// DeepSearsh index, which builds its query the same way: a question about
+    /// running a Coral TPU beside a GPU returned a report on non-violent
+    /// physical protection for a lone parent, and the same four hub documents
+    /// came back for unrelated questions.
+    ///
+    /// A golden set derived from document titles cannot detect this — its
+    /// queries are keywords and carry no function words — which is why it went
+    /// unseen. Both languages are listed because the corpus and the questions
+    /// mix French and English freely.
+    private static let ftsStopwords: Set<String> = [
+        // French
+        "ai", "ait", "alors", "au", "aussi", "autre", "aux", "avec", "avoir",
+        "avais", "avait", "beaucoup", "bien", "car", "ce", "cela", "ces", "cet",
+        "cette", "ceux", "chez", "comme", "coup", "dans", "de", "deja", "des",
+        "donc", "dont", "du", "elle", "elles", "en", "encore", "entre", "est",
+        "et", "etait", "etc", "etre", "eu", "faire", "fait", "faut", "genre",
+        "ici", "il", "ils", "je", "la", "le", "les", "leur", "lui", "ma", "mais",
+        "me", "meme", "mes", "moi", "mon", "ne", "ni", "nos", "notre", "nous",
+        "on", "ont", "ou", "par", "parce", "pas", "peu", "peut", "plus", "pour",
+        "pourquoi", "quand", "que", "quel", "quelle", "qui", "quoi", "sa",
+        "sans", "se", "ses", "si", "sinon", "sur", "ta", "te", "tes", "toi",
+        "ton", "tous", "tout", "toute", "toutes", "tres", "tu", "un", "une",
+        "va", "vais", "vers", "veut", "veux", "voir", "vos", "votre", "vous",
+        // English
+        "about", "all", "also", "am", "an", "and", "any", "are", "as", "at",
+        "be", "been", "but", "by", "can", "could", "did", "do", "does", "for",
+        "from", "get", "had", "has", "have", "how", "if", "in", "is", "it",
+        "its", "just", "like", "more", "my", "no", "not", "of", "one", "or",
+        "our", "out", "should", "so", "some", "that", "the", "their", "them",
+        "then", "there", "these", "they", "this", "to", "too", "up", "us",
+        "was", "we", "were", "what", "when", "where", "which", "who", "why",
+        "will", "with", "would", "you", "your",
+    ]
+
     private static func safeFTSQuery(_ query: String) throws -> String {
         let tokens = query
             .split { !$0.isLetter && !$0.isNumber }
@@ -1179,7 +1218,11 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
             .map { String($0.prefix(64)).lowercased() }
             .filter { !$0.isEmpty }
         guard !tokens.isEmpty else { throw ClaimSearchError.emptyQuery }
-        return tokens.map { "\"" + $0.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }
+        // Keep the function words only when nothing else is left: an empty
+        // query would return nothing at all, which is worse than a noisy match.
+        let content = tokens.filter { !ftsStopwords.contains($0) }
+        let effective = content.isEmpty ? tokens : content
+        return effective.map { "\"" + $0.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }
             .joined(separator: " OR ")
     }
 

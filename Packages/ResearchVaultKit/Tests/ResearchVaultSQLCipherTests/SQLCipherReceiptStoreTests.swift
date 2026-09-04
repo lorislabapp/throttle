@@ -128,6 +128,48 @@ final class SQLCipherReceiptStoreTests: XCTestCase {
         }
     }
 
+    func testFunctionWordsDoNotDecideWhichClaimMatches() async throws {
+        // unicode61 has no stoplist and every token is OR'd, so a written
+        // question used to let a claim win purely on shared function words.
+        // Measured on the sibling DeepSearsh index built the same way, a GPU
+        // question returned a report on protecting a lone parent. Content words
+        // must decide the match; function words must not be able to.
+        let (database, key) = try databaseFixture("fts-stopwords")
+        let store = try SQLCipherReceiptStore(databaseURL: database, key: key)
+        let grant = VaultAuthorization(projectKeys: ["throttle"], maximumSensitivity: .internal)
+
+        let onTopic = try makeReceipt(
+            receiptID: "1f2b4a1e-3c5d-4e6f-8a9b-0c1d2e3f4a5b",
+            projectKey: "throttle",
+            sensitivity: .internal,
+            claim: "coral accelerator runs alongside the discrete gpu"
+        )
+        // Shares only function words with the question, and is longer, which is
+        // exactly the shape that used to win.
+        let offTopic = try makeReceipt(
+            receiptID: "2a3b4c5d-6e7f-4890-a1b2-c3d4e5f60718",
+            projectKey: "throttle",
+            sensitivity: .internal,
+            claim: "on peut aussi le faire pour tout le reste et on peut le refaire ensuite"
+        )
+        _ = try await store.importReceipt(onTopic, authorization: grant, reviewState: .approved)
+        _ = try await store.importReceipt(offTopic, authorization: grant, reviewState: .approved)
+
+        let hits = try await store.searchClaims(
+            query: "et du coup on peut aussi utiliser le coral avec le gpu ou pas",
+            authorization: grant
+        )
+        XCTAssertEqual(hits.first?.receiptID, onTopic.receiptID,
+                       "content words must outrank a claim sharing only function words")
+
+        // A question made only of function words must still return something
+        // rather than silently matching nothing.
+        let allFunctionWords = try await store.searchClaims(
+            query: "et on peut le faire aussi", authorization: grant)
+        XCTAssertFalse(allFunctionWords.isEmpty,
+                       "a query of only function words must not degrade to an empty match")
+    }
+
     func testReceiptIDConflictRollsBackWithoutChangingAcceptedReceipt() async throws {
         let (database, key) = try databaseFixture("conflict")
         let store = try SQLCipherReceiptStore(databaseURL: database, key: key)
