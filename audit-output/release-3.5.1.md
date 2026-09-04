@@ -53,7 +53,7 @@
 
 ## Assets
 
-- [ ] Preserve the previous public DMG/appcast/page as rollback inputs.
+- [x] Preserved the previous public appcast locally before mutation: 92,971 bytes; SHA-256 `bf3af581058bd2fcc51f0507cac3cd842b4b9768cbd7c102eac46d822c7954bd`.
 - [x] Prepared a 3.5.1 DMG containing the exact exported app and `/Applications` symlink.
 
 ## Metadata
@@ -80,15 +80,16 @@
 
 - [x] Apple notarization accepted; submission `9e455bb1-56ee-4585-8b30-b3718b745f9d`, status `Ready for distribution`, no reported issues. Ticket stapled successfully.
 - [x] Public DMG upload authorized and completed for exactly `https://lorislab.fr/throttle/Throttle-3.5.1.dmg`.
-- [ ] NOT AUTHORIZED: Sparkle appcast/page mutation. Publish DMG first, verify public bytes, then appcast, then page.
+- [x] Sparkle appcast publication authorized and completed after public DMG verification; the product page remains unchanged and requires separate authorization.
 
 ## Post-release
 
 - [x] Public URL verified through normal and cache-busted requests: HTTP 200, content length 31,540,263 bytes; downloaded SHA-256 exactly `796da4eff8ebeb53f167198fc0fc4de3addc8ce1414bfa6a970680cfa6eb8693`.
 - [x] Sparkle EdDSA signature verified successfully against a fresh download from the public URL.
-- [ ] Verify the appcast top item and product-page link.
+- [x] Public appcast normal and cache-busted responses match the exact 93,637-byte candidate (SHA-256 `7625700c70f3ba6106f176c2a7a6f3e6793c4d05369cca4e449c958e10af529e`); top item is 3.5.1 (217) and its DMG returns HTTP 200 with length 31,540,263.
+- [ ] Verify/update the product-page version and download link after separate authorization.
 - [ ] Installation/relaunch remains a separate gate.
 
 ## Current verdict
 
-Preparation is **PUBLIC DMG VERIFIED; APPCAST PUBLICATION NOT AUTHORIZED**. The source is integrated at `0bc2ebfa39b029c14109d019be5fcf6db8068e4c`; the notarized DMG is publicly retrievable byte-for-byte and its Sparkle signature verifies. The hosted macOS XCTest runner and the drifting DeepSearsh corpus remain open requalification items. No appcast/page publication, installation or push has occurred.
+Release is **LIVE IN SPARKLE WITH CAVEATS**. The source is integrated at `0bc2ebfa39b029c14109d019be5fcf6db8068e4c`; the notarized DMG is publicly retrievable byte-for-byte, its Sparkle signature verifies, and 3.5.1 (217) is the public feed's top item. The hosted macOS XCTest runner and the drifting DeepSearsh corpus remain open requalification items. No product-page publication, installation or push has occurred.
