@@ -243,7 +243,8 @@ extension TaskIntegrationService {
         try check("setpgroup", posix_spawnattr_setpgroup(&attributes, 0))
 
         var argv: [UnsafeMutablePointer<CChar>?] =
-            [shellPath, "-c", chdirWrapper, "throttle-verify", directory.path, command]
+            [shellPath, "-c", chdirWrapper, "throttle-verify",
+             directory.path(percentEncoded: false), command]
                 .map { strdup($0) }
         argv.append(nil)
         defer { for argument in argv { free(argument) } }
