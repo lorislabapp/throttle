@@ -371,11 +371,19 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         // Full-screen TUIs (claude, vim, less) own the screen: SwiftTerm's
         // scrollback is empty by design there (`canScroll == false`), so the ONLY
         // way to move through their history is to hand the gesture to the program
-        // itself as wheel reports — exactly what a mouse would do. Without this
-        // the pane is frozen: no scrollback to walk, and the program never hears
-        // the gesture.
+        // itself. Use wheel reports when mouse tracking is armed, otherwise match
+        // SwiftTerm's alternate-screen fallback and send cursor keys.
         guard canScroll else {
-            sendWheelReports(up: lines > 0, count: min(abs(lines), 10), terminal: terminal)
+            let count = min(abs(lines), 10)
+            if terminal.mouseMode != .off {
+                sendWheelReports(up: lines > 0, count: count, terminal: terminal)
+            } else if terminal.isCurrentBufferAlternate {
+                let bytes = TerminalWheelReport.cursor(
+                    scrollingUp: lines > 0,
+                    count: count,
+                    applicationMode: terminal.applicationCursor)
+                send(data: bytes[...])
+            }
             return
         }
         if lines > 0 {
@@ -401,13 +409,9 @@ final class DroppableTerminalView: LocalProcessTerminalView {
         let cellW = max(frame.width / CGFloat(max(terminal.cols, 1)), 1)
         // AppKit's origin is bottom-left; terminal rows count from the top.
         let rowFromTop = Int((frame.height - point.y) / cellH)
-        let button = up ? 64 : 65
         let col = min(max(1, Int(point.x / cellW) + 1), max(terminal.cols, 1))
         let row = min(max(1, rowFromTop + 1), max(terminal.rows, 1))
-        var bytes: [UInt8] = []
-        for _ in 0..<max(count, 1) {
-            bytes.append(contentsOf: Array("\u{1B}[<\(button);\(col);\(row)M".utf8))
-        }
+        let bytes = TerminalWheelReport.sgr(scrollingUp: up, count: count, column: col, row: row)
         send(data: bytes[...])
     }
 

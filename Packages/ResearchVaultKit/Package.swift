@@ -9,6 +9,7 @@ let package = Package(
     ],
     products: [
         .library(name: "ResearchVaultModel", targets: ["ResearchVaultModel"]),
+        .library(name: "ResearchVaultReasoning", targets: ["ResearchVaultReasoning"]),
         .library(name: "ResearchVaultIPCModel", targets: ["ResearchVaultIPCModel"]),
         .library(name: "ResearchVaultSynthesis", targets: ["ResearchVaultSynthesis"]),
         .library(name: "ResearchVaultXPCClient", targets: ["ResearchVaultXPCClient"]),
@@ -28,6 +29,15 @@ let package = Package(
             targets: ["research-vault-synthesis-security-probe"]
         ),
         .executable(name: "research-vault-mcp", targets: ["research-vault-mcp"]),
+        .executable(name: "research-vault-agent-hook", targets: ["research-vault-agent-hook"]),
+        .executable(
+            name: "research-vault-reasoning-differential",
+            targets: ["research-vault-reasoning-differential"]
+        ),
+        .executable(
+            name: "research-vault-reasoning-benchmark",
+            targets: ["research-vault-reasoning-benchmark"]
+        ),
         .executable(name: "research-vault-xpc-service", targets: ["research-vault-xpc-service"]),
     ],
     dependencies: [
@@ -38,6 +48,10 @@ let package = Package(
     ],
     targets: [
         .target(name: "ResearchVaultModel"),
+        .target(
+            name: "ResearchVaultReasoning",
+            dependencies: ["ResearchVaultModel"]
+        ),
         .target(
             name: "ResearchVaultIPCModel",
             dependencies: ["ResearchVaultModel"]
@@ -67,6 +81,7 @@ let package = Package(
             name: "ResearchVaultSQLCipher",
             dependencies: [
                 "ResearchVaultModel",
+                "ResearchVaultReasoning",
                 "ResearchVaultStore",
                 "ResearchVaultIngestion",
                 .product(name: "SQLCipher", package: "SQLCipher.swift"),
@@ -83,13 +98,13 @@ let package = Package(
         ),
         .target(
             name: "ResearchVaultIngestion",
-            dependencies: ["ResearchVaultModel"]
+            dependencies: ["ResearchVaultIPCModel", "ResearchVaultModel"]
         ),
         .target(
             name: "ResearchVaultGateway",
             dependencies: [
                 "ResearchVaultModel", "ResearchVaultIPCModel", "ResearchVaultIngestion",
-                "ResearchVaultSQLCipher",
+                "ResearchVaultReasoning", "ResearchVaultSQLCipher",
             ]
         ),
         .target(
@@ -101,7 +116,11 @@ let package = Package(
         ),
         .target(
             name: "ResearchVaultMCP",
-            dependencies: ["ResearchVaultGateway", "ResearchVaultSQLCipher"]
+            dependencies: [
+                "ResearchVaultGateway", "ResearchVaultIngestion", "ResearchVaultIPCModel",
+                "ResearchVaultModel",
+                "ResearchVaultSQLCipher",
+            ]
         ),
         .executableTarget(
             name: "research-vault-crash-probe",
@@ -127,12 +146,29 @@ let package = Package(
             ]
         ),
         .executableTarget(
+            name: "research-vault-agent-hook",
+            dependencies: ["ResearchVaultMCP"]
+        ),
+        .executableTarget(
+            name: "research-vault-reasoning-differential",
+            dependencies: ["ResearchVaultReasoning"]
+        ),
+        .executableTarget(
+            name: "research-vault-reasoning-benchmark",
+            dependencies: ["ResearchVaultReasoning"]
+        ),
+        .executableTarget(
             name: "research-vault-xpc-service",
             dependencies: ["ResearchVaultServiceRuntime"]
         ),
         .testTarget(
             name: "ResearchVaultModelTests",
             dependencies: ["ResearchVaultModel"]
+        ),
+        .testTarget(
+            name: "ResearchVaultReasoningTests",
+            dependencies: ["ResearchVaultReasoning"],
+            resources: [.process("Fixtures")]
         ),
         .testTarget(
             name: "ResearchVaultIPCModelTests",
@@ -159,7 +195,12 @@ let package = Package(
         ),
         .testTarget(
             name: "ResearchVaultSQLCipherTests",
-            dependencies: ["ResearchVaultModel", "ResearchVaultStore", "ResearchVaultSQLCipher"]
+            dependencies: [
+                "ResearchVaultModel", "ResearchVaultReasoning", "ResearchVaultStore",
+                "ResearchVaultSQLCipher",
+                .product(name: "SQLCipher", package: "SQLCipher.swift"),
+            ],
+            cSettings: [.define("SQLITE_HAS_CODEC")]
         ),
         .testTarget(
             name: "ResearchVaultOwnerSecurityTests",
@@ -177,13 +218,14 @@ let package = Package(
             name: "ResearchVaultGatewayTests",
             dependencies: [
                 "ResearchVaultGateway", "ResearchVaultSQLCipher", "ResearchVaultIngestion",
+                "ResearchVaultReasoning",
             ]
         ),
         .testTarget(
             name: "ResearchVaultMCPTests",
             dependencies: [
                 "ResearchVaultMCP", "ResearchVaultGateway", "ResearchVaultSQLCipher",
-                "ResearchVaultIngestion",
+                "ResearchVaultIngestion", "ResearchVaultIPCModel",
             ]
         ),
     ]

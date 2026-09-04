@@ -1,6 +1,6 @@
 # Throttle — current work ledger
 
-Last reconciled: 2026-08-28 against HEAD `6ed630f` plus the current dirty-worktree remediation.
+Last reconciled: 2026-08-30 against HEAD `83a259a` plus the current dirty-worktree remediation.
 
 This is the only active task list. Dated audit checklists, roadmaps and
 `BACKLOG.md` are historical evidence. They do not become work merely because an
@@ -19,6 +19,7 @@ old checkbox is empty.
 | PASS — local release candidate | Build and validate monotonic successor 3.3.1 (208) | Developer ID app/DMG, universal nested binaries, signed Research Vault gate, smoke 6/6 and mounted payload pass; DMG SHA-256 `e1e93631…a48ba` |
 | PASS — notarized | Notarize 3.3.1 (208) | Apple submission `9209d96a-baed-4b66-91cf-f540f480597d` accepted with 0 issues; staple and app/DMG Gatekeeper pass; final SHA-256 `cfc62de2…c87` |
 | PASS — published 2026-08-28 | Publish stapled 3.3.1 (208), then update Sparkle/page | public bytes match SHA-256 `cfc62de2…c87` and size `29284391`; Sparkle EdDSA, appcast top item, page, staple and Gatekeeper pass |
+| PASS — published 2026-08-30 | Publish stapled 3.4.0 (209), then update Sparkle/page | public DMG matches SHA-256 `9330e9ad…9776` and size `30168103`; appcast is byte-identical with top item 3.4.0, EdDSA verifies, and the public page links the exact DMG |
 | PASS — installed/runtime | Replace WebKitUI MCP Native 0.5.11 with the signed 0.5.12 ARM64 companion package | recoverable 0.5.11 backup; installed 0.5.12 (512), exact hashes, normalized LaunchAgent/socket, strict signature/staple/Gatekeeper, 141/141 Debug + 141/141 Release and positive/negative two-client matrices PASS |
 | PASS — published 2026-08-26 | Throttle 3.2.106 (205) archive, notarization, staple, publication and Sparkle update | Apple accepted; downloaded SHA-256 `1125c831…90f1b`; Gatekeeper accepted; appcast and edge verified |
 | SUPERSEDED — public 2026-08-26 | Previous WebKitUI MCP Native 0.5.12 companion package | historical Apple/public proof remains, but downloaded SHA-256 `d5151ad2…bb326` failed current strict signature verification and was replaced on 2026-08-28 |

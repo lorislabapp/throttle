@@ -130,7 +130,10 @@ final class ExactModeService {
             lastSnapshot = snap
             lastError = nil
             onSnapshot?(snap)
-            logger.info("ExactMode snapshot: 5h=\(snap.fiveHour.utilization)%, 7d=\(snap.sevenDay.utilization)%, sonnet=\(snap.sevenDaySonnet.utilization)%")
+            let scope = ScopedCapModel.diagnosticLabel(for: snap.sevenDayScoped)
+            let usage = "5h=\(snap.fiveHour.utilization)%, 7d=\(snap.sevenDay.utilization)%, "
+                + "scoped[\(scope)]=\(snap.sevenDayScoped.utilization)%"
+            logger.info("ExactMode snapshot: \(usage)")
         case .failure(let err):
             lastError = err
             onError?(err)

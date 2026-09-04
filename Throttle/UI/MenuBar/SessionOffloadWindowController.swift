@@ -32,11 +32,10 @@ final class SessionOffloadWindowController: NSObject {
             defer: false
         )
         win.title = "Throttle — Run Sessions on Your Server"
-        win.isReleasedWhenClosed = false
         win.center()
         win.contentViewController = host
         win.minSize = NSSize(width: 480, height: 480)
-        win.delegate = self
+        RetainedWindowPolicy.configure(win, delegate: self)
         win.setFrameAutosaveName("ThrottleSessionOffloadWindow")
 
         self.window = win
@@ -50,9 +49,7 @@ final class SessionOffloadWindowController: NSObject {
 }
 
 extension SessionOffloadWindowController: NSWindowDelegate {
-    nonisolated func windowWillClose(_ notification: Notification) {
-        Task { @MainActor in
-            self.window = nil
-        }
+    func windowWillClose(_ notification: Notification) {
+        // Retained by the singleton and reused on the next open.
     }
 }

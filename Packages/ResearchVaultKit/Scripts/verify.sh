@@ -27,8 +27,11 @@ verify_release() {
 }
 
 verify_debug
+Scripts/verify-reasoning-oracle.sh
+Scripts/verify-reasoning-supply-chain.sh
 Scripts/verify-ipc-boundary.sh
 Scripts/verify-crash-recovery.sh debug
+Scripts/verify-agent-hook.sh
 
 research_vault_deepsearsh_root="${RESEARCH_VAULT_DEEPSEARSH_ROOT:-/Users/kevinnadjarian/GitHub/DeepSearsh}"
 if [ -r "$research_vault_deepsearsh_root/catalog.jsonl" ]; then

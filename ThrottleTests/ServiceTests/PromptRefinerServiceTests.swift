@@ -1,6 +1,30 @@
 @testable import Throttle
 import XCTest
 
+private struct PromptRefinerStubProvider: AIProvider {
+    let displayName: String
+    let kind: AIProviderKind
+    let reply: String?
+    var isAvailable: Bool { get async { true } }
+
+    struct ProviderFailure: Error {}
+
+    func streamChat(
+        messages: [ChatMessage],
+        context: ProjectChatContext
+    ) async throws -> AsyncThrowingStream<String, Error> {
+        let reply = self.reply
+        return AsyncThrowingStream { continuation in
+            if let reply {
+                continuation.yield(reply)
+                continuation.finish()
+            } else {
+                continuation.finish(throwing: ProviderFailure())
+            }
+        }
+    }
+}
+
 /// The refiner proposes; the user applies. These tests pin the invariants that
 /// make that promise true: a payload can never carry its own Enter, control
 /// bytes never reach a live PTY, and the cost shown is the cost measured.
@@ -43,17 +67,17 @@ final class PromptRefinerServiceTests: XCTestCase {
     // MARK: - Metrics
 
     func test_metrics_countsLinesBytesAndApproxTokens() {
-        let m = PromptRefinerService.metrics("abcd\nefgh")
-        XCTAssertEqual(m.lines, 2)
-        XCTAssertEqual(m.bytes, 9)
-        XCTAssertEqual(m.approxTokens, 2)   // bytes / 4, floor 1
+        let metrics = PromptRefinerService.metrics("abcd\nefgh")
+        XCTAssertEqual(metrics.lines, 2)
+        XCTAssertEqual(metrics.bytes, 9)
+        XCTAssertEqual(metrics.approxTokens, 2)   // bytes / 4, floor 1
     }
 
     func test_metrics_emptyTextIsZeroLinesAndOneToken() {
-        let m = PromptRefinerService.metrics("")
-        XCTAssertEqual(m.lines, 0)
-        XCTAssertEqual(m.bytes, 0)
-        XCTAssertEqual(m.approxTokens, 1)
+        let metrics = PromptRefinerService.metrics("")
+        XCTAssertEqual(metrics.lines, 0)
+        XCTAssertEqual(metrics.bytes, 0)
+        XCTAssertEqual(metrics.approxTokens, 1)
     }
 
     // MARK: - Reply parsing
@@ -69,10 +93,10 @@ final class PromptRefinerServiceTests: XCTestCase {
         - named the file
         - asked for a test
         """
-        let r = PromptRefinerService.parse(reply, fallback: "fix scroll")
-        XCTAssertEqual(r.proposed, "Fix the trackpad scroll in DroppableTerminalView.\nAdd a regression test.")
-        XCTAssertEqual(r.why, ["named the file", "asked for a test"])
-        XCTAssertTrue(r.changed)
+        let refinement = PromptRefinerService.parse(reply, fallback: "fix scroll")
+        XCTAssertEqual(refinement.proposed, "Fix the trackpad scroll in DroppableTerminalView.\nAdd a regression test.")
+        XCTAssertEqual(refinement.why, ["named the file", "asked for a test"])
+        XCTAssertTrue(refinement.changed)
     }
 
     func test_parse_stripsAnOuterCodeFenceTheModelAddedAnyway() {
@@ -101,10 +125,10 @@ final class PromptRefinerServiceTests: XCTestCase {
     }
 
     func test_parse_withoutDelimitersFallsBackToTheDraftAndReportsNoChange() {
-        let r = PromptRefinerService.parse("the model rambled", fallback: "fix scroll")
-        XCTAssertEqual(r.proposed, "fix scroll")
-        XCTAssertFalse(r.changed)
-        XCTAssertTrue(r.why.isEmpty)
+        let refinement = PromptRefinerService.parse("the model rambled", fallback: "fix scroll")
+        XCTAssertEqual(refinement.proposed, "fix scroll")
+        XCTAssertFalse(refinement.changed)
+        XCTAssertTrue(refinement.why.isEmpty)
     }
 
     // MARK: - System prompt
@@ -129,35 +153,30 @@ final class PromptRefinerServiceTests: XCTestCase {
 
     func test_systemPrompt_alwaysAsksForTheDelimiters() {
         for mode in RefinerMode.allCases {
-            let p = PromptRefinerService.systemPrompt(mode: mode, runtime: .claudeCode, nudge: nil)
-            XCTAssertTrue(p.contains("===THROTTLE-PROMPT==="), "\(mode) lost the delimiter instruction")
-            XCTAssertTrue(p.contains("===THROTTLE-WHY==="), "\(mode) lost the why instruction")
+            let prompt = PromptRefinerService.systemPrompt(mode: mode, runtime: .claudeCode, nudge: nil)
+            XCTAssertTrue(prompt.contains("===THROTTLE-PROMPT==="), "\(mode) lost the delimiter instruction")
+            XCTAssertTrue(prompt.contains("===THROTTLE-WHY==="), "\(mode) lost the why instruction")
         }
     }
     // MARK: - Provider walk
 
-    /// A provider that either fails or answers, so the fallback can be observed
-    /// rather than assumed.
-    private struct StubProvider: AIProvider {
-        let displayName: String
-        let kind: AIProviderKind
-        let reply: String?          // nil = throw a recoverable error
-        var isAvailable: Bool { get async { true } }
+    func test_localOnlyExcludesEveryNetworkProvider() {
+        let excluded = PromptRefinerService.excludedProviderKinds(
+            tried: [.appleIntelligence],
+            forceLocal: true
+        )
+        XCTAssertTrue(excluded.contains(.appleIntelligence))
+        XCTAssertTrue(excluded.contains(.claudeWebSession))
+        XCTAssertTrue(excluded.contains(.claudeAPIKey))
+        XCTAssertFalse(excluded.contains(.embeddedModel))
+    }
 
-        struct Boom: Error {}
-
-        func streamChat(messages: [ChatMessage],
-                        context: ProjectChatContext) async throws -> AsyncThrowingStream<String, Error> {
-            let reply = self.reply
-            return AsyncThrowingStream { continuation in
-                if let reply {
-                    continuation.yield(reply)
-                    continuation.finish()
-                } else {
-                    continuation.finish(throwing: Boom())
-                }
-            }
-        }
+    func test_networkAllowedExcludesOnlyProvidersAlreadyTried() {
+        let tried: Set<AIProviderKind> = [.appleIntelligence]
+        XCTAssertEqual(
+            PromptRefinerService.excludedProviderKinds(tried: tried, forceLocal: false),
+            tried
+        )
     }
 
     private func wellFormedReply(_ prompt: String) -> String {
@@ -171,17 +190,20 @@ final class PromptRefinerServiceTests: XCTestCase {
     }
 
     func test_refine_fallsThroughToTheNextProviderWhenTheFirstFails() async throws {
-        let flaky = StubProvider(displayName: "Flaky", kind: .claudeWebSession, reply: nil)
-        let good = StubProvider(displayName: "Apple Intelligence", kind: .appleIntelligence,
-                                reply: wellFormedReply("Fix the scroll in DroppableTerminalView."))
-        let r = try await PromptRefinerService.refine(
+        let flaky = PromptRefinerStubProvider(displayName: "Flaky", kind: .claudeWebSession, reply: nil)
+        let good = PromptRefinerStubProvider(
+            displayName: "Apple Intelligence",
+            kind: .appleIntelligence,
+            reply: wellFormedReply("Fix the scroll in DroppableTerminalView.")
+        )
+        let refinement = try await PromptRefinerService.refine(
             draft: "fix scroll", mode: .session, runtime: .claudeCode,
             projectName: "Throttle", projectPath: nil,
             resolve: { tried in tried.isEmpty ? flaky : good })
 
-        XCTAssertEqual(r.proposed, "Fix the scroll in DroppableTerminalView.")
-        XCTAssertEqual(r.provider, "Apple Intelligence")
-        XCTAssertEqual(r.why, ["tightened the scope"])
+        XCTAssertEqual(refinement.proposed, "Fix the scroll in DroppableTerminalView.")
+        XCTAssertEqual(refinement.provider, "Apple Intelligence")
+        XCTAssertEqual(refinement.why, ["tightened the scope"])
     }
 
     func test_refine_withNoProviderThrowsNoProvider() async {
@@ -197,7 +219,7 @@ final class PromptRefinerServiceTests: XCTestCase {
     }
 
     func test_refine_withAnEmptyAnswerThrowsEmpty() async {
-        let silent = StubProvider(displayName: "Silent", kind: .appleIntelligence, reply: "   ")
+        let silent = PromptRefinerStubProvider(displayName: "Silent", kind: .appleIntelligence, reply: "   ")
         do {
             _ = try await PromptRefinerService.refine(
                 draft: "fix scroll", mode: .session, runtime: .claudeCode,
@@ -218,6 +240,23 @@ final class PromptRefinerServiceTests: XCTestCase {
                     XCTFail("must not reach a provider")
                     return nil
                 })
+            XCTFail("expected .controlSequence")
+        } catch {
+            XCTAssertEqual(error as? PromptRefinerService.RefinerError, .controlSequence)
+        }
+    }
+
+    func test_refine_rejectsAControlSequenceReturnedByTheProvider() async {
+        let unsafeProvider = PromptRefinerStubProvider(
+            displayName: "Unsafe",
+            kind: .appleIntelligence,
+            reply: wellFormedReply("fix \u{1b}[2J scroll")
+        )
+        do {
+            _ = try await PromptRefinerService.refine(
+                draft: "fix scroll", mode: .session, runtime: .claudeCode,
+                projectName: "Throttle", projectPath: nil,
+                resolve: { _ in unsafeProvider })
             XCTFail("expected .controlSequence")
         } catch {
             XCTAssertEqual(error as? PromptRefinerService.RefinerError, .controlSequence)

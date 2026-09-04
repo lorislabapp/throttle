@@ -50,12 +50,14 @@ public actor ResearchVaultClient {
     public func search(
         query: String,
         limit: Int = 8,
-        maximumCharacters: Int = 12_000
+        maximumCharacters: Int = 12_000,
+        projectKeys: [String]? = nil
     ) async throws -> ResearchVaultContextBundle {
         let request = try ResearchVaultSearchRequest(
             query: query,
             limit: limit,
-            maximumCharacters: maximumCharacters
+            maximumCharacters: maximumCharacters,
+            projectKeys: projectKeys
         ).validated()
         let encoded = try encoder.encode(request)
         guard encoded.count <= ResearchVaultIPCContract.maximumQueryBytes + 512 else {
@@ -84,6 +86,130 @@ public actor ResearchVaultClient {
         }
         let response = try decode(ResearchVaultReceiptImportResponse.self, from: data)
         guard response.contractVersion == ResearchVaultIPCContract.currentVersion else {
+            throw ResearchVaultClientError.invalidResponse
+        }
+        return response
+    }
+
+    public func quarantine() async throws -> [ResearchVaultQuarantineItem] {
+        let request = try ResearchVaultQuarantineListRequest().validated()
+        let encoded = try encoder.encode(request)
+        let data = try await ownerCall { proxy, reply in
+            proxy.listQuarantine(encoded, withReply: reply)
+        }
+        let response = try decode(ResearchVaultQuarantineListResponse.self, from: data)
+        guard response.contractVersion == ResearchVaultIPCContract.currentVersion,
+              response.items.count <= ResearchVaultIPCContract.maximumReceiptsPerRequest else {
+            throw ResearchVaultClientError.invalidResponse
+        }
+        return response.items
+    }
+
+    public func review(
+        ids: [String],
+        action: ResearchVaultReviewRequest.Action
+    ) async throws -> Int {
+        let request = try ResearchVaultReviewRequest(
+            action: action,
+            receiptIDs: ids
+        ).validated()
+        let encoded = try encoder.encode(request)
+        guard encoded.count <= ResearchVaultIPCContract.maximumOwnerRequestBytes else {
+            throw ResearchVaultClientError.invalidConfiguration
+        }
+        let data = try await ownerCall { proxy, reply in
+            proxy.reviewQuarantine(encoded, withReply: reply)
+        }
+        let response = try decode(ResearchVaultReviewResponse.self, from: data)
+        guard response.contractVersion == ResearchVaultIPCContract.currentVersion,
+              (0 ... ids.count).contains(response.processed) else {
+            throw ResearchVaultClientError.invalidResponse
+        }
+        return response.processed
+    }
+
+    public func exportReceipts(
+        afterReceiptID: String? = nil,
+        limit: Int = 8
+    ) async throws -> ResearchVaultReceiptExportResponse {
+        let request = try ResearchVaultReceiptExportRequest(
+            afterReceiptID: afterReceiptID,
+            limit: limit
+        ).validated()
+        let encoded = try encoder.encode(request)
+        let data = try await ownerCall { proxy, reply in
+            proxy.exportReceipts(encoded, withReply: reply)
+        }
+        let response = try decode(ResearchVaultReceiptExportResponse.self, from: data)
+        guard response.contractVersion == ResearchVaultIPCContract.currentVersion,
+              response.receipts.count <= limit,
+              Set(response.receipts.map(\.receiptID)).count == response.receipts.count,
+              response.nextReceiptID.map({ $0 == response.receipts.last?.receiptID }) ?? true else {
+            throw ResearchVaultClientError.invalidResponse
+        }
+        do {
+            for receipt in response.receipts {
+                try ResearchReceiptValidator.validate(receipt)
+            }
+        } catch {
+            throw ResearchVaultClientError.invalidResponse
+        }
+        return response
+    }
+
+    public func promoteReasoningRelations(
+        _ relations: [ResearchVaultReasoningRelation]
+    ) async throws -> ResearchVaultReasoningRefreshResponse {
+        try await refreshReasoningRelations(relations: relations)
+    }
+
+    public func refreshReasoningRelations(
+        relations: [ResearchVaultReasoningRelation] = [],
+        removingFactIDs: [String] = []
+    ) async throws -> ResearchVaultReasoningRefreshResponse {
+        let request = try ResearchVaultReasoningPromotionRequest(
+            relations: relations,
+            removingFactIDs: removingFactIDs
+        ).validated()
+        let encoded = try encoder.encode(request)
+        guard encoded.count <= ResearchVaultIPCContract.maximumOwnerRequestBytes else {
+            throw ResearchVaultClientError.invalidConfiguration
+        }
+        let data = try await ownerCall { proxy, reply in
+            proxy.promoteReasoning(encoded, withReply: reply)
+        }
+        let response = try decode(ResearchVaultReasoningRefreshResponse.self, from: data)
+        guard response.contractVersion == ResearchVaultIPCContract.currentVersion,
+              response.generation >= 0,
+              response.baseFactCount >= 0,
+              response.derivedFactCount >= 0,
+              response.relationCount >= 0,
+              response.shadowMode else {
+            throw ResearchVaultClientError.invalidResponse
+        }
+        return response
+    }
+
+    public func reasoning(
+        _ query: ResearchVaultReasoningQuery
+    ) async throws -> ResearchVaultReasoningQueryResponse {
+        let request = try query.validated()
+        let encoded = try encoder.encode(request)
+        guard encoded.count <= 1_024 else {
+            throw ResearchVaultClientError.invalidConfiguration
+        }
+        let data = try await ownerCall { proxy, reply in
+            proxy.queryReasoning(encoded, withReply: reply)
+        }
+        let response = try decode(ResearchVaultReasoningQueryResponse.self, from: data)
+        guard response.contractVersion == ResearchVaultIPCContract.currentVersion,
+              response.kind == request.kind,
+              response.generation >= 0,
+              response.facts.count <= request.limit,
+              response.facts.allSatisfy({ fact in
+                  fact.id.range(of: #"^[0-9a-f]{64}$"#, options: .regularExpression) != nil
+                      && !fact.projectKey.isEmpty
+              }) else {
             throw ResearchVaultClientError.invalidResponse
         }
         return response

@@ -86,7 +86,22 @@ public enum ResearchVaultServiceRuntime {
             let throttleOwnerDelegate = try ResearchVaultOwnerListenerDelegate(
                 policy: throttleOwnerPolicy,
                 importer: { receipts in
-                    try await throttleGateway.importReceipts(receipts)
+                    try await throttleGateway.importReceiptsForReview(receipts)
+                },
+                quarantineLister: {
+                    try await throttleGateway.quarantine()
+                },
+                reviewer: { request in
+                    try await throttleGateway.review(request)
+                },
+                exporter: { request in
+                    try await throttleGateway.exportApprovedReceipts(request)
+                },
+                reasoningPromoter: { request in
+                    try await throttleGateway.refreshReasoningShadow(request)
+                },
+                reasoningQuerier: { request in
+                    try await throttleGateway.reasoning(request)
                 }
             )
             let cheatCodeListener = NSXPCListener(

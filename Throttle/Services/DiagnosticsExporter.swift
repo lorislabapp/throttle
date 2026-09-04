@@ -100,7 +100,11 @@ enum DiagnosticsExporter {
         if let err = ExactModeService.shared.lastError {
             lines.append("Last error: \(err)")
         } else if let snap = ExactModeService.shared.lastSnapshot {
-            lines.append("Last snapshot: \(snap.fetchedAt.ISO8601Format()) — 5h=\(snap.fiveHour.utilization)%, 7d=\(snap.sevenDay.utilization)%, sonnet=\(snap.sevenDaySonnet.utilization)%")
+            let scope = ScopedCapModel.diagnosticLabel(for: snap.sevenDayScoped)
+            let timestamp = "Last snapshot: \(snap.fetchedAt.ISO8601Format())"
+            let usage = "5h=\(snap.fiveHour.utilization)%, 7d=\(snap.sevenDay.utilization)%, "
+                + "scoped[\(scope)]=\(snap.sevenDayScoped.utilization)%"
+            lines.append("\(timestamp) — \(usage)")
         } else {
             lines.append("Never polled.")
         }

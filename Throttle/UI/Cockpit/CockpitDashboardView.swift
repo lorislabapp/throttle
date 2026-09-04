@@ -49,6 +49,7 @@ struct CockpitDashboardView: View {
         ScrollView {
             VStack(spacing: 14) {
                 OSIssueBanner()
+                providerTruthPanel
                 claudePanel
                 if !data.modelMix.isEmpty { modelMixPanel }
                 if localModelInstalled || replayLedger.replayed > 0 { localMixPanel }
@@ -58,13 +59,17 @@ struct CockpitDashboardView: View {
                     .background(Color.primary.opacity(0.025), in: RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(hair, lineWidth: 1))
                 if !localRuntimes.isEmpty {
-                    Text("Figures cover Anthropic usage only — \(localRuntimes.joined(separator: " · ")) runs locally and isn't tracked here.")
+                    Text("Cost and savings panels below cover Anthropic usage only — \(localRuntimes.joined(separator: " · ")) runs locally and is reported separately above.")
                         .font(.system(size: 10)).foregroundStyle(.tertiary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .padding(16)
-            .frame(maxWidth: 720)
+            // The cockpit is routinely used full-screen beside terminals. A
+            // 720 pt column left most of that window empty and made the new
+            // provider provenance rows needlessly dense. Stay readable on the
+            // 640 pt minimum while using a real dashboard width on large Macs.
+            .frame(maxWidth: 1040)
             .frame(maxWidth: .infinity)
         }
         .onAppear { load(); startSampling() }
@@ -72,6 +77,110 @@ struct CockpitDashboardView: View {
     }
 
     // MARK: - CLAUDE (hero)
+
+    /// Provider facts stay in separate cards because their counters have
+    /// different scopes. A Claude rolling-window percentage, a Codex session
+    /// total and a local task count are not mathematically interchangeable.
+    private var providerTruthPanel: some View {
+        panel("AI RUNTIMES · OBSERVED") {
+            VStack(spacing: 8) {
+                providerTruthRow(
+                    provider: "Claude",
+                    model: claudeObservedModels,
+                    time: "\(String(format: "%.1f", data.activeWeekHours)) h active · 7 days",
+                    tokens: "\(formatTokens(appState.snapshot.weeklyAll.usedTokens)) weighted tokens · 7 days",
+                    provenance: appState.exactSnapshot?.isFresh() == true
+                        ? "caps: claude.ai exact snapshot · tokens/time: local Claude logs"
+                        : "caps/tokens/time: local Claude logs · cap estimate"
+                )
+                Divider().overlay(hair)
+                if let codex = appState.codexUsageSnapshot {
+                    providerTruthRow(
+                        provider: "Codex",
+                        model: codex.modelName ?? "model not exposed in observed rollout",
+                        time: codex.windows.map(codexWindowLabel).joined(separator: " · ").nilIfEmpty
+                            ?? "rate window not exposed",
+                        tokens: codex.tokens.map {
+                            "\(formatTokens($0.total)) session total · in \(formatTokens($0.input)) · cached \(formatTokens($0.cachedInput)) · out \(formatTokens($0.output)) · reasoning \(formatTokens($0.reasoning))"
+                        } ?? "token total not exposed",
+                        provenance: "Codex local rollout · observed \(relativeAge(codex.observedAt))"
+                    )
+                } else {
+                    providerTruthRow(
+                        provider: "Codex",
+                        model: "not observed",
+                        time: "not observed",
+                        tokens: "not observed",
+                        provenance: "no compatible local Codex rollout"
+                    )
+                }
+                Divider().overlay(hair)
+                providerTruthRow(
+                    provider: "Local",
+                    model: localRuntimeModelLabel,
+                    time: "on-device / self-hosted · no provider quota",
+                    tokens: "\(LocalWorkerRouter.embeddedTaskCount) embedded tasks · \(LocalWorkerRouter.serverTaskCount) server tasks",
+                    provenance: "Throttle task ledger · never merged with Claude or Codex"
+                )
+            }
+        }
+    }
+
+    private func providerTruthRow(
+        provider: String,
+        model: String,
+        time: String,
+        tokens: String,
+        provenance: String
+    ) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(provider.uppercased())
+                .font(.system(size: 10, weight: .bold))
+                .tracking(0.8)
+                .frame(width: 54, alignment: .leading)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(model).font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .textSelection(.enabled)
+                Text(time).font(.system(size: 10.5)).foregroundStyle(.secondary)
+                Text(tokens).font(.system(size: 10.5, design: .monospaced)).foregroundStyle(.secondary)
+                Text(provenance).font(.system(size: 9.5)).foregroundStyle(.tertiary)
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var claudeObservedModels: String {
+        let names = data.modelMix.map(\.label.capitalized)
+        return names.isEmpty ? "models not observed in local logs" : names.joined(separator: " + ")
+    }
+
+    private var localRuntimeModelLabel: String {
+        var models: [String] = []
+        if EmbeddedModelRuntime.isInstalled { models.append(EmbeddedModelRuntime.displayName) }
+        if LocalWorkerRouter.configuredEndpoint != nil { models.append(LocalWorkerRouter.serverDisplayName) }
+        return models.isEmpty ? "no local model configured" : models.joined(separator: " + ")
+    }
+
+    private func codexWindowLabel(_ window: CodexUsageSnapshot.RateWindow) -> String {
+        let duration: String
+        switch window.windowMinutes {
+        case 300: duration = "5 h"
+        case 10_080: duration = "7 days"
+        case let minutes?: duration = "\(minutes) min"
+        case nil: duration = window.kind.rawValue
+        }
+        let reset = window.resetsAt.map { " · resets \($0.formatted(date: .omitted, time: .shortened))" } ?? ""
+        return "\(duration) \(Int(window.usedPercent.rounded()))%\(reset)"
+    }
+
+    private func relativeAge(_ date: Date) -> String {
+        RelativeDateTimeFormatter().localizedString(for: date, relativeTo: Date())
+    }
+
+    private func formatTokens(_ value: Int) -> String {
+        value.formatted(.number.notation(.compactName))
+    }
 
     private var claudePanel: some View {
         panel("CLAUDE") {
@@ -435,6 +544,10 @@ struct CockpitDashboardView: View {
             }
         }
     }
+}
+
+private extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }
 
 // MARK: - Tiny charts

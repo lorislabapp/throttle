@@ -19,12 +19,21 @@ launch_agent_plist="$app/Contents/Library/LaunchAgents/com.lorislab.throttle.res
 agent_app="$app/Contents/Library/LoginItems/ResearchVaultAgent.app"
 agent_binary="$agent_app/Contents/MacOS/ResearchVaultAgent"
 sqlcipher_binary="$agent_app/Contents/Frameworks/SQLCipher.framework/Versions/A/SQLCipher"
+sparkle_root="$app/Contents/Frameworks/Sparkle.framework/Versions/B"
+sparkle_updater="$sparkle_root/Updater.app"
+sparkle_autoupdate="$sparkle_root/Autoupdate"
+sparkle_downloader="$sparkle_root/XPCServices/Downloader.xpc"
+sparkle_installer="$sparkle_root/XPCServices/Installer.xpc"
 
 for required_path in \
     "$main_binary" \
     "$launch_agent_plist" \
     "$agent_binary" \
-    "$sqlcipher_binary"
+    "$sqlcipher_binary" \
+    "$sparkle_updater" \
+    "$sparkle_autoupdate" \
+    "$sparkle_downloader" \
+    "$sparkle_installer"
 do
     if [ ! -e "$required_path" ]; then
         echo "missing required bundle artifact: $required_path" >&2
@@ -100,6 +109,30 @@ if [ "$require_signed" -eq 1 ]; then
         echo "unexpected agent Team ID: $agent_team" >&2
         exit 1
     }
+
+    if codesign -d --entitlements - "$agent_app" 2>&1 \
+        | grep -q 'com.apple.security.get-task-allow'; then
+        echo "ResearchVaultAgent requests forbidden get-task-allow entitlement" >&2
+        exit 1
+    fi
+
+    for distribution_code in \
+        "$sparkle_updater" \
+        "$sparkle_autoupdate" \
+        "$sparkle_downloader" \
+        "$sparkle_installer"
+    do
+        distribution_details="$(codesign -dvvv "$distribution_code" 2>&1)"
+        distribution_team="$(printf '%s\n' "$distribution_details" | sed -n 's/^TeamIdentifier=//p')"
+        [ "$distribution_team" = "TDV6D5L785" ] || {
+            echo "unexpected nested Team ID for $distribution_code: ${distribution_team:-missing}" >&2
+            exit 1
+        }
+        printf '%s\n' "$distribution_details" | grep -q '^Timestamp=' || {
+            echo "missing secure timestamp for $distribution_code" >&2
+            exit 1
+        }
+    done
 fi
 
 echo "{\"status\":\"pass\",\"scenario\":\"research-vault-bundle\",\"signed\":$require_signed}"

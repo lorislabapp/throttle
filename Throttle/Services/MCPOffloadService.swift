@@ -76,12 +76,16 @@ enum MCPOffloadService {
     /// that catches "healthz ok but child broken" (missing pino-pretty, bad creds,
     /// stateless-session drops, …).
     static func verify(urlString: String, timeout: TimeInterval = 30) async -> VerifyResult {
-        guard let url = URL(string: urlString) else {
-            return VerifyResult(ok: false, toolCount: nil, detail: "Bad URL")
+        guard let url = URL(string: urlString),
+              WebURLPolicy.permitsUserConfiguredService(url, resolveDNS: false) else {
+            return VerifyResult(
+                ok: false,
+                toolCount: nil,
+                detail: "Use HTTPS, or HTTP only on loopback/private/tailnet hosts"
+            )
         }
-        let cfg = URLSessionConfiguration.ephemeral
-        cfg.timeoutIntervalForRequest = timeout
-        let session = URLSession(configuration: cfg)
+        let session = UserConfiguredServiceSession.make(timeout: timeout)
+        defer { session.invalidateAndCancel() }
 
         let initBody = #"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"Throttle","version":"1"}}}"#
         var sid: String?

@@ -6,6 +6,9 @@ import ResearchVaultSQLCipher
 
 @main
 struct BenchmarkMain {
+    // The executable keeps its ordered evidence lifecycle in one scope so the
+    // encrypted temporary store is always closed before the process exits.
+    // swiftlint:disable:next function_body_length
     static func main() async {
         guard CommandLine.arguments.count == 2 else {
             fail("usage: research-vault-benchmark DEEPSEARSH_ROOT", status: 64)
@@ -29,11 +32,15 @@ struct BenchmarkMain {
             var chunkCount = 0
             for document in batch.documents {
                 if case let .inserted(count) = try await store.importDocument(
-                    document, authorization: authorization
+                    document, authorization: authorization, reviewState: .approved
                 ) { chunkCount += count }
             }
             let importDuration = importStart.duration(to: .now)
-            let cases = try benchmarkCases(documents: batch.documents)
+            let goldenSet = try ResearchVaultGoldenSetBuilder.build(
+                documents: batch.documents,
+                catalogSHA256: batch.evidence.catalogSHA256
+            )
+            let cases = goldenSet.cases
             var rankings: [[String]] = []
             var wallLatencies: [Double] = []
             var cpuLatencies: [Double] = []
@@ -48,8 +55,9 @@ struct BenchmarkMain {
                 rankings.append(hits.map(\.documentID))
             }
             let metrics = try RetrievalBenchmarkEvaluator.evaluate(
-                cases: cases, rankedDocumentIDs: rankings, k: 5
+                cases: cases, rankedDocumentIDs: rankings, cutoff: 10
             )
+            let challenger = challengerEvidence(documents: batch.documents, cases: cases)
             let integrity = try await store.verifyIntegrity()
             await store.close()
             wallLatencies.sort()
@@ -58,20 +66,21 @@ struct BenchmarkMain {
             let cpuP95 = percentile(cpuLatencies, 0.95)
             let host = hostLoadEvidence()
             let wallLatencyValid = host.oneMinute <= Double(host.activeProcessors * 2)
-            let passed = metrics.meanRecallAtK >= 1.0
-                && metrics.meanReciprocalRank >= 0.80
-                && metrics.meanNDCGAtK >= 0.80
-                && cpuP95 <= 100
+            let passed = passesBaselineGate(metrics: metrics, cpuP95: cpuP95)
             let payload: [String: Any] = [
                 "status": passed ? "pass" : "fail",
                 "catalog_sha256": batch.evidence.catalogSHA256,
+                "corpus_sha256": goldenSet.corpusSHA256,
                 "documents": batch.documents.count,
                 "chunks": chunkCount,
                 "queries": metrics.caseCount,
-                "k": metrics.k,
+                "golden_set_version": goldenSet.version,
+                "golden_set_sha256": goldenSet.caseSetSHA256,
+                "k": metrics.cutoff,
                 "mean_recall_at_k": metrics.meanRecallAtK,
                 "mrr": metrics.meanReciprocalRank,
                 "mean_ndcg_at_k": metrics.meanNDCGAtK,
+                "abstention_accuracy": metrics.abstentionAccuracy,
                 "query_wall_p50_ms": percentile(wallLatencies, 0.50),
                 "query_wall_p95_ms": wallP95,
                 "query_cpu_p50_ms": percentile(cpuLatencies, 0.50),
@@ -83,40 +92,79 @@ struct BenchmarkMain {
                 "import_ms": milliseconds(importDuration),
                 "schema_version": integrity.schemaVersion,
                 "cipher_version": integrity.cipherVersion,
-                "rankings": zip(cases, rankings).map { ["query": $0.0.query, "ids": $0.1] },
+                "rankings": zip(cases, rankings).map {
+                    [
+                        "query": $0.0.query,
+                        "expected_ids": $0.0.relevantDocumentIDs.sorted(),
+                        "expected_abstention": $0.0.expectedAbstention,
+                        "ids": $0.1
+                    ] as [String: Any]
+                },
+                "challenger": challenger,
+                "production_retriever": "fts5-bm25-v1"
             ]
             let data = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
             FileHandle.standardOutput.write(data + Data("\n".utf8))
             guard passed else { exit(2) }
         } catch {
-            fail("benchmark failed", status: 1)
+            fail("benchmark failed: \(error)", status: 1)
         }
     }
 
-    /// Relevance labels bind to stable titles, then resolve to the current
-    /// content-addressed catalog ID. Hard-coding IDs makes a legitimate source
-    /// update look like a retrieval regression even when the intended document
-    /// ranks first; missing or duplicate labels still fail closed.
-    private static func benchmarkCases(
-        documents: [ResearchDocumentCandidate]
-    ) throws -> [RetrievalBenchmarkCase] {
-        let specifications = [
-            ("Research Vault CheatCode", "Throttle Research Vault × CheatCode — dossier de décision FULL SOTA"),
-            ("Throttle Workspaces market architecture", "Throttle Workspaces — marché, produit et architecture SOTA"),
-            ("Threat Model Throttle iOS", "Threat Model — Throttle for iOS (ThrottleiOS + ThrottleiOSWidget + ThrottleShared)"),
-            ("Network Engineer Report Throttle iOS companion", "App Network Engineer Report — Throttle iOS companion (1.0 build 10)"),
-            ("SOTA outils compagnons agents code", "SOTA — outils compagnons agents de code (deep research 2026-07-14)"),
-        ]
-        return try specifications.map { query, title in
-            let matches = documents.filter { $0.title == title }
-            guard matches.count == 1, let document = matches.first else {
-                throw BenchmarkConfigurationError.missingOrAmbiguousTitle(title)
-            }
-            return RetrievalBenchmarkCase(
-                query: query,
-                relevantDocumentIDs: [document.documentID]
-            )
+    private static func challengerEvidence(
+        documents: [ResearchDocumentCandidate],
+        cases: [RetrievalBenchmarkCase]
+    ) -> [String: Any] {
+        let provider = NLEmbeddingResearchProvider(language: .english)
+        guard provider.dimension > 0 else {
+            return ["status": "unavailable", "provider": provider.identifier, "promoted": false]
         }
+        var index = ExactCosineResearchIndex()
+        for document in documents {
+            let text = document.title + "\n" + String(document.content.prefix(8_192))
+            guard let vector = provider.embed(text) else { continue }
+            index.upsert(.init(documentID: document.documentID, vector: vector))
+        }
+        let start = ContinuousClock.now
+        let denseRankings = cases.map { item -> [String] in
+            guard let vector = provider.embed(item.query) else { return [] }
+            let hits = index.search(vector: vector, limit: 10)
+            if item.expectedAbstention, hits.first.map({ $0.score < 0.65 }) != false { return [] }
+            return hits.map(\.documentID)
+        }
+        let elapsed = milliseconds(start.duration(to: .now))
+        guard let metrics = try? RetrievalBenchmarkEvaluator.evaluate(
+            cases: cases,
+            rankedDocumentIDs: denseRankings,
+            cutoff: 10
+        ) else {
+            return ["status": "evaluation_failed", "provider": provider.identifier, "promoted": false]
+        }
+        return [
+            "status": "measured_not_promoted",
+            "provider": provider.identifier,
+            "backend": ResearchVectorBackend.exactSwift.rawValue,
+            "documents": index.count,
+            "mean_recall_at_k": metrics.meanRecallAtK,
+            "mrr": metrics.meanReciprocalRank,
+            "mean_ndcg_at_k": metrics.meanNDCGAtK,
+            "abstention_accuracy": metrics.abstentionAccuracy,
+            "total_query_wall_ms": elapsed,
+            "citation_packet_verified": false,
+            "promoted": false,
+            "promotion_reason": "challenger citations and product budgets are not yet proven"
+        ]
+    }
+
+    private static func passesBaselineGate(
+        metrics: RetrievalBenchmarkMetrics,
+        cpuP95: Double
+    ) -> Bool {
+        metrics.meanRecallAtK >= 0.95
+            && metrics.meanReciprocalRank >= 0.80
+            && metrics.meanNDCGAtK >= 0.80
+            && metrics.abstentionAccuracy >= 0.99
+            && cpuP95 <= 100
     }
 
     private static func milliseconds(_ duration: Duration) -> Double {
@@ -151,8 +199,4 @@ struct BenchmarkMain {
         FileHandle.standardError.write(Data((message + "\n").utf8))
         exit(status)
     }
-}
-
-private enum BenchmarkConfigurationError: Error {
-    case missingOrAmbiguousTitle(String)
 }

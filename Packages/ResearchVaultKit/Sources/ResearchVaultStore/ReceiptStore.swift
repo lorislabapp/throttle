@@ -24,7 +24,8 @@ public enum ReceiptStoreError: Error, Equatable, Sendable {
 public protocol ReceiptStore: Sendable {
     func importReceipt(
         _ receipt: ResearchReceipt,
-        authorization: VaultAuthorization
+        authorization: VaultAuthorization,
+        reviewState: ResearchReviewState
     ) async throws -> ReceiptImportResult
 
     func receipt(
@@ -37,12 +38,14 @@ public protocol ReceiptStore: Sendable {
 
 public actor InMemoryReceiptStore: ReceiptStore {
     private var receiptsByID: [String: ResearchReceipt] = [:]
+    private var reviewStatesByID: [String: ResearchReviewState] = [:]
 
     public init() {}
 
     public func importReceipt(
         _ receipt: ResearchReceipt,
-        authorization: VaultAuthorization
+        authorization: VaultAuthorization,
+        reviewState: ResearchReviewState
     ) throws -> ReceiptImportResult {
         guard authorization.permits(
             projectKey: receipt.projectKey,
@@ -60,6 +63,7 @@ public actor InMemoryReceiptStore: ReceiptStore {
         }
 
         receiptsByID[receipt.receiptID] = receipt
+        reviewStatesByID[receipt.receiptID] = reviewState
         return .inserted
     }
 
@@ -74,12 +78,14 @@ public actor InMemoryReceiptStore: ReceiptStore {
         ) else {
             throw ReceiptStoreError.authorizationDenied
         }
+        guard reviewStatesByID[id] == .approved else { return nil }
         return receipt
     }
 
     public func receipts(authorization: VaultAuthorization) -> [ResearchReceipt] {
         receiptsByID.values
             .filter {
+                reviewStatesByID[$0.receiptID] == .approved &&
                 authorization.permits(
                     projectKey: $0.projectKey,
                     sensitivity: $0.sensitivity

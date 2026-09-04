@@ -56,7 +56,11 @@ final class WindowCalculatorTests: XCTestCase {
             (3600, "claude-haiku-4-5", 100)
         ])
         let total = try db.read { db in
-            try WindowCalculator.totalForWindow(in: db, kind: .weeklySonnet)
+            try WindowCalculator.totalForWindow(
+                in: db,
+                kind: .weeklySonnet,
+                scopedModelToken: "sonnet"
+            )
         }
         XCTAssertEqual(total, 500)
     }
@@ -95,7 +99,11 @@ final class WindowCalculatorTests: XCTestCase {
             (2 * day, "claude-sonnet-4-6", 500)    // oldest sonnet → resets in ~5d
         ])
         let secs = try db.read { db in
-            try WindowCalculator.secondsUntilReset(in: db, kind: .weeklySonnet)
+            try WindowCalculator.secondsUntilReset(
+                in: db,
+                kind: .weeklySonnet,
+                scopedModelToken: "sonnet"
+            )
         }
         XCTAssertEqual(Double(secs), Double(5 * day), accuracy: 300)
     }

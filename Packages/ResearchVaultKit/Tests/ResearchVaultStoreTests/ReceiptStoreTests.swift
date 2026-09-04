@@ -12,8 +12,8 @@ final class ReceiptStoreTests: XCTestCase {
             maximumSensitivity: .internal
         )
 
-        let first = try await store.importReceipt(receipt, authorization: grant)
-        let second = try await store.importReceipt(receipt, authorization: grant)
+        let first = try await store.importReceipt(receipt, authorization: grant, reviewState: .approved)
+        let second = try await store.importReceipt(receipt, authorization: grant, reviewState: .approved)
 
         XCTAssertEqual(first, .inserted)
         XCTAssertEqual(second, .alreadyPresent)
@@ -33,7 +33,7 @@ final class ReceiptStoreTests: XCTestCase {
             maximumSensitivity: .restricted
         )
 
-        _ = try await store.importReceipt(receipt, authorization: throttleGrant)
+        _ = try await store.importReceipt(receipt, authorization: throttleGrant, reviewState: .approved)
 
         do {
             _ = try await store.receipt(id: receipt.receiptID, authorization: cheatCodeGrant)
@@ -43,7 +43,7 @@ final class ReceiptStoreTests: XCTestCase {
         }
 
         do {
-            _ = try await store.importReceipt(receipt, authorization: cheatCodeGrant)
+            _ = try await store.importReceipt(receipt, authorization: cheatCodeGrant, reviewState: .approved)
             XCTFail("Cross-project import must fail closed")
         } catch {
             XCTAssertEqual(error as? ReceiptStoreError, .authorizationDenied)
@@ -57,7 +57,7 @@ final class ReceiptStoreTests: XCTestCase {
             projectKeys: ["throttle"],
             maximumSensitivity: .restricted
         )
-        _ = try await store.importReceipt(internalReceipt, authorization: admin)
+        _ = try await store.importReceipt(internalReceipt, authorization: admin, reviewState: .approved)
 
         let publicOnly = VaultAuthorization(
             projectKeys: ["throttle"],
@@ -82,10 +82,10 @@ final class ReceiptStoreTests: XCTestCase {
             projectKeys: ["throttle"],
             maximumSensitivity: .restricted
         )
-        _ = try await store.importReceipt(first, authorization: grant)
+        _ = try await store.importReceipt(first, authorization: grant, reviewState: .approved)
 
         do {
-            _ = try await store.importReceipt(second, authorization: grant)
+            _ = try await store.importReceipt(second, authorization: grant, reviewState: .approved)
             XCTFail("Reusing a receipt ID with different content must fail")
         } catch {
             XCTAssertEqual(

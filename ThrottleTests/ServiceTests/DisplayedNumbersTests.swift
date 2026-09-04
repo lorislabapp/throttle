@@ -98,6 +98,14 @@ final class DisplayedNumbersTests: XCTestCase {
         XCTAssertEqual(ScopedCapModel.displayName, "Fable")
     }
 
+    func testDiagnosticsNameOnlyTheScopePresentInTheSnapshot() {
+        let named = ExactSnapshot.Window(utilization: 100, resetsAt: nil, scopedModel: "Fable")
+        let unnamed = ExactSnapshot.Window(utilization: 42, resetsAt: nil)
+
+        XCTAssertEqual(ScopedCapModel.diagnosticLabel(for: named), "Fable")
+        XCTAssertEqual(ScopedCapModel.diagnosticLabel(for: unnamed), "scoped")
+    }
+
     // MARK: - A hook that adds context is not a saving
 
     /// The session-start router EMITS the memory files it selected. Its recorded

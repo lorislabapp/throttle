@@ -21,8 +21,8 @@ final class SQLCipherReceiptStoreTests: XCTestCase {
         )
 
         let store = try SQLCipherReceiptStore(databaseURL: database, key: key)
-        let firstImport = try await store.importReceipt(receipt, authorization: grant)
-        let secondImport = try await store.importReceipt(receipt, authorization: grant)
+        let firstImport = try await store.importReceipt(receipt, authorization: grant, reviewState: .approved)
+        let secondImport = try await store.importReceipt(receipt, authorization: grant, reviewState: .approved)
         XCTAssertEqual(firstImport, .inserted)
         XCTAssertEqual(secondImport, .alreadyPresent)
         let hits = try await store.searchClaims(
@@ -33,7 +33,7 @@ final class SQLCipherReceiptStoreTests: XCTestCase {
         XCTAssertEqual(hits.first?.status, .supported)
 
         let integrity = try await store.verifyIntegrity()
-        XCTAssertEqual(integrity.schemaVersion, 3)
+        XCTAssertEqual(integrity.schemaVersion, SQLCipherReceiptStore.currentSchemaVersion)
         XCTAssertEqual(integrity.receiptCount, 1)
         XCTAssertEqual(integrity.documentCount, 0)
         XCTAssertEqual(integrity.chunkCount, 0)
@@ -68,8 +68,8 @@ final class SQLCipherReceiptStoreTests: XCTestCase {
             projectKeys: ["throttle", "cheatcode"],
             maximumSensitivity: .restricted
         )
-        _ = try await store.importReceipt(throttle, authorization: admin)
-        _ = try await store.importReceipt(cheatCode, authorization: admin)
+        _ = try await store.importReceipt(throttle, authorization: admin, reviewState: .approved)
+        _ = try await store.importReceipt(cheatCode, authorization: admin, reviewState: .approved)
 
         let throttleOnly = VaultAuthorization(
             projectKeys: ["throttle"],
@@ -112,7 +112,7 @@ final class SQLCipherReceiptStoreTests: XCTestCase {
             projectKeys: ["throttle"],
             maximumSensitivity: .internal
         )
-        _ = try await store.importReceipt(receipt, authorization: grant)
+        _ = try await store.importReceipt(receipt, authorization: grant, reviewState: .approved)
 
         let hostile = try await store.searchClaims(
             query: #"safe" OR * NOT "#,
@@ -148,10 +148,10 @@ final class SQLCipherReceiptStoreTests: XCTestCase {
             projectKeys: ["throttle"],
             maximumSensitivity: .internal
         )
-        _ = try await store.importReceipt(first, authorization: grant)
+        _ = try await store.importReceipt(first, authorization: grant, reviewState: .approved)
 
         do {
-            _ = try await store.importReceipt(conflicting, authorization: grant)
+            _ = try await store.importReceipt(conflicting, authorization: grant, reviewState: .approved)
             XCTFail("Conflicting content must fail")
         } catch {
             XCTAssertEqual(error as? ReceiptStoreError, .receiptIDConflict(id))
@@ -183,7 +183,11 @@ final class SQLCipherReceiptStoreTests: XCTestCase {
         )
 
         do {
-            _ = try await store.importReceipts([allowed, denied], authorization: grant)
+            _ = try await store.importReceipts(
+                [allowed, denied],
+                authorization: grant,
+                reviewState: .approved
+            )
             XCTFail("the whole owner batch must fail")
         } catch {
             XCTAssertEqual(error as? ReceiptStoreError, .authorizationDenied)
@@ -207,9 +211,9 @@ final class SQLCipherReceiptStoreTests: XCTestCase {
             id: "dr-cheatcode", project: "cheatcode", sensitivity: .confidential,
             text: "# Retrieval\n\nReciprocal rank fusion benchmark sentinel."
         )
-        let first = try await store.importDocument(throttle, authorization: admin)
-        let second = try await store.importDocument(throttle, authorization: admin)
-        _ = try await store.importDocument(cheatCode, authorization: admin)
+        let first = try await store.importDocument(throttle, authorization: admin, reviewState: .approved)
+        let second = try await store.importDocument(throttle, authorization: admin, reviewState: .approved)
+        _ = try await store.importDocument(cheatCode, authorization: admin, reviewState: .approved)
         guard case let .inserted(chunkCount) = first else { return XCTFail("expected insert") }
         XCTAssertGreaterThan(chunkCount, 0)
         XCTAssertEqual(second, .alreadyPresent)
@@ -240,9 +244,9 @@ final class SQLCipherReceiptStoreTests: XCTestCase {
         let grant = VaultAuthorization(projectKeys: ["throttle"], maximumSensitivity: .internal)
         let first = makeDocument(id: "dr-same", project: "throttle", sensitivity: .internal, text: "first")
         let conflict = makeDocument(id: "dr-same", project: "throttle", sensitivity: .internal, text: "second")
-        _ = try await store.importDocument(first, authorization: grant)
+        _ = try await store.importDocument(first, authorization: grant, reviewState: .approved)
         do {
-            _ = try await store.importDocument(conflict, authorization: grant)
+            _ = try await store.importDocument(conflict, authorization: grant, reviewState: .approved)
             XCTFail("conflict must fail")
         } catch {
             XCTAssertEqual(error as? SQLCipherVaultError, .documentIDConflict("dr-same"))
@@ -250,7 +254,8 @@ final class SQLCipherReceiptStoreTests: XCTestCase {
         do {
             _ = try await store.importDocument(
                 makeDocument(id: "dr-other", project: "cheatcode", sensitivity: .internal, text: "x"),
-                authorization: grant
+                authorization: grant,
+                reviewState: .approved
             )
             XCTFail("cross-project import must fail")
         } catch {
@@ -271,12 +276,16 @@ final class SQLCipherReceiptStoreTests: XCTestCase {
             projectKeys: ["throttle"],
             maximumSensitivity: .confidential
         )
-        _ = try await sourceStore.importReceipt(receipt, authorization: grant)
+        _ = try await sourceStore.importReceipt(receipt, authorization: grant, reviewState: .approved)
         let document = makeDocument(
             id: "dr-backup", project: "throttle", sensitivity: .confidential,
             text: "# Backup\n\nRestored document retrieval sentinel."
         )
-        let documentResult = try await sourceStore.importDocument(document, authorization: grant)
+        let documentResult = try await sourceStore.importDocument(
+            document,
+            authorization: grant,
+            reviewState: .approved
+        )
         guard case let .inserted(expectedChunks) = documentResult else {
             return XCTFail("expected document insert")
         }

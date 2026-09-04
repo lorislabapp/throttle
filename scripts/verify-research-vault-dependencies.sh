@@ -42,7 +42,8 @@ awk '
 
 grep -q 'product: ResearchVaultIPCModel' "$throttle_target"
 grep -q 'product: ResearchVaultXPCClient' "$throttle_target"
-if grep -Eq 'product: (ResearchVaultXPC|ResearchVaultGateway|ResearchVaultSQLCipher|ResearchVaultStore|ResearchVaultKeychain|ResearchVaultIngestion)$' "$throttle_target"; then
+grep -q 'product: ResearchVaultIngestion' "$throttle_target"
+if grep -Eq 'product: (ResearchVaultXPC|ResearchVaultGateway|ResearchVaultSQLCipher|ResearchVaultStore|ResearchVaultKeychain)$' "$throttle_target"; then
     echo "Throttle target links a server-side Research Vault product" >&2
     exit 1
 fi

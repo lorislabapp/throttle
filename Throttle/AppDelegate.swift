@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var licenseRenewalTimer: Timer?
     private var codexUsageTimer: Timer?
     private var researchVaultWorkbenchTestWindow: NSWindow?
+    private var globalRAGOnboardingTestWindow: NSWindow?
 
     /// App-hosted tests already initialize the state/database they exercise, but
     /// must not start production listeners, CloudKit, login items or singleton
@@ -30,9 +31,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         FileHandle.standardError.write(Data("[AppDelegate.init] start\n".utf8))
         // Check for -demo launch argument for screen recordings & screenshots
         let isDemoMode = CommandLine.arguments.contains("-demo")
+        let isGlobalRAGTestHost = CommandLine.arguments.contains("-globalRAGOnboardingTest")
+        let isResearchVaultTestHost = CommandLine.arguments.contains("-researchVaultWorkbenchTest")
 
         do {
-            if isDemoMode {
+            if isGlobalRAGTestHost || isResearchVaultTestHost {
+                // UI qualification hosts must be hermetic in every configuration.
+                // In particular, an ad hoc Release must never prompt for the
+                // production license item in Keychain merely to render a view.
+                self.database = try DatabaseQueue()
+                self.coordinator = DataLayerCoordinator(database: database)
+                self.savingsIngester = SavingsIngester(database: database)
+                self.codexIngester = CodexUsageIngester(database: database)
+                self.appState = AppState(database: database, readsLicenseState: false)
+                super.init()
+                if isGlobalRAGTestHost {
+                    GlobalRAGService.baseDir = FileManager.default.temporaryDirectory
+                        .appendingPathComponent("throttle-global-rag-ui-test-\(UUID().uuidString)", isDirectory: true)
+                }
+                self.coordinator.onUsageChanged = {}
+            } else if isDemoMode {
                 #if DEBUG
                 // Demo mode: in-memory database with fake data
                 self.database = try DatabaseQueue()
@@ -100,6 +118,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Clicking Throttle's Dock icon while the app is already running always brings
     /// back the Cockpit, even when every auxiliary window was previously closed.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if Self.isRunningTests {
+            if let researchVaultWorkbenchTestWindow {
+                researchVaultWorkbenchTestWindow.makeKeyAndOrderFront(nil)
+                return true
+            }
+            if let globalRAGOnboardingTestWindow {
+                globalRAGOnboardingTestWindow.makeKeyAndOrderFront(nil)
+                return true
+            }
+        }
         CockpitWindowController.shared.show(appState: appState)
         return true
     }
@@ -134,6 +162,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 window.center()
                 window.makeKeyAndOrderFront(nil)
                 researchVaultWorkbenchTestWindow = window
+            }
+            if CommandLine.arguments.contains("-globalRAGOnboardingTest") {
+                let controller = NSHostingController(
+                    rootView: GlobalRAGOnboardingView(canInstallMCP: false) { _ in }
+                )
+                let window = NSWindow(contentViewController: controller)
+                window.title = "Global Portfolio Setup Test Host"
+                if CommandLine.arguments.contains("-globalRAGOnboardingDarkTest") {
+                    window.appearance = NSAppearance(named: .darkAqua)
+                }
+                window.setContentSize(NSSize(width: 900, height: 720))
+                window.center()
+                window.makeKeyAndOrderFront(nil)
+                globalRAGOnboardingTestWindow = window
             }
             logger.notice("XCTest host detected: skipping production background services")
             return

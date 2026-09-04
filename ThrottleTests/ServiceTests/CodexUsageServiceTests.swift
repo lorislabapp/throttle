@@ -1,4 +1,5 @@
 import GRDB
+import ResearchVaultIngestion
 @testable import Throttle
 import XCTest
 
@@ -22,6 +23,12 @@ final class CodexUsageServiceTests: XCTestCase {
         XCTAssertNil(CodexUsageService.decodeLine(Data(#"{"type":"event_msg","payload":{"type":"token_count","info":null,"rate_limits":null}}"#.utf8)))
     }
 
+    func testDecodesExactModelOnlyFromTurnContext() {
+        let context = Data(#"{"type":"turn_context","payload":{"model":"gpt-5.6-sol"}}"#.utf8)
+        XCTAssertEqual(CodexUsageService.decodeModelLine(context), "gpt-5.6-sol")
+        XCTAssertNil(CodexUsageService.decodeModelLine(Data(#"{"type":"event_msg","payload":{"model":"guess"}}"#.utf8)))
+    }
+
     func testLatestFileAndLatestEventWin() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("throttle-codex-usage-\(UUID().uuidString)", isDirectory: true)
@@ -32,13 +39,16 @@ final class CodexUsageServiceTests: XCTestCase {
         try #"{"timestamp":"2026-08-16T10:00:00Z","type":"event_msg","payload":{"type":"token_count","rate_limits":{"primary":{"used_percent":10}}}}"#
             .write(to: old, atomically: true, encoding: .utf8)
         let latestBody = [
+            #"{"type":"turn_context","payload":{"model":"gpt-5.6-sol"}}"#,
             #"{"timestamp":"2026-08-16T10:01:00Z","type":"event_msg","payload":{"type":"token_count","rate_limits":{"primary":{"used_percent":20}}}}"#,
             #"{"timestamp":"2026-08-16T10:02:00Z","type":"event_msg","payload":{"type":"token_count","rate_limits":{"primary":{"used_percent":44}}}}"#
         ].joined(separator: "\n")
         try latestBody.write(to: latest, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: latest.path)
 
-        XCTAssertEqual(CodexUsageService.latestSnapshot(sessionsRoot: root)?.primary?.usedPercent, 44)
+        let snapshot = CodexUsageService.latestSnapshot(sessionsRoot: root)
+        XCTAssertEqual(snapshot?.primary?.usedPercent, 44)
+        XCTAssertEqual(snapshot?.modelName, "gpt-5.6-sol")
     }
 
     func testFreshnessRejectsOldOrFutureObservations() {
@@ -59,6 +69,109 @@ final class CodexUsageServiceTests: XCTestCase {
             observedAt: now.addingTimeInterval(120)
         )
         XCTAssertFalse(future.isFresh(now: now))
+    }
+}
+
+final class NotebookLMMigrationImporterTests: XCTestCase {
+    func testImportIsContentAddressedAndMarksCopiedTextOpen() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("notebooklm-export-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try "# Note\nA claim copied from NotebookLM is not independently verified."
+            .write(to: root.appendingPathComponent("note.md"), atomically: true, encoding: .utf8)
+
+        let first = try NotebookLMMigrationImporter(root: root, projectKey: "throttle").load()
+        let second = try NotebookLMMigrationImporter(root: root, projectKey: "throttle").load()
+
+        XCTAssertEqual(first.receipts.count, 1)
+        XCTAssertEqual(first.receipts[0].receiptID, second.receipts[0].receiptID)
+        XCTAssertEqual(first.receipts[0].contentHash, second.receipts[0].contentHash)
+        XCTAssertEqual(first.receipts[0].findings.first?.status, .open)
+        XCTAssertEqual(first.receipts[0].sensitivity, .confidential)
+        XCTAssertEqual(first.manifest.aggregateSHA256, second.manifest.aggregateSHA256)
+        XCTAssertEqual(first.manifest.files.first?.relativePath, "note.md")
+    }
+
+    func testSymlinkedDocumentOutsideExportFailsClosed() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("notebooklm-symlink-\(UUID().uuidString)", isDirectory: true)
+        let root = temp.appendingPathComponent("export", isDirectory: true)
+        let outside = temp.appendingPathComponent("outside.md")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        try "secret".write(to: outside, atomically: true, encoding: .utf8)
+        try FileManager.default.createSymbolicLink(
+            at: root.appendingPathComponent("linked.md"),
+            withDestinationURL: outside
+        )
+
+        XCTAssertThrowsError(
+            try NotebookLMMigrationImporter(root: root, projectKey: "throttle").load()
+        ) { error in
+            guard case NotebookLMMigrationError.unsafeEntry = error else {
+                return XCTFail("Expected unsafeEntry, got \(error)")
+            }
+        }
+    }
+
+    func testInvalidProjectKeyFailsBeforeReading() {
+        XCTAssertThrowsError(
+            try NotebookLMMigrationImporter(
+                root: FileManager.default.temporaryDirectory,
+                projectKey: "Not Valid"
+            )
+        ) { error in
+            XCTAssertEqual(error as? NotebookLMMigrationError, .invalidProjectKey)
+        }
+    }
+}
+
+final class LocalWorkerLiveRouteTests: XCTestCase {
+    private struct Configuration: Decodable {
+        let endpoint: String
+        let model: String
+    }
+
+    @MainActor
+    func testConfiguredOllamaServesProjectAssistantWithoutBusinessContext() async throws {
+        let environment = ProcessInfo.processInfo.environment
+        let file = URL(fileURLWithPath: "/private/tmp/throttle-live-ollama-acceptance.json")
+        let fileConfig = (try? Data(contentsOf: file)).flatMap {
+            try? JSONDecoder().decode(Configuration.self, from: $0)
+        }
+        guard let endpoint = environment["THROTTLE_LIVE_OLLAMA_URL"] ?? fileConfig?.endpoint,
+              let model = environment["THROTTLE_LIVE_OLLAMA_MODEL"] ?? fileConfig?.model else {
+            throw XCTSkip("Provide the explicit private-server acceptance configuration.")
+        }
+        let defaults = UserDefaults.standard
+        let oldEndpoint = defaults.object(forKey: LocalWorkerRouter.endpointKey)
+        let oldModel = defaults.object(forKey: LocalWorkerRouter.modelKey)
+        defaults.set(endpoint, forKey: LocalWorkerRouter.endpointKey)
+        defaults.set(model, forKey: LocalWorkerRouter.modelKey)
+        defer {
+            if let oldEndpoint { defaults.set(oldEndpoint, forKey: LocalWorkerRouter.endpointKey) }
+            else { defaults.removeObject(forKey: LocalWorkerRouter.endpointKey) }
+            if let oldModel { defaults.set(oldModel, forKey: LocalWorkerRouter.modelKey) }
+            else { defaults.removeObject(forKey: LocalWorkerRouter.modelKey) }
+        }
+
+        let context = ProjectChatContext(
+            projectName: "synthetic-local-route-test",
+            projectPath: nil,
+            claudeMd: nil,
+            settingsJSON: nil,
+            weeklyTokens: 0,
+            modelSplit: [],
+            hookScripts: [:],
+            mcpServers: [],
+            costEUR: 0
+        )
+        let response = try await LocalWorkerRouter.shared.chat(
+            messages: [ChatMessage(role: .user, content: "Reply exactly LOCAL_ROUTE_OK")],
+            context: context
+        )
+        XCTAssertTrue(response.localizedCaseInsensitiveContains("LOCAL_ROUTE_OK"), response)
     }
 }
 

@@ -77,4 +77,13 @@ enum MCPResponseLedger {
         }
         return 0
     }
+
+    /// Count an MCP response without sending an unsupported root to Foundation.
+    /// Scalar JSON fragments require `.fragmentsAllowed`; `try?` alone cannot catch
+    /// the Objective-C exception raised for an invalid object graph.
+    static func serializedByteCount(of value: Any?) -> Int {
+        guard let value, JSONSerialization.isValidJSONObject([value]) else { return 0 }
+        return (try? JSONSerialization.data(withJSONObject: value,
+                                            options: [.fragmentsAllowed]))?.count ?? 0
+    }
 }

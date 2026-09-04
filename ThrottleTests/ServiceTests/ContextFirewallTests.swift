@@ -67,6 +67,65 @@ final class WebURLPolicyTests: XCTestCase {
         XCTAssertNotNil(WebURLPolicy.rejectionReason(for: URL(string: "https://user:pass@example.com")!, resolveDNS: false))
         XCTAssertNotNil(WebURLPolicy.rejectionReason(for: URL(string: "https://service.internal")!, resolveDNS: false))
     }
+
+    func testUserConfiguredServicesRequireHTTPSOrPrivateHTTP() {
+        XCTAssertFalse(WebURLPolicy.permitsUserConfiguredService(
+            URL(string: "http://203.0.113.10:11434")!, resolveDNS: false
+        ))
+        XCTAssertTrue(WebURLPolicy.permitsUserConfiguredService(
+            URL(string: "https://worker.example.com")!, resolveDNS: false
+        ))
+        XCTAssertTrue(WebURLPolicy.permitsUserConfiguredService(
+            URL(string: "http://100.100.100.100:11434")!, resolveDNS: false
+        ))
+        XCTAssertTrue(WebURLPolicy.permitsUserConfiguredService(
+            URL(string: "http://worker.tailnet-name.ts.net:11434")!, resolveDNS: false
+        ))
+        XCTAssertFalse(WebURLPolicy.permitsUserConfiguredService(
+            URL(string: "https://token@example.com")!, resolveDNS: false
+        ))
+        for raw in [
+            "http://169.254.169.254/latest/meta-data",
+            "https://169.254.169.254/latest/meta-data",
+            "http://0.0.0.0:11434",
+            "http://224.0.0.1:11434",
+            "http://[fe80::1]:11434",
+            "http://[ff02::1]:11434"
+        ] {
+            guard let url = URL(string: raw) else {
+                XCTFail("Invalid test URL: \(raw)")
+                continue
+            }
+            XCTAssertFalse(WebURLPolicy.permitsUserConfiguredService(
+                url, resolveDNS: false
+            ), raw)
+        }
+    }
+
+    func testUserConfiguredServiceRedirectsStayOnTheExactOrigin() {
+        let source = URL(string: "http://100.100.100.100:11434/api/version")!
+        XCTAssertTrue(WebURLPolicy.permitsUserConfiguredServiceRedirect(
+            from: source,
+            to: URL(string: "http://100.100.100.100:11434/api/tags")!,
+            resolveDNS: false
+        ))
+        for destination in [
+            "http://100.100.100.101:11434/api/tags",
+            "http://100.100.100.100:8080/api/tags",
+            "https://100.100.100.100:11434/api/tags",
+            "http://203.0.113.10/api/tags"
+        ] {
+            guard let destinationURL = URL(string: destination) else {
+                XCTFail("Invalid test URL: \(destination)")
+                continue
+            }
+            XCTAssertFalse(WebURLPolicy.permitsUserConfiguredServiceRedirect(
+                from: source,
+                to: destinationURL,
+                resolveDNS: false
+            ), destination)
+        }
+    }
 }
 
 final class WebNavigationPlannerTests: XCTestCase {

@@ -15,15 +15,23 @@ opt-in consumers. This package contains no user corpus, vault key or model.
   canonical service identity and a least-privileged query-only CheatCode client.
 - `ResearchVaultGateway`: fixed-authorization Workbench/MCP boundary returning
   bounded excerpts with source path, origins and plaintext hash.
-- `ResearchVaultMCP`: typed JSON-RPC/MCP protocol handler with the read-only
-  `research_vault_search` and `research_vault_health` tools.
+- `ResearchVaultReasoning`: bounded positive-rule fixed-point evaluation with
+  deterministic proofs, provenance, validity intervals and retraction.
+- `ResearchVaultMCP`: dual legacy/2026-07-28 stateless JSON-RPC handler with
+  approved-only search/resources and quarantined receipt submission.
 - `research-vault-mcp`: isolated stdio server using Keychain-derived keys in
   production, so Throttle/GRDB and SQLCipher never share one process.
+- `research-vault-agent-hook`: bounded Stop/SubagentStop/SessionEnd adapter;
+  it writes sealed candidates atomically and never promotes evidence.
+- `research-vault-reasoning-benchmark` and
+  `research-vault-reasoning-differential`: local Release/permutation gates;
+  neither executable is embedded in the app.
 
 ## Data flow
 
-1. Agents atomically rename canonical `*.research-receipt.json` files into a
-   Finder-visible inbox. Invalid or partial entries block the batch.
+1. Agents atomically place canonical `*.research-receipt.json` files into a
+   Finder-visible inbox. Invalid or partial entries block the batch, and valid
+   entries remain quarantined until an owner-only review approves them.
 2. DeepSearsh remains read-only. `catalog.jsonl`, every selected file, size,
    path confinement and SHA-256 are verified before import.
 3. Accepted documents and chunks are stored in SQLCipher. Project and
@@ -31,6 +39,9 @@ opt-in consumers. This package contains no user corpus, vault key or model.
 4. `ResearchVaultGateway.context` creates a local, citation-first context bundle
    for Throttle, MCP or an on-device model. It does not synthesize claims and
    never uploads the corpus.
+5. Owner-reviewed claim relations may be projected into the encrypted
+   reasoning shadow. Derived facts retain every supporting receipt/source and
+   remain visibly distinct from asserted relations and model hypotheses.
 
 The package is the local NotebookLM-like evidence engine, not an oracle: model
 answers remain derived output and citations remain the authority.
@@ -85,9 +96,19 @@ configurations. It terminates with `_exit(86)` after forcing uncommitted pages
 into SQLCipher's WAL and during a schema migration. A fresh process must then
 prove rollback, schema-version atomicity, `quick_check` and page-HMAC integrity.
 
+Reasoning verification runs deterministic golden cases, cancellation and
+adversarial cardinality tests, a pinned Lemmalog development oracle, SQLCipher
+durability and owner-XPC hostile-input tests. Lemmalog is never linked, bundled
+or invoked at runtime. The MCP adds read-only `research_vault_why` and
+`research_vault_what_changed`; relation promotion/retraction remain owner-only
+and unavailable to MCP callers.
+
 When the local DeepSearsh checkout is readable, verification also imports the
 current Throttle snapshot into an ephemeral encrypted database and enforces:
-Recall@5 = 1.0, MRR >= 0.80, nDCG@5 >= 0.80 and query p95 <= 100 ms.
+On the pinned 200+ case golden set, verification requires Recall@10 >= 0.95,
+MRR >= 0.80, nDCG@10 >= 0.80, abstention accuracy >= 0.99 and query p95
+<= 100 ms. A separately reported semantic challenger is never promoted by this
+baseline gate.
 It then exercises the real stdio MCP process against an ephemeral Debug-only
 key and database. The testing-key flag is compiled out of Release and its
 rejection is a required gate; production always uses the device-bound Keychain.

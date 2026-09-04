@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// Direction 1c "Takeover": the refiner is a stack of full-column focus screens,
@@ -42,8 +43,8 @@ struct PromptRefinerPane: View {
             VStack(alignment: .leading, spacing: 8) {
                 dl("TARGET")
                 Picker("", selection: $model.mode) {
-                    ForEach(RefinerMode.allCases) { m in
-                        Text(m.label).tag(m)
+                    ForEach(RefinerMode.allCases) { mode in
+                        Text(mode.label).tag(mode)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -87,7 +88,10 @@ struct PromptRefinerPane: View {
                                         .font(.system(size: 11))
                                         .foregroundStyle(.primary)
                                         .lineLimit(1)
-                                    Text("\(entry.mode.label) · \(PromptRefinerService.metrics(entry.proposed).lines) ln")
+                                    Text(
+                                        "\(entry.mode.label) · "
+                                            + "\(PromptRefinerService.metrics(entry.proposed).lines) ln"
+                                    )
                                         .font(.system(size: 10).monospacedDigit())
                                         .foregroundStyle(.tertiary)
                                 }
@@ -152,10 +156,10 @@ struct PromptRefinerPane: View {
     private var loading: some View {
         VStack(spacing: 10) {
             Spacer()
-            ForEach([0.92, 0.78, 0.85], id: \.self) { w in
+            ForEach([0.92, 0.78, 0.85], id: \.self) { widthFactor in
                 RoundedRectangle(cornerRadius: 3)
                     .fill(Color.primary.opacity(0.5))
-                    .frame(width: 240 * w, height: 9)
+                    .frame(width: 240 * widthFactor, height: 9)
             }
             Text("\(model.proposal?.provider ?? "refining") · \(Int(now.timeIntervalSince(startedAt)))s")
                 .font(.system(size: 10).monospacedDigit())
@@ -263,10 +267,10 @@ struct PromptRefinerPane: View {
     }
 
     private func delta(_ label: String, _ before: Int, _ after: Int) -> some View {
-        let d = after - before
+        let difference = after - before
         return HStack(spacing: 4) {
             Text(label).font(.system(size: 10)).foregroundStyle(.tertiary)
-            Text(d >= 0 ? "+\(d)" : "\(d)")
+            Text(difference >= 0 ? "+\(difference)" : "\(difference)")
                 .font(.system(size: 10).monospacedDigit())
                 .foregroundStyle(.secondary)
         }
@@ -426,8 +430,8 @@ struct PromptRefinerPane: View {
                 return
             }
             if RefinerSettings.output == .send,
-               let term = cockpit.active?.terminal as? DroppableTerminalView {
-                term.sendProgrammatic(txt: "\r")
+               let terminal = cockpit.active?.terminal as? DroppableTerminalView {
+                terminal.sendProgrammatic(txt: "\r")
             }
         }
         model.screen = .applied
@@ -471,8 +475,8 @@ struct PromptRefinerPane: View {
         .overlay(alignment: .bottom) { Rectangle().fill(hair).frame(height: 1) }
     }
 
-    private func dl(_ t: String) -> some View {
-        Text(t)
+    private func dl(_ title: String) -> some View {
+        Text(title)
             .font(.system(size: 8.5, weight: .semibold))
             .tracking(0.8)
             .foregroundStyle(.tertiary)
@@ -480,7 +484,7 @@ struct PromptRefinerPane: View {
     }
 
     private func metricsLabel(_ text: String) -> String {
-        let m = PromptRefinerService.metrics(text)
-        return "\(m.lines) ln · \(m.bytes) B · ≈\(m.approxTokens) tok"
+        let metrics = PromptRefinerService.metrics(text)
+        return "\(metrics.lines) ln · \(metrics.bytes) B · ≈\(metrics.approxTokens) tok"
     }
 }

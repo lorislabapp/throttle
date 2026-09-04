@@ -26,11 +26,10 @@ final class CommandRunnerWindowController: NSObject {
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered, defer: false)
         win.title = "Throttle — Command Runner"
-        win.isReleasedWhenClosed = false
         win.center()
         win.contentViewController = host
         win.minSize = NSSize(width: 480, height: 420)
-        win.delegate = self
+        RetainedWindowPolicy.configure(win, delegate: self)
         win.setFrameAutosaveName("ThrottleCommandRunnerWindow")
         self.window = win
         win.makeKeyAndOrderFront(nil)
@@ -41,9 +40,7 @@ final class CommandRunnerWindowController: NSObject {
 }
 
 extension CommandRunnerWindowController: NSWindowDelegate {
-    nonisolated func windowWillClose(_ notification: Notification) {
-        Task { @MainActor in
-            self.window = nil
-        }
+    func windowWillClose(_ notification: Notification) {
+        // Retained by the singleton and reused on the next open.
     }
 }
