@@ -1,5 +1,9 @@
 # Throttle — backlog (deferred, as of 2026-06-27, post-3.2.16)
 
+> **ARCHIVED.** This is a historical decision record, not an active checklist.
+> The only current work ledger is [`TODO.md`](TODO.md). Historical unchecked
+> markers below are classified as deferred, rejected or obsolete.
+
 Nothing here is broken or urgent. These are deferred-on-purpose or on-demand.
 Current shipped version: **3.2.65** (build 165) — SOTA sprint, 2026-07-14.
 
@@ -36,13 +40,13 @@ Report: `docs/research/output-styles-caveman-2026-07-14.md` (NotebookLM source #
 - [x] caveman-ultra.md: keep-coding-instructions: true (was already set), description corrected.
 
 ## SOTA gaps — decided NOT now / needs a decision (2026-07-14 research)
-- [ ] **Multi-provider metering** (ClaudeBar does 11, CodexBar ~59): strategic dilution vs market — decide
+- [~] **Multi-provider metering** (ClaudeBar does 11, CodexBar ~59): strategic dilution vs market — decide
       after offload traction. Observability-only if ever (doctrine: never a data-path proxy).
-- [ ] **Review-and-merge layer** (Conductor's lane, $22M funded): out of scope — cockpit, not IDE.
-- [ ] OAuth endpoint extras: per-model weekly (limits[].weekly_scoped), extra-usage spend surface.
-- [ ] ❗Mid-session model right-size nudge is COUNTERPRODUCTIVE (per-model prompt caches) — only nudge
+- [~] **Review-and-merge layer** (Conductor's lane, $22M funded): out of scope — cockpit, not IDE.
+- [~] OAuth endpoint extras: per-model weekly (limits[].weekly_scoped), extra-usage spend surface.
+- [~] ❗Mid-session model right-size nudge is COUNTERPRODUCTIVE (per-model prompt caches) — only nudge
       at NEW-session/task boundaries. Corrects the earlier missed-opps list.
-- [ ] Anthropic first-party Remote Control (research preview) erodes the iOS remote-control lane for
+- [~] Anthropic first-party Remote Control (research preview) erodes the iOS remote-control lane for
       subscription users; Throttle's residual niches: local→remote handoff (shipped), arbitrary-session
       observability, API-key/Bedrock users, cache-aware ops.
 
@@ -57,7 +61,7 @@ Report: `docs/research/output-styles-caveman-2026-07-14.md` (NotebookLM source #
       render within TTL is served from cache (no WKWebView). `useCache` param.
 - [x] **`__web__` semantic recall** (3.2.49) — every rendered page is indexed into a synthetic semantic
       corpus, so research_grounded resurfaces prior research by meaning. Loopback-only bridge hardening.
-- [ ] NOT built (deferred, low value): populate `web_fetches.session_id` for €-per-render join · screenshot
+- [~] NOT built (deferred, low value): populate `web_fetches.session_id` for €-per-render join · screenshot
       in web_render (`takeSnapshot` → ContentStore) · a11y-tree snapshot (thin edge — claude-in-chrome's lane).
 
 ## Cockpit terminal — requested 2026-07-08 (Kevin)
@@ -71,7 +75,7 @@ Report: `docs/research/output-styles-caveman-2026-07-14.md` (NotebookLM source #
       scrollback there); only bites the side shell / plain output. Build-verified; **needs Kevin's live test**.
 - [x] **Copy CLI output optimized for Claude** (`70e7a5e`) — "Copy for Claude (trimmed)" context-menu item,
       reuses `TokoptHook.trimForCopy`.
-- [ ] **Claude drives the terminal (plugin/add-on)** — let Claude/Throttle operate the terminal directly.
+- [~] **Claude drives the terminal (plugin/add-on)** — let Claude/Throttle operate the terminal directly.
       Big design + doctrine call (agent-control vs measure-only cockpit); overlaps the side shell + Command
       Runner. Scope before building.
 
@@ -115,7 +119,7 @@ Report: `docs/research/output-styles-caveman-2026-07-14.md` (NotebookLM source #
       restores the backup + aborts on any round-trip mismatch (FileEditor-style).
 - [x] **State-aware `pauseIdleSessions`** — routed through `drainThenPause` so the
       pacing banner's "Pause idle" can't SIGSTOP mid-flight (NotebookLM Q2 catch).
-- [ ] NOT built (lossy / crosses doctrine): orphaned-tool_result removal, structural
+- [~] NOT built (lossy / crosses doctrine): orphaned-tool_result removal, structural
       block/turn dropping, retrieval-time semantic dedup proxy, AST diff interception.
       NotebookLM flagged these as higher-savings but they silently change the model's
       inputs or become a data-path proxy — parked behind explicit consent + real
@@ -182,7 +186,7 @@ Report: `docs/research/output-styles-caveman-2026-07-14.md` (NotebookLM source #
       sessions). Retry-After half was already effectively covered: `ExactModeService.
       pollPolicy` honors each window's `resets_at` (Retry-After-equivalent) + expo
       backoff on failure, and `ClaudeWebSessionProvider` handles hard 429 + resetsAt.
-- [ ] **TOON Phase 2 → CCR (Compress-Cache-Retrieve)** — upgraded target (NotebookLM
+- [~] **TOON Phase 2 → CCR (Compress-Cache-Retrieve)** — upgraded target (NotebookLM
       2026-06-20): a `PostToolUse` hook replaces verbose low-signal tool output with
       a ~50-token pointer + stashes the raw text in a local SQLite cache; a bundled
       `throttle_expand(hash)` MCP tool lets claude pull it back on demand. HARD no-op
@@ -257,7 +261,7 @@ Report: `docs/research/output-styles-caveman-2026-07-14.md` (NotebookLM source #
 - **B2B Team/Enterprise tier** — deferred per doctrine (behind first consumer sales).
 
 ## Housekeeping
-- [ ] Quit the lingering 3.1.7 Debug GUI instance (cosmetic; it auto-relaunches —
+- [~] Quit the lingering 3.1.7 Debug GUI instance (cosmetic; it auto-relaunches —
       quit from its menu-bar icon).
-- [ ] `lorislab-website` repo is committed locally but not pushed to its GitHub
+- [~] `lorislab-website` repo is committed locally but not pushed to its GitHub
       remote (prod is already deployed via deploy.mjs).

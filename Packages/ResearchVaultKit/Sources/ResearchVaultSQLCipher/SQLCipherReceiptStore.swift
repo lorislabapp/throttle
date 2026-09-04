@@ -2,6 +2,7 @@ import CryptoKit
 import Foundation
 import ResearchVaultIngestion
 import ResearchVaultModel
+import ResearchVaultReasoning
 import ResearchVaultStore
 
 public enum SQLCipherVaultError: Error, Equatable, Sendable {
@@ -71,6 +72,34 @@ public struct SQLCipherBackupEvidence: Equatable, Sendable {
     }
 }
 
+public struct QuarantinedReceiptSummary: Codable, Equatable, Sendable {
+    public let receiptID: String
+    public let projectKey: String
+    public let question: String
+    public let sensitivity: ResearchSensitivity
+    public let createdAt: Date
+    public let sourceCount: Int
+    public let firstSourceLocator: String?
+
+    public init(
+        receiptID: String,
+        projectKey: String,
+        question: String,
+        sensitivity: ResearchSensitivity,
+        createdAt: Date,
+        sourceCount: Int,
+        firstSourceLocator: String?
+    ) {
+        self.receiptID = receiptID
+        self.projectKey = projectKey
+        self.question = question
+        self.sensitivity = sensitivity
+        self.createdAt = createdAt
+        self.sourceCount = sourceCount
+        self.firstSourceLocator = firstSourceLocator
+    }
+}
+
 public enum SQLCipherBackupError: Error, Equatable, Sendable {
     case invalidKeyLength
     case destinationExists
@@ -81,9 +110,9 @@ public enum SQLCipherBackupError: Error, Equatable, Sendable {
 /// All access filters are applied in SQL before receipt payloads or FTS rows are
 /// returned to Swift.
 public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
-    public static let currentSchemaVersion = 3
+    public static let currentSchemaVersion = 6
 
-    private let connection: SQLCipherConnection
+    let connection: SQLCipherConnection
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
 
@@ -122,7 +151,8 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
 
     public func importReceipt(
         _ receipt: ResearchReceipt,
-        authorization: VaultAuthorization
+        authorization: VaultAuthorization,
+        reviewState: ResearchReviewState
     ) throws -> ReceiptImportResult {
         guard authorization.permits(
             projectKey: receipt.projectKey,
@@ -143,7 +173,7 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
         }
 
         try connection.transaction {
-            try insertValidatedReceipt(receipt)
+            try insertValidatedReceipt(receipt, reviewState: reviewState)
         }
         return .inserted
     }
@@ -153,7 +183,8 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
     /// partially accepted batch behind.
     public func importReceipts(
         _ receipts: [ResearchReceipt],
-        authorization: VaultAuthorization
+        authorization: VaultAuthorization,
+        reviewState: ResearchReviewState
     ) throws -> ReceiptBatchImportResult {
         var missing: [ResearchReceipt] = []
         var present = 0
@@ -187,7 +218,7 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
 
         try connection.transaction {
             for receipt in missing {
-                try insertValidatedReceipt(receipt)
+                try insertValidatedReceipt(receipt, reviewState: reviewState)
             }
         }
         return ReceiptBatchImportResult(
@@ -196,14 +227,17 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
         )
     }
 
-    private func insertValidatedReceipt(_ receipt: ResearchReceipt) throws {
+    private func insertValidatedReceipt(
+        _ receipt: ResearchReceipt,
+        reviewState: ResearchReviewState
+    ) throws {
         let payload = try encoder.encode(receipt)
         try connection.execute(
             """
             INSERT INTO receipts(
                 receipt_id, project_key, sensitivity, sensitivity_rank,
-                created_at_ms, content_hash, payload
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7);
+                created_at_ms, content_hash, payload, review_state
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8);
             """,
             binds: [
                 .text(receipt.receiptID),
@@ -213,6 +247,7 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
                 .integer(Self.milliseconds(receipt.createdAt)),
                 .text(receipt.contentHash),
                 .blob(payload),
+                .text(reviewState.rawValue),
             ]
         )
 
@@ -278,6 +313,7 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
             SELECT payload FROM receipts
             WHERE receipt_id = ?1
               AND sensitivity_rank <= ?2
+              AND review_state = 'approved'
               AND project_key IN (\(projectClause));
             """,
             binds: [
@@ -287,7 +323,7 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
         )
         guard let payload = rows.first?.first?.blobValue else {
             let exists = try connection.scalarInteger(
-                "SELECT count(*) FROM receipts WHERE receipt_id = ?1;",
+                "SELECT count(*) FROM receipts WHERE receipt_id = ?1 AND review_state = 'approved';",
                 binds: [.text(id)]
             ) ?? 0
             if exists > 0 { throw ReceiptStoreError.authorizationDenied }
@@ -306,6 +342,7 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
             """
             SELECT payload FROM receipts
             WHERE sensitivity_rank <= ?1
+              AND review_state = 'approved'
               AND project_key IN (\(projectClause))
             ORDER BY created_at_ms ASC, receipt_id ASC;
             """,
@@ -319,6 +356,81 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
             }
             return try decodeAndValidate(payload)
         }
+    }
+
+    public func quarantinedReceipts(
+        authorization: VaultAuthorization
+    ) throws -> [QuarantinedReceiptSummary] {
+        guard !authorization.projectKeys.isEmpty else { return [] }
+        let (projectClause, projectBinds) = Self.projectFilter(
+            authorization.projectKeys,
+            firstParameter: 2
+        )
+        let rows = try connection.rows(
+            """
+            SELECT r.payload,
+                   (SELECT count(*) FROM sources s WHERE s.receipt_id = r.receipt_id),
+                   (SELECT s.locator FROM sources s
+                    WHERE s.receipt_id = r.receipt_id
+                    ORDER BY s.source_id ASC LIMIT 1)
+            FROM receipts r
+            WHERE r.review_state = 'quarantined'
+              AND r.sensitivity_rank <= ?1
+              AND r.project_key IN (\(projectClause))
+            ORDER BY r.created_at_ms DESC, r.receipt_id ASC;
+            """,
+            binds: [
+                .integer(Int64(authorization.maximumSensitivity.policyRank)),
+            ] + projectBinds
+        )
+        return try rows.map { row in
+            guard
+                let payload = row[safe: 0]?.blobValue,
+                let sourceCount = row[safe: 1]?.integerValue
+            else { throw SQLCipherVaultError.corruptSchema }
+            let receipt = try decodeAndValidate(payload)
+            return QuarantinedReceiptSummary(
+                receiptID: receipt.receiptID,
+                projectKey: receipt.projectKey,
+                question: receipt.question,
+                sensitivity: receipt.sensitivity,
+                createdAt: receipt.createdAt,
+                sourceCount: Int(sourceCount),
+                firstSourceLocator: row[safe: 2]?.textValue
+            )
+        }
+    }
+
+    public func approveReceipts(ids: [String]) throws -> Int {
+        let uniqueIDs = Array(Set(ids.filter { !$0.isEmpty })).sorted()
+        guard !uniqueIDs.isEmpty else { return 0 }
+        let placeholders = uniqueIDs.indices.map { "?" + String($0 + 1) }.joined(separator: ", ")
+        var changed = 0
+        try connection.transaction {
+            try connection.execute(
+                "UPDATE receipts SET review_state = 'approved' "
+                    + "WHERE review_state = 'quarantined' AND receipt_id IN (" + placeholders + ");",
+                binds: uniqueIDs.map(SQLCipherBind.text)
+            )
+            changed = Int(try connection.scalarInteger("SELECT changes();") ?? 0)
+        }
+        return changed
+    }
+
+    public func rejectReceipts(ids: [String]) throws -> Int {
+        let uniqueIDs = Array(Set(ids.filter { !$0.isEmpty })).sorted()
+        guard !uniqueIDs.isEmpty else { return 0 }
+        let placeholders = uniqueIDs.indices.map { "?" + String($0 + 1) }.joined(separator: ", ")
+        var changed = 0
+        try connection.transaction {
+            try connection.execute(
+                "DELETE FROM receipts "
+                    + "WHERE review_state = 'quarantined' AND receipt_id IN (" + placeholders + ");",
+                binds: uniqueIDs.map(SQLCipherBind.text)
+            )
+            changed = Int(try connection.scalarInteger("SELECT changes();") ?? 0)
+        }
+        return changed
     }
 
     public func searchClaims(
@@ -343,6 +455,7 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
             JOIN receipts r ON r.receipt_id = f.receipt_id
             WHERE finding_fts MATCH ?1
               AND r.sensitivity_rank <= ?2
+              AND r.review_state = 'approved'
               AND r.project_key IN (\(projectClause))
             ORDER BY bm25(finding_fts) ASC, f.id ASC
             LIMIT ?\(limitParameter);
@@ -380,6 +493,7 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
     public func importDocument(
         _ document: ResearchDocumentCandidate,
         authorization: VaultAuthorization,
+        reviewState: ResearchReviewState,
         chunker: ResearchDocumentChunker = .standard
     ) throws -> ResearchDocumentImportResult {
         guard authorization.permits(
@@ -410,9 +524,9 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
                     document_id, project_key, sensitivity, sensitivity_rank,
                     title, category, library_path, origins_json, content,
                     plaintext_sha256, byte_count, modified_at_ms, observed_at_ms,
-                    evidence_status
+                    evidence_status, review_state
                 ) VALUES (
-                    ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, NULL
+                    ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, NULL, ?14
                 );
                 """,
                 binds: [
@@ -424,6 +538,7 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
                     .text(document.plaintextSHA256), .integer(Int64(document.byteCount)),
                     .integer(Self.milliseconds(document.modifiedAt)),
                     .integer(Self.milliseconds(observedAt)),
+                    .text(reviewState.rawValue),
                 ]
             )
             for chunk in chunks {
@@ -476,6 +591,7 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
                 JOIN documents d ON d.document_id = c.document_id
                 WHERE document_chunk_fts MATCH ?1
                   AND d.sensitivity_rank <= ?2
+                  AND d.review_state = 'approved'
                   AND d.project_key IN (\(projectClause))
             ), ranked_documents AS (
                 SELECT *, row_number() OVER (
@@ -862,6 +978,187 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
                     """
                 )
                 try connection.execute("PRAGMA user_version = 3;")
+            }
+        }
+
+        let afterV3 = Int(try connection.scalarInteger("PRAGMA user_version;") ?? 0)
+        if afterV3 == 3 {
+            try connection.transaction {
+                try connection.execute(
+                    "ALTER TABLE receipts ADD COLUMN review_state TEXT NOT NULL DEFAULT 'approved' CHECK(review_state IN ('quarantined','approved'));"
+                )
+                try connection.execute(
+                    "ALTER TABLE documents ADD COLUMN review_state TEXT NOT NULL DEFAULT 'approved' CHECK(review_state IN ('quarantined','approved'));"
+                )
+                try connection.execute(
+                    "CREATE INDEX receipts_review ON receipts(review_state, project_key);"
+                )
+                try connection.execute(
+                    "CREATE INDEX documents_review ON documents(review_state, project_key);"
+                )
+                try connection.execute("PRAGMA user_version = 4;")
+            }
+        }
+
+        let afterV4 = Int(try connection.scalarInteger("PRAGMA user_version;") ?? 0)
+        if afterV4 == 4 {
+            try connection.transaction {
+                try connection.execute(
+                    """
+                    CREATE TABLE reasoning_generations(
+                        name TEXT PRIMARY KEY NOT NULL,
+                        base_generation INTEGER NOT NULL CHECK(base_generation >= 0),
+                        rule_pack_hash TEXT NOT NULL,
+                        engine_version TEXT NOT NULL,
+                        rules_json BLOB NOT NULL
+                    ) WITHOUT ROWID;
+                    """
+                )
+                try connection.execute(
+                    "INSERT INTO reasoning_generations(name, base_generation, rule_pack_hash, engine_version, rules_json) VALUES ('active', 0, '', '', X'5b5d');"
+                )
+                try connection.execute(
+                    """
+                    CREATE TABLE reasoning_base_facts(
+                        fact_id TEXT PRIMARY KEY NOT NULL CHECK(length(fact_id) = 64),
+                        project_key TEXT NOT NULL,
+                        predicate TEXT NOT NULL,
+                        sensitivity_rank INTEGER NOT NULL CHECK(sensitivity_rank BETWEEN 0 AND 3),
+                        payload BLOB NOT NULL
+                    );
+                    """
+                )
+                try connection.execute(
+                    "CREATE INDEX reasoning_base_scope ON reasoning_base_facts(project_key, sensitivity_rank, predicate);"
+                )
+                try connection.execute(
+                    """
+                    CREATE TABLE reasoning_fact_evidence(
+                        fact_id TEXT NOT NULL REFERENCES reasoning_base_facts(fact_id) ON DELETE CASCADE,
+                        receipt_id TEXT NOT NULL,
+                        source_id TEXT NOT NULL,
+                        PRIMARY KEY(fact_id, receipt_id, source_id),
+                        FOREIGN KEY(receipt_id, source_id)
+                            REFERENCES sources(receipt_id, source_id) ON DELETE RESTRICT
+                    ) WITHOUT ROWID;
+                    """
+                )
+                try connection.execute(
+                    """
+                    CREATE TABLE reasoning_derived_cache(
+                        fact_id TEXT PRIMARY KEY NOT NULL CHECK(length(fact_id) = 64),
+                        project_key TEXT NOT NULL,
+                        sensitivity_rank INTEGER NOT NULL CHECK(sensitivity_rank BETWEEN 0 AND 3),
+                        base_generation INTEGER NOT NULL CHECK(base_generation >= 0),
+                        rule_pack_hash TEXT NOT NULL CHECK(length(rule_pack_hash) = 64),
+                        engine_version TEXT NOT NULL,
+                        payload BLOB NOT NULL
+                    );
+                    """
+                )
+                try connection.execute(
+                    "CREATE INDEX reasoning_cache_scope ON reasoning_derived_cache(project_key, sensitivity_rank);"
+                )
+                try connection.execute(
+                    """
+                    CREATE TABLE reasoning_derivations(
+                        conclusion_fact_id TEXT NOT NULL REFERENCES reasoning_derived_cache(fact_id) ON DELETE CASCADE,
+                        rule_id TEXT NOT NULL,
+                        premise_fact_ids_json BLOB NOT NULL,
+                        PRIMARY KEY(conclusion_fact_id, rule_id, premise_fact_ids_json)
+                    ) WITHOUT ROWID;
+                    """
+                )
+                try connection.execute("PRAGMA user_version = 5;")
+            }
+        }
+
+        let afterV5 = Int(try connection.scalarInteger("PRAGMA user_version;") ?? 0)
+        if afterV5 == 5 {
+            try connection.transaction {
+                try connection.execute(
+                    """
+                    CREATE TABLE spaces(
+                        space_id TEXT PRIMARY KEY NOT NULL,
+                        name TEXT NOT NULL,
+                        kind TEXT NOT NULL CHECK(kind IN ('portfolio','project')),
+                        created_at_ms INTEGER NOT NULL
+                    ) WITHOUT ROWID;
+                    """
+                )
+                try connection.execute(
+                    """
+                    CREATE TABLE space_project_keys(
+                        space_id TEXT NOT NULL REFERENCES spaces(space_id) ON DELETE CASCADE,
+                        project_key TEXT NOT NULL,
+                        PRIMARY KEY(space_id, project_key)
+                    ) WITHOUT ROWID;
+                    """
+                )
+                try connection.execute(
+                    "INSERT INTO spaces(space_id, name, kind, created_at_ms) VALUES ('portfolio', 'Portfolio', 'portfolio', 0);"
+                )
+                try connection.execute(
+                    """
+                    INSERT OR IGNORE INTO spaces(space_id, name, kind, created_at_ms)
+                    SELECT 'project:' || project_key, project_key, 'project', 0
+                    FROM (
+                        SELECT project_key FROM receipts
+                        UNION SELECT project_key FROM documents
+                        UNION SELECT project_key FROM reasoning_base_facts
+                    );
+                    """
+                )
+                try connection.execute(
+                    """
+                    INSERT OR IGNORE INTO space_project_keys(space_id, project_key)
+                    SELECT 'project:' || project_key, project_key
+                    FROM (
+                        SELECT project_key FROM receipts
+                        UNION SELECT project_key FROM documents
+                        UNION SELECT project_key FROM reasoning_base_facts
+                    );
+                    """
+                )
+                try connection.execute(
+                    """
+                    INSERT OR IGNORE INTO space_project_keys(space_id, project_key)
+                    SELECT 'portfolio', project_key
+                    FROM (
+                        SELECT project_key FROM receipts
+                        UNION SELECT project_key FROM documents
+                        UNION SELECT project_key FROM reasoning_base_facts
+                    );
+                    """
+                )
+                try connection.execute(
+                    "CREATE INDEX space_project_lookup ON space_project_keys(project_key, space_id);"
+                )
+                try connection.execute(
+                    """
+                    CREATE TRIGGER spaces_after_receipt_insert AFTER INSERT ON receipts BEGIN
+                        INSERT OR IGNORE INTO spaces(space_id, name, kind, created_at_ms)
+                        VALUES ('project:' || new.project_key, new.project_key, 'project', new.created_at_ms);
+                        INSERT OR IGNORE INTO space_project_keys(space_id, project_key)
+                        VALUES ('project:' || new.project_key, new.project_key);
+                        INSERT OR IGNORE INTO space_project_keys(space_id, project_key)
+                        VALUES ('portfolio', new.project_key);
+                    END;
+                    """
+                )
+                try connection.execute(
+                    """
+                    CREATE TRIGGER spaces_after_document_insert AFTER INSERT ON documents BEGIN
+                        INSERT OR IGNORE INTO spaces(space_id, name, kind, created_at_ms)
+                        VALUES ('project:' || new.project_key, new.project_key, 'project', new.observed_at_ms);
+                        INSERT OR IGNORE INTO space_project_keys(space_id, project_key)
+                        VALUES ('project:' || new.project_key, new.project_key);
+                        INSERT OR IGNORE INTO space_project_keys(space_id, project_key)
+                        VALUES ('portfolio', new.project_key);
+                    END;
+                    """
+                )
+                try connection.execute("PRAGMA user_version = 6;")
             }
         }
     }

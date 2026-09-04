@@ -30,6 +30,14 @@ public enum ResearchEvidenceStatus: String, Codable, CaseIterable, Sendable {
     case stale = "STALE"
 }
 
+/// Human-review state of imported material. Rejection is not a stored state:
+/// rejecting deletes the rows. Existing pre-v4 rows are grandfathered as
+/// approved by the SQLCipher migration.
+public enum ResearchReviewState: String, Codable, Sendable, CaseIterable {
+    case quarantined
+    case approved
+}
+
 public enum ResearchSourceKind: String, Codable, CaseIterable, Sendable {
     case url
     case file

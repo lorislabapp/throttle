@@ -4,6 +4,8 @@
 
 set -u
 
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+
 PASS=0
 FAIL=0
 
@@ -50,6 +52,12 @@ if codesign -dvv "$APP_PATH" 2>&1 | grep -q "TDV6D5L785"; then
     ok "Team ID = TDV6D5L785"
 else
     ko "Team ID is not TDV6D5L785"
+fi
+
+if "$SCRIPT_DIR/verify-research-vault-bundle.sh" --require-signed "$APP_PATH" >/dev/null 2>&1; then
+    ok "Research Vault helper boundary and signature"
+else
+    ko "Research Vault helper boundary or signature invalid"
 fi
 
 echo

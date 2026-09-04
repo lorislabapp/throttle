@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/JordyZomer/lemmalog",
+  "commit": "7d6f1541130aba53949a2da90cc3e134cb0aac01",
+  "license": "MIT",
+  "licenseSHA256": "212da0f1b3ebea42880b338390b99defc8a12a0ac45d0acf6a228280b2cc8652",
+  "harnessSHA256": "c840ce9102024b33c657e963b651411f4c2b4c8c36e5b15029519df4660c2901",
+  "sharedSubset": "positive unary range-restricted Datalog with disjoint EDB and IDB predicates",
+  "defaultPrograms": 10000,
+  "extendedPrograms": 100000,
+  "runtimeDependency": false
+}

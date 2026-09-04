@@ -27,16 +27,31 @@ verify_release() {
 }
 
 verify_debug
+Scripts/verify-reasoning-oracle.sh
+Scripts/verify-reasoning-supply-chain.sh
 Scripts/verify-ipc-boundary.sh
 Scripts/verify-crash-recovery.sh debug
+Scripts/verify-agent-hook.sh
 
+# The retrieval gate is the headline claim of this package, so an unrunnable
+# benchmark is a verification failure, not a note. Skipping it silently while
+# still exiting 0 meant a green verify.sh could report nothing about retrieval
+# at all — the same silent-degradation failure the vault is supposed to prevent.
+# Set RESEARCH_VAULT_ALLOW_BENCHMARK_SKIP=1 to opt out deliberately (a machine
+# with no corpus checkout); the skip is then loud and still recorded.
 research_vault_deepsearsh_root="${RESEARCH_VAULT_DEEPSEARSH_ROOT:-/Users/kevinnadjarian/GitHub/DeepSearsh}"
 if [ -r "$research_vault_deepsearsh_root/catalog.jsonl" ]; then
     swift run research-vault-benchmark "$research_vault_deepsearsh_root"
     RESEARCH_VAULT_DEEPSEARSH_ROOT="$research_vault_deepsearsh_root" \
         Scripts/verify-mcp-process.sh
+elif [ "${RESEARCH_VAULT_ALLOW_BENCHMARK_SKIP:-0}" = "1" ]; then
+    echo '{"status":"skipped","scenario":"live-benchmark","reason":"opted out via RESEARCH_VAULT_ALLOW_BENCHMARK_SKIP"}'
+    echo "WARNING: retrieval gate NOT verified in this run." >&2
 else
-    echo "LIVE BENCHMARK SKIPPED: unreadable DeepSearsh catalog at $research_vault_deepsearsh_root"
+    echo "LIVE BENCHMARK UNRUNNABLE: unreadable DeepSearsh catalog at $research_vault_deepsearsh_root" >&2
+    echo "The retrieval gate cannot be verified, so this run cannot pass." >&2
+    echo "Set RESEARCH_VAULT_DEEPSEARSH_ROOT, or RESEARCH_VAULT_ALLOW_BENCHMARK_SKIP=1 to opt out." >&2
+    exit 1
 fi
 
 verify_release

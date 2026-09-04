@@ -9,6 +9,11 @@ import Security
 
 @objc public protocol ResearchVaultOwnerXPCProtocol {
     func importReceipts(_ request: Data, withReply reply: @escaping @Sendable (Data) -> Void)
+    func listQuarantine(_ request: Data, withReply reply: @escaping @Sendable (Data) -> Void)
+    func reviewQuarantine(_ request: Data, withReply reply: @escaping @Sendable (Data) -> Void)
+    func exportReceipts(_ request: Data, withReply reply: @escaping @Sendable (Data) -> Void)
+    func promoteReasoning(_ request: Data, withReply reply: @escaping @Sendable (Data) -> Void)
+    func queryReasoning(_ request: Data, withReply reply: @escaping @Sendable (Data) -> Void)
 }
 
 public enum ResearchVaultXPCConfigurationError: Error, Equatable, Sendable {

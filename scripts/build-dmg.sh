@@ -113,6 +113,7 @@ APP_PATH="$EXPORT_DIR/Throttle.app"
 echo "→ Strictly verifying exported app and widget"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 codesign --verify --strict --verbose=2 "$APP_PATH/Contents/PlugIns/ThrottleWidget.appex"
+"$PROJECT_DIR/scripts/verify-research-vault-bundle.sh" --require-signed "$APP_PATH"
 
 echo "→ Smoke-testing the build"
 "$PROJECT_DIR/scripts/smoke-test.sh" "$APP_PATH"
@@ -127,13 +128,40 @@ ln -s /Applications "$STAGING/Applications"   # drag-to-install
 diskutil image create from --volumeName "Throttle" --format UDZO "$STAGING" "$DMG_PATH"
 rm -rf "$STAGING"
 
-echo "→ Signing DMG itself (Gatekeeper trusts the container too)"
+echo "→ Verifying the exact app payload inside the DMG"
+VERIFY_MOUNT=$(mktemp -d "${TMPDIR:-/tmp}/throttle-dmg-verify.XXXXXX")
+cleanup_verify_mount() {
+    # `mount` reports canonical `/private/var/...` paths while mktemp may return
+    # `/var/...`; matching the strings can therefore miss a live verification
+    # volume. Always ask Disk Arbitration to eject it and tolerate "not mounted".
+    diskutil eject "$VERIFY_MOUNT" >/dev/null 2>&1 || true
+    rmdir "$VERIFY_MOUNT" 2>/dev/null || true
+}
+trap cleanup_verify_mount EXIT
+diskutil image attach --readOnly --mountOptions nobrowse \
+    --mountPoint "$VERIFY_MOUNT" "$DMG_PATH" >/dev/null
+DMG_APP="$VERIFY_MOUNT/Throttle.app"
+codesign --verify --deep --strict --verbose=2 "$DMG_APP"
+codesign --verify --strict --verbose=2 \
+    "$DMG_APP/Contents/PlugIns/ThrottleWidget.appex"
+"$PROJECT_DIR/scripts/verify-research-vault-bundle.sh" --require-signed "$DMG_APP"
+DMG_VERSION=$(/usr/libexec/PlistBuddy -c \
+    "Print :CFBundleShortVersionString" "$DMG_APP/Contents/Info.plist")
+DMG_BUILD=$(/usr/libexec/PlistBuddy -c \
+    "Print :CFBundleVersion" "$DMG_APP/Contents/Info.plist")
+[ "$DMG_VERSION" = "$VERSION" ]
+[ "$DMG_BUILD" = "$PLANNED_BUILD" ]
+ARCHS=$(lipo -archs "$DMG_APP/Contents/MacOS/Throttle")
+printf '%s\n' "$ARCHS" | grep -qw arm64
+printf '%s\n' "$ARCHS" | grep -qw x86_64
+cleanup_verify_mount
+trap - EXIT
+sync
+
+echo "→ Signing DMG itself after the final mount (Gatekeeper trusts the container too)"
+# Mounting a UDIF can alter container metadata even when the volume is read-only,
+# so payload verification must finish before the final container signature.
 # Apple's timestamp service is a network dependency, and it goes away sometimes.
-# Twice on 2026-08-21 it failed with "The timestamp service is not available",
-# after six minutes of universal archiving, leaving a zero-byte DMG behind — and
-# both times an immediate manual retry succeeded. A signature without a trusted
-# timestamp is not an option (notarization requires one), so retry rather than
-# discard the build.
 for attempt in 1 2 3 4 5; do
     if codesign --force --sign "$SIGNING_SHA1" --keychain "$LOGIN_KEYCHAIN" \
         --options runtime --timestamp "$DMG_PATH" 2>"$RELEASE_BUILD_DIR/codesign.err"; then

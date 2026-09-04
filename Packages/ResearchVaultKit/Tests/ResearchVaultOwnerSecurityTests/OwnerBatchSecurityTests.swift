@@ -16,7 +16,11 @@ struct OwnerBatchSecurityTests {
         let grant = VaultAuthorization(projectKeys: ["throttle"], maximumSensitivity: .internal)
 
         await #expect(throws: ReceiptStoreError.authorizationDenied) {
-            try await store.importReceipts([allowed, denied], authorization: grant)
+            try await store.importReceipts(
+                [allowed, denied],
+                authorization: grant,
+                reviewState: .approved
+            )
         }
         let evidence = try await store.verifyIntegrity()
         #expect(evidence.receiptCount == 0)
@@ -30,7 +34,11 @@ struct OwnerBatchSecurityTests {
         let value = try receipt(id: "same", project: "throttle")
         let grant = VaultAuthorization(projectKeys: ["throttle"], maximumSensitivity: .internal)
 
-        let result = try await store.importReceipts([value, value], authorization: grant)
+        let result = try await store.importReceipts(
+            [value, value],
+            authorization: grant,
+            reviewState: .approved
+        )
         #expect(result.insertedReceipts == 1)
         #expect(result.alreadyPresentReceipts == 1)
         #expect(try await store.verifyIntegrity().receiptCount == 1)

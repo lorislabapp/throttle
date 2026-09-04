@@ -63,6 +63,23 @@ struct ResearchVaultXPCTests {
         await #expect(throws: ResearchVaultClientError.invalidConfiguration) {
             _ = try await client.importReceipts([receipt])
         }
+        await #expect(throws: ResearchVaultClientError.invalidConfiguration) {
+            _ = try await client.quarantine()
+        }
+        await #expect(throws: ResearchVaultClientError.invalidConfiguration) {
+            _ = try await client.review(ids: [receipt.receiptID], action: .approve)
+        }
+        await #expect(throws: ResearchVaultClientError.invalidConfiguration) {
+            _ = try await client.exportReceipts()
+        }
+        await #expect(throws: ResearchVaultClientError.invalidConfiguration) {
+            _ = try await client.promoteReasoningRelations([])
+        }
+        await #expect(throws: ResearchVaultClientError.invalidConfiguration) {
+            _ = try await client.reasoning(
+                ResearchVaultReasoningQuery(kind: .contradictions)
+            )
+        }
     }
 
     @Test("Apple distribution requirement compiles")
@@ -162,16 +179,51 @@ struct ResearchVaultXPCTests {
         }
     }
 
+    @Test("owner review request requires a bounded non-empty unique ID batch")
+    func ownerReviewRequestValidation() throws {
+        let valid = try ResearchVaultReviewRequest(
+            action: .approve,
+            receiptIDs: ["receipt-a", "receipt-b"]
+        ).validated()
+        #expect(valid.action == .approve)
+        #expect(valid.receiptIDs == ["receipt-a", "receipt-b"])
+        #expect(throws: ResearchVaultIPCValidationError.invalidReviewBatch) {
+            try ResearchVaultReviewRequest(action: .reject, receiptIDs: []).validated()
+        }
+        #expect(throws: ResearchVaultIPCValidationError.invalidReviewBatch) {
+            try ResearchVaultReviewRequest(
+                action: .reject,
+                receiptIDs: Array(
+                    repeating: "receipt",
+                    count: ResearchVaultIPCContract.maximumReceiptsPerRequest + 1
+                )
+            ).validated()
+        }
+        #expect(throws: ResearchVaultIPCValidationError.invalidReviewBatch) {
+            try ResearchVaultReviewRequest(
+                action: .approve,
+                receiptIDs: ["receipt-a", "receipt-a"]
+            ).validated()
+        }
+    }
+
     @Test("owner service dispatches a validated content-only request")
     func ownerServiceDispatch() async throws {
         let receipt = try Self.receipt(id: "dispatch")
-        let service = ResearchVaultOwnerService { receipts in
-            #expect(receipts == [receipt])
-            return ResearchVaultReceiptImportResponse(
-                insertedReceipts: 1,
-                alreadyPresentReceipts: 0
-            )
-        }
+        let service = ResearchVaultOwnerService(
+            importer: { receipts in
+                #expect(receipts == [receipt])
+                return ResearchVaultReceiptImportResponse(
+                    insertedReceipts: 1,
+                    alreadyPresentReceipts: 0
+                )
+            },
+            quarantineLister: { ResearchVaultQuarantineListResponse(items: []) },
+            reviewer: { _ in ResearchVaultReviewResponse(processed: 0) },
+            exporter: { _ in
+                ResearchVaultReceiptExportResponse(receipts: [], nextReceiptID: nil)
+            }
+        )
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .millisecondsSince1970
         let request = try encoder.encode(ResearchVaultReceiptImportRequest(receipts: [receipt]))
@@ -185,16 +237,104 @@ struct ResearchVaultXPCTests {
         #expect(response.contractVersion == ResearchVaultIPCContract.currentVersion)
     }
 
+    @Test("owner service lists and reviews quarantined receipts")
+    func ownerServiceReviewDispatch() async throws {
+        let item = ResearchVaultQuarantineItem(
+            receiptID: "receipt-a",
+            projectKey: "throttle",
+            question: "Review this evidence",
+            sensitivity: ResearchSensitivity.internal.rawValue,
+            createdAtMS: 1_787_832_000_000,
+            sourceCount: 1,
+            firstSourceLocator: "evidence/review.md"
+        )
+        let service = ResearchVaultOwnerService(
+            importer: { _ in
+                ResearchVaultReceiptImportResponse(
+                    insertedReceipts: 0,
+                    alreadyPresentReceipts: 0
+                )
+            },
+            quarantineLister: {
+                ResearchVaultQuarantineListResponse(items: [item])
+            },
+            reviewer: { request in
+                #expect(request.action == .approve)
+                #expect(request.receiptIDs == [item.receiptID])
+                return ResearchVaultReviewResponse(processed: 1)
+            },
+            exporter: { _ in
+                ResearchVaultReceiptExportResponse(receipts: [], nextReceiptID: nil)
+            }
+        )
+        let encoder = JSONEncoder()
+        let listRequest = try encoder.encode(ResearchVaultQuarantineListRequest())
+        let listData: Data = await withCheckedContinuation { continuation in
+            service.listQuarantine(listRequest) { continuation.resume(returning: $0) }
+        }
+        let list = try JSONDecoder().decode(ResearchVaultQuarantineListResponse.self, from: listData)
+        #expect(list.items == [item])
+
+        let reviewRequest = try encoder.encode(
+            ResearchVaultReviewRequest(action: .approve, receiptIDs: [item.receiptID])
+        )
+        let reviewData: Data = await withCheckedContinuation { continuation in
+            service.reviewQuarantine(reviewRequest) { continuation.resume(returning: $0) }
+        }
+        let review = try JSONDecoder().decode(ResearchVaultReviewResponse.self, from: reviewData)
+        #expect(review.processed == 1)
+    }
+
+    @Test("owner service exports a validated approved receipt page")
+    func ownerServiceExportDispatch() async throws {
+        let receipt = try Self.receipt(id: "export")
+        let service = ResearchVaultOwnerService(
+            importer: { _ in
+                ResearchVaultReceiptImportResponse(
+                    insertedReceipts: 0,
+                    alreadyPresentReceipts: 0
+                )
+            },
+            quarantineLister: { ResearchVaultQuarantineListResponse(items: []) },
+            reviewer: { _ in ResearchVaultReviewResponse(processed: 0) },
+            exporter: { request in
+                #expect(request.limit == 8)
+                return ResearchVaultReceiptExportResponse(
+                    receipts: [receipt],
+                    nextReceiptID: nil
+                )
+            }
+        )
+        let request = try JSONEncoder().encode(ResearchVaultReceiptExportRequest())
+        let responseData: Data = await withCheckedContinuation { continuation in
+            service.exportReceipts(request) { continuation.resume(returning: $0) }
+        }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .millisecondsSince1970
+        let response = try decoder.decode(
+            ResearchVaultReceiptExportResponse.self,
+            from: responseData
+        )
+        #expect(response.receipts == [receipt])
+    }
+
     @Test("owner service rejects malformed bytes before invoking importer")
     func ownerServiceRejectsMalformedBytes() async throws {
         let counter = InvocationCounter()
-        let service = ResearchVaultOwnerService { _ in
-            await counter.increment()
-            return ResearchVaultReceiptImportResponse(
-                insertedReceipts: 0,
-                alreadyPresentReceipts: 0
-            )
-        }
+        let service = ResearchVaultOwnerService(
+            importer: { _ in
+                await counter.increment()
+                return ResearchVaultReceiptImportResponse(
+                    insertedReceipts: 0,
+                    alreadyPresentReceipts: 0
+                )
+            },
+            quarantineLister: { ResearchVaultQuarantineListResponse(items: []) },
+            reviewer: { _ in ResearchVaultReviewResponse(processed: 0) },
+            exporter: { _ in
+                ResearchVaultReceiptExportResponse(receipts: [], nextReceiptID: nil)
+            }
+        )
         let responseData: Data = await withCheckedContinuation { continuation in
             service.importReceipts(Data("not-json".utf8)) {
                 continuation.resume(returning: $0)
@@ -203,6 +343,98 @@ struct ResearchVaultXPCTests {
         let payload = try JSONDecoder().decode(ResearchVaultIPCErrorPayload.self, from: responseData)
         #expect(payload.code == .invalidRequest)
         #expect(await counter.value == 0)
+    }
+
+    @Test("owner reasoning dispatch is typed, bounded and rejects hostile payloads")
+    func ownerReasoningDispatch() async throws {
+        let firstID = "10000000-0000-4000-8000-000000000001"
+        let secondID = "10000000-0000-4000-8000-000000000002"
+        let service = ResearchVaultOwnerService(
+            importer: { _ in .init(insertedReceipts: 0, alreadyPresentReceipts: 0) },
+            quarantineLister: { .init(items: []) },
+            reviewer: { _ in .init(processed: 0) },
+            exporter: { _ in .init(receipts: [], nextReceiptID: nil) },
+            reasoningPromoter: { request in
+                #expect(request.relations.count == 1)
+                return ResearchVaultReasoningRefreshResponse(
+                    generation: 4,
+                    baseFactCount: 5,
+                    derivedFactCount: 1,
+                    relationCount: request.relations.count,
+                    shadowMode: true
+                )
+            },
+            reasoningQuerier: { request in
+                ResearchVaultReasoningQueryResponse(
+                    kind: request.kind,
+                    generation: 4,
+                    facts: [],
+                    derivations: [],
+                    truncated: false
+                )
+            }
+        )
+        let relation = ResearchVaultReasoningRelation(
+            relation: .dependsOn,
+            subject: .init(receiptID: firstID, findingIndex: 0),
+            object: .init(receiptID: secondID, findingIndex: 0)
+        )
+        let encoder = JSONEncoder()
+        let promotionData = try encoder.encode(
+            ResearchVaultReasoningPromotionRequest(relations: [relation])
+        )
+        let promotionReply: Data = await withCheckedContinuation { continuation in
+            service.promoteReasoning(promotionData) { continuation.resume(returning: $0) }
+        }
+        let promotion = try JSONDecoder().decode(
+            ResearchVaultReasoningRefreshResponse.self,
+            from: promotionReply
+        )
+        #expect(promotion.generation == 4)
+        #expect(promotion.shadowMode)
+
+        let queryData = try encoder.encode(
+            ResearchVaultReasoningQuery(kind: .contradictions, limit: 8)
+        )
+        let queryReply: Data = await withCheckedContinuation { continuation in
+            service.queryReasoning(queryData) { continuation.resume(returning: $0) }
+        }
+        let query = try JSONDecoder().decode(
+            ResearchVaultReasoningQueryResponse.self,
+            from: queryReply
+        )
+        #expect(query.kind == .contradictions)
+
+        let hostile = try encoder.encode(ResearchVaultReasoningPromotionRequest(
+            relations: Array(
+                repeating: relation,
+                count: ResearchVaultIPCContract.maximumReasoningRelations + 1
+            )
+        ))
+        let hostileReply: Data = await withCheckedContinuation { continuation in
+            service.promoteReasoning(hostile) { continuation.resume(returning: $0) }
+        }
+        let error = try JSONDecoder().decode(
+            ResearchVaultIPCErrorPayload.self,
+            from: hostileReply
+        )
+        #expect(error.code == .invalidRequest)
+
+        let duplicateRemoval = try encoder.encode(ResearchVaultReasoningPromotionRequest(
+            relations: [],
+            removingFactIDs: [
+                String(repeating: "a", count: 64),
+                String(repeating: "a", count: 64),
+            ]
+        ))
+        let duplicateRemovalReply: Data = await withCheckedContinuation { continuation in
+            service.promoteReasoning(duplicateRemoval) { continuation.resume(returning: $0) }
+        }
+        let duplicateRemovalError = try JSONDecoder().decode(
+            ResearchVaultIPCErrorPayload.self,
+            from: duplicateRemovalReply
+        )
+        #expect(duplicateRemovalError.code == .invalidRequest)
     }
 
     private static func receipt(id: String) throws -> ResearchReceipt {
