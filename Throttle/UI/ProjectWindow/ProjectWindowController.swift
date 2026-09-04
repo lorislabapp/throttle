@@ -42,11 +42,10 @@ final class ProjectWindowController: NSObject {
             defer: false
         )
         win.title = "Throttle — Project window"
-        win.isReleasedWhenClosed = false
         win.center()
         win.contentViewController = host
         win.minSize = NSSize(width: 720, height: 420)
-        win.delegate = self
+        RetainedWindowPolicy.configure(win, delegate: self)
 
         win.setFrameAutosaveName("ThrottleProjectWindow")
 
@@ -61,11 +60,8 @@ final class ProjectWindowController: NSObject {
 }
 
 extension ProjectWindowController: NSWindowDelegate {
-    nonisolated func windowWillClose(_ notification: Notification) {
-        Task { @MainActor in
-            self.window = nil
-            // Keep the regular activation policy so the Dock icon remains a
-            // reliable reopen target while the menu-bar process is alive.
-        }
+    func windowWillClose(_ notification: Notification) {
+        // Keep the window and regular activation policy so the Dock icon remains
+        // a reliable reopen target while the menu-bar process is alive.
     }
 }

@@ -26,11 +26,10 @@ final class TranscriptSearchWindowController: NSObject {
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered, defer: false)
         win.title = "Throttle — Session Search"
-        win.isReleasedWhenClosed = false
         win.center()
         win.contentViewController = host
         win.minSize = NSSize(width: 480, height: 360)
-        win.delegate = self
+        RetainedWindowPolicy.configure(win, delegate: self)
         win.setFrameAutosaveName("ThrottleSessionSearchWindow")
         self.window = win
         win.makeKeyAndOrderFront(nil)
@@ -41,9 +40,7 @@ final class TranscriptSearchWindowController: NSObject {
 }
 
 extension TranscriptSearchWindowController: NSWindowDelegate {
-    nonisolated func windowWillClose(_ notification: Notification) {
-        Task { @MainActor in
-            self.window = nil
-        }
+    func windowWillClose(_ notification: Notification) {
+        // Retained by the singleton and reused on the next open.
     }
 }

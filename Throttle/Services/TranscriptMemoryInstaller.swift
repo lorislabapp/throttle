@@ -35,23 +35,34 @@ enum TranscriptMemoryInstaller {
         // Validate the Codex mutation before touching either provider. A same-name
         // unmanaged section is a hard conflict, not a reason to leave a partial
         // Claude-only installation behind.
-        let oldCodex = (try? String(contentsOf: codexConfig, encoding: .utf8)) ?? ""
+        let oldClaudeData = try? Data(contentsOf: globalConfig)
+        let oldCodexData = try? Data(contentsOf: codexConfig)
+        let oldCodex = oldCodexData.flatMap { String(data: $0, encoding: .utf8) } ?? ""
         let newCodex = try codexConfigInstalling(in: oldCodex, execPath: execPath)
-        var changed = false
-        var dict = readJSON() ?? [:]
-        var mcp = dict["mcpServers"] as? [String: Any] ?? [:]
-        if mcp[serverKey] == nil {
-            try backup()
-            mcp[serverKey] = ["command": execPath, "args": ["--mcp-server"]] as [String: Any]
-            dict["mcpServers"] = mcp
-            try writeJSON(dict)
-            changed = true
-        }
-        if newCodex != oldCodex {
-            try backupCodex()
-            try FileManager.default.createDirectory(at: codexConfig.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try newCodex.write(to: codexConfig, atomically: true, encoding: .utf8)
-            changed = true
+        let contextWasInstalled = GlobalRAGSessionContextInstaller.isInstalled()
+        try GlobalRAGSessionContextInstaller.install()
+        var changed = !contextWasInstalled
+        do {
+            var dict = readJSON() ?? [:]
+            var mcp = dict["mcpServers"] as? [String: Any] ?? [:]
+            if mcp[serverKey] == nil {
+                try backup()
+                mcp[serverKey] = ["command": execPath, "args": ["--mcp-server"]] as [String: Any]
+                dict["mcpServers"] = mcp
+                try writeJSON(dict)
+                changed = true
+            }
+            if newCodex != oldCodex {
+                try backupCodex()
+                try FileManager.default.createDirectory(at: codexConfig.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try newCodex.write(to: codexConfig, atomically: true, encoding: .utf8)
+                changed = true
+            }
+        } catch {
+            restore(oldClaudeData, to: globalConfig)
+            restore(oldCodexData, to: codexConfig)
+            if !contextWasInstalled { try? GlobalRAGSessionContextInstaller.remove() }
+            throw error
         }
         // Warm the index now so the first search isn't the slow full build.
         DispatchQueue.global(qos: .utility).async { _ = TranscriptIndex.reindex() }
@@ -78,6 +89,9 @@ enum TranscriptMemoryInstaller {
             try? healed.write(to: codexConfig, atomically: true, encoding: .utf8)
             changed = true
         }
+        if isInstalledForClaude() || isInstalledForCodex() {
+            try? GlobalRAGSessionContextInstaller.install()
+        }
         return changed
     }
 
@@ -95,6 +109,7 @@ enum TranscriptMemoryInstaller {
     }
 
     static func remove() throws {
+        try GlobalRAGSessionContextInstaller.remove()
         if var dict = readJSON(), var mcp = dict["mcpServers"] as? [String: Any], mcp[serverKey] != nil {
             try backup()
             mcp.removeValue(forKey: serverKey)
@@ -181,5 +196,10 @@ enum TranscriptMemoryInstaller {
         if FileManager.default.fileExists(atPath: codexConfig.path) {
             try? FileManager.default.copyItem(at: codexConfig, to: dest)
         }
+    }
+
+    private static func restore(_ data: Data?, to url: URL) {
+        if let data { try? data.write(to: url, options: .atomic) }
+        else { try? FileManager.default.removeItem(at: url) }
     }
 }

@@ -132,6 +132,7 @@ struct MultiCockpitRoot: View {
             zsep
             viewSwitcher(iconsOnly: narrow)
             Spacer(minLength: 6)
+            knowledgeMenu(compact: narrow)
             ToolbarToggle(icon: "sidebar.trailing", label: String(localized: "Panel"), isOn: showSidebar,
                           iconOnly: narrow,
                           help: String(localized: "Audit metrics and the prompt refiner")) {
@@ -184,6 +185,32 @@ struct MultiCockpitRoot: View {
             model.routingMode.label))
         .accessibilityLabel(String(localized: "Mission runtime"))
         .accessibilityValue(model.routingMode.label)
+    }
+
+    private func knowledgeMenu(compact: Bool) -> some View {
+        Menu {
+            Button("Research Vault", systemImage: "books.vertical") {
+                ResearchVaultWindowController.shared.show(query: "")
+            }
+            Button("Global Portfolio Setup", systemImage: "square.stack.3d.up") {
+                GlobalRAGOnboardingWindowController.shared.show(canInstallMCP: appState.isPro) { _ in }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "books.vertical")
+                if !compact { Text("Research") }
+                Image(systemName: "chevron.down").font(.system(size: 7, weight: .bold))
+            }
+            .font(.system(size: 10.5, weight: .medium))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 7).padding(.vertical, 5)
+            .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 6))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Research Vault and Global Portfolio Setup")
+        .accessibilityLabel("Research and global portfolio")
     }
 
     /// The revealed utility shelf: contextual timeline (or an empty note) on the
@@ -392,7 +419,7 @@ struct MultiCockpitRoot: View {
                 }
                 HStack(spacing: 4) {
                     Circle().fill(tint).frame(width: 6, height: 6)
-                    Text(pressureLabel(m) + " · \(m.claudeCount) claude\(m.claudeCount == 1 ? "" : "s")"
+                    Text(pressureLabel(m) + " · " + m.agentSummary
                          + (m.swapUsedBytes > 0 ? " · swap \(gb(m.swapUsedBytes))" : ""))
                         .font(.system(size: 10)).foregroundStyle(.tertiary)
                 }
@@ -1182,7 +1209,7 @@ struct MultiCockpitRoot: View {
                 HStack {
                     Text("All sessions").font(.system(size: 13, weight: .semibold))
                     Spacer()
-                    Text("\(model.sessions.count) running · \(model.machine.claudeCount) claude processes")
+                    Text("\(model.sessions.count) running · \(model.machine.agentSummary)")
                         .font(.system(size: 11)).foregroundStyle(.tertiary)
                 }.padding(.horizontal, 18).padding(.top, 13).padding(.bottom, 4)
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {

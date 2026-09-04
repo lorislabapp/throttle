@@ -30,7 +30,7 @@ struct CockpitSidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker("", selection: $tab) {
-                ForEach(Tab.allCases) { t in Text(t.label).tag(t) }
+                ForEach(Tab.allCases) { tabOption in Text(tabOption.label).tag(tabOption) }
             }
             .pickerStyle(.segmented)
             .labelsHidden()

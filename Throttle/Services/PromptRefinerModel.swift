@@ -104,7 +104,7 @@ final class PromptRefinerModel {
         let mode: RefinerMode
         let draft: String
         let proposed: String
-        let at: Date
+        let createdAt: Date
     }
 
     var screen: Screen = .home
@@ -130,7 +130,7 @@ final class PromptRefinerModel {
             .split(separator: "\n", omittingEmptySubsequences: true).first
             .map { $0.trimmingCharacters(in: .whitespaces) } ?? "Untitled draft"
         history.insert(HistoryEntry(title: title, mode: mode, draft: draft,
-                                    proposed: refinement.proposed, at: Date()),
+                                    proposed: refinement.proposed, createdAt: Date()),
                        at: 0)
         if history.count > Self.historyLimit { history.removeLast(history.count - Self.historyLimit) }
     }

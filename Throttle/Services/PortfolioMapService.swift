@@ -13,6 +13,15 @@ struct PortfolioNode: Identifiable, Sendable, Hashable {
     let label: String
     let kind: Kind
     let reach: Int          // code/research: # apps that share it; app: # research docs
+    let locations: [String]
+
+    init(id: String, label: String, kind: Kind, reach: Int, locations: [String] = []) {
+        self.id = id
+        self.label = label
+        self.kind = kind
+        self.reach = reach
+        self.locations = locations
+    }
 }
 
 struct PortfolioEdge: Sendable, Hashable { let from: String; let to: String }
@@ -57,6 +66,8 @@ enum PortfolioMapService {
 
         var codeToRepos: [String: Set<String>] = [:]
         var researchToRepos: [String: Set<String>] = [:]
+        var codeLocations: [String: Set<String>] = [:]
+        var researchLocations: [String: Set<String>] = [:]
         var swiftCount: [String: Int] = [:]
         var researchDocs: [String: Int] = [:]
 
@@ -77,10 +88,14 @@ enum PortfolioMapService {
                     let r = NSRange(name.startIndex..., in: name)
                     if componentRE.firstMatch(in: name, range: r) != nil {
                         codeToRepos[name, default: []].insert(repo)
+                        codeLocations[name, default: []].insert(relativePath(url, under: root))
                     }
                 } else if name.hasSuffix(".md"), low.contains("research") || low.contains("/docs/") {
                     researchDocs[repo, default: 0] += 1
-                    for topic in bigrams(name) { researchToRepos[topic, default: []].insert(repo) }
+                    for topic in bigrams(name) {
+                        researchToRepos[topic, default: []].insert(repo)
+                        researchLocations[topic, default: []].insert(relativePath(url, under: root))
+                    }
                 }
             }
         }
@@ -99,16 +114,34 @@ enum PortfolioMapService {
         var appSet: Set<String> = []
         for (comp, rs) in sharedCode.sorted(by: { $0.value.count > $1.value.count }).prefix(topCode) {
             let id = "code:" + comp
-            g.nodes.append(.init(id: id, label: String(comp.dropLast(6)), kind: .code, reach: rs.count))
+            g.nodes.append(.init(
+                id: id,
+                label: String(comp.dropLast(6)),
+                kind: .code,
+                reach: rs.count,
+                locations: (codeLocations[comp] ?? []).sorted()
+            ))
             for r in rs { appSet.insert(r); g.edges.append(.init(from: id, to: "app:" + r)) }
         }
         for (topic, rs) in sharedResearch.sorted(by: { $0.value.count > $1.value.count }).prefix(topResearch) {
             let id = "res:" + topic
-            g.nodes.append(.init(id: id, label: topic, kind: .research, reach: rs.count))
+            g.nodes.append(.init(
+                id: id,
+                label: topic,
+                kind: .research,
+                reach: rs.count,
+                locations: (researchLocations[topic] ?? []).sorted()
+            ))
             for r in rs { appSet.insert(r); g.edges.append(.init(from: id, to: "app:" + r)) }
         }
         for a in appSet.sorted() {
-            g.nodes.append(.init(id: "app:" + a, label: a, kind: .app, reach: researchDocs[a] ?? 0))
+            g.nodes.append(.init(
+                id: "app:" + a,
+                label: a,
+                kind: .app,
+                reach: researchDocs[a] ?? 0,
+                locations: [a]
+            ))
         }
         return g
     }
@@ -125,5 +158,11 @@ enum PortfolioMapService {
         var out: Set<String> = []
         for i in 0..<(toks.count - 1) { out.insert("\(toks[i])-\(toks[i+1])") }
         return out
+    }
+
+    private static func relativePath(_ url: URL, under root: URL) -> String {
+        let prefix = root.standardizedFileURL.path + "/"
+        let path = url.standardizedFileURL.path
+        return path.hasPrefix(prefix) ? String(path.dropFirst(prefix.count)) : url.lastPathComponent
     }
 }

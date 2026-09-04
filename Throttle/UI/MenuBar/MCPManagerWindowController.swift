@@ -38,11 +38,10 @@ final class MCPManagerWindowController: NSObject {
             defer: false
         )
         win.title = "Throttle — MCP Servers"
-        win.isReleasedWhenClosed = false
         win.center()
         win.contentViewController = host
         win.minSize = NSSize(width: 460, height: 440)
-        win.delegate = self
+        RetainedWindowPolicy.configure(win, delegate: self)
         win.setFrameAutosaveName("ThrottleMCPManagerWindow")
 
         self.window = win
@@ -56,10 +55,7 @@ final class MCPManagerWindowController: NSObject {
 }
 
 extension MCPManagerWindowController: NSWindowDelegate {
-    nonisolated func windowWillClose(_ notification: Notification) {
-        Task { @MainActor in
-            self.window = nil
-            NotificationCenter.default.post(name: .mcpConfigChanged, object: nil)
-        }
+    func windowWillClose(_ notification: Notification) {
+        NotificationCenter.default.post(name: .mcpConfigChanged, object: nil)
     }
 }

@@ -7,6 +7,17 @@ import XCTest
 /// collapsed, and even then no diagnostic line may be removed.
 final class TokoptHookTests: XCTestCase {
 
+    // MARK: - MCP measurement safety
+
+    func test_serializedByteCount_acceptsTopLevelStringResponse() {
+        XCTAssertEqual(MCPResponseLedger.serializedByteCount(of: "hello"), 7)
+    }
+
+    func test_serializedByteCount_acceptsContainersAndRejectsUnsupportedValues() {
+        XCTAssertEqual(MCPResponseLedger.serializedByteCount(of: ["ok": true]), 11)
+        XCTAssertEqual(MCPResponseLedger.serializedByteCount(of: URL(string: "https://example.com")!), 0)
+    }
+
     // MARK: - Command detection
 
     func test_isTestCommand_recognizesRunners() {

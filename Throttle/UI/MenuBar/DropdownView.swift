@@ -1,6 +1,7 @@
 import AppKit
 import GRDB
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct DropdownView: View {
     @Environment(AppState.self) private var appState
@@ -10,7 +11,6 @@ struct DropdownView: View {
         case settings(SettingsTab)
         case stats
         case projects
-        case researchVault
     }
 
     enum SettingsTab: String, CaseIterable {
@@ -51,8 +51,6 @@ struct DropdownView: View {
                     StatsInline(onBack: { mode = .meter })
                 case .projects:
                     ProjectWindowRoot(onBack: { mode = .meter })
-                case .researchVault:
-                    ResearchVaultWorkbenchView(onBack: { mode = .meter })
                 }
             }
         }
@@ -75,12 +73,10 @@ struct DropdownView: View {
     /// the SwiftUI content's frame, so we adjust width + height per mode.
     private var dropdownWidth: CGFloat {
         if case .projects = mode { return 860 }
-        if case .researchVault = mode { return 860 }
         return 440
     }
     private var dropdownHeight: CGFloat? {
         if case .projects = mode { return 540 }
-        if case .researchVault = mode { return 540 }
         return nil
     }
 
@@ -790,7 +786,7 @@ struct DropdownView: View {
                     if appState.isPro { CommandRunnerWindowController.shared.show() } else { mode = .settings(.pro) }
                 }
                 DockTile(icon: "magnifyingglass", label: "Search") {
-                    TranscriptSearchWindowController.shared.show()
+                    ResearchVaultWindowController.shared.show(query: "")
                 }
                 DockTile(icon: "gear", label: "Settings") {
                     mode = .settings(.general)
@@ -844,7 +840,9 @@ struct DropdownView: View {
                             NSWorkspace.openInBackground(url)
                         }
                     }
-                    metaLink("Vault") { mode = .researchVault }
+                    metaLink("Vault") {
+                        ResearchVaultWindowController.shared.show(query: "")
+                    }
                     metaLink("About") { mode = .settings(.about) }
                     metaLink("Quit") { NSApp.terminate(nil) }
                         .keyboardShortcut("q")
@@ -1089,6 +1087,8 @@ private struct SettingsButton: View {
             HStack(spacing: 6) {
                 if let systemImage { Image(systemName: systemImage).font(.system(size: 11)) }
                 Text(LocalizedStringKey(title))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
             }
             .font(.system(size: 12.5, weight: primary ? .semibold : .medium))
             .padding(.horizontal, 13).padding(.vertical, 7)
@@ -1463,6 +1463,7 @@ private struct InlineGeneralPane: View {
     @State private var tokoptNote = ""
     @State private var memoryOn = TranscriptMemoryInstaller.isInstalled()
     @State private var memoryNote = ""
+    @State private var globalRAGNote = ""
     @State private var traycerOn = UserDefaults.standard.bool(forKey: "throttleTraycerEnabled")
     @State private var traycerNote = ""
     @State private var webOn = UserDefaults.standard.bool(forKey: "throttleWebEnabled")
@@ -1511,6 +1512,42 @@ private struct InlineGeneralPane: View {
         panel.prompt = "Export Policy"
         if panel.runModal() == .OK, let url = panel.url {
             try? TeamPolicyService.generate().write(to: url, atomically: true, encoding: .utf8)
+        }
+    }
+
+    private func importGlobalRAGProfile() {
+        let panel = NSOpenPanel()
+        panel.title = "Import global portfolio RAG profile"
+        panel.prompt = "Import"
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [UTType.json, UTType(filenameExtension: "yaml"), UTType(filenameExtension: "yml")].compactMap { $0 }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let profile = try GlobalRAGService.importProfile(from: url)
+            globalRAGNote = "Imported profile v\(profile.version): \(profile.projects.count) project rules, \(profile.roots.count) roots. Refresh occurs on next retrieval."
+        } catch {
+            globalRAGNote = "Import refused: \(error.localizedDescription)"
+        }
+    }
+
+    private func exportGlobalRAGProfile(_ format: GlobalRAGService.ProfileFormat) {
+        let panel = NSSavePanel()
+        let ext: String
+        switch format {
+        case .json: ext = "json"
+        case .yaml: ext = "yaml"
+        }
+        panel.title = "Export global portfolio RAG profile"
+        panel.nameFieldStringValue = "global-rag-profile.\(ext)"
+        panel.prompt = "Export"
+        panel.allowedContentTypes = [UTType(filenameExtension: ext) ?? .data]
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try GlobalRAGService.exportProfile(to: url, format: format)
+            globalRAGNote = "Exported a portable \(ext.uppercased()) profile. It contains configuration only, never indexed source text or credentials."
+        } catch {
+            globalRAGNote = "Export failed: \(error.localizedDescription)"
         }
     }
 
@@ -1703,7 +1740,7 @@ private struct InlineGeneralPane: View {
             SettingsHair()
             SettingsRow(title: "Throttle as an MCP source",
                         sub: memoryNote.isEmpty
-                            ? "Installs the same local Context Firewall in Claude Code and Codex: focused reads, semantic search, exact-content recovery, compact web evidence, session recall and budget signals. Local, backed up and reversible; restart both agents after."
+                            ? "Installs the same local Context Firewall and global portfolio RAG in Claude Code and Codex: projects, reusable capabilities, tools, workflows, handoffs, focused reads and session recall. Local, backed up and reversible; restart both agents after."
                             : memoryNote) {
                 HStack(spacing: 6) {
                     if !appState.isPro {
@@ -1732,9 +1769,24 @@ private struct InlineGeneralPane: View {
                                     memoryNote = on
                                         ? "Installed for Claude Code + Codex — restart both agents to load the shared tools."
                                         : "Removed from Claude Code + Codex — restart both agents."
+                                    if on && !UserDefaults.standard.bool(forKey: GlobalRAGOnboardingService.completedKey) {
+                                        showGlobalRAGOnboarding()
+                                    }
                                 }
                             }
                         }
+                }
+            }
+            SettingsHair()
+            SettingsRow(title: "Global portfolio RAG profile",
+                        sub: globalRAGNote.isEmpty
+                            ? "Optional, portable post-install configuration. Import or export versioned JSON/YAML roots, aliases, capabilities, tools, workflows and handoffs. No project or personal data is built into Throttle; secret-looking fields are refused."
+                            : globalRAGNote) {
+                HStack(spacing: 6) {
+                    SettingsButton(title: "Setup…") { showGlobalRAGOnboarding() }
+                    SettingsButton(title: "Import…") { importGlobalRAGProfile() }
+                    SettingsButton(title: "JSON") { exportGlobalRAGProfile(.json) }
+                    SettingsButton(title: "YAML") { exportGlobalRAGProfile(.yaml) }
                 }
             }
             SettingsHair()
@@ -1885,6 +1937,13 @@ private struct InlineGeneralPane: View {
         .sheet(isPresented: $showingLedger) { autopilotLedgerSheet }
         .onReceive(NotificationCenter.default.publisher(for: .outputStyleChanged)) { _ in
             activeStyle = OutputStyleManager.activeName()
+        }
+    }
+
+    private func showGlobalRAGOnboarding() {
+        GlobalRAGOnboardingWindowController.shared.show(canInstallMCP: appState.isPro) { note in
+            globalRAGNote = note
+            memoryOn = TranscriptMemoryInstaller.isInstalled()
         }
     }
 

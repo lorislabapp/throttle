@@ -1,3 +1,4 @@
+@testable import Throttle
 @testable import ThrottleShared
 import XCTest
 
@@ -13,6 +14,30 @@ final class MouseReportFilterWheelTests: XCTestCase {
     func testWheelReportsPass() {
         XCTAssertEqual(run("\u{1B}[<64;10;5M"), "\u{1B}[<64;10;5M")
         XCTAssertEqual(run("\u{1B}[<65;10;5M"), "\u{1B}[<65;10;5M")
+    }
+
+    func testSharedWheelEncoderProducesBoundedSGRReports() {
+        let bytes = TerminalWheelReport.sgr(scrollingUp: false, count: 2, column: 7, row: 9)
+        XCTAssertEqual(String(bytes: bytes, encoding: .utf8),
+                       "\u{1B}[<65;7;9M\u{1B}[<65;7;9M")
+    }
+
+    func testTrackpadFallbackProducesNormalCursorKeys() {
+        XCTAssertEqual(
+            TerminalWheelReport.cursor(scrollingUp: true, count: 2, applicationMode: false),
+            Array("\u{1B}[A\u{1B}[A".utf8))
+        XCTAssertEqual(
+            TerminalWheelReport.cursor(scrollingUp: false, count: 2, applicationMode: false),
+            Array("\u{1B}[B\u{1B}[B".utf8))
+    }
+
+    func testTrackpadFallbackRespectsApplicationCursorMode() {
+        XCTAssertEqual(
+            TerminalWheelReport.cursor(scrollingUp: true, count: 2, applicationMode: true),
+            Array("\u{1B}OA\u{1B}OA".utf8))
+        XCTAssertEqual(
+            TerminalWheelReport.cursor(scrollingUp: false, count: 2, applicationMode: true),
+            Array("\u{1B}OB\u{1B}OB".utf8))
     }
 
     func testWheelWithModifiersPasses() {

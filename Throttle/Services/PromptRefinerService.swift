@@ -127,44 +127,8 @@ enum PromptRefinerService {
     private static let whyMark = "===THROTTLE-WHY==="
 
     static func systemPrompt(mode: RefinerMode, runtime: AgentRuntime, nudge: RefinerNudge?) -> String {
-        let agent: String
-        let idiom: String
-        switch runtime {
-        case .claudeCode:
-            agent = "Claude Code"
-            idiom = """
-            - Claude Code reads the repository itself. Point at files and symbols; never paste file contents it can open.
-            - Slash commands and `@file` references are idiomatic. Prefer `@path/to/file.swift` over "the file called…".
-            """
-        case .codex:
-            agent = "Codex"
-            idiom = """
-            - Codex works best from an explicit, ordered task list with the acceptance check stated up front.
-            - Spell out the commands to run; do not assume it will infer the toolchain.
-            """
-        case .local, .terminal:
-            agent = "a local shell"
-            idiom = "- There is no coding agent on this tab. Keep the instruction plain and self-contained."
-        }
-
-        let job: String
-        switch mode {
-        case .session:
-            job = """
-            You are rewriting ONE next instruction for a coding agent that is already running in the user's repository, mid-session.
-            It already has context. Do not re-explain the project.
-            """
-        case .mission:
-            job = """
-            You are rewriting the OBJECTIVE of a long autonomous mission that will be handed to a fresh agent with no conversation history.
-            State the goal, the constraints, and the evidence that proves it is done.
-            """
-        case .loop:
-            job = """
-            You are rewriting the objective of a REPEATING loop that will run unattended, over and over.
-            It MUST contain an explicit termination condition — what makes the loop stop — and it must be safe to run when nothing has changed.
-            """
-        }
+        let (agent, idiom) = runtimeInstructions(runtime)
+        let job = jobInstructions(mode)
 
         return """
         \(job)
@@ -190,19 +154,66 @@ enum PromptRefinerService {
         """
     }
 
+    private static func runtimeInstructions(_ runtime: AgentRuntime) -> (String, String) {
+        switch runtime {
+        case .claudeCode:
+            return ("Claude Code", [
+                "- Claude Code reads the repository itself. Point at files and symbols;",
+                "  never paste file contents it can open.",
+                "- Slash commands and `@file` references are idiomatic.",
+                "  Prefer `@path/to/file.swift` over \"the file called…\"."
+            ].joined(separator: "\n"))
+        case .codex:
+            return ("Codex", """
+            - Codex works best from an explicit, ordered task list with the acceptance check stated up front.
+            - Spell out the commands to run; do not assume it will infer the toolchain.
+            """)
+        case .local, .terminal:
+            return (
+                "a local shell",
+                "- There is no coding agent on this tab. Keep the instruction plain and self-contained."
+            )
+        }
+    }
+
+    private static func jobInstructions(_ mode: RefinerMode) -> String {
+        switch mode {
+        case .session:
+            return """
+            You are rewriting ONE next instruction for a coding agent already running
+            in the user's repository, mid-session.
+            It already has context. Do not re-explain the project.
+            """
+        case .mission:
+            return """
+            You are rewriting the OBJECTIVE of a long autonomous mission handed to
+            a fresh agent with no conversation history.
+            State the goal, the constraints, and the evidence that proves it is done.
+            """
+        case .loop:
+            return """
+            You are rewriting the objective of a REPEATING loop that will run unattended, over and over.
+            It MUST contain an explicit termination condition — what makes the loop
+            stop — and it must be safe to run when nothing has changed.
+            """
+        }
+    }
+
     static func parse(_ text: String, fallback: String) -> Refinement {
         var proposed = fallback
-        if let s = text.range(of: promptStart), let e = text.range(of: promptEnd),
-           s.upperBound < e.lowerBound {
-            proposed = stripOuterFence(String(text[s.upperBound..<e.lowerBound])
+        if let start = text.range(of: promptStart), let end = text.range(of: promptEnd),
+           start.upperBound < end.lowerBound {
+            proposed = stripOuterFence(String(text[start.upperBound..<end.lowerBound])
                 .trimmingCharacters(in: .newlines))
         }
         var why: [String] = []
-        if let w = text.range(of: whyMark) {
-            why = text[w.upperBound...].split(separator: "\n").compactMap { line in
-                let t = line.trimmingCharacters(in: .whitespaces)
-                guard t.hasPrefix("-") || t.hasPrefix("•") || t.hasPrefix("*") else { return nil }
-                let body = String(t.drop(while: { "-•* ".contains($0) }))
+        if let whyRange = text.range(of: whyMark) {
+            why = text[whyRange.upperBound...].split(separator: "\n").compactMap { line in
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard trimmed.hasPrefix("-") || trimmed.hasPrefix("•") || trimmed.hasPrefix("*") else {
+                    return nil
+                }
+                let body = String(trimmed.drop(while: { "-•* ".contains($0) }))
                 return body.isEmpty ? nil : body
             }
         }
@@ -214,10 +225,10 @@ enum PromptRefinerService {
     /// Some models fence the whole answer despite the instruction. Strip only a
     /// leading fence line plus its matching trailing one — fences that belong to
     /// the prompt itself sit in the interior and survive.
-    private static func stripOuterFence(_ s: String) -> String {
-        var lines = s.components(separatedBy: "\n")
+    private static func stripOuterFence(_ text: String) -> String {
+        var lines = text.components(separatedBy: "\n")
         guard let first = lines.first,
-              first.trimmingCharacters(in: .whitespaces).hasPrefix("```") else { return s }
+              first.trimmingCharacters(in: .whitespaces).hasPrefix("```") else { return text }
         lines.removeFirst()
         if let last = lines.last, last.trimmingCharacters(in: .whitespaces).hasPrefix("```") {
             lines.removeLast()
@@ -234,10 +245,22 @@ enum PromptRefinerService {
     /// which is the only way to prove the fallback actually falls back.
     typealias ProviderResolver = @Sendable (Set<AIProviderKind>) async -> (any AIProvider)?
 
+    static func excludedProviderKinds(
+        tried: Set<AIProviderKind>,
+        forceLocal: Bool
+    ) -> Set<AIProviderKind> {
+        guard forceLocal else { return tried }
+        return tried.union([.claudeWebSession, .claudeAPIKey])
+    }
+
     static let registryResolver: ProviderResolver = { tried in
-        tried.isEmpty
+        // Local-only is a privacy boundary, not a routing hint. A missing
+        // local model must fail closed instead of spending network tokens.
+        let forceLocal = RefinerSettings.forceLocal
+        let excluded = excludedProviderKinds(tried: tried, forceLocal: forceLocal)
+        return (tried.isEmpty && !forceLocal)
             ? await AIProviderRegistry.shared.resolveActive()
-            : await AIProviderRegistry.shared.firstAvailable(excluding: tried)
+            : await AIProviderRegistry.shared.firstAvailable(excluding: excluded)
     }
 
     static func refine(
@@ -279,9 +302,10 @@ enum PromptRefinerService {
                 guard !full.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                     throw RefinerError.empty
                 }
-                var r = parse(full, fallback: draft)
-                r.provider = provider.displayName
-                return r
+                var refinement = parse(full, fallback: draft)
+                try validate(refinement.proposed)
+                refinement.provider = provider.displayName
+                return refinement
             } catch {
                 lastError = error
                 continue

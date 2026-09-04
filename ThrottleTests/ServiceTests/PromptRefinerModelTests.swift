@@ -7,69 +7,69 @@ import XCTest
 final class PromptRefinerModelTests: XCTestCase {
 
     private func freshModel() -> PromptRefinerModel {
-        let m = PromptRefinerModel()
-        m.reset()
-        return m
+        let model = PromptRefinerModel()
+        model.reset()
+        return model
     }
 
     func test_beginCompose_movesHomeToComposeAndKeepsTheDraft() {
-        let m = freshModel()
-        m.draft = "fix scroll"
-        m.beginCompose()
-        XCTAssertEqual(m.screen, .compose)
-        XCTAssertEqual(m.draft, "fix scroll")
+        let model = freshModel()
+        model.draft = "fix scroll"
+        model.beginCompose()
+        XCTAssertEqual(model.screen, .compose)
+        XCTAssertEqual(model.draft, "fix scroll")
     }
 
     func test_accept_movesToResultAndRecordsHistory() {
-        let m = freshModel()
-        m.draft = "fix scroll"
-        m.screen = .loading
-        m.accept(PromptRefinerService.Refinement(
+        let model = freshModel()
+        model.draft = "fix scroll"
+        model.screen = .loading
+        model.accept(PromptRefinerService.Refinement(
             proposed: "Fix the trackpad scroll in DroppableTerminalView.",
             why: ["named the file"], changed: true, provider: "Apple Intelligence"))
-        XCTAssertEqual(m.screen, .result)
-        XCTAssertEqual(m.history.count, 1)
-        XCTAssertEqual(m.history[0].draft, "fix scroll")
-        XCTAssertEqual(m.history[0].proposed, "Fix the trackpad scroll in DroppableTerminalView.")
+        XCTAssertEqual(model.screen, .result)
+        XCTAssertEqual(model.history.count, 1)
+        XCTAssertEqual(model.history[0].draft, "fix scroll")
+        XCTAssertEqual(model.history[0].proposed, "Fix the trackpad scroll in DroppableTerminalView.")
     }
 
     func test_appliedScreenKeepsTheResultVisibleInsteadOfDroppingHome() {
-        let m = freshModel()
-        m.draft = "fix scroll"
-        m.accept(PromptRefinerService.Refinement(
+        let model = freshModel()
+        model.draft = "fix scroll"
+        model.accept(PromptRefinerService.Refinement(
             proposed: "Fix the scroll.", why: [], changed: true, provider: "p"))
-        m.screen = .applied
+        model.screen = .applied
         // The proposal survives, so the confirmation sits under the text the
         // user just applied rather than replacing it with the home list.
-        XCTAssertEqual(m.proposal?.proposed, "Fix the scroll.")
-        XCTAssertEqual(m.screen, .applied)
+        XCTAssertEqual(model.proposal?.proposed, "Fix the scroll.")
+        XCTAssertEqual(model.screen, .applied)
     }
 
     func test_fail_keepsTheDraftSoNothingTypedIsLost() {
-        let m = freshModel()
-        m.draft = "fix scroll"
-        m.screen = .loading
-        m.fail("No AI provider available.")
-        XCTAssertEqual(m.screen, .error("No AI provider available."))
-        XCTAssertEqual(m.draft, "fix scroll")
+        let model = freshModel()
+        model.draft = "fix scroll"
+        model.screen = .loading
+        model.fail("No AI provider available.")
+        XCTAssertEqual(model.screen, .error("No AI provider available."))
+        XCTAssertEqual(model.draft, "fix scroll")
     }
 
     func test_history_isCappedAndNewestFirst() {
-        let m = freshModel()
-        for i in 0..<(PromptRefinerModel.historyLimit + 5) {
-            m.draft = "draft \(i)"
-            m.accept(PromptRefinerService.Refinement(
-                proposed: "proposed \(i)", why: [], changed: true, provider: "p"))
+        let model = freshModel()
+        for index in 0..<(PromptRefinerModel.historyLimit + 5) {
+            model.draft = "draft \(index)"
+            model.accept(PromptRefinerService.Refinement(
+                proposed: "proposed \(index)", why: [], changed: true, provider: "p"))
         }
-        XCTAssertEqual(m.history.count, PromptRefinerModel.historyLimit)
-        XCTAssertEqual(m.history.first?.draft, "draft \(PromptRefinerModel.historyLimit + 4)")
+        XCTAssertEqual(model.history.count, PromptRefinerModel.historyLimit)
+        XCTAssertEqual(model.history.first?.draft, "draft \(PromptRefinerModel.historyLimit + 4)")
     }
 
     func test_historyTitle_isTheFirstLineTrimmed() {
-        let m = freshModel()
-        m.draft = "make the scroll work\nand add a test"
-        m.accept(PromptRefinerService.Refinement(proposed: "x", why: [], changed: true, provider: "p"))
-        XCTAssertEqual(m.history[0].title, "make the scroll work")
+        let model = freshModel()
+        model.draft = "make the scroll work\nand add a test"
+        model.accept(PromptRefinerService.Refinement(proposed: "x", why: [], changed: true, provider: "p"))
+        XCTAssertEqual(model.history[0].title, "make the scroll work")
     }
 
     // MARK: - Rationale visibility setting
@@ -91,5 +91,24 @@ final class PromptRefinerModelTests: XCTestCase {
         XCTAssertFalse(RefinerRationale.collapsed.isVisible(for: .mission))
         XCTAssertTrue(RefinerRationale.collapsed.isExpandable)
         XCTAssertFalse(RefinerRationale.never.isExpandable)
+    }
+
+    func test_refinerSettings_defaultToInsertLocalAndMissionOnly() throws {
+        // This app-hosted test must never mutate the user's live defaults.
+        let suiteName = "throttle.refiner.tests.\(UUID().uuidString)"
+        let suite = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        RefinerSettings.defaults = suite
+        defer {
+            RefinerSettings.defaults = .standard
+            suite.removePersistentDomain(forName: suiteName)
+        }
+
+        XCTAssertEqual(RefinerSettings.output, .insert)
+        XCTAssertTrue(RefinerSettings.forceLocal)
+        XCTAssertEqual(RefinerSettings.rationale, .missionOnly)
+
+        RefinerSettings.output = .send
+        XCTAssertEqual(RefinerSettings.output, .send)
+        XCTAssertNil(UserDefaults.standard.string(forKey: RefinerSettings.outputKey))
     }
 }

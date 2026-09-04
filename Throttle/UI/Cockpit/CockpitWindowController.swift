@@ -45,11 +45,10 @@ final class CockpitWindowController: NSObject {
             defer: false
         )
         win.title = "Throttle — Cockpit"
-        win.isReleasedWhenClosed = false
         win.center()
         win.contentViewController = host
         win.minSize = NSSize(width: 640, height: 400)
-        win.delegate = self
+        RetainedWindowPolicy.configure(win, delegate: self)
         win.setFrameAutosaveName("ThrottleCockpitWindow")
 
         self.window = win
@@ -63,9 +62,9 @@ final class CockpitWindowController: NSObject {
     }
 }
 
-/// Dedicated evidence window used by the Portfolio inspector. Keeping this out
-/// of the menu-bar navigation means a graph node can open a Vault query without
-/// dismissing or rebuilding the cockpit and its live terminals.
+/// Dedicated evidence window shared by the menu bar and Portfolio inspector.
+/// The workbench needs a real resizable window: its source and import controls
+/// are intentionally richer than a menu-bar popover can present accessibly.
 @MainActor
 final class ResearchVaultWindowController: NSObject, NSWindowDelegate {
     static let shared = ResearchVaultWindowController()
@@ -84,15 +83,15 @@ final class ResearchVaultWindowController: NSObject, NSWindowDelegate {
             window.makeKeyAndOrderFront(nil)
         } else {
             let created = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 860, height: 540),
+                contentRect: NSRect(x: 0, y: 0, width: 820, height: 520),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable],
                 backing: .buffered,
                 defer: false
             )
             created.title = "Throttle — Research Vault"
-            created.minSize = NSSize(width: 720, height: 460)
+            created.minSize = NSSize(width: 760, height: 480)
             created.contentViewController = host
-            created.delegate = self
+            RetainedWindowPolicy.configure(created, delegate: self)
             created.center()
             created.makeKeyAndOrderFront(nil)
             window = created
@@ -100,15 +99,13 @@ final class ResearchVaultWindowController: NSObject, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    nonisolated func windowWillClose(_ notification: Notification) {
-        Task { @MainActor in self.window = nil }
+    func windowWillClose(_ notification: Notification) {
+        // Retained by the singleton and reused on the next search.
     }
 }
 
 extension CockpitWindowController: NSWindowDelegate {
-    nonisolated func windowWillClose(_ notification: Notification) {
-        Task { @MainActor in
-            self.window = nil
-        }
+    func windowWillClose(_ notification: Notification) {
+        // Retained by the singleton and reused on the next open.
     }
 }
