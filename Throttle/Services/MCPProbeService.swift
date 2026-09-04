@@ -156,6 +156,9 @@ enum MCPProbeService {
             MCPProbeResult(server: name, remote: true, status: s, toolCount: nil, schemaBytes: nil, nameBytes: nil)
         }
 
+        guard WebURLPolicy.permitsUserConfiguredService(url, resolveDNS: false) else {
+            return fail(.unsupportedTransport)
+        }
         guard let handshake = await rpc(url: url, headers: headers, session: nil,
                                         body: initializeReq, expectID: nil, timeout: timeout)
         else { return fail(.unresponsive) }
@@ -201,7 +204,7 @@ enum MCPProbeService {
         if let session { req.setValue(session, forHTTPHeaderField: "Mcp-Session-Id") }
         req.httpBody = Data(body.utf8)
 
-        guard let (stream, resp) = try? await URLSession.shared.bytes(for: req),
+        guard let (stream, resp) = try? await UserConfiguredServiceSession.shared.bytes(for: req),
               let http = resp as? HTTPURLResponse else { return nil }
         let sid = http.value(forHTTPHeaderField: "Mcp-Session-Id")
         guard let expectID, (200..<300).contains(http.statusCode) else {

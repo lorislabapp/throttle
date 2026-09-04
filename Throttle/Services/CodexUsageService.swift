@@ -71,10 +71,16 @@ enum CodexUsageService {
 
         var lines = text.split(separator: "\n", omittingEmptySubsequences: true)
         if start > 0, !lines.isEmpty { lines.removeFirst() }
+        var newestSnapshot: CodexUsageSnapshot?
+        var newestModel: String?
         for line in lines.reversed() {
-            if let snapshot = decodeLine(Data(line.utf8)) { return snapshot }
+            let bytes = Data(line.utf8)
+            if newestSnapshot == nil { newestSnapshot = decodeLine(bytes) }
+            if newestModel == nil { newestModel = decodeModelLine(bytes) }
+            if newestSnapshot != nil, newestModel != nil { break }
         }
-        return nil
+        newestSnapshot?.modelName = newestModel
+        return newestSnapshot
     }
 
     nonisolated static func decodeLine(_ data: Data) -> CodexUsageSnapshot? {
@@ -102,6 +108,17 @@ enum CodexUsageService {
             planType: string(rateLimits?["plan_type"]),
             observedAt: observedAt
         )
+    }
+
+    /// The model is emitted independently from token-count events. Parse only
+    /// the documented rollout envelope we have actually observed and fail
+    /// closed for every other shape.
+    nonisolated static func decodeModelLine(_ data: Data) -> String? {
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              object["type"] as? String == "turn_context",
+              let payload = object["payload"] as? [String: Any]
+        else { return nil }
+        return string(payload["model"])
     }
 
     nonisolated private static func decodeTokens(_ value: [String: Any]) -> CodexUsageSnapshot.Tokens? {

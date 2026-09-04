@@ -45,11 +45,10 @@ final class CockpitWindowController: NSObject {
             defer: false
         )
         win.title = "Throttle — Cockpit"
-        win.isReleasedWhenClosed = false
         win.center()
         win.contentViewController = host
         win.minSize = NSSize(width: 640, height: 400)
-        win.delegate = self
+        RetainedWindowPolicy.configure(win, delegate: self)
         win.setFrameAutosaveName("ThrottleCockpitWindow")
 
         self.window = win
@@ -63,10 +62,50 @@ final class CockpitWindowController: NSObject {
     }
 }
 
-extension CockpitWindowController: NSWindowDelegate {
-    nonisolated func windowWillClose(_ notification: Notification) {
-        Task { @MainActor in
-            self.window = nil
+/// Dedicated evidence window shared by the menu bar and Portfolio inspector.
+/// The workbench needs a real resizable window: its source and import controls
+/// are intentionally richer than a menu-bar popover can present accessibly.
+@MainActor
+final class ResearchVaultWindowController: NSObject, NSWindowDelegate {
+    static let shared = ResearchVaultWindowController()
+    private var window: NSWindow?
+
+    override private init() {}
+
+    func show(query: String) {
+        let host = NSHostingController(
+            rootView: ResearchVaultWorkbenchView(initialQuery: query, onBack: { [weak self] in
+                self?.window?.performClose(nil)
+            })
+        )
+        if let window {
+            window.contentViewController = host
+            window.makeKeyAndOrderFront(nil)
+        } else {
+            let created = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 820, height: 520),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                backing: .buffered,
+                defer: false
+            )
+            created.title = "Throttle — Research Vault"
+            created.minSize = NSSize(width: 760, height: 480)
+            created.contentViewController = host
+            RetainedWindowPolicy.configure(created, delegate: self)
+            created.center()
+            created.makeKeyAndOrderFront(nil)
+            window = created
         }
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        // Retained by the singleton and reused on the next search.
+    }
+}
+
+extension CockpitWindowController: NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        // Retained by the singleton and reused on the next open.
     }
 }

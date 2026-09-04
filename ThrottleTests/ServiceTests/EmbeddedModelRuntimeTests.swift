@@ -16,6 +16,22 @@ final class EmbeddedModelRuntimeTests: XCTestCase {
         }
 
         try await EmbeddedModelRuntime.shared.install { _ in }
+        // This acceptance is specifically for the in-process MLX runtime. A
+        // user's configured Ollama endpoint must not make the test pass while
+        // silently exercising the server route instead. Preserve the live
+        // preference exactly and restore it even if inference throws.
+        let defaults = UserDefaults.standard
+        let previousEndpoint = defaults.object(forKey: LocalWorkerRouter.endpointKey)
+        defaults.removeObject(forKey: LocalWorkerRouter.endpointKey)
+        defer {
+            if let previousEndpoint {
+                defaults.set(previousEndpoint, forKey: LocalWorkerRouter.endpointKey)
+            } else {
+                defaults.removeObject(forKey: LocalWorkerRouter.endpointKey)
+            }
+        }
+        XCTAssertNil(LocalWorkerRouter.configuredEndpoint)
+
         let context = ProjectChatContext(
             projectName: "Embedded model acceptance",
             projectPath: nil,

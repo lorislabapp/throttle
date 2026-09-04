@@ -28,7 +28,12 @@ xcodebuild build -project Throttle.xcodeproj -scheme Throttle \
   -skipMacroValidation CODE_SIGNING_ALLOWED=NO
 ```
 
-Test command (**needs user approval first** — launches an app host):
+The build action does NOT compile `ThrottleTests`. Any step that expects a test
+to fail must use the scoped test command below with that task's test class, or
+it will observe a green build and prove nothing.
+
+Test command (the user authorised running this for this session — it launches an
+app host):
 
 ```bash
 xcodebuild test -project Throttle.xcodeproj -scheme Throttle \
@@ -133,7 +138,9 @@ final class PromptRefinerServiceTests: XCTestCase {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run the build command from Global Constraints.
+Run the **scoped test command** for this task's test class — NOT the build
+command. The `Throttle` scheme's build action does not compile `ThrottleTests`,
+so a red step verified with a build shows nothing at all (found in Task 1).
 Expected: FAIL — "cannot find 'PromptRefinerService' in scope".
 
 - [ ] **Step 3: Write the implementation**
@@ -267,7 +274,7 @@ enum PromptRefinerService {
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run `xcodegen generate`, then the build command. Then request approval for the test command and run it.
-Expected: 6 tests PASS.
+Expected: 7 tests PASS.
 
 - [ ] **Step 5: Commit**
 
@@ -465,7 +472,9 @@ Append to `ThrottleTests/ServiceTests/PromptRefinerServiceTests.swift`, inside t
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run the build command.
+Run the **scoped test command** for this task's test class — NOT the build
+command. The `Throttle` scheme's build action does not compile `ThrottleTests`,
+so a red step verified with a build shows nothing at all (found in Task 1).
 Expected: FAIL — "type 'PromptRefinerService' has no member 'parse'".
 
 - [ ] **Step 3: Write the implementation**
@@ -773,7 +782,9 @@ final class PromptRefinerModelTests: XCTestCase {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run the build command.
+Run the **scoped test command** for this task's test class — NOT the build
+command. The `Throttle` scheme's build action does not compile `ThrottleTests`,
+so a red step verified with a build shows nothing at all (found in Task 1).
 Expected: FAIL — "cannot find 'PromptRefinerModel' in scope".
 
 - [ ] **Step 3: Write the implementation**
@@ -831,25 +842,31 @@ enum RefinerRationale: String, CaseIterable, Identifiable, Sendable {
 /// Persisted refiner preferences. Model choice and quality deliberately reuse
 /// `AIProviderRegistry` rather than duplicating a second set of controls.
 enum RefinerSettings {
-    private static let outputKey = "throttleRefinerOutput"
-    private static let forceLocalKey = "throttleRefinerForceLocal"
-    private static let rationaleKey = "throttleRefinerRationale"
+    static let outputKey = "throttleRefinerOutput"
+    static let forceLocalKey = "throttleRefinerForceLocal"
+    static let rationaleKey = "throttleRefinerRationale"
+
+    /// Injectable ON PURPOSE. The macOS test bundle is app-hosted
+    /// (`TEST_HOST` is Throttle.app), so `.standard` inside a test is the user's
+    /// LIVE preference domain — a test that clears these keys would silently
+    /// reset the settings of whoever ran it. Tests point this at their own suite.
+    nonisolated(unsafe) static var defaults: UserDefaults = .standard
 
     static var output: RefinerOutput {
-        get { RefinerOutput(rawValue: UserDefaults.standard.string(forKey: outputKey) ?? "") ?? .insert }
-        set { UserDefaults.standard.set(newValue.rawValue, forKey: outputKey) }
+        get { RefinerOutput(rawValue: defaults.string(forKey: outputKey) ?? "") ?? .insert }
+        set { defaults.set(newValue.rawValue, forKey: outputKey) }
     }
 
     /// Defaults ON: paying frontier tokens to save frontier tokens is the trap
     /// this product refuses elsewhere.
     static var forceLocal: Bool {
-        get { UserDefaults.standard.object(forKey: forceLocalKey) as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: forceLocalKey) }
+        get { defaults.object(forKey: forceLocalKey) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: forceLocalKey) }
     }
 
     static var rationale: RefinerRationale {
-        get { RefinerRationale(rawValue: UserDefaults.standard.string(forKey: rationaleKey) ?? "") ?? .missionOnly }
-        set { UserDefaults.standard.set(newValue.rawValue, forKey: rationaleKey) }
+        get { RefinerRationale(rawValue: defaults.string(forKey: rationaleKey) ?? "") ?? .missionOnly }
+        set { defaults.set(newValue.rawValue, forKey: rationaleKey) }
     }
 }
 
@@ -951,9 +968,14 @@ git commit -m "[throttle] feat: the draft outlives the pane that renders it"
 ### Task 4: Insertion path — bracketed paste that never presses Enter
 
 **Files:**
-- Modify: `Throttle/UI/Cockpit/DroppableTerminalView.swift` (add a method near the existing `sendProgrammatic(txt:)` at line 198)
+- Create: `Throttle/UI/Cockpit/DroppableTerminalView+ComposedText.swift`
 - Modify: `Throttle/UI/Cockpit/MultiCockpitModel.swift` (add to `MultiCockpitModel`, near `active`)
 - Test: `ThrottleTests/ServiceTests/PromptRefinerServiceTests.swift`
+
+**Do NOT edit `DroppableTerminalView.swift`.** It carries the user's uncommitted
+work (13 insertions, 9 deletions at the time of writing), and staging it would
+sweep their in-progress changes into this task's commit. The new method goes in
+its own extension file instead.
 
 **Interfaces:**
 - Consumes: `PromptRefinerService.insertionPayload(_:)`, `.validate(_:)` (Task 1); `DroppableTerminalView.paste(_:trailingSpace:)` (private, same file, line 821).
@@ -985,20 +1007,38 @@ implement the callers.
 
 - [ ] **Step 3: Write the implementation**
 
-In `Throttle/UI/Cockpit/DroppableTerminalView.swift`, add directly after
-`sendProgrammatic(txt:)` (which ends at line 202):
+Create `Throttle/UI/Cockpit/DroppableTerminalView+ComposedText.swift`:
 
 ```swift
+import SwiftTerm
+
+/// Deliberately a separate file: `DroppableTerminalView.swift` carries the
+/// user's uncommitted work, and editing it here would force this task's commit
+/// to either sweep in their changes or leave the file half-staged.
+extension DroppableTerminalView {
+
     /// Paste a Throttle-composed prompt into the foreground program. Bracketed
     /// paste when the TUI supports it, so a multi-line prompt arrives as ONE
     /// paste instead of N Enter presses. No newline is ever appended — the user
     /// presses Return.
+    ///
+    /// This repeats three lines of the private `paste(_:trailingSpace:)` in the
+    /// main file rather than calling it, because that method is private and this
+    /// extension lives outside its file. Fold the two together once the user's
+    /// in-flight edits to that file have landed.
     func insertComposedText(_ text: String) {
-        programmaticDepth += 1
-        defer { programmaticDepth -= 1 }
-        paste(text)
+        if getTerminal().bracketedPasteMode {
+            sendProgrammatic(txt: "\u{1b}[200~" + text + "\u{1b}[201~")
+        } else {
+            sendProgrammatic(txt: text)
+        }
     }
+}
 ```
+
+`sendProgrammatic(txt:)` is internal (not private), so it is reachable from this
+extension, and it already handles the `programmaticDepth` bookkeeping that keeps
+the injected text from being dropped by the `inputSuspended` guard.
 
 In `Throttle/UI/Cockpit/MultiCockpitModel.swift`, add to `MultiCockpitModel`:
 
@@ -1024,9 +1064,12 @@ Expected: build succeeds, all `PromptRefinerServiceTests` PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Throttle/UI/Cockpit/DroppableTerminalView.swift Throttle/UI/Cockpit/MultiCockpitModel.swift ThrottleTests/ServiceTests/PromptRefinerServiceTests.swift
+git add Throttle/UI/Cockpit/DroppableTerminalView+ComposedText.swift Throttle/UI/Cockpit/MultiCockpitModel.swift ThrottleTests/ServiceTests/PromptRefinerServiceTests.swift
 git commit -m "[throttle] feat: a refined prompt arrives as one paste, never as N returns"
 ```
+
+Note the absence of `DroppableTerminalView.swift` from that list. If you find
+yourself wanting to add it, stop — the user's work is in there.
 
 ---
 
@@ -1789,14 +1832,26 @@ preference — which is the point of the seam.
 Append to `PromptRefinerModelTests`:
 
 ```swift
-    func test_refinerSettings_defaultToInsertLocalAndMissionOnly() {
-        let defaults = UserDefaults.standard
-        defaults.removeObject(forKey: "throttleRefinerOutput")
-        defaults.removeObject(forKey: "throttleRefinerForceLocal")
-        defaults.removeObject(forKey: "throttleRefinerRationale")
+    func test_refinerSettings_defaultToInsertLocalAndMissionOnly() throws {
+        // NEVER UserDefaults.standard here: this bundle is hosted by the real
+        // Throttle.app, so clearing these keys in `.standard` would wipe the
+        // preferences of whoever ran the suite.
+        let suiteName = "throttle.refiner.tests.\(UUID().uuidString)"
+        let suite = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        RefinerSettings.defaults = suite
+        defer {
+            RefinerSettings.defaults = .standard
+            suite.removePersistentDomain(forName: suiteName)
+        }
+
         XCTAssertEqual(RefinerSettings.output, .insert)
         XCTAssertTrue(RefinerSettings.forceLocal)
         XCTAssertEqual(RefinerSettings.rationale, .missionOnly)
+
+        RefinerSettings.output = .send
+        XCTAssertEqual(RefinerSettings.output, .send)
+        XCTAssertNil(UserDefaults.standard.string(forKey: RefinerSettings.outputKey),
+                     "the write must not have leaked into the user's live domain")
     }
 ```
 
@@ -2018,7 +2073,9 @@ final class PromptLibraryStoreTests: XCTestCase {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run the build command.
+Run the **scoped test command** for this task's test class — NOT the build
+command. The `Throttle` scheme's build action does not compile `ThrottleTests`,
+so a red step verified with a build shows nothing at all (found in Task 1).
 Expected: FAIL — "cannot find 'PromptLibraryStore' in scope".
 
 - [ ] **Step 3: Write the implementation**
@@ -2255,7 +2312,9 @@ Append to `PromptLibraryStoreTests`:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run the build command.
+Run the **scoped test command** for this task's test class — NOT the build
+command. The `Throttle` scheme's build action does not compile `ThrottleTests`,
+so a red step verified with a build shows nothing at all (found in Task 1).
 Expected: FAIL — "value of type 'PromptLibraryStore' has no member 'rebuildIndex'".
 
 - [ ] **Step 3: Write the implementation**
@@ -2417,7 +2476,9 @@ Append to `PromptRefinerModelTests`:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run the build command.
+Run the **scoped test command** for this task's test class — NOT the build
+command. The `Throttle` scheme's build action does not compile `ThrottleTests`,
+so a red step verified with a build shows nothing at all (found in Task 1).
 Expected: FAIL — "value of type 'PromptRefinerModel' has no member 'beginSave'".
 
 - [ ] **Step 3: Extend the model**
@@ -2777,7 +2838,7 @@ and add the shared row builder:
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(p.name).font(.system(size: 11)).foregroundStyle(.primary).lineLimit(1)
                         Spacer(minLength: 4)
-                        Text(model.query.isEmpty ? "\(p.uses) uses" : "\(Int(hit.score * 100))%")
+                        Text(model.query.isEmpty ? "\(p.uses) uses" : "\(min(100, Int(hit.score * 100)))%")
                             .font(.system(size: 10.5).monospacedDigit())
                             .foregroundStyle(.secondary)
                             .help(model.query.isEmpty
@@ -2939,7 +3000,7 @@ Append to `PromptLibraryStoreTests`:
     }
 
     func test_pendingTrigger_ignoresTextAfterTheCaret() {
-        XCTAssertEqual(TriggerScanner.pendingTrigger(in: ";;bu trailing", caret: 4), "b")
+        XCTAssertEqual(TriggerScanner.pendingTrigger(in: ";;bu trailing", caret: 4), "bu")
     }
 
     func test_expand_replacesTheTriggerTokenAndReportsTheNewCaret() {
@@ -2957,7 +3018,9 @@ Append to `PromptLibraryStoreTests`:
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run the build command.
+Run the **scoped test command** for this task's test class — NOT the build
+command. The `Throttle` scheme's build action does not compile `ThrottleTests`,
+so a red step verified with a build shows nothing at all (found in Task 1).
 Expected: FAIL — "cannot find 'TriggerScanner' in scope".
 
 - [ ] **Step 3: Write the scanner and the composer**
@@ -3077,6 +3140,10 @@ In `PromptRefinerPane.swift`, add state:
     @State private var expanderSelection = 0
     @State private var flash: String?
 ```
+
+Remove `.keyboardShortcut(.return, modifiers: .command)` from the Refine button
+in `compose` — the composer now owns ⌘⏎ via `onCommandReturn`, and leaving both
+in place fires the refinement twice.
 
 Replace the `TextEditor` in `compose` with:
 

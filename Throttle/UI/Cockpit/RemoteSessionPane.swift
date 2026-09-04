@@ -2,6 +2,32 @@ import SwiftTerm
 import SwiftUI
 import ThrottleShared
 
+/// Shared encoder for the explicit wheel reports used when a full-screen TUI
+/// owns the terminal and therefore has no SwiftTerm scrollback to move.
+enum TerminalWheelReport {
+    static func sgr(scrollingUp: Bool, count: Int, column: Int, row: Int) -> [UInt8] {
+        let button = scrollingUp ? 64 : 65
+        var bytes: [UInt8] = []
+        for _ in 0..<max(count, 1) {
+            bytes.append(contentsOf: Array("\u{1B}[<\(button);\(column);\(row)M".utf8))
+        }
+        return bytes
+    }
+
+    /// SwiftTerm maps wheel motion to cursor keys while an alternate-screen TUI
+    /// owns the terminal but has not enabled mouse reporting. Preserve that
+    /// fallback for precise trackpad gestures, including application-cursor mode.
+    static func cursor(scrollingUp: Bool, count: Int, applicationMode: Bool) -> [UInt8] {
+        let sequence: [UInt8]
+        if scrollingUp {
+            sequence = Array((applicationMode ? "\u{1B}OA" : "\u{1B}[A").utf8)
+        } else {
+            sequence = Array((applicationMode ? "\u{1B}OB" : "\u{1B}[B").utf8)
+        }
+        return Array(repeating: sequence, count: max(count, 1)).flatMap { $0 }
+    }
+}
+
 /// Connection state for a remote (edge-agent) terminal — mirrors the iOS
 /// `TerminalConnection` shape, minus the biometric lock: the Mac is the trusted,
 /// already-authenticated device driving its own box.
@@ -204,6 +230,37 @@ private struct MacEdgeTerminalView: NSViewRepresentable {
             let lines = Int(scrollAccumulator / cellHeight)
             guard lines != 0 else { return }
             scrollAccumulator -= CGFloat(lines) * cellHeight
+
+            // A remote full-screen TUI has no local SwiftTerm scrollback. The
+            // earlier remote-trackpad fix consumed the gesture and then tried to
+            // move that empty buffer, so Claude/vim/less still appeared frozen.
+            // Forward explicit wheel reports when the TUI armed mouse tracking.
+            // Otherwise mirror SwiftTerm's alternate-screen fallback and send
+            // cursor keys (Claude/Codex commonly use this path).
+            if !view.canScroll {
+                let count = min(abs(lines), 10)
+                let bytes: [UInt8]
+                if terminal.mouseMode != .off {
+                    let point = view.convert(event.locationInWindow, from: nil)
+                    let cellWidth = max(view.frame.width / CGFloat(max(terminal.cols, 1)), 1)
+                    let rowFromTop = Int((view.frame.height - point.y) / cellHeight)
+                    let column = min(max(1, Int(point.x / cellWidth) + 1), max(terminal.cols, 1))
+                    let row = min(max(1, rowFromTop + 1), max(terminal.rows, 1))
+                    bytes = TerminalWheelReport.sgr(
+                        scrollingUp: lines > 0,
+                        count: count,
+                        column: column,
+                        row: row)
+                } else {
+                    guard terminal.isCurrentBufferAlternate else { return }
+                    bytes = TerminalWheelReport.cursor(
+                        scrollingUp: lines > 0,
+                        count: count,
+                        applicationMode: terminal.applicationCursor)
+                }
+                client?.sendInput(bytes)
+                return
+            }
             if lines > 0 { view.scrollUp(lines: lines) } else { view.scrollDown(lines: -lines) }
         }
 

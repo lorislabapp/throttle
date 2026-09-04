@@ -4,6 +4,9 @@ strict: true
 
 excluded:
   - .build
+  - .claude
+  - .agents
+  - Packages/ResearchVaultKit/.build
   - ThrottleShared/.build
   - edge-agent/node_modules
   - build

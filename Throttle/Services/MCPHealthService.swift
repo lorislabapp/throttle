@@ -184,12 +184,15 @@ enum MCPHealthService {
     // MARK: http (reachability only — never spawned, no auth triggered)
 
     private static func probeHTTP(name: String, url: URL) async -> MCPHealth {
+        guard WebURLPolicy.permitsUserConfiguredService(url, resolveDNS: false) else {
+            return MCPHealth(name: name, status: .down, latencyMs: nil, toolCount: nil)
+        }
         var req = URLRequest(url: url)
         req.httpMethod = "HEAD"
         req.timeoutInterval = 5
         let start = Date()
         do {
-            let (_, resp) = try await URLSession.shared.data(for: req)
+            let (_, resp) = try await UserConfiguredServiceSession.shared.data(for: req)
             let ms = Int(Date().timeIntervalSince(start) * 1000)
             let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
             // 2xx/3xx, or 401/403 (up but needs auth) = reachable.

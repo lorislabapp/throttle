@@ -14,7 +14,8 @@ import ThrottleShared
 struct MultiCockpitRoot: View {
     @Environment(AppState.self) private var appState
     @State private var model = MultiCockpitModel.shared   // singleton: sessions outlive the window
-    @State private var showInspector = false
+    @State private var showSidebar = false
+    @State private var sidebarTab: CockpitSidebar.Tab = .audit
     @State private var activeStyle = OutputStyleManager.activeName()
     @State private var hoveredSession: UUID?
     @State private var expandedFeed: UUID?
@@ -59,9 +60,9 @@ struct MultiCockpitRoot: View {
             if let leak = model.leakSessions.first { leakBanner(leak) }
             HStack(spacing: 0) {
                 content
-                if showInspector {
+                if showSidebar {
                     Rectangle().fill(hair).frame(width: 1)
-                    CockpitAuditInspector()
+                    CockpitSidebar(tab: $sidebarTab)
                 }
             }
         }
@@ -131,8 +132,12 @@ struct MultiCockpitRoot: View {
             zsep
             viewSwitcher(iconsOnly: narrow)
             Spacer(minLength: 6)
-            ToolbarToggle(icon: "sidebar.trailing", label: String(localized: "Audit"), isOn: showInspector,
-                          iconOnly: narrow, help: String(localized: "Audit inspector")) { showInspector.toggle() }
+            knowledgeMenu(compact: narrow)
+            ToolbarToggle(icon: "sidebar.trailing", label: String(localized: "Panel"), isOn: showSidebar,
+                          iconOnly: narrow,
+                          help: String(localized: "Audit metrics and the prompt refiner")) {
+                showSidebar.toggle()
+            }
             ToolbarToggle(icon: "terminal", label: String(localized: "Shell"), isOn: model.showShell,
                           iconOnly: narrow,
                           help: String(localized: "Side shell (⌘⇧T) — a zsh in this project's folder, beside claude")) {
@@ -180,6 +185,32 @@ struct MultiCockpitRoot: View {
             model.routingMode.label))
         .accessibilityLabel(String(localized: "Mission runtime"))
         .accessibilityValue(model.routingMode.label)
+    }
+
+    private func knowledgeMenu(compact: Bool) -> some View {
+        Menu {
+            Button("Research Vault", systemImage: "books.vertical") {
+                ResearchVaultWindowController.shared.show(query: "")
+            }
+            Button("Global Portfolio Setup", systemImage: "square.stack.3d.up") {
+                GlobalRAGOnboardingWindowController.shared.show(canInstallMCP: appState.isPro) { _ in }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "books.vertical")
+                if !compact { Text("Research") }
+                Image(systemName: "chevron.down").font(.system(size: 7, weight: .bold))
+            }
+            .font(.system(size: 10.5, weight: .medium))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 7).padding(.vertical, 5)
+            .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 6))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Research Vault and Global Portfolio Setup")
+        .accessibilityLabel("Research and global portfolio")
     }
 
     /// The revealed utility shelf: contextual timeline (or an empty note) on the
@@ -926,7 +957,8 @@ struct MultiCockpitRoot: View {
                 source: source,
                 target: target,
                 sourceSessionID: sourceSessionID,
-                objective: "Continue the current work at the next unfinished task.",
+                objective: PromptRefinerModel.shared.pendingMissionObjective
+                    ?? "Continue the current work at the next unfinished task.",
                 context: MissionHandoffContext(
                     completed: "", remaining: "", validation: "", blockers: "",
                     recentConversation: snapshot.1

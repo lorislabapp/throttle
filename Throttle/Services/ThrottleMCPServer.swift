@@ -3,7 +3,7 @@ import Foundation
 /// A tiny stdio MCP server (`Throttle --mcp-server`) that gives Claude Code and
 /// Codex the same local context/research tools. Reuses the
 /// signed app binary (no separate Node server). JSON-RPC 2.0 over newline-
-/// delimited stdin/stdout, exposing one tool: `search_sessions`.
+/// delimited stdin/stdout, exposing shared local context tools.
 ///
 /// On-wedge: Throttle only PROVIDES local evidence; the agent decides when to
 /// call it. 100% local — nothing leaves the machine.
@@ -30,10 +30,10 @@ enum ThrottleMCPServer {
             respond(id: id, result: [
                 "protocolVersion": "2024-11-05",
                 "capabilities": ["tools": [:] as [String: Any]],
-                "serverInfo": ["name": "throttle-memory", "version": "1.0.0"]
+                "serverInfo": ["name": "throttle-memory", "version": "1.1.0"]
             ])
         case "tools/list":
-            var tools = [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema(), mcpHealthSchema(), expandPointerSchema(), recallSchema(), semanticSearchSchema(), contextReadSchema()]
+            var tools = [searchSchema(), budgetSchema(), costSchema(), deadSkillsSchema(), mcpHealthSchema(), expandPointerSchema(), recallSchema(), globalContextSchema(), globalRefreshSchema(), semanticSearchSchema(), contextReadSchema()]
             if EmbeddedModelRuntime.isInstalled {
                 tools.append(localSummarizeSchema())
                 if LocalDelegationService.isEnabled { tools.append(localDelegateSchema()) }
@@ -74,6 +74,17 @@ enum ThrottleMCPServer {
                 } else {
                     respond(id: id, error: [-32602, "Missing topic"])
                 }
+            case "throttle_global_context":
+                let rawKinds = args?["kinds"] as? [String] ?? []
+                let kinds = Set(rawKinds.compactMap(GlobalRAGRecord.Kind.init(rawValue:)))
+                respond(id: id, result: textResult(GlobalRAGService.contextText(
+                    query: args?["query"] as? String ?? "",
+                    currentProject: args?["current_project"] as? String,
+                    kinds: kinds,
+                    limit: args?["limit"] as? Int
+                )))
+            case "throttle_refresh_global_context":
+                respond(id: id, result: textResult(GlobalRAGService.refreshText()))
             case "throttle_semantic_search":
                 if let query = args?["query"] as? String {
                     respond(id: id, result: textResult(semanticSearchText(query: query, repo: args?["repo"] as? String, k: (args?["k"] as? Int) ?? 6)))
@@ -294,6 +305,30 @@ enum ThrottleMCPServer {
             parts.append("Knowledge bundles (OKF):\n\(list)")
         }
         return parts.isEmpty ? "Nothing recorded for “\(topic)”." : parts.joined(separator: "\n\n")
+    }
+
+    private static func globalContextSchema() -> [String: Any] {
+        [
+            "name": "throttle_global_context",
+            "description": "Retrieve ranked, local context across this user's own projects: reusable capabilities and SDK candidates, tools, workflows, research, and handoffs. Call near the start of new product/app design, architecture or reuse decisions, release/publish preparation, and cross-session handoffs. The portfolio is discovered locally and may be enriched by a portable JSON/YAML profile; no project is built into Throttle. Results are evidence leads, not proof of current SDK/account/signing/provider state and never authorization for external actions.",
+            "inputSchema": [
+                "type": "object",
+                "properties": [
+                    "query": ["type": "string", "description": "Need or task, e.g. secure file storage, PDF export, or a release workflow. Omit for a portfolio overview."],
+                    "current_project": ["type": "string", "description": "Optional current project name or absolute path for ranking."],
+                    "kinds": ["type": "array", "items": ["type": "string", "enum": GlobalRAGRecord.Kind.allCases.map(\.rawValue)], "description": "Optional filters: project, capability, tool, workflow, handoff, research, memory."],
+                    "limit": ["type": "integer", "description": "Maximum results, 1-50. Omitted calls are capped at 6; use a larger explicit value only when needed."]
+                ]
+            ]
+        ]
+    }
+
+    private static func globalRefreshSchema() -> [String: Any] {
+        [
+            "name": "throttle_refresh_global_context",
+            "description": "Refresh Throttle's local global portfolio index after repositories or the portable profile changed. Reads configured roots and writes only Throttle's derived snapshot; never modifies repositories, provider configuration, portals, or accounts.",
+            "inputSchema": ["type": "object", "properties": [:] as [String: Any]]
+        ]
     }
 
     private static func semanticSearchSchema() -> [String: Any] {

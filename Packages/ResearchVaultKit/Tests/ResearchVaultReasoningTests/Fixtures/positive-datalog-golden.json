@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "name": "transitive-closure",
+      "facts": [
+        { "predicate": "edge", "arguments": ["a", "b"] },
+        { "predicate": "edge", "arguments": ["b", "c"] },
+        { "predicate": "edge", "arguments": ["c", "d"] }
+      ],
+      "rules": [
+        {
+          "id": "path.base",
+          "head": { "predicate": "path", "terms": ["$x", "$y"] },
+          "body": [{ "predicate": "edge", "terms": ["$x", "$y"] }]
+        },
+        {
+          "id": "path.step",
+          "head": { "predicate": "path", "terms": ["$x", "$z"] },
+          "body": [
+            { "predicate": "path", "terms": ["$x", "$y"] },
+            { "predicate": "edge", "terms": ["$y", "$z"] }
+          ]
+        }
+      ],
+      "expectedDerived": [
+        "path(a,b)", "path(a,c)", "path(a,d)",
+        "path(b,c)", "path(b,d)", "path(c,d)"
+      ]
+    },
+    {
+      "name": "constant-filter",
+      "facts": [
+        { "predicate": "status", "arguments": ["doc-a", "verified"] },
+        { "predicate": "status", "arguments": ["doc-b", "open"] }
+      ],
+      "rules": [
+        {
+          "id": "trusted",
+          "head": { "predicate": "trusted", "terms": ["$doc"] },
+          "body": [{ "predicate": "status", "terms": ["$doc", "verified"] }]
+        }
+      ],
+      "expectedDerived": ["trusted(doc-a)"]
+    },
+    {
+      "name": "unseeded-cycle",
+      "facts": [],
+      "rules": [
+        {
+          "id": "a-to-b",
+          "head": { "predicate": "b", "terms": ["$x"] },
+          "body": [{ "predicate": "a", "terms": ["$x"] }]
+        },
+        {
+          "id": "b-to-a",
+          "head": { "predicate": "a", "terms": ["$x"] },
+          "body": [{ "predicate": "b", "terms": ["$x"] }]
+        }
+      ],
+      "expectedDerived": []
+    }
+  ]
+}

@@ -191,6 +191,31 @@ struct ProjectAssistantTab: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
+
+            Picker("Refined prompts", selection: Binding(
+                get: { RefinerSettings.output },
+                set: { RefinerSettings.output = $0 }
+            )) {
+                ForEach(RefinerOutput.allCases) { Text($0.label).tag($0) }
+            }
+            .help("What the cockpit refiner's apply button does. Insert never presses Return.")
+
+            Picker("Explain changes", selection: Binding(
+                get: { RefinerSettings.rationale },
+                set: { RefinerSettings.rationale = $0 }
+            )) {
+                ForEach(RefinerRationale.allCases) { Text($0.label).tag($0) }
+            }
+            .help("When the refiner shows why it rewrote your draft.")
+
+            Toggle("Refine with a local model only", isOn: Binding(
+                get: { RefinerSettings.forceLocal },
+                set: { RefinerSettings.forceLocal = $0 }
+            ))
+            .help(
+                "Keeps refinements on Apple Intelligence or the embedded model, "
+                    + "so optimising tokens never costs tokens."
+            )
         }
         .padding(12)
         .background(chipBG, in: RoundedRectangle(cornerRadius: 8))

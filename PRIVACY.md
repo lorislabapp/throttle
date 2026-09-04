@@ -7,6 +7,7 @@ Throttle is local-first and contains no advertising or third-party analytics SDK
 | Feature | Data | Destination | Trigger/control | Local retention |
 |---|---|---|---|---|
 | Local meter and cockpit | token counts, timestamps, model/session metadata; terminal I/O stays inside the launched provider process | local Mac | opening/running Throttle | SQLite and provider-native session files |
+| Research Vault | user-selected research receipts, bounded excerpts, provenance, hashes and optional on-device drafts | local, separately signed Throttle helper over authenticated XPC | explicit helper enablement, receipt import, Inbox selection, search or synthesis | SQLCipher database; master key in Keychain; security-scoped Inbox bookmark in app preferences |
 | Exact usage | account usage response, not message content | Anthropic via the user's authenticated web session | explicit Exact Mode | bounded cached snapshot |
 | License | license token and product/device assertions | LorisLabs license service | activation/validation | token in Keychain |
 | Updates | appcast and update package | LorisLabs update host | Sparkle setting | Sparkle-managed cache |
@@ -23,6 +24,9 @@ Client bearer tokens, license material and API keys belong in Keychain or an equ
 ## User controls
 
 - Networked and configuration-changing features are opt-in.
+- Research Vault is opt-in. Throttle never sends its database key, vault path or
+  security-scoped Inbox access to CheatCode; cross-app access is bounded to cited
+  query results by signed client identity.
 - Handoffs show the target and bounded context before launch.
 - Remote terminal input starts locked and relocks after inactivity/backgrounding.
 - App Store companions restrict remote input to the user's paired Mac on the local network; off-LAN Edge control is not exposed there.

@@ -34,6 +34,10 @@ struct CodexUsageSnapshot: Sendable, Equatable {
     }
 
     let sessionID: String?
+    /// Exact model identifier observed in the newest `turn_context` envelope
+    /// from the same rollout. Nil means Codex did not expose it; callers must
+    /// never infer a model from the context-window size or product name.
+    var modelName: String? = nil
     let tokens: Tokens?
     let contextWindow: Int?
     let primary: RateWindow?

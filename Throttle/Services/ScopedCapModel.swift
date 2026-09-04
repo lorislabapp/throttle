@@ -151,4 +151,12 @@ enum ScopedCapModel {
 
     /// "Weekly · Sonnet" / "Weekly · Fable" — the binding label.
     static var bindingLabel: String { "Weekly · \(effectiveName ?? "Sonnet")" }
+
+    /// Name the exact scoped window in support output without reviving the old
+    /// Sonnet assumption. A payload that does not name its scope stays unknown.
+    static func diagnosticLabel(for window: ExactSnapshot.Window) -> String {
+        guard let model = window.scopedModel?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !model.isEmpty else { return "scoped" }
+        return model
+    }
 }

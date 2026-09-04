@@ -41,11 +41,10 @@ final class OutputStyleWindowController: NSObject {
             defer: false
         )
         win.title = "Throttle — Output Styles"
-        win.isReleasedWhenClosed = false
         win.center()
         win.contentViewController = host
         win.minSize = NSSize(width: 440, height: 420)
-        win.delegate = self
+        RetainedWindowPolicy.configure(win, delegate: self)
         win.setFrameAutosaveName("ThrottleOutputStyleWindow")
 
         self.window = win
@@ -59,10 +58,7 @@ final class OutputStyleWindowController: NSObject {
 }
 
 extension OutputStyleWindowController: NSWindowDelegate {
-    nonisolated func windowWillClose(_ notification: Notification) {
-        Task { @MainActor in
-            self.window = nil
-            NotificationCenter.default.post(name: .outputStyleChanged, object: nil)
-        }
+    func windowWillClose(_ notification: Notification) {
+        NotificationCenter.default.post(name: .outputStyleChanged, object: nil)
     }
 }

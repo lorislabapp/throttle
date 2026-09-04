@@ -19,8 +19,8 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
-    MARKETING_VERSION: "3.2.106"
-    CURRENT_PROJECT_VERSION: "205"
+    MARKETING_VERSION: "3.5.1"
+    CURRENT_PROJECT_VERSION: "217"
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
   configs:
     # Hardened runtime is required for notarized Release distribution but
@@ -51,8 +51,14 @@ packages:
   SwiftTransformers:
     url: https://github.com/huggingface/swift-transformers
     exactVersion: "1.3.0"
+  ResearchVaultKit:
+    path: Packages/ResearchVaultKit
 
 schemes:
+  ResearchVaultAgent:
+    build:
+      targets:
+        ResearchVaultAgent: all
   ThrottleiOS:
     build:
       targets:
@@ -68,6 +74,11 @@ targets:
     platform: macOS
     sources:
       - path: Throttle
+      - path: ResearchVaultAgent/com.lorislab.throttle.research-vault-agent.plist
+        buildPhase:
+          copyFiles:
+            destination: wrapper
+            subpath: Contents/Library/LaunchAgents
       # Bundled so SessionOffloadSheet can emit a self-contained deploy script.
       # Must live under `sources` with an explicit resources buildPhase — a target
       # `resources:` key is NOT valid XcodeGen and was silently dropped, which is
@@ -142,7 +153,58 @@ targets:
       - package: ThrottleShared
       - package: ThrottleShared
         product: ThrottlePeer
+      # Client-safe products only: no Gateway, SQLCipher or database key may
+      # enter the Throttle process. Ingestion contains bounded parsers but no
+      # store, key or privileged service runtime.
+      - package: ResearchVaultKit
+        product: ResearchVaultIPCModel
+      - package: ResearchVaultKit
+        product: ResearchVaultXPCClient
+      - package: ResearchVaultKit
+        product: ResearchVaultSynthesis
+      - package: ResearchVaultKit
+        product: ResearchVaultIngestion
       - target: ThrottleWidget
+      # A separately signed process owns SQLCipher and the vault key. Throttle
+      # embeds but never links this helper, preserving the one-SQLite-per-process
+      # invariant. launchd starts it only after explicit SMAppService approval.
+      - target: ResearchVaultAgent
+        link: false
+        embed: true
+        codeSign: true
+        copy:
+          destination: wrapper
+          subpath: Contents/Library/LoginItems
+
+  ResearchVaultAgent:
+    type: application
+    platform: macOS
+    sources:
+      - path: ResearchVaultAgent
+        excludes:
+          - "*.plist"
+    info:
+      path: ResearchVaultAgent/Info.plist
+      properties:
+        LSBackgroundOnly: true
+        LSUIElement: true
+        NSHumanReadableCopyright: "Copyright © 2026 LorisLabs. All rights reserved."
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lorislab.throttle.research-vault-agent
+        PRODUCT_NAME: ResearchVaultAgent
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+        SKIP_INSTALL: YES
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "8333AB7CD909731530AC62DD28CCA47C8D288225"
+        # This background helper has no distribution entitlements. Prevent
+        # Xcode from injecting get-task-allow into Release signatures.
+        CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+    dependencies:
+      - package: ResearchVaultKit
+        product: ResearchVaultServiceRuntime
 
   ThrottleWidget:
     type: app-extension

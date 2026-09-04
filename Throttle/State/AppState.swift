@@ -67,17 +67,19 @@ final class AppState {
     ///   - a valid Throttle Pro license JWT in Keychain
     ///   - the 7-day Pro trial (auto-started on first launch)
     /// The computed flag is refreshed via `refreshProStatus()`.
-    var isPro: Bool = LicenseService.shared.isPro
-        || TrialService.shared.isActive
-        || DevUnlockService.shared.isUnlocked
+    var isPro: Bool
 
     let database: any DatabaseWriter
 
     private var refreshTask: Task<Void, Never>?
     private var codexRefreshTask: Task<Void, Never>?
 
-    init(database: any DatabaseWriter) {
+    init(database: any DatabaseWriter, readsLicenseState: Bool = true) {
         self.database = database
+        self.isPro = readsLicenseState
+            && (LicenseService.shared.isPro
+                || TrialService.shared.isActive
+                || DevUnlockService.shared.isUnlocked)
         self.claudeCodeDetected = ClaudeCodePathProvider.projectsDirectory() != nil
         self.codexDetected = FileManager.default.fileExists(
             atPath: FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".codex").path

@@ -767,6 +767,18 @@ final class MultiCockpitModel {
 
     var active: CockpitTab? { sessions.first { $0.id == activeID } ?? sessions.first }
 
+    /// Put a refined prompt in front of the active agent WITHOUT sending it.
+    /// Returns false when there is no live terminal or the payload carries a
+    /// control sequence — the caller surfaces that instead of failing silently.
+    @discardableResult
+    func insertDraft(_ text: String) -> Bool {
+        guard let term = active?.terminal as? DroppableTerminalView else { return false }
+        let payload = PromptRefinerService.insertionPayload(text)
+        guard !payload.isEmpty, (try? PromptRefinerService.validate(payload)) != nil else { return false }
+        term.insertComposedText(payload)
+        return true
+    }
+
     /// Tabs already associated with the same checkout. Canonicalizing both sides
     /// catches `/tmp/link/project` vs `/Users/me/project` and trailing-slash
     /// variants before the UI asks whether to focus or intentionally duplicate.

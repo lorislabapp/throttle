@@ -1,6 +1,243 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@ is ready inside Throttle. Suggestions stay on-device.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%@ est prêt dans Throttle. Les suggestions restent sur l’appareil." } } } },
+    "%lld capabilities": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld capacités" } } } },
+    "%lld roots": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld racines" } } } },
+    "%lld tools": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld outils" } } } },
+    "%lld workflows": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld flux" } } } },
+    "%lld receipts · %lld sources": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld reçus · %lld sources" } } }
+    },
+    "Add sources, folders & migrations": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ajouter des sources, dossiers et migrations" } } } },
+    "Add a watched research folder": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ajouter un dossier de recherche surveillé" } } } },
+    "Add one or more trusted folders to this Space": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ajouter un ou plusieurs dossiers de confiance à cet Espace" } } } },
+    "Activate": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Activer" } } } },
+    "Add folders…": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ajouter des dossiers…" } } } },
+    "AI suggestion reviewed": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Suggestion IA vérifiée" } } } },
+    "Analysing locally…": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Analyse locale…" } } } },
+    "Capabilities": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Capacités" } } } },
+    "Choose project folders": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisir les dossiers de projets" } } } },
+    "Choose the folders that contain your projects": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisissez les dossiers contenant vos projets" } } } },
+    "Detected projects": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Projets détectés" } } } },
+    "Display name": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Nom affiché" } } } },
+    "Finish": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Terminer" } } } },
+    "Global portfolio setup": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Configuration du portefeuille global" } } } },
+    "Handoffs": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Passages de relais" } } } },
+    "Install the shared MCP tools for Claude Code and Codex": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Installer les outils MCP partagés pour Claude Code et Codex" } } } },
+    "LOCAL FIRST": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "LOCAL D’ABORD" } } } },
+    "Local scan": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Analyse locale" } } } },
+    "No cloud fallback. If the model is unavailable or its JSON is invalid, Throttle keeps the deterministic result.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun repli vers le cloud. Si le modèle est indisponible ou si son JSON est invalide, Throttle conserve le résultat déterministe." } } } },
+    "No folder connected": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun dossier connecté" } } } },
+    "No folders selected": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun dossier sélectionné" } } } },
+    "No repositories detected": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun dépôt détecté" } } } },
+    "Optional local suggestions": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Suggestions locales facultatives" } } } },
+    "One encrypted local vault": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Un coffre local chiffré" } } } },
+    "Project folders": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Dossiers de projets" } } } },
+    "Research": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Recherche" } } } },
+    "Ready to create the portable profile": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Prêt à créer le profil portable" } } } },
+    "Rejected local result": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Résultat local rejeté" } } } },
+    "Review profile": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vérifier le profil" } } } },
+    "Saving…": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Enregistrement…" } } } },
+    "Scan again": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Analyser à nouveau" } } } },
+    "Scanning…": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Analyse…" } } } },
+    "Select a project": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Sélectionnez un projet" } } } },
+    "Setup…": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Configurer…" } } } },
+    "Spaces": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Espaces" } } } },
+    "Suggest locally": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Suggérer localement" } } } },
+    "Tools / SDKs": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Outils / SDK" } } } },
+    "Watch Folder": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Surveiller le dossier" } } } },
+    "Watched folders": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Dossiers surveillés" } } } },
+    "Use a local model to propose cleaner labels and handoffs": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Utiliser un modèle local pour proposer des libellés et relais plus clairs" } } } },
+    "Workflows": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Flux de travail" } } } },
+    "Your portfolio remains yours": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Votre portefeuille reste le vôtre" } } } },
+    " AI output is labelled, bounded, and never treated as proof.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": " La sortie IA est signalée, limitée et jamais considérée comme une preuve." } } } },
+    "%lld capabilities · %lld tools · %lld workflows": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld capacités · %lld outils · %lld flux" } } } },
+    "%lld discovery roots. The saved profile can later be exported as JSON or YAML.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld racines de découverte. Le profil enregistré pourra être exporté en JSON ou YAML." } } } },
+    "%lld selected projects": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld projets sélectionnés" } } } },
+    "Add one or more project folders to continue.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ajoutez un ou plusieurs dossiers de projets pour continuer." } } } },
+    "Aliases": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Alias" } } } },
+    "Apple Foundation Models is ready on this Mac. Suggestions stay on-device.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Apple Foundation Models est prêt sur ce Mac. Les suggestions restent sur l’appareil." } } } },
+    "Apple Foundation Models · on-device": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Apple Foundation Models · sur l’appareil" } } } },
+    "Build, test, release, website…": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Build, tests, publication, site web…" } } } },
+    "Check the selected folders, then scan again.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vérifiez les dossiers sélectionnés, puis relancez l’analyse." } } } },
+    "Checking local models…": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vérification des modèles locaux…" } } } },
+    "Could not finish setup: %@": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Impossible de terminer la configuration : %@" } } } },
+    "Deterministic first": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Déterministe d’abord" } } } },
+    "Example: after release, prepare the website page": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Exemple : après publication, préparer la page du site" } } } },
+    "Found %lld repositories locally. Nothing was modified.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld dépôts trouvés localement. Rien n’a été modifié." } } } },
+    "Installing MCP updates local agent configuration with backups. Restart both agents afterward. This does not publish or upload anything.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "L’installation MCP met à jour la configuration locale des agents avec sauvegardes. Redémarrez ensuite les deux agents. Rien n’est publié ni téléversé." } } } },
+    "MCP installation requires the Pro feature. The profile can still be created and exported.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "L’installation MCP nécessite la fonction Pro. Le profil peut tout de même être créé et exporté." } } } },
+    "No local model is currently available. The deterministic scan remains usable.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun modèle local n’est disponible. L’analyse déterministe reste utilisable." } } } },
+    "No local model is ready. The deterministic scanner and manual editor still work completely.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun modèle local n’est prêt. L’analyse déterministe et l’éditeur manuel restent entièrement utilisables." } } } },
+    "Onboarding progress": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Progression de la configuration" } } } },
+    "Private local worker ready at %@. Nothing is sent to a cloud model.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le moteur local privé est prêt à l’adresse %@. Rien n’est envoyé à un modèle cloud." } } } },
+    "One item per line": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Un élément par ligne" } } } },
+    "Only tools worth reusing": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Uniquement les outils utiles à réutiliser" } } } },
+    "Reading repository metadata locally…": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Lecture locale des métadonnées des dépôts…" } } } },
+    "Repository markers, dependency manifests, scripts, and indexed evidence are detected without AI. Every item remains editable before saving.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Les marqueurs de dépôt, manifestes de dépendances, scripts et preuves indexées sont détectés sans IA. Chaque élément reste modifiable avant l’enregistrement." } } } },
+    "Reusable product or technical abilities": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Capacités produit ou techniques réutilisables" } } } },
+    "Review": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vérification" } } } },
+    "Review every label before activation.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vérifiez chaque libellé avant l’activation." } } } },
+    "Select only projects that should be available as global context.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Sélectionnez uniquement les projets à rendre disponibles comme contexte global." } } } },
+    "Step %lld of %lld": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Étape %lld sur %lld" } } } },
+    "Step %lld of %lld · %@": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Étape %lld sur %lld · %@" } } } },
+    "Suggested by %@ — verify before saving": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Suggéré par %@ — à vérifier avant l’enregistrement" } } } },
+    "The local model response was rejected because it did not match the bounded profile schema.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La réponse du modèle local a été rejetée car elle ne respectait pas le schéma limité du profil." } } } },
+    "Throttle scans only folders you choose. It stores a small derived index and a portable profile. It never uploads source code, credentials, transcripts, or the profile from this assistant.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Throttle analyse uniquement les dossiers choisis. Il conserve un petit index dérivé et un profil portable. Cet assistant ne téléverse jamais le code source, les identifiants, les transcriptions ni le profil." } } } },
+    "Throttle searches at most three directory levels, ignores build caches and symlinks, and never changes a repository.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Throttle parcourt au maximum trois niveaux, ignore les caches de build et les liens symboliques, et ne modifie jamais un dépôt." } } } },
+    "configured host": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "hôte configuré" } } } },
+    "1 capability": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "1 capacité" } } } },
+    "1 discovery root. The saved profile can later be exported as JSON or YAML.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "1 racine de découverte. Le profil enregistré pourra être exporté en JSON ou YAML." } } } },
+    "1 root": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "1 racine" } } } },
+    "1 selected project": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "1 projet sélectionné" } } } },
+    "1 tool": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "1 outil" } } } },
+    "1 workflow": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "1 flux" } } } },
+    "A claim cannot relate to itself.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Une affirmation ne peut pas être reliée à elle-même." } } }
+    },
+    "All facts": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tous les faits" } } }
+    },
+    "ASSERTED": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "AFFIRMÉ" } } }
+    },
+    "ASSERTED ≠ DERIVED · MODEL OUTPUT IS NEVER A RULE": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "AFFIRMÉ ≠ DÉRIVÉ · LA SORTIE DU MODÈLE N’EST JAMAIS UNE RÈGLE" } } }
+    },
+    "Contradicts": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Contredit" } } }
+    },
+    "DERIVED": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "DÉRIVÉ" } } }
+    },
+    "Depends on": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Dépend de" } } }
+    },
+    "Direct evidence and derived facts cannot be retracted from this control.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Les preuves directes et les faits dérivés ne peuvent pas être rétractés depuis ce contrôle." } } }
+    },
+    "Generation %lld · SHADOW": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Génération %lld · OMBRE" } } }
+    },
+    "Impacted claims": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Affirmations impactées" } } }
+    },
+    "No bounded explanation for this selection.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune explication bornée pour cette sélection." } } }
+    },
+    "Object claim": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Affirmation objet" } } }
+    },
+    "Only an asserted reviewed relation can be retracted.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Seule une relation affirmée et révisée peut être rétractée." } } }
+    },
+    "Only the selected typed relation is promoted. Source text cannot install rules or widen access.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Seule la relation typée sélectionnée est promue. Le texte source ne peut ni installer de règles ni élargir l’accès." } } }
+    },
+    "Promote and refresh shadow": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Promouvoir et actualiser l’ombre" } } }
+    },
+    "Promote this reviewed relation?": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Promouvoir cette relation révisée ?" } } }
+    },
+    "Reasoning": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Raisonnement" } } }
+    },
+    "Reasoning shadow is not initialized yet.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "L’ombre de raisonnement n’est pas encore initialisée." } } }
+    },
+    "Reasoning shadow not initialized": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ombre de raisonnement non initialisée" } } }
+    },
+    "Reasoning shadow refreshed with %lld asserted facts and %lld derived facts.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ombre de raisonnement actualisée avec %lld faits affirmés et %lld faits dérivés." } } }
+    },
+    "Relation": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Relation" } } }
+    },
+    "Relation promotion failed closed; no fact or rule changed.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La promotion de la relation a échoué en mode fermé ; aucun fait ni aucune règle n’a changé." } } }
+    },
+    "Relation retraction failed closed; no fact or rule changed.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La rétractation de la relation a échoué en mode fermé ; aucun fait ni aucune règle n’a changé." } } }
+    },
+    "Retract relation…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rétracter la relation…" } } }
+    },
+    "Retract selected relation": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rétracter la relation sélectionnée" } } }
+    },
+    "Retract this asserted relation?": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rétracter cette relation affirmée ?" } } }
+    },
+    "Review relation…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Réviser la relation…" } } }
+    },
+    "Select this fact to inspect proof or impact": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Sélectionnez ce fait pour examiner sa preuve ou son impact" } } }
+    },
+    "Select a reasoning action": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Sélectionnez une action de raisonnement" } } }
+    },
+    "Subject claim": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Affirmation sujet" } } }
+    },
+    "Supersedes": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Remplace" } } }
+    },
+    "The bounded reasoning explanation is unavailable.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "L’explication bornée du raisonnement est indisponible." } } }
+    },
+    "The selected relation was retracted from the reasoning shadow.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La relation sélectionnée a été rétractée de l’ombre de raisonnement." } } }
+    },
+    "Unresolved contradictions": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Contradictions non résolues" } } }
+    },
+    "What changed": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ce qui a changé" } } }
+    },
+    "Why we believe this": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Pourquoi nous le croyons" } } }
+    },
     "%lld failing · %lld warning": {
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld échec · %lld avertissement" } } }
@@ -5579,6 +5816,518 @@
           }
         }
       }
+    },
+    "%@ · %@ · observed %lldd ago": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%@ · %@ · observé il y a %lld j" } } }
+    },
+    "%lld docs · %lld receipts · SQLCipher %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld documents · %lld reçus · SQLCipher %@" } } }
+    },
+    "%lld evidence states": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld états de preuve" } } }
+    },
+    "%lld hashed versions · %lld impacted claims": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld versions identifiées · %lld affirmations affectées" } } }
+    },
+    "%lld orphan references": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld références orphelines" } } }
+    },
+    "%lld source kinds": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld types de source" } } }
+    },
+    "%lld source(s)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld source(s)" } } }
+    },
+    "%lld sources · %lld claims · %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld sources · %lld affirmations · %@" } } }
+    },
+    "Allow NotebookLM export": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Autoriser l’export NotebookLM" } } }
+    },
+    "Allow Research Vault in System Settings > Login Items.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Autorisez le Coffre de recherche dans Réglages Système > Général > Ouverture et extensions." } } }
+    },
+    "Approve": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Approuver" } } }
+    },
+    "Approve all": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tout approuver" } } }
+    },
+    "Approved %lld quarantined receipts.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld reçus en quarantaine approuvés." } } }
+    },
+    "Choose Inbox": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisir la boîte de réception" } } }
+    },
+    "Choose Inbox…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisir la boîte de réception…" } } }
+    },
+    "Choose a NotebookLM notebook, then start the explicit local import.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisissez un carnet NotebookLM, puis lancez l’import local explicite." } } }
+    },
+    "Choose a Research Vault Inbox": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisir une boîte de réception du Coffre de recherche" } } }
+    },
+    "Choose a folder for the Markdown export": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisir un dossier pour l’export Markdown" } } }
+    },
+    "Choose a staging folder for the NotebookLM import": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisir un dossier de préparation pour l’import NotebookLM" } } }
+    },
+    "Choose an exported NotebookLM folder": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisir un dossier NotebookLM exporté" } } }
+    },
+    "Citations: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Citations : %@" } } }
+    },
+    "Claims": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Affirmations" } } }
+    },
+    "Disable": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Désactiver" } } }
+    },
+    "EXPLICIT READ/EXPORT · CHECKPOINTED": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "LECTURE/EXPORT EXPLICITES · REPRISE ENREGISTRÉE" } } }
+    },
+    "Enable": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Activer" } } }
+    },
+    "Enable explicit NotebookLM export for this session first.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Activez d’abord l’export NotebookLM explicite pour cette session." } } }
+    },
+    "Encrypted vault ready.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Coffre chiffré prêt." } } }
+    },
+    "Enter a valid HTTPS URL.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Saisissez une URL HTTPS valide." } } }
+    },
+    "Evidence": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Preuves" } } }
+    },
+    "Evidence: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Preuves : %@" } } }
+    },
+    "Export Markdown…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Exporter en Markdown…" } } }
+    },
+    "Export stopped: a destination file already exists.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Export arrêté : un fichier de destination existe déjà." } } }
+    },
+    "Exported %lld approved receipts as derived Markdown.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld reçus approuvés exportés en Markdown dérivé." } } }
+    },
+    "HTTPS · SINGLE PAGE · QUARANTINED": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "HTTPS · PAGE UNIQUE · EN QUARANTAINE" } } }
+    },
+    "Import Locally": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Importer localement" } } }
+    },
+    "Import NotebookLM export…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Importer un export NotebookLM…" } } }
+    },
+    "Import URL…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Importer une URL…" } } }
+    },
+    "Import receipts…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Importer des reçus…" } } }
+    },
+    "Import sealed research receipts": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Importer des reçus de recherche scellés" } } }
+    },
+    "Inbox connected. Sync remains explicit and local.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Boîte de réception connectée. La synchronisation reste explicite et locale." } } }
+    },
+    "Inbox contains no JSON receipt.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La boîte de réception ne contient aucun reçu JSON." } } }
+    },
+    "Inbox has more than 32 receipts. Archive a batch before syncing.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La boîte de réception contient plus de 32 reçus. Archivez un lot avant la synchronisation." } } }
+    },
+    "Inbox sync failed closed; no file was moved or deleted.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La synchronisation a échoué en mode fermé ; aucun fichier n’a été déplacé ni supprimé." } } }
+    },
+    "Inbox: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Boîte de réception : %@" } } }
+    },
+    "Install the embedded Qwen model in AI settings first.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Installez d’abord le modèle Qwen intégré dans les réglages IA." } } }
+    },
+    "LOCAL MIGRATION · NO GOOGLE LOGIN": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "MIGRATION LOCALE · AUCUNE CONNEXION GOOGLE" } } }
+    },
+    "LOCAL · ENCRYPTED": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "LOCAL · CHIFFRÉ" } } }
+    },
+    "List NotebookLM notebooks…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Lister les carnets NotebookLM…" } } }
+    },
+    "Local synthesis failed closed; the cited sources remain available.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La synthèse locale a échoué en mode fermé ; les sources citées restent disponibles." } } }
+    },
+    "Markdown export failed closed; no vault data was changed.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "L’export Markdown a échoué en mode fermé ; aucune donnée du coffre n’a été modifiée." } } }
+    },
+    "Migration failed closed. No source file was moved, deleted or uploaded.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La migration a échoué en mode fermé. Aucun fichier source n’a été déplacé, supprimé ni téléversé." } } }
+    },
+    "Migration manifest saved with source hashes and aggregate integrity hash.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Manifeste de migration enregistré avec les empreintes des sources et l’empreinte d’intégrité globale." } } }
+    },
+    "No NotebookLM notebook is available from the configured gateway.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun carnet NotebookLM n’est disponible via la passerelle configurée." } } }
+    },
+    "No approved history": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun historique approuvé" } } }
+    },
+    "No approved receipt is available to export.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun reçu approuvé n’est disponible pour l’export." } } }
+    },
+    "No approved sources": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune source approuvée" } } }
+    },
+    "No authorized local source matched.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune source locale autorisée ne correspond." } } }
+    },
+    "No evidence ID attached": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun identifiant de preuve associé" } } }
+    },
+    "No reviewed claims": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune affirmation révisée" } } }
+    },
+    "No revised source detected": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune révision de source détectée" } } }
+    },
+    "No supported NotebookLM export document was found.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun document d’export NotebookLM pris en charge n’a été trouvé." } } }
+    },
+    "Notebook": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Carnet" } } }
+    },
+    "NotebookLM import failed closed. The checkpoint remains resumable.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "L’import NotebookLM a échoué en mode fermé. Le point de reprise reste utilisable." } } }
+    },
+    "NotebookLM import paused. Select the same staging folder to resume.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Import NotebookLM en pause. Sélectionnez le même dossier de préparation pour reprendre." } } }
+    },
+    "NotebookLM import staged and quarantined: %lld new, %lld already present.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Import NotebookLM préparé et mis en quarantaine : %lld nouveaux, %lld déjà présents." } } }
+    },
+    "NotebookLM listing failed closed. No source was exported.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La liste NotebookLM a échoué en mode fermé. Aucune source n’a été exportée." } } }
+    },
+    "NotebookLM migration: %lld imported, %lld already present · manifest %@.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Migration NotebookLM : %lld importés, %lld déjà présents · manifeste %@." } } }
+    },
+    "ON-DEVICE DRAFT · NOT EVIDENCE": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "BROUILLON SUR L’APPAREIL · PAS UNE PREUVE" } } }
+    },
+    "On-device draft validated against known citation identifiers.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Brouillon sur l’appareil validé par rapport aux identifiants de citation connus." } } }
+    },
+    "Open Login Items": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouvrir les éléments d’ouverture" } } }
+    },
+    "Opt in for this session. Throttle never exports in the background.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Acceptez pour cette session. Throttle n’exporte jamais en arrière-plan." } } }
+    },
+    "Pause": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Mettre en pause" } } }
+    },
+    "Pause requested; the current source will finish safely.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Pause demandée ; le traitement de la source actuelle se terminera en toute sécurité." } } }
+    },
+    "Project key must use lowercase letters, numbers, dots, dashes or underscores.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La clé de projet doit utiliser des lettres minuscules, chiffres, points, tirets ou traits de soulignement." } } }
+    },
+    "Quarantine (%lld)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Quarantaine (%lld)" } } }
+    },
+    "Quarantine refresh failed closed.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "L’actualisation de la quarantaine a échoué en mode fermé." } } }
+    },
+    "REVIEW REQUIRED": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "RÉVISION REQUISE" } } }
+    },
+    "Reject": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rejeter" } } }
+    },
+    "Reject all": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tout rejeter" } } }
+    },
+    "Rejected %lld quarantined receipts.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld reçus en quarantaine rejetés." } } }
+    },
+    "Rejected receipts are removed from the encrypted vault.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Les reçus rejetés sont supprimés du coffre chiffré." } } }
+    },
+    "Research Vault": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Coffre de recherche" } } }
+    },
+    "Research Vault is disabled.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le Coffre de recherche est désactivé." } } }
+    },
+    "Research Vault is enabled.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le Coffre de recherche est activé." } } }
+    },
+    "Research Vault is unavailable in this build.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le Coffre de recherche n’est pas disponible dans cette version." } } }
+    },
+    "Research Vault project key for migrated NotebookLM sources": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Clé de projet du Coffre de recherche pour les sources NotebookLM migrées" } } }
+    },
+    "Research Vault view": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vue du Coffre de recherche" } } }
+    },
+    "Results come from local sources; generated text is never evidence.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Les résultats proviennent de sources locales ; le texte généré n’est jamais une preuve." } } }
+    },
+    "Review failed closed; no unreviewed source became searchable.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La révision a échoué en mode fermé ; aucune source non révisée n’est devenue consultable." } } }
+    },
+    "Revisions": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Révisions" } } }
+    },
+    "SHA-256 %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "SHA-256 %@" } } }
+    },
+    "SHA-256 %@ · observed %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "SHA-256 %@ · observé %@" } } }
+    },
+    "Save NotebookLM migration manifest": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Enregistrer le manifeste de migration NotebookLM" } } }
+    },
+    "Save View": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Enregistrer la vue" } } }
+    },
+    "Save integrity manifest…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Enregistrer le manifeste d’intégrité…" } } }
+    },
+    "Saved View": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vue enregistrée" } } }
+    },
+    "Saved Views": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vues enregistrées" } } }
+    },
+    "Saved view created. It stores filters only, never corpus data.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vue enregistrée créée. Elle conserve uniquement les filtres, jamais les données du corpus." } } }
+    },
+    "Search": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rechercher" } } }
+    },
+    "Search evidence, decisions and prior research": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rechercher des preuves, décisions et recherches antérieures" } } }
+    },
+    "Search failed closed. Check service approval and signing.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La recherche a échoué en mode fermé. Vérifiez l’autorisation et la signature du service." } } }
+    },
+    "Search returns bounded excerpts with path, locator, hash, freshness and evidence status.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La recherche renvoie des extraits bornés avec chemin, emplacement, empreinte, fraîcheur et statut de preuve." } } }
+    },
+    "Source-first local research": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Recherche locale fondée sur les sources" } } }
+    },
+    "Sources": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Sources" } } }
+    },
+    "Start / Resume Import…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Démarrer / reprendre l’import…" } } }
+    },
+    "Start Import": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Démarrer l’import" } } }
+    },
+    "Sync Inbox": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Synchroniser la boîte de réception" } } }
+    },
+    "Synthesize on Mac": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Synthétiser sur le Mac" } } }
+    },
+    "Taxonomy audit": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Audit de taxonomie" } } }
+    },
+    "The Inbox bookmark could not be saved.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le signet de la boîte de réception n’a pas pu être enregistré." } } }
+    },
+    "The migration manifest could not be saved.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le manifeste de migration n’a pas pu être enregistré." } } }
+    },
+    "The saved view could not be stored.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La vue enregistrée n’a pas pu être conservée." } } }
+    },
+    "The signed Research Vault service is not reachable.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le service signé du Coffre de recherche est inaccessible." } } }
+    },
+    "Throttle reads supported documents locally. It never signs in to Google or uploads this folder.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Throttle lit localement les documents pris en charge. Il ne se connecte jamais à Google et ne téléverse pas ce dossier." } } }
+    },
+    "Timeline": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Chronologie" } } }
+    },
+    "Unavailable": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Indisponible" } } }
+    },
+    "Uncertainty: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Incertitude : %@" } } }
+    },
+    "Add research files": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ajouter des fichiers de recherche" } } }
+    },
+    "Add research files…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ajouter des recherches…" } } }
+    },
+    "Add to Research Vault": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ajouter au Coffre de recherche" } } }
+    },
+    "Files are read locally, sealed with their SHA-256, and quarantined for review.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Les fichiers sont lus localement, scellés avec leur SHA-256 et placés en quarantaine pour vérification." } } }
+    },
+    "LOCAL · SHA-256 · QUARANTINED": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "LOCAL · SHA-256 · EN QUARANTAINE" } } }
+    },
+    "One selected file type is not supported.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le type d’un fichier sélectionné n’est pas pris en charge." } } }
+    },
+    "or drop files here": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "ou déposez les fichiers ici" } } }
+    },
+    "project-key": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "clé-projet" } } }
+    },
+    "Research import failed closed. No source file was moved, deleted or uploaded.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "L’import a échoué en mode fermé. Aucun fichier source n’a été déplacé, supprimé ou téléversé." } } }
+    },
+    "Select at most 32 research files per import.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Sélectionnez au maximum 32 fichiers de recherche par import." } } }
+    },
+    "macOS could not change the Research Vault service.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "macOS n’a pas pu modifier le service du Coffre de recherche." } } }
     }
   },
   "version": "1.0"

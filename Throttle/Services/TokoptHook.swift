@@ -28,7 +28,7 @@ enum TokoptHook {
         // this file does not guess.
         if toolName.hasPrefix("mcp__") {
             let response = payload["tool_response"]
-            let whole = (try? JSONSerialization.data(withJSONObject: response ?? [:]))?.count ?? 0
+            let whole = MCPResponseLedger.serializedByteCount(of: response)
             MCPResponseLedger.record(tool: toolName,
                                      bytes: whole,
                                      textBytes: MCPResponseLedger.textBytes(of: response))

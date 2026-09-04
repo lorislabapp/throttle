@@ -4,10 +4,15 @@ Throttle is an Apple-first cockpit for Claude Code and Codex. It measures local 
 
 Current status: active pre-release development. The repository contains macOS, iOS, widget, visionOS and self-hosted Edge surfaces. A local build is not proof of notarization, TestFlight approval or production readiness.
 
+The single current work ledger is [docs/TODO.md](docs/TODO.md). Dated roadmaps,
+backlogs and audit checklists are historical evidence, not active task lists.
+
 ## What it does
 
 - Parses local Claude Code session data and displays measured or clearly labelled estimated usage.
 - Runs Claude Code and Codex sessions in a native macOS cockpit.
+- Searches user-selected prior research through an opt-in encrypted local vault
+  with bounded citations and an on-device draft mode clearly labelled as non-evidence.
 - Creates reviewed, one-writer handoff packets between providers; it does not silently copy provider transcripts.
 - Offers explicit, reversible optimizers for supported Claude Code configuration and transcript workflows.
 - Optionally mirrors encrypted state through the user's private CloudKit database and an authenticated LAN peer link.
