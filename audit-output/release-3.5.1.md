@@ -59,7 +59,7 @@
 ## Metadata
 
 - [x] Prepared the non-published Sparkle entry for 3.5.1 (217), minimum macOS 14.0, from the final stapled DMG.
-- [ ] Prepare the product-page version/link update without publishing it.
+- [x] Prepared the product-page version/link update from the fresh public page, then removed Cloudflare/WebMCP response transformations before upload; clean source is 26,794 bytes with SHA-256 `b487c46e1a343aa559fcac25d8b568a7e588dfa47c899fa71c122e0cabd9518c`.
 
 ## Assemble
 
@@ -80,16 +80,17 @@
 
 - [x] Apple notarization accepted; submission `9e455bb1-56ee-4585-8b30-b3718b745f9d`, status `Ready for distribution`, no reported issues. Ticket stapled successfully.
 - [x] Public DMG upload authorized and completed for exactly `https://lorislab.fr/throttle/Throttle-3.5.1.dmg`.
-- [x] Sparkle appcast publication authorized and completed after public DMG verification; the product page remains unchanged and requires separate authorization.
+- [x] Sparkle appcast publication authorized and completed after public DMG verification.
+- [x] Product-page publication separately authorized and completed for exactly `https://lorislab.fr/throttle/`; only `throttle/index.html` was uploaded from an isolated directory.
 
 ## Post-release
 
 - [x] Public URL verified through normal and cache-busted requests: HTTP 200, content length 31,540,263 bytes; downloaded SHA-256 exactly `796da4eff8ebeb53f167198fc0fc4de3addc8ce1414bfa6a970680cfa6eb8693`.
 - [x] Sparkle EdDSA signature verified successfully against a fresh download from the public URL.
 - [x] Public appcast normal and cache-busted responses match the exact 93,637-byte candidate (SHA-256 `7625700c70f3ba6106f176c2a7a6f3e6793c4d05369cca4e449c958e10af529e`); top item is 3.5.1 (217) and its DMG returns HTTP 200 with length 31,540,263.
-- [ ] Verify/update the product-page version and download link after separate authorization.
+- [x] Public product page verified through normal and cache-busted requests after removing the dynamic Cloudflare transformations: both normalize exactly to SHA-256 `b487c46e1a343aa559fcac25d8b568a7e588dfa47c899fa71c122e0cabd9518c`, show 3.5.1 and 31.5 MB, and link to the 31,540,263-byte public DMG. Exactly one WebMCP bridge and one Rocket Loader injection are served.
 - [ ] Installation/relaunch remains a separate gate.
 
 ## Current verdict
 
-Release is **LIVE IN SPARKLE WITH CAVEATS**. The source is integrated at `0bc2ebfa39b029c14109d019be5fcf6db8068e4c`; the notarized DMG is publicly retrievable byte-for-byte, its Sparkle signature verifies, and 3.5.1 (217) is the public feed's top item. The hosted macOS XCTest runner and the drifting DeepSearsh corpus remain open requalification items. No product-page publication, installation or push has occurred.
+Release is **PUBLICLY LIVE WITH CAVEATS**. The source is integrated at `0bc2ebfa39b029c14109d019be5fcf6db8068e4c`; the notarized DMG is publicly retrievable byte-for-byte, its Sparkle signature verifies, 3.5.1 (217) is the public feed's top item, and the public product page advertises the exact 3.5.1 DMG. The hosted macOS XCTest runner and the drifting DeepSearsh corpus remain open requalification items. No installation or push has occurred.
