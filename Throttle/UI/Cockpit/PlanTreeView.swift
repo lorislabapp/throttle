@@ -1,5 +1,13 @@
 import SwiftUI
 
+struct PlanViewContext: Equatable {
+    var projectName = "No active project"
+    var projectPath = "Select a Cockpit session to choose the project plan."
+    var sessionLabel: String?
+    var runtime: String?
+    var state: String?
+}
+
 /// The Plan segment: a project's task tree on the left, the selected task's log on
 /// the right.
 ///
@@ -8,9 +16,11 @@ import SwiftUI
 struct PlanTreeView: View {
 
     let model: PlanModel
+    var context = PlanViewContext()
     /// The cockpit opens the session; this view only asks for it. Keeps the
     /// "advisory, never automatic" rule visible in the type signature.
     var onLaunch: ((TaskLauncher.LaunchPlan) -> Void)?
+    var onShowSession: (() -> Void)?
 
     @State var launchError: String?
     @State var integrationError: String?
@@ -25,6 +35,8 @@ struct PlanTreeView: View {
             VStack(spacing: 0) {
                 header
                 Rectangle().fill(hair).frame(height: 1)
+                nextStepBanner
+                Rectangle().fill(hair).frame(height: 1)
                 tree
             }
             .frame(minWidth: 340)
@@ -37,18 +49,71 @@ struct PlanTreeView: View {
     // MARK: - Header
 
     private var header: some View {
-        HStack(spacing: 10) {
-            Text(model.plan?.title.uppercased() ?? "PLAN")
-                .font(.system(size: 11, weight: .semibold)).kerning(0.6)
-                .foregroundStyle(.secondary)
-            Spacer()
-            if model.hasPlan {
-                Text("\(model.overallPct)%")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Text(model.plan?.title.uppercased() ?? "PLAN")
+                    .font(.system(size: 11, weight: .semibold)).kerning(0.6)
                     .foregroundStyle(.secondary)
+                Spacer()
+                if model.hasPlan {
+                    Text("\(model.overallPct)%")
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Label(context.projectName, systemImage: "folder")
+                    .font(.system(size: 12, weight: .semibold))
+                Text(context.projectPath)
+                    .font(.system(size: 10.5, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                if let session = context.sessionLabel {
+                    HStack(spacing: 5) {
+                        Image(systemName: "bubble.left.and.bubble.right")
+                        Text(session)
+                        if let runtime = context.runtime { Text("· \(runtime)") }
+                        if let state = context.state { Text("· \(state)") }
+                        Spacer(minLength: 4)
+                        if onShowSession != nil {
+                            Button("Show session") { onShowSession?() }
+                                .buttonStyle(.link).controlSize(.small)
+                        }
+                    }
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(.secondary)
+                } else {
+                    Text("No active session — this plan is not attached to a running agent.")
+                        .font(.system(size: 10.5)).foregroundStyle(.orange)
+                }
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 9)
+    }
+
+    @ViewBuilder
+    private var nextStepBanner: some View {
+        if let id = model.selection, let task = model.plan?.task(id) {
+            let state = model.state(id)
+            HStack(alignment: .center, spacing: 8) {
+                Image(systemName: nextStepIcon(state.status))
+                    .foregroundStyle(color(state.status))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("NEXT STEP").font(.system(size: 9, weight: .semibold)).kerning(0.5)
+                        .foregroundStyle(.secondary)
+                    Text(nextStepText(task, state))
+                        .font(.system(size: 11, weight: .medium)).lineLimit(2)
+                }
+                Spacer(minLength: 6)
+                if let dependency = model.unmetDependencies(for: task).first {
+                    Button("Open \(dependency)") { model.selection = dependency }
+                        .controlSize(.small)
+                }
+            }
+            .padding(.horizontal, 14).padding(.vertical, 8)
+            .background(Color.accentColor.opacity(0.045))
+        }
     }
 
     // MARK: - Tree
@@ -121,8 +186,11 @@ struct PlanTreeView: View {
                     .font(.system(size: 9, weight: .medium)).kerning(0.4)
                     .foregroundStyle(.secondary)
             }
+            Text(statusText(state.status))
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(color(state.status))
             if state.status == .blocked, let waiting = state.blockedReason {
-                Text("← \(waiting)").font(.system(size: 10, design: .monospaced))
+                Text("waiting for \(waiting)").font(.system(size: 10, design: .monospaced))
                     .foregroundStyle(.secondary)
             }
             progressBar(state.pct, status: state.status)
@@ -167,6 +235,7 @@ struct PlanTreeView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(task.title).font(.system(size: 13, weight: .semibold))
 
+                    nextAction(task, state)
                     facts(task, state)
 
                     if !state.evidence.isEmpty {
@@ -243,6 +312,67 @@ struct PlanTreeView: View {
             Text(label).font(.system(size: 10, weight: .medium)).kerning(0.3)
                 .foregroundStyle(.secondary).frame(width: 78, alignment: .leading)
             Text(value).font(.system(size: 11)).textSelection(.enabled)
+        }
+    }
+
+    @ViewBuilder
+    private func nextAction(_ task: PlanTask, _ state: TaskState) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            section("WHAT TO DO NOW")
+            Text(nextStepText(task, state))
+                .font(.system(size: 11.5, weight: .medium))
+                .fixedSize(horizontal: false, vertical: true)
+            if let dependency = model.unmetDependencies(for: task).first,
+               let dependencyTask = model.plan?.task(dependency) {
+                Button("Open \(dependency): \(dependencyTask.title)") {
+                    model.selection = dependency
+                }
+                .buttonStyle(.link).controlSize(.small)
+            }
+        }
+        .padding(10)
+        .background(Color.accentColor.opacity(0.07), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func nextStepText(_ task: PlanTask, _ state: TaskState) -> String {
+        if let dependency = model.unmetDependencies(for: task).first {
+            let title = model.plan?.task(dependency)?.title ?? dependency
+            return "Finish \(dependency) — \(title) — before this task can start."
+        }
+        switch state.status {
+        case .pending: return "Ready to start. Review the recommendation, then launch an agent."
+        case .claimed, .running:
+            return "Continue in \(state.runtime?.capitalized ?? "the assigned") session; it owns this task."
+        case .blocked: return state.blockedReason.map { "Resolve the blocker: \($0)" } ?? "Resolve the reported blocker."
+        case .review: return "Review the evidence with the opposite runtime before accepting completion."
+        case .done: return "Review the diff and verification result, then integrate the task."
+        case .integrated: return "Integrated. Select the next ready task in the plan."
+        case .failed: return "Inspect the log, then release or retry this task explicitly."
+        }
+    }
+
+    private func nextStepIcon(_ status: TaskStatus) -> String {
+        switch status {
+        case .pending: return "play.circle"
+        case .blocked: return "lock"
+        case .claimed, .running: return "arrow.right.circle"
+        case .review: return "checkmark.message"
+        case .done: return "arrow.triangle.merge"
+        case .integrated: return "checkmark.circle"
+        case .failed: return "exclamationmark.triangle"
+        }
+    }
+
+    private func statusText(_ status: TaskStatus) -> String {
+        switch status {
+        case .pending: return "Ready"
+        case .blocked: return "Blocked"
+        case .claimed: return "Assigned"
+        case .running: return "Running"
+        case .review: return "Review"
+        case .done: return "Done"
+        case .failed: return "Failed"
+        case .integrated: return "Integrated"
         }
     }
 

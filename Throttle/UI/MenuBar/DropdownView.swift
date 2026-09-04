@@ -2983,6 +2983,12 @@ private struct InlineAssistantPane: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             SettingsGroupHeader(label: "AI Assistant", desc: "Powers the Project window's chat")
+            SettingsRow(title: "AI routing", sub: "See session, local/frontier and fallback rules together.") {
+                SettingsButton(title: "Open…", systemImage: "arrow.triangle.branch") {
+                    AIRoutingWindowController.shared.show()
+                }
+            }
+            SettingsHair()
             SettingsRow(title: "Provider", sub: "Who answers \u{201C}why am I burning tokens?\u{201D}") {
                 Picker("", selection: Binding(
                     get: { aiSelection ?? defaultProviderKind() },
@@ -3249,6 +3255,11 @@ private struct InlineAssistantPane: View {
         Task {
             let status = await LocalWorkerRouter.shared.detailedStatus()
             localWorkerStatus = status
+            if let exact = LocalWorkerRouter.installedModelName(
+                matching: localWorkerServerModel, in: status.installedModels
+            ), exact != localWorkerServerModel {
+                localWorkerServerModel = exact
+            }
             localWorkerProbing = false
         }
     }

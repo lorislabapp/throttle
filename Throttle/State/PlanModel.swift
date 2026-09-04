@@ -26,6 +26,9 @@ final class PlanModel {
     private(set) var hasPlan = false
 
     var selection: String?
+    /// Mission currently visible in the Cockpit. It is orientation context only:
+    /// changing tabs never claims, launches or edits a task.
+    private var activeMissionID: String?
 
     /// One advice per actionable task. Computed on reload rather than on every
     /// draw, because it samples memory and reads usage snapshots.
@@ -103,6 +106,7 @@ final class PlanModel {
             plan = resolved.plan
             states = resolved.states
             loadError = nil
+            orientSelection()
             refreshAdvice()
             autoRelaunchRejectedTasks()
         } catch {
@@ -218,6 +222,26 @@ final class PlanModel {
     }
 
     func state(_ id: String) -> TaskState { states[id] ?? TaskState() }
+
+    /// Re-orient Plan when the active Cockpit tab changes. Prefer the task owned
+    /// by that mission, otherwise the first leaf whose dependencies are complete.
+    func orient(to missionID: UUID?) {
+        activeMissionID = missionID?.uuidString
+        selection = nil
+        orientSelection()
+    }
+
+    private func orientSelection() {
+        guard let plan else { selection = nil; return }
+        if let selection, plan.task(selection) != nil { return }
+        selection = PlanOrientation.initialSelection(
+            plan: plan, states: states, activeMissionID: activeMissionID
+        )
+    }
+
+    func unmetDependencies(for task: PlanTask) -> [String] {
+        PlanOrientation.unmetDependencies(for: task, states: states)
+    }
 
     var overallPct: Int {
         guard let plan, !plan.roots.isEmpty else { return 0 }

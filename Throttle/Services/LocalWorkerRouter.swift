@@ -70,6 +70,16 @@ actor LocalWorkerRouter {
         return "\(serverModel) @ \(host)"
     }
 
+    /// Resolve an alias such as `throttle-worker` to the exact tag returned by
+    /// Ollama (`throttle-worker:latest`). SwiftUI Picker requires exact tag
+    /// equality; without this normalization its closed state appears blank even
+    /// though the server and model are healthy.
+    nonisolated static func installedModelName(matching configured: String,
+                                               in installed: [String]) -> String? {
+        if installed.contains(configured) { return configured }
+        return installed.first { $0.hasPrefix("\(configured):") }
+    }
+
     /// Delegation can serve when either backend can.
     nonisolated static var anyBackendAvailable: Bool {
         EmbeddedModelRuntime.isInstalled || configuredEndpoint != nil

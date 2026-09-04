@@ -153,36 +153,21 @@ struct MultiCockpitRoot: View {
     }
 
     private func routingMenu(compact: Bool) -> some View {
-        Menu {
-            ForEach(MissionRoutingMode.allCases) { mode in
-                Button {
-                    model.routingMode = mode
-                } label: {
-                    if model.routingMode == mode {
-                        Label(mode.label, systemImage: "checkmark")
-                    } else {
-                        Text(mode.label)
-                    }
-                }
-                Text(mode.detail)
-            }
+        Button {
+            AIRoutingWindowController.shared.show()
         } label: {
             HStack(spacing: 5) {
-                Image(systemName: model.runtimeForNewMission.symbol)
+                Image(systemName: "arrow.triangle.branch")
                 if !compact { Text(model.routingMode.label) }
-                Image(systemName: "chevron.down").font(.system(size: 7, weight: .bold))
             }
             .font(.system(size: 10.5, weight: .medium))
             .foregroundStyle(.secondary)
             .padding(.horizontal, 7).padding(.vertical, 5)
             .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 6))
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
         .fixedSize()
-        .help(String.localizedStringWithFormat(
-            String(localized: "Mission routing: %@ — affects new sessions; live sessions switch through a reviewed handoff"),
-            model.routingMode.label))
+        .help("Open AI Routing — coding sessions, local/frontier inference and fallback rules")
         .accessibilityLabel(String(localized: "Mission runtime"))
         .accessibilityValue(model.routingMode.label)
     }

@@ -25,15 +25,20 @@ struct CockpitPlanView: View {
     @State private var planModel = PlanModel()
 
     var body: some View {
-        PlanTreeView(model: planModel, onLaunch: launch)
+        PlanTreeView(model: planModel, context: context, onLaunch: launch,
+                     onShowSession: showActiveSession)
             .onAppear {
                 planModel.onAutoRelaunch = launch
                 planModel.isDirectoryHeldBySession = {
                     SessionWorkingDirectory.isSessionWorking(inside: $0, of: cockpit.sessions)
                 }
                 planModel.bind(to: activeProjectRoot)
+                planModel.orient(to: cockpit.active?.missionID)
             }
-            .onChange(of: cockpit.activeID) { _, _ in planModel.bind(to: activeProjectRoot) }
+            .onChange(of: cockpit.activeID) { _, _ in
+                planModel.bind(to: activeProjectRoot)
+                planModel.orient(to: cockpit.active?.missionID)
+            }
     }
 
     private func launch(_ task: TaskLauncher.LaunchPlan) {
@@ -49,6 +54,35 @@ struct CockpitPlanView: View {
     private var activeProjectRoot: URL? {
         guard let cwd = cockpit.active?.cwd, !cwd.isEmpty else { return nil }
         return URL(fileURLWithPath: cwd, isDirectory: true)
+    }
+
+    private var context: PlanViewContext {
+        guard let active = cockpit.active else { return PlanViewContext() }
+        return PlanViewContext(
+            projectName: active.projectName,
+            projectPath: active.cwd,
+            sessionLabel: "Session \((active.sessionId ?? active.id.uuidString).prefix(8))",
+            runtime: active.runtime.label,
+            state: sessionState(active)
+        )
+    }
+
+    private func showActiveSession() {
+        guard let active = cockpit.active else { return }
+        cockpit.wake(active.id)
+        cockpit.viewMode = .rail
+    }
+
+    private func sessionState(_ session: CockpitTab) -> String {
+        switch session.state {
+        case .dormant: return "not started"
+        case .hibernated: return "hibernated"
+        case .rateLimited: return "rate limited"
+        case .paused: return "paused"
+        case .working: return "working"
+        case .waiting: return "waiting for you"
+        case .idle: return "idle"
+        }
     }
 }
 
