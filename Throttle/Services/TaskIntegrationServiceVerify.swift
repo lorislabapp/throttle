@@ -242,10 +242,15 @@ extension TaskIntegrationService {
         try check("setflags", posix_spawnattr_setflags(&attributes, flags))
         try check("setpgroup", posix_spawnattr_setpgroup(&attributes, 0))
 
-        var argv: [UnsafeMutablePointer<CChar>?] =
-            [shellPath, "-c", chdirWrapper, "throttle-verify",
-             directory.path(percentEncoded: false), command]
-                .map { strdup($0) }
+        // Spelled out as [String] rather than left to inference: with the array
+        // literal untyped, the compiler is free to read the closure parameter as
+        // a C string and picks strdup's UnsafePointer overload, which no longer
+        // matches the elements it was handed.
+        let arguments: [String] = [
+            shellPath, "-c", chdirWrapper, "throttle-verify",
+            directory.path(percentEncoded: false), command
+        ]
+        var argv: [UnsafeMutablePointer<CChar>?] = arguments.map { strdup($0) }
         argv.append(nil)
         defer { for argument in argv { free(argument) } }
 

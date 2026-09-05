@@ -3,8 +3,16 @@ reporter: xcode
 strict: true
 
 excluded:
+  # Nested git worktrees. They hold other branches' copies of the same sources,
+  # so a local run linted every file two or three times and reported thousands
+  # of violations the baseline had never seen. CI has no worktrees and never saw
+  # this, which is exactly why the local ratchet has to match it.
+  - .claude
+  # Every SPM build directory, not just the two that happened to exist when this
+  # list was written: SwiftLint does not read .gitignore, so generated sources
+  # under a package's .build were linted as if they were ours.
+  - "**/.build"
   - .build
-  - ThrottleShared/.build
   - edge-agent/node_modules
   - build
   - audit-output
