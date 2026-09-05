@@ -10,6 +10,10 @@ final class SemanticIndexTests: XCTestCase {
     /// String.hashValue (we sum unicode scalars).
     private struct StubEmbedder: EmbeddingProvider {
         var dimension: Int { 16 }
+
+        /// Named so a record embedded by this stub is never ranked against a
+        /// vector from a real model.
+        var modelIdentifier: String { "test.stub.16" }
         func embed(_ text: String) -> [Float]? {
             var v = [Float](repeating: 0, count: 16)
             for w in text.lowercased().split(whereSeparator: { !$0.isLetter }) {
@@ -80,7 +84,11 @@ final class SemanticIndexTests: XCTestCase {
     func test_searchHybrid_keywordFallbackWhenNoEmbedder() {
         // Built with a model; queried later when the model is gone → pure keyword
         // ranking over the stored chunks still finds the exact identifier.
-        struct Dead: EmbeddingProvider { var dimension: Int { 0 }; func embed(_ t: String) -> [Float]? { nil } }
+        struct Dead: EmbeddingProvider {
+            var dimension: Int { 0 }
+            var modelIdentifier: String { "test.stub.none" }
+            func embed(_ text: String) -> [Float]? { nil }
+        }
         var built = SemanticIndex(embedder: StubEmbedder())
         built.index(docId: "match", text: "func authenticateUser keychain token", maxChars: 100)
         built.index(docId: "other", text: "networking retry backoff timeout", maxChars: 100)
@@ -101,7 +109,11 @@ final class SemanticIndexTests: XCTestCase {
     }
 
     func test_search_emptyWhenEmbedderUnavailable() {
-        struct Dead: EmbeddingProvider { var dimension: Int { 0 }; func embed(_ t: String) -> [Float]? { nil } }
+        struct Dead: EmbeddingProvider {
+            var dimension: Int { 0 }
+            var modelIdentifier: String { "test.stub.none" }
+            func embed(_ text: String) -> [Float]? { nil }
+        }
         var idx = SemanticIndex(embedder: Dead())
         XCTAssertEqual(idx.index(docId: "d", text: "anything", maxChars: 100), 0)
         XCTAssertTrue(idx.search("anything").isEmpty)

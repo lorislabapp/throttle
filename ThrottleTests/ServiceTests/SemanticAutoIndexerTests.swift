@@ -6,6 +6,10 @@ final class SemanticAutoIndexerTests: XCTestCase {
 
     private struct StubEmbedder: EmbeddingProvider {
         var dimension: Int { 16 }
+
+        /// Named so a record embedded by this stub is never ranked against a
+        /// vector from a real model.
+        var modelIdentifier: String { "test.stub.16" }
         func embed(_ text: String) -> [Float]? {
             var v = [Float](repeating: 0, count: 16)
             for w in text.lowercased().split(whereSeparator: { !$0.isLetter }) {
