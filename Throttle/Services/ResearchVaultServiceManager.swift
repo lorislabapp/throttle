@@ -18,12 +18,30 @@ enum ResearchVaultServiceManager {
 
     static var state: State {
         switch service.status {
-        case .notFound: .unavailable
+        // `.notFound` is documented as a missing or malformed property list, and
+        // that is how this was read: the workbench announced the vault as absent
+        // from the build. On macOS 27 an agent that has simply never been
+        // registered answers `.notFound` too — measured with a minimal probe app,
+        // where registering by the same name succeeds and every later status is
+        // correct. So the file's own presence decides: if the bundle carries the
+        // plist, the honest reading is that nobody has enabled it yet.
+        case .notFound: bundledPlistExists ? .disabled : .unavailable
         case .notRegistered: .disabled
         case .enabled: .enabled
         case .requiresApproval: .requiresApproval
         @unknown default: .unavailable
         }
+    }
+
+    /// Registration only ever works by bare file name: addressing the same agent
+    /// as `Contents/Library/LaunchAgents/<name>` reports a plausible status and
+    /// then fails to register. The path is used to look for the file, never to
+    /// name the service.
+    private static var bundledPlistExists: Bool {
+        FileManager.default.fileExists(
+            atPath: Bundle.main.bundleURL
+                .appendingPathComponent("Contents/Library/LaunchAgents")
+                .appendingPathComponent(plistName).path)
     }
 
     static func setEnabled(_ enabled: Bool) throws {
@@ -34,23 +52,7 @@ enum ResearchVaultServiceManager {
         }
     }
 
-    /// The bare file name is what the documentation asks for, and it is what
-    /// worked through macOS 15. On macOS 27 it resolves to nothing: every agent
-    /// reports `.notFound`, which this app rendered as "unavailable in this
-    /// build" — a bundle that was in fact complete, signed, notarized and
-    /// correct. Measured on 27.0 with a minimal probe app, the same plist
-    /// answers `.notRegistered` when addressed by its path within the bundle.
-    ///
-    /// Neither spelling can be assumed, so the working one is chosen once:
-    /// anything other than `.notFound` means the system resolved the file.
-    private static let plistReference: String = {
-        let full = "Contents/Library/LaunchAgents/" + plistName
-        if SMAppService.agent(plistName: plistName).status != .notFound { return plistName }
-        if SMAppService.agent(plistName: full).status != .notFound { return full }
-        return plistName
-    }()
-
     private static var service: SMAppService {
-        SMAppService.agent(plistName: plistReference)
+        SMAppService.agent(plistName: plistName)
     }
 }

@@ -99,7 +99,11 @@ final class ResearchVaultWorkbenchModel {
             if enabled { Task { await checkHealth() } }
         } catch {
             refreshState()
+            // The reason was dropped here, and the sentence that replaced it was
+            // true of every possible failure — so a registration that macOS
+            // refused looked exactly like one it had never been asked to make.
             status = String(localized: "macOS could not change the Research Vault service.")
+                + " (\(error.localizedDescription))"
         }
     }
 
