@@ -34,7 +34,23 @@ enum ResearchVaultServiceManager {
         }
     }
 
+    /// The bare file name is what the documentation asks for, and it is what
+    /// worked through macOS 15. On macOS 27 it resolves to nothing: every agent
+    /// reports `.notFound`, which this app rendered as "unavailable in this
+    /// build" — a bundle that was in fact complete, signed, notarized and
+    /// correct. Measured on 27.0 with a minimal probe app, the same plist
+    /// answers `.notRegistered` when addressed by its path within the bundle.
+    ///
+    /// Neither spelling can be assumed, so the working one is chosen once:
+    /// anything other than `.notFound` means the system resolved the file.
+    private static let plistReference: String = {
+        let full = "Contents/Library/LaunchAgents/" + plistName
+        if SMAppService.agent(plistName: plistName).status != .notFound { return plistName }
+        if SMAppService.agent(plistName: full).status != .notFound { return full }
+        return plistName
+    }()
+
     private static var service: SMAppService {
-        SMAppService.agent(plistName: plistName)
+        SMAppService.agent(plistName: plistReference)
     }
 }
