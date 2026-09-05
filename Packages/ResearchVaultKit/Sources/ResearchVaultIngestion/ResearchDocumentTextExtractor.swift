@@ -62,6 +62,7 @@ public enum ResearchDocumentTextExtractor {
             throw ResearchDocumentTextExtractorError.unsupportedOrUnreadable(name)
         }
         var pages: [String] = []
+        var unreadablePages = 0
         for index in 0 ..< document.pageCount {
             guard let page = document.page(at: index) else { continue }
             let embedded = (page.string ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -74,9 +75,18 @@ public enum ResearchDocumentTextExtractor {
                 pages.append(recognised)
             } else if !embedded.isEmpty {
                 pages.append(embedded)
+            } else {
+                // A page that yields nothing must leave a mark. Joining silently
+                // over it makes an unreadable page indistinguishable from one that
+                // never existed, and the receipt then seals that shortfall as a
+                // legitimate character count — the same "absent rather than
+                // visibly unreadable" failure this fallback exists to remove,
+                // moved down from the document to the page.
+                unreadablePages += 1
+                pages.append("[page \(index + 1): no text layer and OCR recovered nothing]")
             }
         }
-        guard !pages.isEmpty else {
+        guard pages.count > unreadablePages else {
             throw ResearchDocumentTextExtractorError.unsupportedOrUnreadable(name)
         }
         return pages.joined(separator: "\n\n")
@@ -90,10 +100,25 @@ public enum ResearchDocumentTextExtractor {
               let page = document.page(at: pageIndex + 1) else { return nil }
 
         let box = page.getBoxRect(.mediaBox)
-        let scale: CGFloat = 2
-        let width = Int((box.width * scale).rounded())
-        let height = Int((box.height * scale).rounded())
-        guard width > 0, height > 0, width * height < 40_000_000 else { return nil }
+        // The media box comes from the file and CoreGraphics does not clamp it.
+        // A declared page of 1e11 points overflows the pixel-count multiply and
+        // traps the process before any guard can reject it — a 438-byte file is
+        // enough, and since watched folders are re-scanned it would crash again
+        // on every relaunch. Validate in Double, before any conversion to Int.
+        let boxWidth = box.width.isFinite ? Double(box.width) : 0
+        let boxHeight = box.height.isFinite ? Double(box.height) : 0
+        guard boxWidth > 1, boxHeight > 1, boxWidth < 200_000, boxHeight < 200_000 else {
+            return nil
+        }
+
+        // Fit the pixel budget by rendering smaller rather than giving up: a page
+        // skipped here vanishes from the document silently, which is the failure
+        // this whole fallback exists to remove.
+        let budget = 24_000_000.0
+        let scale = min(2.0, (budget / (boxWidth * boxHeight)).squareRoot())
+        let width = Int(boxWidth * scale)
+        let height = Int(boxHeight * scale)
+        guard width > 0, height > 0 else { return nil }
 
         guard let context = CGContext(
             data: nil, width: width, height: height,
@@ -103,7 +128,7 @@ public enum ResearchDocumentTextExtractor {
         ) else { return nil }
         context.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
         context.fill(CGRect(x: 0, y: 0, width: width, height: height))
-        context.scaleBy(x: scale, y: scale)
+        context.scaleBy(x: CGFloat(scale), y: CGFloat(scale))
         context.translateBy(x: -box.origin.x, y: -box.origin.y)
         context.drawPDFPage(page)
         guard let image = context.makeImage() else { return nil }

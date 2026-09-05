@@ -1188,11 +1188,11 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
     /// mix French and English freely.
     private static let ftsStopwords: Set<String> = [
         // French
-        "ai", "ait", "alors", "au", "aussi", "autre", "aux", "avec", "avoir",
+        "ait", "alors", "au", "aussi", "autre", "aux", "avec", "avoir",
         "avais", "avait", "beaucoup", "bien", "car", "ce", "cela", "ces", "cet",
         "cette", "ceux", "chez", "comme", "coup", "dans", "de", "deja", "des",
         "donc", "dont", "du", "elle", "elles", "en", "encore", "entre", "est",
-        "et", "etait", "etc", "etre", "eu", "faire", "fait", "faut", "genre",
+        "et", "etait", "etc", "etre", "faire", "fait", "faut", "genre",
         "ici", "il", "ils", "je", "la", "le", "les", "leur", "lui", "ma", "mais",
         "me", "meme", "mes", "moi", "mon", "ne", "ni", "nos", "notre", "nous",
         "on", "ont", "ou", "par", "parce", "pas", "peu", "peut", "plus", "pour",
@@ -1202,7 +1202,7 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
         "va", "vais", "vers", "veut", "veux", "voir", "vos", "votre", "vous",
         // English
         "about", "all", "also", "am", "an", "and", "any", "are", "as", "at",
-        "be", "been", "but", "by", "can", "could", "did", "do", "does", "for",
+        "be", "been", "but", "by", "could", "did", "do", "does", "for",
         "from", "get", "had", "has", "have", "how", "if", "in", "is", "it",
         "its", "just", "like", "more", "my", "no", "not", "of", "one", "or",
         "our", "out", "should", "so", "some", "that", "the", "their", "them",
@@ -1211,17 +1211,33 @@ public actor SQLCipherReceiptStore: ReceiptStore, ClaimSearchStore {
         "will", "with", "would", "you", "your",
     ]
 
+    private static func fold(_ token: String) -> String {
+        token.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
+    }
+
     private static func safeFTSQuery(_ query: String) throws -> String {
         let tokens = query
             .split { !$0.isLetter && !$0.isNumber }
             .prefix(32)
-            .map { String($0.prefix(64)).lowercased() }
+            .map { String($0.prefix(64)) }
             .filter { !$0.isEmpty }
         guard !tokens.isEmpty else { throw ClaimSearchError.emptyQuery }
+
+        // Case separates an acronym from a function word, so the stoplist is
+        // consulted only for a token written entirely in lower case. In this
+        // corpus the collisions ARE the subject matter — AI, CAN (the bus), IT,
+        // US, EU — and they are capitalised, while "le", "du" and "on" are not.
+        //
+        // Diacritics are folded before the lookup because the index tokenizer is
+        // configured with remove_diacritics 2: it stores "ete" for "été", so
+        // comparing a raw token missed every accented French function word the
+        // list exists to catch.
+        let content = tokens.filter { token in
+            token.contains(where: \.isUppercase) || !ftsStopwords.contains(Self.fold(token))
+        }
         // Keep the function words only when nothing else is left: an empty
         // query would return nothing at all, which is worse than a noisy match.
-        let content = tokens.filter { !ftsStopwords.contains($0) }
-        let effective = content.isEmpty ? tokens : content
+        let effective = (content.isEmpty ? tokens : content).map { $0.lowercased() }
         return effective.map { "\"" + $0.replacingOccurrences(of: "\"", with: "\"\"") + "\"" }
             .joined(separator: " OR ")
     }

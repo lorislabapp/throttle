@@ -170,6 +170,39 @@ final class SQLCipherReceiptStoreTests: XCTestCase {
                        "a query of only function words must not degrade to an empty match")
     }
 
+    func testAnAcronymIsNotMistakenForAFunctionWord() async throws {
+        // The stoplist collides with this corpus's own subject matter: AI, CAN
+        // (the bus), IT, US and EU are all function words in one language or
+        // another. Case is what separates them, so a capitalised token is kept
+        // whatever the list says. Accented French is folded before the lookup,
+        // because the index tokenizer stores "ete" for "été".
+        let (database, key) = try databaseFixture("fts-acronyms")
+        let store = try SQLCipherReceiptStore(databaseURL: database, key: key)
+        let grant = VaultAuthorization(projectKeys: ["throttle"], maximumSensitivity: .internal)
+
+        let onTopic = try makeReceipt(
+            receiptID: "3c4d5e6f-7a8b-49c0-b1d2-e3f4a5b60719",
+            projectKey: "throttle",
+            sensitivity: .internal,
+            claim: "the CAN bus decoder was verified against the EU regulation"
+        )
+        let offTopic = try makeReceipt(
+            receiptID: "4d5e6f70-8b9c-4ad1-c2e3-f4a5b6c7081a",
+            projectKey: "throttle",
+            sensitivity: .internal,
+            claim: "on peut aussi le faire ete apres et on peut le refaire ensuite"
+        )
+        _ = try await store.importReceipt(onTopic, authorization: grant, reviewState: .approved)
+        _ = try await store.importReceipt(offTopic, authorization: grant, reviewState: .approved)
+
+        let hits = try await store.searchClaims(
+            query: "est ce que le CAN et la reglementation EU sont ok",
+            authorization: grant
+        )
+        XCTAssertEqual(hits.first?.receiptID, onTopic.receiptID,
+                       "CAN and EU must survive the stoplist that contains can and eu")
+    }
+
     func testReceiptIDConflictRollsBackWithoutChangingAcceptedReceipt() async throws {
         let (database, key) = try databaseFixture("conflict")
         let store = try SQLCipherReceiptStore(databaseURL: database, key: key)
