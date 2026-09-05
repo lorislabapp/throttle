@@ -81,21 +81,36 @@ final class ResearchVaultWindowController: NSObject, NSWindowDelegate {
         if let window {
             window.contentViewController = host
             window.makeKeyAndOrderFront(nil)
-        } else {
-            let created = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 820, height: 520),
-                styleMask: [.titled, .closable, .miniaturizable, .resizable],
-                backing: .buffered,
-                defer: false
-            )
-            created.title = "Throttle — Research Vault"
-            created.minSize = NSSize(width: 760, height: 480)
-            created.contentViewController = host
-            RetainedWindowPolicy.configure(created, delegate: self)
-            created.center()
-            created.makeKeyAndOrderFront(nil)
-            window = created
+            NSApp.activate(ignoringOtherApps: true)
+            return
         }
+
+        // Without this the window opens while the app is still an accessory, so
+        // it carries no application menu bar and the user cannot reach Throttle's
+        // own menu at all. Every other window in the app does this; this one was
+        // the exception. It also dodges the macOS 26.5 NSTitlebar crash that hits
+        // menu-bar apps creating titled windows.
+        NSApp.setActivationPolicy(.regular)
+
+        // ResearchVaultWorkbenchView declares minWidth 920, idealWidth 1100 and
+        // minHeight 600. The window was built at 820x520 with a 760x480 floor —
+        // below the content's own minimum — so SwiftUI had no option but to clip,
+        // and the intake controls were cut off at both edges. Match the view.
+        let created = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 1_120, height: 720),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        created.title = "Throttle — Research Vault"
+        created.minSize = NSSize(width: 940, height: 620)
+        created.contentViewController = host
+        RetainedWindowPolicy.configure(created, delegate: self)
+        created.center()
+        // Remember where the user put it and how big they made it.
+        created.setFrameAutosaveName("ThrottleResearchVaultWindow")
+        created.makeKeyAndOrderFront(nil)
+        window = created
         NSApp.activate(ignoringOtherApps: true)
     }
 
