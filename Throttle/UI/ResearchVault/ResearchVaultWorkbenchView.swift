@@ -46,6 +46,10 @@ final class ResearchVaultWorkbenchModel {
     var spaces = ResearchVaultSpaceStore.load(projectKeys: ["cheatcode", "throttle"])
     var selectedSpaceID = "project:throttle"
     var folderSources = ResearchVaultFolderSourceStore.load()
+    /// A query that returned nothing and a vault nobody has searched yet look
+    /// identical in the results area, and they need opposite words.
+    var hasSearched = false
+    var lastQuery = ""
 
     private let client: ResearchVaultClient?
     private var activeNotebookLMImportJob: NotebookLMImportJob?
@@ -339,6 +343,8 @@ extension ResearchVaultWorkbenchModel {
             contextBundle = bundle
             results = bundle.items
             synthesis = nil
+            hasSearched = true
+            lastQuery = trimmed
             status = bundle.items.isEmpty
                 ? String(localized: "No authorized local source matched.")
                 : String(localized: "Results come from local sources; generated text is never evidence.")
@@ -894,6 +900,7 @@ struct ResearchVaultWorkbenchView: View {
     @State private var showReasoningPromotionConfirmation = false
     @State private var showReasoningRetractionConfirmation = false
     @State private var pane = WorkbenchPane.evidence
+    @State private var showAddToVault = false
 
     private enum WorkbenchPane: String, CaseIterable, Identifiable {
         case evidence = "Evidence"
@@ -923,243 +930,22 @@ struct ResearchVaultWorkbenchView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
+        HStack(spacing: 0) {
             spaceSidebar
-        } detail: {
+                .frame(width: 240)
+            Divider()
             VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Button(action: onBack) { Image(systemName: "chevron.left") }
-                    .buttonStyle(.plain)
-                Text("Research Vault").font(.headline)
-                Text("LOCAL · ENCRYPTED").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                Spacer()
-                if model.isBusy { ProgressView().controlSize(.small) }
-                serviceControl
-            }
-            .padding(16)
-
-            Divider()
-
-            VStack(spacing: 8) {
-                HStack(spacing: 6) {
-                    Label(
-                        model.selectedSpace.name,
-                        systemImage: model.selectedSpace.kind == .portfolio
-                            ? "square.grid.2x2" : "folder"
-                    )
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .accessibilityLabel("Search scope: \(model.selectedSpace.name)")
-                    Spacer()
-                }
-                HStack(spacing: 8) {
-                    TextField("Search evidence, decisions and prior research", text: $model.query)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(minWidth: 280)
-                        .onSubmit { Task { await model.search() } }
-                    Button {
-                        Task { await model.search() }
-                    } label: {
-                        Label("Search", systemImage: "magnifyingglass")
-                    }
-                    .fixedSize()
-                    .disabled(model.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-                HStack(spacing: 8) {
-                    Button("Synthesize on Mac") { Task { await model.synthesizeOnDevice() } }
-                        .disabled(model.results.isEmpty)
-                    Button("Save View") { model.saveCurrentView() }
-                        .disabled(model.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    if !model.savedViews.isEmpty {
-                        Picker("Saved View", selection: $model.selectedSavedViewID) {
-                            Text("Saved Views").tag(Optional<UUID>.none)
-                            ForEach(model.savedViews) { view in
-                                Text(view.name).tag(Optional(view.id))
-                            }
-                        }
-                        .labelsHidden()
-                        .frame(maxWidth: 170)
-                        Button("Apply") { Task { await model.applySavedView() } }
-                            .disabled(model.selectedSavedViewID == nil)
-                    }
-                    Spacer()
-                }
-                DisclosureGroup("Add sources, folders & migrations") {
-                    VStack(spacing: 8) {
-                HStack(spacing: 8) {
-                    TextField("project-key", text: $model.migrationProjectKey)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 190)
-                        .help("Research Vault project key for imported sources")
-                    Button("Add research files…") {
-                        Task { await model.chooseResearchFiles() }
-                    }
-                    .disabled(model.serviceState != .enabled || model.migrationProjectKey.isEmpty)
-                    Text("or drop files here")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text("LOCAL · SHA-256 · QUARANTINED")
-                        .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                }
-                .padding(8)
-                .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 8))
-                .contentShape(Rectangle())
-                .dropDestination(for: URL.self) { urls, _ in
-                    guard !urls.isEmpty else { return false }
-                    Task { await model.importResearchFiles(urls) }
-                    return true
-                }
-                HStack(spacing: 8) {
-                    Button("Import receipts…") { Task { await model.importReceiptFiles() } }
-                        .disabled(model.serviceState != .enabled)
-                    if let inboxFolderName = model.inboxFolderName {
-                        Button("Inbox: \(inboxFolderName)") { model.chooseInboxFolder() }
-                    } else {
-                        Button("Choose Inbox…") { model.chooseInboxFolder() }
-                    }
-                    Button("Sync Inbox") { Task { await model.syncInbox() } }
-                        .disabled(model.serviceState != .enabled || model.inboxFolderName == nil)
-                    Spacer()
-                }
-                HStack(spacing: 8) {
-                    Button("Import NotebookLM export…") {
-                        Task { await model.importNotebookLMExport() }
-                    }
-                    .disabled(model.serviceState != .enabled || model.migrationProjectKey.isEmpty)
-                    if model.migrationManifest != nil {
-                        Button("Save integrity manifest…") { model.saveMigrationManifest() }
-                    }
-                    Button("Export Markdown…") {
-                        Task { await model.exportMarkdown() }
-                    }
-                    .disabled(model.serviceState != .enabled)
-                    Spacer()
-                    Text("LOCAL MIGRATION · NO GOOGLE LOGIN")
-                        .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                }
-                HStack(spacing: 8) {
-                    TextField("https://example.com/research", text: $model.urlToImport)
-                        .textFieldStyle(.roundedBorder)
-                    Button("Import URL…") {
-                        Task { await model.importURL() }
-                    }
-                    .disabled(
-                        model.serviceState != .enabled
-                            || model.urlToImport.trimmingCharacters(
-                                in: .whitespacesAndNewlines
-                            ).isEmpty
-                            || model.migrationProjectKey.isEmpty
-                    )
-                    Text("HTTPS · SINGLE PAGE · QUARANTINED")
-                        .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                }
-                HStack(spacing: 8) {
-                    Toggle("Allow NotebookLM export", isOn: $model.notebookLMSyncEnabled)
-                        .toggleStyle(.checkbox)
-                        .help("Opt in for this session. Throttle never exports in the background.")
-                    Button("List NotebookLM notebooks…") {
-                        Task { await model.loadNotebookLMNotebooks() }
-                    }
-                    .disabled(!model.notebookLMSyncEnabled)
-                    Spacer()
-                    Text("EXPLICIT READ/EXPORT · CHECKPOINTED")
-                        .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                }
-                if !model.notebookLMNotebooks.isEmpty {
-                    HStack(spacing: 8) {
-                        Picker("Notebook", selection: $model.selectedNotebookID) {
-                            ForEach(model.notebookLMNotebooks) { notebook in
-                                Text("\(notebook.title) (\(notebook.sourceCount))")
-                                    .tag(Optional(notebook.id))
-                            }
-                        }
-                        .labelsHidden()
-                        Button("Start / Resume Import…") {
-                            Task { await model.importSelectedNotebookLM() }
-                        }
-                        .disabled(
-                            !model.notebookLMSyncEnabled
-                                || model.selectedNotebookID == nil
-                                || model.isBusy
-                        )
-                        if model.notebookLMImportProgress.phase == .exporting {
-                            Button("Pause") { Task { await model.pauseNotebookLMImport() } }
-                        }
-                        if model.notebookLMImportProgress.total > 0 {
-                            ProgressView(
-                                value: Double(model.notebookLMImportProgress.completed),
-                                total: Double(model.notebookLMImportProgress.total)
-                            )
-                            .frame(width: 100)
-                            Text(
-                                "\(model.notebookLMImportProgress.completed)/"
-                                    + "\(model.notebookLMImportProgress.total)"
-                            )
-                            .font(.caption.monospacedDigit())
-                        }
-                        Spacer()
-                    }
-                }
-                    }
-                    .padding(.top, 8)
-                }
-            }
-            .padding(16)
-
-            if !model.pendingItems.isEmpty {
+                titleBar
                 Divider()
-                quarantineSection
-            }
-
-            HStack {
-                Text(model.status).font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                if let health = model.health {
-                    Text(
-                        // swiftlint:disable:next line_length
-                        "\(health.documentCount) docs · \(health.receiptCount) receipts · SQLCipher \(health.cipherVersion)"
-                    )
-                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                }
-            }
-            .padding(.horizontal, 16).padding(.bottom, 10)
-
-            Divider()
-
-            Picker("Research Vault view", selection: $pane) {
-                ForEach(WorkbenchPane.allCases) { value in
-                    Text(value.localizedTitle).tag(value)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .accessibilityLabel("Research Vault view")
-
-            if pane == .evidence, let synthesis = model.synthesis {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("ON-DEVICE DRAFT · NOT EVIDENCE")
-                        .font(.caption2.weight(.bold)).foregroundStyle(.orange)
-                    Text(synthesis.answer).font(.system(size: 12)).textSelection(.enabled)
-                    Text("Citations: \(synthesis.citationIDs.joined(separator: ", "))")
-                        .font(.caption.monospaced()).foregroundStyle(.secondary)
-                    if let uncertainty = synthesis.uncertainty, !uncertainty.isEmpty {
-                        Text("Uncertainty: \(uncertainty)")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-                .padding(12)
+                searchBlock
+                mainContent
                 Divider()
+                trustLine
             }
-
-            workbenchContent
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationSplitViewStyle(.balanced)
-        .frame(minWidth: 920, idealWidth: 1_100, minHeight: 600, idealHeight: 720)
+        .frame(minWidth: 940, idealWidth: 1_100, minHeight: 620, idealHeight: 700)
+        .sheet(isPresented: $showAddToVault) { addToVaultSheet }
         .task { if model.serviceState == .enabled { await model.checkHealth() } }
         .task {
             while !Task.isCancelled {
@@ -1194,83 +980,808 @@ struct ResearchVaultWorkbenchView: View {
         }
     }
 
-    private var spaceSidebar: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Spaces").font(.headline)
-                Spacer()
-                Button {
-                    Task { await model.chooseFolderSource() }
-                } label: {
-                    Image(systemName: "folder.badge.plus")
-                }
+    // MARK: - Setup progress
+
+    /// The three steps between a fresh install and a searchable vault. They are
+    /// what the content area shows until every one of them is done, because a
+    /// vault with nothing in it has nothing else worth saying.
+    private var vaultIsOn: Bool { model.serviceState == .enabled }
+    private var loginItemsApproved: Bool { model.serviceState != .requiresApproval }
+
+    private var spaceFolders: [ResearchVaultFolderSource] {
+        model.folderSources.filter {
+            model.selectedSpace.kind == .portfolio || $0.spaceID == model.selectedSpaceID
+        }
+    }
+
+    private var hasASource: Bool {
+        !spaceFolders.isEmpty || (model.health?.documentCount ?? 0) > 0
+    }
+
+    private var setupComplete: Bool { vaultIsOn && loginItemsApproved && hasASource }
+
+    // MARK: - Chrome
+
+    private var titleBar: some View {
+        HStack(spacing: 14) {
+            Button(action: onBack) { Image(systemName: "chevron.left") }
                 .buttonStyle(.plain)
-                .disabled(model.selectedSpace.kind != .project)
-                .help("Add one or more trusted folders to this Space")
+                .accessibilityLabel("Back")
+            Text("Research Vault")
+                .font(.system(size: 15, weight: .semibold))
+            Spacer()
+            if model.isBusy { ProgressView().controlSize(.small) }
+            Button("Add to vault…") { showAddToVault = true }
+                .disabled(!vaultIsOn)
+                .help(vaultIsOn
+                    ? String(localized: "Every way to put research into this vault")
+                    : String(localized: "Turn the vault on first"))
+            if vaultIsOn {
+                Button("Turn off") { model.setEnabled(false) }
             }
-            .padding(12)
+        }
+        .padding(.horizontal, 28)
+        .frame(height: 52)
+    }
 
-            List {
-                Section("Research") {
-                    ForEach(model.spaces) { space in
-                        Button {
-                            model.selectSpace(space.id)
-                        } label: {
-                            Label(
-                                space.name,
-                                systemImage: space.kind == .portfolio
-                                    ? "square.grid.2x2" : "folder"
-                            )
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .listRowBackground(
-                            space.id == model.selectedSpaceID
-                                ? Color.accentColor.opacity(0.16) : Color.clear
-                        )
-                        .accessibilityAddTraits(
-                            space.id == model.selectedSpaceID ? .isSelected : []
-                        )
+    private var searchBlock: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+                Text(model.selectedSpace.name)
+                    .font(.system(size: 12, weight: .semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
+                    .accessibilityLabel("Search scope: \(model.selectedSpace.name)")
+                TextField("Ask your past research…", text: $model.query)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 14))
+                    .onSubmit { Task { await model.search() } }
+                    .disabled(!setupComplete)
+                if model.hasSearched {
+                    Text("\(model.results.count) excerpts")
+                        .font(.system(size: 11).monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 14)
+            .frame(height: 44)
+            .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(Color.primary.opacity(0.09))
+            )
+
+            if !setupComplete {
+                Text("Search turns on at step 3.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            } else if !model.pendingItems.isEmpty {
+                Text("Nothing is searchable until you approve the documents below.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            } else {
+                secondaryActions
+            }
+        }
+        .padding(.horizontal, 40)
+        .padding(.top, 24)
+    }
+
+    /// Both actions state their own reason when they cannot run. A control that
+    /// greys out without a word is the single complaint this window earned most.
+    private var secondaryActions: some View {
+        HStack(spacing: 22) {
+            reasonedAction(
+                "Synthesize on this Mac",
+                reason: model.results.isEmpty ? String(localized: "needs at least one excerpt") : nil
+            ) {
+                Task { await model.synthesizeOnDevice() }
+            }
+            reasonedAction(
+                "Save view",
+                reason: model.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    ? String(localized: "nothing to save yet") : nil
+            ) {
+                model.saveCurrentView()
+            }
+            if !model.savedViews.isEmpty {
+                Picker("Saved View", selection: $model.selectedSavedViewID) {
+                    Text("Saved views").tag(Optional<UUID>.none)
+                    ForEach(model.savedViews) { view in
+                        Text(view.name).tag(Optional(view.id))
                     }
                 }
+                .labelsHidden()
+                .frame(maxWidth: 170)
+                Button("Apply") { Task { await model.applySavedView() } }
+                    .disabled(model.selectedSavedViewID == nil)
+            }
+            Spacer()
+        }
+        .frame(minHeight: 36)
+    }
 
-                Section("Watched folders") {
-                    let visible = model.folderSources.filter {
-                        model.selectedSpace.kind == .portfolio
-                            || $0.spaceID == model.selectedSpaceID
+    @ViewBuilder
+    private func reasonedAction(
+        _ title: LocalizedStringKey,
+        reason: String?,
+        action: @escaping () -> Void
+    ) -> some View {
+        HStack(spacing: 6) {
+            Button(title, action: action)
+                .buttonStyle(.plain)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(reason == nil ? AnyShapeStyle(.tint) : AnyShapeStyle(.tertiary))
+                .disabled(reason != nil)
+            if let reason {
+                Text("— \(reason)")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(reason ?? "")
+    }
+
+    private var trustLine: some View {
+        HStack(spacing: 0) {
+            Text(vaultIsOn
+                ? String(localized: "Encrypted vault on")
+                : String(localized: "Encrypted vault off"))
+            if let health = model.health {
+                Text(" · \(health.documentCount) documents · \(health.receiptCount) receipts")
+                if !model.pendingItems.isEmpty {
+                    Text(" · \(model.pendingItems.count) in quarantine")
+                }
+                Text(" · ")
+                Text("SQLCipher \(health.cipherVersion)").font(.system(size: 11.5, design: .monospaced))
+            }
+            Spacer()
+            Text(model.status).lineLimit(1).truncationMode(.middle)
+        }
+        .font(.system(size: 11.5).monospacedDigit())
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 28)
+        .frame(minHeight: 44)
+    }
+
+    // MARK: - Content
+
+    @ViewBuilder
+    private var mainContent: some View {
+        if !setupComplete {
+            setupChecklist
+        } else if !model.pendingItems.isEmpty {
+            quarantineSection
+        } else if model.hasSearched && model.results.isEmpty && pane == .evidence {
+            emptyResults
+        } else {
+            if pane == .evidence, let synthesis = model.synthesis {
+                synthesisBlock(synthesis)
+            }
+            workbenchContent
+        }
+    }
+
+    private var setupChecklist: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Three steps to a searchable vault")
+                .font(.system(size: 24, weight: .bold))
+                .padding(.bottom, 22)
+
+            checklistStep(
+                ChecklistStep(
+                    number: 1,
+                    done: vaultIsOn,
+                    live: !vaultIsOn,
+                    title: String(localized: "Turn on the vault"),
+                    detail: String(
+                        localized: """
+                        A separate signed helper, the Throttle Vault Agent, starts on this Mac. \
+                        Nothing leaves the machine.
+                        """
+                    ),
+                    doneTitle: String(localized: "Vault is on")
+                )
+            ) {
+                Button("Turn on the vault") { model.setEnabled(true) }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+            }
+
+            checklistStep(
+                ChecklistStep(
+                    number: 2,
+                    done: vaultIsOn && loginItemsApproved,
+                    live: vaultIsOn && !loginItemsApproved,
+                    title: String(localized: "Allow it in Login Items, if macOS asks"),
+                    detail: String(localized: "macOS is holding the helper until you approve it."),
+                    doneTitle: String(localized: "Allowed in Login Items")
+                )
+            ) {
+                Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+            }
+
+            checklistStep(
+                ChecklistStep(
+                    number: 3,
+                    done: hasASource,
+                    live: vaultIsOn && loginItemsApproved && !hasASource,
+                    title: model.selectedSpace.kind == .project
+                        ? String(localized: "Add a folder to \(model.selectedSpace.name)")
+                        : String(localized: "Add a folder to a space"),
+                    detail: stepThreeDetail,
+                    doneTitle: String(localized: "Sources connected"),
+                    isLast: true
+                )
+            ) {
+                HStack(spacing: 10) {
+                    Button("Watch a folder…") { Task { await model.chooseFolderSource() } }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                        .disabled(model.selectedSpace.kind != .project)
+                    Button("Other ways in…") { showAddToVault = true }
+                        .controlSize(.large)
+                }
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: 640, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, 40)
+        .padding(.top, 40)
+    }
+
+    /// One step of the setup checklist. Grouped into a value rather than eight
+    /// parameters so the call sites read as the three steps they describe.
+    private struct ChecklistStep {
+        let number: Int
+        let done: Bool
+        let live: Bool
+        let title: String
+        let detail: String
+        let doneTitle: String
+        var isLast = false
+    }
+
+    @ViewBuilder
+    private func checklistStep<Action: View>(
+        _ step: ChecklistStep,
+        @ViewBuilder action: () -> Action
+    ) -> some View {
+        let (number, done, live) = (step.number, step.done, step.live)
+        let (title, detail, doneTitle, isLast) = (step.title, step.detail, step.doneTitle, step.isLast)
+        HStack(alignment: .top, spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(live ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary))
+                    .frame(width: 28, height: 28)
+                Text(done ? "✓" : "\(number)")
+                    .font(.system(size: 13, weight: .bold).monospacedDigit())
+                    .foregroundStyle(live ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                Text(done ? doneTitle : title)
+                    .font(.system(size: done ? 13 : 17, weight: done ? .medium : .semibold))
+                    .foregroundStyle(done || live ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+                if !done {
+                    Text(detail)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if live { action() }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.vertical, done ? 12 : 18)
+        .overlay(alignment: .bottom) {
+            if !isLast { Divider() }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(done
+            ? String(localized: "Step \(number), done: \(doneTitle)")
+            : String(localized: "Step \(number): \(title)"))
+    }
+
+    private var stepThreeDetail: String {
+        guard model.selectedSpace.kind == .project else {
+            return String(
+                localized: """
+                Pick a project in the sidebar first — Portfolio is a read-only roll-up of \
+                the other spaces and holds no folders of its own.
+                """
+            )
+        }
+        return String(localized: "Pick the folder where this project’s research already lives.")
+    }
+
+    private var emptyResults: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Nothing in \(model.selectedSpace.name) matches “\(model.lastQuery)”.")
+                .font(.system(size: 24, weight: .bold))
+                .fixedSize(horizontal: false, vertical: true)
+            Text(searchedCountSentence)
+                .font(.system(size: 15))
+                .foregroundStyle(.secondary)
+                .padding(.top, 10)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 12) {
+                if model.selectedSpace.kind == .project {
+                    Button("Search all of Portfolio instead") {
+                        model.selectSpace(ResearchVaultSpace.portfolio.id)
+                        Task { await model.search() }
                     }
-                    if visible.isEmpty {
-                        Text("No folder connected")
-                            .font(.caption)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                }
+                Button("Try fewer words") { model.query = "" }
+                    .controlSize(.large)
+            }
+            .padding(.top, 26)
+            Spacer()
+        }
+        .frame(maxWidth: 640, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, 40)
+        .padding(.top, 44)
+    }
+
+    /// Only ever states a number the vault actually reported.
+    private var searchedCountSentence: String {
+        guard let documents = model.health?.documentCount, documents > 0 else {
+            return String(localized: "This space has no approved documents yet.")
+        }
+        return String(localized: "\(documents) documents were searched.")
+    }
+
+    private func synthesisBlock(_ synthesis: ResearchVaultSynthesisDraft) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 14) {
+                Text("SYNTHESIS · LOCAL")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .strokeBorder(Color.primary.opacity(0.2))
+                    )
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(synthesis.answer)
+                        .font(.system(size: 14))
+                        .textSelection(.enabled)
+                    Text("Citations: \(synthesis.citationIDs.joined(separator: ", "))")
+                        .font(.system(size: 11.5, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                    if let uncertainty = synthesis.uncertainty, !uncertainty.isEmpty {
+                        Text("Uncertainty: \(uncertainty)")
+                            .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                     }
-                    ForEach(visible) { source in
-                        HStack {
-                            Label(source.name, systemImage: "folder.fill")
-                                .lineLimit(1)
-                            Spacer()
-                            Button(role: .destructive) {
-                                model.removeFolderSource(source.id)
-                            } label: {
-                                Image(systemName: "minus.circle")
-                            }
-                            .buttonStyle(.borderless)
-                            .accessibilityLabel("Remove \(source.name)")
-                        }
-                    }
                 }
             }
-
-            HStack {
-                Image(systemName: "lock.fill")
-                Text("One encrypted local vault")
-            }
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .padding(12)
         }
-        .navigationSplitViewColumnWidth(min: 190, ideal: 230, max: 280)
+        .padding(.horizontal, 40)
+        .padding(.vertical, 14)
+        .overlay(alignment: .bottom) { Divider() }
+    }
+
+    // MARK: - Add to vault
+
+    private var addToVaultSheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Add to \(model.selectedSpace.name)")
+                    .font(.system(size: 19, weight: .bold))
+                Text("Everything is hashed, encrypted and held in quarantine until you approve it.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 22)
+            .padding(.bottom, 6)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    sheetSectionHeader("Everyday")
+                    everydayWays
+                    sheetSectionHeader("Occasional")
+                    occasionalWays
+                }
+                .padding(.horizontal, 28)
+            }
+
+            Divider()
+            HStack {
+                Spacer()
+                Button("Done") { showAddToVault = false }
+                    .keyboardShortcut(.defaultAction)
+            }
+            .padding(.horizontal, 28)
+            .padding(.vertical, 14)
+        }
+        .frame(width: 560, height: 620)
+    }
+
+    private func sheetSectionHeader(_ title: LocalizedStringKey) -> some View {
+        Text(title)
+            .font(.system(size: 10.5, weight: .semibold))
+            .tracking(0.8)
+            .textCase(.uppercase)
+            .foregroundStyle(.tertiary)
+            .padding(.top, 14)
+            .padding(.bottom, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var everydayWays: some View {
+        everydayRow(
+            title: String(localized: "Watch a folder"),
+            hint: String(
+                localized: "Throttle keeps it in sync. Best for a research folder you already keep."
+            ),
+            action: String(localized: "Choose folder…"),
+            reason: model.selectedSpace.kind == .project
+                ? nil : String(localized: "pick a project space first")
+        ) {
+            showAddToVault = false
+            Task { await model.chooseFolderSource() }
+        }
+        everydayRow(
+            title: String(localized: "Add files"),
+            hint: String(localized: "Drop in individual notes, PDFs or exports."),
+            action: String(localized: "Choose files…"),
+            reason: model.migrationProjectKey.isEmpty
+                ? String(localized: "needs a project key") : nil
+        ) {
+            showAddToVault = false
+            Task { await model.chooseResearchFiles() }
+        }
+    }
+
+    @ViewBuilder
+    private var occasionalWays: some View {
+        occasionalRow(
+            title: String(localized: "Import sealed receipts"),
+            hint: String(localized: "Signed .receipt files from another Mac."),
+            action: String(localized: "Choose…"),
+            reason: nil
+        ) {
+            showAddToVault = false
+            Task { await model.importReceiptFiles() }
+        }
+        occasionalRow(
+            title: String(localized: "Inbox folder and sync"),
+            hint: model.inboxFolderName.map {
+                String(localized: "Currently \($0). Throttle empties it on demand.")
+            } ?? String(localized: "A drop folder Throttle empties on demand."),
+            action: model.inboxFolderName == nil
+                ? String(localized: "Set up…") : String(localized: "Sync now"),
+            reason: nil
+        ) {
+            if model.inboxFolderName == nil {
+                model.chooseInboxFolder()
+            } else {
+                Task { await model.syncInbox() }
+            }
+        }
+        occasionalRow(
+            title: String(localized: "Import a NotebookLM export"),
+            hint: String(localized: "Local file, no Google connection."),
+            action: String(localized: "Choose…"),
+            reason: model.migrationProjectKey.isEmpty
+                ? String(localized: "needs a project key") : nil
+        ) {
+            showAddToVault = false
+            Task { await model.importNotebookLMExport() }
+        }
+        occasionalRow(
+            title: String(localized: "Export to Markdown"),
+            hint: String(localized: "One .md or a folder of them."),
+            action: String(localized: "Choose…"),
+            reason: nil
+        ) {
+            showAddToVault = false
+            Task { await model.exportMarkdown() }
+        }
+        urlRow
+        notebookLMRow
+    }
+
+    private var urlRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            occasionalRow(
+                title: String(localized: "Import one URL"),
+                hint: String(localized: "HTTPS, single page, quarantined."),
+                action: String(localized: "Import"),
+                reason: model.urlToImport.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    ? String(localized: "paste a URL below") : nil
+            ) {
+                Task { await model.importURL() }
+            }
+            TextField("https://example.com/research", text: $model.urlToImport)
+                .textFieldStyle(.roundedBorder)
+                .padding(.bottom, 8)
+        }
+    }
+
+    @ViewBuilder
+    private var notebookLMRow: some View {
+        occasionalRow(
+            title: String(localized: "List NotebookLM notebooks"),
+            hint: String(localized: "Explicit read/export only; resumes where it stopped."),
+            action: model.notebookLMSyncEnabled
+                ? String(localized: "List…") : String(localized: "Allow first"),
+            reason: model.notebookLMSyncEnabled
+                ? nil : String(localized: "turn on the export permission below")
+        ) {
+            Task { await model.loadNotebookLMNotebooks() }
+        }
+        Toggle("Allow NotebookLM export", isOn: $model.notebookLMSyncEnabled)
+            .toggleStyle(.checkbox)
+            .font(.system(size: 12))
+            .padding(.bottom, 8)
+            .help("Opt in for this session. Throttle never exports in the background.")
+        if !model.notebookLMNotebooks.isEmpty {
+            HStack(spacing: 8) {
+                Picker("Notebook", selection: $model.selectedNotebookID) {
+                    ForEach(model.notebookLMNotebooks) { notebook in
+                        Text("\(notebook.title) (\(notebook.sourceCount))")
+                            .tag(Optional(notebook.id))
+                    }
+                }
+                .labelsHidden()
+                Button(
+                    model.notebookLMImportProgress.completed > 0
+                        ? String(localized: "Resume import") : String(localized: "Start import")
+                ) {
+                    Task { await model.importSelectedNotebookLM() }
+                }
+                .disabled(model.selectedNotebookID == nil || model.isBusy)
+                if model.notebookLMImportProgress.phase == .exporting {
+                    Button("Pause") { Task { await model.pauseNotebookLMImport() } }
+                }
+            }
+            .padding(.bottom, 8)
+            if model.notebookLMImportProgress.total > 0 {
+                ProgressView(
+                    value: Double(model.notebookLMImportProgress.completed),
+                    total: Double(model.notebookLMImportProgress.total)
+                )
+                .padding(.bottom, 10)
+            }
+        }
+        if model.migrationManifest != nil {
+            Button("Save integrity manifest…") { model.saveMigrationManifest() }
+                .padding(.bottom, 10)
+        }
+    }
+
+    private func everydayRow(
+        title: String,
+        hint: String,
+        action: String,
+        reason: String?,
+        perform: @escaping () -> Void
+    ) -> some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.system(size: 15, weight: .semibold))
+                Text(reason.map { "\(hint) — \($0)" } ?? hint)
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            Button(action, action: perform)
+                .buttonStyle(.borderedProminent)
+                .disabled(reason != nil || !vaultIsOn)
+                .fixedSize()
+        }
+        .padding(.vertical, 12)
+        .overlay(alignment: .top) { Divider() }
+        .accessibilityHint(reason ?? "")
+    }
+
+    private func occasionalRow(
+        title: String,
+        hint: String,
+        action: String,
+        reason: String?,
+        perform: @escaping () -> Void
+    ) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 16) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(.system(size: 13, weight: .medium))
+                Text(reason.map { "\(hint) — \($0)" } ?? hint)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            Button(action, action: perform)
+                .buttonStyle(.plain)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(
+                    reason == nil && vaultIsOn ? AnyShapeStyle(.tint) : AnyShapeStyle(.tertiary)
+                )
+                .disabled(reason != nil || !vaultIsOn)
+                .fixedSize()
+        }
+        .frame(minHeight: 44)
+        .overlay(alignment: .top) { Divider() }
+        .accessibilityHint(reason ?? "")
+    }
+
+    // MARK: - Sidebar
+
+    private var facetCounts: [WorkbenchPane: Int] {
+        let receipts = scopedApprovedReceipts
+        return [
+            .evidence: model.results.count,
+            .sources: ResearchVaultWorkbenchProjection.sources(receipts: receipts).count,
+            .claims: ResearchVaultWorkbenchProjection.claims(receipts: receipts).count,
+            .timeline: receipts.count,
+            .revisions: ResearchVaultWorkbenchProjection.revisions(receipts: receipts).count,
+            .reasoning: model.reasoningFacts.count
+        ]
+    }
+
+    private var spaceSidebar: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 2) {
+                sidebarHeader("Spaces")
+                ForEach(model.spaces) { space in
+                    spaceRow(space)
+                    if space.id == model.selectedSpaceID && space.kind == .project {
+                        selectedSpaceFolders
+                    }
+                }
+
+                sidebarHeader(model.hasSearched ? "Facets · this query" : "Facets")
+                ForEach(WorkbenchPane.allCases) { facet in
+                    facetRow(facet)
+                }
+
+                Spacer(minLength: 12)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 12)
+        }
+        .background(.quaternary.opacity(0.2))
+    }
+
+    private func sidebarHeader(_ title: LocalizedStringKey) -> some View {
+        Text(title)
+            .font(.system(size: 10.5, weight: .semibold))
+            .tracking(0.8)
+            .textCase(.uppercase)
+            .foregroundStyle(.tertiary)
+            .padding(.horizontal, 12)
+            .padding(.top, 14)
+            .padding(.bottom, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func spaceRow(_ space: ResearchVaultSpace) -> some View {
+        let selected = space.id == model.selectedSpaceID
+        let waiting = selected ? model.pendingItems.count : 0
+        return Button {
+            model.selectSpace(space.id)
+        } label: {
+            HStack(spacing: 9) {
+                Circle()
+                    .fill(selected ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
+                    .frame(width: 6, height: 6)
+                Text(space.name).font(.system(size: 13, weight: .medium))
+                Spacer(minLength: 0)
+                if waiting > 0 {
+                    Text("\(waiting) waiting")
+                        .font(.system(size: 11).monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 10)
+            .frame(minHeight: 44)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                selected ? AnyShapeStyle(.quaternary) : AnyShapeStyle(.clear),
+                in: RoundedRectangle(cornerRadius: 7)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    /// The folders of the selected space, and the control that adds one — in the
+    /// space they belong to, rather than behind an unlabelled icon in a header.
+    @ViewBuilder
+    private var selectedSpaceFolders: some View {
+        if spaceFolders.isEmpty {
+            Text("No folders yet.")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .padding(.leading, 25)
+                .padding(.vertical, 2)
+        }
+        ForEach(spaceFolders) { source in
+            HStack(spacing: 6) {
+                Text(source.name)
+                    .font(.system(size: 11.5, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.head)
+                Spacer(minLength: 0)
+                Button {
+                    model.removeFolderSource(source.id)
+                } label: {
+                    Image(systemName: "minus.circle")
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Remove \(source.name)")
+            }
+            .padding(.leading, 25)
+            .padding(.trailing, 10)
+            .frame(minHeight: 36)
+        }
+        Button {
+            Task { await model.chooseFolderSource() }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "plus")
+                Text("Add folder to \(model.selectedSpace.name)…")
+                    .font(.system(size: 13, weight: .medium))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(.tint)
+            .padding(.leading, 25)
+            .padding(.trailing, 10)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!vaultIsOn)
+        .help(vaultIsOn
+            ? String(localized: "Watch a folder for this space")
+            : String(localized: "Turn the vault on first"))
+    }
+
+    private func facetRow(_ facet: WorkbenchPane) -> some View {
+        let selected = pane == facet
+        let count = facetCounts[facet] ?? 0
+        return Button {
+            pane = facet
+        } label: {
+            HStack {
+                Text(facet.localizedTitle)
+                    .font(.system(size: 13, weight: .medium))
+                Spacer(minLength: 0)
+                Text(model.hasSearched || count > 0 ? "\(count)" : "—")
+                    .font(.system(size: 11.5).monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            .foregroundStyle(selected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+            .padding(.leading, 12)
+            .padding(.trailing, 10)
+            .frame(minHeight: 36)
+            .background(
+                selected ? AnyShapeStyle(.quaternary) : AnyShapeStyle(.clear),
+                in: RoundedRectangle(cornerRadius: 7)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private var scopedApprovedReceipts: [ResearchReceipt] {
@@ -1739,19 +2250,6 @@ struct ResearchVaultWorkbenchView: View {
     }
 
     @ViewBuilder
-    private var serviceControl: some View {
-        switch model.serviceState {
-        case .disabled:
-            Button("Enable") { model.setEnabled(true) }
-        case .enabled:
-            Button("Disable") { model.setEnabled(false) }
-        case .requiresApproval:
-            Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() }
-        case .unavailable:
-            Text("Unavailable").foregroundStyle(.secondary)
-        }
-    }
-
     private func resultCard(_ item: ResearchVaultContextItem, identifier: String) -> some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack(alignment: .firstTextBaseline) {
