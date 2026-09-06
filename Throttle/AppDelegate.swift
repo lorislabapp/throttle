@@ -12,7 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let codexIngester: CodexUsageIngester
     private let traycer = TraycerReceiver.shared   // local OTLP receiver (opt-in; started below)
     private let updater = UpdaterService.shared
-    private let logger = AppLogger.app
+    let logger = AppLogger.app
     private var licenseRenewalTimer: Timer?
     private var codexUsageTimer: Timer?
     private var researchVaultWorkbenchTestWindow: NSWindow?
@@ -412,54 +412,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         logger.notice("Throttle quitting")
     }
 
-    /// Handle deep links: `throttle://activate?key=THROTTLE-XXXX-XXXX-XXXX-XXXX`.
-    /// Lets the purchase email link auto-activate Pro instead of asking the user
-    /// to copy the key, find the menu bar pill, and click Paste license key.
-    func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls {
-            handleDeepLink(url)
-        }
-    }
-
-    private func handleDeepLink(_ url: URL) {
-        guard url.scheme?.lowercased() == "throttle" else {
-            logger.notice("Ignoring URL with unknown scheme: \(url.scheme ?? "nil", privacy: .public)")
-            return
-        }
-        let host = url.host?.lowercased()
-        switch host {
-        case "activate":
-            // ?key=THROTTLE-… in either query or path component.
-            let comps = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let key = comps?.queryItems?.first(where: { $0.name == "key" })?.value?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .uppercased()
-            guard let key, key.hasPrefix("THROTTLE-") else {
-                logger.notice("activate URL missing or malformed key")
-                return
-            }
-            Task { @MainActor in
-                let result = await LicenseService.shared.activate(key: key)
-                switch result {
-                case .success:
-                    self.appState.refreshProStatus()
-                    self.notifyActivation(success: true, message: "Throttle Pro activated.")
-                case .failure(let err):
-                    self.notifyActivation(success: false, message: self.describeActivationError(err))
-                }
-            }
-        case "cockpit":
-            Task { @MainActor in CockpitWindowController.shared.show(appState: self.appState) }
-        case "pause":   ThrottleCommandChannel.enqueue(.pauseAll)
-        case "resume":  ThrottleCommandChannel.enqueue(.resumeAll)
-        case "quiet":   ThrottleCommandChannel.enqueue(.quietOn)
-        case "unquiet": ThrottleCommandChannel.enqueue(.quietOff)
-        default:
-            logger.notice("Ignoring throttle:// URL with unknown host: \(host ?? "nil", privacy: .public)")
-        }
-    }
-
-    private func notifyActivation(success: Bool, message: String) {
+    func notifyActivation(success: Bool, message: String) {
         let alert = NSAlert()
         alert.messageText = success ? "Throttle Pro" : "Activation failed"
         alert.informativeText = message
@@ -469,7 +422,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alert.runModal()
     }
 
-    private func describeActivationError(_ err: LicenseService.ActivationError) -> String {
+    func describeActivationError(_ err: LicenseService.ActivationError) -> String {
         switch err {
         case .invalidKey:           return "Invalid license key."
         case .machineLimitReached:  return "Already activated on 3 Macs. Deactivate one first."

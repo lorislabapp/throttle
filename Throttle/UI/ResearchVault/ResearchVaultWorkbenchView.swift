@@ -1051,6 +1051,9 @@ struct ResearchVaultWorkbenchView: View {
         }
         .frame(minWidth: 940, idealWidth: 1_100, minHeight: 620, idealHeight: 700)
         .sheet(isPresented: $showAddToVault) { addToVaultSheet }
+        .onReceive(NotificationCenter.default.publisher(for: .throttleResearchVaultConnectLibrary)) { _ in
+            Task { await model.connectResearchLibrary() }
+        }
         .task { if model.serviceState == .enabled { await model.checkHealth() } }
         .task {
             while !Task.isCancelled {
@@ -2403,6 +2406,12 @@ private extension ResearchVaultReasoningRelationKind {
             String(localized: "Depends on")
         }
     }
+}
+
+extension Notification.Name {
+    /// Raised by the throttle://research-vault/library deep link.
+    static let throttleResearchVaultConnectLibrary =
+        Notification.Name("throttle.researchVault.connectLibrary")
 }
 
 private extension Array {
