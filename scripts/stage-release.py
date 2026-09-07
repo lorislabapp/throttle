@@ -18,7 +18,7 @@ Usage:
 --live-appcast / --live-page take local snapshots instead of fetching (offline runs, tests).
 Nothing is uploaded; see publish-release.mjs.
 """
-import argparse, hashlib, os, re, shutil, sys, urllib.request
+import argparse, hashlib, os, re, shutil, subprocess, sys, urllib.request
 
 SITE = "https://lorislab.fr/throttle"
 PROJECT_YML = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "project.yml")
@@ -70,6 +70,25 @@ def main():
     pub = re.search(r"<pubDate>([^<]+)</pubDate>", entry).group(1)
     if os.path.getsize(dmg) != length:
         sys.exit(f"DMG size {os.path.getsize(dmg)} != signed length {length}: the entry was signed for another file")
+
+    # Never stage an unnotarized DMG: Gatekeeper blocks it on every machine but the
+    # one that built it, and the failure surfaces only after users download it.
+    if subprocess.run(["xcrun", "stapler", "validate", dmg],
+                      capture_output=True).returncode != 0:
+        sys.exit(f"{dmg} carries no stapled notarization ticket — run build-dmg.sh --notarize")
+
+    # A matching size is not a matching file. Verify the EdDSA signature against the
+    # actual bytes, so a stale or hand-edited entry cannot ship.
+    sign_tool = next((p for p in subprocess.run(
+        ["find", os.path.expanduser("~/Library/Developer/Xcode/DerivedData"),
+         "-name", "sign_update", "-type", "f", "-not", "-path", "*old_dsa*"],
+        capture_output=True, text=True).stdout.split("\n") if p), None)
+    if sign_tool:
+        if subprocess.run([sign_tool, "--verify", dmg, sig], capture_output=True).returncode != 0:
+            sys.exit("the signed entry does not verify against the DMG — regenerate it from this exact file")
+        print("→ EdDSA signature verified against the DMG")
+    else:
+        print("⚠ Sparkle sign_update not found — EdDSA signature NOT re-verified", file=sys.stderr)
 
     live = open(a.live_appcast, encoding="utf-8").read() if a.live_appcast else fetch(f"{SITE}/appcast.xml")
     if f"<sparkle:version>{build}</sparkle:version>" in live:

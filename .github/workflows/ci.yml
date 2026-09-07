@@ -157,7 +157,18 @@ jobs:
 
       - name: Enforce fail-closed release scripts
         run: |
-          bash -n scripts/build-dmg.sh scripts/finalize-dmg.sh scripts/smoke-test.sh
+          bash -n scripts/build-dmg.sh scripts/finalize-dmg.sh scripts/smoke-test.sh \
+                  scripts/verify-public-release.sh
+          # The publish path is as load-bearing as the build path: a syntax error in
+          # either only shows up mid-release, after notarization.
+          node --check scripts/publish-release.mjs
+          python3 -m py_compile scripts/stage-release.py
+          # stage-release must keep reading the LIVE site rather than the website
+          # checkout, which drifts behind what is actually served.
+          grep -q 'https://lorislab.fr/throttle' scripts/stage-release.py
+          # publish-release must keep proving the deploy with the stamp, never with
+          # the trigger's status code (it has returned 500 on deploys that landed).
+          grep -q 'deploy-stamp.txt' scripts/publish-release.mjs
           grep -REn 'NOTARIZE=false' scripts/build-dmg.sh scripts/finalize-dmg.sh
           grep -REn -- '--notarize' scripts/build-dmg.sh scripts/finalize-dmg.sh
           ! grep -REn 'mirrored — read-only|Your data never leaves your iCloud|Vos données ne quittent jamais' \
