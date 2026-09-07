@@ -12,9 +12,25 @@ struct VectorRecord: Codable, Sendable, Equatable {
     var vector: [Float]
     var text: String                    // the chunk text, returned on a hit
     var metadata: [String: String]      // e.g. ["repo": "Throttle", "path": "…"]
+    /// Which model produced this vector.
+    ///
+    /// Cosine between two embedding spaces is meaningless, and silently mixing
+    /// them corrupts ranking without any visible error — a record embedded at
+    /// 512 dimensions and one at 1024 simply never match, and the store looks
+    /// merely unhelpful rather than broken. Recording the model makes the
+    /// mismatch detectable instead of invisible. Absent on records written
+    /// before this existed, which is itself the signal to re-index.
+    var embedModel: String?
 
-    init(id: String, vector: [Float], text: String = "", metadata: [String: String] = [:]) {
-        self.id = id; self.vector = vector; self.text = text; self.metadata = metadata
+    init(
+        id: String,
+        vector: [Float],
+        text: String = "",
+        metadata: [String: String] = [:],
+        embedModel: String? = nil
+    ) {
+        self.id = id; self.vector = vector; self.text = text
+        self.metadata = metadata; self.embedModel = embedModel
     }
 }
 

@@ -15,28 +15,50 @@ struct MemoryHealth: Sendable, Equatable {
     let pressureLevel: Int       // 1 normal · 2 warning · 4 critical (kernel)
     let claudeCount: Int
     let claudeRSSBytes: UInt64
+    /// Codex CLI sessions. Counted separately because the machine load is what
+    /// decides "can I open another session?", and that load is not Claude-only:
+    /// a mixed-runtime desk routinely runs more `codex` than `claude`. Omitting
+    /// them made the cell under-report the real agent load.
+    let codexCount: Int
+    let codexRSSBytes: UInt64
 
     var usedFraction: Double { totalBytes > 0 ? min(1, Double(usedBytes) / Double(totalBytes)) : 0 }
+    /// Every CLI agent process, whichever runtime — the honest denominator.
+    var agentCount: Int { claudeCount + codexCount }
+    var agentRSSBytes: UInt64 { claudeRSSBytes + codexRSSBytes }
+
+    /// Per-runtime breakdown for the machine cells, e.g. `4 claude · 7 codex`.
+    /// A runtime that isn't running is omitted rather than shown as zero, so the
+    /// line stays quiet on a single-runtime desk.
+    var agentSummary: String {
+        var parts: [String] = []
+        if claudeCount > 0 { parts.append("\(claudeCount) claude") }
+        if codexCount > 0 { parts.append("\(codexCount) codex") }
+        return parts.isEmpty ? "no agents" : parts.joined(separator: " · ")
+    }
     /// "Should I think twice before opening another session?"
     var underPressure: Bool { pressureLevel >= 2 || swapUsedBytes > 4_000_000_000 }
     /// "Opening another session will make things worse."
     var critical: Bool { pressureLevel >= 4 || swapUsedBytes > 16_000_000_000 }
 
     static let unknown = MemoryHealth(totalBytes: 0, usedBytes: 0, swapUsedBytes: 0,
-                                      pressureLevel: 1, claudeCount: 0, claudeRSSBytes: 0)
+                                      pressureLevel: 1, claudeCount: 0, claudeRSSBytes: 0,
+                                      codexCount: 0, codexRSSBytes: 0)
 }
 
 enum SystemMemoryService {
 
     static func sample() -> MemoryHealth {
-        let cl = claudeProcesses()
+        let agents = agentProcesses()
         return MemoryHealth(
             totalBytes: ProcessInfo.processInfo.physicalMemory,
             usedBytes: usedMemory(),
             swapUsedBytes: swapUsed(),
             pressureLevel: pressureLevel(),
-            claudeCount: cl.count,
-            claudeRSSBytes: cl.rss
+            claudeCount: agents.claude.count,
+            claudeRSSBytes: agents.claude.rss,
+            codexCount: agents.codex.count,
+            codexRSSBytes: agents.codex.rss
         )
     }
 
@@ -280,33 +302,90 @@ enum SystemMemoryService {
         for pid in ordered where pid > 1 { kill(pid, sig) }
     }
 
-    // MARK: - Running claude sessions
+    // MARK: - Running agent sessions
 
-    /// Sum RSS of processes whose executable name is exactly `claude` (the CLI).
-    /// Best-effort: a `ps` sweep, excluding our own app. RSS undercounts when the
-    /// kernel has swapped/compressed pages, but the count + the pressure/swap
-    /// signals above carry the decision.
-    private static func claudeProcesses() -> (count: Int, rss: UInt64) {
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: "/bin/ps")
-        p.arguments = ["-axo", "rss=,comm="]
+    typealias ProcTally = (count: Int, rss: UInt64)
+
+    /// Sum RSS of the CLI agent processes, split by runtime. Matches the executable
+    /// name EXACTLY (`claude`, `codex`) so helper processes that merely share the
+    /// prefix — `codex-code-mode` and friends — don't inflate the session count.
+    /// Best-effort: one `ps` sweep. RSS undercounts when the kernel has
+    /// swapped/compressed pages, but the count + the pressure/swap signals above
+    /// carry the decision.
+    private static func agentProcesses() -> (claude: ProcTally, codex: ProcTally) {
+        let empty: (claude: ProcTally, codex: ProcTally) = ((0, 0), (0, 0))
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/bin/ps")
+        proc.arguments = ["-axo", "rss=,comm="]
         let pipe = Pipe()
-        p.standardOutput = pipe
-        p.standardError = FileHandle.nullDevice
-        do { try p.run() } catch { return (0, 0) }
+        proc.standardOutput = pipe
+        proc.standardError = FileHandle.nullDevice
+        do { try proc.run() } catch { return empty }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        p.waitUntilExit()
-        guard let text = String(data: data, encoding: .utf8) else { return (0, 0) }
+        proc.waitUntilExit()
+        guard let text = String(data: data, encoding: .utf8) else { return empty }
 
-        var count = 0
-        var rssKB: UInt64 = 0
+        var claude: ProcTally = (0, 0)
+        var codex: ProcTally = (0, 0)
         for line in text.split(separator: "\n") {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard let sp = trimmed.firstIndex(of: " ") else { continue }
-            let comm = trimmed[trimmed.index(after: sp)...].trimmingCharacters(in: .whitespaces)
-            guard comm == "claude" || comm.hasSuffix("/claude") else { continue }
-            if let kb = UInt64(trimmed[..<sp]) { rssKB += kb; count += 1 }
+            guard let space = trimmed.firstIndex(of: " ") else { continue }
+            let comm = trimmed[trimmed.index(after: space)...].trimmingCharacters(in: .whitespaces)
+            guard let kbytes = UInt64(trimmed[..<space]) else { continue }
+            if comm == "claude" || comm.hasSuffix("/claude") {
+                claude.count += 1; claude.rss += kbytes
+            } else if comm == "codex" || comm.hasSuffix("/codex") {
+                codex.count += 1; codex.rss += kbytes
+            }
         }
-        return (count, rssKB * 1024)
+        return ((claude.count, claude.rss * 1024), (codex.count, codex.rss * 1024))
+    }
+
+}
+
+// MARK: - macOS purge daemons
+
+extension SystemMemoryService {
+
+    /// Executables macOS runs when it is reclaiming disk space or re-indexing.
+    /// When these burn CPU while the volume is nearly full, the machine stalls
+    /// system-wide — that is the signature behind a "my terminal froze" report,
+    /// and neither the memory-pressure level nor the free-bytes readout shows it.
+    private static let purgeDaemonNames: Set<String> = [
+        "deleted",                    // CacheDelete — the cache reclaimer
+        "spotlightknowledged",
+        "spotlightknowledged.updater",
+        "mds_stores",
+        "mds"
+    ]
+
+    /// Cumulative CPU-seconds burned by the purge daemons, for delta sampling.
+    ///
+    /// Returns a running total, never a rate: `ps %cpu` on macOS averages over a
+    /// process's whole lifetime, so it reads high long after a daemon goes quiet.
+    /// Diff two of these readings over a known interval to learn whether the
+    /// daemons are working RIGHT NOW.
+    static func purgeDaemonCPUSeconds() -> Double {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/bin/ps")
+        proc.arguments = ["-axo", "time=,comm="]
+        let pipe = Pipe()
+        proc.standardOutput = pipe
+        proc.standardError = FileHandle.nullDevice
+        do { try proc.run() } catch { return 0 }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        proc.waitUntilExit()
+        guard let text = String(data: data, encoding: .utf8) else { return 0 }
+
+        var total = 0.0
+        for line in text.split(separator: "\n") {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard let space = trimmed.firstIndex(of: " ") else { continue }
+            let comm = trimmed[trimmed.index(after: space)...].trimmingCharacters(in: .whitespaces)
+            let leaf = comm.split(separator: "/").last.map(String.init) ?? comm
+            guard purgeDaemonNames.contains(leaf) else { continue }
+            total += parseCPUTime(String(trimmed[..<space])) ?? 0
+        }
+        return total
     }
 }

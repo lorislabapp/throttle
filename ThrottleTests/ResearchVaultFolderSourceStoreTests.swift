@@ -26,7 +26,7 @@ final class ResearchVaultFolderSourceStoreTests: XCTestCase {
             bookmark: bookmark
         )
         let first = try ResearchVaultFolderSourceStore.changedFiles(for: source, at: root)
-        XCTAssertEqual(first.urls.map(\.lastPathComponent), ["evidence.md"])
+        XCTAssertEqual(first.urls.map(\.relative), ["evidence.md"])
 
         source.fingerprints = first.fingerprints
         XCTAssertTrue(
@@ -36,8 +36,50 @@ final class ResearchVaultFolderSourceStoreTests: XCTestCase {
         try Data("second and longer".utf8).write(to: markdown, options: .atomic)
         XCTAssertEqual(
             try ResearchVaultFolderSourceStore.changedFiles(for: source, at: root)
-                .urls.map(\.lastPathComponent),
+                .urls.map(\.relative),
             ["evidence.md"]
+        )
+    }
+
+    /// A library granted once has to route each file to the project its own path
+    /// names, or ninety projects would need ninety permissions against a ceiling
+    /// of thirty-two watched folders.
+    func testLibraryFolderRoutesFilesToTheProjectInTheirPath() {
+        let library = ResearchVaultFolderSource(
+            spaceID: "portfolio",
+            projectKey: "library",
+            name: "GitHub/library",
+            bookmark: Data(),
+            projectSegment: 1
+        )
+        XCTAssertEqual(
+            library.projectKey(forRelativePath: "audits-and-reviews/throttle/note.md"),
+            "throttle"
+        )
+        XCTAssertEqual(
+            library.projectKey(forRelativePath: "market-and-competitors/e-clair/report.md"),
+            "e-clair"
+        )
+        // Too shallow to name a project: the folder's own key stands rather than
+        // a guess.
+        XCTAssertEqual(library.projectKey(forRelativePath: "loose-note.md"), "library")
+
+        let plain = ResearchVaultFolderSource(
+            spaceID: "project:throttle",
+            projectKey: "throttle",
+            name: "audits-and-reviews/throttle",
+            bookmark: Data()
+        )
+        XCTAssertEqual(plain.projectKey(forRelativePath: "anything/at/all.md"), "throttle")
+    }
+
+    /// Seven folders all named `throttle` were seven identical sidebar rows.
+    func testDisplayNameCarriesTheParentFolder() {
+        XCTAssertEqual(
+            ResearchVaultFolderSourceStore.displayName(
+                for: URL(fileURLWithPath: "/tmp/library/audits-and-reviews/throttle")
+            ),
+            "audits-and-reviews/throttle"
         )
     }
 }

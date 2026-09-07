@@ -285,6 +285,26 @@ final class CockpitTab: Identifiable {
 
     var isSpawned: Bool { terminal != nil }
 
+    /// Filter tier LIVE = `isSpawned` (a process runs: working, waiting, idle or
+    /// paused; dormant and hibernated are out). Not `isLive`, which is the
+    /// transcript-freshness flag the tick derives.
+    ///
+    /// ACTIVE = it needs the user, is rate-limited, or emitted output within the
+    /// last `activeWindow`. Wider than the 6 s that drives the state dot, on
+    /// purpose: a filter that dropped a tab six seconds after its last byte
+    /// would flicker while an agent thinks between tool calls.
+    nonisolated static let activeWindow: TimeInterval = 60
+
+    /// Pure so the rule is testable without a PTY.
+    nonisolated static func isActive(needsInput: Bool, rateLimited: Bool, lastActivityAt: Date, now: Date) -> Bool {
+        needsInput || rateLimited || now.timeIntervalSince(lastActivityAt) < activeWindow
+    }
+
+    func isActive(now: Date = Date()) -> Bool {
+        isSpawned && Self.isActive(needsInput: needsInput, rateLimited: isRateLimited,
+                                   lastActivityAt: lastActivityAt, now: now)
+    }
+
     /// Spawn the terminal on first activation: a login shell, then cd into the
     /// project and launch (or resume) the tab's native runtime.
     func ensureSpawned() {
@@ -636,6 +656,72 @@ final class MultiCockpitModel {
         }
     }
     var sortMode: SortMode = .manual { didSet { if sortMode != oldValue { recomputeSortOrder() } } }
+
+    /// Rail / tab-bar activity filter. Two tiers the user can tell apart: LIVE
+    /// (a process runs) and ACTIVE (it is doing something or waiting on them).
+    enum ActivityFilter: String, CaseIterable, Identifiable {
+        case all, live, active
+        var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .all:    return String(localized: "All sessions")
+            case .live:   return String(localized: "Live")
+            case .active: return String(localized: "Active")
+            }
+        }
+        nonisolated func passes(isLive: Bool, isActive: Bool) -> Bool {
+            switch self {
+            case .all:    return true
+            case .live:   return isLive
+            case .active: return isActive
+            }
+        }
+    }
+    var activityFilter: ActivityFilter = ActivityFilter(
+        rawValue: UserDefaults.standard.string(forKey: "cockpitActivityFilter") ?? ""
+    ) ?? .all {
+        didSet {
+            guard activityFilter != oldValue else { return }
+            UserDefaults.standard.set(activityFilter.rawValue, forKey: "cockpitActivityFilter")
+            recomputeActivityFilter()
+        }
+    }
+
+    /// Ids passing `activityFilter`; nil when the filter is `.all`. Cached and
+    /// recomputed only on the tick / filter change / add-remove — same
+    /// discipline as `sortedOrder`: `isActive` reads `lastActivityAt`, and a
+    /// body that read it per row would invalidate the whole cockpit per byte.
+    private(set) var visibleSessionIDs: Set<UUID>?
+    /// Tier counts for the filter menu + header. STORED, assigned only on change,
+    /// read only from the cockpit window — never from the menu-bar label.
+    private(set) var liveCount = 0
+    private(set) var activeCount = 0
+
+    func recomputeActivityFilter(now: Date = Date()) {
+        var live = 0, active = 0
+        var ids = Set<UUID>()
+        for tab in sessions {
+            let spawned = tab.isSpawned, busy = tab.isActive(now: now)
+            if spawned { live += 1 }
+            if busy { active += 1 }
+            if activityFilter.passes(isLive: spawned, isActive: busy) { ids.insert(tab.id) }
+        }
+        if live != liveCount { liveCount = live }
+        if active != activeCount { activeCount = active }
+        let next: Set<UUID>? = activityFilter == .all ? nil : ids
+        if next != visibleSessionIDs { visibleSessionIDs = next }
+    }
+
+    /// `displaySessions` after the activity filter. The selected tab is pinned:
+    /// it is what the terminal shows, so the list must not deny it exists.
+    var visibleSessions: [CockpitTab] {
+        Self.visibleSessions(displaySessions, visibleIDs: visibleSessionIDs, pinned: activeID)
+    }
+
+    static func visibleSessions(_ sessions: [CockpitTab], visibleIDs: Set<UUID>?, pinned: UUID?) -> [CockpitTab] {
+        guard let visibleIDs else { return sessions }
+        return sessions.filter { visibleIDs.contains($0.id) || $0.id == pinned }
+    }
     var routingMode: MissionRoutingMode = MissionRoutingMode(
         rawValue: UserDefaults.standard.string(forKey: "cockpitMissionRoutingMode") ?? ""
     ) ?? .automatic {
@@ -653,7 +739,7 @@ final class MultiCockpitModel {
         return MissionRuntimeService.resolve(routingMode, claudeRateLimited: !rateLimitedSessions.isEmpty)
     }
 
-    private(set) var sessions: [CockpitTab] = [] { didSet { refreshWaitingCount() } }
+    private(set) var sessions: [CockpitTab] = [] { didSet { refreshWaitingCount(); recomputeActivityFilter() } }
 
     /// Cached display order (session ids). Recomputed only on an explicit trigger
     /// — sort-mode change, session add/remove, and the periodic tick — NOT on every
@@ -1406,6 +1492,7 @@ final class MultiCockpitModel {
             }
             if changed { self.persist() }   // keep saved resume-ids fresh
             self.recomputeSortOrder()        // refresh sort order on the tick, not per-byte
+            self.recomputeActivityFilter()   // same cadence for the rail/tab activity filter
         }
     }
 

@@ -198,6 +198,32 @@ struct MultiCockpitRoot: View {
         .accessibilityLabel("Research and global portfolio")
     }
 
+    private func knowledgeMenu(compact: Bool) -> some View {
+        Menu {
+            Button("Research Vault", systemImage: "books.vertical") {
+                ResearchVaultWindowController.shared.show(query: "")
+            }
+            Button("Global Portfolio Setup", systemImage: "square.stack.3d.up") {
+                GlobalRAGOnboardingWindowController.shared.show(canInstallMCP: appState.isPro) { _ in }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "books.vertical")
+                if !compact { Text("Research") }
+                Image(systemName: "chevron.down").font(.system(size: 7, weight: .bold))
+            }
+            .font(.system(size: 10.5, weight: .medium))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 7).padding(.vertical, 5)
+            .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 6))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Research Vault and Global Portfolio Setup")
+        .accessibilityLabel("Research and global portfolio")
+    }
+
     /// The revealed utility shelf: contextual timeline (or an empty note) on the
     /// left, the occasional utilities on the right. Height collapses to 0 when hidden.
     private func utilityRow(narrow: Bool) -> some View {
@@ -404,7 +430,7 @@ struct MultiCockpitRoot: View {
                 }
                 HStack(spacing: 4) {
                     Circle().fill(tint).frame(width: 6, height: 6)
-                    Text(pressureLabel(m) + " · \(m.claudeCount) claude\(m.claudeCount == 1 ? "" : "s")"
+                    Text(pressureLabel(m) + " · " + m.agentSummary
                          + (m.swapUsedBytes > 0 ? " · swap \(gb(m.swapUsedBytes))" : ""))
                         .font(.system(size: 10)).foregroundStyle(.tertiary)
                 }
@@ -702,35 +728,41 @@ struct MultiCockpitRoot: View {
         VStack(spacing: 0) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 1) {
-                    ForEach(model.sessions) { s in
-                        let on = s.id == (model.active?.id)
-                        Button { model.wake(s.id) } label: {
+                    ForEach(model.visibleSessions) { tab in
+                        let selected = tab.id == (model.active?.id)
+                        Button { model.wake(tab.id) } label: {
                             HStack(spacing: 8) {
-                                stateDot(s).help(stateDotHelp(s))
-                                Text(s.projectName).font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(on ? .primary : .secondary)
-                                runtimeTag(s.runtime)
-                                if s.needsInput {
+                                stateDot(tab).help(stateDotHelp(tab))
+                                Text(tab.projectName).font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(selected ? .primary : .secondary)
+                                runtimeTag(tab.runtime)
+                                if tab.needsInput {
                                     Image(systemName: "bell.badge.fill").font(.system(size: 10))
                                         .foregroundStyle(.orange)
                                 }
-                                if let e = s.eur {
-                                    Text(String(format: "€%.2f", e))
+                                if let eur = tab.eur {
+                                    Text(String(format: "€%.2f", eur))
                                         .font(.system(size: 10, design: .monospaced)).foregroundStyle(.tertiary)
                                 }
-                                Button { model.close(s.id) } label: {
+                                Button { model.close(tab.id) } label: {
                                     Image(systemName: "xmark").font(.system(size: 8, weight: .bold))
                                         .foregroundStyle(.tertiary)
                                 }.buttonStyle(.plain)
                             }
                             .padding(.horizontal, 12).frame(minHeight: 40)
-                            .background(on ? Color.primary.opacity(0.06) : .clear)
+                            .background(selected ? Color.primary.opacity(0.06) : .clear)
                             .overlay(alignment: .bottom) {
-                                if on { Rectangle().fill(Color.accentColor).frame(height: 2).padding(.horizontal, 10) }
+                                if selected {
+                                    Rectangle().fill(Color.accentColor).frame(height: 2).padding(.horizontal, 10)
+                                }
                             }
                             .contentShape(Rectangle())
                         }.buttonStyle(.plain)
                     }
+                    if model.visibleSessions.isEmpty, model.activityFilter != .all, !model.sessions.isEmpty {
+                        activityFilterEmptyState.fixedSize()
+                    }
+                    activityFilterMenu.padding(.horizontal, 6).frame(minHeight: 40)
                     newTabButton
                 }
                 .padding(.horizontal, 6)
@@ -765,9 +797,12 @@ struct MultiCockpitRoot: View {
         HStack(spacing: 0) {
             VStack(spacing: 0) {
                 HStack {
-                    gLabel("SESSIONS · \(model.sessions.count)")
+                    gLabel(model.activityFilter == .all
+                           ? "SESSIONS · \(model.sessions.count)"
+                           : "SESSIONS · \(model.visibleSessions.count)/\(model.sessions.count)")
                     Spacer()
                     if model.waitingCount > 0 { waitingChip(model.waitingCount) }
+                    activityFilterMenu
                     sortMenu
                 }.padding(.horizontal, 13).padding(.vertical, 9)
                 // Search only appears once the rail is crowded — no permanent chrome
@@ -780,6 +815,8 @@ struct MultiCockpitRoot: View {
                             Text("No session matches “\(railFilter)”.")
                                 .font(.system(size: 11)).foregroundStyle(.tertiary)
                                 .padding(.vertical, 12)
+                        } else if filteredSessions.isEmpty, model.activityFilter != .all, !model.sessions.isEmpty {
+                            activityFilterEmptyState
                         }
                         // Edge-agent sessions live on the user's box, not this Mac.
                         // A remote OWNED by a local tab (offloaded from it) is NOT
@@ -839,11 +876,57 @@ struct MultiCockpitRoot: View {
         .accessibilityLabel(String(localized: "Sort sessions")).accessibilityValue(model.sortMode.label)
     }
 
-    /// Sessions after the rail filter — case-insensitive substring on project name.
+    /// Sessions after the activity filter, then the rail text filter —
+    /// case-insensitive substring on project name.
     private var filteredSessions: [CockpitTab] {
         let q = railFilter.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !q.isEmpty else { return model.displaySessions }
-        return model.displaySessions.filter { $0.projectName.lowercased().contains(q) }
+        guard !q.isEmpty else { return model.visibleSessions }
+        return model.visibleSessions.filter { $0.projectName.lowercased().contains(q) }
+    }
+
+    /// All / Live / Active. Shared by the rail and the tab bar; the counts let
+    /// the two tiers be told apart before picking one. Reads only the model's
+    /// stored counts — never a per-tab `state` (that would invalidate the whole
+    /// cockpit on every PTY chunk).
+    private var activityFilterMenu: some View {
+        let filtered = model.activityFilter != .all
+        return Menu {
+            ForEach(MultiCockpitModel.ActivityFilter.allCases) { tier in
+                Button {
+                    model.activityFilter = tier
+                } label: {
+                    let title = "\(tier.label) · \(activityTierCount(tier))"
+                    if model.activityFilter == tier { Label(title, systemImage: "checkmark") } else { Text(title) }
+                }
+            }
+        } label: {
+            Image(systemName: filtered ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                .font(.system(size: 9.5, weight: .semibold))
+                .foregroundStyle(filtered ? Color.accentColor : Color.secondary.opacity(0.6))
+        }
+        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+        .help(String.localizedStringWithFormat(String(localized: "Show: %@"), model.activityFilter.label))
+        .accessibilityLabel(String(localized: "Filter sessions by activity"))
+        .accessibilityValue(model.activityFilter.label)
+    }
+
+    private func activityTierCount(_ tier: MultiCockpitModel.ActivityFilter) -> Int {
+        switch tier {
+        case .all:    return model.sessions.count
+        case .live:   return model.liveCount
+        case .active: return model.activeCount
+        }
+    }
+
+    private var activityFilterEmptyState: some View {
+        VStack(spacing: 6) {
+            Text(model.activityFilter == .active ? "No active session." : "No live session.")
+                .font(.system(size: 11)).foregroundStyle(.tertiary)
+            Button { model.activityFilter = .all } label: {
+                Text("Show all").font(.system(size: 11, weight: .medium)).foregroundStyle(Color.accentColor)
+            }.buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity).padding(.vertical, 12)
     }
 
     private var railSearchField: some View {
@@ -1192,7 +1275,7 @@ struct MultiCockpitRoot: View {
                 HStack {
                     Text("All sessions").font(.system(size: 13, weight: .semibold))
                     Spacer()
-                    Text("\(model.sessions.count) running · \(model.machine.claudeCount) claude processes")
+                    Text("\(model.sessions.count) running · \(model.machine.agentSummary)")
                         .font(.system(size: 11)).foregroundStyle(.tertiary)
                 }.padding(.horizontal, 18).padding(.top, 13).padding(.bottom, 4)
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {

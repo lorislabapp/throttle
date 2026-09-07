@@ -20,6 +20,28 @@ final class HostMetricsService {
         var netDownBytesPerSec: Double = 0
         var netUpBytesPerSec: Double = 0
         var sampledAt: Date = .distantPast
+        /// macOS purge daemons are actively burning CPU (see `samplePurgeActivityIfDue`).
+        var osPurging: Bool = false
+
+        var diskUsedFraction: Double {
+            diskTotalBytes > 0 ? min(1, 1 - Double(diskFreeBytes) / Double(diskTotalBytes)) : 0
+        }
+
+        /// The volume is close enough to full that ordinary work starts failing.
+        ///
+        /// Both arms matter: the absolute floor because a single Xcode build can
+        /// need several GB of DerivedData in one go, and the ratio because macOS
+        /// begins aggressive cache reclamation near the top regardless of the
+        /// disk's size. A full disk does not fail loudly — it surfaces as a
+        /// mislabelled build error, which costs far more to chase than to prevent.
+        var diskTight: Bool {
+            guard diskTotalBytes > 0 else { return false }
+            return diskFreeBytes < 15_000_000_000 || diskUsedFraction > 0.95
+        }
+
+        /// Disk is nearly full AND the OS is thrashing to reclaim it. This is the
+        /// state where the whole machine — the embedded terminal included — stalls.
+        var diskThrashing: Bool { diskTight && osPurging }
     }
 
     private(set) var snapshot = Snapshot()
@@ -28,6 +50,17 @@ final class HostMetricsService {
     private var prevCPUTicks: [(used: UInt64, total: UInt64)] = []
     // Network delta state.
     private var prevNet: (inBytes: UInt64, outBytes: UInt64, at: Date)?
+    // Purge-daemon delta state. Sampled on its own slower cadence: unlike the
+    // mach/BSD reads above, it forks `ps`, which is too costly for every tick.
+    private var prevPurge: (secs: Double, at: Date)?
+    private var purgeProbeInFlight = false
+    private var osPurging = false
+
+    /// A purge daemon busy at least this fraction of one core, sustained across a
+    /// probe interval, counts as "the OS is reclaiming". Below it the daemons are
+    /// merely idling and the disk being tight is not yet costing the user anything.
+    private static let purgeBusyCoreFraction = 0.25
+    private static let purgeProbeInterval: TimeInterval = 10
 
     private init() {}
 
@@ -37,8 +70,38 @@ final class HostMetricsService {
         sampleCPU(into: &s)
         sampleDisk(into: &s)
         sampleNetwork(into: &s)
+        // Carried across, not re-measured: the purge probe forks `ps` and so runs
+        // on its own slower cadence via `samplePurgeActivityIfDue`.
+        s.osPurging = osPurging
         s.sampledAt = Date()
         snapshot = s
+    }
+
+    /// Refresh the purge-daemon signal if its interval has elapsed. Forks `ps`, so
+    /// the sweep runs off the main actor and at a tenth of the tick rate; callers
+    /// can await this from the same loop that drives `sample()` without stalling it.
+    func samplePurgeActivityIfDue() async {
+        let now = Date()
+        if let prev = prevPurge, now.timeIntervalSince(prev.at) < Self.purgeProbeInterval { return }
+        guard !purgeProbeInFlight else { return }
+        purgeProbeInFlight = true
+        defer { purgeProbeInFlight = false }
+
+        let secs = await Task.detached(priority: .utility) {
+            SystemMemoryService.purgeDaemonCPUSeconds()
+        }.value
+        let probedAt = Date()
+        defer { prevPurge = (secs, probedAt) }
+
+        // The first probe only establishes a baseline — there is no rate to report
+        // yet, and inventing one would be a number we can't stand behind.
+        guard let prev = prevPurge else { return }
+        let elapsed = probedAt.timeIntervalSince(prev.at)
+        guard elapsed > 0 else { return }
+        // Guard against a counter that went backwards (daemon restarted).
+        let burned = max(0, secs - prev.secs)
+        osPurging = (burned / elapsed) >= Self.purgeBusyCoreFraction
+        snapshot.osPurging = osPurging
     }
 
     // MARK: - CPU (host_processor_info, per-core load ticks → busy delta)

@@ -10,6 +10,13 @@ struct ResearchVaultFolderSource: Codable, Equatable, Identifiable {
     let name: String
     let bookmark: Data
     var fingerprints: [String: String]
+    /// Which directory level under this folder names the project a file belongs
+    /// to, counting from zero. A whole research library can then be granted once
+    /// and still feed every Space, instead of costing one macOS permission per
+    /// project — which, at ninety projects across eight categories, was the
+    /// difference between a setup someone finishes and one they abandon.
+    /// `nil` keeps the folder's own `projectKey` for everything inside it.
+    var projectSegment: Int?
 
     init(
         id: UUID = UUID(),
@@ -17,7 +24,8 @@ struct ResearchVaultFolderSource: Codable, Equatable, Identifiable {
         projectKey: String,
         name: String,
         bookmark: Data,
-        fingerprints: [String: String] = [:]
+        fingerprints: [String: String] = [:],
+        projectSegment: Int? = nil
     ) {
         self.id = id
         self.spaceID = spaceID
@@ -25,6 +33,16 @@ struct ResearchVaultFolderSource: Codable, Equatable, Identifiable {
         self.name = name
         self.bookmark = bookmark
         self.fingerprints = fingerprints
+        self.projectSegment = projectSegment
+    }
+
+    /// The project a file belongs to, read from its path when this folder was
+    /// granted as a library.
+    func projectKey(forRelativePath relative: String) -> String {
+        guard let projectSegment else { return projectKey }
+        let parts = relative.split(separator: "/")
+        guard parts.count > projectSegment + 1 else { return projectKey }
+        return String(parts[projectSegment])
     }
 }
 
@@ -38,7 +56,10 @@ enum ResearchVaultFolderSourceError: Error {
 enum ResearchVaultFolderSourceStore {
     private static let key = "researchVault.folderSources.v1"
     private static let maximumSources = 32
-    private static let maximumFilesPerScan = 256
+    /// A library folder legitimately holds thousands of files. The scan stays
+    /// bounded, but at a size that fits a real corpus rather than one folder of
+    /// notes; the import below it is what batches.
+    private static let maximumFilesPerScan = 20_000
 
     static func load(defaults: UserDefaults = .standard) -> [ResearchVaultFolderSource] {
         guard let data = defaults.data(forKey: key),
@@ -51,6 +72,7 @@ enum ResearchVaultFolderSourceStore {
         folder: URL,
         spaceID: String,
         projectKey: String,
+        projectSegment: Int? = nil,
         defaults: UserDefaults = .standard
     ) throws -> ResearchVaultFolderSource {
         let values = try folder.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
@@ -65,8 +87,9 @@ enum ResearchVaultFolderSourceStore {
         let source = ResearchVaultFolderSource(
             spaceID: spaceID,
             projectKey: projectKey,
-            name: folder.lastPathComponent,
-            bookmark: bookmark
+            name: displayName(for: folder),
+            bookmark: bookmark,
+            projectSegment: projectSegment
         )
         var sources = load(defaults: defaults)
         if let existing = sources.firstIndex(where: {
@@ -80,6 +103,14 @@ enum ResearchVaultFolderSourceStore {
         sources.append(source)
         try save(sources, defaults: defaults)
         return source
+    }
+
+    /// Seven folders named `throttle`, one per category, are seven identical rows
+    /// in the sidebar. Carrying the parent tells them apart at a glance.
+    static func displayName(for folder: URL) -> String {
+        let parent = folder.deletingLastPathComponent().lastPathComponent
+        guard !parent.isEmpty, parent != "/" else { return folder.lastPathComponent }
+        return "\(parent)/\(folder.lastPathComponent)"
     }
 
     static func remove(id: UUID, defaults: UserDefaults = .standard) throws {
@@ -101,7 +132,7 @@ enum ResearchVaultFolderSourceStore {
     static func changedFiles(
         for source: ResearchVaultFolderSource,
         at folder: URL
-    ) throws -> (urls: [URL], fingerprints: [String: String]) {
+    ) throws -> (urls: [(url: URL, relative: String)], fingerprints: [String: String]) {
         let keys: Set<URLResourceKey> = [
             .isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey, .contentModificationDateKey
         ]
@@ -111,24 +142,37 @@ enum ResearchVaultFolderSourceStore {
             options: [.skipsHiddenFiles, .skipsPackageDescendants]
         ) else { throw ResearchVaultFolderSourceError.unavailable }
         var fingerprints: [String: String] = [:]
-        var changed: [URL] = []
+        var changed: [(url: URL, relative: String)] = []
         for case let url as URL in enumerator {
             let values = try url.resourceValues(forKeys: keys)
             guard values.isRegularFile == true, values.isSymbolicLink != true else { continue }
             guard ManualResearchFileImporter.supportedExtensions.contains(
                 url.pathExtension.lowercased()
             ) else { continue }
-            let relative = String(url.path.dropFirst(folder.path.count)).trimmingCharacters(
-                in: CharacterSet(charactersIn: "/")
-            )
+            // Taking the tail by the root path's length assumed both spell the
+            // same prefix, and they do not: the enumerator resolves /var to
+            // /private/var, so a character or two of the parent's own name
+            // survived into the key. Harmless while it was only an opaque
+            // fingerprint key, wrong the moment the path names a project.
+            guard let relative = Self.relativePath(of: url, under: folder) else { continue }
             let fingerprint = "\(values.fileSize ?? -1):\(values.contentModificationDate?.timeIntervalSince1970 ?? -1)"
             fingerprints[relative] = fingerprint
-            if source.fingerprints[relative] != fingerprint { changed.append(url) }
+            if source.fingerprints[relative] != fingerprint {
+                changed.append((url: url, relative: relative))
+            }
             if fingerprints.count > maximumFilesPerScan {
                 throw ResearchVaultFolderSourceError.tooManyFiles
             }
         }
-        return (changed.sorted { $0.path < $1.path }, fingerprints)
+        return (changed.sorted { $0.relative < $1.relative }, fingerprints)
+    }
+
+    /// The path of `url` beneath `root`, or nil when it is not beneath it.
+    static func relativePath(of url: URL, under root: URL) -> String? {
+        let file = url.resolvingSymlinksInPath().standardizedFileURL.pathComponents
+        let base = root.resolvingSymlinksInPath().standardizedFileURL.pathComponents
+        guard file.count > base.count, Array(file.prefix(base.count)) == base else { return nil }
+        return file.dropFirst(base.count).joined(separator: "/")
     }
 
     static func markSynced(

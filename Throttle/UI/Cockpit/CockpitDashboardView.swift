@@ -424,8 +424,35 @@ struct CockpitDashboardView: View {
                        trail: "\(gb(machine.usedBytes)) / \(gb(machine.totalBytes))")
             HStack(spacing: 14) {
                 kv("SWAP", gb(machine.swapUsedBytes))
-                kv("DISK", "\(gb(UInt64(max(0, s.diskFreeBytes)))) free")
+                diskKV(s)
                 kv("NET", String(format: "↓%@ ↑%@", rate(s.netDownBytesPerSec), rate(s.netUpBytesPerSec)))
+            }
+            if s.diskThrashing {
+                Text("macOS is reclaiming disk space — expect stalls until there is headroom.")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    /// DISK earns emphasis, never colour: orange and red stay reserved for Claude
+    /// cap pressure, so a tight volume steps up in weight and gains a LOW tag
+    /// instead. Rendered flat, a nearly-full disk is indistinguishable from a
+    /// healthy one — which is exactly how it goes unnoticed until a build fails.
+    private func diskKV(_ metrics: HostMetricsService.Snapshot) -> some View {
+        let free = "\(gb(UInt64(max(0, metrics.diskFreeBytes)))) free"
+        return HStack(spacing: 5) {
+            gLabel("DISK")
+            Text(free)
+                .font(.system(size: 11, weight: metrics.diskTight ? .semibold : .regular, design: .monospaced))
+                .foregroundStyle(metrics.diskTight ? Color.primary : .secondary)
+            if metrics.diskTight {
+                Text("LOW")
+                    .font(.system(size: 9, weight: .heavy)).tracking(0.4)
+                    .padding(.horizontal, 5).padding(.vertical, 1)
+                    .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 4))
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -541,6 +568,8 @@ struct CockpitDashboardView: View {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(2))
                 host.sample()
+                // Self-throttled to its own 10s cadence — cheap to call every tick.
+                await host.samplePurgeActivityIfDue()
             }
         }
     }

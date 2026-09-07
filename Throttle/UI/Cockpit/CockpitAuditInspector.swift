@@ -198,7 +198,7 @@ struct CockpitAuditInspector: View {
                     Circle().fill(tint).frame(width: 6, height: 6)
                     Text(m.critical ? "critical" : (m.underPressure ? "warning" : "normal"))
                         .font(.system(size: 10.5)).foregroundStyle(tint)
-                    Text("· \(m.claudeCount) claude · swap \(gb(m.swapUsedBytes))")
+                    Text("· \(m.agentSummary) · swap \(gb(m.swapUsedBytes))")
                         .font(.system(size: 10.5)).foregroundStyle(.tertiary)
                 }
             } else {
