@@ -665,8 +665,8 @@ final class MultiCockpitModel {
         var label: String {
             switch self {
             case .all:    return String(localized: "All sessions")
-            case .live:   return String(localized: "Live")
-            case .active: return String(localized: "Active")
+            case .live:   return String(localized: "Live sessions")
+            case .active: return String(localized: "Active sessions")
             }
         }
         nonisolated func passes(isLive: Bool, isActive: Bool) -> Bool {

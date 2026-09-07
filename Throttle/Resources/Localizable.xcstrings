@@ -422,6 +422,17 @@
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Revenir au direct" } } }
     },
+    "Active sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions actives"
+          }
+        }
+      }
+    },
     "Keep Mac awake": {
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Garder le Mac éveillé" } } }
@@ -2028,6 +2039,17 @@
         }
       }
     },
+    "Filter sessions by activity": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtrer les sessions par activité"
+          }
+        }
+      }
+    },
     "Configure": {
       "extractionState": "manual",
       "localizations": {
@@ -2699,6 +2721,17 @@
         }
       }
     },
+    "Live sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions vivantes"
+          }
+        }
+      }
+    },
     "Keep engineering instructions": {
       "localizations": {
         "fr": {
@@ -3086,6 +3119,17 @@
         }
       }
     },
+    "No active session.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune session active."
+          }
+        }
+      }
+    },
     "No changes yet.": {
       "localizations": {
         "fr": {
@@ -3198,7 +3242,18 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aucune session active"
+            "value": "Aucune session en cours"
+          }
+        }
+      }
+    },
+    "No live session.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune session vivante."
           }
         }
       }
@@ -5382,12 +5437,34 @@
         }
       }
     },
+    "Show all": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout afficher"
+          }
+        }
+      }
+    },
     "local": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "local"
+          }
+        }
+      }
+    },
+    "Show: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher : %@"
           }
         }
       }
