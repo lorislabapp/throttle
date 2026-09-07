@@ -20,7 +20,9 @@ final class DispatchAdvisorTests: XCTestCase {
                      swapUsedBytes: UInt64(swapGB) * 1_000_000_000,
                      pressureLevel: pressure,
                      claudeCount: sessions,
-                     claudeRSSBytes: UInt64(sessions * sessionGB) * 1_000_000_000)
+                     claudeRSSBytes: UInt64(sessions * sessionGB) * 1_000_000_000,
+                     codexCount: 0,
+                     codexRSSBytes: 0)
     }
 
     private func budget(_ runtime: AgentRuntime, used: Double,
