@@ -59,16 +59,18 @@
 ## Submit
 
 - [x] Apple notarization accepted; submission `b208d0fe-f88a-47bf-918a-9e1c39515588`; ticket stapled.
-- [ ] Public upload (DMG + appcast + page in ONE isolated archive, merge-extract over `public_html/throttle/`): the automated session was blocked by the tool classifier; to be run by the user: `node <scratchpad>/publish-throttle.mjs <scratchpad>/stage-352`.
-- [ ] Sparkle appcast publication — same isolated upload as above.
-- [ ] Product-page publication — same isolated upload as above.
+- [x] Public upload run by the user 2026-09-07 (`publish-throttle.mjs`, one isolated archive `throttle-release-20260907062756.zip`, 5 entries, merge-extract); deploy trigger 200; stamp `20260907062756-937bg2wx` verified live.
+- [x] Sparkle appcast published in the same upload.
+- [x] Product page published in the same upload.
 
 ## Post-release
 
-- [ ] Verify public HTTP status, byte length and downloaded SHA-256.
-- [ ] Verify Sparkle signature and top appcast item from a fresh public response.
-- [ ] Installation/relaunch remains a separate gate.
+- [x] Public DMG: HTTP 200 with content length 31,832,615 through both a plain and a cache-busted request; downloaded SHA-256 exactly `c7ff74053564b0afeecb6379813401874e7916150d3b12afa6e4e4cbb56993c1` (identical bytes, so the EdDSA signature verified locally holds for the public file).
+- [x] Public appcast: 94,827 bytes, SHA-256 `d16a0544…` (identical to the staged file); top item 3.5.2 / `<sparkle:version>218` from both a fresh and an edge-cached response.
+- [x] Public page advertises `Throttle-3.5.2.dmg`, `v3.5.2 · 31.8 MB`.
+- [ ] Installation/relaunch remains a separate gate (user is working in the installed 3.5.1).
+- [ ] `release/3.5.2-218` not pushed to origin (user decision pending).
 
 ## Current verdict
 
-2026-09-07: **SIGNED, NOTARIZED AND STAGED — PUBLICATION PENDING (user-run upload)**. Merged tree tested (578/0), universal Developer ID export, stapled DMG accepted by Gatekeeper, Sparkle entry signed and verified, page and appcast staged byte-exact. Nothing has been uploaded; the installed 3.5.1 is untouched.
+2026-09-07: **PUBLISHED AND VERIFIED**. 3.5.2 (218) is live on `https://lorislab.fr/throttle/` and at the top of the Sparkle feed; clients on 217 will be offered it. The installed app on the release machine was not touched.
