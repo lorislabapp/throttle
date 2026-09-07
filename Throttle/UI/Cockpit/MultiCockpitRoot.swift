@@ -734,7 +734,7 @@ struct MultiCockpitRoot: View {
                         }.buttonStyle(.plain)
                     }
                     if model.visibleSessions.isEmpty, model.activityFilter != .all, !model.sessions.isEmpty {
-                        activityFilterEmptyState.fixedSize()
+                        activityFilterEmptyTab
                     }
                     activityFilterMenu.padding(.horizontal, 6).frame(minHeight: 40)
                     newTabButton
@@ -892,15 +892,37 @@ struct MultiCockpitRoot: View {
         }
     }
 
+    /// A ternary between two string literals types as `String`, which picks
+    /// `Text(_: String)` — the overload that does NOT localize. Resolve the
+    /// catalog lookup here instead.
+    private var activityFilterEmptyMessage: String {
+        model.activityFilter == .active
+            ? String(localized: "No active session.")
+            : String(localized: "No live session.")
+    }
+
+    private var showAllButton: some View {
+        Button { model.activityFilter = .all } label: {
+            Text("Show all").font(.system(size: 11, weight: .medium)).foregroundStyle(Color.accentColor)
+        }.buttonStyle(.plain)
+    }
+
+    /// Rail: stacked, centred in the empty list.
     private var activityFilterEmptyState: some View {
         VStack(spacing: 6) {
-            Text(model.activityFilter == .active ? "No active session." : "No live session.")
-                .font(.system(size: 11)).foregroundStyle(.tertiary)
-            Button { model.activityFilter = .all } label: {
-                Text("Show all").font(.system(size: 11, weight: .medium)).foregroundStyle(Color.accentColor)
-            }.buttonStyle(.plain)
+            Text(activityFilterEmptyMessage).font(.system(size: 11)).foregroundStyle(.tertiary)
+            showAllButton
         }
         .frame(maxWidth: .infinity).padding(.vertical, 12)
+    }
+
+    /// Tab bar: one line at row height, because the bar is horizontal and 40pt tall.
+    private var activityFilterEmptyTab: some View {
+        HStack(spacing: 8) {
+            Text(activityFilterEmptyMessage).font(.system(size: 12)).foregroundStyle(.tertiary)
+            showAllButton
+        }
+        .padding(.horizontal, 12).frame(minHeight: 40)
     }
 
     private var railSearchField: some View {
