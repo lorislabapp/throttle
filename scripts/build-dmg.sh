@@ -60,6 +60,14 @@ if [ -n "$PLANNED_BUILD" ]; then
     fi
 fi
 
+# The SwiftLint baseline must be repo-relative. Regenerated from a worktree under /tmp,
+# SwiftLint stored every entry as an absolute path; CI matched none of them and every
+# push went red (3.5.1 → 3.5.2). Refuse to ship from such a tree.
+if grep -q '"file":"\\/' .swiftlint-baseline.json; then
+    echo "✘ .swiftlint-baseline.json holds absolute paths — regenerate it from a worktree under \$HOME." >&2
+    exit 65
+fi
+
 echo "→ Generating Xcode project"
 xcodegen generate
 

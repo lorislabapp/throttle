@@ -72,6 +72,15 @@ jobs:
       - name: Test shared Swift packages
         run: swift test --package-path ThrottleShared
 
+      - name: Baseline must be repo-relative
+        # A baseline regenerated under /tmp carries absolute paths; nothing matches on
+        # the runner and all known violations come back as new. Fail with the cause.
+        run: |
+          if grep -q '"file":"\\/' .swiftlint-baseline.json; then
+            echo "::error::.swiftlint-baseline.json holds absolute paths — regenerate from a worktree under \$HOME"
+            exit 1
+          fi
+
       - name: Enforce SwiftLint ratchet
         run: swiftlint lint --strict
 
