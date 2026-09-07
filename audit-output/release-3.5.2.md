@@ -74,6 +74,14 @@
 - [x] Release path made repeatable: `scripts/stage-release.py`, `scripts/publish-release.mjs`, `scripts/verify-public-release.sh`, runbook `docs/RELEASE.md`; the stage script reproduces the published 3.5.2 files byte-for-byte and the verifier passes against the live site.
 - [x] `lorislab-website` reconciled with origin (34 local + 5 remote commits, uniform asset stamp) and its `throttle/` files synced to the published appcast and page.
 
+## Post-publication hardening (2026-09-07, after the release)
+
+- [x] CI green on `main` for the first time since 3.2.96 (run 34096405323, `860e58b`), confirming the baseline was the sole cause.
+- [x] Release path made fail-closed on the two things that only surface after users download: staging now refuses a DMG with no stapled ticket and re-verifies the EdDSA signature against the bytes with Sparkle's `sign_update`. CI syntax-checks the publish scripts and pins two invariants (staging reads the live site; publishing proves itself with the deploy stamp).
+- [x] Shipped 3.5.2 dSYMs preserved outside `/private/tmp`, which is cleared on reboot: `.install-backups/dSYMs-3.5.2-218/` (Throttle, widget, Research Vault agent; 107 MB, with UUIDs). Without this, a 3.5.2 crash report could never have been symbolicated.
+- [x] Filter defects found in review and fixed for the next release (NOT in the shipped 3.5.2): the tab bar was given the rail's stacked empty state, the empty-state message was a ternary of literals that silently picked the non-localizing `Text` overload, and the seven new strings were missing from the catalog. Tier labels are now `Live sessions` / `Active sessions`, and `No sessions running` no longer translates to `Aucune session active`, which contradicted the new Active tier.
+- [x] Release build intermediates (archive, export) removed after the durable artifacts were verified; the notarized DMG and signed appcast entry are kept.
+
 ## Current verdict
 
 2026-09-07: **PUBLISHED AND VERIFIED**. 3.5.2 (218) is live on `https://lorislab.fr/throttle/` and at the top of the Sparkle feed; clients on 217 will be offered it. The installed app on the release machine was not touched.
