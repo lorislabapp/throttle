@@ -69,7 +69,10 @@
 - [x] Public appcast: 94,827 bytes, SHA-256 `d16a0544…` (identical to the staged file); top item 3.5.2 / `<sparkle:version>218` from both a fresh and an edge-cached response.
 - [x] Public page advertises `Throttle-3.5.2.dmg`, `v3.5.2 · 31.8 MB`.
 - [ ] Installation/relaunch remains a separate gate (user is working in the installed 3.5.1).
-- [ ] `release/3.5.2-218` not pushed to origin (user decision pending).
+- [x] `release/3.5.2-218`, `main` (fast-forwarded to the release tip) and `feat/research-vault-lots-1-4` pushed to origin.
+- [x] CI ratchet root cause fixed: the 3.5.1 baseline held absolute `/tmp` paths; regenerated repo-relative with the pinned SwiftLint 0.63.2, guards added to `build-dmg.sh` and CI.
+- [x] Release path made repeatable: `scripts/stage-release.py`, `scripts/publish-release.mjs`, `scripts/verify-public-release.sh`, runbook `docs/RELEASE.md`; the stage script reproduces the published 3.5.2 files byte-for-byte and the verifier passes against the live site.
+- [x] `lorislab-website` reconciled with origin (34 local + 5 remote commits, uniform asset stamp) and its `throttle/` files synced to the published appcast and page.
 
 ## Current verdict
 
