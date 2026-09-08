@@ -103,6 +103,53 @@ snapshot gelé. Résultat distant exact :
 L'édition Swift n'a pas été compilée localement (1,8 Gio de disque) ; la CI n°4
 en est la vérification. Les artefacts complets du run n°3 restent sur GitHub.
 
+## CI n°4 — quatrième lot (run 34269208573, HEAD `2e5193e`)
+
+- `vault-tests (release)` **PASS** : la testabilité manquante était bien la
+  cause. `vault-tests (debug)` **PASS** : second échantillon vert pour
+  `unknownTool`, sans modification du test — l'échec du run n°3 est donc
+  intermittent ; sa cause (`sqlite3_key` → SQLITE_ERROR) reste non nommée et
+  le gate reste ouvert tant qu'elle ne l'est pas.
+- `ios-tests` **FAIL** `command_timeout_or_interruption`, 0 cas : le log
+  s'arrête juste après la sélection de destination du simulateur, avant toute
+  compilation. Sources iOS identiques au run n°3 (vert). Classé infrastructure
+  du runner hébergé ; aucun changement de code, à rejouer.
+- `macos-tests` **FAIL** : 2 échecs Cockpit (`testHibernate…`, `testModelStop
+  Failure…`), un jeu différent de celui du run n°3 — non déterministe. Les
+  messages de diagnostic ajoutés au lot 4 nomment enfin la cause :
+  `member 38722 not inspectable, kill(pid,0)=0 errno=3 ; member 38723
+  kill=-1 errno=3 ; group 38722 kill(-group,0)=-1 errno=1 occupants=[38722 ?]`.
+  Lecture : le shell racine est un **zombie** (le noyau ne garde que son code
+  de sortie, `proc_pidinfo` ne le décrit plus, `kill(-groupe,0)` répond EPERM
+  au lieu d'ESRCH) ; le fils `sleep` est parti. Le processus a bien terminé,
+  mais son parent — le gestionnaire de sortie de SwiftTerm, sur la file
+  principale — ne l'a pas encore récolté, et `OwnedProcessTermination.awaitExit`
+  exigeait ESRCH sur le groupe. La confirmation dépendait donc de la latence
+  de la file principale, jamais garantie sur un runner chargé (523
+  avertissements Thread Performance Checker au run n°3) et pas davantage dans
+  l'app réelle.
+
+### Correction (cinquième lot)
+
+`OwnedProcessTermination` reconnaît maintenant l'état noyau via `sysctl
+KERN_PROC_PID` (`kernelState(of:)`, `isZombie`) : un membre zombie est un
+reçu de sortie, et un groupe qui ne subsiste que par des zombies est
+considéré parti (`onlyZombies(in:)`, liste `proc_listpids PROC_PGRP_ONLY` ;
+une liste vide ou tronquée reste inconnue, donc refusée). Un processus vivant,
+stoppé ou remplacé bloque toujours la confirmation ; aucun délai relevé, aucun
+`waitpid` ajouté (la récolte reste à SwiftTerm, sinon course sur le code de
+sortie). Test de régression `testUnreapedZombieIsAnExitReceiptUntilItsParentReaps`
+(le fils se stoppe, est capturé vivant, sort sans être récolté ; `stop` doit
+confirmer ; récolte en fin de test → ESRCH).
+
+Preuves locales sur macOS 27 : `swiftc -typecheck` des deux fichiers produit ;
+harnais autonome compilé avec ces mêmes fichiers reproduisant la signature CI
+(`kill(-groupe,0)=-1 errno=1` sur un zombie non récolté) puis `stop() → stopped`
+et ESRCH après récolte ; SwiftLint 0.63.2 exit 0 ; `git diff --check` propre.
+Le harnais a d'abord révélé une course dans le test (CONT envoyé avant l'arrêt
+du shell → stoppé pour toujours) ; le test attend désormais `SSTOP`. La suite
+XCTest complète n'a pas été exécutée localement : CI n°5.
+
 ## Conservation et verdict
 
 Les preuves compactes sont dans [evidence/2026-09-08-release-loop](evidence/2026-09-08-release-loop).

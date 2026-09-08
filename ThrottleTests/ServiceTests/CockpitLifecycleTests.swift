@@ -230,7 +230,8 @@ final class CockpitLifecycleTests: XCTestCase {
                     ? "still the captured process" : "pid reused by another process"))
             } else {
                 let probe = kill(pid, 0), error = errno
-                lines.append("member \(pid) not inspectable, kill(pid,0)=\(probe) errno=\(error)")
+                lines.append("member \(pid) not inspectable, zombie=\(OwnedProcessTermination.isZombie(pid)) "
+                    + "kill(pid,0)=\(probe) errno=\(error)")
             }
         }
         for group in scope.groups {

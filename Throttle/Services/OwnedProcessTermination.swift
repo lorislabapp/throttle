@@ -45,7 +45,7 @@ enum OwnedProcessTermination {
                 if let child = NativeProcessIdentity.capture(pid) {
                     guard child.parentPID == identity.pid else { return nil }
                     pending.append(child)
-                } else if kill(pid, 0) == 0 || errno != ESRCH {
+                } else if !isZombie(pid), kill(pid, 0) == 0 || errno != ESRCH {
                     return nil
                 }
             }
@@ -116,10 +116,46 @@ enum OwnedProcessTermination {
 
     private static func stillRunning(_ identity: NativeProcessIdentity) -> Bool {
         guard let current = NativeProcessIdentity.capture(identity.pid) else {
-            // An inaccessible PID is unknown, not an exit receipt.
+            // A zombie has already exited; only its unreaped status remains.
+            if isZombie(identity.pid) { return false }
+            // Any other inaccessible PID is unknown, not an exit receipt.
             return kill(identity.pid, 0) == 0 || errno != ESRCH
         }
         return sameProcess(current, identity)
+    }
+
+    /// A zombie has terminated: the kernel keeps only its exit status until the
+    /// parent reaps it. It cannot run, hold the PTY or spawn, so it is an exit
+    /// receipt — yet `kill(-group, 0)` still counts it and `proc_pidinfo` no
+    /// longer describes it. Reaping belongs to the parent (SwiftTerm's exit
+    /// handler on the main queue); confirmation must not wait on that queue.
+    static func isZombie(_ pid: pid_t) -> Bool {
+        kernelState(of: pid) == SZOMB
+    }
+
+    /// The kernel's `p_stat` (SRUN, SSLEEP, SSTOP, SZOMB…) or nil when the PID
+    /// is unknown. Unlike `proc_pidinfo`, this still describes a zombie.
+    static func kernelState(of pid: pid_t) -> Int32? {
+        guard pid > 1 else { return nil }
+        var info = kinfo_proc()
+        var size = MemoryLayout<kinfo_proc>.size
+        var name: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, pid]
+        guard sysctl(&name, UInt32(name.count), &info, &size, nil, 0) == 0,
+              size == MemoryLayout<kinfo_proc>.size else { return nil }
+        return Int32(info.kp_proc.p_stat)
+    }
+
+    /// True only when the group still exists solely because of unreaped zombies.
+    /// An empty or truncated listing is unknown and never certifies the group.
+    private static func onlyZombies(in group: pid_t) -> Bool {
+        var pids = [pid_t](repeating: 0, count: 512)
+        let capacity = pids.count * MemoryLayout<pid_t>.size
+        let bytes = pids.withUnsafeMutableBytes {
+            proc_listpids(UInt32(PROC_PGRP_ONLY), UInt32(group), $0.baseAddress, Int32(capacity))
+        }
+        guard bytes > 0, Int(bytes) < capacity else { return false }
+        let occupants = pids.prefix(Int(bytes) / MemoryLayout<pid_t>.size).filter { $0 > 0 }
+        return !occupants.isEmpty && occupants.allSatisfy(isZombie)
     }
 
     private static func awaitExit(_ scope: Scope, within duration: TimeInterval, scopeChanged: inout Bool) -> Bool {
@@ -130,7 +166,7 @@ enum OwnedProcessTermination {
             scopeChanged = scopeChanged || hasGroupDrift(scope)
             let membersGone = scope.members.allSatisfy { !stillRunning($0.identity) }
             let groupsGone = scope.groups.allSatisfy { group in
-                kill(-group, 0) == -1 && errno == ESRCH
+                (kill(-group, 0) == -1 && errno == ESRCH) || onlyZombies(in: group)
             }
             if membersGone && groupsGone { return true }
             if ProcessInfo.processInfo.systemUptime >= deadline { return false }

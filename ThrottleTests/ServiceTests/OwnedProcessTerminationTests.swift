@@ -57,6 +57,43 @@ final class OwnedProcessTerminationTests: XCTestCase {
             "The session changed process scope while stopping. Review remaining processes before continuing."))
     }
 
+    func testUnreapedZombieIsAnExitReceiptUntilItsParentReaps() throws {
+        // The child stops itself so it can be captured alive, then exits once
+        // continued. This test is its parent and deliberately does not reap it
+        // until the end, exactly like a starved SwiftTerm exit handler.
+        let pid = try spawnGroup("kill -STOP $$; exit 0")
+        addTeardownBlock { var status: Int32 = 0; _ = waitpid(pid, &status, WNOHANG) }
+        let deadline = ProcessInfo.processInfo.systemUptime + 3
+        while NativeProcessIdentity.capture(pid) == nil || getpgid(pid) != pid,
+              ProcessInfo.processInfo.systemUptime < deadline {
+            Thread.sleep(forTimeInterval: 0.01)
+        }
+        // CONT sent before the shell has stopped itself would be lost, and the
+        // shell would then stop forever: wait for the kernel to report SSTOP.
+        while OwnedProcessTermination.kernelState(of: pid) != SSTOP,
+              ProcessInfo.processInfo.systemUptime < deadline {
+            Thread.sleep(forTimeInterval: 0.01)
+        }
+        let root = try XCTUnwrap(NativeProcessIdentity.capture(pid))
+        let scope = try XCTUnwrap(OwnedProcessTermination.capture(roots: [root]))
+        XCTAssertEqual(OwnedProcessTermination.kernelState(of: pid), SSTOP)
+        XCTAssertFalse(OwnedProcessTermination.isZombie(pid), "A stopped process is alive, not a zombie")
+        XCTAssertEqual(kill(pid, SIGCONT), 0)
+        while !OwnedProcessTermination.isZombie(pid), ProcessInfo.processInfo.systemUptime < deadline {
+            Thread.sleep(forTimeInterval: 0.01)
+        }
+        XCTAssertTrue(OwnedProcessTermination.isZombie(pid), "The child must have exited without being reaped")
+        XCTAssertEqual(kill(-pid, 0), -1, "The unreaped group still exists for the kernel")
+        XCTAssertNotEqual(errno, ESRCH)
+        XCTAssertEqual(OwnedProcessTermination.stop(scope, grace: 0.05, exitTimeout: 0.05), .stopped,
+                       "An exited child must be confirmed without waiting for its parent to reap it")
+        var status: Int32 = 0
+        XCTAssertEqual(waitpid(pid, &status, 0), pid)
+        XCTAssertFalse(OwnedProcessTermination.isZombie(pid))
+        XCTAssertEqual(kill(-pid, 0), -1)
+        XCTAssertEqual(errno, ESRCH)
+    }
+
     private func launchFixture(ignoresTerm: Bool) throws -> (
         root: NativeProcessIdentity, scope: OwnedProcessTermination.Scope
     ) {
