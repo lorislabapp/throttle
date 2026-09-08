@@ -79,13 +79,24 @@ export function redactLine(line) {
 }
 
 function classify(line) {
-  if (/\b0 errors?\b/i.test(line) || /\b0 failed\b/i.test(line)) {
-    return patterns.summary.some((pattern) => pattern.test(line)) ? "summary" : null;
-  }
+  // Nonzero failures take precedence over unrelated zero counts.
+  if (patterns.critical.some(pattern => pattern.test(line))) return "critical";
+  if (/\b[1-9]\d* (?:failed|failures?|errors?)\b/i.test(line)) return "error";
   for (const severity of ["critical", "error", "blocked", "warning", "summary"]) {
     if (patterns[severity].some((pattern) => pattern.test(line))) return severity;
   }
   return null;
+}
+
+function isSuccessSummary(line) {
+  const clean = line.trim();
+  if (/^(?:\*\*\s*)?BUILD SUCCEEDED(?:\s*\*\*)?$/.test(clean)) return true;
+  if (/^Test Suite .+ passed(?: at .*)?$/.test(clean)) return true;
+  if (/^status\s*[:=]\s*Accepted$/i.test(clean)) return true;
+  if (/^notari(?:zation|zed).*Accepted/i.test(clean)) return true;
+  const counts = clean.replace(/^=+\s*|\s*=+$/g, "");
+  return /^(?:\d+ (?:passed|failed|errors?|skipped|deselected|xfailed|xpassed)(?:,\s*| ))+in \d+(?:\.\d+)?s(?: \([^)]*\))?$/.test(counts)
+    && /\b[1-9]\d* passed\b/.test(counts);
 }
 
 function inferCauses(evidence) {
@@ -140,7 +151,7 @@ export function refineText(text, options = {}) {
 
   const hasFailure = candidates.some((item) => item.severity === "critical" || item.severity === "error");
   const hasBlocked = candidates.some((item) => item.severity === "blocked");
-  const hasSuccess = candidates.some((item) => item.severity === "summary" && /SUCCEEDED|passed|Accepted/i.test(item.text));
+  const hasSuccess = candidates.some((item) => item.severity === "summary" && isSuccessSummary(item.text));
   const status = hasFailure ? "fail" : hasBlocked ? "blocked" : hasSuccess ? "pass" : "unknown";
   const counts = Object.fromEntries(["critical", "error", "blocked", "warning", "summary"].map(
     (severity) => [severity, candidates.filter((item) => item.severity === severity).length],

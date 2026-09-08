@@ -19,10 +19,6 @@ enum ContentStore {
         SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
-    /// Store `data`; returns its SHA-256 hex. Idempotent: identical bytes map to
-    /// the same blob and are written once. Best-effort — a write failure still
-    /// returns the hash (the pointer text stays informative even if a later
-    /// expand misses).
     /// Store `data` and return its hash, or `nil` when the bytes did NOT land.
     ///
     /// This used to return the hash unconditionally, swallowing the write error.
@@ -39,8 +35,8 @@ enum ContentStore {
         let url = baseDir.appendingPathComponent("\(hash).blob")
         let fm = FileManager.default
         if fm.fileExists(atPath: url.path) {
-            // Content-addressed: an existing blob with this hash IS this data.
-            return hash
+            // The name is not proof: corruption must not yield a usable pointer.
+            return get(hash) == data ? hash : nil
         }
         do {
             try fm.createDirectory(at: baseDir, withIntermediateDirectories: true)
@@ -48,8 +44,7 @@ enum ContentStore {
         } catch {
             return nil
         }
-        guard let size = try? fm.attributesOfItem(atPath: url.path)[.size] as? Int,
-              size == data.count else {
+        guard get(hash) == data else {
             try? fm.removeItem(at: url)   // never leave a half blob under a valid hash
             return nil
         }
@@ -58,9 +53,11 @@ enum ContentStore {
 
     /// Fetch the original bytes for a hash, or nil if never stored / expired.
     static func get(_ hash: String) -> Data? {
-        let clean = hash.lowercased().filter(\.isHexDigit)
-        guard clean.count == 64 else { return nil }
-        return try? Data(contentsOf: baseDir.appendingPathComponent("\(clean).blob"))
+        let clean = hash.lowercased()
+        guard clean.count == 64, clean.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }),
+              let data = try? Data(contentsOf: baseDir.appendingPathComponent("\(clean).blob")),
+              sha256Hex(data) == clean else { return nil }
+        return data
     }
 
     /// Age out blobs older than `maxAge` (default 30 days). These can contain

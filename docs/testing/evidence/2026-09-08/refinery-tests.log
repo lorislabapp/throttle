@@ -1,0 +1,28 @@
+
+> throttle-local-context-refinery@0.1.0 test
+> node --test test/*.test.mjs
+
+✔ mixed runner summaries retain failures instead of reporting pass (5.528333ms)
+✔ zero counts cannot mask a critical diagnostic or a different nonzero failure (0.175417ms)
+✔ failure status survives noise, ordering, duplicate successes and evidence caps (7.817542ms)
+✔ zero tests and prose are not terminal success evidence (0.433541ms)
+✔ stdio MCP negotiates, lists read-only tools, and returns structured evidence (53.019167ms)
+✔ does not contact a runtime when no model is configured (0.472833ms)
+✔ rejects non-loopback local-model endpoints before network access (0.101875ms)
+✔ reads model configuration without probing the endpoint (0.329417ms)
+✔ uses bounded non-thinking structured inference (0.114916ms)
+✔ extracts build evidence, redacts credentials, and fails closed (4.108875ms)
+✔ recognizes a terminal successful test summary (1.960042ms)
+✔ returns unknown instead of inventing a result (0.355958ms)
+✔ rejects oversized input rather than silently truncating (0.228542ms)
+✔ allows regular files inside configured roots and rejects traversal (2.821334ms)
+✔ redacts common standalone token formats (0.096375ms)
+✔ rejects sensitive-looking filenames and non-log formats (0.945ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 102.0385

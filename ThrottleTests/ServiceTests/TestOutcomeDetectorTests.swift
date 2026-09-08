@@ -55,4 +55,51 @@ final class TestOutcomeDetectorTests: XCTestCase {
         XCTAssertNil(TestOutcomeDetector.detect(in: "The build passed and everything looks great now."))
         XCTAssertNil(TestOutcomeDetector.detect(in: "I will run the tests next."))
     }
+
+    func test_failureFirstAndErrorOnlyPytestSummaries() {
+        for text in ["=== 2 failed, 10 passed in 1.23s ===", "=== 1 error in 0.20s ==="] {
+            let result = TestOutcomeDetector.detect(in: text)
+            XCTAssertNotNil(result, text)
+            XCTAssertFalse(result?.green == true, text)
+        }
+    }
+
+    func test_laterSuccessDoesNotEraseFailureInTheSameObservedTail() {
+        let text = "test result: FAILED. 1 passed; 2 failed; 0 ignored;\n"
+            + "test result: ok. 8 passed; 0 failed; 0 ignored;"
+        XCTAssertFalse(TestOutcomeDetector.detect(in: text)?.green == true)
+        let swift = "Executed 3 tests, with 2 failures (0 unexpected)\n"
+            + "Executed 8 tests, with 0 failures (0 unexpected)"
+        XCTAssertFalse(TestOutcomeDetector.detect(in: swift)?.green == true)
+    }
+
+    func test_failureFromAnotherRunnerCannotBecomeGreen() {
+        let text = "=== 12 passed in 1.0s ===\nFAIL\texample.com/pkg\t0.1s"
+        XCTAssertFalse(TestOutcomeDetector.detect(in: text)?.green == true)
+    }
+
+    func test_summaryMentionedInProseIsNotObservedResult() {
+        XCTAssertNil(TestOutcomeDetector.detect(in: "Earlier I saw 12 passed in 1.0s and continued."))
+        XCTAssertNil(TestOutcomeDetector.detect(in: "Example: Executed 12 tests, with 0 failures"))
+    }
+
+    func test_invalidAndEmptyCountsCannotBecomeGreen() {
+        for text in ["=== 0 passed in 1.0s ===", "Executed 1 tests, with 2 failures",
+                     "test result: FAILED. 12 passed; 0 failed; 0 ignored;"] {
+            XCTAssertFalse(TestOutcomeDetector.detect(in: text)?.green == true, text)
+        }
+    }
+
+    func test_ansiColourAndCachedGoOutput() {
+        XCTAssertTrue(TestOutcomeDetector.detect(in: "\u{001B}[32m=== 12 passed in 1.0s ===\u{001B}[0m")?.green == true)
+        XCTAssertTrue(TestOutcomeDetector.detect(in: "ok\texample.com/pkg\t(cached)")?.green == true)
+    }
+
+    func test_swiftTestingOrNodeFailureAfterXCTestSuccessIsNotGreen() {
+        for failure in ["✘ Test run with 8 tests failed after 0.001 seconds with 11 issues.",
+                        "ℹ fail 3", "=== 1 passed, 999999999999999999999999 failed in 1.0s ==="] {
+            let text = "Executed 15 tests, with 0 failures (0 unexpected)\n" + failure
+            XCTAssertFalse(TestOutcomeDetector.detect(in: text)?.green == true)
+        }
+    }
 }

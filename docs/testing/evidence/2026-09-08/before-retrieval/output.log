@@ -1,0 +1,135 @@
+Building for debugging...
+[0/11] /private/tmp/throttle-testing-20260908/throttle-core-evidence-djp0n57v/package/.build/arm64-apple-macosx/debug/ThrottleCoreEvidencePackageTests.derived/runner.swift
+[1/11] Write sources
+[8/11] Write swift-version-39B54973F684ADAB.txt
+[10/15] Emitting module Throttle
+[11/15] Compiling Throttle TestOutcomeDetector.swift
+[12/16] Emitting module ResearchVaultModel
+[13/16] Compiling ResearchVaultModel ResearchReceipt.swift
+[14/17] Compiling ResearchVaultModel VaultAuthorization.swift
+[15/17] Compiling Throttle TestOutcomeStore.swift
+[16/21] Emitting module ResearchVaultIPCModel
+[17/21] Compiling ResearchVaultIPCModel ResearchVaultIPCModel.swift
+[18/23] Emitting module ResearchVaultIngestion
+[19/23] Compiling ResearchVaultIngestion RetrievalBenchmark.swift
+[20/24] Compiling ResearchVaultIngestion RetrievalQualityGate.swift
+[21/26] Emitting module ResearchVaultIngestionTests
+[22/26] Compiling ResearchVaultIngestionTests RetrievalBenchmarkTests.swift
+[23/27] Compiling ResearchVaultIngestionTests RetrievalQualityGateTests.swift
+[24/27] Compiling ThrottleTests TestOutcomeDetectorTests.swift
+[25/27] Emitting module ThrottleTests
+[26/29] Compiling ThrottleCoreEvidencePackageTests runner.swift
+[27/29] Emitting module ThrottleCoreEvidencePackageTests
+[27/29] Write Objects.LinkFileList
+[28/29] Linking ThrottleCoreEvidencePackageTests
+Build complete! (10.49s)
+Test Suite 'All tests' started at 2026-09-08 10:59:39.766.
+Test Suite 'ThrottleCoreEvidencePackageTests.xctest' started at 2026-09-08 10:59:39.784.
+Test Suite 'TestOutcomeDetectorTests' started at 2026-09-08 10:59:39.784.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_ansiColourAndCachedGoOutput]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_ansiColourAndCachedGoOutput]' passed (0.010 seconds).
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_cargo]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_cargo]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_failureFirstAndErrorOnlyPytestSummaries]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_failureFirstAndErrorOnlyPytestSummaries]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_failureFromAnotherRunnerCannotBecomeGreen]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_failureFromAnotherRunnerCannotBecomeGreen]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_go_fail]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_go_fail]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_go_ok]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_go_ok]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_invalidAndEmptyCountsCannotBecomeGreen]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_invalidAndEmptyCountsCannotBecomeGreen]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_jest_failedFirstOrder]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_jest_failedFirstOrder]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_jest_passOnly]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_jest_passOnly]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_laterSuccessDoesNotEraseFailureInTheSameObservedTail]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_laterSuccessDoesNotEraseFailureInTheSameObservedTail]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_noFalsePositiveOnProse]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_noFalsePositiveOnProse]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_pytest_passOnly]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_pytest_passOnly]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_pytest_withFailures]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_pytest_withFailures]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_summaryMentionedInProseIsNotObservedResult]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_summaryMentionedInProseIsNotObservedResult]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_swift]' started.
+Test Case '-[ThrottleTests.TestOutcomeDetectorTests test_swift]' passed (0.000 seconds).
+Test Suite 'TestOutcomeDetectorTests' passed at 2026-09-08 10:59:39.800.
+	 Executed 15 tests, with 0 failures (0 unexpected) in 0.013 (0.016) seconds
+Test Suite 'ThrottleCoreEvidencePackageTests.xctest' passed at 2026-09-08 10:59:39.800.
+	 Executed 15 tests, with 0 failures (0 unexpected) in 0.013 (0.016) seconds
+Test Suite 'All tests' passed at 2026-09-08 10:59:39.800.
+	 Executed 15 tests, with 0 failures (0 unexpected) in 0.013 (0.034) seconds
+◇ Test run started.
+↳ Testing Library Version: 2078
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite "Retrieval benchmark metrics" started.
+◇ Suite "Retrieval quality gate" started.
+◇ Test "rejects invalid benchmark definitions" started.
+◇ Test "promotes only a significant gain inside every product budget" started.
+◇ Test "scores explicit abstention separately" started.
+◇ Test "does not promote a small or insignificant challenger" started.
+◇ Test "no abstention observations cannot count as perfect abstention" started.
+◇ Test "unanswerable queries cannot inflate positive retrieval metrics" started.
+◇ Test "measures claim coverage and rejects a tampered excerpt citation" started.
+◇ Test "computes Recall, reciprocal rank and nDCG with duplicate suppression" started.
+✔ Test "computes Recall, reciprocal rank and nDCG with duplicate suppression" passed after 0.001 seconds.
+✔ Test "does not promote a small or insignificant challenger" passed after 0.001 seconds.
+✔ Test "rejects invalid benchmark definitions" passed after 0.001 seconds.
+✘ Test "unanswerable queries cannot inflate positive retrieval metrics" recorded an issue at RetrievalBenchmarkTests.swift:69:13: Expectation failed: mixed.meanRecallAtK == baseline.meanRecallAtK
+↳ mixed.meanRecallAtK == baseline.meanRecallAtK → false
+↳   mixed.meanRecallAtK → 0.5
+↳   baseline.meanRecallAtK → 0.0
+✘ Test "no abstention observations cannot count as perfect abstention" recorded an issue at RetrievalBenchmarkTests.swift:80:9: Expectation failed: result.abstentionAccuracy == 0
+↳ result.abstentionAccuracy == 0 → false
+↳   result.abstentionAccuracy → 1.0
+↳   0 → 0.0
+✔ Test "promotes only a significant gain inside every product budget" passed after 0.001 seconds.
+✔ Test "measures claim coverage and rejects a tampered excerpt citation" passed after 0.001 seconds.
+✘ Test "scores explicit abstention separately" recorded an issue at RetrievalBenchmarkTests.swift:53:9: Expectation failed: result.meanRecallAtK == 0
+↳ result.meanRecallAtK == 0 → false
+↳   result.meanRecallAtK → 1.0
+↳   0 → 0.0
+✘ Test "unanswerable queries cannot inflate positive retrieval metrics" recorded an issue at RetrievalBenchmarkTests.swift:70:13: Expectation failed: mixed.meanReciprocalRank == baseline.meanReciprocalRank
+↳ mixed.meanReciprocalRank == baseline.meanReciprocalRank → false
+↳   mixed.meanReciprocalRank → 0.5
+↳   baseline.meanReciprocalRank → 0.0
+✔ Suite "Retrieval quality gate" passed after 0.001 seconds.
+✘ Test "unanswerable queries cannot inflate positive retrieval metrics" recorded an issue at RetrievalBenchmarkTests.swift:71:13: Expectation failed: mixed.meanNDCGAtK == baseline.meanNDCGAtK
+↳ mixed.meanNDCGAtK == baseline.meanNDCGAtK → false
+↳   mixed.meanNDCGAtK → 0.5
+↳   baseline.meanNDCGAtK → 0.0
+✘ Test "scores explicit abstention separately" failed after 0.001 seconds with 1 issue.
+✘ Test "no abstention observations cannot count as perfect abstention" failed after 0.001 seconds with 1 issue.
+✘ Test "unanswerable queries cannot inflate positive retrieval metrics" recorded an issue at RetrievalBenchmarkTests.swift:69:13: Expectation failed: mixed.meanRecallAtK == baseline.meanRecallAtK
+↳ mixed.meanRecallAtK == baseline.meanRecallAtK → false
+↳   mixed.meanRecallAtK → 0.9090909090909091
+↳   baseline.meanRecallAtK → 0.0
+✘ Test "unanswerable queries cannot inflate positive retrieval metrics" recorded an issue at RetrievalBenchmarkTests.swift:70:13: Expectation failed: mixed.meanReciprocalRank == baseline.meanReciprocalRank
+↳ mixed.meanReciprocalRank == baseline.meanReciprocalRank → false
+↳   mixed.meanReciprocalRank → 0.9090909090909091
+↳   baseline.meanReciprocalRank → 0.0
+✘ Test "unanswerable queries cannot inflate positive retrieval metrics" recorded an issue at RetrievalBenchmarkTests.swift:71:13: Expectation failed: mixed.meanNDCGAtK == baseline.meanNDCGAtK
+↳ mixed.meanNDCGAtK == baseline.meanNDCGAtK → false
+↳   mixed.meanNDCGAtK → 0.9090909090909091
+↳   baseline.meanNDCGAtK → 0.0
+✘ Test "unanswerable queries cannot inflate positive retrieval metrics" recorded an issue at RetrievalBenchmarkTests.swift:69:13: Expectation failed: mixed.meanRecallAtK == baseline.meanRecallAtK
+↳ mixed.meanRecallAtK == baseline.meanRecallAtK → false
+↳   mixed.meanRecallAtK → 0.9900990099009901
+↳   baseline.meanRecallAtK → 0.0
+✘ Test "unanswerable queries cannot inflate positwarning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+ive retrieval metrics" recorded an issue at RetrievalBenchmarkTests.swift:70:13: Expectation failed: mixed.meanReciprocalRank == baseline.meanReciprocalRank
+↳ mixed.meanReciprocalRank == baseline.meanReciprocalRank → false
+↳   mixed.meanReciprocalRank → 0.9900990099009901
+↳   baseline.meanReciprocalRank → 0.0
+✘ Test "unanswerable queries cannot inflate positive retrieval metrics" recorded an issue at RetrievalBenchmarkTests.swift:71:13: Expectation failed: mixed.meanNDCGAtK == baseline.meanNDCGAtK
+↳ mixed.meanNDCGAtK == baseline.meanNDCGAtK → false
+↳   mixed.meanNDCGAtK → 0.9900990099009901
+↳   baseline.meanNDCGAtK → 0.0
+✘ Test "unanswerable queries cannot inflate positive retrieval metrics" failed after 0.001 seconds with 9 issues.
+✘ Suite "Retrieval benchmark metrics" failed after 0.001 seconds with 11 issues.
+✘ Test run with 8 tests in 2 suites failed after 0.001 seconds with 11 issues.
+Note: Some test targets reported failures:
+  - ThrottleCoreEvidencePackageTests (Swift Testing)

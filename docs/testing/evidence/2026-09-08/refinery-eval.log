@@ -1,0 +1,28 @@
+
+> throttle-local-context-refinery@0.1.0 eval
+> node evaluate.mjs
+
+PASS xcode-compile-error 1.4ms
+PASS xcode-warning-success 0.4ms
+PASS xctest-failure 0.2ms
+PASS xctest-success-zero-failure 0.2ms
+PASS notary-accepted 0.0ms
+PASS notary-rejected 0.0ms
+PASS codesign-critical 0.0ms
+PASS disk-blocker 0.0ms
+PASS permission-blocker 0.1ms
+PASS mcp-protocol-error 0.0ms
+PASS unknown-progress 0.0ms
+PASS secret-redaction 0.1ms
+{
+  "corpus_schema": "1.0",
+  "cases": 12,
+  "passed": 12,
+  "failed": 0,
+  "must_keep_recall": 1,
+  "aggregate_compression_ratio": 0.09,
+  "model": null,
+  "model_latency_ms_p50": null,
+  "model_latency_ms_p95": null,
+  "failures": []
+}

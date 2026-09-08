@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "scope": "core-validator-subset",
+  "status": "fail",
+  "started_at_unix": 1788857967.0482922,
+  "duration_seconds": 12.874,
+  "command": [
+    "swift",
+    "test",
+    "--package-path",
+    "/private/tmp/throttle-testing-20260908/throttle-core-evidence-djp0n57v/package",
+    "--build-system",
+    "native",
+    "--jobs",
+    "2",
+    "--xunit-output",
+    "/private/tmp/throttle-testing-20260908/throttle-core-evidence-djp0n57v/results.xml"
+  ],
+  "exit_code": 1,
+  "reported_cases": 0,
+  "sources_sha256": {
+    "Throttle/Services/TestOutcomeDetector.swift": "b08d75074590bef60c222b1a7b277c61855031a5b7feefa459785e1f91d79ac5",
+    "Throttle/Services/TestOutcomeStore.swift": "4321ba14b74e4a651d7c31c555686b61fb728b4e986b4cb410e187416287860b",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultModel/ResearchReceipt.swift": "54f3078dc01cc93221a6be41bc4f67984c3a6a0fda07e5f27f553674f4f57950",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultModel/VaultAuthorization.swift": "69c0ce7097abee499f110ba84fbfab9cf153dc60ac9e7b43ea0b3e0f11d6c390",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultIPCModel.swift": "349221d682360c14f87f88829eeeee5dce41347c3c331869ddd440852b11f762",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIngestion/RetrievalBenchmark.swift": "442f9d942e0d19803584e8206f8ca7473f765f71bff98871f6068e1930382100",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIngestion/RetrievalQualityGate.swift": "e73800cd2bd3e4f5a0b3e472231a060d5c0514a6ab2d285b785d67f78b86ed3c",
+    "ThrottleTests/ServiceTests/TestOutcomeDetectorTests.swift": "2a50cf8a0aada61538978821c12780139457fbe4594162263d0c3d30d0c46888",
+    "Packages/ResearchVaultKit/Tests/ResearchVaultIngestionTests/RetrievalBenchmarkTests.swift": "516552dfce5aa65d62ab2a1e9f3431eaccf8c87a48201db4a901b8d29faf351b",
+    "Packages/ResearchVaultKit/Tests/ResearchVaultIngestionTests/RetrievalQualityGateTests.swift": "43c0d90ca9683e7bc6166316f7180ce9f2320fb1ac2d07e174440400abad0244"
+  },
+  "errors": [
+    "missing_or_invalid_final_report",
+    "command_failed"
+  ],
+  "result_sha256": null
+}

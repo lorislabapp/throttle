@@ -1,0 +1,22 @@
+{
+  "vault-final-xctest.xml": "1e54f9bdbc45911553960e9a0aa1c7de9ae65d635f33c7e3e1b59f540ac7facf",
+  "vault-final-swift-testing.xml": "fa7e30d8d6ebd27f277c03dc7996589aaccf292f96cbc3154fa62cdbcaa0dee4",
+  "refinery-tests.log": "580518401bab9bae78772695f3972d845872e20767f3b14ad0dc2a7066adf7bc",
+  "refinery-eval.log": "ef34c57ddf42acb382012d8882797a745e4165ea3b0e0e53b2431957662b56c6",
+  "python-gates.log": "1e0e2bdb45564bbe320b7113d13572bc16a721786b13f7564aaf719bf19f6c26",
+  "environment.json": "2d062dd65434fc44db8c647ac891ebdea911091bf05ab16479bc1fb035a571c1",
+  "vault-source-snapshot.json": "c9fd50e2f3691a52522a3723627923848dc58af9c573f6781ca441988d2f414d",
+  "vault-final-xctest.log": "e6e8ed5b4e42080757bddcc115c81114cec4681918a015a039232e19c64651ab",
+  "vault-final-swift-testing.log": "0394498687311a41cdbcf7d4fb51f5a952394b0bd568af036d297d368261e61e",
+  "core/swift-testing.xml": "4f946a53233052aa5bb180479fd2de0dab076d2c02bee4b88772cffce6cba371",
+  "core/output.log": "4f1d23e18f3699abd7836d1b91be115b300141911a00d7b0e70951167d1b403b",
+  "core/xctest.xml": "3238f36f778248ee7609d7ddc03fbf202cc32508e3623d1f8a23008bfa1640d3",
+  "core/receipt.json": "78a76a8665b176e83f87b76154725f485005a035b2278c9f9337f0c024baf7c9",
+  "before-retrieval/output.log": "2e5ebd2ef6b11d57041a7cf0aa98645f434e1aa21ed45ab02587cc744e257472",
+  "before-retrieval/results-swift-testing.xml": "49f36a0ef9d793b671744a584207931818f67fd333c0debb8846a99b1894e645",
+  "before-retrieval/receipt.json": "7979211a1a7ed93773aae9243ed3e548fc91e842a31264874c256318e6219839",
+  "before-context/swift-testing.xml": "220225f25eb15914d4cc5d98b555a862a7ffd0be94e135bf96ee03bfc6b5896d",
+  "before-context/output.log": "830008a819a227681f98a4182a0b7f2aa8876901f22f0169bee54a0f61b5cdb6",
+  "before-context/xctest.xml": "ffbb61b2dd90fc51bbe5e07d80659791bc833748e2a9e7f900e021ccd54a387c",
+  "before-context/receipt.json": "4b7adb9f8cea35381ba5624b97c7c76c973e179237326225d993deda75d2398c"
+}

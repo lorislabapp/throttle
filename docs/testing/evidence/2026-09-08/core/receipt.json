@@ -1,0 +1,119 @@
+{
+  "schema": 1,
+  "scope": "core-validator-subset",
+  "status": "pass",
+  "started_at_unix": 1788859439.905922,
+  "duration_seconds": 15.164,
+  "commands": [
+    [
+      "swift",
+      "test",
+      "--package-path",
+      "/private/tmp/throttle-testing-20260908/throttle-core-evidence-g2w8gxit/package",
+      "--build-system",
+      "native",
+      "--jobs",
+      "2",
+      "--parallel",
+      "--num-workers",
+      "2",
+      "--disable-swift-testing",
+      "--xunit-output",
+      "/private/tmp/throttle-testing-20260908/throttle-core-evidence-g2w8gxit/xctest.xml"
+    ],
+    [
+      "swift",
+      "test",
+      "--package-path",
+      "/private/tmp/throttle-testing-20260908/throttle-core-evidence-g2w8gxit/package",
+      "--build-system",
+      "native",
+      "--jobs",
+      "2",
+      "--skip-build",
+      "--disable-xctest",
+      "--xunit-output",
+      "/private/tmp/throttle-testing-20260908/throttle-core-evidence-g2w8gxit/swift-testing.xml"
+    ]
+  ],
+  "exit_codes": [
+    0,
+    0
+  ],
+  "reported_cases": 39,
+  "expected_cases": {
+    "TestOutcomeDetectorTests": [
+      "test_pytest_passOnly",
+      "test_pytest_withFailures",
+      "test_cargo",
+      "test_jest_failedFirstOrder",
+      "test_jest_passOnly",
+      "test_swift",
+      "test_go_ok",
+      "test_go_fail",
+      "test_noFalsePositiveOnProse",
+      "test_failureFirstAndErrorOnlyPytestSummaries",
+      "test_laterSuccessDoesNotEraseFailureInTheSameObservedTail",
+      "test_failureFromAnotherRunnerCannotBecomeGreen",
+      "test_summaryMentionedInProseIsNotObservedResult",
+      "test_invalidAndEmptyCountsCannotBecomeGreen",
+      "test_ansiColourAndCachedGoOutput",
+      "test_swiftTestingOrNodeFailureAfterXCTestSuccessIsNotGreen"
+    ],
+    "TestOutcomeStoreTests": [
+      "test_failedAttemptsContributeToCostPerGreen",
+      "test_windowUsesHistoricalCostAnchor",
+      "test_missingCostsAndResetsCannotMakeMetricCheaper",
+      "test_malformedOrEmptyResultsCannotBecomeGreen",
+      "test_stableOrderAndIndependentSessions",
+      "test_unrelatedProjectsAndAllFailuresDoNotCreateCostPerGreen"
+    ],
+    "ContextPacketEvidenceTests": [
+      "test_corruptionCannotRehydrateOrProduceAValidPointer",
+      "test_pointerRequiresAnExactHash",
+      "test_numberingAndMetadataStayInsideTheContextBudget",
+      "test_sourceMetadataCannotExhaustTheBudget",
+      "test_writeFailureIsExplicitAndDoesNotAdvertiseRehydration",
+      "test_selectedEvidenceKeepsExactOriginalAndUntrustedBoundary"
+    ],
+    "RetrievalBenchmarkTests": [
+      "metrics",
+      "invalid",
+      "abstention",
+      "addingAbstentionsDoesNotImproveRecall",
+      "unmeasuredAbstention"
+    ],
+    "RetrievalQualityGateTests": [
+      "rejectsInvalidEvidence",
+      "largeSample",
+      "noClaims",
+      "conservativePromotion",
+      "promotesMeasuredGain",
+      "claimsAndCitations"
+    ]
+  },
+  "sources_sha256": {
+    "Throttle/Services/TestOutcomeDetector.swift": "f51439146f30ba7bad2104513112654a90f3abf585b778c07d77d73515c844bb",
+    "Throttle/Services/TestOutcomeStore.swift": "189480fc85da9148388ab6b07badcc8691d39d71e46e6eee0dadf1679496fa2a",
+    "Throttle/Services/ContextFirewall.swift": "51015f4cb0564ce68a1f4253fcdc9d7b72b9f0ef518d01f606b95346434f3793",
+    "Throttle/Services/ContentStore.swift": "3f855fd3d5ecd7ef198e0b7b2ec4df7794827ec38cd172e7bedf2ef0eabbec89",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultModel/ResearchReceipt.swift": "54f3078dc01cc93221a6be41bc4f67984c3a6a0fda07e5f27f553674f4f57950",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultModel/VaultAuthorization.swift": "69c0ce7097abee499f110ba84fbfab9cf153dc60ac9e7b43ea0b3e0f11d6c390",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultIPCModel.swift": "349221d682360c14f87f88829eeeee5dce41347c3c331869ddd440852b11f762",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIngestion/RetrievalBenchmark.swift": "b77189f321b88135fbaa8a950d8ff2b03d2779443d36c3bf1326b48bb24b3f3d",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIngestion/RetrievalQualityGate.swift": "a5b49afef6f804c5f73c6396e47d696398a8e54278d470a4faec0527da3de8f5",
+    "ThrottleTests/ServiceTests/TestOutcomeDetectorTests.swift": "59b7d056c2bbc060d9d2feee91ef82ae613555af64cdb2f9ca7928bada1561d8",
+    "ThrottleTests/ServiceTests/TestOutcomeStoreTests.swift": "8f11d6df41c3bdff28b2388b66f2670a413e44aae9adb6b4f48e457e11680958",
+    "ThrottleTests/ServiceTests/ContextPacketEvidenceTests.swift": "271fc14533d0223c252bc951a0eb3b6f082dc7978fd58c89e08d4fe4a0276894",
+    "Packages/ResearchVaultKit/Tests/ResearchVaultIngestionTests/RetrievalBenchmarkTests.swift": "516552dfce5aa65d62ab2a1e9f3431eaccf8c87a48201db4a901b8d29faf351b",
+    "Packages/ResearchVaultKit/Tests/ResearchVaultIngestionTests/RetrievalQualityGateTests.swift": "8678b44eb02f03f8aea8f55cb55d614a60ae72ff4dd4c8b883a6f8d0ba5814d0"
+  },
+  "errors": [],
+  "manifest_sha256": "f8a4b7bf87251619086abcb9ec54c4464d82fe90d5162e8c81e6dc371e26ba15",
+  "runner_sha256": "7cc31560e21dd3351f24339f6b9b0f05b7ba7ea7f6b7772b99b58eea70eca869",
+  "log_sha256": "4f1d23e18f3699abd7836d1b91be115b300141911a00d7b0e70951167d1b403b",
+  "results_sha256": {
+    "swift-testing.xml": "4f946a53233052aa5bb180479fd2de0dab076d2c02bee4b88772cffce6cba371",
+    "xctest.xml": "3238f36f778248ee7609d7ddc03fbf202cc32508e3623d1f8a23008bfa1640d3"
+  }
+}

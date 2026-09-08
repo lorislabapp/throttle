@@ -7,6 +7,37 @@ import Testing
 
 @Suite("Retrieval quality gate")
 struct RetrievalQualityGateTests {
+    @Test("invalid measurements cannot authorize promotion")
+    func rejectsInvalidEvidence() {
+        for value in [Double.nan, .infinity, -.infinity, -0.1, 1.1] {
+            let decision = RetrievalPromotionEvaluator.evaluate(
+                baseline: evidence(recall: 0.90), challenger: evidence(recall: value),
+                paired: Array(repeating: .init(baselineScore: 0, challengerScore: 1), count: 20),
+                maximumPeakMemoryBytes: 100, maximumEnergyImpact: 1
+            )
+            #expect(!decision.promoted)
+            #expect(decision.reasons.contains("invalid_evidence_or_budget"))
+        }
+    }
+
+    @Test("large almost-balanced samples do not manufacture significance through underflow")
+    func largeSample() {
+        let paired = Array(repeating: RetrievalPairedOutcome(baselineScore: 0, challengerScore: 1), count: 601)
+            + Array(repeating: RetrievalPairedOutcome(baselineScore: 1, challengerScore: 0), count: 599)
+        let decision = RetrievalPromotionEvaluator.evaluate(
+            baseline: evidence(recall: 0.90), challenger: evidence(recall: 0.93),
+            paired: paired, maximumPeakMemoryBytes: 100, maximumEnergyImpact: 1
+        )
+        #expect(!decision.promoted)
+        #expect(decision.twoSidedSignTestPValue > 0.9)
+    }
+
+    @Test("no claims is unmeasured, not perfect quality")
+    func noClaims() {
+        #expect(ResearchClaimEvaluator.evaluate([]).claimCoverage == 0)
+        #expect(ResearchClaimEvaluator.evaluate([]).citationPrecision == 0)
+    }
+
     @Test("does not promote a small or insignificant challenger")
     func conservativePromotion() {
         let baseline = evidence(recall: 0.90)

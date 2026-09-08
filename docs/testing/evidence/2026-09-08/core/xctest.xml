@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites>
+<testsuite name="TestResults" errors="0" tests="28" failures="0" time="2.4530694140000002">
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_numberingAndMetadataStayInsideTheContextBudget" time="0.157867916">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_corruptionCannotRehydrateOrProduceAValidPointer" time="0.1578695">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_pointerRequiresAnExactHash" time="0.069657333">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_selectedEvidenceKeepsExactOriginalAndUntrustedBoundary" time="0.069669208">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_writeFailureIsExplicitAndDoesNotAdvertiseRehydration" time="0.071442">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_sourceMetadataCannotExhaustTheBudget" time="0.071449458">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_cargo" time="0.098632667">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_ansiColourAndCachedGoOutput" time="0.098647584">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_failureFirstAndErrorOnlyPytestSummaries" time="0.0803745">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_failureFromAnotherRunnerCannotBecomeGreen" time="0.080383875">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_go_ok" time="0.080420667">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_go_fail" time="0.08042125">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_jest_failedFirstOrder" time="0.085852333">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_invalidAndEmptyCountsCannotBecomeGreen" time="0.085868584">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_jest_passOnly" time="0.089072416">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_laterSuccessDoesNotEraseFailureInTheSameObservedTail" time="0.089033916">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_pytest_passOnly" time="0.084993375">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_noFalsePositiveOnProse" time="0.085002042">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_summaryMentionedInProseIsNotObservedResult" time="0.090854833">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_pytest_withFailures" time="0.09085575">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_swift" time="0.085928416">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_swiftTestingOrNodeFailureAfterXCTestSuccessIsNotGreen" time="0.085922833">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_malformedOrEmptyResultsCannotBecomeGreen" time="0.082191916">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_failedAttemptsContributeToCostPerGreen" time="0.082467917">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_stableOrderAndIndependentSessions" time="0.077344917">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_missingCostsAndResetsCannotMakeMetricCheaper" time="0.077585">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_unrelatedProjectsAndAllFailuresDoNotCreateCostPerGreen" time="0.071629125">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_windowUsesHistoricalCostAnchor" time="0.071630083">
+</testcase>
+</testsuite>
+</testsuites>

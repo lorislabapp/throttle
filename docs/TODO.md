@@ -1,5 +1,30 @@
 # Throttle — current work ledger
 
+## Current continuation — integration on 3abf6a6
+
+The active combined work is now isolated in `build/context-testing-3.6.0`, branch
+`feat/context-testing-3.6.0`, based on the other session's `release/3.6.0-219` commit
+`3abf6a6`. Final local validation: 627 macOS tests pass (5 opt-in skips), all 149
+ResearchVaultKit tests pass including OCR, and isolated UI previews are verified.
+This root worktree preserves the earlier delta; do not resume from the older OCR
+failure below. [Current integration report](../build/context-testing-3.6.0/docs/testing/2026-09-08-integration-3.6.0.md).
+No new commit, installation or publication. Measured pilot and remote CI remain open.
+
+## Workflow / context validation — 2026-09-08
+
+Local changes on `feat/research-vault-lots-1-4` at `ce083dec72bd06b8c4ba2b6e379e6de3424b5da7`:
+context integrity/budgets, test-outcome detection, retrieval metrics, cost accounting
+and CI validators corrected. The 39-case core suite passes. ResearchVaultKit:
+42/42 XCTest pass, 97/98 Swift Testing pass; the scanned-PDF OCR test remains red
+and reproduces in direct Vision calls. Full hosted macOS/UI validation and the
+ten-real-task pilot remain open. No commit, installation or release performed.
+
+Evidence and bounded next steps: [workflow validation report](testing/2026-09-08-workflow-validation.md).
+Common protocol: [testing workflow](testing/workflow.md).
+The older release gates below are preserved as their original scoped checkpoint.
+
+## Earlier release checkpoint
+
 Last reconciled: 2026-08-30 against HEAD `83a259a` plus the current dirty-worktree remediation.
 
 This is the only active task list. Dated audit checklists, roadmaps and

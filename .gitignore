@@ -50,3 +50,6 @@ Untitled*.png
 default.profraw
 lancedb/
 .claude/scheduled_tasks.lock
+
+# Local app backups made by install scripts; never part of the tree
+.install-backups/

@@ -1,0 +1,36 @@
+[
+  {
+    "command": [
+      "swift",
+      "--version"
+    ],
+    "exit_code": 0,
+    "stdout": "Apple Swift version 6.4 (swiftlang-6.4.0.33.1 clang-2100.3.33.1)\nTarget: arm64-apple-macosx27.0.0"
+  },
+  {
+    "command": [
+      "xcodebuild",
+      "-version"
+    ],
+    "exit_code": 0,
+    "stdout": "Xcode 27.0\nBuild version 27A5252f"
+  },
+  {
+    "command": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "exit_code": 0,
+    "stdout": "ce083dec72bd06b8c4ba2b6e379e6de3424b5da7"
+  },
+  {
+    "command": [
+      "git",
+      "branch",
+      "--show-current"
+    ],
+    "exit_code": 0,
+    "stdout": "feat/research-vault-lots-1-4"
+  }
+]

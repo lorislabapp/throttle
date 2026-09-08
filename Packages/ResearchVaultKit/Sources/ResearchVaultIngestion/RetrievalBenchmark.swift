@@ -26,6 +26,8 @@ public struct RetrievalCaseMetrics: Equatable, Sendable {
 
 public struct RetrievalBenchmarkMetrics: Equatable, Sendable {
     public let caseCount: Int
+    public let answerableCaseCount: Int
+    public let abstentionCaseCount: Int
     public let cutoff: Int
     public let meanRecallAtK: Double
     public let meanReciprocalRank: Double
@@ -56,16 +58,19 @@ public enum RetrievalBenchmarkEvaluator {
         for (item, ranked) in zip(cases, rankedDocumentIDs) {
             output.append(try metrics(for: item, ranked: ranked, cutoff: cutoff))
         }
-        let count = Double(output.count)
+        let answerable = output.filter { $0.abstentionCorrect == nil }
+        let count = Double(max(1, answerable.count))
         let abstentions = output.compactMap(\.abstentionCorrect)
         return RetrievalBenchmarkMetrics(
             caseCount: output.count,
+            answerableCaseCount: answerable.count,
+            abstentionCaseCount: abstentions.count,
             cutoff: cutoff,
-            meanRecallAtK: output.reduce(0) { $0 + $1.recallAtK } / count,
-            meanReciprocalRank: output.reduce(0) { $0 + $1.reciprocalRank } / count,
-            meanNDCGAtK: output.reduce(0) { $0 + $1.ndcgAtK } / count,
+            meanRecallAtK: answerable.reduce(0) { $0 + $1.recallAtK } / count,
+            meanReciprocalRank: answerable.reduce(0) { $0 + $1.reciprocalRank } / count,
+            meanNDCGAtK: answerable.reduce(0) { $0 + $1.ndcgAtK } / count,
             abstentionAccuracy: abstentions.isEmpty
-                ? 1
+                ? 0
                 : Double(abstentions.count(where: { $0 })) / Double(abstentions.count),
             cases: output
         )
@@ -85,9 +90,9 @@ public enum RetrievalBenchmarkEvaluator {
             let correct = unique.isEmpty
             return RetrievalCaseMetrics(
                 query: item.query,
-                recallAtK: correct ? 1 : 0,
-                reciprocalRank: correct ? 1 : 0,
-                ndcgAtK: correct ? 1 : 0,
+                recallAtK: 0,
+                reciprocalRank: 0,
+                ndcgAtK: 0,
                 abstentionCorrect: correct
             )
         }
