@@ -47,10 +47,9 @@ struct ResearchVaultWorkbenchProjectionTests {
         model.approvedReceipts = [open, verified]
 
         #expect(model.reasoningClaimReferences.count == 1)
-        #expect(model.reasoningClaimReferences[0].title == "Use TLS")
-        #expect(
-            model.reasoningClaimReferences[0].reference.receiptID == verified.receiptID
-        )
+        let reference = try #require(model.reasoningClaimReferences.first)
+        #expect(reference.title == "Use TLS")
+        #expect(reference.reference.receiptID == verified.receiptID)
     }
 
     private func receipt(

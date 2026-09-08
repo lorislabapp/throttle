@@ -51,38 +51,41 @@ final class ContextFirewallTests: XCTestCase {
 }
 
 final class WebURLPolicyTests: XCTestCase {
-    func testRejectsPrivateAndSpecialAddressesWithoutDNS() {
+    func testRejectsPrivateAndSpecialAddressesWithoutDNS() throws {
         for raw in ["http://127.0.0.1", "http://10.0.0.2", "http://169.254.169.254/latest",
                     "http://192.168.1.2", "http://100.100.100.100", "http://[::1]"] {
-            let url = URL(string: raw)!
+            let url = try XCTUnwrap(URL(string: raw))
             XCTAssertNotNil(WebURLPolicy.rejectionReason(for: url, resolveDNS: false), raw)
         }
     }
 
-    func testAllowsPublicHTTPSLiteralWithoutDNS() {
-        XCTAssertNil(WebURLPolicy.rejectionReason(for: URL(string: "https://1.1.1.1/docs")!, resolveDNS: false))
+    func testAllowsPublicHTTPSLiteralWithoutDNS() throws {
+        XCTAssertNil(WebURLPolicy.rejectionReason(
+            for: try XCTUnwrap(URL(string: "https://1.1.1.1/docs")), resolveDNS: false))
     }
 
-    func testRejectsCredentialsAndInternalSuffixes() {
-        XCTAssertNotNil(WebURLPolicy.rejectionReason(for: URL(string: "https://user:pass@example.com")!, resolveDNS: false))
-        XCTAssertNotNil(WebURLPolicy.rejectionReason(for: URL(string: "https://service.internal")!, resolveDNS: false))
+    func testRejectsCredentialsAndInternalSuffixes() throws {
+        XCTAssertNotNil(WebURLPolicy.rejectionReason(
+            for: try XCTUnwrap(URL(string: "https://user:pass@example.com")), resolveDNS: false))
+        XCTAssertNotNil(WebURLPolicy.rejectionReason(
+            for: try XCTUnwrap(URL(string: "https://service.internal")), resolveDNS: false))
     }
 
-    func testUserConfiguredServicesRequireHTTPSOrPrivateHTTP() {
+    func testUserConfiguredServicesRequireHTTPSOrPrivateHTTP() throws {
         XCTAssertFalse(WebURLPolicy.permitsUserConfiguredService(
-            URL(string: "http://203.0.113.10:11434")!, resolveDNS: false
+            try XCTUnwrap(URL(string: "http://203.0.113.10:11434")), resolveDNS: false
         ))
         XCTAssertTrue(WebURLPolicy.permitsUserConfiguredService(
-            URL(string: "https://worker.example.com")!, resolveDNS: false
+            try XCTUnwrap(URL(string: "https://worker.example.com")), resolveDNS: false
         ))
         XCTAssertTrue(WebURLPolicy.permitsUserConfiguredService(
-            URL(string: "http://100.100.100.100:11434")!, resolveDNS: false
+            try XCTUnwrap(URL(string: "http://100.100.100.100:11434")), resolveDNS: false
         ))
         XCTAssertTrue(WebURLPolicy.permitsUserConfiguredService(
-            URL(string: "http://worker.tailnet-name.ts.net:11434")!, resolveDNS: false
+            try XCTUnwrap(URL(string: "http://worker.tailnet-name.ts.net:11434")), resolveDNS: false
         ))
         XCTAssertFalse(WebURLPolicy.permitsUserConfiguredService(
-            URL(string: "https://token@example.com")!, resolveDNS: false
+            try XCTUnwrap(URL(string: "https://token@example.com")), resolveDNS: false
         ))
         for raw in [
             "http://169.254.169.254/latest/meta-data",
@@ -102,11 +105,11 @@ final class WebURLPolicyTests: XCTestCase {
         }
     }
 
-    func testUserConfiguredServiceRedirectsStayOnTheExactOrigin() {
-        let source = URL(string: "http://100.100.100.100:11434/api/version")!
+    func testUserConfiguredServiceRedirectsStayOnTheExactOrigin() throws {
+        let source = try XCTUnwrap(URL(string: "http://100.100.100.100:11434/api/version"))
         XCTAssertTrue(WebURLPolicy.permitsUserConfiguredServiceRedirect(
             from: source,
-            to: URL(string: "http://100.100.100.100:11434/api/tags")!,
+            to: try XCTUnwrap(URL(string: "http://100.100.100.100:11434/api/tags")),
             resolveDNS: false
         ))
         for destination in [

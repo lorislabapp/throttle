@@ -73,6 +73,22 @@ public actor ResearchVaultClient {
         return response
     }
 
+    /// Call only after the owner selected the project(s) to connect. Receipt
+    /// intake itself never calls this operation or grants metadata-derived keys.
+    public func admitProjects(_ projectKeys: [String]) async throws {
+        let request = try ResearchVaultProjectAdmissionRequest(projectKeys: projectKeys).validated()
+        let encoded = try encoder.encode(request)
+        let data = try await ownerCall { proxy, reply in
+            proxy.admitProjects(encoded, withReply: reply)
+        }
+        let response = try decode(ResearchVaultProjectAdmissionResponse.self, from: data)
+        guard response.contractVersion == ResearchVaultIPCContract.currentVersion,
+              response.projectKeys.count == request.projectKeys.count,
+              Set(response.projectKeys) == Set(request.projectKeys) else {
+            throw ResearchVaultClientError.invalidResponse
+        }
+    }
+
     public func importReceipts(
         _ receipts: [ResearchReceipt]
     ) async throws -> ResearchVaultReceiptImportResponse {
@@ -215,6 +231,9 @@ public actor ResearchVaultClient {
         return response
     }
 
+}
+
+extension ResearchVaultClient {
     private func queryCall(
         _ operation: @escaping @Sendable (
             ResearchVaultQueryXPCProtocol,

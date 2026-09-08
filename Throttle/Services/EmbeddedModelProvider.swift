@@ -84,7 +84,7 @@ struct LocalModelRecommendation: Identifiable, Sendable {
     let runtime: Runtime
     let fit: String
     let note: String
-    let modelURL: URL
+    let modelURL: URL?
 
     static let catalog: [Self] = [
         .init(
@@ -101,7 +101,7 @@ struct LocalModelRecommendation: Identifiable, Sendable {
             runtime: .ollama,
             fit: "Small self-hosted worker",
             note: "Good first server model when memory is constrained.",
-            modelURL: URL(string: "https://ollama.com/library/qwen3")!
+            modelURL: URL(string: "https://ollama.com/library/qwen3")
         ),
         .init(
             id: "qwen3-coder:30b",
@@ -109,7 +109,7 @@ struct LocalModelRecommendation: Identifiable, Sendable {
             runtime: .ollama,
             fit: "Coding and agentic work on a stronger server",
             note: "Use only when the host can keep enough layers resident.",
-            modelURL: URL(string: "https://ollama.com/library/qwen3-coder")!
+            modelURL: URL(string: "https://ollama.com/library/qwen3-coder")
         ),
         .init(
             id: "gpt-oss:20b",
@@ -117,7 +117,7 @@ struct LocalModelRecommendation: Identifiable, Sendable {
             runtime: .ollama,
             fit: "General reasoning on capable local hardware",
             note: "Open-weight option; validate latency and memory on the exact host.",
-            modelURL: URL(string: "https://huggingface.co/openai/gpt-oss-20b")!
+            modelURL: URL(string: "https://huggingface.co/openai/gpt-oss-20b")
         ),
     ]
 }
@@ -126,7 +126,7 @@ actor EmbeddedModelRuntime {
     static let shared = EmbeddedModelRuntime()
     static let modelID = "mlx-community/Qwen3-1.7B-4bit"
     static let displayName = "Qwen 3 1.7B · 4-bit"
-    static let modelURL = URL(string: "https://huggingface.co/mlx-community/Qwen3-1.7B-4bit")!
+    static let modelURL = URL(string: "https://huggingface.co/mlx-community/Qwen3-1.7B-4bit")
 
     private var container: ModelContainer?
     private var loadingTask: Task<ModelContainer, Error>?

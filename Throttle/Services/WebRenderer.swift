@@ -101,7 +101,7 @@ final class WebRenderer: NSObject {
         if result.finalURL.isEmpty { result.finalURL = view.url?.absoluteString ?? urlString }
 
         // Free the page's memory immediately; keep the (now-cheap) view warm.
-        view.load(URLRequest(url: URL(string: "about:blank")!))
+        view.loadHTMLString("", baseURL: nil)
         return result
     }
 

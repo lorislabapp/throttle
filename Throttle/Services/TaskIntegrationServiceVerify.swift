@@ -16,6 +16,14 @@ extension TaskIntegrationService {
     /// takes longer than this should say so in its own command.
     static let defaultTimeout: TimeInterval = 900
     private static let outputLimit = 4000
+    static let outputTruncationNotice = "\n[throttle] Earlier output omitted; showing final diagnostics."
+
+    static func boundedVerificationOutput(_ text: String) -> String {
+        guard text.count > outputLimit else { return text }
+        let tail = String(text.suffix(outputLimit))
+        if tail.contains(outputTruncationNotice) { return tail }
+        return String(text.suffix(outputLimit - outputTruncationNotice.count)) + outputTruncationNotice
+    }
     /// Grace period between SIGTERM and SIGKILL. A process that traps or ignores
     /// SIGTERM would otherwise sail past its own timeout with no way out.
     private static let killGracePeriod: TimeInterval = 2
@@ -38,13 +46,15 @@ extension TaskIntegrationService {
     ///
     /// Consent is the caller's to obtain: this function runs what it is given.
     @discardableResult
-    static func verify(taskID: String, in repo: URL, command: String,
-                       timeout: TimeInterval = defaultTimeout,
-                       store: PlanStore?, author: String) throws -> Verdict {
+    static func verify(
+        taskID: String, in repo: URL, command: String,
+        timeout: TimeInterval = defaultTimeout,
+        store: PlanStore?, author: String
+    ) throws -> Verdict {
         let worktree = try existingWorktree(taskID, in: repo)
         let stamp = try assess(taskID: taskID, in: repo).stamp
         let result = shell(command, in: worktree, timeout: timeout)
-        let verdict = Verdict(passed: result.ok, output: String(result.output.suffix(outputLimit)),
+        let verdict = Verdict(passed: result.ok, output: boundedVerificationOutput(result.output),
                               stamp: stamp)
 
         try store?.append(TaskEvent(seq: 0, timestamp: Date(), author: author, type: .checked,
@@ -73,8 +83,10 @@ extension TaskIntegrationService {
     /// `/bin/sh -c "swift test"` killed at its deadline left the compiler and the test
     /// binaries running — holding this pipe open and, on a 16 GB machine, the RAM with
     /// it. That is why this is `posix_spawn`.
-    private static func shell(_ command: String, in directory: URL,
-                              timeout: TimeInterval) -> (ok: Bool, output: String) {
+    static func shell(
+        _ command: String, in directory: URL,
+        timeout: TimeInterval
+    ) -> (ok: Bool, output: String) {
         let child: ChildControl
         do {
             child = try spawn(command, in: directory)
@@ -136,9 +148,11 @@ extension TaskIntegrationService {
 
     /// Turns what the child left behind into the pair `shell` returns. Split out only
     /// so `shell` stays one readable sequence.
-    private static func verdictText(_ collector: OutputCollector, child: ChildControl,
-                                    status: Int32?, timeout: TimeInterval,
-                                    emptied: Bool) -> (ok: Bool, output: String) {
+    private static func verdictText(
+        _ collector: OutputCollector, child: ChildControl,
+        status: Int32?, timeout: TimeInterval,
+        emptied: Bool
+    ) -> (ok: Bool, output: String) {
         var output = collector.output
         if collector.timedOut {
             output += "\n[throttle] verification timed out after \(Int(timeout))s and was killed"
@@ -219,8 +233,10 @@ extension TaskIntegrationService {
     /// Every return code is checked. A file action that silently failed to be
     /// recorded would leave the child with the wrong descriptors and nothing but
     /// downstream confusion to say so.
-    private static func launch(_ command: String, in directory: URL,
-                               writeFD: Int32) throws -> pid_t {
+    private static func launch(
+        _ command: String, in directory: URL,
+        writeFD: Int32
+    ) throws -> pid_t {
         var actions: posix_spawn_file_actions_t?
         try check("file_actions_init", posix_spawn_file_actions_init(&actions))
         defer { posix_spawn_file_actions_destroy(&actions) }

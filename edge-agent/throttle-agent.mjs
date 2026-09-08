@@ -35,6 +35,30 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
+import { TransferStore, TransferCoordinator, SystemdTransferBackend, launchTransfer, runTransferNative, freezeTransfer, requireUnmanagedWorkspace } from './transfer-runtime.mjs';
+import { FreshSessionStore, FreshSessionBackend, FreshSessions, isFreshID, launchFresh, runFreshNative } from './fresh-runtime.mjs';
+
+// Fresh helpers run in their own unit without loading the HTTP service token.
+if (['--fresh-launch', '--fresh-native'].includes(process.argv[2])) {
+  try {
+    const args = process.argv.slice(3);
+    if (args.length !== 3) throw new Error('invalid fresh helper arguments');
+    const code = process.argv[2] === '--fresh-launch' ? await launchFresh(...args) : await runFreshNative(...args);
+    process.exit(code || 0);
+  } catch (error) { console.error(error.message); process.exit(1); }
+}
+
+// Helper execution is always inside its transfer unit and needs no control-plane credential.
+if (['--transfer-launch', '--transfer-native', '--transfer-freeze'].includes(process.argv[2])) {
+  try {
+    const args = process.argv.slice(3);
+    if (args.length !== 3) throw new Error('invalid transfer helper arguments');
+    const code = process.argv[2] === '--transfer-launch'
+      ? await launchTransfer(...args) : process.argv[2] === '--transfer-freeze'
+        ? (await freezeTransfer(...args), 0) : await runTransferNative(...args);
+    process.exit(code || 0);
+  } catch (error) { console.error(error.message); process.exit(1); }
+}
 
 const execFileP = promisify(execFile);
 
@@ -53,9 +77,8 @@ const HOST = process.env.THROTTLE_AGENT_HOST || '127.0.0.1';
 const PORT = parseInt(process.env.THROTTLE_AGENT_PORT || '8787', 10);
 const TTYD_PORT = parseInt(process.env.THROTTLE_AGENT_TTYD_PORT || '8788', 10);
 const CLAUDE_CMD = process.env.THROTTLE_AGENT_CLAUDE_CMD || 'claude';
-const CODEX_CMD = process.env.THROTTLE_AGENT_CODEX_CMD || 'codex';
 const PROJECTS_DIR = process.env.CLAUDE_PROJECTS_DIR || path.join(os.homedir(), '.claude', 'projects');
-const VERSION = '1.0.0';
+const VERSION = '2.0.0';
 const MISSION_ROOT = process.env.THROTTLE_AGENT_MISSION_ROOT || '/opt/throttle-agent/missions';
 const INCOMING_ROOT = process.env.THROTTLE_AGENT_INCOMING_ROOT || '/opt/throttle-agent/incoming';
 const MAX_MISSION_TASK_BYTES = 32 * 1024;
@@ -134,6 +157,20 @@ if (!TOKEN) { console.error('FATAL: provide the bearer token through a protected
 const PREFIX = 'throttle-';
 const META_PATH = '/opt/throttle-agent/sessions.json';
 const sessions = new Map(); // id -> { id, project, cwd, startedAt }
+const transferStore = new TransferStore(
+  process.env.THROTTLE_AGENT_TRANSFER_ROOT || '/opt/throttle-agent/transfers',
+  process.env.THROTTLE_AGENT_WORKSPACE_ROOT || path.join(os.homedir(), 'offload', 'transfers'));
+const transferBackend = new SystemdTransferBackend(transferStore);
+const transfers = new TransferCoordinator(transferStore, transferBackend);
+const freshStore = new FreshSessionStore(process.env.THROTTLE_AGENT_FRESH_ROOT || '/opt/throttle-agent/fresh-sessions');
+const freshBackend = new FreshSessionBackend(freshStore);
+const freshSessions = new FreshSessions(freshStore, freshBackend);
+function requireUserWorkspace(cwd) {
+  requireUnmanagedWorkspace(transferStore, cwd);
+  requireUnmanagedWorkspace(freshStore, cwd);
+}
+function isTransferID(id) { return /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id); }
+
 const missionProcesses = new Map();
 const missionFinalizing = new Set();
 try {
@@ -173,9 +210,16 @@ function killTtyd() {
 
 async function attachTtyd(id) {
   if (ttydSessionId === id && ttydProc && !ttydProc.killed) return; // already attached
+  const freshTerminal = isFreshID(id) ? await freshSessions.terminal(id) : null;
+  const tmuxName = freshTerminal?.name || PREFIX + id;
+  const tmuxArgs = freshTerminal ? ['-S', freshTerminal.socket] : isTransferID(id) ? ['-S', transferBackend.socket(id)] : [];
+  if (isTransferID(id)) {
+    if (transferStore.tombstoned(id)) throw new Error('transfer has been stopped');
+    await transferBackend.confirmRunning(id);
+  }
   killTtyd();
   ttydProc = spawn('ttyd', ['-i', '127.0.0.1', '-p', String(TTYD_PORT), '-W',
-    '-H', 'X-Throttle-Authorized', 'tmux', '-u', 'attach-session', '-t', PREFIX + id],
+    '-H', 'X-Throttle-Authorized', 'tmux', ...tmuxArgs, '-u', 'attach-session', '-t', tmuxName],
     { stdio: 'ignore', env: { ...process.env, LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8' } });
   ttydSessionId = id;
   ttydProc.once('exit', () => { if (ttydSessionId === id) { ttydProc = null; ttydSessionId = null; } });
@@ -319,61 +363,14 @@ function normalizeRuntime(value) {
 }
 
 function encodedProjectDir(cwd) { return cwd.replace(/[^A-Za-z0-9-]/g, '-'); }
-function newestTranscript(cwd) {
-  const dir = path.join(PROJECTS_DIR, encodedProjectDir(cwd));
-  try {
-    const files = fs.readdirSync(dir).filter(f => f.endsWith('.jsonl'))
-      .map(f => ({ f, m: fs.statSync(path.join(dir, f)).mtimeMs })).sort((a, b) => b.m - a.m);
-    return files.length ? path.join(dir, files[0].f) : null;
-  } catch { return null; }
+function legacyTranscript(meta) {
+  if (!meta?.cwd || meta.runtime !== 'claude' || !isTransferID(meta.nativeSessionID || '')) return null;
+  const file = path.join(PROJECTS_DIR, encodedProjectDir(meta.cwd), `${meta.nativeSessionID}.jsonl`);
+  try { return fs.lstatSync(file).isFile() ? file : null; } catch { return null; }
 }
-function usageFor(cwd) {
-  const t = newestTranscript(cwd);
-  if (!t) return { tokens: null, model: null };
-  try {
-    const lines = fs.readFileSync(t, 'utf8').trim().split('\n');
-    let tokens = 0, model = null;
-    for (const ln of lines) {
-      try {
-        const o = JSON.parse(ln);
-        const u = o?.message?.usage;
-        if (u) tokens += (u.input_tokens || 0) + (u.output_tokens || 0);
-        if (o?.message?.model) model = o.message.model;
-      } catch {}
-    }
-    return { tokens: tokens || null, model };
-  } catch { return { tokens: null, model: null }; }
-}
-
-
-// Bytes of the newest transcript for a working directory, across both harnesses.
-// Best-effort: a missing file is not an error, it means the session has not
-// written anything yet.
-function transcriptBytesFor(cwd) {
-  const candidates = [];
-  const codexRoot = path.join(HOME_DIR, '.codex', 'sessions');
-  const claudeRoot = path.join(HOME_DIR, '.claude', 'projects');
-  const walk = (dir, depth = 0) => {
-    if (depth > 6) return;
-    let entries;
-    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
-    for (const e of entries) {
-      const full = path.join(dir, e.name);
-      if (e.isDirectory()) walk(full, depth + 1);
-      else if (e.name.endsWith('.jsonl')) {
-        try {
-          const st = fs.statSync(full);
-          candidates.push({ full, size: st.size, mtime: st.mtimeMs });
-        } catch { /* raced with a delete */ }
-      }
-    }
-  };
-  walk(codexRoot);
-  walk(claudeRoot);
-  if (!candidates.length) return null;
-  // Newest wins: the session writing right now is the one that matters.
-  candidates.sort((a, b) => b.mtime - a.mtime);
-  return candidates[0].size;
+function transcriptBytesFor(meta) {
+  const file = legacyTranscript(meta);
+  try { return file ? fs.statSync(file).size : null; } catch { return null; }
 }
 
 // How much memory this container actually has, so the Mac can judge a transcript
@@ -393,10 +390,10 @@ function containerMemoryTotal() {
 
 async function listSessions() {
   const live = await tmuxList();
-  return live.map(s => {
+  const legacy = live.map(s => {
     const meta = sessions.get(s.id) || {};
     const idleSec = Math.max(0, Math.floor(Date.now() / 1000) - s.activity);
-    const u = meta.cwd ? usageFor(meta.cwd) : { tokens: null, model: null };
+    const u = { tokens: null, model: null };
     return {
       id: s.id,
       project: meta.project || s.id,
@@ -411,84 +408,30 @@ async function listSessions() {
       // 2026-08-22, a codex rollout reached 275 MB here and the OOM killer took
       // the session and this unit with it. Reported so the Mac can warn while
       // there is still time to act.
-      transcriptBytes: meta.cwd ? transcriptBytesFor(meta.cwd) : null,
+      transcriptBytes: transcriptBytesFor(meta),
       memoryTotalBytes: containerMemoryTotal(),
     };
   });
+  const managed = await transfers.list();
+  const fresh = await freshSessions.list();
+  return [...legacy, ...[...managed, ...fresh].map(session => ({ ...session, memoryTotalBytes: containerMemoryTotal() }))];
 }
 
-// Make ~/.claude.json non-interactive for a headless offload session, so a freshly
-// deployed box doesn't hang a spawned session on claude's first-run gates:
-//   - theme picker + onboarding: a brand-new box has never run claude interactively,
-//     so without these flags the session sits at "choose a theme" and dies.
-//   - per-folder trust: an offloaded cwd is new to the box → "Is this a project you
-//     trust?" gate. Pre-accepting it is the user answering yes for a folder THEY
-//     chose to offload to — NOT a permissions bypass.
-// Best-effort; a failure here never blocks start.
-function seedClaudeConfig(cwd) {
-  try {
-    const p = path.join(os.homedir(), '.claude.json');
-    const d = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : {};
-    if (!d.theme) d.theme = 'dark';
-    d.hasCompletedOnboarding = true;
-    if (!d.lastOnboardingVersion) d.lastOnboardingVersion = '2.1.0';
-    d.hasUsedBackslashReturn = true;
-    d.projects = d.projects || {};
-    d.projects[cwd] = Object.assign({}, d.projects[cwd], { hasTrustDialogAccepted: true });
-    fs.writeFileSync(p, JSON.stringify(d, null, 2));
-  } catch {}
+async function startSession(request) {
+  return freshSessions.create(request, transferStore);
 }
 
-async function startSession({ project, cwd, resume, runtime }) {
-  if (!cwd) throw new Error('cwd required');
-  const kind = normalizeRuntime(runtime);
-  if (kind === 'claude') seedClaudeConfig(cwd);
-  const id = crypto.randomBytes(4).toString('hex');
-  const name = PREFIX + id;
-  // The two CLIs disagree on how to name the thing and how to reopen it, so the
-  // runtime has to travel with the request. Offloading a Codex tab used to launch
-  // `claude --resume <codex uuid>`: claude has never heard of that id, the session
-  // died on the spot, and the offload still reported success.
-  const bin = kind === 'codex' ? CODEX_CMD : CLAUDE_CMD;
-  const launch = resume
-    ? (kind === 'codex'
-        ? `${bin} resume ${shq(resume)}`
-        : `${bin} --resume ${shq(resume)}`)
-    : bin;
-  // mkdir -p the cwd first: an offloaded session names a project dir that may not
-  // exist yet on this box (the Mac had it, we don't). Without this `cd` fails and
-  // the tmux session dies on launch — the transcript was uploaded but claude never
-  // starts. Creating it is the sane "run a session here" behaviour.
-  const inner = `mkdir -p ${shq(cwd)} && cd ${shq(cwd)} && ${oauthShellPrefix()} exec ${launch}`;
-  // Spawn the tmux server in its OWN transient systemd scope, NOT in this agent's
-  // service cgroup. Under systemd, a tmux server forked directly by the agent lives
-  // in throttle-agent.service's control group and gets reaped almost immediately
-  // (verified: identical spawn dies <2.5s under the service but survives from a
-  // plain shell). `systemd-run --scope` moves it to an independent scope so the
-  // session outlives the request — and a later `systemctl restart` of the agent no
-  // longer kills running sessions either. Falls back to a bare tmux spawn where
-  // systemd-run isn't available (non-systemd hosts / macOS dev).
-  // Spawn with HOME explicitly set. Under systemd the service env has NO HOME
-  // (verified live: the agent process environ lacked HOME entirely), so the
-  // session's `bash -lc` couldn't source ~/.profile — no CLAUDE_CODE_OAUTH_TOKEN,
-  // no ~/.local/bin PATH — and claude exited within ~2s. os.homedir() resolves the
-  // home from /etc/passwd even when $HOME is unset, so this is correct for root and
-  // any other service user without hardcoding a path. (The unit also sets
-  // KillMode=process so `systemctl restart` no longer reaps live sessions.)
-  // LANG/LC_ALL: a minimal Debian LXC defaults to the C locale, and tmux then
-  // renders every non-ASCII glyph as "_" — the Mac cockpit's attached view showed
-  // accented French (and claude's box-drawing UI) as underscores. C.UTF-8 always
-  // exists on glibc ≥2.13, no locale-gen needed. `-u` forces tmux UTF-8 too.
-  const spawnEnv = { ...process.env, HOME: process.env.HOME || os.homedir(),
-                     LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8' };
-  await execFileP('tmux', ['-u', 'new-session', '-d', '-s', name, 'bash', '-lc', inner],
-    { env: spawnEnv });
-  sessions.set(id, { id, project: project || path.basename(cwd), cwd, startedAt: Date.now() });
-  persistSessions();
-  return { id, name };
+async function stopSession(id) {
+  if (isFreshID(id)) return freshSessions.stop(id);
+  if (isTransferID(id)) return transfers.stop(id);
+  await sh('tmux', ['kill-session', '-t', PREFIX + id]); sessions.delete(id); persistSessions();
 }
-async function stopSession(id) { await sh('tmux', ['kill-session', '-t', PREFIX + id]); sessions.delete(id); persistSessions(); }
 async function paneSignal(id, sig) {
+  if (isFreshID(id)) return freshSessions.signal(id, sig === 'STOP' ? 'SIGSTOP' : 'SIGCONT');
+  if (isTransferID(id)) {
+    if (transferStore.tombstoned(id)) throw new Error('transfer stopped');
+    return transferBackend.signal(id, sig === 'STOP' ? 'SIGSTOP' : 'SIGCONT');
+  }
   const pid = await sh('tmux', ['list-panes', '-t', PREFIX + id, '-F', '#{pane_pid}']);
   if (pid) await sh('bash', ['-lc', `pkill -${sig} -P ${pid.split('\n')[0]} || kill -${sig} ${pid.split('\n')[0]}`]);
 }
@@ -744,20 +687,22 @@ function body(req, maxBytes = 64 * 1024) {
 const MCP_TOOLS = [
   {
     name: 'throttle_edge_list_sessions',
-    description: 'List Claude Code sessions running on the user-owned Throttle edge server.',
+    description: 'List remote sessions and the fresh serverID required to create a conversation.',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'throttle_edge_start_session',
-    description: 'Start a Claude Code session on the user-owned edge server in an absolute remote working directory.',
+    description: 'Start a new Claude or Codex conversation. Keep requestID unchanged across retries or uncertain responses. A different ID starts another conversation.',
     inputSchema: {
       type: 'object',
       properties: {
         cwd: { type: 'string', description: 'Absolute working directory on the edge server.' },
         project: { type: 'string', description: 'Optional display name.' },
-        resume: { type: 'string', description: 'Optional uploaded Claude session ID to resume.' },
+        requestID: { type: 'string', description: 'Stable lowercase UUID for this creation. Reuse on every retry.' },
+        serverID: { type: 'string', description: 'Fresh serverID returned by throttle_edge_list_sessions.' },
+        runtime: { type: 'string', enum: ['claude', 'codex'] },
       },
-      required: ['cwd'],
+      required: ['cwd', 'requestID', 'serverID'],
     },
   },
   {
@@ -800,7 +745,9 @@ async function handleMCP(req, res) {
 
   const name = message.params?.name;
   const args = message.params?.arguments || {};
-  if (name === 'throttle_edge_list_sessions') return ok(mcpText(await listSessions()));
+  if (name === 'throttle_edge_list_sessions') {
+    return ok(mcpText({ serverID: freshStore.identity(), sessions: await listSessions() }));
+  }
   if (name === 'throttle_edge_start_session') {
     if (typeof args.cwd !== 'string' || !args.cwd.startsWith('/')) return fail(-32602, 'cwd must be absolute');
     return ok(mcpText(await startSession(args)));
@@ -842,7 +789,7 @@ async function receiveTranscript(req, url) {
   const cwd = url.searchParams.get('cwd');
   const sessionId = url.searchParams.get('session');
   const kind = normalizeRuntime(url.searchParams.get('runtime'));
-  if (!cwd || !cwd.startsWith('/')) throw new Error('cwd (absolute) required');
+  requireUserWorkspace(cwd);
   if (!sessionId || !/^[A-Za-z0-9-]{8,64}$/.test(sessionId)) throw new Error('bad session id');
   if (kind === 'codex') return receiveCodexRollout(req, url, sessionId);
   const dir = path.join(PROJECTS_DIR, encodedProjectDir(cwd));
@@ -878,7 +825,7 @@ async function receiveCodexRollout(req, url, sessionId) {
 async function receiveRepo(req, url) {
   const cwd = url.searchParams.get('cwd');
   const branch = url.searchParams.get('branch') || 'HEAD';
-  if (!cwd || !cwd.startsWith('/')) throw new Error('cwd (absolute) required');
+  requireUserWorkspace(cwd);
   if (!/^[A-Za-z0-9._\/-]{4,300}$/.test(branch)) throw new Error('bad branch');
   if (fs.existsSync(cwd) && fs.readdirSync(cwd).length > 0) {
     const err = new Error('cwd not empty — refusing to clobber'); err.code = 409; throw err;
@@ -967,7 +914,7 @@ async function snapshotWorkInProgress(cwd) {
 // prevent.
 async function sendRepoBundle(req, res, url) {
   const cwd = url.searchParams.get('cwd');
-  if (!cwd || !cwd.startsWith('/')) throw new Error('cwd (absolute) required');
+  requireUserWorkspace(cwd);
   if (!fs.existsSync(path.join(cwd, '.git'))) {
     const err = new Error('not a git repository'); err.code = 404; throw err;
   }
@@ -1124,7 +1071,56 @@ const server = http.createServer(async (req, res) => {
     if (p === '/auth/start' && req.method === 'POST') return send(res, 200, await authStart());
     if (p === '/auth/peek' && req.method === 'GET') return send(res, 200, await authPeek());
     if (p === '/auth/submit' && req.method === 'POST') { const { code } = await body(req); return send(res, 200, await authSubmit(code)); }
+    if (p === '/transfers/capabilities' && req.method === 'GET') {
+      return send(res, 200, { contractVersion: 2, serverID: transferStore.identity(),
+        workspaceRoot: transferStore.workspaceRoot, ready: await transferBackend.ready() });
+    }
+    if (p === '/transfers' && req.method === 'POST') {
+      const input = await body(req);
+      if (input.serverID !== transferStore.identity()) return send(res, 409, { error: 'server identity changed' });
+      if (!(await transferBackend.ready())) return send(res, 503, { error: 'systemd cgroup v2 is required' });
+      return send(res, 201, transfers.prepare(input));
+    }
+    const transfer = p.match(/^\/transfers\/([a-f0-9-]{36})(?:\/(start|stop|freeze|acknowledge|transcript|repo))?$/);
+    if (transfer) {
+      const [, id, action] = transfer;
+      if (req.headers['x-throttle-server-id'] !== transferStore.identity()) {
+        return send(res, 409, { error: 'server identity changed or missing' });
+      }
+      if (!action && req.method === 'GET') {
+        const record = transferStore.read(id);
+        return record ? send(res, 200, record) : send(res, 404, { error: 'transfer not found' });
+      }
+      if (action === 'start' && req.method === 'POST') return send(res, 200, await transfers.start(id));
+      if (action === 'stop' && req.method === 'POST') return send(res, 200, await transfers.stop(id));
+      if (action === 'freeze' && req.method === 'POST') return send(res, 200, await transfers.freeze(id));
+      if (action === 'acknowledge' && req.method === 'POST') return send(res, 200, await transfers.acknowledge(id, await body(req)));
+      if (['transcript', 'repo'].includes(action) && req.method === 'GET') {
+        const artifact = await transfers.download(id, action);
+        res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': artifact.bytes,
+          'X-Throttle-SHA256': artifact.sha256, 'Cache-Control': 'no-store' });
+        const stream = fs.createReadStream(artifact.file);
+        stream.on('error', error => res.destroy(error));
+        res.on('close', () => stream.destroy());
+        stream.pipe(res);
+        return;
+      }
+      if (['transcript', 'repo'].includes(action) && req.method === 'PUT') {
+        return send(res, 201, await transfers.upload(id, req, action));
+      }
+    }
+    if (p === '/sessions/capabilities' && req.method === 'GET') {
+      return send(res, 200, { contractVersion: 1, serverID: freshStore.identity() });
+    }
     if (p === '/sessions' && req.method === 'GET') return send(res, 200, { sessions: await listSessions() });
+    const freshStop = p.match(/^\/sessions\/(fresh-[a-f0-9-]{36})\/stop$/);
+    if (freshStop && req.method === 'POST') {
+      const input = await body(req);
+      if (input.serverID && input.serverID !== freshStore.identity()) {
+        return send(res, 409, { error: 'fresh server identity changed' });
+      }
+      return send(res, 200, await freshSessions.stop(freshStop[1]));
+    }
     if (p === '/sessions' && req.method === 'POST') { const r = await startSession(await body(req)); return send(res, 201, r); }
     if (p === '/missions' && req.method === 'POST') {
       try { return send(res, 202, await startMission(await body(req))); }
@@ -1159,7 +1155,9 @@ const server = http.createServer(async (req, res) => {
       try { return send(res, 202, await stopMission(missionStop[1])); }
       catch (e) { return send(res, e.code === 409 ? 409 : 500, { error: String(e.message || e) }); }
     }
-    if (p === '/transcripts' && req.method === 'PUT') { const r = await receiveTranscript(req, url); return send(res, 201, r); }
+    if (p === '/transcripts' && req.method === 'PUT') {
+      return send(res, 426, { error: 'Update Throttle: context transfer requires the v2 protocol' });
+    }
     if (p === '/repos' && req.method === 'GET') {
       try { return await sendRepoBundle(req, res, url); }
       catch (e) { return send(res, e.code === 404 ? 404 : 500, { error: String(e.message || e) }); }
@@ -1168,29 +1166,29 @@ const server = http.createServer(async (req, res) => {
       try { const r = await receiveRepo(req, url); return send(res, 201, r); }
       catch (e) { return send(res, e.code === 409 ? 409 : 500, { error: String(e.message || e) }); }
     }
-    // Bring-back: stream the NEWEST transcript for a session's cwd so the Mac can
-    // resume it locally. `claude --resume` writes a NEW jsonl (new session id) on
-    // the box, so "newest for the cwd" — not the original id — is the right file.
-    const tm = p.match(/^\/sessions\/([A-Za-z0-9_-]+)\/transcript$/);
-    if (tm && req.method === 'GET') {
-      const meta = sessions.get(tm[1]);
-      if (!meta?.cwd) return send(res, 404, { error: 'unknown session cwd (agent restarted?)' });
-      const t = newestTranscript(meta.cwd);
-      if (!t) return send(res, 404, { error: 'no transcript on the box yet' });
-      res.writeHead(200, {
-        'Content-Type': 'application/octet-stream',
-        'X-Session-Id': path.basename(t, '.jsonl'),
-        'Content-Length': fs.statSync(t).size,
-      });
-      fs.createReadStream(t).pipe(res);
-      return;
+    const legacyTranscriptRequest = p.match(/^\/sessions\/([A-Za-z0-9_-]+)\/transcript$/);
+    if (legacyTranscriptRequest && req.method === 'GET') {
+      return send(res, 426, { error: 'Update Throttle: return requires a confirmed stop and frozen v2 artifacts' });
     }
     const m = p.match(/^\/sessions\/([A-Za-z0-9_-]+)\/(stop|pause|resume|attach)$/);
     if (m && req.method === 'POST') {
       const [, id, action] = m;
-      if (action === 'stop') { if (ttydSessionId === id) killTtyd(); await stopSession(id); }
-      if (action === 'pause') await paneSignal(id, 'STOP');
-      if (action === 'resume') await paneSignal(id, 'CONT');
+      if (action === 'stop') {
+        if (ttydSessionId === id) killTtyd();
+        if (isFreshID(id)) return send(res, 200, await freshSessions.stop(id));
+        if (isTransferID(id)) return send(res, 200, await transfers.stop(id));
+        await stopSession(id);
+      }
+      if (action === 'pause') {
+        if (isTransferID(id)) await transferBackend.signal(id, 'SIGSTOP');
+        else await paneSignal(id, 'STOP');
+      }
+      if (action === 'resume') {
+        if (isTransferID(id)) {
+          if (transferStore.tombstoned(id)) throw new Error('transfer stopped');
+          await transferBackend.signal(id, 'SIGCONT');
+        } else await paneSignal(id, 'CONT');
+      }
       if (action === 'attach') {
         if (!(await hasTtyd())) return send(res, 500, { error: 'ttyd not installed' });
         await attachTtyd(id);
@@ -1199,7 +1197,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true, id, action });
     }
     return send(res, 404, { error: 'not found' });
-  } catch (e) { return send(res, 500, { error: String(e.message || e) }); }
+  } catch (e) { return send(res, [400, 404, 409, 413, 426, 503].includes(e.code) ? e.code : 500, { error: String(e.message || e) }); }
 });
 
 // Authenticated WS reverse proxy. The public connection reaches this server only

@@ -23,8 +23,8 @@ final class LicenseService {
     static let shared = LicenseService()
 
     private let logger = Logger(subsystem: "com.lorislab.throttle", category: "License")
-    private let activateURL = URL(string: "https://license.lorislab.fr/api/activate")!
-    private let deactivateURL = URL(string: "https://license.lorislab.fr/api/deactivate")!
+    private let activateURL = URL(string: "https://license.lorislab.fr/api/activate")
+    private let deactivateURL = URL(string: "https://license.lorislab.fr/api/deactivate")
     private let offlineGraceDays: TimeInterval = 14 * 24 * 3600
     private let renewAheadWindow: TimeInterval = 7 * 24 * 3600   // re-mint a week before exp
 
@@ -98,17 +98,8 @@ final class LicenseService {
     /// Activate a license key. On success, stores the JWT in Keychain.
     func activate(key: String) async -> Result<Void, ActivationError> {
         let machineId = MachineFingerprint.id
-        var payload: [String: String] = [
-            "licenseKey": key,
-            "machineId": machineId,
-            "appVersion": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
-        ]
-        // Lets the server recognise a Mac already registered under the old drifting
-        // `kern.uuid` and swap it for the stable one, instead of treating this as a
-        // brand-new machine and rejecting the owner at the 3-machine limit.
-        if let legacy = MachineFingerprint.legacyId, legacy != machineId {
-            payload["legacyMachineId"] = legacy
-        }
+        let payload = Self.activationPayload(key: key, machineID: machineId)
+        guard let activateURL else { return .failure(.network(URLError(.badURL).localizedDescription)) }
         var req = URLRequest(url: activateURL)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -169,6 +160,7 @@ final class LicenseService {
         if let legacy = MachineFingerprint.legacyId, legacy != MachineFingerprint.id {
             payload["legacyMachineId"] = legacy
         }
+        guard let deactivateURL else { return false }
         var req = URLRequest(url: deactivateURL)
         req.timeoutInterval = 15   // M21
         req.httpMethod = "POST"

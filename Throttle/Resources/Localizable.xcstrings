@@ -1,6 +1,472 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "If macOS asks, allow the vault in Login Items.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si macOS le demande, autorisez le coffre dans les éléments d’ouverture."
+          }
+        }
+      }
+    },
+    "No folders yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun dossier pour le moment."
+          }
+        }
+      }
+    },
+    "Facets": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtres"
+          }
+        }
+      }
+    },
+    "Facets · this query": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtres · cette recherche"
+          }
+        }
+      }
+    },
+    "Add to vault…": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter au coffre…"
+          }
+        }
+      }
+    },
+    "Search scope: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Périmètre de recherche : %@"
+          }
+        }
+      }
+    },
+    "Ask your past research…": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interroger vos recherches…"
+          }
+        }
+      }
+    },
+    "Search turns on at step 3.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La recherche s’active à l’étape 3."
+          }
+        }
+      }
+    },
+    "Three steps to a searchable vault": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre coffre en trois étapes"
+          }
+        }
+      }
+    },
+    "Turn on the vault": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activer le coffre"
+          }
+        }
+      }
+    },
+    "A separate signed helper, the Throttle Vault Agent, starts on this Mac. Nothing leaves the machine.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le service signé Throttle Vault Agent démarre sur ce Mac. Aucune donnée ne quitte la machine."
+          }
+        }
+      }
+    },
+    "Vault is on": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le coffre est activé"
+          }
+        }
+      }
+    },
+    "Vault activation requested": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activation du coffre demandée"
+          }
+        }
+      }
+    },
+    "Allow it in Login Items, if macOS asks": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autoriser le service si macOS le demande"
+          }
+        }
+      }
+    },
+    "macOS is holding the helper until you approve it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS attend votre accord pour démarrer le service."
+          }
+        }
+      }
+    },
+    "Allowed in Login Items": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Service autorisé par macOS"
+          }
+        }
+      }
+    },
+    "Add a folder to %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un dossier à %@"
+          }
+        }
+      }
+    },
+    "Add a folder to a space": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un dossier à un espace"
+          }
+        }
+      }
+    },
+    "Sources connected": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sources connectées"
+          }
+        }
+      }
+    },
+    "Watch a folder…": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suivre un dossier…"
+          }
+        }
+      }
+    },
+    "Connect a library…": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecter une bibliothèque…"
+          }
+        }
+      }
+    },
+    "Other ways in…": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autres méthodes d’ajout…"
+          }
+        }
+      }
+    },
+    "Step %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Étape %lld"
+          }
+        }
+      }
+    },
+    "Pick a project in the sidebar first — Portfolio is a read-only roll-up of the other spaces and holds no folders of its own.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez d’abord un projet dans la barre latérale. Portfolio regroupe les autres espaces en lecture seule et ne possède aucun dossier."
+          }
+        }
+      }
+    },
+    "Pick the folder where this project’s research already lives.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez le dossier qui contient les recherches de ce projet."
+          }
+        }
+      }
+    },
+    "Encrypted vault off": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coffre chiffré désactivé"
+          }
+        }
+      }
+    },
+    "Encrypted vault on": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coffre chiffré activé"
+          }
+        }
+      }
+    },
+    "Turn the vault on first": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activez d’abord le coffre"
+          }
+        }
+      }
+    },
+    "Add folder to %@…": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un dossier à %@…"
+          }
+        }
+      }
+    },
+    "Watch a folder for this space": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suivre un dossier pour cet espace"
+          }
+        }
+      }
+    },
+    "Every way to put research into this vault": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les méthodes d’ajout au coffre"
+          }
+        }
+      }
+    },
+    "Turn off": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Désactiver"
+          }
+        }
+      }
+    },
+    "Remove %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer %@"
+          }
+        }
+      }
+    },
+    "%lld waiting": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld en attente"
+          }
+        }
+      }
+    },
+    "%lld excerpts": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld extraits"
+          }
+        }
+      }
+    },
+    "Nothing is searchable until you approve the documents below.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approuvez les documents ci-dessous pour pouvoir les rechercher."
+          }
+        }
+      }
+    },
+    "Synthesize on this Mac": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Synthétiser sur ce Mac"
+          }
+        }
+      }
+    },
+    "needs at least one excerpt": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nécessite au moins un extrait"
+          }
+        }
+      }
+    },
+    "nothing to save yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "rien à enregistrer pour le moment"
+          }
+        }
+      }
+    },
+    "Saved views": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vues enregistrées"
+          }
+        }
+      }
+    },
+    " · %lld documents · %lld receipts": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · %lld documents · %lld reçus"
+          }
+        }
+      }
+    },
+    " · %lld in quarantine": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · %lld en quarantaine"
+          }
+        }
+      }
+    },
+    "Local OCR is unavailable for page %lld of %@. The document was not imported.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La reconnaissance de texte locale est indisponible pour la page %lld de %@. Le document n’a pas été importé." } } } },
+    "Permission prompts": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Demandes d’autorisation" } } } },
+    "Review agent permission requests in the terminal. Throttle never approves them automatically.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vérifiez les demandes d’autorisation de l’agent dans le terminal. Throttle ne les accepte jamais automatiquement." } } } },
+    "Manual": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Manuel" } } } },
     "%@ is ready inside Throttle. Suggestions stay on-device.": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%@ est prêt dans Throttle. Les suggestions restent sur l’appareil." } } } },
     "%lld capabilities": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld capacités" } } } },
     "%lld roots": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld racines" } } } },

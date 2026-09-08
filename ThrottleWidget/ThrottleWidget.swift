@@ -167,9 +167,11 @@ struct ThrottleWidgetView: View {
                 }
                 Spacer(minLength: 2)
                 // Tap to pause all Claude sessions (opens Throttle, which freezes them).
-                Link(destination: URL(string: "throttle://pause")!) {
-                    Label("Pause Claude", systemImage: "pause.circle")
-                        .font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+                if let pauseURL = URL(string: "throttle://pause") {
+                    Link(destination: pauseURL) {
+                        Label("Pause Claude", systemImage: "pause.circle")
+                            .font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+                    }
                 }
             }
             Spacer(minLength: 0)

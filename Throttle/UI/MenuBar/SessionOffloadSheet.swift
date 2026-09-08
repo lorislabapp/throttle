@@ -60,13 +60,22 @@ struct SessionOffloadSheet: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("One click: Throttle SSHes to a Tailscale node, keeps the agent loopback-only, publishes it through tailnet-only HTTPS, clones your repository, verifies MCP, then backs up and routes ~/.claude.json.")
+                    Text(
+                        """
+                        One click: Throttle SSHes to a Tailscale node, keeps the agent \
+                        loopback-only, publishes it through tailnet-only HTTPS, clones your \
+                        repository, verifies MCP, then backs up and routes ~/.claude.json.
+                        """
+                    )
                         .font(.system(size: 11)).foregroundStyle(.secondary)
 
                     group("Agent") {
                         field("Full Tailscale hostname (*.ts.net)", $svc.host, "edge.example.ts.net")
                         HStack {
-                            field("Port", Binding(get: { String(svc.port) }, set: { svc.port = Int($0) ?? 8787 }), "8787")
+                            field(
+                                "Port",
+                                Binding(get: { String(svc.port) }, set: { svc.port = Int($0) ?? 8787 }),
+                                "8787")
                             field("SSH user", $user, "root")
                         }
                         HStack {
@@ -138,34 +147,59 @@ struct SessionOffloadSheet: View {
                             .pickerStyle(.segmented)
                             .frame(width: 130)
                             .labelsHidden()
-                            Button("Start") {
+                            Button(svc.isStartingSession ? "Starting…" : "Start") {
                                 let cwd = newCwd, runtime = newRuntime
                                 Task { await svc.start(project: nil, cwd: cwd, runtime: runtime) }
-                            }.controlSize(.small).disabled(newCwd.isEmpty || !svc.isConfigured)
+                            }.controlSize(.small).disabled(newCwd.isEmpty || !svc.isConfigured || svc.isStartingSession
+                                || svc.pendingStart != nil || svc.startRecoveryError != nil)
                             Button(svc.polling ? "Stop poll" : "Poll") {
                                 svc.polling ? svc.stopPolling() : svc.startPolling()
                             }.controlSize(.small)
+                        }
+                        if let pending = svc.pendingStart {
+                            Text("A server start is waiting for confirmation: \(pending.project)")
+                                .font(.caption).textSelection(.enabled)
+                            Text(pending.endpoint).font(.caption).foregroundStyle(.secondary)
+                            HStack {
+                                Button("Check original start") { Task { await svc.resolvePendingStart(stop: false) } }
+                                Button("Stop original start") { Task { await svc.resolvePendingStart(stop: true) } }
+                            }
+                            .controlSize(.small)
+                            .disabled(svc.isStartingSession || !svc.isConfigured || svc.baseURL != pending.endpoint)
+                        }
+                        if let issue = svc.startRecoveryError {
+                            Text(issue).font(.caption).foregroundStyle(.orange)
                         }
                         // Context transfer: pick a local session, ship its FULL
                         // transcript, resume it on the box (no context rebuild).
                         HStack {
                             Picker("", selection: $selectedLocalId) {
-                                Text("Local session…").tag(String?.none)
+                                Text("Cockpit conversation…").tag(String?.none)
                                 ForEach(localSessions) { s in
-                                    Text("\(s.id.prefix(8)) · \(s.project.split(separator: "-").suffix(2).joined(separator: "-")) · \(s.sizeBytes / 1024) KB")
+                                    Text(
+                                        """
+                                        \(s.id.prefix(8)) · \
+                                        \(s.project.split(separator: "-").suffix(2).joined(separator: "-")) · \
+                                        \(s.sizeBytes / 1024) KB
+                                        """
+                                    )
                                         .tag(String?.some(s.id))
                                 }
                             }
                             .labelsHidden().controlSize(.small).frame(maxWidth: 260)
                             Button(offloading ? "Offloading…" : "Offload with context") {
                                 guard let s = localSessions.first(where: { $0.id == selectedLocalId }) else { return }
-                                let cwd = newCwd
                                 offloading = true
-                                Task { await svc.offload(s, remoteCwd: cwd); offloading = false }
+                                Task { await svc.offload(s); offloading = false }
                             }
                             .controlSize(.small)
-                            .disabled(offloading || selectedLocalId == nil || newCwd.isEmpty || !svc.isConfigured)
+                            .disabled(offloading || selectedLocalId == nil || !svc.isConfigured)
                         }
+                        Text("""
+                        Open a conversation in Cockpit to transfer it. Each transfer uses its own server \
+                        workspace.
+                        """)
+                            .font(.system(size: 10)).foregroundStyle(.secondary)
                         if let status = svc.offloadStatus {
                             Text(status).font(.system(size: 10)).foregroundStyle(.secondary)
                         }
@@ -200,6 +234,9 @@ struct SessionOffloadSheet: View {
         .onDisappear { svc.stopPolling() }
     }
 
+}
+
+extension SessionOffloadSheet {
     // MARK: Claude login on the box — fully in-app
 
     @ViewBuilder private var claudeAuthRow: some View {
@@ -304,7 +341,9 @@ struct SessionOffloadSheet: View {
                     .font(.system(size: 10)).foregroundStyle(.secondary)
             }
             Spacer()
-            if let t = s.tokens { Text("\(t)").font(.system(size: 10, design: .monospaced)).foregroundStyle(.secondary) }
+            if let tokens = s.tokens {
+                Text("\(tokens)").font(.system(size: 10, design: .monospaced)).foregroundStyle(.secondary)
+            }
             Button("Pause") { Task { await svc.act(s.id, "pause") } }.controlSize(.mini)
             Button("Resume") { Task { await svc.act(s.id, "resume") } }.controlSize(.mini)
             Button("Stop") { Task { await svc.act(s.id, "stop") } }.controlSize(.mini)

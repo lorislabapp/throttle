@@ -14,17 +14,21 @@ final class UpdaterService: NSObject {
 
     override init() {
         self.updater = SPUStandardUpdaterController(
-            startingUpdater: true,
+            startingUpdater: !AppDelegate.isIsolatedHost,
             updaterDelegate: nil,
             userDriverDelegate: nil
         )
         super.init()
-        logger.info("Sparkle updater started — feed: \(self.updater.updater.feedURL?.absoluteString ?? "none", privacy: .public)")
+        if !AppDelegate.isIsolatedHost {
+            let feed = self.updater.updater.feedURL?.absoluteString ?? "none"
+            logger.info("Sparkle updater started — feed: \(feed, privacy: .public)")
+        }
     }
 
     /// User-initiated check. Sparkle handles the UI flow (modal sheet,
     /// download, install). Replaces the user driver — banner-style.
     func checkForUpdates() {
+        guard !AppDelegate.isIsolatedHost else { return }
         updater.checkForUpdates(nil)
     }
 

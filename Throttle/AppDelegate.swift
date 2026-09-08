@@ -6,25 +6,34 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let appState: AppState
-    private let database: any DatabaseWriter  // Accept both DatabasePool and DatabaseQueue
-    private let coordinator: DataLayerCoordinator
-    private let savingsIngester: SavingsIngester
-    private let codexIngester: CodexUsageIngester
-    private let traycer = TraycerReceiver.shared   // local OTLP receiver (opt-in; started below)
-    private let updater = UpdaterService.shared
+    let database: any DatabaseWriter  // Accept both DatabasePool and DatabaseQueue
+    let coordinator: DataLayerCoordinator
+    let savingsIngester: SavingsIngester
+    let codexIngester: CodexUsageIngester
+    let traycer = TraycerReceiver.shared   // local OTLP receiver (opt-in; started below)
+    lazy var updater = UpdaterService.shared
     let logger = AppLogger.app
-    private var licenseRenewalTimer: Timer?
-    private var codexUsageTimer: Timer?
-    private var researchVaultWorkbenchTestWindow: NSWindow?
-    private var globalRAGOnboardingTestWindow: NSWindow?
+    var licenseRenewalTimer: Timer?
+    var codexUsageTimer: Timer?
+    var researchVaultWorkbenchTestWindow: NSWindow?
+    var globalRAGOnboardingTestWindow: NSWindow?
 
     /// App-hosted tests already initialize the state/database they exercise, but
     /// must not start production listeners, CloudKit, login items or singleton
     /// ownership. Xcode 27 no longer guarantees the legacy environment marker.
-    private static var isRunningTests: Bool {
+    static var isRunningTests: Bool {
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
             || NSClassFromString("XCTestCase") != nil
             || Bundle.allBundles.contains(where: { $0.bundlePath.hasSuffix(".xctest") })
+    }
+
+    /// UI hosts can also be launched directly, without XCTest injection.
+    /// Use the same boundary for initialization, scenes and the whole lifecycle.
+    static var isIsolatedHost: Bool {
+        isRunningTests
+            || CommandLine.arguments.contains("-globalRAGOnboardingTest")
+            || CommandLine.arguments.contains("-researchVaultWorkbenchTest")
+            || CommandLine.arguments.contains("-researchVaultApprovalTest")
     }
 
     override init() {
@@ -32,14 +41,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Check for -demo launch argument for screen recordings & screenshots
         let isDemoMode = CommandLine.arguments.contains("-demo")
         let isGlobalRAGTestHost = CommandLine.arguments.contains("-globalRAGOnboardingTest")
-        let isResearchVaultTestHost = CommandLine.arguments.contains("-researchVaultWorkbenchTest")
 
         do {
-            if isGlobalRAGTestHost || isResearchVaultTestHost {
+            if Self.isIsolatedHost {
                 // UI qualification hosts must be hermetic in every configuration.
                 // In particular, an ad hoc Release must never prompt for the
                 // production license item in Keychain merely to render a view.
                 self.database = try DatabaseQueue()
+                try Migrations.register(on: database)
                 self.coordinator = DataLayerCoordinator(database: database)
                 self.savingsIngester = SavingsIngester(database: database)
                 self.codexIngester = CodexUsageIngester(database: database)
@@ -88,353 +97,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Keep the Pro JWT alive. `activate` is the only endpoint that mints one, so a
-    /// license that isn't re-minted decays to Free the moment `exp` + grace passes —
-    /// with the key still sitting in Keychain. Fires at launch, daily, and on wake
-    /// (a Mac asleep for weeks would otherwise miss every tick).
-    private func startLicenseRenewal() {
-        Task { @MainActor in
-            await LicenseService.shared.refreshIfNeeded()
-            appState.refreshProStatus()
-        }
-        licenseRenewalTimer = Timer.scheduledTimer(withTimeInterval: 24 * 3600, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                guard let self else { return }
-                await LicenseService.shared.refreshIfNeeded()
-                self.appState.refreshProStatus()
-            }
-        }
-        NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                guard let self else { return }
-                await LicenseService.shared.refreshIfNeeded()
-                self.appState.refreshProStatus()
-            }
-        }
-    }
+    var quitPending = false
 
-    /// Clicking Throttle's Dock icon while the app is already running always brings
-    /// back the Cockpit, even when every auxiliary window was previously closed.
-    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if Self.isRunningTests {
-            if let researchVaultWorkbenchTestWindow {
-                researchVaultWorkbenchTestWindow.makeKeyAndOrderFront(nil)
-                return true
-            }
-            if let globalRAGOnboardingTestWindow {
-                globalRAGOnboardingTestWindow.makeKeyAndOrderFront(nil)
-                return true
-            }
-        }
-        CockpitWindowController.shared.show(appState: appState)
-        return true
-    }
-
-    func applicationDidFinishLaunching(_ notification: Notification) {
-        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] start\n".utf8))
-        // Before anything else: the runaway-menu-bar watchdog. It runs on its own
-        // queue precisely because the failure it guards against wedges the main
-        // thread, so it must not be scheduled behind any other startup work.
-        MenuBarUpdateGuard.start()
-        // Reclaim what Throttle itself keeps. Measured 2026-08-22: 3.8 GB of
-        // never-expiring caches on a Mac whose disk hit zero twice that day —
-        // the tool reporting memory pressure was a cause of it.
-        RetentionService.startPeriodicSweeps()
-        // Serves build/test requests from the box only if the user turned it on.
-        CapabilityHostService.shared.restoreIfEnabled()
-        let isDemoMode = CommandLine.arguments.contains("-demo")
-
-        // In demo mode, skip all background services and just show the UI with fake data
-        guard !isDemoMode else {
-            logger.notice("🎬 DEMO MODE: Skipping all background services")
-            return
-        }
-        guard !Self.isRunningTests else {
-            if CommandLine.arguments.contains("-researchVaultWorkbenchTest") {
-                let controller = NSHostingController(
-                    rootView: ResearchVaultWorkbenchView(onBack: {})
-                )
-                let window = NSWindow(contentViewController: controller)
-                window.title = "Research Vault Workbench Test Host"
-                window.setContentSize(NSSize(width: 860, height: 540))
-                window.center()
-                window.makeKeyAndOrderFront(nil)
-                researchVaultWorkbenchTestWindow = window
-            }
-            if CommandLine.arguments.contains("-globalRAGOnboardingTest") {
-                let controller = NSHostingController(
-                    rootView: GlobalRAGOnboardingView(canInstallMCP: false) { _ in }
-                )
-                let window = NSWindow(contentViewController: controller)
-                window.title = "Global Portfolio Setup Test Host"
-                if CommandLine.arguments.contains("-globalRAGOnboardingDarkTest") {
-                    window.appearance = NSAppearance(named: .darkAqua)
-                }
-                window.setContentSize(NSSize(width: 900, height: 720))
-                window.center()
-                window.makeKeyAndOrderFront(nil)
-                globalRAGOnboardingTestWindow = window
-            }
-            logger.notice("XCTest host detected: skipping production background services")
-            return
-        }
-        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] past demo check\n".utf8))
-
-        // Listen for cross-process commands from App Intents / Shortcuts / Focus
-        // Filters (pause/resume/quiet) and apply anything queued before launch.
-        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] before ThrottleCommandChannel\n".utf8))
-        ThrottleCommandChannel.startObserving()
-        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] after ThrottleCommandChannel\n".utf8))
-
-        // Raise the per-process FD limit. macOS defaults to ~256 soft;
-        // LiveFileWatcher used to open one descriptor per session JSONL,
-        // and on heavy users with thousands of subagent files (now
-        // filtered out, but defensively cap higher anyway) we'd hit
-        // EMFILE which masquerades as "directory not readable".
-        // Heal the tokopt hook's exec path if it points at a stale build (e.g. an
-        // old DerivedData path after installing to /Applications or a Sparkle
-        // update). No-op if the hook isn't installed or is already current.
-        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] before installers\n".utf8))
-        TokoptHookInstaller.reconcile()
-        TranscriptMemoryInstaller.reconcile()   // heal a stale throttle-memory --mcp-server path (e.g. dev build → /Applications)
-        TraycerEnvInstaller.reconcile()          // heal drifted OTLP env keys — only if the user opted the export in
-        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] after installers\n".utf8))
-
-        // Traycer: local OTLP receiver for €-per-skill attribution. Opt-in
-        // (Settings → the export writes full command lines to the local usage.db).
-        // Fail-open: a bind conflict on 4318 disables it silently.
-        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] before Traycer\n".utf8))
-        if UserDefaults.standard.bool(forKey: "throttleTraycerEnabled") {
-            traycer.start(writer: database)
-        }
-        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] after Traycer\n".utf8))
-
-        // Provider-neutral local context bridge. It stays loopback-only and cheap;
-        // WebKit is created only when the explicit web preference is enabled and a
-        // render is requested. The same bridge hosts bounded embedded-model drafts.
-        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] before WebRenderBridge\n".utf8))
-        WebRenderBridge.shared.start(writer: database)
-        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] after WebRenderBridge\n".utf8))
-
-        // iOS companion mirror: publish live usage/cockpit state to the user's
-        // private CloudKit DB. Opt-in; fail-open (no iCloud / no entitlement →
-        // silently disabled, meter unaffected). Fed from AppState.refresh via
-        // MirrorFanout — register the transport always (so it holds the freshest
-        // snapshot), but only arm the network side when the user opted in.
-        MirrorFanout.shared.register(CloudKitPublisher.shared)
-        MirrorFanout.shared.register(PeerTransport.shared)   // LAN fast path (Bonjour+TLS-PSK)
-        if UserDefaults.standard.bool(forKey: "throttleiCloudMirrorEnabled") {
-            CloudKitPublisher.shared.start()
-            PeerTransport.shared.start()
-        }
-
-        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] before OutputStyleManager\n".utf8))
-        OutputStyleManager.resyncManagedTemplates()   // heal stale managed output-style files after an app upgrade changed a template body
-        FileHandle.standardError.write(Data("[applicationDidFinishLaunching] after OutputStyleManager\n".utf8))
-
-        var rlim = rlimit()
-        if getrlimit(RLIMIT_NOFILE, &rlim) == 0 {
-            let target = min(rlim.rlim_max, rlim_t(10_240))
-            if target > rlim.rlim_cur {
-                rlim.rlim_cur = target
-                setrlimit(RLIMIT_NOFILE, &rlim)
-            }
-        }
-
-        // Skip the singleton check under XCTest — the test host bundle launches a
-        // second Throttle.app process to load the test bundle, and the singleton
-        // lock would terminate it before tests can run.
-        guard Self.acquireSingletonLock() else {
-            logger.notice("Another Throttle instance is already running. Quitting.")
-            NSApp.terminate(nil)
-            return
-        }
-
-        logger.notice("Throttle launched (\(Bundle.main.shortVersion, privacy: .public))")
-        AppLogger.appendToFile("Throttle launched (\(Bundle.main.shortVersion))")
-
-        startLicenseRenewal()
-
-        // Wire ExactModeService → AppState. The service runs whenever the user
-        // has enabled exact mode AND is signed in to claude.ai. When polling
-        // returns a fresh snapshot, the dropdown promotes its values over the
-        // local JSONL math.
-        let exact = ExactModeService.shared
-        exact.onSnapshot = { [weak self] snap in
-            Task { @MainActor in
-                self?.appState.exactSnapshot = snap
-                self?.appState.exactModeError = nil
-                // Learn which model the per-model weekly cap belongs to, so the
-                // label and the offline estimate stop assuming Sonnet.
-                ScopedCapModel.remember(snap.sevenDayScoped.scopedModel)
-                self?.appState.anchorCalibration(from: snap)   // make the local estimate track server truth
-                self?.appState.refreshStatusline()   // keep the terminal line in sync with exact
-            }
-        }
-        exact.onError = { [weak self] err in
-            Task { @MainActor in
-                // Non-recoverable errors (notSignedIn) — drop the snapshot so the UI
-                // falls back to local math instead of showing stale data.
-                if err == .notSignedIn {
-                    self?.appState.exactSnapshot = nil
-                }
-                self?.appState.exactModeError = err
-            }
-        }
-
-        savingsIngester.onIngest = { [weak self] in
-            self?.appState.refresh()
-        }
-        savingsIngester.start()
-        codexIngester.onIngest = { [weak self] in
-            self?.appState.refresh()
-        }
-        codexIngester.start()
-
-        CrashReporter.shared.start()
-        TokoptHook.purgeRaw()   // age out raw command-output dumps (M16)
-        ContentStore.purge()    // age out trimmed-payload blobs (CMV, ~30d)
-
-        // Read Firewall: inspect only local execution logs and surface one
-        // non-blocking, actionable toast for the most recent high-waste workspace.
-        // No project config is changed until the user accepts the notification.
-        Task.detached(priority: .utility) {
-            let candidates = ProjectsService.listProjects().compactMap { project
-                -> (ProjectInfo, String, ReadFirewallScanner.Summary)? in
-                guard let path = ProjectsService.decodePath(project.encodedName),
-                      FileManager.default.fileExists(atPath: path) else { return nil }
-                let summary = ReadFirewallScanner.scan(encodedName: project.encodedName)
-                return summary.highWaste ? (project, path, summary) : nil
-            }
-            guard let candidate = candidates.first else { return }
-            await MainActor.run {
-                let key = "readFirewallToast.\(candidate.0.encodedName)"
-                let last = UserDefaults.standard.object(forKey: key) as? Date ?? .distantPast
-                guard Date().timeIntervalSince(last) > 7 * 86_400 else { return }
-                UserDefaults.standard.set(Date(), forKey: key)
-                CockpitNotifier.shared.notifyReadFirewall(
-                    project: candidate.0.displayName,
-                    projectPath: candidate.1,
-                    summary: candidate.2)
-            }
-        }
-
-        // Auto-trim idle transcripts (opt-in, OFF by default). Reuses the manual
-        // trimmer's lossless + reversible apply path (backup + validation + post-write
-        // verify + rehydratable pointers); a 10-min idle floor never touches a session
-        // you're actively resuming. Off-main, images-only, best-effort.
-        if UserDefaults.standard.bool(forKey: "throttleAutoTrimEnabled") {
-            Task.detached(priority: .utility) {
-                let r = ContextTrimmerService.autoTrimIdle()
-                // `r` is a tuple whose first member is named `count`, not a
-                // collection. SwiftLint's empty_count autocorrect rewrote this
-                // to `!r.isEmpty` and broke the build.
-                // swiftlint:disable:next empty_count
-                if r.count > 0 {
-                    await CockpitNotifier.shared.notifyAutoTrim(count: r.count, tokensSaved: r.tokensSaved)
-                }
-            }
-        }
-
-        // Adaptive keep-alive for the embedded local model (2026-08 mix research):
-        // weights reload in seconds, the user's swapping sessions don't recover —
-        // so under critical pressure the model is never kept resident.
-        MemoryPressureMonitor.shared.onPressureRise { level in
-            guard level == .critical else { return }
-            Task { await EmbeddedModelRuntime.shared.unload() }
-        }
-
-        // Throttle Autopilot — keep the Claude Code setup optimized, by default,
-        // system-wide. Off-main; debounced to ~once/day; every action reversible
-        // and logged (Settings → Autopilot → Review & undo).
-        if appState.isPro {   // Autopilot is a Pro feature
-            Task.detached(priority: .utility) { _ = AutopilotService.runIfDue() }
-        }
-
-        // Semantic auto-index (opt-in, OFF by default): keep each project's corpus
-        // fresh for throttle_semantic_search without manual --index-repo. Skipped
-        // under memory pressure (16 GB Mac). Gate read on main, heavy work off-main.
-        // Consult a SYNCHRONOUS snapshot too: at cold start on an already-swapping
-        // Mac the kernel hasn't posted a pressure event yet, so `isQuiet` reads a
-        // stale `.normal` — the false negative that let the heavy embedding pass
-        // start precisely when the machine was worst (MEM-M01).
-        if SemanticAutoIndexer.isEnabled, !MemoryPressureMonitor.shared.isQuiet,
-           !SystemMemoryService.sample().underPressure {
-            Task.detached(priority: .utility) {
-                let roots = ProjectsService.listProjects().compactMap { $0.projectPath }
-                _ = SemanticAutoIndexer.run(roots: roots, enabled: true, memoryQuiet: false,
-                                            embedder: NLEmbeddingProvider())
-            }
-        }
-
-        Task { @MainActor in
-            await coordinator.start()
-            appState.refresh()
-            appState.refreshCodexUsage()
-            if appState.exactModeEnabled {
-                // Safari Bridge handles missing-Safari / not-signed-in via
-                // .failure on each poll — start unconditionally; the UI
-                // surfaces errors when polling fails.
-                exact.start()
-            }
-        }
-
-        // Codex has no separate account API integration here: refresh the latest
-        // provider-emitted local token_count event on a modest cadence. The reader
-        // touches only the last three date directories and a bounded file tail.
-        codexUsageTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.appState.refreshCodexUsage() }
-        }
-
-        // Re-evaluate Pro status whenever the dev-unlock sheet succeeds
-        // so the UI immediately reflects the change without needing a
-        // restart. Posted by `DevUnlockSheet.tryUnlock` after a valid
-        // key + Keychain write.
-        NotificationCenter.default.addObserver(
-            forName: .devUnlockChanged,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.appState.refreshProStatus() }
-        }
-    }
-
-    func applicationWillTerminate(_ notification: Notification) {
-        codexUsageTimer?.invalidate()
-        MultiCockpitModel.shared.stop()        // hard-kill every cockpit session subtree (C01)
-        CaffeineService.shared.setActive(false) // release the power assertion (M04)
-        coordinator.stop()
-        savingsIngester.stop()
-        codexIngester.stop()
-        traycer.stop()
-        logger.notice("Throttle quitting")
-    }
-
-    func notifyActivation(success: Bool, message: String) {
-        let alert = NSAlert()
-        alert.messageText = success ? "Throttle Pro" : "Activation failed"
-        alert.informativeText = message
-        alert.alertStyle = success ? .informational : .warning
-        alert.addButton(withTitle: "OK")
-        NSApp.activate(ignoringOtherApps: true)
-        alert.runModal()
-    }
-
-    func describeActivationError(_ err: LicenseService.ActivationError) -> String {
-        switch err {
-        case .invalidKey:           return "Invalid license key."
-        case .machineLimitReached:  return "Already activated on 3 Macs. Deactivate one first."
-        case .revoked:              return "License revoked. Contact support@lorislab.fr."
-        case .verificationFailed:   return "Server response failed signature check. Don't trust this network."
-        case .network(let m):       return "Network error: \(m)"
-        case .server(let code):     return "Server error \(code). Try again later."
-        case .decode(let m):        return "Couldn't decode response: \(m)"
-        }
-    }
-
-    private static func openDatabaseSync() throws -> DatabasePool {
+    static func openDatabaseSync() throws -> DatabasePool {
         let url = try DatabaseManager.databaseURL()
         try FileManager.default.createDirectory(
             at: url.deletingLastPathComponent(),
@@ -457,7 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Held for the GUI process's whole lifetime so the advisory lock stays taken.
-    private static var singletonLockFD: Int32 = -1
+    static var singletonLockFD: Int32 = -1
 
     /// Single-instance guard via an advisory file lock (`flock`), NOT an
     /// `NSRunningApplication` bundle-id count. The CLI sub-modes (`--mcp-server`,
@@ -468,7 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// though no other *GUI* instance exists. Those CLI modes `exit()` in
     /// `main.swift` before `ThrottleApp.main()`, so they never reach this code —
     /// an flock taken only here counts GUI instances exactly.
-    private static func acquireSingletonLock() -> Bool {
+    static func acquireSingletonLock() -> Bool {
         let path = (NSTemporaryDirectory() as NSString)
             .appendingPathComponent("com.lorislab.throttle.singleton.lock")
         // O_CLOEXEC: without it, any child process forked off this one (e.g. the
@@ -486,7 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-private extension Bundle {
+extension Bundle {
     var shortVersion: String {
         infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
     }

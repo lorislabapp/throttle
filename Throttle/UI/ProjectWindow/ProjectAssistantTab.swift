@@ -146,7 +146,7 @@ struct ProjectAssistantTab: View {
                         .font(.caption)
                         .foregroundStyle(.red)
                 }
-                Link("Model card · Apache 2.0", destination: EmbeddedModelRuntime.modelURL)
+                ModelCardLink(title: "Model card · Apache 2.0", url: EmbeddedModelRuntime.modelURL)
                     .font(.caption)
 
                 providerCard(

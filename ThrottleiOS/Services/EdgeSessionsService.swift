@@ -109,26 +109,47 @@ final class EdgeSessionsService {
 
     /// Transient status line surfaced by the Edge UI after an action.
     private(set) var actionStatus: String?
+    private(set) var pendingStart: EdgeFreshSessionStarter.Pending?
+    private(set) var startRecoveryError: String?
 
-    /// Start a remote session on the agent. `resume` (a session id already present on
-    /// the box — e.g. one the Mac offloaded with its transcript) resumes that
-    /// conversation instead of a fresh one: the iOS half of "offload with context".
-    /// The transcript UPLOAD itself stays Mac-origin (that's where the JSONL lives);
-    /// here we only ask the box to resume an id it already has.
+    /// Start a fresh conversation, retaining uncertain requests across app restarts.
     @discardableResult
-    func start(cwd: String, resume: String? = nil) async -> Bool {
+    func start(cwd: String) async -> Bool {
         guard isConfigured, !cwd.isEmpty else { return false }
-        actionStatus = resume == nil ? "Starting session…" : "Resuming \(resume!.prefix(8))…"
+        actionStatus = "Starting session…"
         do {
-            _ = try await EdgeAgentService.start(baseURL: baseURL, token: token,
-                                                 project: nil, cwd: cwd, resume: resume)
+            _ = try await EdgeAgentService.start(baseURL: baseURL, token: token, project: nil, cwd: cwd)
             actionStatus = nil
+            await refreshPendingStart()
             await refresh()
             return true
         } catch {
-            actionStatus = "Start failed: \(error.localizedDescription)"
+            actionStatus = "Start is unresolved: \(error.localizedDescription)"
+            await refreshPendingStart()
             return false
         }
+    }
+
+    func refreshPendingStart() async {
+        do {
+            pendingStart = try await EdgeFreshSessionStarter.shared.pending()
+            startRecoveryError = nil
+        } catch { startRecoveryError = error.localizedDescription }
+    }
+
+    func resolvePendingStart(stop: Bool) async {
+        guard isConfigured else { return }
+        do {
+            if stop {
+                try await EdgeFreshSessionStarter.shared.stopPending(endpoint: baseURL, token: token)
+                actionStatus = "The original server start is stopped."
+            } else {
+                _ = try await EdgeFreshSessionStarter.shared.retry(endpoint: baseURL, token: token)
+                actionStatus = "The original conversation is confirmed on the server."
+            }
+        } catch { actionStatus = "Server start needs recovery: \(error.localizedDescription)" }
+        await refreshPendingStart()
+        await refresh()
     }
 
     /// Coarse lifecycle: pause / resume / stop a running session.

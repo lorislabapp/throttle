@@ -35,7 +35,7 @@ import OSLog
 final class EmbeddedClaudeSession: NSObject {
     static let shared = EmbeddedClaudeSession()
 
-    private let logger = Logger(subsystem: "com.lorislab.throttle", category: "EmbeddedClaudeSession")
+    let logger = Logger(subsystem: "com.lorislab.throttle", category: "EmbeddedClaudeSession")
 
     /// The web view. Initialized lazily on first access so we don't pay
     /// the WebKit startup cost at app launch unless the user actually
@@ -398,18 +398,6 @@ final class EmbeddedClaudeSession: NSObject {
         try? data.write(to: url, options: [.atomic])
     }
 
-    /// Make sure the webview has navigated to claude.ai at least once
-    /// in this app session. Without an initial navigation,
-    /// `evaluateJavaScript` runs against `about:blank` and any
-    /// `fetch('/api/...')` resolves against the wrong origin.
-    private func ensureLoaded() async throws {
-        let view = ensureWebView()
-        if let url = view.url, url.host?.contains("claude.ai") == true {
-            return
-        }
-        try await navigate(to: URL(string: "https://claude.ai/")!)
-    }
-
     /// Navigate the webview to `url` and wait for the navigation to
     /// finish. Bridges `WKNavigationDelegate` callbacks to async/await.
     fileprivate func navigate(to url: URL) async throws {
@@ -422,7 +410,7 @@ final class EmbeddedClaudeSession: NSObject {
         }
     }
 
-    fileprivate func notifyNavigationFinished(error: Error?) {
+    func notifyNavigationFinished(error: Error?) {
         navigationInProgress = false
         let conts = navigationContinuations
         navigationContinuations.removeAll()
@@ -451,6 +439,7 @@ final class EmbeddedClaudeSession: NSObject {
     /// resumed` which was captured across closures and could race
     /// across the close-notification + cookie-poll paths).
     func presentSignIn() async -> Bool {
+        guard let endpoint = URL(string: "https://claude.ai/login") else { return false }
         let view = ensureWebView()
         let originalHost = self.hostWindow
 
@@ -467,7 +456,7 @@ final class EmbeddedClaudeSession: NSObject {
         // ⌘W's the window during a navigation.
         signInWindow.isReleasedWhenClosed = false
         signInWindow.contentView = view
-        view.load(URLRequest(url: URL(string: "https://claude.ai/login")!))
+        view.load(URLRequest(url: endpoint))
         signInWindow.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
 
@@ -547,39 +536,6 @@ private final class SignInCoordinator {
     }
 }
 
-// MARK: - WKNavigationDelegate
-
-extension EmbeddedClaudeSession: WKNavigationDelegate {
-    nonisolated func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        Task { @MainActor in self.notifyNavigationFinished(error: nil) }
-    }
-
-    nonisolated func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        Task { @MainActor in self.notifyNavigationFinished(error: error) }
-    }
-
-    nonisolated func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        Task { @MainActor in self.notifyNavigationFinished(error: error) }
-    }
-
-    /// Recover when the WebKit content process dies (sad-mac in the
-    /// view, every subsequent `evaluateJavaScript` would silently fail).
-    /// macOS 26.5 has a known RenderBox/Metal-shader path that can
-    /// trigger this; the entitlements in `Throttle.entitlements`
-    /// (allow-jit, allow-unsigned-executable-memory,
-    /// disable-library-validation) mitigate but don't eliminate it.
-    /// Re-load claude.ai/ to bring the view back to a usable state.
-    nonisolated func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        Task { @MainActor in
-            self.logger.warning("WKWebView content process terminated — reloading claude.ai")
-            // Drop any pending navigation continuations with a clear
-            // error so callers don't wait forever.
-            self.notifyNavigationFinished(error: EmbeddedSessionError.scriptError("WebKit content process died — recovering"))
-            webView.load(URLRequest(url: URL(string: "https://claude.ai/")!))
-        }
-    }
-}
-
 // MARK: - Errors
 
 enum EmbeddedSessionError: Error, LocalizedError {
@@ -598,4 +554,20 @@ enum EmbeddedSessionError: Error, LocalizedError {
         case .decode(let what):   return "Decoding failed: \(what)"
         }
     }
+}
+
+extension EmbeddedClaudeSession {
+    /// Make sure the webview has navigated to claude.ai at least once
+    /// in this app session. Without an initial navigation,
+    /// `evaluateJavaScript` runs against `about:blank` and any
+    /// `fetch('/api/...')` resolves against the wrong origin.
+    private func ensureLoaded() async throws {
+        let view = ensureWebView()
+        if let url = view.url, url.host?.contains("claude.ai") == true {
+            return
+        }
+        guard let endpoint = URL(string: "https://claude.ai/") else { throw URLError(.badURL) }
+        try await navigate(to: endpoint)
+    }
+
 }

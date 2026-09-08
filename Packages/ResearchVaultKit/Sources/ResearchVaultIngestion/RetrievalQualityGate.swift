@@ -148,6 +148,15 @@ public enum ResearchCitationVerifier {
                   citation.locator.hasSuffix("#chunk-" + String(citation.chunkOrdinal)) else {
                 return citation.documentID
             }
+            if let receipt = citation.receiptProvenance {
+                guard UUID(uuidString: receipt.receiptID) != nil,
+                      citation.documentID == "receipt:" + receipt.receiptID,
+                      citation.libraryPath == "vault-receipt/" + receipt.receiptID,
+                      citation.chunkOrdinal == receipt.findingIndex,
+                      receipt.findingIndex >= 0,
+                      receipt.sealedContentHash.range(of: #"^[a-f0-9]{64}$"#, options: .regularExpression) != nil,
+                      citation.origins == receipt.sources.map(\.locator) else { return citation.documentID }
+            }
             return nil
         }
         return ResearchCitationVerification(valid: invalid.isEmpty, invalidDocumentIDs: invalid)

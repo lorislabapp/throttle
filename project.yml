@@ -19,8 +19,8 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
-    MARKETING_VERSION: "3.5.2"
-    CURRENT_PROJECT_VERSION: "218"
+    MARKETING_VERSION: "3.6.0"
+    CURRENT_PROJECT_VERSION: "219"
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
   configs:
     # Hardened runtime is required for notarized Release distribution but
@@ -38,7 +38,7 @@ packages:
     exactVersion: "6.29.3"
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
-    exactVersion: "2.9.1"
+    exactVersion: "2.9.6"
   SwiftTerm:
     url: https://github.com/migueldeicaza/SwiftTerm
     exactVersion: "1.14.0"   # 1.14 parser fixes; bumped chasing macOS 27 beta ANSI mis-render
@@ -84,6 +84,10 @@ targets:
       # `resources:` key is NOT valid XcodeGen and was silently dropped, which is
       # why 3.2.58 shipped the "// throttle-agent.mjs missing from bundle" placeholder.
       - path: edge-agent/throttle-agent.mjs
+        buildPhase: resources
+      - path: edge-agent/fresh-runtime.mjs
+        buildPhase: resources
+      - path: edge-agent/transfer-runtime.mjs
         buildPhase: resources
     info:
       path: Throttle/Info.plist

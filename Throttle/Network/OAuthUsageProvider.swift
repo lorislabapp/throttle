@@ -40,7 +40,10 @@ enum OAuthUsageProvider {
         guard let creds = loadCredentials() else { throw ProviderError.noToken }
         guard creds.expiresAt > Date() else { throw ProviderError.tokenExpired }
 
-        var req = URLRequest(url: URL(string: "https://api.anthropic.com/api/oauth/usage")!)
+        guard let endpoint = URL(string: "https://api.anthropic.com/api/oauth/usage") else {
+            throw URLError(.badURL)
+        }
+        var req = URLRequest(url: endpoint)
         req.timeoutInterval = timeout
         req.setValue("Bearer \(creds.accessToken)", forHTTPHeaderField: "Authorization")
         req.setValue("oauth-2025-04-20", forHTTPHeaderField: "anthropic-beta")

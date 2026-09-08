@@ -2,10 +2,11 @@
 import XCTest
 
 final class EmbeddedModelRuntimeTests: XCTestCase {
-    func testModelMetadataIsPinnedToHTTPS() {
+    func testModelMetadataIsPinnedToHTTPS() throws {
         XCTAssertEqual(EmbeddedModelRuntime.modelID, "mlx-community/Qwen3-1.7B-4bit")
-        XCTAssertEqual(EmbeddedModelRuntime.modelURL.scheme, "https")
-        XCTAssertEqual(EmbeddedModelRuntime.modelURL.host, "huggingface.co")
+        let modelURL = try XCTUnwrap(EmbeddedModelRuntime.modelURL)
+        XCTAssertEqual(modelURL.scheme, "https")
+        XCTAssertEqual(modelURL.host, "huggingface.co")
     }
 
     func testEndToEndInferenceWhenExplicitlyEnabled() async throws {

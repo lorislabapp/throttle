@@ -17,12 +17,16 @@ struct ThrottleApp: App {
         // pocket-view rendering that crashes any SwiftUI-managed external window —
         // even with .windowStyle(.hiddenTitleBar). Keeping everything inside the
         // popover avoids that code path entirely.
-        MenuBarExtra {
-            DropdownView()
-                .environment(appDelegate.appState)
+        MenuBarExtra(isInserted: .constant(!AppDelegate.isIsolatedHost)) {
+            if !AppDelegate.isIsolatedHost {
+                DropdownView()
+                    .environment(appDelegate.appState)
+            }
         } label: {
-            MenuBarLabel()
-                .environment(appDelegate.appState)
+            if !AppDelegate.isIsolatedHost {
+                MenuBarLabel()
+                    .environment(appDelegate.appState)
+            }
         }
         .menuBarExtraStyle(.window)
     }

@@ -15,10 +15,15 @@ extension AppDelegate {
     }
 
     func handleDeepLink(_ url: URL) {
+        guard !Self.isIsolatedHost else { return }
         guard url.scheme?.lowercased() == "throttle" else {
             logger.notice("Ignoring URL with unknown scheme: \(url.scheme ?? "nil", privacy: .public)")
             return
         }
+        routeDeepLink(url)
+    }
+
+    private func routeDeepLink(_ url: URL) {
         let host = url.host?.lowercased()
         switch host {
         case "activate":

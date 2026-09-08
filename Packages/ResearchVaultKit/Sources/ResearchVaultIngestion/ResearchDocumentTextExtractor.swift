@@ -6,10 +6,19 @@ import UIKit
 import CoreGraphics
 import Foundation
 import PDFKit
-import Vision
 
-public enum ResearchDocumentTextExtractorError: Error, Equatable, Sendable {
+public enum ResearchDocumentTextExtractorError: Error, Equatable, Sendable, LocalizedError {
     case unsupportedOrUnreadable(String)
+    case ocrUnavailable(String, page: Int)
+
+    public var errorDescription: String? {
+        switch self {
+        case .unsupportedOrUnreadable(let name):
+            return "Unsupported or unreadable document: \(name)."
+        case .ocrUnavailable(let name, let page):
+            return "Local OCR is unavailable for page \(page) of \(name). The document was not imported."
+        }
+    }
 }
 
 public enum ResearchDocumentTextExtractor {
@@ -63,6 +72,7 @@ public enum ResearchDocumentTextExtractor {
         }
         var pages: [String] = []
         var unreadablePages = 0
+        var ocr = ResearchDocumentOCR()
         for index in 0 ..< document.pageCount {
             guard let page = document.page(at: index) else { continue }
             let embedded = (page.string ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -70,7 +80,15 @@ public enum ResearchDocumentTextExtractor {
                 pages.append(embedded)
                 continue
             }
-            if let recognised = recogniseText(in: bytes, pageIndex: index),
+            let recognised: String?
+            do {
+                recognised = try recogniseText(in: bytes, pageIndex: index, ocr: &ocr)
+            } catch {
+                // An unavailable engine is not evidence that the page is blank.
+                // Do not seal a partial import as a successfully read document.
+                throw ResearchDocumentTextExtractorError.ocrUnavailable(name, page: index + 1)
+            }
+            if let recognised,
                !recognised.isEmpty {
                 pages.append(recognised)
             } else if !embedded.isEmpty {
@@ -92,9 +110,10 @@ public enum ResearchDocumentTextExtractor {
         return pages.joined(separator: "\n\n")
     }
 
-    /// Render one page and read it with Vision. Returns nil rather than throwing:
-    /// a page that yields nothing is reported as empty, never dropped silently.
-    private static func recogniseText(in bytes: Data, pageIndex: Int) -> String? {
+    /// Nil means no recoverable text; a thrown error means OCR was unavailable.
+    private static func recogniseText(
+        in bytes: Data, pageIndex: Int, ocr: inout ResearchDocumentOCR
+    ) throws -> String? {
         guard let provider = CGDataProvider(data: bytes as CFData),
               let document = CGPDFDocument(provider),
               let page = document.page(at: pageIndex + 1) else { return nil }
@@ -133,20 +152,7 @@ public enum ResearchDocumentTextExtractor {
         context.drawPDFPage(page)
         guard let image = context.makeImage() else { return nil }
 
-        let request = VNRecognizeTextRequest()
-        request.recognitionLevel = .accurate
-        request.usesLanguageCorrection = true
-        // The corpus is bilingual; a French-only or English-only pass loses half.
-        request.recognitionLanguages = ["fr-FR", "en-US"]
-        do {
-            try VNImageRequestHandler(cgImage: image, options: [:]).perform([request])
-        } catch {
-            return nil
-        }
-        let lines = (request.results ?? []).compactMap {
-            $0.topCandidates(1).first?.string
-        }
-        return lines.isEmpty ? nil : lines.joined(separator: "\n")
+        return try ocr.text(in: image)
     }
 
     private static func attributedText(

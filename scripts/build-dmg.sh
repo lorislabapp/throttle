@@ -68,6 +68,8 @@ if grep -q '"file":"\\/' .swiftlint-baseline.json; then
     exit 65
 fi
 
+"$PROJECT_DIR/scripts/verify-swiftlint.sh"
+
 echo "→ Generating Xcode project"
 xcodegen generate
 

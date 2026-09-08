@@ -1,12 +1,19 @@
 {
   "name": "throttle-edge-agent",
-  "version": "1.0.0",
-  "description": "Throttle Edge Agent — loopback-only control plane published through private HTTPS; spawns and measures Claude Code sessions on a user-owned host.",
+  "version": "2.0.0",
+  "description": "Throttle Edge Agent \u2014 loopback-only control plane published through private HTTPS; spawns and measures Claude Code sessions on a user-owned host.",
   "type": "module",
-  "bin": { "throttle-agent": "throttle-agent.mjs" },
+  "bin": {
+    "throttle-agent": "throttle-agent.mjs"
+  },
   "main": "throttle-agent.mjs",
-  "scripts": { "start": "node throttle-agent.mjs", "test": "node throttle-agent.mjs --self-test" },
-  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node throttle-agent.mjs",
+    "test": "node throttle-agent.mjs --self-test && node --test transfer-runtime.test.mjs fresh-runtime.test.mjs"
+  },
+  "engines": {
+    "node": "^22.0.0 || ^24.0.0"
+  },
   "dependencies": {},
   "license": "UNLICENSED",
   "private": true

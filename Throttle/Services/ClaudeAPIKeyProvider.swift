@@ -39,7 +39,7 @@ struct ClaudeAPIKeyProvider: AIProvider {
     let displayName = "Claude API (your key)"
     let kind: AIProviderKind = .claudeAPIKey
 
-    private let endpoint = URL(string: "https://api.anthropic.com/v1/messages")!
+    private let endpoint = URL(string: "https://api.anthropic.com/v1/messages")
     private let anthropicVersion = "2023-06-01"
 
     /// The model used per chat is decided by the user's quality
@@ -56,6 +56,19 @@ struct ClaudeAPIKeyProvider: AIProvider {
 
     var isAvailable: Bool {
         get async { ClaudeAPIKeyStore.read() != nil }
+    }
+
+    private func makeRequest(body: [String: Any], key: String) throws -> URLRequest {
+        guard let endpoint else { throw URLError(.badURL) }
+        var req = URLRequest(url: endpoint)
+        req.httpMethod = "POST"
+        req.timeoutInterval = 60
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(anthropicVersion, forHTTPHeaderField: "anthropic-version")
+        req.setValue(key, forHTTPHeaderField: "x-api-key")
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        return req
     }
 
     func streamChat(
@@ -86,15 +99,7 @@ struct ClaudeAPIKeyProvider: AIProvider {
             priorToolUses: priorToolUses
         )
 
-        var req = URLRequest(url: endpoint)
-        req.httpMethod = "POST"
-        req.timeoutInterval = 60
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(anthropicVersion, forHTTPHeaderField: "anthropic-version")
-        req.setValue(key, forHTTPHeaderField: "x-api-key")
-        req.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-        let request = req
+        let request = try makeRequest(body: body, key: key)
         return AsyncThrowingStream { continuation in
             Task { @Sendable in
                 do {

@@ -60,13 +60,16 @@ struct EdgeSessionListView: View {
                                         Task { await svc.act(s.id, "stop") }
                                     }
                                 } label: { Label("Stop", systemImage: "stop.fill") }
-                                if s.state == "paused" {
+                                if ["paused", "remote", "unverified"].contains(s.state) {
                                     Button {
                                         Haptics.tap(.success)
                                         Task { await svc.act(s.id, "resume") }
                                     } label: { Label("Resume", systemImage: "play.fill") }
                                         .tint(MirrorUI.ok)
-                                } else {
+                                }
+                                // Managed scopes do not yet report an observed pause state.
+                                // Keep both controls reachable instead of inferring one from "remote".
+                                if s.state != "paused" {
                                     Button {
                                         Haptics.tap(.success)
                                         Task { await svc.act(s.id, "pause") }
@@ -113,14 +116,11 @@ struct EdgeSessionListView: View {
     }
 }
 
-/// Start (or resume) a remote session. The optional resume id is the iOS half of
-/// "offload with context" — resume a transcript the box already has (e.g. one the
-/// Mac uploaded) rather than starting cold.
+/// Create a fresh conversation or reconcile its saved, uncertain start.
 private struct NewEdgeSessionSheet: View {
     @Bindable var svc: EdgeSessionsService
     @Environment(\.dismiss) private var dismiss
     @State private var cwd = ""
-    @State private var resumeId = ""
     @State private var busy = false
 
     var body: some View {
@@ -135,17 +135,19 @@ private struct NewEdgeSessionSheet: View {
                 } footer: {
                     Text("A path on the box. It's created if it doesn't exist yet.")
                 }
-                Section {
-                    TextField("Session id to resume (optional)", text: $resumeId)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .font(.system(.body, design: .monospaced))
-                } header: {
-                    Text("Resume with context")
-                } footer: {
-                    Text("Leave empty for a fresh session. Paste an id already offloaded to the box to resume its full conversation.")
+                if let pending = svc.pendingStart {
+                    Section("Start awaiting confirmation") {
+                        Text(pending.project)
+                        Text(pending.endpoint).font(.caption).foregroundStyle(.secondary)
+                        Button("Check original start") { recover(stop: false) }
+                        Button("Stop original start") { recover(stop: true) }
+                    }
+                    .disabled(busy || pending.endpoint != svc.baseURL)
                 }
+                if let issue = svc.startRecoveryError { Text(issue).foregroundStyle(.orange) }
+                if let status = svc.actionStatus { Text(status).foregroundStyle(.secondary) }
             }
+            .task { await svc.refreshPendingStart() }
             .navigationTitle("New session")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -155,19 +157,23 @@ private struct NewEdgeSessionSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(busy ? "Starting…" : "Start") {
                         busy = true
-                        let r = resumeId.trimmingCharacters(in: .whitespaces)
                         Task {
-                            let ok = await svc.start(cwd: cwd.trimmingCharacters(in: .whitespaces),
-                                                     resume: r.isEmpty ? nil : r)
+                            let started = await svc.start(cwd: cwd.trimmingCharacters(in: .whitespaces))
                             busy = false
-                            Haptics.tap(ok ? .success : .error)
-                            if ok { dismiss() }
+                            Haptics.tap(started ? .success : .error)
+                            if started { dismiss() }
                         }
                     }
-                    .disabled(busy || cwd.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(busy || cwd.trimmingCharacters(in: .whitespaces).isEmpty
+                        || svc.pendingStart != nil || svc.startRecoveryError != nil)
                 }
             }
         }
+    }
+
+    private func recover(stop: Bool) {
+        busy = true
+        Task { await svc.resolvePendingStart(stop: stop); busy = false }
     }
 }
 

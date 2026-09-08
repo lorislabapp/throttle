@@ -188,13 +188,27 @@ extension TaskIntegrationService {
     /// queue, distinct from the queue the timeout escalation runs on — so both sides
     /// go through a lock rather than a plain var.
     final class OutputCollector: @unchecked Sendable {
+        static let byteLimit = 64 * 1024
         private let lock = NSLock()
         private var buffer = Data()
+        private var receivedBytes = 0
         private var hasTimedOut = false
         private var eofSeen = false
 
         func append(_ chunk: Data) {
             lock.lock(); defer { lock.unlock() }
+            let (total, overflow) = receivedBytes.addingReportingOverflow(chunk.count)
+            receivedBytes = overflow ? Int.max : total
+            if chunk.count >= Self.byteLimit {
+                buffer = Data(chunk.suffix(Self.byteLimit))
+                return
+            }
+            let retainedCount = Self.byteLimit - chunk.count
+            if buffer.count > retainedCount {
+                // Copy so a slice cannot retain an old allocation. Keep draining
+                // the pipe after reaching the cap instead of blocking the child.
+                buffer = Data(buffer.suffix(retainedCount))
+            }
             buffer.append(chunk)
         }
 
@@ -219,7 +233,21 @@ extension TaskIntegrationService {
 
         var output: String {
             lock.lock(); defer { lock.unlock() }
-            return String(bytes: buffer, encoding: .utf8) ?? ""
+            // A byte boundary can split a UTF-8 scalar. Repair it rather than
+            // discarding the whole diagnostic when decoding fails.
+            // Lossy UTF-8 is deliberate for a subprocess byte stream; a failable
+            // conversion would erase all diagnostics for one partial scalar.
+            // swiftlint:disable:next optional_data_string_conversion
+            var text = String(decoding: buffer, as: UTF8.self)
+            if receivedBytes > buffer.count {
+                text += TaskIntegrationService.outputTruncationNotice
+            }
+            return text
+        }
+
+        var retainedByteCount: Int {
+            lock.lock(); defer { lock.unlock() }
+            return buffer.count
         }
     }
 }

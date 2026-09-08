@@ -19,30 +19,32 @@ import os
 /// on spawn and termination.
 enum LiveAgentRoots {
 
-    private static let lock = OSAllocatedUnfairLock(initialState: Set<Int32>())
+    private static let lock = OSAllocatedUnfairLock(initialState: [Int32: NativeProcessIdentity]())
 
-    static func register(_ pid: Int32) {
-        lock.withLock { _ = $0.insert(pid) }
+    static func register(_ identity: NativeProcessIdentity) {
+        lock.withLock { $0[identity.pid] = identity }
     }
 
     static func unregister(_ pid: Int32) {
-        lock.withLock { _ = $0.remove(pid) }
+        lock.withLock { _ = $0.removeValue(forKey: pid) }
     }
 
     static var current: [Int32] {
-        lock.withLock { Array($0) }
+        lock.withLock { Array($0.keys) }
     }
 
     /// Terminate every registered subtree. Safe to call from any thread, and
     /// deliberately best-effort: this runs on the way out, and a PID that has
     /// already gone is not an error.
     ///
-    /// `SIGTERM`, not `SIGKILL`: `claude` writes its transcript on the way down,
-    /// and the point is to stop the leak, not to corrupt a session the user will
-    /// want to resume.
+    /// Allow a short TERM grace, then escalate only the captured owned scope.
+    /// This emergency path cannot offer the interactive recovery used by quit.
     static func terminateAll() {
-        for pid in current {
-            SystemMemoryService.signalSubtree(rootPid: pid, signal: SIGTERM)
+        let roots = lock.withLock { Array($0.values) }
+        for root in roots {
+            if let scope = OwnedProcessTermination.capture(roots: [root]) {
+                _ = OwnedProcessTermination.stop(scope, grace: 0.2, exitTimeout: 0.2)
+            }
         }
     }
 }

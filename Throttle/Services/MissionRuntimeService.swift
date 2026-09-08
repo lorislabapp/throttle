@@ -477,13 +477,6 @@ enum MissionRuntimeService {
         "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
-    /// A handoff always starts a new native conversation. Resuming a target
-    /// provider's unrelated "newest session" would discard the handoff prompt and
-    /// can accidentally attach this mission to older work in the same checkout.
-    static func shouldDiscoverResumeSession(initialPrompt: String?) -> Bool {
-        initialPrompt?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false
-    }
-
     /// Validate Claude's native identity just as strictly as Codex's. The two CLIs
     /// both use UUID-looking identifiers, so shape validation alone cannot prevent
     /// a Codex UUID from being submitted to `claude --resume`.
@@ -620,13 +613,13 @@ enum MissionRuntimeService {
     /// so this only ever broke on CI. A hand-written scan has no overload set to
     /// be ambiguous about, and it allocates one `Data` per line either way.
     #if DEBUG
-    /// Test seam — the production entry point stays private.
+    /// Test seam for the shared, stable-toolchain splitter.
     nonisolated static func newlineSeparatedChunksForTesting(_ data: Data) -> [Data] {
         newlineSeparatedChunks(data)
     }
     #endif
 
-    nonisolated private static func newlineSeparatedChunks(_ data: Data) -> [Data] {
+    nonisolated static func newlineSeparatedChunks(_ data: Data) -> [Data] {
         var lines: [Data] = []
         var start = data.startIndex
         var index = data.startIndex

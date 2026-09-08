@@ -13,9 +13,9 @@ final class TokoptHookTests: XCTestCase {
         XCTAssertEqual(MCPResponseLedger.serializedByteCount(of: "hello"), 7)
     }
 
-    func test_serializedByteCount_acceptsContainersAndRejectsUnsupportedValues() {
+    func test_serializedByteCount_acceptsContainersAndRejectsUnsupportedValues() throws {
         XCTAssertEqual(MCPResponseLedger.serializedByteCount(of: ["ok": true]), 11)
-        XCTAssertEqual(MCPResponseLedger.serializedByteCount(of: URL(string: "https://example.com")!), 0)
+        XCTAssertEqual(MCPResponseLedger.serializedByteCount(of: try XCTUnwrap(URL(string: "https://example.com"))), 0)
     }
 
     // MARK: - Command detection

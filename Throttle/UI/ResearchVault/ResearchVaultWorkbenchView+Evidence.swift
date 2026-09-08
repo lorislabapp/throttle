@@ -1,0 +1,155 @@
+import AppKit
+import Observation
+import ResearchVaultIngestion
+import ResearchVaultIPCModel
+import ResearchVaultModel
+import ResearchVaultSynthesis
+import ResearchVaultXPCClient
+import ServiceManagement
+import SwiftUI
+import UniformTypeIdentifiers
+
+extension ResearchVaultWorkbenchView {
+    var sourceList: some View {
+        let rows = ResearchVaultWorkbenchProjection.sources(receipts: scopedApprovedReceipts)
+        return Group {
+            if rows.isEmpty {
+                ContentUnavailableView("No approved sources", systemImage: "doc.badge.clock")
+            } else {
+                List(rows) { row in
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(row.source.locator).font(.callout.weight(.semibold))
+                            Spacer()
+                            Text(row.sensitivity.rawValue.uppercased())
+                                .font(.caption2.weight(.bold))
+                        }
+                        Text(
+                            "\(row.projectKey) · \(row.source.kind.rawValue) · observed \(row.ageDays)d ago"
+                        )
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        Text("SHA-256 \(row.source.sha256)")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.tertiary)
+                            .textSelection(.enabled)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
+    }
+
+    var claimList: some View {
+        let rows = ResearchVaultWorkbenchProjection.claims(receipts: scopedApprovedReceipts)
+        return Group {
+            if rows.isEmpty {
+                ContentUnavailableView("No reviewed claims", systemImage: "checkmark.message")
+            } else {
+                List(rows) { row in
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(row.status.rawValue).font(.caption2.weight(.bold))
+                            Text(row.projectKey).font(.caption).foregroundStyle(.secondary)
+                            Spacer()
+                            Text(row.createdAt.formatted()).font(.caption2.monospacedDigit())
+                        }
+                        Text(row.claim).textSelection(.enabled)
+                        Group {
+                            if row.evidenceIDs.isEmpty {
+                                Text("No evidence ID attached")
+                            } else {
+                                Text("Evidence: \(row.evidenceIDs.joined(separator: ", "))")
+                            }
+                        }
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(
+                            row.evidenceIDs.isEmpty ? Color.orange : Color.secondary
+                        )
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
+    }
+
+    var timelineList: some View {
+        let receipts = scopedApprovedReceipts.sorted {
+            if $0.createdAt != $1.createdAt { return $0.createdAt > $1.createdAt }
+            return $0.receiptID < $1.receiptID
+        }
+        return Group {
+            if receipts.isEmpty {
+                ContentUnavailableView("No approved history", systemImage: "clock.arrow.circlepath")
+            } else {
+                List(receipts, id: \.receiptID) { receipt in
+                    let sourceCount = receipt.sources.count
+                    let claimCount = receipt.findings.count
+                    let sensitivity = receipt.sensitivity.rawValue.uppercased()
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(receipt.createdAt.formatted()).font(.caption.monospacedDigit())
+                            Text(receipt.projectKey).font(.caption.weight(.semibold))
+                            Spacer()
+                            Text(String(receipt.contentHash.prefix(12)))
+                                .font(.caption2.monospaced())
+                        }
+                        Text(receipt.question).textSelection(.enabled)
+                        Text("\(sourceCount) sources · \(claimCount) claims · \(sensitivity)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
+    }
+
+    var revisionList: some View {
+        let revisions = ResearchVaultWorkbenchProjection.revisions(
+            receipts: scopedApprovedReceipts
+        )
+        let audit = ResearchVaultWorkbenchProjection.taxonomyAudit(
+            receipts: scopedApprovedReceipts
+        )
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Taxonomy audit").font(.caption.weight(.semibold))
+                Text("\(audit.projectKeys.count) projects")
+                Text("\(audit.sourceKinds.count) source kinds")
+                Text("\(audit.evidenceStatuses.count) evidence states")
+                Spacer()
+                Text("\(audit.orphanEvidenceReferences) orphan references")
+                    .foregroundStyle(
+                        audit.orphanEvidenceReferences == 0 ? Color.secondary : Color.red
+                    )
+            }
+            .font(.caption.monospacedDigit())
+            .padding(12)
+            Divider()
+            if revisions.isEmpty {
+                ContentUnavailableView(
+                    "No revised source detected",
+                    systemImage: "doc.text.magnifyingglass"
+                )
+            } else {
+                List(revisions) { revision in
+                    let versionCount = revision.versions.count
+                    let impactedClaimCount = revision.impactedClaims.count
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(revision.locator).font(.callout.weight(.semibold))
+                        Text("\(versionCount) hashed versions · \(impactedClaimCount) impacted claims")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        ForEach(revision.impactedClaims) { claim in
+                            Text("\(claim.status.rawValue): \(claim.claim)")
+                                .font(.caption)
+                                .textSelection(.enabled)
+                        }
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
+    }
+}

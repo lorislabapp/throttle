@@ -183,6 +183,9 @@ final class SQLCipherReviewStateTests: XCTestCase {
         XCTAssertEqual(reimport, .inserted)
     }
 
+}
+
+extension SQLCipherReviewStateTests {
     private func fullAuthorization() -> VaultAuthorization {
         VaultAuthorization(projectKeys: ["throttle"], maximumSensitivity: .restricted)
     }
@@ -262,6 +265,8 @@ final class SQLCipherReviewStateTests: XCTestCase {
         }
 
         let statements = [
+            "DROP INDEX findings_receipt_order;",
+            "DROP TABLE owner_project_grants;",
             "DROP TRIGGER spaces_after_document_insert;",
             "DROP TRIGGER spaces_after_receipt_insert;",
             "DROP INDEX space_project_lookup;",

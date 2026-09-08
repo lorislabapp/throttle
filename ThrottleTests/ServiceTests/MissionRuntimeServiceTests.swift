@@ -163,12 +163,6 @@ final class MissionRuntimeServiceTests: XCTestCase {
         XCTAssertEqual(MissionRuntimeService.shellQuote("don't $expand"), "'don'\\''t $expand'")
     }
 
-    func testHandoffPromptForcesFreshTargetSession() {
-        XCTAssertTrue(MissionRuntimeService.shouldDiscoverResumeSession(initialPrompt: nil))
-        XCTAssertTrue(MissionRuntimeService.shouldDiscoverResumeSession(initialPrompt: "  "))
-        XCTAssertFalse(MissionRuntimeService.shouldDiscoverResumeSession(initialPrompt: "continue here"))
-    }
-
     func testClaudeIdentityValidationAndPortableContext() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("throttle-claude-context-\(UUID().uuidString)", isDirectory: true)

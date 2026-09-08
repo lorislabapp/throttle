@@ -4,7 +4,7 @@ import ResearchVaultIngestion
 import ResearchVaultIPCModel
 import ResearchVaultModel
 import ResearchVaultReasoning
-@_spi(ReasoningPersistence) import ResearchVaultSQLCipher
+@_spi(ReasoningPersistence) @_spi(OwnerProjectAdministration) import ResearchVaultSQLCipher
 
 public struct ResearchVaultSnapshotImportEvidence: Codable, Equatable, Sendable {
     public let snapshotSHA256: String
@@ -44,10 +44,12 @@ public struct ResearchVaultSourceResource: Codable, Equatable, Sendable {
 }
 
 /// Application-facing boundary shared by Throttle and future package clients.
-/// Authorization is fixed at construction and cannot be widened per request.
+/// Ordinary gateways have a fixed grant. The owner gateway can admit projects
+/// through its separate authenticated operation; receipts never widen grants.
 public actor ResearchVaultGateway {
     private let store: SQLCipherReceiptStore
-    private let authorization: VaultAuthorization
+    private var authorization: VaultAuthorization
+    private let permitsProjectAdmission: Bool
     private var lastReasoningChangeSet: ReasoningChangeSet?
 
     private struct ReasoningChangeSet: Sendable {
@@ -60,6 +62,40 @@ public actor ResearchVaultGateway {
     public init(store: SQLCipherReceiptStore, authorization: VaultAuthorization) {
         self.store = store
         self.authorization = authorization
+        self.permitsProjectAdmission = false
+    }
+
+    private init(ownerStore: SQLCipherReceiptStore, authorization: VaultAuthorization) {
+        self.store = ownerStore
+        self.authorization = authorization
+        self.permitsProjectAdmission = true
+    }
+
+    /// Production uses this factory only for Throttle's authenticated owner and
+    /// first-party query endpoints. No third-party endpoint receives this grant.
+    public static func owner(
+        store: SQLCipherReceiptStore,
+        baseline: VaultAuthorization
+    ) async throws -> ResearchVaultGateway {
+        let projects = try await store.ownerProjectKeys().union(baseline.projectKeys)
+        return ResearchVaultGateway(ownerStore: store, authorization: VaultAuthorization(
+            projectKeys: projects, maximumSensitivity: baseline.maximumSensitivity
+        ))
+    }
+
+    public func admitProjects(
+        _ request: ResearchVaultProjectAdmissionRequest
+    ) async throws -> ResearchVaultProjectAdmissionResponse {
+        guard permitsProjectAdmission else { throw ResearchVaultProjectAdmissionError.ownerRequired }
+        let request = try request.validated()
+        let projects = try await store.admitOwnerProjects(Set(request.projectKeys))
+        // Actor reentrancy cannot replace a later concurrent admission with an
+        // older returned snapshot: the in-memory owner grant only grows here.
+        authorization = VaultAuthorization(
+            projectKeys: authorization.projectKeys.union(projects),
+            maximumSensitivity: authorization.maximumSensitivity
+        )
+        return ResearchVaultProjectAdmissionResponse(projectKeys: request.projectKeys.sorted())
     }
 
     public static let toolDefinitions = [
@@ -423,58 +459,13 @@ public actor ResearchVaultGateway {
         maximumCharacters: Int = 12_000,
         projectKeys: [String]? = nil
     ) async throws -> ResearchVaultContextBundle {
-        let boundedCharacters = min(max(maximumCharacters, 256), 50_000)
-        let scopedAuthorization: VaultAuthorization
-        if let projectKeys {
-            scopedAuthorization = VaultAuthorization(
-                projectKeys: authorization.projectKeys.intersection(projectKeys),
-                maximumSensitivity: authorization.maximumSensitivity
-            )
-        } else {
-            scopedAuthorization = authorization
-        }
-        let hits = try await store.searchDocuments(
-            query: query,
-            limit: min(max(limit, 1), 20),
-            authorization: scopedAuthorization
+        let scopedAuthorization = VaultAuthorization(
+            projectKeys: projectKeys.map { authorization.projectKeys.intersection($0) } ?? authorization.projectKeys,
+            maximumSensitivity: authorization.maximumSensitivity
         )
-        var remaining = boundedCharacters
-        var items: [ResearchVaultContextItem] = []
-        var truncated = false
-        for hit in hits {
-            guard remaining > 0 else { truncated = true; break }
-            let excerpt = String(hit.content.prefix(remaining))
-            let excerptHash = SHA256.hash(data: Data(excerpt.utf8))
-                .map { String(format: "%02x", $0) }
-                .joined()
-            if excerpt.count < hit.content.count { truncated = true }
-            remaining -= excerpt.count
-            items.append(ResearchVaultContextItem(
-                citation: ResearchVaultCitation(
-                    documentID: hit.documentID,
-                    title: hit.title,
-                    libraryPath: hit.libraryPath,
-                    origins: hit.origins,
-                    plaintextSHA256: hit.plaintextSHA256,
-                    chunkOrdinal: hit.ordinal,
-                    locator: hit.libraryPath + "#chunk-" + String(hit.ordinal),
-                    excerptSHA256: excerptHash,
-                    observedAt: hit.observedAt,
-                    sourceModifiedAt: hit.sourceModifiedAt,
-                    evidenceStatus: hit.evidenceStatus,
-                    indexGeneration: hit.indexGeneration
-                ),
-                heading: hit.heading,
-                excerpt: excerpt,
-                score: hit.score
-            ))
-        }
-        return ResearchVaultContextBundle(
-            query: query,
-            projectKeys: scopedAuthorization.projectKeys.sorted(),
-            maximumSensitivity: scopedAuthorization.maximumSensitivity,
-            items: items,
-            truncated: truncated
+        return try await ResearchVaultContextAssembler.context(
+            store: store, authorization: scopedAuthorization, query: query,
+            limit: limit, maximumCharacters: maximumCharacters
         )
     }
 

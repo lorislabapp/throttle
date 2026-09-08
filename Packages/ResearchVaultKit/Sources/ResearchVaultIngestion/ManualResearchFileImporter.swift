@@ -113,18 +113,7 @@ public struct ManualResearchFileImporter: Sendable {
             guard bytes.count == size else {
                 throw ManualResearchFileImportError.unsafeEntry(name)
             }
-            let text: String
-            do {
-                text = try ResearchDocumentTextExtractor.extractText(
-                    from: candidate,
-                    bytes: bytes
-                ).trimmingCharacters(in: .whitespacesAndNewlines)
-            } catch {
-                throw ManualResearchFileImportError.unsupportedOrUnreadable(name)
-            }
-            guard !text.isEmpty, text.count <= Self.maximumExtractedCharacters else {
-                throw ManualResearchFileImportError.unsupportedOrUnreadable(name)
-            }
+            let text = try Self.extractedText(from: candidate, bytes: bytes)
             return ManualDocument(
                 name: name,
                 bytes: bytes,
@@ -157,6 +146,22 @@ public struct ManualResearchFileImporter: Sendable {
             files: importedFiles,
             aggregateSHA256: aggregate
         )
+    }
+
+    private static func extractedText(from url: URL, bytes: Data) throws -> String {
+        let text: String
+        do {
+            text = try ResearchDocumentTextExtractor.extractText(from: url, bytes: bytes)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        } catch ResearchDocumentTextExtractorError.ocrUnavailable(let file, let page) {
+            throw ResearchDocumentTextExtractorError.ocrUnavailable(file, page: page)
+        } catch {
+            throw ManualResearchFileImportError.unsupportedOrUnreadable(url.lastPathComponent)
+        }
+        guard !text.isEmpty, text.count <= maximumExtractedCharacters else {
+            throw ManualResearchFileImportError.unsupportedOrUnreadable(url.lastPathComponent)
+        }
+        return text
     }
 
     private func receipt(

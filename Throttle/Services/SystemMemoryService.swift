@@ -276,21 +276,6 @@ enum SystemMemoryService {
         return out
     }
 
-    /// Guaranteed teardown of a session's process subtree (shell → claude → node):
-    /// SIGTERM the whole tree (deepest first so a parent can't respawn a child),
-    /// then SIGKILL any survivor after a grace period. This is what actually frees
-    /// the RAM — a cooperative Ctrl-D can't kill a busy claude TUI, which is how
-    /// hibernate was orphaning subtrees. Safe no-op for pid ≤ 1.
-    static func killSubtree(rootPid: pid_t, grace: TimeInterval = 1.5) {
-        guard rootPid > 1 else { return }
-        let term = subtreePids(rootPids: [rootPid])
-        for pid in term.reversed() where pid > 1 { kill(pid, SIGTERM) }
-        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + grace) {
-            let survivors = subtreePids(rootPids: [rootPid])
-            for pid in survivors.reversed() where pid > 1 { kill(pid, SIGKILL) }
-        }
-    }
-
     /// Freeze (SIGSTOP) or resume (SIGCONT) a session's whole subtree — a
     /// reversible pause that stops token burn without killing state. User-
     /// triggered only (the circuit-breaker's safe half). Deepest-first on stop so

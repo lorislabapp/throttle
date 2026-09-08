@@ -82,7 +82,7 @@ jobs:
           fi
 
       - name: Enforce SwiftLint ratchet
-        run: swiftlint lint --strict
+        run: scripts/verify-swiftlint.sh
 
       # The plugin/macro validation flags mirror scripts/build-dmg.sh. mlx-swift
       # ships a `CudaBuild` build-tool plugin, and Xcode refuses to run an
@@ -163,6 +163,7 @@ jobs:
           # either only shows up mid-release, after notarization.
           node --check scripts/publish-release.mjs
           python3 -m py_compile scripts/stage-release.py
+          python3 scripts/tests/test_verify_public_release.py
           # stage-release must keep reading the LIVE site rather than the website
           # checkout, which drifts behind what is actually served.
           grep -q 'https://lorislab.fr/throttle' scripts/stage-release.py

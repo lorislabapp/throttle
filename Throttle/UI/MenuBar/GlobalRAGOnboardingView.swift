@@ -6,18 +6,18 @@ struct GlobalRAGOnboardingView: View {
     let onRequestClose: (() -> Void)?
     let onComplete: (String) -> Void
 
-    @Environment(\.dismiss) private var dismiss
-    @State private var step = 0
-    @State private var roots = GlobalRAGOnboardingService.suggestedRoots()
-    @State private var projects: [GlobalRAGOnboardingProject] = []
-    @State private var selectedProjectID: String?
-    @State private var isScanning = false
-    @State private var isSaving = false
-    @State private var aiInFlight: Set<String> = []
-    @State private var status = ""
-    @State private var localAIStatus = String(localized: "Checking local models…")
-    @State private var useLocalAI = true
-    @State private var installMCP = TranscriptMemoryInstaller.isInstalled()
+    @Environment(\.dismiss) var dismiss
+    @State var step = 0
+    @State var roots = AppDelegate.isIsolatedHost ? [] : GlobalRAGOnboardingService.suggestedRoots()
+    @State var projects: [GlobalRAGOnboardingProject] = []
+    @State var selectedProjectID: String?
+    @State var isScanning = false
+    @State var isSaving = false
+    @State var aiInFlight: Set<String> = []
+    @State var status = ""
+    @State var localAIStatus = String(localized: "Checking local models…")
+    @State var useLocalAI = true
+    @State var installMCP = !AppDelegate.isIsolatedHost && TranscriptMemoryInstaller.isInstalled()
 
     init(
         canInstallMCP: Bool,
@@ -60,6 +60,7 @@ struct GlobalRAGOnboardingView: View {
         .accessibilityIdentifier("global-rag-onboarding")
         .interactiveDismissDisabled(isSaving)
         .task {
+            guard !AppDelegate.isIsolatedHost else { return }
             if !canInstallMCP { installMCP = false }
             localAIStatus = await GlobalRAGOnboardingService.localAIStatus()
         }
@@ -318,106 +319,6 @@ struct GlobalRAGOnboardingView: View {
         case 2: return projects.contains(where: \.isIncluded)
         case 3: return projects.filter(\.isIncluded).allSatisfy { !$0.displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         default: return true
-        }
-    }
-
-    private func advance() {
-        switch step {
-        case 1:
-            step = 2
-            scan()
-        case 4:
-            finish()
-        default:
-            if step == 3 { status = "" }
-            step += 1
-        }
-    }
-
-    private func chooseRoots() {
-        let panel = NSOpenPanel()
-        panel.title = String(localized: "Choose project folders")
-        panel.prompt = String(localized: "Add")
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = true
-        guard panel.runModal() == .OK else { return }
-        for url in panel.urls where !roots.contains(url.standardizedFileURL.path) {
-            roots.append(url.standardizedFileURL.path)
-        }
-    }
-
-    private func scan() {
-        guard !isScanning else { return }
-        isScanning = true
-        status = ""
-        let selectedRoots = roots
-        Task {
-            let found = await Task.detached(priority: .utility) {
-                GlobalRAGOnboardingService.scan(roots: selectedRoots)
-            }.value
-            projects = found
-            selectedProjectID = found.first?.id
-            status = String(localized: "Found \(found.count) repositories locally. Nothing was modified.")
-            isScanning = false
-        }
-    }
-
-    private func suggestLocally(index: Int) {
-        let project = projects[index]
-        aiInFlight.insert(project.id)
-        Task {
-            do {
-                let (proposal, backend) = try await GlobalRAGOnboardingService.localProposal(for: project)
-                guard let current = projects.firstIndex(where: { $0.id == project.id }) else { return }
-                GlobalRAGOnboardingService.apply(proposal, to: &projects[current], backend: backend)
-            } catch {
-                guard let current = projects.firstIndex(where: { $0.id == project.id }) else { return }
-                projects[current].localAINote = error.localizedDescription
-                projects[current].localAIBackend = String(localized: "Rejected local result")
-            }
-            aiInFlight.remove(project.id)
-        }
-    }
-
-    private func finish() {
-        let profile = GlobalRAGOnboardingService.profile(roots: roots, projects: projects)
-        let shouldManageMCP = canInstallMCP
-        let desiredMCPState = installMCP
-        isSaving = true
-        Task {
-            let failure: String? = await Task.detached(priority: .utility) {
-                do {
-                    try GlobalRAGService.saveProfile(profile)
-                    _ = GlobalRAGService.buildSnapshot(profile: profile)
-                    if shouldManageMCP {
-                        if desiredMCPState { _ = try TranscriptMemoryInstaller.install() }
-                        else if TranscriptMemoryInstaller.isInstalled() { try TranscriptMemoryInstaller.remove() }
-                    }
-                    return nil
-                } catch {
-                    return error.localizedDescription
-                }
-            }.value
-            isSaving = false
-            if let failure {
-                status = String(localized: "Could not finish setup: \(failure)")
-            } else {
-                UserDefaults.standard.set(true, forKey: GlobalRAGOnboardingService.completedKey)
-                let message = shouldManageMCP && desiredMCPState
-                    ? String(localized: "Global RAG configured for \(profile.projects.count) projects. Restart Claude Code and Codex.")
-                    : String(localized: "Global RAG profile created for \(profile.projects.count) projects.")
-                onComplete(message)
-                close()
-            }
-        }
-    }
-
-    private func close() {
-        if let onRequestClose {
-            onRequestClose()
-        } else {
-            dismiss()
         }
     }
 
