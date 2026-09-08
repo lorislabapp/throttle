@@ -17,7 +17,11 @@ errors="$fixture/stderr.log"
 "$product_directory/research-vault-agent-hook" --inbox "$fixture/inbox" < "$request" > "$second" 2>> "$errors"
 
 test ! -s "$errors"
-test "$(find "$fixture/inbox" -type f -name '*.research-receipt.json' | wc -l | tr -d ' ')" = "1"
+# Capture traversal before counting: a partial one-file listing followed by a
+# find error must fail, rather than becoming a successful idempotence check.
+find "$fixture/inbox" -type f -name '*.research-receipt.json' -print > "$fixture/receipts.list"
+receipt_count=$(wc -l < "$fixture/receipts.list")
+test "$receipt_count" -eq 1
 jq -e '.status == "candidate_written" and (.receiptID | length) == 36' "$first" >/dev/null
 jq -e '.status == "already_present" and (.receiptID | length) == 36' "$second" >/dev/null
 test "$(jq -r .receiptID "$first")" = "$(jq -r .receiptID "$second")"

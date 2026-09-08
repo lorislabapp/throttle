@@ -103,7 +103,7 @@ struct RemoteTerminalView: UIViewRepresentable {
             // SwiftTerm 1.14's reset retains its alternate buffer. Retire the
             // entire view/engine, including scrollback and partial parser state.
             terminal?.isHidden = true
-            terminal?.resignFirstResponder()
+            _ = terminal?.resignFirstResponder()
             terminal?.terminalDelegate = nil
             terminal = nil
             cachedView = nil

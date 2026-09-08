@@ -109,7 +109,8 @@ final class OwnedProcessTerminationTests: XCTestCase {
         for descriptor: Int32 in 0...2 {
             posix_spawn_file_actions_addopen(&actions, descriptor, "/dev/null", O_RDWR, 0)
         }
-        let strings = ["sh", "-c", command].map { strdup($0) }
+        let words: [String] = ["sh", "-c", command]
+        let strings = words.map { word in word.withCString { strdup($0) } }
         defer { strings.forEach { free($0) } }
         var arguments = strings + [nil]
         var environment = [strdup("PATH=/usr/bin:/bin"), nil]
