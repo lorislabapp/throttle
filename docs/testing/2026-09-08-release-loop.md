@@ -150,6 +150,38 @@ Le harnais a d'abord révélé une course dans le test (CONT envoyé avant l'arr
 du shell → stoppé pour toujours) ; le test attend désormais `SSTOP`. La suite
 XCTest complète n'a pas été exécutée localement : CI n°5.
 
+## CI n°5 — cinquième lot (run 34274128067, HEAD `fc4dde9`)
+
+- `ios-tests` **PASS** : le timeout du run n°4 était bien l'infrastructure.
+  `vault-tests` Debug et Release **PASS** (troisième échantillon vert pour
+  `unknownTool`). `quality`, `validator-evidence`, `visionos-build` **PASS**.
+- `macos-tests` **FAIL** : 646 cas, **1** échec. Le correctif produit est
+  confirmé : chaque arrêt Cockpit est désormais confirmé (`testModelStop…`
+  0,13 s contre 5,7 s ; `testUnknownOwner…` 0,06 s contre 2,1 s ; le nouveau
+  test zombie passe). L'échec restant est dans `assertGone` du test
+  `testHibernate…` : `errno 1 ≠ ESRCH` sur le groupe — le shell sorti n'est
+  pas encore récolté au moment de l'assertion. Ce n'est plus l'oracle produit
+  qui échoue, mais l'assertion de test, plus stricte que lui.
+- Constat annexe, vérifié dans SwiftTerm 1.14.0 (`LocalProcess.deinit`) :
+  le moniteur de sortie est annulé **sans** `waitpid` quand la vue est
+  libérée. Avec l'oracle corrigé, `hibernate()` pouvait libérer le terminal
+  avant la récolte et laisser un zombie par session hibernée.
+
+### Sixième lot
+
+`hibernate()` attend maintenant, après confirmation et avant de libérer les
+vues, que plus aucune racine ne soit un zombie (`awaitReaping`, borne 1 s,
+`Task.sleep` sur l'acteur principal pour laisser courir le gestionnaire de
+SwiftTerm). La récolte reste à SwiftTerm ; aucun `waitpid` produit. Le test
+`testHibernate…` vérifie explicitement que les groupes sont oubliés du noyau
+(ESRCH) après hibernation — preuve de non-fuite — et `assertGone` tolère un
+groupe qui ne subsiste que par des zombies, en nommant ses occupants.
+`holdsOnlyZombies` devient interne pour être partagé par le test.
+
+Preuves locales : `swiftc -typecheck` des fichiers produit autonomes,
+SwiftLint 0.63.2 exit 0, `git diff --check` propre. `CockpitTab+Runtime.swift`
+n'est pas typecheckable isolément ; CI n°6.
+
 ## Conservation et verdict
 
 Les preuves compactes sont dans [evidence/2026-09-08-release-loop](evidence/2026-09-08-release-loop).

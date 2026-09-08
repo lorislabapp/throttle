@@ -117,6 +117,14 @@ extension CockpitTab {
         term.send(txt: "cd \(quoted) && clear\n")
     }
 
+    /// Yields to the main queue until no root is still an unreaped zombie.
+    static func awaitReaping(of roots: [NativeProcessIdentity], within limit: Duration = .seconds(1)) async {
+        let deadline = ContinuousClock.now + limit
+        while roots.contains(where: { OwnedProcessTermination.isZombie($0.pid) }), ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+    }
+
     /// Capture both process trees before any signal and retain their terminals
     /// until the captured scope has exited. Competing actions cannot replace it.
     /// Unknown ownership remains a visible recovery state, never an exit receipt.
@@ -147,6 +155,11 @@ extension CockpitTab {
             if case .failed(let issue) = outcome { stopIssue = issue }
             return false
         }
+        // SwiftTerm reaps its exited child from the main queue and cancels that
+        // monitor without reaping when the view is released. Let the reap run
+        // before dropping the views, so an exited shell does not linger as a
+        // zombie; the bound only limits how long a starved queue can hold us.
+        await Self.awaitReaping(of: roots)
         for root in roots { LiveAgentRoots.unregister(root.pid) }
         if sessionId == nil { requiresNativePicker = runtime.usesTranscript }
         terminal = nil

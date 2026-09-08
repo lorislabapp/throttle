@@ -147,7 +147,7 @@ enum OwnedProcessTermination {
 
     /// True only when the group still exists solely because of unreaped zombies.
     /// An empty or truncated listing is unknown and never certifies the group.
-    private static func onlyZombies(in group: pid_t) -> Bool {
+    static func holdsOnlyZombies(_ group: pid_t) -> Bool {
         var pids = [pid_t](repeating: 0, count: 512)
         let capacity = pids.count * MemoryLayout<pid_t>.size
         let bytes = pids.withUnsafeMutableBytes {
@@ -166,7 +166,7 @@ enum OwnedProcessTermination {
             scopeChanged = scopeChanged || hasGroupDrift(scope)
             let membersGone = scope.members.allSatisfy { !stillRunning($0.identity) }
             let groupsGone = scope.groups.allSatisfy { group in
-                (kill(-group, 0) == -1 && errno == ESRCH) || onlyZombies(in: group)
+                (kill(-group, 0) == -1 && errno == ESRCH) || holdsOnlyZombies(group)
             }
             if membersGone && groupsGone { return true }
             if ProcessInfo.processInfo.systemUptime >= deadline { return false }

@@ -42,6 +42,9 @@ final class CockpitLifecycleTests: XCTestCase {
         XCTAssertNil(tab.sideShellIdentity)
         XCTAssertNil(tab.pauseReason)
         XCTAssertEqual(tab.sessionId, identity)
+        // Releasing the views must not have leaked the exited shells as zombies:
+        // hibernate waits for SwiftTerm's reap, so the kernel forgets the groups.
+        try await eventually { reaped(primary) && reaped(side) }
         assertGone(primary)
         assertGone(side)
         assertAlive(unrelated)
@@ -259,6 +262,11 @@ final class CockpitLifecycleTests: XCTestCase {
         }.joined(separator: ", ")
     }
 
+    /// The kernel no longer lists any captured group: every member was reaped.
+    private func reaped(_ fixture: CockpitTerminalFixture) -> Bool {
+        fixture.scope.groups.allSatisfy { kill(-$0, 0) == -1 && errno == ESRCH }
+    }
+
     private func assertGone(_ fixture: CockpitTerminalFixture) {
         for member in fixture.scope.members {
             let current = NativeProcessIdentity.capture(member.identity.pid)
@@ -267,9 +275,11 @@ final class CockpitLifecycleTests: XCTestCase {
         for group in fixture.scope.groups {
             let result = kill(-group, 0), error = errno
             // Assertion/reporting code may change errno; retain the syscall's
-            // actual result before calling into XCTest.
-            XCTAssertEqual(result, -1, "Captured process group \(group) still exists")
-            XCTAssertEqual(error, ESRCH, "Captured process group \(group) exit is unconfirmed")
+            // actual result before calling into XCTest. A group that survives
+            // only through zombies has exited; its reap belongs to the parent.
+            XCTAssertEqual(result, -1, "Captured process group \(group) still exists: " + occupants(of: group))
+            XCTAssertTrue(error == ESRCH || OwnedProcessTermination.holdsOnlyZombies(group),
+                          "Captured process group \(group) exit is unconfirmed: " + occupants(of: group))
         }
     }
 }
