@@ -182,6 +182,38 @@ Preuves locales : `swiftc -typecheck` des fichiers produit autonomes,
 SwiftLint 0.63.2 exit 0, `git diff --check` propre. `CockpitTab+Runtime.swift`
 n'est pas typecheckable isolément ; CI n°6.
 
+## CI n°6 — sixième lot (run 34276972984, HEAD `75d1c53`)
+
+- Vault Debug/Release, visionOS, quality, validator-evidence **PASS**.
+- `macos-tests` **FAIL** : 646 cas, 1 échec, toujours `testHibernate…`, cette
+  fois sur la nouvelle preuve de non-fuite (`eventually { reaped }`, 3 s) :
+  après 1 s d'attente cédée à la file principale puis 3 s supplémentaires, le
+  shell sorti n'était toujours pas récolté par SwiftTerm sur le runner. Les six
+  `OwnedProcessTerminationTests` passent (zombie compris) et les cinq autres
+  parcours Cockpit passent en 0,06–0,28 s : l'oracle est bon, la récolte par
+  SwiftTerm ne peut simplement pas être attendue sur une file affamée.
+- `ios-tests` **FAIL** `command_timeout_or_interruption`, 2ᵉ fois sur 3 runs.
+  Reçu : `build-for-testing` 155 s (ok) puis `test-without-building
+  -enumerate-tests` **expiré à 300 s** (exit 124). Le runner froid démarre le
+  simulateur à l'intérieur de cette étape.
+
+### Septième lot
+
+- `hibernate()` : après l'attente cédée (1 s), Throttle récolte lui-même
+  (`waitpid` `WNOHANG`) toute racine encore zombie **dont il est le parent
+  direct**, puis libère les vues. Les deux appelants de `waitpid` — SwiftTerm
+  et ce repli — s'exécutent sur l'acteur principal, donc jamais en concurrence ;
+  la libération qui suit annule définitivement le moniteur de SwiftTerm. Cela
+  remplace l'énoncé « aucun waitpid » du cinquième lot, avec cette analyse de
+  course. Le test de non-fuite est inchangé.
+- Vérificateur iOS : démarrage explicite et reçu du simulateur
+  (`xcrun simctl bootstatus <udid> -b`, 600 s) avant `xcodebuild`, et budget
+  d'énumération porté de 300 à 600 s au vu des durées observées. Aucun oracle
+  de test modifié ; 149/149 tests Python.
+
+Preuves locales : `swiftc -typecheck` des fichiers produit autonomes,
+SwiftLint 0.63.2 exit 0, `git diff --check` propre. CI n°7.
+
 ## Conservation et verdict
 
 Les preuves compactes sont dans [evidence/2026-09-08-release-loop](evidence/2026-09-08-release-loop).

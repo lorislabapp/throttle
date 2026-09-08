@@ -344,6 +344,11 @@ def main():
             inventory_path = evidence / "simulators.json"
             run_command(["xcrun", "simctl", "list", "devices", "available", "--json"], ROOT, log, 120, commands, inventory_path)
             destination, simulator = simulator_destination(read_json(inventory_path), args.destination)
+            # A cold hosted runner boots the simulator lazily inside the first
+            # xcodebuild step, which exceeded the enumeration budget on two of
+            # three runs (0 cases, log cut before compilation). Boot it as its
+            # own receipted step; `bootstatus -b` boots when needed and waits.
+            run_command(["xcrun", "simctl", "bootstatus", simulator["udid"], "-b"], ROOT, log, 600, commands)
         else:
             destination = args.destination or "platform=macOS,arch=" + platform.machine()
         # Generate before recording sources: the receipt covers the actual project.
@@ -354,7 +359,7 @@ def main():
         run_command(base + ["build-for-testing"], ROOT, log, 2100, commands)
         run_command(base + ["test-without-building", "-enumerate-tests", "-test-enumeration-style", "flat",
                            "-test-enumeration-format", "json", "-test-enumeration-output-path",
-                           str(evidence / "enumeration.json")], ROOT, log, 300, commands)
+                           str(evidence / "enumeration.json")], ROOT, log, 600, commands)
         expected = inventory_from_enumeration(read_json(evidence / "enumeration.json"), scheme=args.scheme)
         free = shutil.disk_usage(output).free
         if free < 3 * 1024 ** 3:

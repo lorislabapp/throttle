@@ -117,11 +117,18 @@ extension CockpitTab {
         term.send(txt: "cd \(quoted) && clear\n")
     }
 
-    /// Yields to the main queue until no root is still an unreaped zombie.
+    /// Yields to the main queue so SwiftTerm's exit monitor can reap an exited
+    /// root, then reaps any still-unreaped direct child itself. Both `waitpid`
+    /// callers run on the main actor, so they can never race; the views are
+    /// released right after, which cancels SwiftTerm's monitor for good.
     static func awaitReaping(of roots: [NativeProcessIdentity], within limit: Duration = .seconds(1)) async {
         let deadline = ContinuousClock.now + limit
         while roots.contains(where: { OwnedProcessTermination.isZombie($0.pid) }), ContinuousClock.now < deadline {
             try? await Task.sleep(for: .milliseconds(10))
+        }
+        for root in roots where root.parentPID == getpid() && OwnedProcessTermination.isZombie(root.pid) {
+            var status: Int32 = 0
+            _ = waitpid(root.pid, &status, WNOHANG)
         }
     }
 
@@ -156,9 +163,9 @@ extension CockpitTab {
             return false
         }
         // SwiftTerm reaps its exited child from the main queue and cancels that
-        // monitor without reaping when the view is released. Let the reap run
-        // before dropping the views, so an exited shell does not linger as a
-        // zombie; the bound only limits how long a starved queue can hold us.
+        // monitor without reaping when the view is released. Let that reap run
+        // first; on a starved queue, reap our own exited child before dropping
+        // the views, so no hibernated session leaves a zombie behind.
         await Self.awaitReaping(of: roots)
         for root in roots { LiveAgentRoots.unregister(root.pid) }
         if sessionId == nil { requiresNativePicker = runtime.usesTranscript }
