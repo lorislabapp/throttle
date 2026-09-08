@@ -19,6 +19,7 @@ final class TerminalLockState {
     private let relockAfterNanoseconds: UInt64
     private let authenticationOverride: (@MainActor () async -> Bool)?
     private var relockTask: Task<Void, Never>?
+    private var authorizationGeneration: UInt64 = 0
 
     init(
         relockAfterNanoseconds: UInt64 = 5 * 60 * 1_000_000_000,
@@ -34,8 +35,11 @@ final class TerminalLockState {
     /// On success, unlock and start the idle countdown.
     @discardableResult
     func unlock() async -> Bool {
+        let generation = authorizationGeneration
         if let authenticationOverride {
-            guard await authenticationOverride() else {
+            let authenticated = await authenticationOverride()
+            guard generation == authorizationGeneration, !Task.isCancelled else { return false }
+            guard authenticated else {
                 lastError = "Authentication was not confirmed."
                 return false
             }
@@ -53,8 +57,10 @@ final class TerminalLockState {
                 .deviceOwnerAuthentication,
                 localizedReason: "Unlock to type into this remote session"
             )
+            guard generation == authorizationGeneration, !Task.isCancelled else { return false }
             guard authenticated else { lastError = "Authentication was not confirmed."; return false }
         } catch {
+            guard generation == authorizationGeneration, !Task.isCancelled else { return false }
             // User cancel / system cancel are not errors worth shouting about.
             lastError = (error as? LAError)?.code == .userCancel ? nil : error.localizedDescription
             return false
@@ -64,6 +70,7 @@ final class TerminalLockState {
     }
 
     func lock() {
+        authorizationGeneration &+= 1
         relockTask?.cancel()
         relockTask = nil
         unlocked = false

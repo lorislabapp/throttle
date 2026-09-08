@@ -15,21 +15,56 @@ final class MirrorStore {
     var lastError: String?
 
     private static let historyCap = 1500
-    private static let historyKey = "ThrottleMirrorHistoryV1"
+    static let historyKey = "ThrottleMirrorHistoryV1"
 
-    private var defaults: UserDefaults {
-        UserDefaults(suiteName: MirrorStorage.appGroupID) ?? .standard
+    private let defaults: UserDefaults
+    private let historyEncoder: @Sendable ([ThrottleMirrorSnapshot]) async -> Data?
+    private let flushDelayNanoseconds: UInt64
+    private let reloadWidgets: @MainActor () -> Void
+    private let didIngest: @MainActor (ThrottleMirrorSnapshot) -> Void
+    private let didScrub: @MainActor () -> Void
+    private var persistenceGeneration: UInt64 = 0
+
+    init(defaults: UserDefaults = CompanionRuntime.defaults,
+         historyEncoder: @escaping @Sendable ([ThrottleMirrorSnapshot]) async -> Data? = { snapshots in
+             await Task.detached { try? JSONEncoder.iso.encode(snapshots) }.value
+         },
+         flushDelayNanoseconds: UInt64 = 3_000_000_000,
+         reloadWidgets: @escaping @MainActor () -> Void = {
+             if !CompanionRuntime.isTesting { WidgetCenter.shared.reloadAllTimelines() }
+         },
+         didIngest: @escaping @MainActor (ThrottleMirrorSnapshot) -> Void = MirrorStore.updateSurfaces,
+         didScrub: @escaping @MainActor () -> Void = MirrorStore.clearSurfaces) {
+        self.defaults = defaults
+        self.historyEncoder = historyEncoder
+        self.flushDelayNanoseconds = flushDelayNanoseconds
+        self.reloadWidgets = reloadWidgets
+        self.didIngest = didIngest
+        self.didScrub = didScrub
+        // Persisted cache stays undisclosed until CloudKit proves its owner.
+        history = []
+        defaults.removeObject(forKey: MirrorWidgetPublication.snapshotKey)
+        reloadWidgets()
     }
 
-    private init() {
-        history = []
-        history = loadHistory()
+    func restoreVerifiedCache() {
+        guard latest == nil, history.isEmpty else { return }
+        history = Array(loadHistory().suffix(Self.historyCap)).map(\.withoutSecrets)
         latest = history.last
+        if let data = defaults.data(forKey: MirrorStorage.latestSnapshotKey),
+           let saved = try? ThrottleMirrorSnapshot.decoded(from: data),
+           latest == nil || saved.publishedAt > (latest?.publishedAt ?? .distantPast) {
+            latest = saved.withoutSecrets
+            history.append(saved.withoutSecrets)
+            history = Array(history.suffix(Self.historyCap))
+        }
+        if let latest { persistLatest(latest) }
+        reloadWidgets()
     }
 
     /// Accept a freshly fetched snapshot. Ignores stale/duplicate (older or same
     /// publish time), appends to history, updates the widget.
-    private var historyFlush: Task<Void, Never>?
+    private(set) var historyFlush: Task<Void, Never>?
 
     func ingest(_ snap: ThrottleMirrorSnapshot) {
         if let cur = latest, snap.publishedAt <= cur.publishedAt { return }
@@ -40,11 +75,8 @@ final class MirrorStore {
         }
         persistLatest(snap)          // tiny blob, hot path — the widget needs it now
         scheduleHistoryFlush()       // large array — off-main, debounced
-        WidgetCenter.shared.reloadAllTimelines()
-        ThresholdNotifier.shared.evaluate(snap)
-        #if os(iOS)
-        ThrottleLiveActivity.sync(snap)   // keep the Dynamic Island / lock-screen banner in step
-        #endif
+        reloadWidgets()
+        didIngest(snap)
     }
 
     /// Latest snapshot only — a single small blob, cheap enough to write synchronously
@@ -56,6 +88,9 @@ final class MirrorStore {
         // backed up. The widget needs the numbers, never the secrets.
         if let data = try? snap.withoutSecrets.encoded() {
             defaults.set(data, forKey: MirrorStorage.latestSnapshotKey)
+            defaults.set(data, forKey: MirrorWidgetPublication.snapshotKey)
+        } else {
+            defaults.removeObject(forKey: MirrorWidgetPublication.snapshotKey)
         }
     }
 
@@ -64,12 +99,17 @@ final class MirrorStore {
     /// Debounce to 3s and encode off-main; the on-device charts don't need it instant.
     private func scheduleHistoryFlush() {
         historyFlush?.cancel()
+        persistenceGeneration &+= 1
+        let generation = persistenceGeneration
         let snapshot = history.map(\.withoutSecrets)
+        let encode = historyEncoder
+        let delay = flushDelayNanoseconds
         historyFlush = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            try? await Task.sleep(nanoseconds: delay)
             guard !Task.isCancelled else { return }
-            let data = await Task.detached { try? JSONEncoder.iso.encode(snapshot) }.value
-            guard let data, let self else { return }
+            let data = await encode(snapshot)
+            guard !Task.isCancelled, let data, let self,
+                  self.persistenceGeneration == generation else { return }
             self.defaults.set(data, forKey: Self.historyKey)
         }
     }
@@ -78,12 +118,32 @@ final class MirrorStore {
     /// person's usage + 1500-entry history (also read by the widget) never lingers
     /// in the shared App Group for a different iCloud user on the same device.
     func scrub() {
+        persistenceGeneration &+= 1
         historyFlush?.cancel()
+        historyFlush = nil
+        didScrub()
         latest = nil
         history = []
+        lastError = nil
         defaults.removeObject(forKey: MirrorStorage.latestSnapshotKey)
+        defaults.removeObject(forKey: MirrorWidgetPublication.snapshotKey)
         defaults.removeObject(forKey: Self.historyKey)
-        WidgetCenter.shared.reloadAllTimelines()
+        reloadWidgets()
+    }
+
+    private static func updateSurfaces(_ snap: ThrottleMirrorSnapshot) {
+        ThresholdNotifier.shared.evaluate(snap)
+        #if os(iOS)
+        ThrottleLiveActivity.sync(snap)
+        #endif
+    }
+
+    private static func clearSurfaces() {
+        PeerClient.shared.stop()
+        ThresholdNotifier.shared.scrub()
+        #if os(iOS)
+        ThrottleLiveActivity.end()
+        #endif
     }
 
     private func loadHistory() -> [ThrottleMirrorSnapshot] {

@@ -5,19 +5,17 @@ import UIKit
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        guard !CompanionRuntime.isTesting else { return true }
         application.registerForRemoteNotifications()
         Task { await CloudKitSubscriber.shared.bootstrap() }
-        // Cover an offline cold launch: if a prior snapshot (with the pairing secret)
-        // is already persisted, start the LAN link now without waiting for CloudKit.
-        Task { @MainActor in
-            if let latest = MirrorStore.shared.latest { PeerClient.shared.syncPairing(from: latest) }
-        }
+        // Only the subscriber may authorize pairing after proving the account.
         return true
     }
 
     func application(_ application: UIApplication,
                      didReceiveRemoteNotification userInfo: [AnyHashable: Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        guard !CompanionRuntime.isTesting else { completionHandler(.noData); return }
         // Silent push → refresh the mirror, then report the ACCURATE result. Always
         // reporting .newData risks APNs throttling the app's background pushes.
         let handler = SendableBox(completionHandler)

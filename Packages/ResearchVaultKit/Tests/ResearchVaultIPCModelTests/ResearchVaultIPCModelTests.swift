@@ -54,4 +54,36 @@ struct ResearchVaultIPCModelTests {
                 .validated()
         }
     }
+
+    @Test("owner-admitted project key lengths remain queryable after wire decoding")
+    func projectKeyBoundaryRoundTrip() throws {
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+        for length in [64, 65, 128] {
+            let key = String(repeating: "a", count: length)
+            let admission = try decoder.decode(
+                ResearchVaultProjectAdmissionRequest.self,
+                from: encoder.encode(ResearchVaultProjectAdmissionRequest(projectKeys: [key]))
+            ).validated()
+            let search = try decoder.decode(
+                ResearchVaultSearchRequest.self,
+                from: encoder.encode(ResearchVaultSearchRequest(query: "evidence", projectKeys: [key]))
+            ).validated()
+            #expect(admission.projectKeys == [key])
+            #expect(search.projectKeys == admission.projectKeys)
+        }
+        let tooLong = String(repeating: "a", count: 129)
+        #expect(throws: ResearchVaultProjectAdmissionError.invalidProjects) {
+            try decoder.decode(
+                ResearchVaultProjectAdmissionRequest.self,
+                from: encoder.encode(ResearchVaultProjectAdmissionRequest(projectKeys: [tooLong]))
+            ).validated()
+        }
+        #expect(throws: ResearchVaultIPCValidationError.invalidProjectScope) {
+            try decoder.decode(
+                ResearchVaultSearchRequest.self,
+                from: encoder.encode(ResearchVaultSearchRequest(query: "evidence", projectKeys: [tooLong]))
+            ).validated()
+        }
+    }
 }

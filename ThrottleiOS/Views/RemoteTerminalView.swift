@@ -23,19 +23,18 @@ struct RemoteTerminalView: UIViewRepresentable {
         if let existing = context.coordinator.cachedView { return existing }
         // ResigningTerminalView: see EdgeTerminalView — drops firstResponder when
         // leaving the window so the keyboard bar can't stick across bottom tabs.
-        let tv = ResigningTerminalView(frame: .zero,
-                                       font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular))
+        let terminalView = context.coordinator.terminalView()
         // Never forward mouse events to the remote PTY. When a TUI (claude) turns on
         // any-event mouse tracking (`ESC[?1003h`) and exits without resetting it,
         // SwiftTerm keeps mouseMode on and every touch/scroll emits an SGR motion
         // report into the shared session — echoed as `<btn>;<col>;<row>M` garbage that
         // shows here AND on the Mac cockpit mirroring the same tmux session. Matches the
         // Mac fix in DroppableTerminalView (c6ae798).
-        tv.allowMouseReporting = false
-        TerminalRendering.applyOpaqueBackground(tv)
-        tv.terminalDelegate = context.coordinator
-        context.coordinator.terminal = tv
-        context.coordinator.cachedView = tv
+        terminalView.allowMouseReporting = false
+        TerminalRendering.applyOpaqueBackground(terminalView)
+        terminalView.terminalDelegate = context.coordinator
+        context.coordinator.terminal = terminalView
+        context.coordinator.cachedView = terminalView
 
         // Accessory-bar keys go through the same lock gate as typed input — the LAN
         // terminal types straight into the live Mac session, the most sensitive path.
@@ -45,17 +44,20 @@ struct RemoteTerminalView: UIViewRepresentable {
             PeerClient.shared.sendTerminalInput(bytes)
         }
 
-        PeerClient.shared.attachTerminal(
+        context.coordinator.attachment = PeerClient.shared.attachTerminal(
             tabID: sessionId,
             onOutput: { [weak coord = context.coordinator] bytes in
-                Task { @MainActor in coord?.terminal?.feed(byteArray: bytes[...]) }
+                coord?.terminal?.feed(byteArray: bytes[...])
             },
             onResize: { [weak coord = context.coordinator] cols, rows in
                 // Adopt the Mac's authoritative geometry so wrapping matches.
-                Task { @MainActor in coord?.terminal?.getTerminal().resize(cols: cols, rows: rows) }
+                coord?.terminal?.getTerminal().resize(cols: cols, rows: rows)
+            },
+            onInvalidated: { [weak coord = context.coordinator] in
+                coord?.invalidateTerminal()
             })
 
-        return tv
+        return terminalView
     }
 
     // Focus is SwiftTerm's tap-to-focus, as in 404. Raising it ourselves only when
@@ -68,8 +70,10 @@ struct RemoteTerminalView: UIViewRepresentable {
 
     static func dismantleUIView(_ uiView: TerminalView, coordinator: Coordinator) {
         if uiView.isFirstResponder { _ = uiView.resignFirstResponder() }
-        PeerClient.shared.detachTerminal()
-        coordinator.cachedView = nil
+        if let attachment = coordinator.attachment {
+            PeerClient.shared.detachTerminal(attachment: attachment)
+        }
+        coordinator.invalidateTerminal()
     }
 
     // SwiftTerm invokes the delegate on the main thread (it's a UIView), so a
@@ -80,9 +84,32 @@ struct RemoteTerminalView: UIViewRepresentable {
         weak var terminal: TerminalView?
         /// Strong cache so makeUIView returns the same emulator instance (see makeUIView).
         var cachedView: TerminalView?
+        var attachment: UInt64?
         private let lockState: TerminalLockState
 
         init(lockState: TerminalLockState) { self.lockState = lockState }
+
+        func terminalView() -> TerminalView {
+            if let cachedView { return cachedView }
+            let view = ResigningTerminalView(
+                frame: .zero, font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular))
+            terminal = view
+            cachedView = view
+            return view
+        }
+
+        func invalidateTerminal() {
+            guard terminal != nil || cachedView != nil || attachment != nil else { return }
+            // SwiftTerm 1.14's reset retains its alternate buffer. Retire the
+            // entire view/engine, including scrollback and partial parser state.
+            terminal?.isHidden = true
+            terminal?.resignFirstResponder()
+            terminal?.terminalDelegate = nil
+            terminal = nil
+            cachedView = nil
+            attachment = nil
+            lockState.lock()
+        }
 
         // User typed → ship the bytes to the Mac PTY. A deliberately locked session
         // asks to unlock instead of eating the keystroke.
@@ -131,6 +158,7 @@ struct RemoteTerminalScreen: View {
         TerminalHost(title: title, lockState: lockState, keySender: keySender,
                      connection: connection) {
             RemoteTerminalView(sessionId: sessionId, lockState: lockState, keySender: keySender)
+                .id("\(peer.connectionGeneration)-\(peer.connected)")
         }
         .onChange(of: peer.connected, initial: true) { _, up in
             connection.state = up ? .live : .readOnly("Off your local network — viewing only. Open this on the same Wi-Fi as your Mac to type.")

@@ -15,9 +15,10 @@ import UIKit
 enum ThrottleLiveActivity {
     static let enabledKey = "throttleLiveActivityEnabled"
     private static let log = Logger(subsystem: "com.lorislab.throttle.ios", category: "LiveActivity")
+    private static var generation: UInt64 = 0
 
     static var isEnabled: Bool {
-        (UserDefaults(suiteName: MirrorStorage.appGroupID) ?? .standard).bool(forKey: enabledKey)
+        !CompanionRuntime.isTesting && CompanionRuntime.defaults.bool(forKey: enabledKey)
     }
 
     private static func state(from snap: ThrottleMirrorSnapshot) -> ThrottleActivityAttributes.ContentState {
@@ -38,18 +39,23 @@ enum ThrottleLiveActivity {
     /// Single entry point, called on every new snapshot. Reconciles the live
     /// activity to the current setting + data.
     static func sync(_ snap: ThrottleMirrorSnapshot) {
+        guard !CompanionRuntime.isTesting else { return }
+        generation &+= 1
+        let token = generation
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
         let running = Activity<ThrottleActivityAttributes>.activities.first
 
         guard isEnabled else { if running != nil { end() }; return }
 
         let content = ActivityContent(state: state(from: snap), staleDate: staleDate(snap))
-        if running != nil {
+        if let activityID = running?.id {
             // Re-fetch inside the task rather than capturing the Activity across the
             // isolation boundary (Swift 6 sending rule). `content` is Sendable.
             Task { @MainActor in
-                guard let a = Activity<ThrottleActivityAttributes>.activities.first else { return }
-                await a.update(content)
+                guard generation == token else { return }
+                let activities = Activity<ThrottleActivityAttributes>.activities
+                guard let activity = activities.first(where: { $0.id == activityID }) else { return }
+                await activity.update(content)
             }
         } else if UIApplication.shared.applicationState == .active {
             // Foreground-only start (ActivityKit requirement).
@@ -68,7 +74,7 @@ enum ThrottleLiveActivity {
     /// Turn the feature on/off from Settings. Turning on starts immediately from the
     /// latest snapshot (Settings is foreground); turning off ends the activity.
     static func setEnabled(_ on: Bool) {
-        (UserDefaults(suiteName: MirrorStorage.appGroupID) ?? .standard).set(on, forKey: enabledKey)
+        CompanionRuntime.defaults.set(on, forKey: enabledKey)
         if on {
             if let snap = MirrorStore.shared.latest { sync(snap) }
         } else {
@@ -77,9 +83,14 @@ enum ThrottleLiveActivity {
     }
 
     static func end() {
+        guard !CompanionRuntime.isTesting else { return }
+        generation &+= 1
+        // Capture only the old activities. Delayed cleanup must not end an activity
+        // created for the next account while ActivityKit is processing this one.
+        let oldActivities = Activity<ThrottleActivityAttributes>.activities
         Task { @MainActor in
-            for a in Activity<ThrottleActivityAttributes>.activities {
-                await a.end(nil, dismissalPolicy: .immediate)
+            for activity in oldActivities {
+                await activity.end(nil, dismissalPolicy: .immediate)
             }
         }
     }

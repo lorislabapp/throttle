@@ -77,6 +77,42 @@ struct OwnerProjectAdmissionTests {
             }
         }
     }
+
+    @Test("long owner-admitted project keys are searchable without widening query-only grants")
+    func longProjectKeyScopedSearch() async throws {
+        let fixture = try Fixture()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let store = try fixture.open()
+        let owner = try await ResearchVaultGateway.owner(store: store, baseline: fixture.ownerGrant)
+        let reader = ResearchVaultGateway(store: store, authorization: fixture.readerGrant)
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+        for length in [64, 65, 128] {
+            let key = String(repeating: "a", count: length)
+            let admission = try decoder.decode(
+                ResearchVaultProjectAdmissionRequest.self,
+                from: encoder.encode(ResearchVaultProjectAdmissionRequest(projectKeys: [key]))
+            ).validated()
+            _ = try await owner.admitProjects(admission)
+            let receipt = try fixture.receipt(project: key)
+            _ = try await owner.importReceiptsForReview([receipt])
+            _ = try await owner.review(.init(action: .approve, receiptIDs: [receipt.receiptID]))
+            let request = try decoder.decode(
+                ResearchVaultSearchRequest.self,
+                from: encoder.encode(ResearchVaultSearchRequest(query: "admission sentinel", projectKeys: [key]))
+            ).validated()
+            let result = try await owner.context(query: request.query, projectKeys: request.projectKeys)
+            #expect(result.items.count == 1)
+            #expect(result.items.first?.citation.receiptProvenance?.receiptID == receipt.receiptID)
+            #expect(result.projectKeys == [key])
+            #expect(try await reader.context(query: request.query, projectKeys: request.projectKeys).items.isEmpty)
+        }
+        let tooLong = String(repeating: "a", count: 129)
+        await #expect(throws: ResearchVaultProjectAdmissionError.invalidProjects) {
+            try await owner.admitProjects(.init(projectKeys: [tooLong]))
+        }
+        #expect(try await owner.context(query: "admission sentinel", projectKeys: [tooLong]).projectKeys.isEmpty)
+    }
 }
 
 private struct Fixture {

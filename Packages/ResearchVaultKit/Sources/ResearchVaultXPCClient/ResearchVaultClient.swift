@@ -60,7 +60,7 @@ public actor ResearchVaultClient {
             projectKeys: projectKeys
         ).validated()
         let encoded = try encoder.encode(request)
-        guard encoded.count <= ResearchVaultIPCContract.maximumQueryBytes + 512 else {
+        guard encoded.count <= ResearchVaultIPCContract.maximumSearchRequestBytes else {
             throw ResearchVaultClientError.invalidConfiguration
         }
         let data = try await queryCall { proxy, reply in

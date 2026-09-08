@@ -2,6 +2,22 @@ import Foundation
 import ThrottlePeer
 import ThrottleShared
 
+@MainActor
+protocol MirrorPeerConnecting: AnyObject {
+    var onSnapshot: (@Sendable (Data) -> Void)? { get set }
+    var onConnected: (@Sendable (Bool) -> Void)? { get set }
+    var onTermOut: (@Sendable ([UInt8]) -> Void)? { get set }
+    var onTermResize: (@Sendable (Int, Int) -> Void)? { get set }
+    func start()
+    func stop()
+    func attachTerminal(sessionId: String)
+    func sendInput(_ bytes: [UInt8])
+    func sendResize(cols: Int, rows: Int)
+    func detachTerminal()
+}
+
+extension PeerConnector: MirrorPeerConnecting {}
+
 /// iOS side of the LAN mirror fast path. Learns the pairing secret from the first
 /// CloudKit-synced snapshot (`peerPairingSecret`), then browses for the Mac and
 /// streams snapshots over TLS-PSK — sub-second when both are on the same Wi-Fi.
@@ -13,10 +29,24 @@ import ThrottleShared
 @MainActor
 @Observable
 final class PeerClient {
-    static let shared = PeerClient()
-    private init() {}
+    static let shared = PeerClient(allowsConnections: !CompanionRuntime.isTesting)
+    private let makeConnector: (PeerPairingSecret) -> any MirrorPeerConnecting
+    private let ingest: (ThrottleMirrorSnapshot) -> Void
+    private let allowsConnections: Bool
+    private var generation: UInt64 = 0
+    private var terminalGeneration: UInt64 = 0
+    private var terminalAttached = false
+    private var invalidateTerminal: (@MainActor @Sendable () -> Void)?
 
-    private var connector: PeerConnector?
+    init(makeConnector: @escaping (PeerPairingSecret) -> any MirrorPeerConnecting = { PeerConnector(secret: $0) },
+         ingest: @escaping (ThrottleMirrorSnapshot) -> Void = { MirrorStore.shared.ingest($0) },
+         allowsConnections: Bool = true) {
+        self.makeConnector = makeConnector
+        self.ingest = ingest
+        self.allowsConnections = allowsConnections
+    }
+
+    private var connector: (any MirrorPeerConnecting)?
     private var currentSecretB64: String?
 
     /// True only while a peer connection is actually established (driven by the
@@ -29,14 +59,20 @@ final class PeerClient {
     /// not consume `peerFallbackHost`: remote input is constrained to the local
     /// Bonjour/LAN path under App Review guideline 4.2.7.
     func syncPairing(from snapshot: ThrottleMirrorSnapshot) {
+        guard allowsConnections else { return }
         guard let b64 = snapshot.peerPairingSecret,
-              b64 != currentSecretB64,
-              let secret = PeerPairingSecret(base64: b64) else { return }
+              let secret = PeerPairingSecret(base64: b64) else { stop(); return }
+        guard b64 != currentSecretB64 else { return }
+        stop()
         currentSecretB64 = b64
         restart(with: secret)
     }
 
     func stop() {
+        generation &+= 1
+        detachTerminal()
+        connector?.onSnapshot = nil
+        connector?.onConnected = nil
         connector?.stop()
         connector = nil
         currentSecretB64 = nil
@@ -45,42 +81,85 @@ final class PeerClient {
 
     /// True only while the LAN peer link is actually connected (not just configured).
     var hasLink: Bool { connected }
+    var connectionGeneration: UInt64 { generation }
 
     // MARK: - Remote terminal passthrough
 
-    /// Attach to a Mac session's live terminal. `onOutput`/`onResize` fire on the
-    /// connector queue (hop to the main actor before touching UIKit). No-op if the
+    /// Callbacks run on the main actor after validating their attachment generation.
+    /// Consumers must deliver directly to UIKit without another asynchronous hop.
+    /// Attach to a Mac session's live terminal. No-op if the
     /// LAN link isn't up yet (the phone must have paired via a snapshot first).
+    @discardableResult
     func attachTerminal(tabID: String,
-                        onOutput: @escaping @Sendable ([UInt8]) -> Void,
-                        onResize: @escaping @Sendable (Int, Int) -> Void) {
-        guard let c = connector else { return }
-        c.onTermOut = onOutput
-        c.onTermResize = onResize
-        c.attachTerminal(sessionId: tabID)
+                        onOutput: @escaping @MainActor @Sendable ([UInt8]) -> Void,
+                        onResize: @escaping @MainActor @Sendable (Int, Int) -> Void,
+                        onInvalidated: @escaping @MainActor @Sendable () -> Void = {}) -> UInt64? {
+        detachTerminal()
+        guard connected, let current = connector else { return nil }
+        let token = generation
+        let terminalToken = terminalGeneration
+        terminalAttached = true
+        invalidateTerminal = onInvalidated
+        current.onTermOut = { [weak self] bytes in
+            Task { @MainActor in
+                guard let self, self.acceptsTerminal(token, terminalToken) else { return }
+                onOutput(bytes)
+            }
+        }
+        current.onTermResize = { [weak self] cols, rows in
+            Task { @MainActor in
+                guard let self, self.acceptsTerminal(token, terminalToken) else { return }
+                onResize(cols, rows)
+            }
+        }
+        current.attachTerminal(sessionId: tabID)
+        return terminalToken
     }
 
-    func sendTerminalInput(_ bytes: [UInt8]) { connector?.sendInput(bytes) }
-    func sendTerminalResize(cols: Int, rows: Int) { connector?.sendResize(cols: cols, rows: rows) }
+    private func acceptsTerminal(_ connection: UInt64, _ terminal: UInt64) -> Bool {
+        connected && terminalAttached && generation == connection && terminalGeneration == terminal
+    }
 
-    func detachTerminal() {
-        connector?.detachTerminal()
+    func sendTerminalInput(_ bytes: [UInt8]) {
+        guard connected, terminalAttached else { return }
+        connector?.sendInput(bytes)
+    }
+    func sendTerminalResize(cols: Int, rows: Int) {
+        guard connected, terminalAttached else { return }
+        connector?.sendResize(cols: cols, rows: rows)
+    }
+
+    func detachTerminal(attachment: UInt64? = nil) {
+        if let attachment, attachment != terminalGeneration { return }
+        terminalGeneration &+= 1
+        if terminalAttached { connector?.detachTerminal() }
+        terminalAttached = false
         connector?.onTermOut = nil
         connector?.onTermResize = nil
+        let invalidate = invalidateTerminal
+        invalidateTerminal = nil
+        invalidate?()
     }
 
     private func restart(with secret: PeerPairingSecret) {
-        connector?.stop()
-        let c = PeerConnector(secret: secret)
-        c.onSnapshot = { data in
+        let token = generation
+        let current = makeConnector(secret)
+        current.onSnapshot = { [weak self] data in
             // Fires on the connector's queue; decode off-main then ingest on main.
             guard let snap = try? ThrottleMirrorSnapshot.decoded(from: data) else { return }
-            Task { @MainActor in MirrorStore.shared.ingest(snap) }
+            Task { @MainActor in
+                guard let self, self.generation == token else { return }
+                self.ingest(snap)
+            }
         }
-        c.onConnected = { ok in
-            Task { @MainActor in PeerClient.shared.connected = ok }
+        current.onConnected = { [weak self] connected in
+            Task { @MainActor in
+                guard let self, self.generation == token else { return }
+                self.connected = connected
+                if !connected { self.detachTerminal() }
+            }
         }
-        c.start()
-        connector = c
+        connector = current
+        current.start()
     }
 }

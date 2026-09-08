@@ -26,9 +26,8 @@ struct Entry: TimelineEntry {
 
 enum MirrorSnapshotReader {
     static func read() -> ThrottleMirrorSnapshot? {
-        let defaults = UserDefaults(suiteName: MirrorStorage.appGroupID)
-        guard let data = defaults?.data(forKey: MirrorStorage.latestSnapshotKey) else { return nil }
-        return try? ThrottleMirrorSnapshot.decoded(from: data)
+        guard let defaults = UserDefaults(suiteName: MirrorStorage.appGroupID) else { return nil }
+        return MirrorWidgetPublication.read(from: defaults)
     }
 }
 
