@@ -1,0 +1,43 @@
+Window: "Research Vault Workbench Test Host", App: Throttle.
+0 fenêtre standard Research Vault Workbench Test Host, Secondary Actions: Raise
+	1 container
+		2 zone de défilement
+			3 texte ESPACES
+			4 bouton Portfolio
+			5 bouton cheatcode
+			6 bouton (selected) throttle
+			7 texte Aucun dossier pour le moment.
+			8 bouton (disabled) Description: Ajouter un dossier à throttle…, Help: Activez d’abord le coffre
+			9 texte FILTRES
+			10 bouton (selected) Preuves, —
+			11 bouton Sources, —
+			12 bouton Affirmations, —
+			13 bouton Chronologie, —
+			14 bouton Révisions, —
+			15 bouton Raisonnement, —
+		16 bouton Description: Retour, ID: chevron.left
+		17 texte Coffre de recherche
+		18 bouton (disabled) Description: Ajouter au coffre…, Help: Activez d’abord le coffre
+		19 image Description: Rechercher, ID: magnifyingglass
+		20 texte Périmètre de recherche : throttle
+		21 champ de texte (disabled) Interroger vos recherches…
+		22 text La recherche s’active à l’étape 3. Votre coffre en trois étapes
+		23 container Étape 1
+			24 texte Activation du coffre demandée
+		25 container Étape 2
+			26 text Autoriser le service si macOS le demande macOS attend votre accord pour démarrer le service.
+			27 bouton Ouvrir les éléments d’ouverture
+		28 container Étape 3
+			29 text Ajouter un dossier à throttle Choisissez le dossier qui contient les recherches de ce projet.
+		30 text Coffre chiffré désactivé Autorisez le Coffre de recherche dans Réglages Système > Général > Ouverture et extensions.
+	31 Bouton de fermeture
+	32 bouton plein écran Help: ce bouton peut également agrandir ou réduire la fenêtre, Secondary Actions: réduire/agrandir la fenêtre
+	33 bouton de minimisation
+	34 texte Research Vault Workbench Test Host
+35 menu bar
+	36 Édition
+	37 Présentation
+	38 Fenêtre
+	39 Aide
+
+The focused UI element is 0 fenêtre standard Research Vault Workbench Test Host, Secondary Actions: Raise

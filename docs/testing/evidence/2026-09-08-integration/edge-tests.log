@@ -1,0 +1,70 @@
+
+> throttle-edge-agent@2.0.0 test
+> node throttle-agent.mjs --self-test && node --test transfer-runtime.test.mjs fresh-runtime.test.mjs
+
+throttle edge mission contract: ok
+throttle edge shell quoting: ok
+✔ same fresh request starts once and never aliases a transfer workspace (96.396875ms)
+✔ stopping during fresh startup leaves a permanent tombstone and a scoped receipt (95.147209ms)
+✔ failed fresh stop retains the writer state and retry cannot become an unconfirmed success (71.175292ms)
+✔ Codex fresh conversations report no invented native identity or usage (70.548625ms)
+✔ fresh units share the verified backend but have their own helper, namespace and socket (19.468792ms)
+✔ fresh retries retain their identity across coordinator restart and a lost start reply (80.50975ms)
+✔ configured inert commands survive helper environment changes and receive no native flags (381.924458ms)
+✔ invalid configured commands fail before backend start without falling back to a native CLI (35.867ms)
+✔ prepare is idempotent, exact, and reserves a native identity across projects (74.419292ms)
+✔ stop-before-prepare survives restart and cannot be overwritten by a delayed start (88.192292ms)
+✔ upload validates the full hash and never clobbers a staged transcript (97.895084ms)
+✔ a stop tombstone is visible while waiting for an earlier operation (72.831791ms)
+✔ unconfirmed stop retains the tombstone and never produces a receipt (78.044334ms)
+✔ corrupt journals fail closed and unit generation bounds startup and stop (59.005458ms)
+✔ a truthy fake stop receipt or missing record cannot release a native claim (67.451667ms)
+✔ lost mutable state retains its native claim after backend reconciliation (48.483167ms)
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+✔ native publication is exact, idempotent, and preserves a differing destination (42.078125ms)
+✔ wrong native metadata never creates a published transcript (9.321667ms)
+✔ stop racing ready cannot leave a writer or permit a replacement (115.234209ms)
+✔ stop racing install cannot leave a writer or permit a replacement (126.9195ms)
+✔ stop racing start cannot leave a writer or permit a replacement (85.862625ms)
+✔ stop racing confirmRunning cannot leave a writer or permit a replacement (72.197667ms)
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+warning: You appear to have cloned an empty repository.
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+✔ return freezes exact files after stop and hash acknowledgement (lost mutable status: false) (449.541667ms)
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+warning: You appear to have cloned an empty repository.
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead
+✔ return freezes exact files after stop and hash acknowledgement (lost mutable status: true) (432.399459ms)
+✔ return cannot bypass a failed native stop or a missing binding (64.691542ms)
+✔ legacy writers cannot enter transfer workspaces directly or through symlinks (1.080625ms)
+✔ returned phase cannot release a native claim without sealed artifacts and matching acknowledgement (96.893083ms)
+✔ immutable binding survives missing mutable state and only recovers after confirmed stop (47.918ms)
+✔ crash after immutable publication cannot start a writer or replace its accepted identity (50.920542ms)
+✔ contradictory or corrupt metadata cannot be substituted during recovery (49.926041ms)
+✔ oversized native filenames are rejected before publishing any journal binding (0.322292ms)
+✔ terminal sockets stay inside a short unit-owned runtime directory even for long journal roots (0.247792ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2353.617375

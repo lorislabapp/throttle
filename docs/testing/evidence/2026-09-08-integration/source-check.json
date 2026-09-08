@@ -1,0 +1,7 @@
+{
+  "base_commit": "3abf6a6bfbdfb17b16ba80329c2fe50c7a343cb6",
+  "branch": "feat/context-testing-3.6.0",
+  "verified_source_files": 559,
+  "changed_since_final_build": [],
+  "scope": "Swift sources and tests, project.yml, localization catalog"
+}

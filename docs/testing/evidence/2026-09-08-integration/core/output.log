@@ -1,0 +1,92 @@
+Building for debugging...
+[0/11] /private/tmp/throttle-integration-20260908/core/throttle-core-evidence-2es53q4r/package/.build/arm64-apple-macosx/debug/ThrottleCoreEvidencePackageTests.derived/runner.swift
+[1/11] Write sources
+[8/11] Write swift-version-39B54973F684ADAB.txt
+[10/16] Emitting module Throttle
+[11/16] Compiling Throttle ContentStore.swift
+[12/16] Compiling Throttle ContextFirewall.swift
+[13/18] Emitting module ResearchVaultModel
+[14/18] Compiling ResearchVaultModel ResearchReceipt.swift
+[15/19] Compiling ResearchVaultModel VaultAuthorization.swift
+[16/23] Compiling ResearchVaultIPCModel ResearchVaultProjectAdmission.swift
+[17/23] Compiling Throttle TestOutcomeStore.swift
+[18/26] Emitting module ResearchVaultIPCModel
+[19/29] Compiling ThrottleTests ContextPacketEvidenceTests.swift
+[20/29] Compiling ThrottleTests TestOutcomeDetectorTests.swift
+[22/29] Compiling ResearchVaultIPCModel ResearchVaultReasoningDTO.swift
+[23/29] Compiling ResearchVaultIPCModel ResearchVaultReceiptDTO.swift
+[24/29] Compiling ResearchVaultIPCModel ResearchVaultReceiptProvenance.swift
+[25/31] Emitting module ResearchVaultIngestion
+[26/31] Compiling ResearchVaultIngestion RetrievalBenchmark.swift
+[27/32] Compiling ResearchVaultIngestion RetrievalQualityGate.swift
+[28/34] Compiling ResearchVaultIngestionTests RetrievalBenchmarkTests.swift
+[29/34] Emitting module ResearchVaultIngestionTests
+[30/35] Compiling ResearchVaultIngestionTests RetrievalQualityGateTests.swift
+[31/35] Emitting module ThrottleTests
+[34/36] Compiling ThrottleTests TestOutcomeStoreTests.swift
+[35/38] Emitting module ThrottleCoreEvidencePackageTests
+[36/38] Compiling ThrottleCoreEvidencePackageTests runner.swift
+[36/38] Write Objects.LinkFileList
+[37/38] Linking ThrottleCoreEvidencePackageTests
+Build complete! (21.46s)
+[1/28] Testing ThrottleTests.ContextPacketEvidenceTests/test_numberingAndMetadataStayInsideTheContextBudget
+[2/28] Testing ThrottleTests.ContextPacketEvidenceTests/test_corruptionCannotRehydrateOrProduceAValidPointer
+[3/28] Testing ThrottleTests.ContextPacketEvidenceTests/test_pointerRequiresAnExactHash
+[4/28] Testing ThrottleTests.ContextPacketEvidenceTests/test_selectedEvidenceKeepsExactOriginalAndUntrustedBoundary
+[5/28] Testing ThrottleTests.ContextPacketEvidenceTests/test_sourceMetadataCannotExhaustTheBudget
+[6/28] Testing ThrottleTests.ContextPacketEvidenceTests/test_writeFailureIsExplicitAndDoesNotAdvertiseRehydration
+[7/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_ansiColourAndCachedGoOutput
+[8/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_cargo
+[9/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_failureFirstAndErrorOnlyPytestSummaries
+[10/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_failureFromAnotherRunnerCannotBecomeGreen
+[11/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_go_ok
+[12/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_go_fail
+[13/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_jest_failedFirstOrder
+[14/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_invalidAndEmptyCountsCannotBecomeGreen
+[15/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_jest_passOnly
+[16/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_laterSuccessDoesNotEraseFailureInTheSameObservedTail
+[17/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_pytest_passOnly
+[18/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_noFalsePositiveOnProse
+[19/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_pytest_withFailures
+[20/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_summaryMentionedInProseIsNotObservedResult
+[21/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_swift
+[22/28] Testing ThrottleTests.TestOutcomeDetectorTests/test_swiftTestingOrNodeFailureAfterXCTestSuccessIsNotGreen
+[23/28] Testing ThrottleTests.TestOutcomeStoreTests/test_failedAttemptsContributeToCostPerGreen
+[24/28] Testing ThrottleTests.TestOutcomeStoreTests/test_malformedOrEmptyResultsCannotBecomeGreen
+[25/28] Testing ThrottleTests.TestOutcomeStoreTests/test_missingCostsAndResetsCannotMakeMetricCheaper
+[26/28] Testing ThrottleTests.TestOutcomeStoreTests/test_stableOrderAndIndependentSessions
+[27/28] Testing ThrottleTests.TestOutcomeStoreTests/test_windowUsesHistoricalCostAnchor
+[28/28] Testing ThrottleTests.TestOutcomeStoreTests/test_unrelatedProjectsAndAllFailuresDoNotCreateCostPerGreen
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+[0/1] Planning build
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+◇ Test run started.
+↳ Testing Library Version: 2078
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite "Retrieval quality gate" started.
+◇ Suite "Retrieval benchmark metrics" started.
+◇ Test "measures claim coverage and rejects a tampered excerpt citation" started.
+◇ Test "promotes only a significant gain inside every product budget" started.
+◇ Test "large almost-balanced samples do not manufacture significance through underflow" started.
+◇ Test "no claims is unmeasured, not perfect quality" started.
+◇ Test "does not promote a small or insignificant challenger" started.
+◇ Test "computes Recall, reciprocal rank and nDCG with duplicate suppression" started.
+◇ Test "invalid measurements cannot authorize promotion" started.
+◇ Test "scores explicit abstention separately" started.
+◇ Test "rejects invalid benchmark definitions" started.
+◇ Test "unanswerable queries cannot inflate positive retrieval metrics" started.
+◇ Test "no abstention observations cannot count as perfect abstention" started.
+✔ Test "computes Recall, reciprocal rank and nDCG with duplicate suppression" passed after 0.001 seconds.
+✔ Test "no claims is unmeasured, not perfect quality" passed after 0.001 seconds.
+✔ Test "no abstention observations cannot count as perfect abstention" passed after 0.001 seconds.
+✔ Test "does not promote a small or insignificant challenger" passed after 0.001 seconds.
+✔ Test "promotes only a significant gain inside every product budget" passed after 0.001 seconds.
+✔ Test "scores explicit abstention separately" passed after 0.001 seconds.
+✔ Test "unanswerable queries cannot inflate positive retrieval metrics" passed after 0.001 seconds.
+✔ Test "measures claim coverage and rejects a tampered excerpt citation" passed after 0.001 seconds.
+✔ Test "invalid measurements cannot authorize promotion" passed after 0.001 seconds.
+✔ Test "large almost-balanced samples do not manufacture significance through underflow" passed after 0.001 seconds.
+✔ Suite "Retrieval quality gate" passed after 0.001 seconds.
+✔ Test "rejects invalid benchmark definitions" passed after 0.001 seconds.
+✔ Suite "Retrieval benchmark metrics" passed after 0.001 seconds.
+✔ Test run with 11 tests in 2 suites passed after 0.001 seconds.

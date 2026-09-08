@@ -1,6 +1,17 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Searching in %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recherche dans %@."
+          }
+        }
+      }
+    },
     "If macOS asks, allow the vault in Login Items.": {
       "extractionState": "manual",
       "localizations": {

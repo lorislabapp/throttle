@@ -67,17 +67,27 @@ public enum RetrievalPromotionEvaluator {
         let losses = paired.count { $0.challengerScore < $0.baselineScore }
         let pValue = signTestPValue(wins: wins, losses: losses)
         var reasons: [String] = []
-        if challenger.recallAtK < baseline.recallAtK + 0.02 { reasons.append("recall_gain_below_0.02") }
-        if challenger.reciprocalRank < baseline.reciprocalRank { reasons.append("mrr_regression") }
-        if challenger.ndcgAtK < baseline.ndcgAtK { reasons.append("ndcg_regression") }
-        if challenger.abstentionAccuracy < 0.99 { reasons.append("abstention_below_0.99") }
-        if challenger.citationPrecision < 0.99 { reasons.append("citation_precision_below_0.99") }
-        if challenger.claimCoverage < 1 { reasons.append("claim_coverage_below_1.0") }
-        if challenger.latencyP95MS > maximumLatencyP95MS { reasons.append("latency_budget_exceeded") }
-        if challenger.peakMemoryBytes > maximumPeakMemoryBytes { reasons.append("memory_budget_exceeded") }
-        if challenger.energyImpact > maximumEnergyImpact { reasons.append("energy_budget_exceeded") }
-        if wins + losses < 20 { reasons.append("insufficient_paired_cases") }
-        if pValue > 0.05 || wins <= losses { reasons.append("paired_gain_not_significant") }
+        if !valid(baseline) || !valid(challenger)
+            || paired.contains(where: { !unitScore($0.baselineScore) || !unitScore($0.challengerScore) })
+            || !maximumLatencyP95MS.isFinite || maximumLatencyP95MS < 0
+            || maximumPeakMemoryBytes < 0
+            || !maximumEnergyImpact.isFinite || maximumEnergyImpact < 0 {
+            reasons.append("invalid_evidence_or_budget")
+        }
+        let violations: [(Bool, String)] = [
+            (challenger.recallAtK < baseline.recallAtK + 0.02, "recall_gain_below_0.02"),
+            (challenger.reciprocalRank < baseline.reciprocalRank, "mrr_regression"),
+            (challenger.ndcgAtK < baseline.ndcgAtK, "ndcg_regression"),
+            (challenger.abstentionAccuracy < 0.99, "abstention_below_0.99"),
+            (challenger.citationPrecision < 0.99, "citation_precision_below_0.99"),
+            (challenger.claimCoverage < 1, "claim_coverage_below_1.0"),
+            (challenger.latencyP95MS > maximumLatencyP95MS, "latency_budget_exceeded"),
+            (challenger.peakMemoryBytes > maximumPeakMemoryBytes, "memory_budget_exceeded"),
+            (challenger.energyImpact > maximumEnergyImpact, "energy_budget_exceeded"),
+            (wins + losses < 20, "insufficient_paired_cases"),
+            (pValue > 0.05 || wins <= losses, "paired_gain_not_significant")
+        ]
+        reasons += violations.compactMap { $0.0 ? $0.1 : nil }
         return RetrievalPromotionDecision(
             promoted: reasons.isEmpty,
             reasons: reasons,
@@ -91,14 +101,31 @@ public enum RetrievalPromotionEvaluator {
         let count = wins + losses
         guard count > 0 else { return 1 }
         let tail = min(wins, losses)
-        var probability = pow(0.5, Double(count))
+        // Start at the largest term in the tail in log space. Starting at 2^-n
+        // underflows for large samples and can manufacture significance.
+        let logProbability = lgamma(Double(count + 1)) - lgamma(Double(tail + 1))
+            - lgamma(Double(count - tail + 1)) - Double(count) * log(2)
+        var probability = exp(logProbability)
         var sum = probability
-        guard tail > 0 else { return min(1, 2 * sum) }
-        for value in 1 ... tail {
-            probability *= Double(count - value + 1) / Double(value)
-            sum += probability
+        if tail > 0 {
+            for value in stride(from: tail, through: 1, by: -1) {
+                probability *= Double(value) / Double(count - value + 1)
+                sum += probability
+            }
         }
         return min(1, 2 * sum)
+    }
+
+    private static func unitScore(_ value: Double) -> Bool {
+        value.isFinite && (0...1).contains(value)
+    }
+
+    private static func valid(_ value: RetrievalSystemEvidence) -> Bool {
+        [value.recallAtK, value.reciprocalRank, value.ndcgAtK,
+         value.abstentionAccuracy, value.citationPrecision, value.claimCoverage].allSatisfy(unitScore)
+            && value.latencyP95MS.isFinite && value.latencyP95MS >= 0
+            && value.peakMemoryBytes >= 0
+            && value.energyImpact.isFinite && value.energyImpact >= 0
     }
 }
 
@@ -119,7 +146,7 @@ public struct ResearchClaimMetrics: Equatable, Sendable {
 
 public enum ResearchClaimEvaluator {
     public static func evaluate(_ claims: [ResearchClaimEvaluation]) -> ResearchClaimMetrics {
-        guard !claims.isEmpty else { return .init(claimCoverage: 1, citationPrecision: 1) }
+        guard !claims.isEmpty else { return .init(claimCoverage: 0, citationPrecision: 0) }
         let covered = claims.count { !$0.citedEvidenceIDs.isDisjoint(with: $0.expectedEvidenceIDs) }
         let cited = claims.reduce(0) { $0 + $1.citedEvidenceIDs.count }
         let correct = claims.reduce(0) { $0 + $1.citedEvidenceIDs.intersection($1.expectedEvidenceIDs).count }

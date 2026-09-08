@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="TestResults" errors="0" tests="11" failures="0" skipped="0" time="0.001917875">
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="addingAbstentionsDoesNotImproveRecall()" time="0.0004535" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="abstention()" time="0.000441667" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="invalid()" time="0.00151775" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="unmeasuredAbstention()" time="0.000612166" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="metrics()" time="0.000480833" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="conservativePromotion()" time="0.000799" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="claimsAndCitations()" time="0.000929667" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="rejectsInvalidEvidence()" time="0.000895541" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="largeSample()" time="0.001288625" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="noClaims()" time="0.000520875" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="promotesMeasuredGain()" time="0.000838666" />
+  </testsuite>
+</testsuites>

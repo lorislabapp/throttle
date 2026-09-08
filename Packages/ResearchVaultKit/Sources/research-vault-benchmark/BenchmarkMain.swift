@@ -74,6 +74,8 @@ struct BenchmarkMain {
                 "documents": batch.documents.count,
                 "chunks": chunkCount,
                 "queries": metrics.caseCount,
+                "answerable_queries": metrics.answerableCaseCount,
+                "abstention_queries": metrics.abstentionCaseCount,
                 "golden_set_version": goldenSet.version,
                 "golden_set_sha256": goldenSet.caseSetSHA256,
                 "k": metrics.cutoff,
@@ -145,6 +147,8 @@ struct BenchmarkMain {
             "provider": provider.identifier,
             "backend": ResearchVectorBackend.exactSwift.rawValue,
             "documents": index.count,
+            "answerable_queries": metrics.answerableCaseCount,
+            "abstention_queries": metrics.abstentionCaseCount,
             "mean_recall_at_k": metrics.meanRecallAtK,
             "mrr": metrics.meanReciprocalRank,
             "mean_ndcg_at_k": metrics.meanNDCGAtK,
@@ -160,11 +164,12 @@ struct BenchmarkMain {
         metrics: RetrievalBenchmarkMetrics,
         cpuP95: Double
     ) -> Bool {
-        metrics.meanRecallAtK >= 0.95
+        metrics.answerableCaseCount > 0 && metrics.abstentionCaseCount > 0
+            && metrics.meanRecallAtK >= 0.95
             && metrics.meanReciprocalRank >= 0.80
             && metrics.meanNDCGAtK >= 0.80
             && metrics.abstentionAccuracy >= 0.99
-            && cpuP95 <= 100
+            && cpuP95.isFinite && cpuP95 >= 0 && cpuP95 <= 100
     }
 
     private static func milliseconds(_ duration: Duration) -> Double {

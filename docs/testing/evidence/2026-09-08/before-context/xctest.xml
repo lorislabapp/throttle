@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites>
+<testsuite name="TestResults" errors="0" tests="28" failures="5" time="3.169434959000001">
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_ansiColourAndCachedGoOutput" time="0.164129625">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_selectedEvidenceKeepsExactOriginalAndUntrustedBoundary" time="0.164143417">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_writeFailureIsExplicitAndDoesNotAdvertiseRehydration" time="0.164136667">
+<failure message="failure"></failure>
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_failureFromAnotherRunnerCannotBecomeGreen" time="0.164117667">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_pointerRequiresAnExactHash" time="0.164132042">
+<failure message="failure"></failure>
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_sourceMetadataCannotExhaustTheBudget" time="0.16413625">
+<failure message="failure"></failure>
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_cargo" time="0.177390625">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_numberingAndMetadataStayInsideTheContextBudget" time="0.17741225">
+<failure message="failure"></failure>
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_corruptionCannotRehydrateOrProduceAValidPointer" time="0.177389417">
+<failure message="failure"></failure>
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_failureFirstAndErrorOnlyPytestSummaries" time="0.177394667">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_invalidAndEmptyCountsCannotBecomeGreen" time="0.087067167">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_laterSuccessDoesNotEraseFailureInTheSameObservedTail" time="0.087071917">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_go_fail" time="0.087100917">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_jest_failedFirstOrder" time="0.087096166">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_go_ok" time="0.087127167">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_jest_passOnly" time="0.087146458">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_pytest_passOnly" time="0.087566459">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_noFalsePositiveOnProse" time="0.091556791">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_pytest_withFailures" time="0.091554667">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_summaryMentionedInProseIsNotObservedResult" time="0.09149425">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_malformedOrEmptyResultsCannotBecomeGreen" time="0.064692416">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_failedAttemptsContributeToCostPerGreen" time="0.078908875">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_swift" time="0.078926208">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_missingCostsAndResetsCannotMakeMetricCheaper" time="0.0788855">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_stableOrderAndIndependentSessions" time="0.078855583">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_swiftTestingOrNodeFailureAfterXCTestSuccessIsNotGreen" time="0.078919458">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_unrelatedProjectsAndAllFailuresDoNotCreateCostPerGreen" time="0.066609917">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_windowUsesHistoricalCostAnchor" time="0.064472416">
+</testcase>
+</testsuite>
+</testsuites>

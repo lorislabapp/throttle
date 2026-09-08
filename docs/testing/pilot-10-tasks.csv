@@ -1,0 +1,11 @@
+slot,status,project,task,acceptance_criterion,source_snapshot,context_variant,model_versions,evidence_path,attempts,total_cost_eur,human_minutes,elapsed_minutes,accepted,regressions,notes
+1,observed_incomplete,Throttle,Integration des deux sessions sur 3abf6a6,Conserver les deux deltas; suites combinees et previews isolees verifiees,3abf6a6 + delta local trace,Extraits avec provenance et originals verifies,non relevees,2026-09-08-integration-3.6.0.md,,,,,local_validation_pass,none_observed_in_scope,627 macOS passes + 5 opt-in skips; 149 Vault passes; isolated previews verified; disk-full failed run retained then recovered; total cost and human time unknown; no productivity comparison
+2,pending,,,,,,,,,,,,,,
+3,pending,,,,,,,,,,,,,,
+4,pending,,,,,,,,,,,,,,
+5,pending,,,,,,,,,,,,,,
+6,pending,,,,,,,,,,,,,,
+7,pending,,,,,,,,,,,,,,
+8,pending,,,,,,,,,,,,,,
+9,pending,,,,,,,,,,,,,,
+10,pending,,,,,,,,,,,,,,

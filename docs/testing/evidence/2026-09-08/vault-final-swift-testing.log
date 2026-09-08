@@ -1,0 +1,275 @@
+◇ Test run started.
+↳ Testing Library Version: 2078
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite "NotebookLM local migration importer" started.
+◇ Suite "Research embedding challenger" started.
+◇ Suite "Research Vault client Inbox reader" started.
+◇ Suite "Research document text extraction" started.
+◇ Suite "Manual research file importer" started.
+◇ Suite "Versioned Research Vault golden set" started.
+◇ Suite "Research Vault gateway" started.
+◇ Suite "Research receipt Finder inbox" started.
+◇ Suite "Research Vault XPC trust policy" started.
+◇ Suite "Owner receipt batch security" started.
+◇ Suite "Research Vault Markdown exporter" started.
+◇ Suite "Retrieval benchmark metrics" started.
+◇ Suite "Synthesis grounding security" started.
+◇ Suite "Research Vault IPC model" started.
+◇ Suite "Retrieval quality gate" started.
+◇ Suite "Research Vault symbolic reasoning" started.
+◇ Suite "Research document chunker" started.
+◇ Suite "Research Vault reasoning golden corpus" started.
+◇ Suite "Research Vault MCP protocol" started.
+◇ Test "double load is deterministic and ignores unsupported files" started.
+◇ Test "sidecars bind full NotebookLM provenance and duplicate titles by index" started.
+◇ Test "symlink and oversized supported files fail closed" started.
+◇ Test "exact cosine index is deterministic and rejects dimension mismatches" started.
+◇ Test "a PDF with a real text layer never pays for OCR" started.
+◇ Suite "Research Vault synthesis routing" started.
+◇ Suite "Approved receipt reasoning projection" started.
+◇ Test "changed source changes aggregate and receipt identity" started.
+◇ Test "an unreadable PDF is still reported, not silently empty" started.
+◇ Test "reads a scanned PDF that carries no text layer" started.
+◇ Suite "DeepSearsh catalog importer" started.
+◇ Test "RRF deduplicates and preserves deterministic ties" started.
+◇ Test "invalid project key and empty selection fail closed" started.
+◇ Test "reads canonical receipts deterministically and ignores unrelated JSON" started.
+◇ Test "unlinked native vector extensions are never reported available" started.
+◇ Test "unsupported, linked and oversized files fail closed" started.
+◇ Test "tampered sidecar or duplicate source index fails closed" started.
+◇ Test "approved receipt export is scoped and cursor-paginated" started.
+◇ Test "changed content changes the receipt identity and aggregate hash" started.
+◇ Test "selected files become deterministic OPEN receipts without absolute paths" started.
+◇ Test "is deterministic, drift-pinned and refuses a too-small corpus" started.
+◇ Test "publishes closed MCP-compatible schemas only" started.
+◇ Test "rejects symlinks, duplicates, oversized files and oversized batches" started.
+◇ Test "owner promotion refreshes a separate bounded reasoning shadow" started.
+◇ Test "invalid and duplicated receipts block the whole batch" started.
+◇ Test "owner service exports a validated approved receipt page" started.
+◇ Test "owner review cannot target a receipt outside its endpoint grant" started.
+◇ Test "loads canonical receipts deterministically" started.
+◇ Test "owner endpoint is a distinct immutable role" started.
+◇ Test "returns bounded context with complete provenance" started.
+◇ Test "owner intake remains invisible until an authorized review" started.
+◇ Test "reasoning promotion cannot resolve unapproved or cross-scope receipts" started.
+◇ Test "async service lifetime suspends until structured cancellation" started.
+◇ Test "identity inputs cannot inject requirement syntax" started.
+◇ Test "owner review request requires a bounded non-empty unique ID batch" started.
+◇ Test "unauthorized member leaves no partial import" started.
+◇ Test "Apple distribution requirement compiles" started.
+◇ Test "export is deterministic and carries complete provenance" started.
+◇ Test "CheatCode client contract is canonical and query-only" started.
+◇ Test "restricted evidence uses cited same-device JSON" started.
+◇ Test "owner service rejects malformed bytes before invoking importer" started.
+◇ Test "scores explicit abstention separately" started.
+◇ Test "unanswerable queries cannot inflate positive retrieval metrics" started.
+◇ Test "identical duplicate is idempotent within one transaction" started.
+◇ Test "owner service lists and reviews quarantined receipts" started.
+◇ Test "no abstention observations cannot count as perfect abstention" started.
+◇ Test "owner request accepts only bounded sealed receipts" started.
+◇ Test "invented citation is rejected" started.
+◇ Test "owner service dispatches a validated content-only request" started.
+◇ Test "rejects invalid benchmark definitions" started.
+◇ Test "computes Recall, reciprocal rank and nDCG with duplicate suppression" started.
+◇ Test "no claims is unmeasured, not perfect quality" started.
+◇ Test "endpoint grant is immutable and non-empty" started.
+◇ Test "query validation is closed and bounded" started.
+◇ Test "invalid measurements cannot authorize promotion" started.
+◇ Test "derived metadata is conservative and time intervals intersect" started.
+◇ Test "promotes only a significant gain inside every product budget" started.
+◇ Test "does not promote a small or insignificant challenger" started.
+◇ Test "query contract carries only a narrowing project scope" started.
+◇ Test "project scope is normalized by strict validation" started.
+◇ Test "owner reasoning dispatch is typed, bounded and rejects hostile payloads" started.
+◇ Test "resource caps fail closed" started.
+◇ Test "duplicate rule identities fail closed" started.
+◇ Test "joins never cross project boundaries" started.
+◇ Test "alternative proofs are retained and bounded why traverses them" started.
+◇ Test "base and derived predicate roles cannot be mixed" started.
+◇ Test "positive rules reach a deterministic fixed point" started.
+◇ Test "pre-cancelled evaluation stops before accepting work" started.
+◇ Test "cycles without a seed terminate without inventing facts" started.
+◇ Test "join cardinality cap fails closed" started.
+◇ Test "large almost-balanced samples do not manufacture significance through underflow" started.
+◇ Test "versioned positive Datalog fixtures match exactly" started.
+◇ Test "unsafe rules and inconsistent arity fail closed" started.
+◇ Test "is deterministic, bounded and carries headings" started.
+◇ Test "full rebuild retracts unsupported consequences" started.
+◇ Test "proof traversal reports truncation at its bound" started.
+◇ Test "measures claim coverage and rejects a tampered excerpt citation" started.
+◇ Test "rejects invalid configuration without trapping" started.
+◇ Test "what changed reports conservative metadata updates" started.
+◇ Test case passing 1 argument kind → "symlink" to "symlink and oversized supported files fail closed" started.
+◇ Test "empty Markdown produces no chunk" started.
+◇ Test case passing 1 argument kind → "unsupported" to "unsupported, linked and oversized files fail closed" started.
+◇ Test case passing 1 argument kind → "oversize" to "symlink and oversized supported files fail closed" started.
+◇ Test case passing 1 argument kind → "symlink" to "unsupported, linked and oversized files fail closed" started.
+◇ Test case passing 1 argument kind → "oversized" to "unsupported, linked and oversized files fail closed" started.
+CoreGraphics PDF has logged an error. Set environment variable "CG_PDF_VERBOSE" to learn more.
+◇ Test case passing 1 argument kind → "invalid" to "invalid and duplicated receipts block the whole batch" started.
+◇ Test case passing 1 argument kind → "duplicate" to "invalid and duplicated receipts block the whole batch" started.
+◇ Test case passing 1 argument kind → "oversize" to "invalid and duplicated receipts block the whole batch" started.
+◇ Test case passing 1 argument kind → "symlink" to "rejects symlinks, duplicates, oversized files and oversized batches" started.
+◇ Test case passing 1 argument kind → "duplicate" to "rejects symlinks, duplicates, oversized files and oversized batches" started.
+◇ Test case passing 1 argument kind → "file-size" to "rejects symlinks, duplicates, oversized files and oversized batches" started.
+◇ Test case passing 1 argument kind → "count" to "rejects symlinks, duplicates, oversized files and oversized batches" started.
+◇ Test case passing 1 argument kind → "request-size" to "rejects symlinks, duplicates, oversized files and oversized batches" started.
+◇ Test "supports stateless discovery, quarantined submit and cited resources" started.
+◇ Test "all three terminal hook events produce candidates" started.
+◇ Test "rejects unsupported per-request protocol metadata" started.
+◇ Test "rejects unknown tools without reflecting hostile input" started.
+◇ Test "lists closed tools and returns citation-first search content" started.
+◇ Test "agent hooks are bounded, parent-linked, transcript-safe and restart-idempotent" started.
+◇ Test "reasoning MCP is read-only, bounded and provenance preserving" started.
+◇ Test "sensitive endpoints never route to the private server" started.
+◇ Test "sensitive execution uses same-device provider with cited JSON" started.
+◇ Test "authenticated private server handles bounded deep synthesis" started.
+◇ Test "executor rejects invented citations" started.
+◇ Test "no model degrades to cited retrieval" started.
+◇ Test "approved verified findings project exact claim and support facts" started.
+◇ Test "unauthenticated server is never selected" started.
+◇ Test "quarantined receipts and open findings never create active facts" started.
+◇ Test "cross-project, self and ambiguous relations fail closed" started.
+◇ Test "typed owner promotion resolves both receipts and conserves sensitivity" started.
+◇ Test "rejects traversal, symlinks, tampering, duplicates, oversize and public defaults" started.
+◇ Test "accepts a verified, scoped document and emits snapshot evidence" started.
+◇ Test "filters projects before reading their document bytes" started.
+◇ Test "scopes a document through secondary project references" started.
+✔ Test "unlinked native vector extensions are never reported available" passed after 0.159 seconds.
+✔ Test "RRF deduplicates and preserves deterministic ties" passed after 0.160 seconds.
+✔ Test "exact cosine index is deterministic and rejects dimension mismatches" passed after 0.160 seconds.
+✔ Test "invalid project key and empty selection fail closed" passed after 0.160 seconds.
+✔ Test "unsupported, linked and oversized files fail closed" with 3 test cases passed after 0.160 seconds.
+✔ Test "an unreadable PDF is still reported, not silently empty" passed after 0.160 seconds.
+✔ Test "symlink and oversized supported files fail closed" with 2 test cases passed after 0.160 seconds.
+✔ Test "publishes closed MCP-compatible schemas only" passed after 0.160 seconds.
+✔ Test "changed content changes the receipt identity and aggregate hash" passed after 0.160 seconds.
+✔ Test "changed source changes aggregate and receipt identity" passed after 0.160 seconds.
+✔ Test "reads canonical receipts deterministically and ignores unrelated JSON" passed after 0.160 seconds.
+✔ Test "sidecars bind full NotebookLM provenance and duplicate titles by index" passed after 0.160 seconds.
+✔ Test "invalid and duplicated receipts block the whole batch" with 3 test cases passed after 0.161 seconds.
+✔ Test "is deterministic, drift-pinned and refuses a too-small corpus" passed after 0.161 seconds.
+✔ Test "double load is deterministic and ignores unsupported files" passed after 0.161 seconds.
+✔ Test "selected files become deterministic OPEN receipts without absolute paths" passed after 0.161 seconds.
+✔ Test "loads canonical receipts deterministically" passed after 0.161 seconds.
+✔ Test "tampered sidecar or duplicate source index fails closed" passed after 0.161 seconds.
+✔ Test "owner endpoint is a distinct immutable role" passed after 0.161 seconds.
+✔ Test "rejects symlinks, duplicates, oversized files and oversized batches" with 5 test cases passed after 0.161 seconds.
+✔ Test "identity inputs cannot inject requirement syntax" passed after 0.161 seconds.
+✔ Test "owner review request requires a bounded non-empty unique ID batch" passed after 0.161 seconds.
+✔ Test "export is deterministic and carries complete provenance" passed after 0.161 seconds.
+✔ Test "Apple distribution requirement compiles" passed after 0.161 seconds.
+✔ Test "CheatCode client contract is canonical and query-only" passed after 0.161 seconds.
+✔ Test "restricted evidence uses cited same-device JSON" passed after 0.161 seconds.
+✔ Test "unanswerable queries cannot inflate positive retrieval metrics" passed after 0.161 seconds.
+✔ Test "scores explicit abstention separately" passed after 0.161 seconds.
+✔ Test "a PDF with a real text layer never pays for OCR" passed after 0.162 seconds.
+✔ Test "owner request accepts only bounded sealed receipts" passed after 0.161 seconds.
+✔ Test "no abstention observations cannot count as perfect abstention" passed after 0.161 seconds.
+✔ Test "invented citation is rejected" passed after 0.161 seconds.
+✔ Test "rejects invalid benchmark definitions" passed after 0.162 seconds.
+✔ Test "computes Recall, reciprocal rank and nDCG with duplicate suppression" passed after 0.162 seconds.
+✔ Test "endpoint grant is immutable and non-empty" passed after 0.162 seconds.
+✔ Test "no claims is unmeasured, not perfect quality" passed after 0.162 seconds.
+✔ Test "query validation is closed and bounded" passed after 0.162 seconds.
+✔ Test "invalid measurements cannot authorize promotion" passed after 0.162 seconds.
+✔ Test "derived metadata is conservative and time intervals intersect" passed after 0.162 seconds.
+✔ Test "promotes only a significant gain inside every product budget" passed after 0.162 seconds.
+✔ Test "project scope is normalized by strict validation" passed after 0.162 seconds.
+✔ Test "does not promote a small or insignificant challenger" passed after 0.162 seconds.
+✔ Test "joins never cross project boundaries" passed after 0.302 seconds.
+✔ Test "duplicate rule identities fail closed" passed after 0.417 seconds.
+✔ Test "query contract carries only a narrowing project scope" passed after 0.436 seconds.
+✔ Test "alternative proofs are retained and bounded why traverses them" passed after 0.436 seconds.
+✔ Test "positive rules reach a deterministic fixed point" passed after 0.436 seconds.
+✔ Test "resource caps fail closed" passed after 0.436 seconds.
+✔ Test "cycles without a seed terminate without inventing facts" passed after 0.436 seconds.
+✔ Test "base and derived predicate roles cannot be mixed" passed after 0.436 seconds.
+✔ Test "versioned positive Datalog fixtures match exactly" passed after 0.437 seconds.
+✔ Test "join cardinality cap fails closed" passed after 0.437 seconds.
+✔ Test "large almost-balanced samples do not manufacture significance through underflow" passed after 0.437 seconds.
+◇ Test case passing 1 argument kind → "traversal" to "rejects traversal, symlinks, tampering, duplicates, oversize and public defaults" started.
+◇ Test case passing 1 argument kind → "symlink" to "rejects traversal, symlinks, tampering, duplicates, oversize and public defaults" started.
+◇ Test case passing 1 argument kind → "hash" to "rejects traversal, symlinks, tampering, duplicates, oversize and public defaults" started.
+◇ Test case passing 1 argument kind → "size" to "rejects traversal, symlinks, tampering, duplicates, oversize and public defaults" started.
+◇ Test case passing 1 argument kind → "duplicate" to "rejects traversal, symlinks, tampering, duplicates, oversize and public defaults" started.
+◇ Test case passing 1 argument kind → "oversize" to "rejects traversal, symlinks, tampering, duplicates, oversize and public defaults" started.
+◇ Test case passing 1 argument kind → "public" to "rejects traversal, symlinks, tampering, duplicates, oversize and public defaults" started.
+✔ Test "unsafe rules and inconsistent arity fail closed" passed after 0.469 seconds.
+✔ Test "is deterministic, bounded and carries headings" passed after 0.469 seconds.
+✔ Test "full rebuild retracts unsupported consequences" passed after 0.470 seconds.
+✔ Test "proof traversal reports truncation at its bound" passed after 0.469 seconds.
+✔ Test "measures claim coverage and rejects a tampered excerpt citation" passed after 0.469 seconds.
+✔ Test "rejects invalid configuration without trapping" passed after 0.469 seconds.
+✔ Test "what changed reports conservative metadata updates" passed after 0.469 seconds.
+✔ Test "empty Markdown produces no chunk" passed after 0.469 seconds.
+✔ Test "returns bounded context with complete provenance" passed after 0.472 seconds.
+✔ Test "all three terminal hook events produce candidates" passed after 0.325 seconds.
+✔ Test "identical duplicate is idempotent within one transaction" passed after 0.472 seconds.
+✔ Test "owner intake remains invisible until an authorized review" passed after 0.472 seconds.
+✔ Test "unauthorized member leaves no partial import" passed after 0.472 seconds.
+✔ Test "approved receipt export is scoped and cursor-paginated" passed after 0.472 seconds.
+✔ Test "owner review cannot target a receipt outside its endpoint grant" passed after 0.472 seconds.
+✔ Test "sensitive endpoints never route to the private server" passed after 0.322 seconds.
+✔ Test "sensitive execution uses same-device provider with cited JSON" passed after 0.322 seconds.
+✔ Test "executor rejects invented citations" passed after 0.322 seconds.
+✔ Test "no model degrades to cited retrieval" passed after 0.322 seconds.
+✔ Test "approved verified findings project exact claim and support facts" passed after 0.318 seconds.
+✔ Test "unauthenticated server is never selected" passed after 0.317 seconds.
+✔ Test "quarantined receipts and open findings never create active facts" passed after 0.317 seconds.
+✔ Test "cross-project, self and ambiguous relations fail closed" passed after 0.317 seconds.
+✔ Test "typed owner promotion resolves both receipts and conserves sensitivity" passed after 0.317 seconds.
+✔ Test "rejects traversal, symlinks, tampering, duplicates, oversize and public defaults" with 7 test cases passed after 0.317 seconds.
+✔ Test "reasoning promotion cannot resolve unapproved or cross-scope receipts" passed after 0.473 seconds.
+✔ Test "accepts a verified, scoped document and emits snapshot evidence" passed after 0.317 seconds.
+✔ Test "rejects unsupported per-request protocol metadata" passed after 0.325 seconds.
+✔ Suite "Research embedding challenger" passed after 0.473 seconds.
+✔ Suite "Manual research file importer" passed after 0.474 seconds.
+✔ Suite "NotebookLM local migration importer" passed after 0.474 seconds.
+✔ Suite "Research Vault client Inbox reader" passed after 0.474 seconds.
+✔ Test "owner service exports a validated approved receipt page" passed after 0.473 seconds.
+✔ Suite "Research receipt Finder inbox" passed after 0.474 seconds.
+✔ Test "supports stateless discovery, quarantined submit and cited resources" passed after 0.326 seconds.
+✔ Suite "Versioned Research Vault golden set" passed after 0.474 seconds.
+✔ Suite "Synthesis grounding security" passed after 0.474 seconds.
+✔ Test "owner service rejects malformed bytes before invoking importer" passed after 0.473 seconds.
+✔ Suite "Retrieval benchmark metrics" passed after 0.474 seconds.
+✔ Suite "Research Vault Markdown exporter" passed after 0.474 seconds.
+✔ Test "owner service dispatches a validated content-only request" passed after 0.473 seconds.
+✔ Suite "Retrieval quality gate" passed after 0.474 seconds.
+✔ Suite "Research Vault IPC model" passed after 0.474 seconds.
+✔ Test "pre-cancelled evaluation stops before accepting work" passed after 0.474 seconds.
+✔ Suite "Research Vault reasoning golden corpus" passed after 0.474 seconds.
+✔ Suite "Research document chunker" passed after 0.475 seconds.
+✔ Test "authenticated private server handles bounded deep synthesis" passed after 0.322 seconds.
+✔ Suite "Owner receipt batch security" passed after 0.475 seconds.
+✔ Suite "Approved receipt reasoning pwarning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+rojection" passed after 0.475 seconds.
+✔ Test "owner service lists and reviews quarantined receipts" passed after 0.474 seconds.
+✔ Suite "Research Vault symbolic reasoning" passed after 0.475 seconds.
+✔ Suite "Research Vault synthesis routing" passed after 0.475 seconds.
+✔ Test "async service lifetime suspends until structured cancellation" passed after 0.474 seconds.
+✔ Test "filters projects before reading their document bytes" passed after 0.319 seconds.
+✔ Test "owner reasoning dispatch is typed, bounded and rejects hostile payloads" passed after 0.476 seconds.
+✔ Suite "Research Vault XPC trust policy" passed after 0.477 seconds.
+✔ Test "scopes a document through secondary project references" passed after 0.323 seconds.
+✔ Suite "DeepSearsh catalog importer" passed after 0.479 seconds.
+✔ Test "owner promotion refreshes a separate bounded reasoning shadow" passed after 0.483 seconds.
+✔ Suite "Research Vault gateway" passed after 0.484 seconds.
+✔ Test "rejects unknown tools without reflecting hostile input" passed after 0.363 seconds.
+✔ Test "agent hooks are bounded, parent-linked, transcript-safe and restart-idempotent" passed after 0.443 seconds.
+✔ Test "lists closed tools and returns citation-first search content" passed after 0.448 seconds.
+✔ Test "reasoning MCP is read-only, bounded and provenance preserving" passed after 0.453 seconds.
+✔ Suite "Research Vault MCP protocol" passed after 0.601 seconds.
+✘ Test "reads a scanned PDF that carries no text layer" recorded an issue at ResearchDocumentTextExtractorTests.swift:17:6: Caught error: .unsupportedOrUnreadable("scanned.pdf")
+✘ Test "reads a scanned PDF that carries no text layer" failed after 19.236 seconds with 1 issue.
+↳ /// A scanned page has no text layer at all, so the extractor used to throw
+↳ /// and the document vanished from the corpus without ever being reported as
+↳ /// unreadable. This builds a genuinely scanned-shaped PDF — the words are
+↳ /// rasterised into a bitmap first, then that bitmap is the only thing drawn
+↳ /// into the page — so there is nothing for PDFKit to read and only OCR can
+↳ /// recover it.
+✘ Suite "Research document text extraction" failed after 19.237 seconds with 1 issue.
+✘ Test run with 98 tests in 22 suites failed after 19.237 seconds with 1 issue.
+Note: Some test targets reported failures:
+  - ResearchVaultKitPackageTests (Swift Testing)

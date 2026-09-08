@@ -1,10 +1,7 @@
 import Foundation
 
-/// Detects a test-runner SUMMARY line in a session's terminal output and extracts
-/// pass/fail counts. Pure + best-effort — fires only on an unambiguous end-of-run
-/// summary, never on incidental "passed" prose. Feeds the eval-ROI readout
-/// ("cost per green run"); measure-only, changes nothing. Supports the runners a
-/// Claude Code user actually hits: pytest, cargo, go, jest/vitest, swift test.
+/// Best-effort terminal telemetry, never task acceptance. A tail can contain
+/// several suite summaries; a success must not hide an observed failure.
 enum TestOutcomeDetector {
     struct Outcome: Sendable, Equatable {
         let framework: String
@@ -13,44 +10,81 @@ enum TestOutcomeDetector {
         var green: Bool { failed == 0 && passed > 0 }
     }
 
-    /// Scan the tail (summaries are at the end of a run). Returns the FIRST framework
-    /// whose summary matches; nil if none.
     static func detect(in text: String) -> Outcome? {
-        let tail = String(text.suffix(2000))
+        let plain = String(text.suffix(8_000)).replacingOccurrences(
+            of: "\u{001B}" + #"\[[0-?]*[ -/]*[@-~]"#, with: "", options: .regularExpression
+        )
+        let lines = plain.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        let outcomes = lines.compactMap(parse)
+        if let failure = outcomes.last(where: { $0.failed > 0 }) { return failure }
+        // A contradictory/truncated transcript cannot support a green signal.
+        if lines.contains(where: {
+            $0.contains("test result: FAILED") || $0 == "** TEST FAILED **"
+                || $0 == "** TEST EXECUTE FAILED **"
+                || matches($0, #"\b[1-9]\d* (?:failed|failures?|errors?)\b"#)
+                || matches($0, #"^[✘✖].*(?:failed|issue)"#)
+                || matches($0, #"^ℹ fail [1-9]\d*\b"#)
+        }) { return nil }
+        return outcomes.last(where: { $0.green })
+    }
 
-        // pytest: "===== 12 passed, 2 failed in 3.41s =====" | "12 passed in 1.2s"
-        if let c = caps(tail, #"(\d+) passed(?:, (\d+) failed)?[^\n]* in \d"#) {
-            return Outcome(framework: "pytest", passed: c[0] ?? 0, failed: c[1] ?? 0)
+    private static func parse(_ line: String) -> Outcome? {
+        if let result = pytest(line) { return result }
+        if let values = captures(line, #"^test result: (?:ok|FAILED)\. (\d+) passed; (\d+) failed;"#),
+           let passed = Int(values[0]), let failed = Int(values[1]) {
+            guard !line.contains("FAILED") || failed > 0 else { return nil }
+            return Outcome(framework: "cargo", passed: passed, failed: failed)
         }
-        // cargo: "test result: ok. 12 passed; 0 failed;" | "test result: FAILED. 10 passed; 2 failed;"
-        if let c = caps(tail, #"test result: \w+\. (\d+) passed; (\d+) failed"#) {
-            return Outcome(framework: "cargo", passed: c[0] ?? 0, failed: c[1] ?? 0)
+        let swiftSummary = #"^Executed (\d+) tests?, with "#
+            + #"(?:(\d+) tests? skipped and )?(\d+) failures?(?: |$)"#
+        if let values = captures(line, swiftSummary),
+           let total = Int(values[0]), let failed = Int(values[2]) {
+            let skipped = Int(values[1]) ?? 0
+            guard failed <= total, skipped <= total - failed else { return nil }
+            return Outcome(framework: "swift", passed: total - failed - skipped, failed: failed)
         }
-        // jest / vitest: "Tests:       2 failed, 10 passed, 12 total" (failed FIRST) or "Tests: 10 passed, 12 total"
-        if let c = caps(tail, #"Tests:\s+(?:(\d+) failed, )?(\d+) passed"#) {
-            return Outcome(framework: "jest", passed: c[1] ?? 0, failed: c[0] ?? 0)
+        if line.hasPrefix("Tests:"),
+           matches(line, #"^Tests:\s+(?:\d+ (?:failed|passed|skipped|todo|total)(?:,\s*|$))+$"#) {
+            return counted(line, framework: "jest")
         }
-        // swift test: "Executed 12 tests, with 2 failures (0 unexpected)"
-        if let c = caps(tail, #"Executed (\d+) tests?, with (\d+) failure"#) {
-            let total = c[0] ?? 0, fail = c[1] ?? 0
-            return Outcome(framework: "swift", passed: max(0, total - fail), failed: fail)
+        if matches(line, #"^FAIL(?:\s+\S+)?(?:\s+\d+(?:\.\d+)?s)?$"#) {
+            return Outcome(framework: "go", passed: 0, failed: 1)
         }
-        // go: a run's final "ok  <pkg>  0.5s" (pass) or "FAIL  <pkg>" (fail). No counts,
-        // so treat a package result as one unit. Require the line-anchored token to
-        // avoid matching prose. Checked last (weakest signal).
-        if caps(tail, #"(?m)^FAIL\s+\S"#) != nil { return Outcome(framework: "go", passed: 0, failed: 1) }
-        if caps(tail, #"(?m)^ok\s+\S+\s+\d"#) != nil { return Outcome(framework: "go", passed: 1, failed: 0) }
+        if matches(line, #"^ok\s+\S+\s+(?:\d+(?:\.\d+)?s|\(cached\))$"#) {
+            return Outcome(framework: "go", passed: 1, failed: 0)
+        }
         return nil
     }
 
-    /// Return the integer captures of the first match (nil per absent/optional group).
-    private static func caps(_ text: String, _ pattern: String) -> [Int?]? {
-        guard let re = try? NSRegularExpression(pattern: pattern),
-              let m = re.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) else { return nil }
-        var out: [Int?] = []
-        for i in 1..<m.numberOfRanges {
-            if let r = Range(m.range(at: i), in: text) { out.append(Int(text[r])) } else { out.append(nil) }
+    private static func pytest(_ line: String) -> Outcome? {
+        let body = line.trimmingCharacters(in: CharacterSet(charactersIn: "= "))
+        let summary = #"^(?:\d+ (?:passed|failed|errors?|skipped|deselected|xfailed|xpassed)(?:,\s*| ))+"#
+            + #"in \d+(?:\.\d+)?s(?: \([^)]*\))?$"#
+        guard matches(body, summary) else { return nil }
+        return counted(body, framework: "pytest")
+    }
+
+    private static func counted(_ line: String, framework: String) -> Outcome? {
+        // An overflowing counter must not silently become zero failures.
+        guard line.split(whereSeparator: { !$0.isNumber }).allSatisfy({ Int($0) != nil }) else { return nil }
+        let passed = captures(line, #"(?:^|\s)(\d+) passed\b"#).flatMap { Int($0[0]) } ?? 0
+        let failed = captures(line, #"(?:^|\s)(\d+) failed\b"#).flatMap { Int($0[0]) } ?? 0
+        let errors = captures(line, #"(?:^|\s)(\d+) errors?\b"#).flatMap { Int($0[0]) } ?? 0
+        let sum = failed.addingReportingOverflow(errors)
+        guard !sum.overflow, passed > 0 || sum.partialValue > 0 else { return nil }
+        return Outcome(framework: framework, passed: passed, failed: sum.partialValue)
+    }
+
+    private static func matches(_ text: String, _ pattern: String) -> Bool {
+        text.range(of: pattern, options: .regularExpression) != nil
+    }
+
+    private static func captures(_ text: String, _ pattern: String) -> [String]? {
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) else { return nil }
+        return (1..<match.numberOfRanges).map { index in
+            Range(match.range(at: index), in: text).map { String(text[$0]) } ?? ""
         }
-        return out
     }
 }

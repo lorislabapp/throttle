@@ -24,7 +24,7 @@ enum TestOutcomeStore {
             "failed": outcome.failed
         ]
         if let sessionId { rec["sid"] = sessionId }
-        if let costEUR { rec["eur"] = costEUR }
+        if let costEUR, costEUR.isFinite, costEUR >= 0 { rec["eur"] = costEUR }
         guard let line = try? JSONSerialization.data(withJSONObject: rec) else { return }
         let url = fileURL
         if let h = try? FileHandle(forWritingTo: url) {
@@ -38,46 +38,85 @@ enum TestOutcomeStore {
         var green = 0            // runs with 0 failures
         var red = 0             // runs with ≥1 failure
         var lastFramework: String?
-        var eurPerGreen: Double?  // mean per-run cost attributed to green runs, if derivable
+        var eurPerGreen: Double?  // all observed attempt costs / green runs; estimate only
         var hasData: Bool { green + red > 0 }
         var passRate: Double { green + red == 0 ? 0 : Double(green) / Double(green + red) }
     }
 
-    private struct Row { let ts: Int; let sid: String?; let eur: Double?; let green: Bool }
+    private struct Row {
+        let timestamp: Int
+        let order: Int
+        let sid: String?
+        let eur: Double?
+        let green: Bool
+        let framework: String?
+    }
 
     /// Fold the log for one project over the last `days`. Cheap line scan.
-    /// €/green: within each session (sorted by ts), the cumulative session cost's
-    /// consecutive delta is the cost incurred to reach that run; the mean of those
-    /// deltas over green runs is the "cost per green run".
+    /// €/green includes failed attempts. Terminal observations and cumulative
+    /// session costs are estimates, not unique accepted tasks or full billing.
     static func summary(project: String, days: Int = 14) -> Summary {
-        var s = Summary()
-        guard let text = try? String(contentsOf: fileURL, encoding: .utf8) else { return s }
+        guard let text = try? String(contentsOf: fileURL, encoding: .utf8) else { return Summary() }
         let cutoff = Int(Date().addingTimeInterval(-Double(days) * 86_400).timeIntervalSince1970)
+        return summarize(text: text, project: project, cutoff: cutoff)
+    }
+
+    /// Pure fold for deterministic verification. Pre-window samples anchor deltas.
+    /// Missing costs or a counter reset make the estimate unavailable, not cheaper.
+    static func summarize(text: String, project: String, cutoff: Int) -> Summary {
+        var s = Summary()
+        let rows = parseRows(text: text, project: project).sorted {
+            $0.timestamp == $1.timestamp ? $0.order < $1.order : $0.timestamp < $1.timestamp
+        }
+        for row in rows where row.timestamp >= cutoff {
+            if row.green { s.green += 1 } else { s.red += 1 }
+            s.lastFramework = row.framework ?? s.lastFramework
+        }
+        if s.green > 0, let cost = totalObservedCost(rows: rows, cutoff: cutoff) {
+            s.eurPerGreen = cost / Double(s.green)
+        }
+        return s
+    }
+
+    private static func parseRows(text: String, project: String) -> [Row] {
         var rows: [Row] = []
-        for line in text.split(separator: "\n") {
+        for (order, line) in text.split(separator: "\n").enumerated() {
             guard let d = line.data(using: .utf8),
                   let o = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
                   (o["project"] as? String) == project,
-                  let ts = o["ts"] as? Int, ts >= cutoff else { continue }
-            let failed = (o["failed"] as? Int) ?? 0
-            let passed = (o["passed"] as? Int) ?? 0
+                  let timestamp = o["ts"] as? Int,
+                  let failed = o["failed"] as? Int, failed >= 0,
+                  let passed = o["passed"] as? Int, passed >= 0,
+                  failed > 0 || passed > 0 else { continue }
             let green = failed == 0 && passed > 0
-            if green { s.green += 1 } else { s.red += 1 }
-            s.lastFramework = (o["fw"] as? String) ?? s.lastFramework
-            rows.append(Row(ts: ts, sid: o["sid"] as? String, eur: o["eur"] as? Double, green: green))
+            rows.append(Row(timestamp: timestamp, order: order, sid: o["sid"] as? String,
+                            eur: o["eur"] as? Double, green: green, framework: o["fw"] as? String))
         }
-        // Per-session consecutive cost deltas → per-run cost; average over green runs.
-        var greenCost = 0.0, greenCounted = 0
-        for (_, group) in Dictionary(grouping: rows.filter { $0.sid != nil }, by: { $0.sid! }) {
-            let sorted = group.sorted { $0.ts < $1.ts }
-            var prev = 0.0
-            for r in sorted {
-                guard let e = r.eur else { continue }   // no cost yet → skip this run's delta
-                let delta = max(0, e - prev); prev = e
-                if r.green { greenCost += delta; greenCounted += 1 }
+        return rows
+    }
+
+    private static func totalObservedCost(rows: [Row], cutoff: Int) -> Double? {
+        var previous: [String: Double] = [:]
+        var seenBeforeWindow = Set<String>()
+        var totalCost = 0.0
+        var completeCost = true
+        for row in rows {
+            let inWindow = row.timestamp >= cutoff
+            if !inWindow, let sid = row.sid { seenBeforeWindow.insert(sid) }
+            guard let sid = row.sid, !sid.isEmpty,
+                  let cost = row.eur, cost.isFinite, cost >= 0 else {
+                if inWindow { completeCost = false }
+                continue
             }
+            let prior = previous[sid]
+            previous[sid] = cost
+            guard inWindow else { continue }
+            // A session first observed before the window but without a cost
+            // anchor is unknown. A new session uses its cumulative cost estimate.
+            if let prior, cost < prior { completeCost = false; continue }
+            if prior == nil, seenBeforeWindow.contains(sid) { completeCost = false; continue }
+            totalCost += cost - (prior ?? 0)
         }
-        if greenCounted > 0 { s.eurPerGreen = greenCost / Double(greenCounted) }
-        return s
+        return completeCost && totalCost.isFinite ? totalCost : nil
     }
 }

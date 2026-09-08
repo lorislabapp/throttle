@@ -1,5 +1,26 @@
 # Throttle — current work ledger
 
+## Workflow / context validation — 2026-09-08
+
+Current local integration: `feat/context-testing-3.6.0` in
+`build/context-testing-3.6.0`, based on `3abf6a6` from `release/3.6.0-219`.
+Both sessions' changes are preserved: context integrity/budgets, test-outcome
+detection, retrieval metrics, cost accounting and CI validators, plus the release
+OCR CPU fallback and provenance guards. Final macOS suite: 627 passed, 5 opt-in
+skipped, 0 failed. ResearchVaultKit: 42/42 XCTest and 107/107 Swift Testing pass,
+including the scanned PDF. Core evidence: 39/39. Isolated UI previews and the
+French search translation are verified. Intermediate disk-full failure retained;
+the same final binaries pass after reclaiming this task's generated caches.
+The ten-task measured pilot, hosted full-suite CI coverage and actual remote CI
+execution remain open. No new commit, installation or release performed.
+
+Fresh evidence and remaining scope: [integration report](testing/2026-09-08-integration-3.6.0.md).
+Historical initial snapshot: [workflow validation report](testing/2026-09-08-workflow-validation.md).
+Common protocol: [testing workflow](testing/workflow.md).
+The older release gates below are preserved as their original scoped checkpoint.
+
+## Earlier release checkpoint
+
 Last reconciled: 2026-08-30 against HEAD `83a259a` plus the current dirty-worktree remediation.
 
 This is the only active task list. Dated audit checklists, roadmaps and

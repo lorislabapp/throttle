@@ -50,6 +50,33 @@ struct RetrievalBenchmarkTests {
             cutoff: 5
         )
         #expect(result.abstentionAccuracy == 1)
-        #expect(result.meanRecallAtK == 1)
+        #expect(result.meanRecallAtK == 0)
+    }
+
+    @Test("unanswerable queries cannot inflate positive retrieval metrics")
+    func addingAbstentionsDoesNotImproveRecall() throws {
+        let positive = RetrievalBenchmarkCase(query: "missing file", relevantDocumentIDs: ["needed"])
+        let baseline = try RetrievalBenchmarkEvaluator.evaluate(
+            cases: [positive], rankedDocumentIDs: [["wrong"]], cutoff: 5
+        )
+        for count in [1, 10, 100] {
+            let cases = [positive] + (0..<count).map {
+                RetrievalBenchmarkCase(query: "absent \($0)", relevantDocumentIDs: [], expectedAbstention: true)
+            }
+            let mixed = try RetrievalBenchmarkEvaluator.evaluate(
+                cases: cases, rankedDocumentIDs: [["wrong"]] + Array(repeating: [], count: count), cutoff: 5
+            )
+            #expect(mixed.meanRecallAtK == baseline.meanRecallAtK)
+            #expect(mixed.meanReciprocalRank == baseline.meanReciprocalRank)
+            #expect(mixed.meanNDCGAtK == baseline.meanNDCGAtK)
+        }
+    }
+
+    @Test("no abstention observations cannot count as perfect abstention")
+    func unmeasuredAbstention() throws {
+        let result = try RetrievalBenchmarkEvaluator.evaluate(
+            cases: [.init(query: "q", relevantDocumentIDs: ["a"])], rankedDocumentIDs: [["a"]], cutoff: 1
+        )
+        #expect(result.abstentionAccuracy == 0)
     }
 }

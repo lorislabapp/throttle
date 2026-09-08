@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites>
+<testsuite name="TestResults" errors="0" tests="28" failures="0" time="4.831913667">
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_numberingAndMetadataStayInsideTheContextBudget" time="0.21905375">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_corruptionCannotRehydrateOrProduceAValidPointer" time="0.219287042">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_pointerRequiresAnExactHash" time="0.098074417">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_selectedEvidenceKeepsExactOriginalAndUntrustedBoundary" time="0.098084667">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_sourceMetadataCannotExhaustTheBudget" time="0.144713458">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_writeFailureIsExplicitAndDoesNotAdvertiseRehydration" time="0.14469275">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_ansiColourAndCachedGoOutput" time="0.16516625">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_cargo" time="0.165044375">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_failureFirstAndErrorOnlyPytestSummaries" time="0.178760458">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_failureFromAnotherRunnerCannotBecomeGreen" time="0.17871825">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_go_ok" time="0.157931167">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_go_fail" time="0.158049875">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_jest_failedFirstOrder" time="0.12730525">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_invalidAndEmptyCountsCannotBecomeGreen" time="0.12746675">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_jest_passOnly" time="0.165641625">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_laterSuccessDoesNotEraseFailureInTheSameObservedTail" time="0.165496417">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_pytest_passOnly" time="0.259247333">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_noFalsePositiveOnProse" time="0.274432458">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_pytest_withFailures" time="0.290438167">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_summaryMentionedInProseIsNotObservedResult" time="0.31665425">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_swift" time="0.178332334">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_swiftTestingOrNodeFailureAfterXCTestSuccessIsNotGreen" time="0.176426458">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_failedAttemptsContributeToCostPerGreen" time="0.173529292">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_malformedOrEmptyResultsCannotBecomeGreen" time="0.175501208">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_missingCostsAndResetsCannotMakeMetricCheaper" time="0.124826083">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_stableOrderAndIndependentSessions" time="0.096153166">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_windowUsesHistoricalCostAnchor" time="0.120690667">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_unrelatedProjectsAndAllFailuresDoNotCreateCostPerGreen" time="0.13219575">
+</testcase>
+</testsuite>
+</testsuites>

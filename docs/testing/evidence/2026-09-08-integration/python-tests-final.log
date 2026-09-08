@@ -1,0 +1,17 @@
+test_case_failures_and_duplicate_cases_fail (test_core_evidence.EvidenceReportTests.test_case_failures_and_duplicate_cases_fail) ... ok
+test_complete_report_passes (test_core_evidence.EvidenceReportTests.test_complete_report_passes) ... ok
+test_empty_skipped_and_malformed_reports_fail (test_core_evidence.EvidenceReportTests.test_empty_skipped_and_malformed_reports_fail) ... ok
+test_missing_case_fails (test_core_evidence.EvidenceReportTests.test_missing_case_fails) ... ok
+test_missing_suite_fails_even_with_another_green_suite (test_core_evidence.EvidenceReportTests.test_missing_suite_fails_even_with_another_green_suite) ... ok
+test_suite_level_errors_cannot_hide_behind_green_case (test_core_evidence.EvidenceReportTests.test_suite_level_errors_cannot_hide_behind_green_case) ... ok
+test_absence_passes_and_match_fails_without_echoing_content (test_no_match.NoMatchTests.test_absence_passes_and_match_fails_without_echoing_content) ... ok
+test_missing_file_and_invalid_pattern_fail (test_no_match.NoMatchTests.test_missing_file_and_invalid_pattern_fail) ... ok
+test_missing_tool_fails (test_no_match.NoMatchTests.test_missing_tool_fails) ... ok
+test_cached_appcast_with_same_top_build_but_different_bytes_fails (test_verify_public_release.PublicReleaseVerificationTests.test_cached_appcast_with_same_top_build_but_different_bytes_fails) ... ok
+test_identical_downloads_pass (test_verify_public_release.PublicReleaseVerificationTests.test_identical_downloads_pass) ... ok
+test_same_size_corrupt_fresh_dmg_fails (test_verify_public_release.PublicReleaseVerificationTests.test_same_size_corrupt_fresh_dmg_fails) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 2.794s
+
+OK

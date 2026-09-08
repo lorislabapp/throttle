@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="TestResults" errors="0" tests="8" failures="11" skipped="0" time="0.001039959">
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="claimsAndCitations()" time="0.000419667" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="conservativePromotion()" time="0.000181" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="promotesMeasuredGain()" time="0.000406208" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="abstention()" time="0.000488125" >
+      <failure message="Expectation failed: result.meanRecallAtK == 0 (error)" />
+    </testcase>
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="unmeasuredAbstention()" time="0.000455" >
+      <failure message="Expectation failed: result.abstentionAccuracy == 0 (error)" />
+    </testcase>
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="metrics()" time="0.000162375" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="addingAbstentionsDoesNotImproveRecall()" time="0.000718375" >
+      <failure message="Expectation failed: mixed.meanRecallAtK == baseline.meanRecallAtK (error)" />
+      <failure message="Expectation failed: mixed.meanReciprocalRank == baseline.meanReciprocalRank (error)" />
+      <failure message="Expectation failed: mixed.meanNDCGAtK == baseline.meanNDCGAtK (error)" />
+      <failure message="Expectation failed: mixed.meanRecallAtK == baseline.meanRecallAtK (error)" />
+      <failure message="Expectation failed: mixed.meanReciprocalRank == baseline.meanReciprocalRank (error)" />
+      <failure message="Expectation failed: mixed.meanNDCGAtK == baseline.meanNDCGAtK (error)" />
+      <failure message="Expectation failed: mixed.meanRecallAtK == baseline.meanRecallAtK (error)" />
+      <failure message="Expectation failed: mixed.meanReciprocalRank == baseline.meanReciprocalRank (error)" />
+      <failure message="Expectation failed: mixed.meanNDCGAtK == baseline.meanNDCGAtK (error)" />
+    </testcase>
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="invalid()" time="0.000430417" />
+  </testsuite>
+</testsuites>

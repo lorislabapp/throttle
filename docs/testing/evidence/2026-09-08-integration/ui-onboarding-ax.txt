@@ -1,0 +1,27 @@
+Window: "Global Portfolio Setup Test Host", App: Throttle.
+0 fenêtre standard Global Portfolio Setup Test Host, Secondary Actions: Raise
+	1 container
+		2 text Value: Configuration du portefeuille global LOCAL D’ABORD Étape 1 sur 5 · Confidentialité, ID: global-rag-onboarding
+		3 indicateur de progression Description: Progression de la configuration, Value: 0.2, Details: Étape 1 sur 5, ID: global-rag-onboarding
+		4 zone de défilement global-rag-onboarding
+			5 text Votre portefeuille reste le vôtre Throttle analyse uniquement les dossiers choisis. Il conserve un petit index dérivé et un profil portable. Cet assistant ne téléverse jamais le code source, les identifiants, les transcriptions ni le profil.
+			6 image (selected) Description: Vérifié, ID: checkmark.seal
+			7 text Déterministe d’abord Les marqueurs de dépôt, manifestes de dépendances, scripts et preuves indexées sont détectés sans IA. Chaque élément reste modifiable avant l’enregistrement.
+			8 image Description: Scintillement, ID: sparkles
+			9 text Suggestions locales facultatives Vérification des modèles locaux… La sortie IA est signalée, limitée et jamais considérée comme une preuve.
+			10 commutateur Utiliser un modèle local pour proposer des libellés et relais plus clairs, Value: on, ID: global-rag-use-local-ai
+			11 texte Aucun repli vers le cloud. Si le modèle est indisponible ou si son JSON est invalide, Throttle conserve le résultat déterministe.
+		12 bouton Description: Annuler, ID: global-rag-onboarding
+		13 bouton Description: Continuer, ID: global-rag-onboarding
+	14 Bouton de fermeture
+	15 bouton plein écran Help: ce bouton peut également agrandir ou réduire la fenêtre, Secondary Actions: réduire/agrandir la fenêtre
+	16 bouton de minimisation
+	17 texte Global Portfolio Setup Test Host
+18 menu bar
+	19 Throttle
+	20 Édition
+	21 Présentation
+	22 Fenêtre
+	23 Aide
+
+The focused UI element is 0 fenêtre standard Global Portfolio Setup Test Host, Secondary Actions: Raise
