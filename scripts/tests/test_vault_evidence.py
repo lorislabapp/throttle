@@ -274,6 +274,9 @@ class VaultReleaseEvidenceTests(unittest.TestCase):
         self.assertEqual(release, ["release" if value == "debug" else value for value in debug])
         self.assertEqual(release[release.index("--scratch-path") + 1], str(scratch))
         self.assertEqual(release[release.index("--build-system") + 1], "native")
+        for flags in (debug, release):
+            # `@testable import` only compiles with testability; Release lacks it by default.
+            self.assertEqual(flags[flags.index("-Xswiftc") + 1], "-enable-testing")
         with self.assertRaises(validator.EvidenceError):
             validator.package_flags(scratch, "relase")
 

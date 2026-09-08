@@ -65,8 +65,11 @@ def require(condition, message):
 
 def package_flags(scratch, configuration):
     require(configuration in {"debug", "release"}, "unknown_build_configuration")
+    # Release does not enable testability by default, so every `@testable import`
+    # in the test targets fails to compile there (ModuleNotTestable). Both
+    # configurations get the same flag: the matrix must differ only by `-c`.
     return ["--package-path", str(PACKAGE), "--scratch-path", str(scratch), "--build-system", "native",
-            "-c", configuration, "--jobs", "2"]
+            "-c", configuration, "--jobs", "2", "-Xswiftc", "-enable-testing"]
 
 
 def validate_crash_recovery(records):

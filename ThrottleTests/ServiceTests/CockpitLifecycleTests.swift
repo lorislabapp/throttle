@@ -16,7 +16,8 @@ final class CockpitLifecycleTests: XCTestCase {
                 let scope = OwnedProcessTermination.capture(roots: [identity]) ?? previousScope
                 return OwnedProcessTermination.stop(scope, grace: 0.05)
             }.value
-            XCTAssertEqual(outcome, .stopped, "Only this test's captured process scope may be cleaned up")
+            XCTAssertEqual(outcome, .stopped,
+                           "Only this test's captured process scope may be cleaned up: " + lingering(fixture.scope))
             if outcome == .stopped { try FileManager.default.removeItem(at: fixture.directory) }
         }
         fixtures.removeAll()
@@ -30,7 +31,8 @@ final class CockpitLifecycleTests: XCTestCase {
         let identity = tab.sessionId
         tab.pauseReason = .user
         let stopped = await tab.hibernate()
-        XCTAssertTrue(stopped, tab.stopIssue ?? "Both owned terminal groups must have exited")
+        XCTAssertTrue(stopped, (tab.stopIssue ?? "Both owned terminal groups must have exited")
+            + " — " + lingering(primary.scope) + " | " + lingering(side.scope))
         XCTAssertTrue(tab.isHibernated)
         XCTAssertFalse(tab.isStopping)
         XCTAssertNil(tab.stopIssue)
@@ -110,7 +112,8 @@ final class CockpitLifecycleTests: XCTestCase {
         let secondFixture = try await fixture(), second = tab(secondFixture)
         let model = model(with: [first, second])
         let stopped = await model.stop()
-        XCTAssertTrue(stopped)
+        XCTAssertTrue(stopped, (first.stopIssue ?? second.stopIssue ?? "Every captured tree must have exited")
+            + " — " + [primary, side, secondFixture].map { lingering($0.scope) }.joined(separator: " | "))
         XCTAssertTrue(model.isQuitting)
         XCTAssertTrue(model.sessions.isEmpty)
         XCTAssertTrue(first.isHibernated)
@@ -214,6 +217,45 @@ final class CockpitLifecycleTests: XCTestCase {
     private func assertAlive(_ fixture: CockpitTerminalFixture) {
         let current = NativeProcessIdentity.capture(fixture.identity.pid)
         XCTAssertTrue(current.map { OwnedProcessTermination.sameProcess($0, fixture.identity) } == true)
+    }
+
+    /// Diagnostic only, evaluated when an assertion fails: names what still
+    /// occupies a captured scope so a hosted-runner timeout is not a bare number.
+    private func lingering(_ scope: OwnedProcessTermination.Scope) -> String {
+        var lines: [String] = []
+        for member in scope.members {
+            let pid = member.identity.pid
+            if let current = NativeProcessIdentity.capture(pid) {
+                lines.append("member \(pid) " + (OwnedProcessTermination.sameProcess(current, member.identity)
+                    ? "still the captured process" : "pid reused by another process"))
+            } else {
+                let probe = kill(pid, 0), error = errno
+                lines.append("member \(pid) not inspectable, kill(pid,0)=\(probe) errno=\(error)")
+            }
+        }
+        for group in scope.groups {
+            let probe = kill(-group, 0), error = errno
+            lines.append("group \(group) kill(-group,0)=\(probe) errno=\(error) occupants=[\(occupants(of: group))]")
+        }
+        return lines.joined(separator: "; ")
+    }
+
+    /// Every process still listed in the group, zombies included (status 5).
+    private func occupants(of group: pid_t) -> String {
+        var pids = [pid_t](repeating: 0, count: 256)
+        let bytes = pids.withUnsafeMutableBytes {
+            proc_listpids(UInt32(PROC_PGRP_ONLY), UInt32(group), $0.baseAddress, Int32($0.count))
+        }
+        guard bytes > 0 else { return "none" }
+        return pids.prefix(Int(bytes) / MemoryLayout<pid_t>.size).filter { $0 > 0 }.map { pid -> String in
+            var info = proc_bsdinfo()
+            let size = MemoryLayout.size(ofValue: info)
+            guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, Int32(size)) == size else { return "\(pid) ?" }
+            let name = withUnsafePointer(to: &info.pbi_comm) {
+                String(cString: UnsafeRawPointer($0).assumingMemoryBound(to: CChar.self))
+            }
+            return "\(pid) \(name) ppid=\(info.pbi_ppid) status=\(info.pbi_status)"
+        }.joined(separator: ", ")
     }
 
     private func assertGone(_ fixture: CockpitTerminalFixture) {

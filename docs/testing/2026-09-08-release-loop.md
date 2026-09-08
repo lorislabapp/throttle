@@ -65,6 +65,44 @@ Le refus du benchmark est conservé dans `retrieval-gate.json`. Le corpus privé
 ses requêtes ne sont pas envoyés sur GitHub. Le jeu actuel dérive des titres et
 sections ; il ne remplace pas un jeu de questions humaines indépendant.
 
+## CI n°3 — troisième lot rejoué (run 34260476621 → 34265419804, HEAD `cbb0936`)
+
+Le troisième lot a été committé et poussé le 8 septembre 2026 au soir, après
+149/149 tests Python, SwiftLint 0.63.2 épinglé et `git diff --check` sur le
+snapshot gelé. Résultat distant exact :
+
+- `ios-tests` **PASS** : la correction ActivityKit est confirmée par une vraie
+  compilation et les tests UIKit/SwiftTerm. `visionos-build`, `quality` et
+  `validator-evidence` **PASS**.
+- `vault-tests (release)` **FAIL** en 64 s à la compilation : `@testable import
+  ResearchVaultIngestion` → `ModuleNotTestable`. `-c release` n'active pas la
+  testabilité ; le vérificateur ne passait pas `-Xswiftc -enable-testing`.
+  Corrigé pour les deux configurations (la matrice ne doit différer que par
+  `-c`), avec assertion dans `test_vault_evidence.py`. Conséquence assumée :
+  les binaires Release utilisés par les gates crash/refus sont compilés avec
+  testabilité — un build de qualification, pas un artefact de distribution.
+- `vault-tests (debug)` **FAIL** : 1 fonction Swift Testing sur 157,
+  `ResearchVaultMCPProtocolHandlerTests.unknownTool`, `SQLCipher operation
+  failed (key, code 1)` à `sqlite3_key`. Les sources du package sont inchangées
+  depuis le run n°2 vert (le lot ne touchait que `Scripts/verify-crash-recovery.sh`).
+  Classé intermittent ; **le test n'est pas modifié**, un second échantillon est
+  demandé à la CI n°4. Gate ouvert tant que la cause n'est pas nommée.
+- `macos-tests` **FAIL** : 645 cas, 3 échecs, tous dans `CockpitLifecycleTests`
+  avec la fixture stabilisée (1 seul au run n°2) : `testHibernate…` (5,99 s),
+  `testModelStop…` (5,70 s) et le tearDown de `testUnknownOwner…` (2,11 s), même
+  message « Session stop could not be confirmed ». Lecture des durées : le test
+  voisin `testHandoff…` passe en 1,68 s ≈ délai de grâce TERM → sur le runner
+  hébergé, TERM ne termine pas l'arbre et l'escalade KILL ne se confirme pas
+  toujours dans les 2 s. Non reproduit localement (20/20, session précédente).
+  Le run contient 523 avertissements Thread Performance Checker (QoS UI en
+  attente d'un thread Default). Action : **diagnostic uniquement** — les
+  messages d'assertion listent désormais les membres survivants et les occupants
+  du groupe (`proc_listpids` `PROC_PGRP_ONLY`, zombies inclus). Aucun délai
+  produit relevé, aucun oracle assoupli. Gate ouvert.
+
+L'édition Swift n'a pas été compilée localement (1,8 Gio de disque) ; la CI n°4
+en est la vérification. Les artefacts complets du run n°3 restent sur GitHub.
+
 ## Conservation et verdict
 
 Les preuves compactes sont dans [evidence/2026-09-08-release-loop](evidence/2026-09-08-release-loop).
