@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "testCount": 6,
+  "tests": [
+    "testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck",
+    "testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount",
+    "testCancelledDebounceCannotConsumeSnapshotAfterRestart",
+    "testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot",
+    "testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots",
+    "testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck"
+  ],
+  "sourceSHA256": {
+    "Throttle/Network/CloudKitPublisher.swift": "429b6066292171dc988c85f28241f1d0c6748d0a2989ab7ab4676466005c2229",
+    "ThrottleTests/ServiceTests/CloudKitPublisherTests.swift": "721307be66d0e395da240b71ee8dd44264a147d4476544d9afdd85cf7a6bd807",
+    "ThrottleShared/Sources/ThrottleShared/CloudKitSchema.swift": "807eeb104a2d903e1bd8403e629d1e73feb492f6384030764a4dbc63c71f59c0",
+    "ThrottleShared/Sources/ThrottleShared/CloudKitRecordMapping.swift": "40e9ca8c7c0f10e279f30af471cdfbbe8f69a649e66c82b69afabb7b728b03a6",
+    "ThrottleShared/Sources/ThrottleShared/ThrottleMirrorSnapshot.swift": "6fb333312b39b72c9f225acf5a6572338900f8fe611ba866413dcd2cd7ceb346",
+    "ThrottleShared/Sources/ThrottleShared/MirrorTransport.swift": "dd0ca2faebe1fd41136e6c25421cd206c79bdefafbf3bf53a2acc28b2975aedc"
+  },
+  "scope": "isolated Swift6 source-and-test copies, no application host or CloudKit service",
+  "lint": "0 diagnostics, SwiftLint 0.63.2",
+  "initialNoXMLAttempt": "swift test without --parallel completed 6/6 but did not emit XML; parallel runner re-executed 6 cases and emitted checked XML"
+}

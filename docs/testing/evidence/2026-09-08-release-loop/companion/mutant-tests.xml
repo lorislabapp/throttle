@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites>
+<testsuite name="TestResults" errors="0" tests="22" failures="9" time="3.0534335410000004">
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testAccountNotificationScrubsBeforeItsAsynchronousRefreshStarts" time="0.151360958">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testBootstrapHidesUnverifiedCacheAndScrubsDifferentOwnerBeforeFetch" time="0.144105667">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testDelayedAccountAResponseCannotRepopulateAccountB" time="0.166683125">
+<failure message="failure"></failure>
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testDifferentOwnerCannotInheritPreviousPushSubscription" time="0.117583542">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testIdentityChangedWithoutNotificationRejectsFetchedRecordAndPairing" time="0.170168959">
+<failure message="failure"></failure>
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testIdentityFailureAfterRecordDoesNotRestorePreviousAuthorization" time="0.144031">
+<failure message="failure"></failure>
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testLateFailureCannotOverwriteTheNewAccountState" time="0.159538625">
+<failure message="failure"></failure>
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testLateIdentityCannotBindItsCacheToTheNextAccount" time="0.169367">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testLateSubscriptionCannotRestorePushAuthorizationAfterAccountChange" time="0.166545333">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testSameProvenOwnerRetainsCacheWhenNoNewSnapshotExists" time="0.15172375">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testSignOutImmediatelyRevokesMirrorPeerAndErrors" time="0.14831125">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testUnownedLegacyCacheIsNotAssignedToFirstAccount" time="0.140060417">
+</testcase>
+<testcase classname="ThrottleTests.CompanionHostIsolationTests" name="testDefaultStoreUsesOnlyTestDefaultsAndNotificationsStayDisabled" time="0.12393575">
+</testcase>
+<testcase classname="ThrottleTests.CompanionHostIsolationTests" name="testHostedTestsUseTheirOwnDefaultsAndCannotStartTheSharedPeer" time="0.123583208">
+</testcase>
+<testcase classname="ThrottleTests.CompanionHostIsolationTests" name="testProductionCloudBackendRejectsAllEntrypointsBeforeOpeningContainer" time="0.111485375">
+</testcase>
+<testcase classname="ThrottleTests.MirrorStorePrivacyTests" name="testEncodingAlreadyInFlightCannotWriteAfterScrub" time="0.114236083">
+<failure message="failure"></failure>
+</testcase>
+<testcase classname="ThrottleTests.MirrorStorePrivacyTests" name="testSupersededEncodingCannotOverwriteNewerHistoryAndSecretsNeverPersist" time="0.113208041">
+<failure message="failure"></failure>
+</testcase>
+<testcase classname="ThrottleTests.PeerClientPrivacyTests" name="testDetachSuppressesQueuedTerminalCallbacksAndOutgoingWrites" time="0.147325791">
+</testcase>
+<testcase classname="ThrottleTests.PeerClientPrivacyTests" name="testMissingPairingRevokesExistingConnectorAndTerminalImmediately" time="0.112013959">
+</testcase>
+<testcase classname="ThrottleTests.PeerClientPrivacyTests" name="testReattachmentCannotDeliverPreviousTerminalBytesToEitherView" time="0.136070791">
+<failure message="failure"></failure>
+</testcase>
+<testcase classname="ThrottleTests.PeerClientPrivacyTests" name="testRotationRejectsOldSnapshotAndConnectionStateButAcceptsNewConnector" time="0.142323958">
+<failure message="failure"></failure>
+</testcase>
+<testcase classname="ThrottleTests.PeerClientPrivacyTests" name="testStopRejectsCallbacksAlreadyQueuedAndCapturedByOldConnector" time="0.099770959">
+<failure message="failure"></failure>
+</testcase>
+</testsuite>
+</testsuites>

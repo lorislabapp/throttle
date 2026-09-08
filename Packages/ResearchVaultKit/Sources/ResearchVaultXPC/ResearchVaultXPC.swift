@@ -26,7 +26,7 @@ public final class ResearchVaultQueryService: NSObject, ResearchVaultQueryXPCPro
         _ request: Data,
         withReply reply: @escaping @Sendable (Data) -> Void
     ) {
-        guard request.count <= ResearchVaultIPCContract.maximumQueryBytes + 512 else {
+        guard request.count <= ResearchVaultIPCContract.maximumSearchRequestBytes else {
             reply(errorPayload(.invalidRequest))
             return
         }
@@ -43,6 +43,8 @@ public final class ResearchVaultQueryService: NSObject, ResearchVaultQueryXPCPro
                 reply(try result.encodedForIPC())
             } catch let error as ResearchVaultIPCValidationError {
                 _ = error
+                reply(errorPayload(.invalidRequest))
+            } catch is DecodingError {
                 reply(errorPayload(.invalidRequest))
             } catch {
                 reply(errorPayload(.unavailable))

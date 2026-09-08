@@ -127,6 +127,14 @@ extension PlanTreeView {
                         .textSelection(.enabled)
                 }
                 controls(task.id, assessment)
+                if let check = state.lastCheck {
+                    Text(check.receipt == nil
+                         ? String(localized: "Historical check — evidence coverage not recorded")
+                         : String(localized:
+                            "Command-level evidence — test coverage and physical acceptance are separate"))
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 if let integrationError {
                     Text(integrationError).font(.system(size: 11)).foregroundStyle(.red)
                         .fixedSize(horizontal: false, vertical: true)

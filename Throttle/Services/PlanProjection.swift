@@ -118,7 +118,7 @@ enum PlanProjection {
         case .checked:
             state.lastCheck = TaskCheck(passed: event.passed ?? false,
                                         stamp: event.ref ?? "",
-                                        ranAt: event.timestamp)
+                                        ranAt: event.timestamp, receipt: event.receipt)
 
         case .integrated:
             state.status = .integrated

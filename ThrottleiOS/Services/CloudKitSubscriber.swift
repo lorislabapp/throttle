@@ -3,132 +3,151 @@ import Foundation
 import OSLog
 import ThrottleShared
 
-/// Fetches the latest mirror snapshot from the user's private CloudKit DB and
-/// keeps a silent-push subscription so background pushes refresh it. Read-only.
-/// Also owns iCloud account lifecycle: it checks `accountStatus` (so a signed-out
-/// state is surfaced, not shown as an opaque error) and scrubs the shared App Group
-/// when the iCloud identity changes (privacy — no data bleed between accounts).
+/// The identity that authorizes a snapshot must survive every CloudKit await.
+/// A generation also rejects replies already in flight when an account changes.
 @MainActor
 @Observable
 final class CloudKitSubscriber {
     static let shared = CloudKitSubscriber()
-    private let container = CKContainer(identifier: CloudKitSchema.containerID)
-    private var database: CKDatabase { container.privateCloudDatabase }
-    private init() {}
-
-    private static let subscriptionID = "throttle-snapshot-sub"
-    private static let userRecordKey = "ThrottleiCloudUserRecordV1"
+    static let userRecordKey = "ThrottleiCloudUserRecordV1"
     private static let log = Logger(subsystem: "com.lorislab.throttle.ios", category: "CloudKit")
 
     enum Account: Equatable { case unknown, available, signedOut, restricted, error(String) }
     private(set) var account: Account = .unknown
-
-    /// Whether the silent-push subscription is live. false only means background
-    /// pushes are off (schema not promoted to Production, etc.) — foreground and
-    /// pull-to-refresh still update the mirror, so this is NOT surfaced as an error.
     private(set) var pushAvailable = false
 
-    /// One-shot at launch: verify the account, pull the current snapshot, ensure the
-    /// push subscription, and start observing account changes.
+    private let backend: any MirrorCloudBackend
+    private let defaults: UserDefaults
+    private let mirror: MirrorStore
+    private let pair: (ThrottleMirrorSnapshot) -> Void
+    private let notifications: NotificationCenter?
+    private var observer: NSObjectProtocol?
+    private var generation: UInt64 = 0
+    private var verifiedIdentity: String?
+
+    init(backend: any MirrorCloudBackend = SystemMirrorCloudBackend(),
+         defaults: UserDefaults = CompanionRuntime.defaults,
+         mirror: MirrorStore = .shared,
+         pair: @escaping (ThrottleMirrorSnapshot) -> Void = { PeerClient.shared.syncPairing(from: $0) },
+         notifications: NotificationCenter? = CompanionRuntime.isTesting ? nil : .default) {
+        self.backend = backend
+        self.defaults = defaults
+        self.mirror = mirror
+        self.pair = pair
+        self.notifications = notifications
+    }
+
     func bootstrap() async {
-        NotificationCenter.default.addObserver(
-            forName: .CKAccountChanged, object: nil, queue: .main) { _ in
-                Task { @MainActor in await CloudKitSubscriber.shared.handleAccountChange() }
+        if observer == nil, let notifications {
+            observer = notifications.addObserver(
+                forName: .CKAccountChanged, object: nil, queue: .main) { [weak self] _ in
+                // The observer runs on the main queue. Revoke synchronously before
+                // scheduling a refresh: queued old responses must already be stale.
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.accountDidChange()
+                    Task { [weak self] in await self?.refreshWithSubscription() }
+                }
             }
-        await refreshAccount()
-        guard account == .available else { return }
-        await fetchLatest()
-        await ensureSubscription()
+        }
+        await refreshWithSubscription()
     }
 
-    private func refreshAccount() async {
+    private func refreshWithSubscription() async {
+        _ = await fetchLatest()
+        guard account == .available, let identity = verifiedIdentity else { return }
+        await ensureSubscription(identity: identity, generation: generation)
+    }
+
+    /// May be called before starting any asynchronous reconciliation.
+    func accountDidChange() {
+        generation &+= 1
+        verifiedIdentity = nil
+        account = .unknown
+        pushAvailable = false
+        mirror.scrub()
+        defaults.removeObject(forKey: Self.userRecordKey)
+    }
+
+    private func isCurrent(_ token: UInt64) -> Bool { token == generation && !Task.isCancelled }
+
+    private func identity(generation token: UInt64) async -> String? {
         do {
-            switch try await container.accountStatus() {
-            case .available:            account = .available
-            case .noAccount:            account = .signedOut
-            case .restricted:           account = .restricted
-            case .couldNotDetermine:    account = .unknown
-            case .temporarilyUnavailable: account = .unknown
-            @unknown default:           account = .unknown
+            let status = try await backend.accountStatus()
+            guard isCurrent(token) else { return nil }
+            guard status == .available else {
+                accountDidChange()
+                switch status {
+                case .noAccount: account = .signedOut
+                case .restricted: account = .restricted
+                default: account = .unknown
+                }
+                return nil
             }
+            let identity = try await backend.userRecordName()
+            guard isCurrent(token) else { return nil }
+            guard !identity.isEmpty else { throw MirrorCloudError.missingIdentity }
+            return identity
         } catch {
+            guard isCurrent(token) else { return nil }
+            accountDidChange()
             account = .error(error.localizedDescription)
+            return nil
         }
     }
 
-    /// On an iCloud account switch/sign-out, compare the CloudKit user record id to
-    /// the last-seen one; if it changed (or signed out), scrub all mirrored data so
-    /// the previous identity's usage/history never shows to a different user.
-    private func handleAccountChange() async {
-        await refreshAccount()
-        let store = UserDefaults(suiteName: MirrorStorage.appGroupID) ?? .standard
-        let previous = store.string(forKey: Self.userRecordKey)
-        guard account == .available else {
-            // Signed out / unavailable → drop everything and forget the identity.
-            MirrorStore.shared.scrub()
-            store.removeObject(forKey: Self.userRecordKey)
-            return
+    private func verify(_ expected: String, generation token: UInt64) async -> Bool {
+        guard let current = await identity(generation: token) else { return false }
+        guard current == expected else {
+            accountDidChange()
+            return false
         }
-        let current = try? await container.userRecordID().recordName
-        if let current, current != previous {
-            if previous != nil { MirrorStore.shared.scrub() }  // identity actually changed
-            store.set(current, forKey: Self.userRecordKey)
-            await fetchLatest()
-            await ensureSubscription()
-        }
+        return isCurrent(token)
     }
 
     @discardableResult
     func fetchLatest() async -> Bool {
-        let id = CKRecord.ID(recordName: CloudKitSchema.recordName())
-        do {
-            let record = try await database.record(for: id)
-            let snap = try CloudKitRecordMapping.snapshot(from: record)
-            MirrorStore.shared.ingest(snap)
-            PeerClient.shared.syncPairing(from: snap)
-            MirrorStore.shared.lastError = nil
-            // Remember the identity that owns this data (first successful fetch).
-            if let uid = try? await container.userRecordID().recordName {
-                (UserDefaults(suiteName: MirrorStorage.appGroupID) ?? .standard)
-                    .set(uid, forKey: Self.userRecordKey)
-            }
+        generation &+= 1
+        let token = generation
+        guard let current = await identity(generation: token) else { return false }
+        let storedOwner = defaults.string(forKey: Self.userRecordKey)
+        let activeOwnerChanged = verifiedIdentity != nil && verifiedIdentity != current
+        if storedOwner != current || activeOwnerChanged {
+            // This also rejects an unowned legacy cache: no arbitrary migration to
+            // the first account encountered after upgrading or switching accounts.
+            mirror.scrub()
+            pushAvailable = false
+        } else if verifiedIdentity == nil {
+            mirror.restoreVerifiedCache()
+        }
+        defaults.set(current, forKey: Self.userRecordKey)
+        verifiedIdentity = current
+        account = .available
+
+        let result: Result<ThrottleMirrorSnapshot?, Error>
+        do { result = .success(try await backend.latestSnapshot()) } catch { result = .failure(error) }
+        guard isCurrent(token), await verify(current, generation: token) else { return false }
+        switch result {
+        case .success(let snapshot):
+            mirror.lastError = nil
+            guard let snapshot else { return false }
+            mirror.ingest(snapshot)
+            pair(snapshot)
             return true
-        } catch let ck as CKError where ck.code == .unknownItem {
-            // Mac hasn't published a snapshot yet — not an error.
-            MirrorStore.shared.lastError = nil
-            return false
-        } catch {
-            MirrorStore.shared.lastError = error.localizedDescription
+        case .failure(let error):
+            mirror.lastError = error.localizedDescription
             return false
         }
     }
 
-    private func ensureSubscription() async {
-        let sub = CKQuerySubscription(
-            recordType: CloudKitSchema.recordType,
-            predicate: NSPredicate(value: true),
-            subscriptionID: Self.subscriptionID,
-            options: [.firesOnRecordCreation, .firesOnRecordUpdate])
-        let info = CKSubscription.NotificationInfo()
-        info.shouldSendContentAvailable = true   // silent push
-        sub.notificationInfo = info
-        do {
-            _ = try await database.save(sub)
-            pushAvailable = true
-        } catch let ck as CKError where ck.code == .serverRejectedRequest {
-            // Already registered — the expected idempotent case, ignore.
-            pushAvailable = true
-        } catch {
-            // Silent push is a background-refresh OPTIMISATION, not the data path:
-            // the mirror still refreshes on foreground, pull-to-refresh and every
-            // received push. So a failed subscription must NOT raise the red
-            // `lastError` banner over a screen that is showing fresh data — that
-            // read as "broken" when nothing was. Most common cause here is the
-            // CloudKit schema not being promoted to Production (ThrottleSnapshot
-            // not Queryable in prod); the fix is a one-time Console deploy, not
-            // anything the user can act on from the phone. Log it, flag it quietly.
-            pushAvailable = false
+    private func ensureSubscription(identity: String, generation token: UInt64) async {
+        guard isCurrent(token) else { return }
+        let succeeded: Bool
+        do { try await backend.ensureSubscription(); succeeded = true } catch {
+            succeeded = false
             Self.log.info("silent-push subscription unavailable: \(error.localizedDescription, privacy: .public)")
         }
+        guard isCurrent(token), await verify(identity, generation: token) else { return }
+        pushAvailable = succeeded
     }
 }

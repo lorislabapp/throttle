@@ -1,4 +1,5 @@
 import CryptoKit
+import Darwin
 import Foundation
 
 enum PlanStoreError: Error, Equatable {
@@ -6,15 +7,18 @@ enum PlanStoreError: Error, Equatable {
     case unknownTask(String)
     case missingPlan(String)
     case planAlreadyExists(String)
+    case mutationBusy
+    case unsafeStorage
+    case invalidLog(String)
+    case eventIdentityConflict
+    case staleSequence
 }
 
 /// Reads and writes a project's `.throttle/` directory.
 ///
-/// An actor because it is the single writer: agents reach the log through
-/// `ThrottleMCPServer`, which lives in this same process, so appends serialise
-/// here and the `prev` hash chain stays intact without a lock file. A log written
-/// by something that bypassed Throttle still parses — the chain simply reports
-/// itself broken, which is information rather than damage.
+/// Mutation transactions serialize cooperating instances and processes using a
+/// project lock. The complete read/check/append operation must use `mutate`, not
+/// only append. This lock is coordination, not authentication or a sandbox.
 ///
 /// What the chain is worth, precisely: it catches an edit to any line that has a
 /// successor. It does NOT catch an edit to the final line, which nothing vouches
@@ -26,13 +30,10 @@ final class PlanStore: @unchecked Sendable {
     private let root: URL
     private let files = FileManager.default
 
-    /// Not an actor: `ThrottleMCPServer` is a synchronous stdin loop, and bridging
-    /// it to an actor would mean blocking a thread on every tool call. A plain lock
-    /// gives the same single-writer guarantee without that seam.
-    ///
-    /// NSLock is not reentrant, so every public method takes the lock exactly once
-    /// and delegates to an unlocked `impl`; no public method calls another.
-    private let lock = NSLock()
+    /// Recursive only to allow a mutation to call this instance's public methods.
+    /// The OS lock below provides the missing cross-instance/process boundary.
+    private let lock = NSRecursiveLock()
+    private var mutationActive = false
 
     /// Replaying a log on every filesystem event would re-read every line on every
     /// keystroke of an agent, so replays are memoised on the log's identity.
@@ -41,7 +42,37 @@ final class PlanStore: @unchecked Sendable {
     private var replayCache: [String: Replay] = [:]
 
     init(projectRoot: URL) {
-        self.root = projectRoot
+        self.root = projectRoot.standardizedFileURL.resolvingSymlinksInPath()
+    }
+
+    /// Never call a different store instance from this closure. Do not perform
+    /// network work or launch a runtime while holding the transaction.
+    func mutate<T>(_ body: (PlanStore) throws -> T) throws -> T {
+        lock.lock(); defer { lock.unlock() }
+        if mutationActive { return try body(self) }
+        try files.createDirectory(at: throttleDir, withIntermediateDirectories: true,
+                                  attributes: [.posixPermissions: 0o700])
+        guard throttleDir.resolvingSymlinksInPath().path == throttleDir.path else {
+            throw PlanStoreError.unsafeStorage
+        }
+        let descriptor = Darwin.open(throttleDir.appendingPathComponent("mutation.lock").path,
+                                     O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
+        guard descriptor >= 0 else { throw PlanStoreError.unsafeStorage }
+        defer { Darwin.close(descriptor) }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0, (info.st_mode & S_IFMT) == S_IFREG,
+              info.st_nlink == 1 else { throw PlanStoreError.unsafeStorage }
+        let deadline = ProcessInfo.processInfo.systemUptime + 5
+        while flock(descriptor, LOCK_EX | LOCK_NB) != 0 {
+            guard errno == EWOULDBLOCK || errno == EINTR else { throw PlanStoreError.unsafeStorage }
+            guard ProcessInfo.processInfo.systemUptime < deadline else { throw PlanStoreError.mutationBusy }
+            Thread.sleep(forTimeInterval: 0.005)
+        }
+        defer { flock(descriptor, LOCK_UN) }
+        mutationActive = true
+        replayCache.removeAll()
+        defer { mutationActive = false; replayCache.removeAll() }
+        return try body(self)
     }
 
     // MARK: - Layout
@@ -57,6 +88,7 @@ final class PlanStore: @unchecked Sendable {
         let isSafe = !taskID.isEmpty && taskID.count <= 128
             && !taskID.contains("/") && !taskID.contains("\\")
             && !taskID.contains("..") && !taskID.hasPrefix(".")
+            && taskID.rangeOfCharacter(from: .controlCharacters) == nil
         guard isSafe else { throw PlanStoreError.unsafeTaskID(taskID) }
         return taskID
     }
@@ -71,20 +103,20 @@ final class PlanStore: @unchecked Sendable {
 
     // MARK: - Codec
 
-    private static let encoder: JSONEncoder = {
+    private static var encoder: JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         // Sorted keys keep a line's bytes stable, which is what makes the hash
         // chain reproducible across machines and Swift versions.
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         return encoder
-    }()
+    }
 
-    private static let decoder: JSONDecoder = {
+    private static var decoder: JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return decoder
-    }()
+    }
 
     private static func hash(_ line: String) -> String {
         SHA256.hash(data: Data(line.utf8)).map { String(format: "%02x", $0) }.joined()
@@ -107,12 +139,12 @@ final class PlanStore: @unchecked Sendable {
     /// Writes a starting plan, and refuses if one already exists. Bootstrapping
     /// over a live plan would discard tasks agents are holding.
     func bootstrap(_ plan: Plan) throws {
-        lock.lock(); defer { lock.unlock() }
-        guard !files.fileExists(atPath: planURL.path) else {
-            throw PlanStoreError.planAlreadyExists(planURL.path)
+        try mutate { _ in
+            guard !files.fileExists(atPath: planURL.path) else {
+                throw PlanStoreError.planAlreadyExists(planURL.path)
+            }
+            try Self.encoder.encode(plan).write(to: planURL, options: .atomic)
         }
-        try files.createDirectory(at: throttleDir, withIntermediateDirectories: true)
-        try Self.encoder.encode(plan).write(to: planURL, options: .atomic)
     }
 
     func planExists() -> Bool {
@@ -142,9 +174,9 @@ final class PlanStore: @unchecked Sendable {
             return (cached.events, cached.chainValid)
         }
 
-        let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+        let text = try String(contentsOf: url, encoding: .utf8)
         var events: [TaskEvent] = []
-        var chainValid = true
+        var chainValid = text.isEmpty || text.hasSuffix("\n")
         var expectedPrev: String?
 
         for line in text.split(separator: "\n", omittingEmptySubsequences: true) {
@@ -153,7 +185,7 @@ final class PlanStore: @unchecked Sendable {
                 chainValid = false
                 continue
             }
-            if event.prev != expectedPrev { chainValid = false }
+            if event.prev != expectedPrev || event.seq != events.count + 1 { chainValid = false }
             expectedPrev = Self.hash(raw)
             events.append(event)
         }
@@ -165,17 +197,29 @@ final class PlanStore: @unchecked Sendable {
     /// Appends one event, filling in `seq` and `prev` from the log's current tail.
     /// The caller supplies intent; the store owns the chain.
     @discardableResult
-    func append(_ event: TaskEvent, to taskID: String) throws -> TaskEvent {
-        lock.lock(); defer { lock.unlock() }
-        return try appendImpl(event, to: taskID)
+    func append(_ event: TaskEvent, to taskID: String, expectedSequence: Int? = nil) throws -> TaskEvent {
+        try mutate { _ in try appendImpl(event, to: taskID, expectedSequence: expectedSequence) }
     }
 
-    private func appendImpl(_ event: TaskEvent, to taskID: String) throws -> TaskEvent {
+    private func appendImpl(_ event: TaskEvent, to taskID: String, expectedSequence: Int?) throws -> TaskEvent {
         let url = try logURL(taskID)
         try files.createDirectory(at: logDir, withIntermediateDirectories: true)
-
-        let existing = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+        guard logDir.resolvingSymlinksInPath().path == logDir.path,
+              url.resolvingSymlinksInPath().path == url.path else { throw PlanStoreError.unsafeStorage }
+        let existing = files.fileExists(atPath: url.path) ? try String(contentsOf: url, encoding: .utf8) : ""
+        let history = try eventsImpl(for: taskID)
+        guard history.chainValid else { throw PlanStoreError.invalidLog(taskID) }
+        if let identity = event.eventID, let previous = history.events.first(where: { $0.eventID == identity }) {
+            var retry = event
+            retry.seq = previous.seq
+            retry.prev = previous.prev
+            guard try Self.encoder.encode(retry) == Self.encoder.encode(previous) else {
+                throw PlanStoreError.eventIdentityConflict
+            }
+            return previous
+        }
         let lines = existing.split(separator: "\n", omittingEmptySubsequences: true)
+        if let expectedSequence, expectedSequence != lines.count { throw PlanStoreError.staleSequence }
 
         var stamped = event
         stamped.seq = lines.count + 1
@@ -185,13 +229,15 @@ final class PlanStore: @unchecked Sendable {
         guard var line = String(data: data, encoding: .utf8) else { return stamped }
         line += "\n"
 
-        if let handle = FileHandle(forWritingAtPath: url.path) {
-            defer { try? handle.close() }
-            try handle.seekToEnd()
-            try handle.write(contentsOf: Data(line.utf8))
-        } else {
-            try Data(line.utf8).write(to: url, options: .atomic)
-        }
+        let descriptor = Darwin.open(url.path, O_WRONLY | O_APPEND | O_CREAT | O_NOFOLLOW | O_CLOEXEC, 0o600)
+        guard descriptor >= 0 else { throw PlanStoreError.unsafeStorage }
+        defer { Darwin.close(descriptor) }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0, (info.st_mode & S_IFMT) == S_IFREG,
+              info.st_nlink == 1 else { throw PlanStoreError.unsafeStorage }
+        let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: false)
+        try handle.write(contentsOf: Data(line.utf8))
+        try handle.synchronize()
 
         replayCache[taskID] = nil
         return stamped

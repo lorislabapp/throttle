@@ -14,6 +14,58 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  macos-tests:
+    # Independent of quality/lint: the complete app-hosted suite must always run.
+    # Ad hoc Debug signing needs no distribution identity or cloud entitlement.
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Select stable Xcode
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1
+        with:
+          xcode-version: latest-stable
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Verify the macOS evidence validator
+        run: python3 -B -m unittest discover -s scripts/tests -p 'test_macos_evidence.py' -v
+      - name: Run every isolated macOS host test and verify its evidence
+        run: python3 -B scripts/verify-macos-evidence.py --output-parent "$RUNNER_TEMP/throttle-macos-evidence"
+      - name: Preserve exact macOS test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: macos-tests-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/throttle-macos-evidence/*/evidence/
+          if-no-files-found: error
+          retention-days: 14
+          include-hidden-files: true
+
+  vault-tests:
+    # Independent package lane: both test engines, every argument, no opt-in skip.
+    # Debug package tests do not qualify signed XPC or the full Vault workflow.
+    runs-on: macos-26
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Select stable Xcode
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1
+        with:
+          xcode-version: latest-stable
+      - name: Verify the Vault evidence validator
+        run: python3 -B -m unittest discover -s scripts/tests -p 'test_vault_evidence.py' -v
+      - name: Run every Vault package test and verify native evidence
+        run: python3 -B scripts/verify-vault-tests.py --output-parent "$RUNNER_TEMP/throttle-vault-evidence"
+      - name: Preserve exact Vault package test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: vault-tests-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/throttle-vault-evidence/*/evidence/
+          if-no-files-found: error
+          retention-days: 14
+          include-hidden-files: true
+
   validator-evidence:
     # Deliberately independent of the GUI build/lint: this subset needs no
     # signing, MLX download, local model or private research corpus.
@@ -144,9 +196,17 @@ jobs:
             -disableAutomaticPackageResolution \
             -skipPackagePluginValidation \
             -skipMacroValidation \
-            CODE_SIGN_STYLE=Automatic \
+            -jobs 2 \
+            -parallel-testing-enabled NO \
+            CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY=- \
-            PROVISIONING_PROFILE_SPECIFIER=
+            DEVELOPMENT_TEAM= \
+            PROVISIONING_PROFILE= \
+            PROVISIONING_PROFILE_SPECIFIER= \
+            CODE_SIGN_ENTITLEMENTS= \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGNING_REQUIRED=YES \
+            ENABLE_HARDENED_RUNTIME=NO
 
       - name: Reject accidental broad transport or runtime exceptions
         run: |

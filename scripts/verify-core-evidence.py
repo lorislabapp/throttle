@@ -25,6 +25,19 @@ FILES = {
         "Throttle/Services/TestOutcomeStore.swift",
         "Throttle/Services/ContextFirewall.swift",
         "Throttle/Services/ContentStore.swift",
+        "Throttle/Models/PlanModels.swift",
+        "Throttle/Models/WorkflowEvidenceReceipt.swift",
+        "Throttle/Services/PlanProjection.swift",
+        "Throttle/Services/PlanStore.swift",
+        "Throttle/Services/PlanMCPTools.swift",
+        "Throttle/Services/PlanMCPRetry.swift",
+        "Throttle/Services/PlanMCPTaskRouter.swift",
+        "Throttle/Services/DiagnosticReport.swift",
+        "Throttle/Services/DiagnosticArchive.swift",
+        "Throttle/Services/TaskWorktreeService.swift",
+        "Throttle/Services/TaskIntegrationService.swift",
+        "Throttle/Services/TaskIntegrationServiceVerify.swift",
+        "Throttle/Services/TaskIntegrationVerifyChild.swift",
     ],
     "Sources/ResearchVaultModel": [
         "Packages/ResearchVaultKit/Sources/ResearchVaultModel/ResearchReceipt.swift",
@@ -44,7 +57,18 @@ FILES = {
     ],
     "Tests/ThrottleTests": ["ThrottleTests/ServiceTests/TestOutcomeDetectorTests.swift",
                             "ThrottleTests/ServiceTests/TestOutcomeStoreTests.swift",
-                            "ThrottleTests/ServiceTests/ContextPacketEvidenceTests.swift"],
+                            "ThrottleTests/ServiceTests/ContextPacketEvidenceTests.swift",
+                            "ThrottleTests/ServiceTests/PlanStoreTests.swift",
+                            "ThrottleTests/ServiceTests/WorkflowFoundationTests.swift",
+                            "ThrottleTests/ServiceTests/PlanMCPRetryTests.swift",
+                            "ThrottleTests/ServiceTests/PlanMCPTaskRouterTests.swift",
+                            "ThrottleTests/ServiceTests/DiagnosticReportTests.swift",
+                            "ThrottleTests/ServiceTests/DiagnosticArchiveTests.swift",
+                            "ThrottleTests/ServiceTests/WorkflowEvidenceReceiptTests.swift",
+                            "ThrottleTests/ServiceTests/TaskIntegrationServiceTests.swift",
+                            "ThrottleTests/ServiceTests/TaskIntegrationRefusalTests.swift",
+                            "ThrottleTests/ServiceTests/TaskIntegrationOutputTests.swift",
+                            "ThrottleTests/ServiceTests/TaskIntegrationHardeningTests.swift"],
     "Tests/ResearchVaultIngestionTests": [
         "Packages/ResearchVaultKit/Tests/ResearchVaultIngestionTests/RetrievalBenchmarkTests.swift",
         "Packages/ResearchVaultKit/Tests/ResearchVaultIngestionTests/RetrievalQualityGateTests.swift",
@@ -97,6 +121,8 @@ def validate_reports(paths, expected):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-parent", type=pathlib.Path)
+    parser.add_argument("--scratch-path", type=pathlib.Path,
+                        help="Reuse a task-owned Swift build cache; evidence stays in a new directory")
     args = parser.parse_args()
     if args.output_parent:
         args.output_parent.mkdir(parents=True, exist_ok=True)
@@ -112,12 +138,14 @@ def main():
             (folder / pathlib.Path(relative).name).write_bytes(data)
             hashes[relative] = hashlib.sha256(data).hexdigest()
             if destination.startswith("Tests/"):
-                methods = re.findall(r"(?:@Test\b[\s\S]*?\bfunc\s+|\bfunc\s+(?=test_))(\w+)\s*\(", data.decode())
+                methods = re.findall(r"(?:@Test\b[\s\S]*?\bfunc\s+|\bfunc\s+(?=test[_A-Z]))(\w+)\s*\(", data.decode())
                 if not methods:
                     raise ValueError("No test cases discovered in " + relative)
                 expected[pathlib.Path(relative).stem] = methods
     (package / "Package.swift").write_text(MANIFEST)
     base = ["swift", "test", "--package-path", str(package), "--build-system", "native", "--jobs", "2"]
+    if args.scratch_path:
+        base += ["--scratch-path", str(args.scratch_path.resolve())]
     commands = [base + ["--parallel", "--num-workers", "2", "--disable-swift-testing",
                         "--xunit-output", str(output / "xctest.xml")],
                 base + ["--skip-build", "--disable-xctest", "--xunit-output", str(output / "swift-testing.xml")]]

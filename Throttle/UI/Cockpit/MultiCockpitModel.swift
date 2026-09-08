@@ -45,6 +45,10 @@ final class MultiCockpitModel {
 
     var sessions: [CockpitTab] = [] { didSet { refreshWaitingCount(); recomputeActivityFilter() } }
 
+    /// Additional launch admission for an isolated owner; lifecycle transitions
+    /// still use the normal session guards and confirmed-stop path.
+    @ObservationIgnored var sessionLaunchPolicy: @MainActor () -> Bool = { true }
+
     /// Cached display order (session ids). Recomputed only on an explicit trigger
     /// — sort-mode change, session add/remove, and the periodic tick — NOT on every
     /// `@Observable` mutation. Without this, sorting by "last activity" / cost / RAM

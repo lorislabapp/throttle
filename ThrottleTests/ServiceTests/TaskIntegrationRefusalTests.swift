@@ -81,6 +81,28 @@ final class TaskIntegrationRefusalTests: XCTestCase {
                                              author: "throttle:test")
     }
 
+    func testVerificationRecordsCommandReceiptWithoutClaimingTestCoverage() throws {
+        let store = try makeStore()
+        try finishedTask("t1", store: store)
+        let verdict = try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                                        store: store, author: "throttle:test")
+        XCTAssertTrue(verdict.passed)
+        let receipt = try XCTUnwrap(store.state(for: "t1").lastCheck?.receipt)
+        XCTAssertEqual(receipt.scope, .command)
+        XCTAssertEqual(receipt.outcome, .passed)
+        XCTAssertFalse(receipt.provesCompleteTests())
+    }
+
+    func testVerificationThatChangesTrackedInputsCannotPass() throws {
+        let store = try makeStore()
+        try finishedTask("t1", store: store)
+        let verdict = try TaskIntegrationService.verify(taskID: "t1", in: repo,
+            command: "printf changed > task.txt", store: store, author: "throttle:test")
+        XCTAssertFalse(verdict.passed)
+        XCTAssertTrue(verdict.output.contains("incomplete"))
+        XCTAssertEqual(try store.state(for: "t1").lastCheck?.receipt?.outcome, .incomplete)
+    }
+
     // MARK: - merge-tree parsing
 
     /// git older than 2.38 does not know `--write-tree`: it exits non-zero after

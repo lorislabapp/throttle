@@ -13,20 +13,24 @@ final class ThresholdNotifier {
 
     private static let firedKey = "ThrottleThresholdFiredV2"
     private static let iso = ISO8601DateFormatter()
+    private var generation: UInt64 = 0
 
     @discardableResult
     func requestAuthorization() async -> Bool {
-        (try? await UNUserNotificationCenter.current()
+        guard !CompanionRuntime.isTesting else { return false }
+        return (try? await UNUserNotificationCenter.current()
             .requestAuthorization(options: [.alert, .sound])) ?? false
     }
 
     /// Current authorization, so a Settings screen can show the real state and offer
     /// re-request (or a jump to system Settings if the user previously denied).
     func authorizationStatus() async -> UNAuthorizationStatus {
-        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        guard !CompanionRuntime.isTesting else { return .notDetermined }
+        return await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
     }
 
     func evaluate(_ snap: ThrottleMirrorSnapshot) {
+        guard !CompanionRuntime.isTesting else { return }
         let w = snap.bindingWindow
         let level = w.utilization >= 95 ? 95 : (w.utilization >= 80 ? 80 : 0)
         guard level > 0 else { return }
@@ -35,7 +39,7 @@ final class ThresholdNotifier {
         let key = "\(level)@\(resetKey)"
         // Track every fired (level, reset-window) key in a small capped set so
         // crossing 80 then 95 both fire once, and neither re-fires within the window.
-        let store = UserDefaults(suiteName: MirrorStorage.appGroupID) ?? .standard
+        let store = CompanionRuntime.defaults
         var fired = Set(store.stringArray(forKey: Self.firedKey) ?? [])
         guard !fired.contains(key) else { return }
         fired.insert(key)
@@ -49,7 +53,27 @@ final class ThresholdNotifier {
         content.body = body
         content.sound = .default
 
-        let req = UNNotificationRequest(identifier: key, content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(req)
+        let token = generation
+        // A late completion can only remove its own notification, never an alert
+        // with the same threshold/reset window belonging to the next account.
+        let identifier = "throttle-threshold-" + UUID().uuidString
+        let req = UNNotificationRequest(identifier: identifier, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(req) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.generation != token else { return }
+                let center = UNUserNotificationCenter.current()
+                center.removePendingNotificationRequests(withIdentifiers: [identifier])
+                center.removeDeliveredNotifications(withIdentifiers: [identifier])
+            }
+        }
+    }
+
+    func scrub() {
+        generation &+= 1
+        CompanionRuntime.defaults.removeObject(forKey: Self.firedKey)
+        guard !CompanionRuntime.isTesting else { return }
+        let center = UNUserNotificationCenter.current()
+        center.removeAllPendingNotificationRequests()
+        center.removeAllDeliveredNotifications()
     }
 }

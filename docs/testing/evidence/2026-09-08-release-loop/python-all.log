@@ -1,0 +1,49 @@
+test_case_failures_and_duplicate_cases_fail (test_core_evidence.EvidenceReportTests.test_case_failures_and_duplicate_cases_fail) ... ok
+test_complete_report_passes (test_core_evidence.EvidenceReportTests.test_complete_report_passes) ... ok
+test_empty_skipped_and_malformed_reports_fail (test_core_evidence.EvidenceReportTests.test_empty_skipped_and_malformed_reports_fail) ... ok
+test_missing_case_fails (test_core_evidence.EvidenceReportTests.test_missing_case_fails) ... ok
+test_missing_suite_fails_even_with_another_green_suite (test_core_evidence.EvidenceReportTests.test_missing_suite_fails_even_with_another_green_suite) ... ok
+test_suite_level_errors_cannot_hide_behind_green_case (test_core_evidence.EvidenceReportTests.test_suite_level_errors_cannot_hide_behind_green_case) ... ok
+test_command_exit_zero_does_not_make_missing_report_pass (test_macos_evidence.MacOSEvidenceTests.test_command_exit_zero_does_not_make_missing_report_pass) ... ok
+test_empty_unknown_truncated_or_failed_summary_cannot_pass (test_macos_evidence.MacOSEvidenceTests.test_empty_unknown_truncated_or_failed_summary_cannot_pass) ... ok
+test_enumeration_rejects_disabled_duplicate_missing_and_unknown_cases (test_macos_evidence.MacOSEvidenceTests.test_enumeration_rejects_disabled_duplicate_missing_and_unknown_cases) ... ok
+test_extra_case_duplicate_and_wrong_target_fail (test_macos_evidence.MacOSEvidenceTests.test_extra_case_duplicate_and_wrong_target_fail) ... ok
+test_green_container_cannot_hide_failure_and_failed_container_cannot_hide_green_cases (test_macos_evidence.MacOSEvidenceTests.test_green_container_cannot_hide_failure_and_failed_container_cannot_hide_green_cases) ... ok
+test_json_duplicate_keys_nonfinite_and_truncation_fail (test_macos_evidence.MacOSEvidenceTests.test_json_duplicate_keys_nonfinite_and_truncation_fail) ... ok
+test_malformed_tree_empty_inventory_and_count_mismatch_fail (test_macos_evidence.MacOSEvidenceTests.test_malformed_tree_empty_inventory_and_count_mismatch_fail) ... ok
+test_missing_case_fails_even_with_consistent_green_summary (test_macos_evidence.MacOSEvidenceTests.test_missing_case_fails_even_with_consistent_green_summary) ... ok
+test_native_enumeration_and_five_explicit_skips_pass (test_macos_evidence.MacOSEvidenceTests.test_native_enumeration_and_five_explicit_skips_pass) ... ok
+test_nonzero_command_and_timeout_are_failures (test_macos_evidence.MacOSEvidenceTests.test_nonzero_command_and_timeout_are_failures) ... ok
+test_opt_in_test_may_pass_instead_of_skip_but_may_not_disappear (test_macos_evidence.MacOSEvidenceTests.test_opt_in_test_may_pass_instead_of_skip_but_may_not_disappear) ... ok
+test_snapshot_includes_ignored_generated_project_and_detects_changed_inputs (test_macos_evidence.MacOSEvidenceTests.test_snapshot_includes_ignored_generated_project_and_detects_changed_inputs) ... ok
+test_unknown_status_expected_failure_and_unexpected_skip_fail (test_macos_evidence.MacOSEvidenceTests.test_unknown_status_expected_failure_and_unexpected_skip_fail) ... ok
+test_warnings_and_recorded_skip_messages_are_not_extra_tests (test_macos_evidence.MacOSEvidenceTests.test_warnings_and_recorded_skip_messages_are_not_extra_tests) ... ok
+test_absence_passes_and_match_fails_without_echoing_content (test_no_match.NoMatchTests.test_absence_passes_and_match_fails_without_echoing_content) ... ok
+test_missing_file_and_invalid_pattern_fail (test_no_match.NoMatchTests.test_missing_file_and_invalid_pattern_fail) ... ok
+test_missing_tool_fails (test_no_match.NoMatchTests.test_missing_tool_fails) ... ok
+test_app_and_project_key_mismatch_is_refused (test_stage_release.StageReleaseTests.test_app_and_project_key_mismatch_is_refused) ... ok
+test_failed_verifier_even_with_receipt_is_refused (test_stage_release.StageReleaseTests.test_failed_verifier_even_with_receipt_is_refused) ... ok
+test_malformed_signature_is_refused (test_stage_release.StageReleaseTests.test_malformed_signature_is_refused) ... ok
+test_missing_exported_metadata_is_refused (test_stage_release.StageReleaseTests.test_missing_exported_metadata_is_refused) ... ok
+test_missing_verifier_is_refused (test_stage_release.StageReleaseTests.test_missing_verifier_is_refused) ... ok
+test_real_ed25519_signature_stages_exact_bytes (test_stage_release.StageReleaseTests.test_real_ed25519_signature_stages_exact_bytes) ... ok
+test_same_size_corrupt_dmg_is_refused (test_stage_release.StageReleaseTests.test_same_size_corrupt_dmg_is_refused) ... ok
+test_timed_out_verifier_is_refused (test_stage_release.StageReleaseTests.test_timed_out_verifier_is_refused) ... ok
+test_valid_signature_for_another_public_key_is_refused (test_stage_release.StageReleaseTests.test_valid_signature_for_another_public_key_is_refused) ... ok
+test_wrong_app_build_is_refused (test_stage_release.StageReleaseTests.test_wrong_app_build_is_refused) ... ok
+test_zero_exit_without_verification_receipt_is_refused (test_stage_release.StageReleaseTests.test_zero_exit_without_verification_receipt_is_refused) ... ok
+test_cached_appcast_with_same_top_build_but_different_bytes_fails (test_verify_public_release.PublicReleaseVerificationTests.test_cached_appcast_with_same_top_build_but_different_bytes_fails) ... ok
+test_identical_downloads_pass (test_verify_public_release.PublicReleaseVerificationTests.test_identical_downloads_pass) ... ok
+test_same_size_corrupt_fresh_dmg_fails (test_verify_public_release.PublicReleaseVerificationTests.test_same_size_corrupt_fresh_dmg_fails) ... ok
+
+----------------------------------------------------------------------
+Ran 37 tests in 3.094s
+
+OK
+→ Ed25519 signature verified against the DMG and exported app's public key
+staged 0.0.0 (999) in /tmp/throttle-stage-fixture-p6ecissu/stage
+  Throttle-0.0.0.dmg: 1 bytes  sha256 454349e422f05297191ead13e21d3db520e5abef52055e4964b82fb213f593a1
+  appcast.xml: 712 bytes  sha256 f12d7049198f78c8f03b79bb182635b866e17d6872f87187dff27b7645656c73
+  index.html: 83 bytes  sha256 9d19b61c10e5a7b1977ef79a2a7eb215fccda04954a7f4b0e9696dec4c3a1c51
+  page: 0.0.1 → 0.0.0, 0.0 MB | appcast items: 1
+next: node scripts/publish-release.mjs /tmp/throttle-stage-fixture-p6ecissu/stage

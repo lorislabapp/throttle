@@ -3,7 +3,12 @@ import ResearchVaultModel
 
 public enum ResearchVaultIPCContract {
     public static let currentVersion = 1
+    /// Maximum UTF-8 byte count of the decoded query string, before JSON escaping.
     public static let maximumQueryBytes = 4_096
+    /// Maximum complete JSON request on the wire, checked before decoding.
+    /// Separate from the decoded query budget: escaping and 64 project keys of
+    /// up to 128 ASCII characters also occupy bytes in the envelope.
+    public static let maximumSearchRequestBytes = 65_536
     public static let maximumResultCharacters = 50_000
     public static let maximumOwnerRequestBytes = 1_048_576
     public static let maximumReceiptsPerRequest = 32
@@ -56,7 +61,7 @@ public struct ResearchVaultSearchRequest: Codable, Equatable, Sendable {
                   Set(projectKeys).count == projectKeys.count,
                   projectKeys.allSatisfy({
                       $0.range(
-                          of: #"^[a-z0-9][a-z0-9._-]{0,63}$"#,
+                          of: #"^[a-z0-9][a-z0-9._-]{0,127}$"#,
                           options: .regularExpression
                       ) != nil
                   }) else {

@@ -106,7 +106,7 @@ extension MultiCockpitModel {
     /// already shows the prompt, so no notification — just the in-app badge.
     func wire(_ tab: CockpitTab) {
         tab.allowsProcessLaunch = { [weak self, weak tab] in
-            guard let self, let tab, !self.isQuitting else { return false }
+            guard let self, let tab, !self.isQuitting, self.sessionLaunchPolicy() else { return false }
             if let nativeID = tab.sessionId, self.sessions.contains(where: {
                 $0 !== tab && $0.runtime == tab.runtime && $0.isSpawned
                     && ($0.isChoosingNativeSession || $0.sessionId?.caseInsensitiveCompare(nativeID) == .orderedSame)

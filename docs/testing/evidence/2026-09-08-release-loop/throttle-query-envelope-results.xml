@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="TestResults" errors="0" tests="21" failures="0" skipped="0" time="1.012755542">
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultReceiptBatchReaderTests" name="canonicalBatch()" time="0.039362625" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultReceiptBatchReaderTests" name="failsClosed(kind:)" time="0.03936825" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultQueryEnvelopeTests" name="semanticLimitsRemainEnforced()" time="0.817033166" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultQueryEnvelopeTests" name="longScopeWithEscapedUnicode()" time="0.979058833" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultQueryEnvelopeTests" name="thirdPartyGrantStaysFixed()" time="0.985644958" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultQueryEnvelopeTests" name="malformedRequestsStayInvalid()" time="0.651969667" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultQueryEnvelopeTests" name="exactWireBoundary()" time="1.002128458" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultQueryEnvelopeTests" name="oversizedMessageStopsBeforeGateway()" time="1.011881917" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultXPCTests" name="ownerServiceExportDispatch()" time="0.029247958" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultXPCTests" name="requirementCompiles()" time="0.029088584" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultXPCTests" name="rejectsRequirementInjection()" time="0.028622417" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultXPCTests" name="serviceLifetimeIsCancellable()" time="0.135075042" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultXPCTests" name="endpointPolicy()" time="0.028788125" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultXPCTests" name="ownerReasoningDispatch()" time="0.031029917" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultXPCTests" name="ownerRequestValidation()" time="0.028891167" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultXPCTests" name="ownerServiceReviewDispatch()" time="0.030037834" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultXPCTests" name="ownerServiceRejectsMalformedBytes()" time="0.029421958" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultXPCTests" name="cheatCodeClientContractIsQueryOnly()" time="0.028528125" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultXPCTests" name="ownerServiceDispatch()" time="0.029235959" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultXPCTests" name="ownerReviewRequestValidation()" time="0.028487084" />
+    <testcase classname="ResearchVaultXPCTests.ResearchVaultXPCTests" name="ownerEndpointPolicy()" time="0.028461042" />
+  </testsuite>
+</testsuites>

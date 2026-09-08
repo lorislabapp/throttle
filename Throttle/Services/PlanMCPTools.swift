@@ -22,9 +22,18 @@ enum PlanMCPTools {
         var verdict: String
         var reason: String?
         var summary: String?
+        var retry = MutationRetry()
     }
 
     static func verdictText(_ request: VerdictRequest) -> String {
+        do {
+            return try store(request.project).mutate { verdictText(request, store: $0) }
+        } catch {
+            return "Refused: the plan mutation could not be safely persisted."
+        }
+    }
+
+    private static func verdictText(_ request: VerdictRequest, store: PlanStore) -> String {
         let taskID = request.taskID
         let author = request.author
         let verdict = request.verdict
@@ -37,10 +46,12 @@ enum PlanMCPTools {
         if type == .rejected, (reason ?? "").trimmingCharacters(in: .whitespaces).isEmpty {
             return "Refused: a rejection has to say what is missing, or the next agent repeats the same work."
         }
-        let store = store(request.project)
         guard let plan = try? store.loadPlan(), plan.task(taskID) != nil else {
             return "Refused: no task \(taskID) in this plan."
         }
+        var event = TaskEvent(seq: 0, timestamp: Date(), author: author, type: type,
+                              reason: reason, summary: summary)
+        if let replay = retryResponse(&event, retry: request.retry, taskID: taskID, store: store) { return replay }
         guard let current = try? store.state(for: taskID) else {
             return "Refused: could not read the log for \(taskID)."
         }
@@ -53,8 +64,6 @@ enum PlanMCPTools {
                 + " higher than it should — the verdict has to come from the other runtime."
         }
 
-        let event = TaskEvent(seq: 0, timestamp: Date(), author: author, type: type,
-                              reason: reason, summary: summary)
         guard (try? store.append(event, to: taskID)) != nil,
               let after = try? store.state(for: taskID) else {
             return "Refused: could not write the log for \(taskID)."
@@ -98,6 +107,7 @@ enum PlanMCPTools {
             let state = states[task.id] ?? TaskState()
             let indent = String(repeating: "  ", count: depth)
             var line = "\(indent)\(task.id)  \(task.title)  [\(state.status.rawValue) \(state.pct)%]"
+                + " seq=\(state.lastSeq)"
             // Only while it is actually being worked on: "held by" next to a
             // finished task reads as if someone is still on it.
             if let owner = state.owner, state.status == .claimed || state.status == .running
@@ -126,10 +136,22 @@ enum PlanMCPTools {
     // MARK: - Write
 
     static func claimText(project: String?, taskID: String,
-                          author: String, missionID: String?) -> String {
-        let store = store(project)
+                          author: String, missionID: String?, retry: MutationRetry = MutationRetry()) -> String {
+        do {
+            return try store(project).mutate {
+                claimText(store: $0, taskID: taskID, author: author, missionID: missionID, retry: retry)
+            }
+        } catch {
+            return "Refused: the plan mutation could not be safely persisted."
+        }
+    }
+
+    private static func claimText(store: PlanStore, taskID: String,
+                                  author: String, missionID: String?, retry: MutationRetry) -> String {
         guard let plan = try? store.loadPlan() else { return "Refused: no plan at this project root." }
         guard let task = plan.task(taskID) else { return "Refused: no task \(taskID) in this plan." }
+        var event = TaskEvent(seq: 0, timestamp: Date(), author: author, type: .claimed, missionID: missionID)
+        if let replay = retryResponse(&event, retry: retry, taskID: taskID, store: store) { return replay }
 
         guard let current = try? store.state(for: taskID) else {
             return "Refused: could not read the log for \(taskID)."
@@ -141,9 +163,11 @@ enum PlanMCPTools {
         if !unmet.isEmpty {
             return "Refused: \(taskID) depends on \(unmet.joined(separator: ", ")), which is not done."
         }
+        guard current.chainValid, current.status == .pending,
+              plan.isLeafByID[taskID] == true else {
+            return "Refused: this task is not an actionable leaf with a valid history."
+        }
 
-        let event = TaskEvent(seq: 0, timestamp: Date(), author: author,
-                              type: .claimed, missionID: missionID)
         guard let written = try? store.append(event, to: taskID) else {
             return "Refused: could not write the log for \(taskID)."
         }
@@ -171,9 +195,18 @@ enum PlanMCPTools {
         var ref: String?
         var reason: String?
         var summary: String?
+        var retry = MutationRetry()
     }
 
     static func eventText(_ request: EventRequest) -> String {
+        do {
+            return try store(request.project).mutate { eventText(request, store: $0) }
+        } catch {
+            return "Refused: the plan mutation could not be safely persisted."
+        }
+    }
+
+    private static func eventText(_ request: EventRequest, store: PlanStore) -> String {
         let taskID = request.taskID
         let author = request.author
         // Split so the sentence is true: `checked` and `integrated` are perfectly
@@ -181,14 +214,19 @@ enum PlanMCPTools {
         guard let eventType = TaskEventType(rawValue: request.type) else {
             return "Refused: unknown event type '\(request.type)'."
         }
-        guard eventType != .claimed, eventType != .checked, eventType != .integrated else {
+        let allowed: Set<TaskEventType> = [.progress, .evidence, .blocked, .unblocked,
+                                           .completed, .failed, .released]
+        guard allowed.contains(eventType) else {
             return "Refused: '\(request.type)' is not an agent's to write."
                 + " Use throttle_task_claim to take a task; checks and integrations are Throttle's to write."
         }
-        let store = store(request.project)
         guard let plan = try? store.loadPlan(), plan.task(taskID) != nil else {
             return "Refused: no task \(taskID) in this plan."
         }
+        var event = TaskEvent(seq: 0, timestamp: Date(), author: author, type: eventType,
+                              pct: request.pct, note: request.note, kind: request.kind,
+                              ref: request.ref, reason: request.reason, summary: request.summary)
+        if let replay = retryResponse(&event, retry: request.retry, taskID: taskID, store: store) { return replay }
         guard let current = try? store.state(for: taskID) else {
             return "Refused: could not read the log for \(taskID)."
         }
@@ -199,9 +237,6 @@ enum PlanMCPTools {
             return "Refused: \(taskID) is held by \(owner), not \(author)."
         }
 
-        let event = TaskEvent(seq: 0, timestamp: Date(), author: author, type: eventType,
-                              pct: request.pct, note: request.note, kind: request.kind,
-                              ref: request.ref, reason: request.reason, summary: request.summary)
         guard (try? store.append(event, to: taskID)) != nil,
               let after = try? store.state(for: taskID) else {
             return "Refused: could not write the log for \(taskID)."

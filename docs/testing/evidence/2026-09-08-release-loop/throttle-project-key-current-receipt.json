@@ -1,0 +1,47 @@
+{
+  "status": "pass",
+  "recorded_at": "2026-09-08T16:33:20.117111+00:00",
+  "scope": "project-key IPC validation and isolated SQLCipher owner admission; 64, 65, 128 accepted, 129 rejected",
+  "completed_tests": 9,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "production_signed_XPC_qualified": false,
+  "sources_sha256": {
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultIPCModel.swift": "46b47a620bd85a9bb3e5c9736722a5c71bc0192cab7f536cc9884b5b919c676e",
+    "Packages/ResearchVaultKit/Tests/ResearchVaultIPCModelTests/ResearchVaultIPCModelTests.swift": "b1398f994bcecca7f0d827ef662c36677f604454b451fe0fbbc43e9ed117b526",
+    "Packages/ResearchVaultKit/Tests/ResearchVaultGatewayTests/OwnerProjectAdmissionTests.swift": "e332ddc538f30dcd101bcaf015aae4c14bfd2f4b5e991514d43af306ed3eeea1"
+  },
+  "reports": {
+    "/private/tmp/throttle-project-key-current-ipc-results.xml": {
+      "sha256": "d08d651e061a4290156ae273e12fc0da9df1743a5f039241ab62af66b22d262b",
+      "cases": [
+        "projectKeyBoundaryRoundTrip()",
+        "projectScopeValidation()",
+        "secretlessRequest()",
+        "validation()"
+      ],
+      "log": "/private/tmp/throttle-project-key-current-ipc-results.log",
+      "log_sha256": "29b91967e3af003f1981f943b76934593aeaa02d6fe29c1f0dbbfc4b5925aaf6"
+    },
+    "/private/tmp/throttle-project-key-current-owner-results.xml": {
+      "sha256": "3feea09d13e787d41ef42b74917d2fed540c6147cdadc91c1273e1130d7d5ba8",
+      "cases": [
+        "concurrentAdmissions()",
+        "longProjectKeyScopedSearch()",
+        "malformedAdmission()",
+        "metadataCannotGrant()",
+        "persistentOwnerGrant()"
+      ],
+      "log": "/private/tmp/throttle-project-key-current-owner-results.log",
+      "log_sha256": "016a294e7dc931e24a5c87f40092f30eea74434408eb0f7943f87d7fa13c84e8"
+    }
+  },
+  "binary_sha256": {
+    "Packages/ResearchVaultKit/.build/out/Products/Debug/ResearchVaultIPCModelTests.xctest/Contents/MacOS/ResearchVaultIPCModelTests": "affc1d00c49c69ce0275f13c78c0ef8e89e42f76698e27796f777f09a6543aa0",
+    "Packages/ResearchVaultKit/.build/out/Products/Debug/ResearchVaultGatewayTests.xctest/Contents/MacOS/ResearchVaultGatewayTests": "f710b2776c5dd2a8faeca625e87aff8711f2d8f2f7f08a8ca65e7403e7a57d3f"
+  },
+  "build_log": "/private/tmp/throttle-query-envelope-build.log",
+  "runner": "already-rebuilt SwiftPM testing helper with swift-testing and Xcode runtime library paths; no rebuild",
+  "earlier_failure": "SwiftPM discovery ENOSPC preserved in throttle-project-key-tests-final.log; this run invokes the rebuilt bundles directly"
+}

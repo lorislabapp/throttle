@@ -23,10 +23,29 @@ enum TaskLauncher {
         case alreadyHeld(String, owner: String)
     }
 
+    private struct PreparationContext {
+        let author: String
+        let base: String
+        let missionID: UUID
+    }
+
     static func prepare(taskID: String, runtime: AgentRuntime, repo: URL,
                         author: String, base: String = "HEAD",
                         missionID: UUID = UUID()) throws -> LaunchPlan {
         let store = PlanStore(projectRoot: repo)
+        return try store.mutate { store in
+            try prepareLocked(taskID: taskID, runtime: runtime, repo: repo,
+                              context: PreparationContext(author: author, base: base, missionID: missionID),
+                              store: store)
+        }
+    }
+
+    private static func prepareLocked(taskID: String, runtime: AgentRuntime, repo: URL,
+                                      context: PreparationContext,
+                                      store: PlanStore) throws -> LaunchPlan {
+        let author = context.author
+        let base = context.base
+        let missionID = context.missionID
         let plan = try store.loadPlan()
         guard let task = plan.task(taskID) else { throw LaunchError.unknownTask(taskID) }
 
@@ -36,6 +55,7 @@ enum TaskLauncher {
         if let owner = current.owner {
             throw LaunchError.alreadyHeld(taskID, owner: owner)
         }
+        guard current.chainValid else { throw PlanStoreError.invalidLog(taskID) }
 
         let worktree = try TaskWorktreeService.create(taskID: taskID, in: repo, base: base)
         try store.append(TaskEvent(seq: 0, timestamp: Date(), author: author,

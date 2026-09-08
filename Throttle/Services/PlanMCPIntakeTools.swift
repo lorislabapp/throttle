@@ -158,49 +158,4 @@ extension PlanMCPTools {
         }
     }
 
-    private static func routeTaskCall(
-        _ name: String, _ args: [String: Any]?,
-        _ result: (String) -> Void, _ error: ([Any]) -> Void
-    ) {
-        switch name {
-        case "throttle_task_verdict":
-            guard let taskID = args?["task_id"] as? String,
-                  let author = args?["by"] as? String,
-                  let verdict = args?["verdict"] as? String else {
-                error([-32602, "Missing task_id, by or verdict"]); return
-            }
-            result(verdictText(VerdictRequest(
-                project: args?["project"] as? String, taskID: taskID, author: author,
-                verdict: verdict, reason: args?["reason"] as? String,
-                summary: args?["summary"] as? String
-            )))
-        case "throttle_plan_read":
-            result(planReadText(project: args?["project"] as? String))
-        case "throttle_task_claim":
-            guard let taskID = args?["task_id"] as? String,
-                  let author = args?["by"] as? String else {
-                error([-32602, "Missing task_id or by"]); return
-            }
-            result(claimText(project: args?["project"] as? String, taskID: taskID,
-                             author: author, missionID: args?["mission_id"] as? String))
-        default:
-            routeEventCall(args, result, error)
-        }
-    }
-
-    private static func routeEventCall(
-        _ args: [String: Any]?, _ result: (String) -> Void, _ error: ([Any]) -> Void
-    ) {
-        guard let taskID = args?["task_id"] as? String,
-              let author = args?["by"] as? String,
-              let type = args?["type"] as? String else {
-            error([-32602, "Missing task_id, by or type"]); return
-        }
-        result(eventText(EventRequest(
-            project: args?["project"] as? String, taskID: taskID, author: author, type: type,
-            pct: args?["pct"] as? Int, note: args?["note"] as? String,
-            kind: args?["kind"] as? String, ref: args?["ref"] as? String,
-            reason: args?["reason"] as? String, summary: args?["summary"] as? String
-        )))
-    }
 }

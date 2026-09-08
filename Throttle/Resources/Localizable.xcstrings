@@ -1,6 +1,60 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Preview diagnostics": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": { "stringUnit": { "state": "translated", "value": "Aperçu des diagnostics" } }
+      }
+    },
+    "Only the summary below will be saved. Nothing is uploaded or added to your AI conversation.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": { "stringUnit": { "state": "translated", "value": "Seul le résumé ci-dessous sera enregistré. Rien n’est envoyé ni ajouté à votre conversation avec l’IA." } }
+      }
+    },
+    "Export failed. No data was uploaded. You can retry.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": { "stringUnit": { "state": "translated", "value": "Échec de l’export. Aucune donnée n’a été envoyée. Vous pouvez réessayer." } }
+      }
+    },
+    "Summary saved to Desktop. Nothing was uploaded.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": { "stringUnit": { "state": "translated", "value": "Résumé enregistré sur le Bureau. Rien n’a été envoyé." } }
+      }
+    },
+    "Save this summary to Desktop": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": { "stringUnit": { "state": "translated", "value": "Enregistrer ce résumé sur le Bureau" } }
+      }
+    },
+    "Diagnostics preview unavailable. Try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": { "stringUnit": { "state": "translated", "value": "Aperçu des diagnostics indisponible. Réessayez." } }
+      }
+    },
+    "Summary .zip to Desktop — no logs or raw errors.": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": { "stringUnit": { "state": "translated", "value": "Résumé .zip sur le Bureau — sans journaux ni erreurs brutes." } }
+      }
+    },
+    "Historical check — evidence coverage not recorded": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": { "stringUnit": { "state": "translated", "value": "Vérification historique — portée des preuves non enregistrée" } }
+      }
+    },
+    "Command-level evidence — test coverage and physical acceptance are separate": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": { "stringUnit": { "state": "translated", "value": "Preuve d’exécution de commande — couverture des tests et validation physique distinctes" } }
+      }
+    },
     "Searching in %@.": {
       "extractionState": "manual",
       "localizations": {

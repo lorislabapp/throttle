@@ -18,10 +18,63 @@ Usage:
 --live-appcast / --live-page take local snapshots instead of fetching (offline runs, tests).
 Nothing is uploaded; see publish-release.mjs.
 """
-import argparse, hashlib, os, re, shutil, subprocess, sys, urllib.request
+import argparse, base64, binascii, hashlib, json, os, plistlib, re, shutil, subprocess, sys, urllib.request
+from pathlib import Path
 
 SITE = "https://lorislab.fr/throttle"
 PROJECT_YML = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "project.yml")
+
+# Sparkle's sign_update --verify reads a private key from Keychain and does not
+# bind that key to SUPublicEDKey in the shipped app. CryptoKit verifies the same
+# Ed25519 signature with public data only; no private key or new package is needed.
+SIGNATURE_VERIFIER = r'''
+import CryptoKit
+import Foundation
+do {
+    let input = FileHandle.standardInput.readDataToEndOfFile()
+    guard let arguments = try JSONSerialization.jsonObject(with: input) as? [String: String],
+          let path = arguments["path"], let encodedSignature = arguments["signature"],
+          let encodedKey = arguments["publicKey"],
+          let signature = Data(base64Encoded: encodedSignature), signature.count == 64,
+          let rawKey = Data(base64Encoded: encodedKey), rawKey.count == 32 else { exit(65) }
+    let key = try Curve25519.Signing.PublicKey(rawRepresentation: rawKey)
+    let bytes = try Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe)
+    guard key.isValidSignature(signature, for: bytes) else { exit(65) }
+    print("THROTTLE_ED25519_VALID")
+} catch { exit(65) }
+'''
+
+
+def verify_update_signature(dmg, signature, app_plist, version, build):
+    """Fail closed against the exported app's public key before touching staging."""
+    try:
+        with open(app_plist, "rb") as source:
+            info = plistlib.load(source)
+        with open(PROJECT_YML, encoding="utf-8") as source:
+            expected_keys = re.findall(r'^\s*SUPublicEDKey:\s*"([^"\n]+)"\s*$', source.read(), re.M)
+        key = info.get("SUPublicEDKey")
+        if len(expected_keys) != 1 or key != expected_keys[0]:
+            sys.exit("exported app SUPublicEDKey does not match the project's release key")
+        if (info.get("CFBundleIdentifier") != "com.lorislab.throttle"
+                or info.get("CFBundleShortVersionString") != version
+                or str(info.get("CFBundleVersion")) != build):
+            sys.exit("exported app identity/version/build does not match the signed entry")
+        if len(base64.b64decode(key, validate=True)) != 32:
+            sys.exit("invalid SUPublicEDKey: expected a 32-byte Ed25519 public key")
+        if len(base64.b64decode(signature, validate=True)) != 64:
+            sys.exit("invalid Sparkle signature: expected 64 bytes")
+    except (OSError, ValueError, TypeError, binascii.Error, plistlib.InvalidFileException):
+        sys.exit("could not validate exported app metadata or Sparkle signature encoding")
+    try:
+        result = subprocess.run(
+            ["/usr/bin/xcrun", "swift", "-e", SIGNATURE_VERIFIER],
+            input=json.dumps({"path": dmg, "signature": signature, "publicKey": key}),
+            capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.TimeoutExpired):
+        sys.exit("Ed25519 verifier unavailable or timed out; staging refused")
+    if result.returncode != 0 or result.stdout.strip() != "THROTTLE_ED25519_VALID":
+        sys.exit("Ed25519 verification failed against the exported app's public key; staging refused")
+    print("→ Ed25519 signature verified against the DMG and exported app's public key")
 
 
 def fetch(url):
@@ -42,7 +95,7 @@ def strip_edge_transforms(html):
 
 
 def sha256(path):
-    return hashlib.sha256(open(path, "rb").read()).hexdigest()
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def main():
@@ -63,7 +116,7 @@ def main():
         if not os.path.exists(p):
             sys.exit(f"missing {p} — run scripts/build-dmg.sh --notarize first")
 
-    entry = open(entry_path).read()
+    entry = Path(entry_path).read_text()
     sig = re.search(r'sparkle:edSignature="([^"]+)"', entry).group(1)
     length = int(re.search(r'length="(\d+)"', entry).group(1))
     build = re.search(r"<sparkle:version>(\d+)</sparkle:version>", entry).group(1)
@@ -77,20 +130,11 @@ def main():
                       capture_output=True).returncode != 0:
         sys.exit(f"{dmg} carries no stapled notarization ticket — run build-dmg.sh --notarize")
 
-    # A matching size is not a matching file. Verify the EdDSA signature against the
-    # actual bytes, so a stale or hand-edited entry cannot ship.
-    sign_tool = next((p for p in subprocess.run(
-        ["find", os.path.expanduser("~/Library/Developer/Xcode/DerivedData"),
-         "-name", "sign_update", "-type", "f", "-not", "-path", "*old_dsa*"],
-        capture_output=True, text=True).stdout.split("\n") if p), None)
-    if sign_tool:
-        if subprocess.run([sign_tool, "--verify", dmg, sig], capture_output=True).returncode != 0:
-            sys.exit("the signed entry does not verify against the DMG — regenerate it from this exact file")
-        print("→ EdDSA signature verified against the DMG")
-    else:
-        print("⚠ Sparkle sign_update not found — EdDSA signature NOT re-verified", file=sys.stderr)
+    # A matching size is not a matching file. Missing/failed verification must
+    # never fall through to a publishable stage, nor verify with an unrelated key.
+    verify_update_signature(dmg, sig, f"{build_dir}/export/Throttle.app/Contents/Info.plist", version, build)
 
-    live = open(a.live_appcast, encoding="utf-8").read() if a.live_appcast else fetch(f"{SITE}/appcast.xml")
+    live = Path(a.live_appcast).read_text(encoding="utf-8") if a.live_appcast else fetch(f"{SITE}/appcast.xml")
     if f"<sparkle:version>{build}</sparkle:version>" in live:
         sys.exit(f"build {build} is already in the live appcast — Sparkle compares CFBundleVersion; bump it")
     anchor = "        <language>en</language>\n"
@@ -113,7 +157,7 @@ def main():
             f"            </item>\n")
     appcast = live.replace(anchor, anchor + item, 1)
 
-    page = open(a.live_page, encoding="utf-8").read() if a.live_page else fetch(f"{SITE}/")
+    page = Path(a.live_page).read_text(encoding="utf-8") if a.live_page else fetch(f"{SITE}/")
     page = strip_edge_transforms(page)
     prev = re.search(r'href="Throttle-([0-9.]+)\.dmg"', page)
     meta = re.search(r'<span class="mono">v([0-9.]+)</span> · ([0-9.]+) MB', page)
@@ -129,11 +173,21 @@ def main():
 
     stage = os.path.abspath(a.stage or f"{build_dir}/stage")
     out = f"{stage}/throttle"
-    shutil.rmtree(stage, ignore_errors=True)
-    os.makedirs(out)
-    open(f"{out}/appcast.xml", "w", encoding="utf-8").write(appcast)
-    open(f"{out}/index.html", "w", encoding="utf-8").write(page)
-    shutil.copy2(dmg, f"{out}/Throttle-{version}.dmg")
+    # A caller can supply any --stage path, including the export directory.
+    # Claim a fresh directory exclusively; never delete a prior candidate or
+    # unrelated data, and reject symlinks or racing directory creation too.
+    try:
+        os.makedirs(stage, exist_ok=False)
+    except FileExistsError:
+        sys.exit(f"stage already exists: {stage} — choose a fresh --stage directory")
+    os.mkdir(out)
+    staged_dmg = f"{out}/Throttle-{version}.dmg"
+    shutil.copy2(dmg, staged_dmg)
+    # A concurrent build may replace the source after the first verification.
+    # Qualify the actual copied bytes before creating the publishable metadata.
+    verify_update_signature(staged_dmg, sig, f"{build_dir}/export/Throttle.app/Contents/Info.plist", version, build)
+    Path(f"{out}/appcast.xml").write_text(appcast, encoding="utf-8")
+    Path(f"{out}/index.html").write_text(page, encoding="utf-8")
 
     print(f"staged {version} ({build}) in {stage}")
     for f in sorted(os.listdir(out)):

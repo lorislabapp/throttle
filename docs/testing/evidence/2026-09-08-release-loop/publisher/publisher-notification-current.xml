@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites>
+<testsuite name="TestResults" errors="0" tests="7" failures="0" time="0.4396245829999999">
+<testcase classname="ThrottleTests.CloudKitPublisherTests" name="testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck" time="0.06220275">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitPublisherTests" name="testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart" time="0.061447125">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitPublisherTests" name="testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount" time="0.062455292">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitPublisherTests" name="testCancelledDebounceCannotConsumeSnapshotAfterRestart" time="0.066637875">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitPublisherTests" name="testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot" time="0.065412583">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitPublisherTests" name="testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots" time="0.061641833">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitPublisherTests" name="testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck" time="0.059827125">
+</testcase>
+</testsuite>
+</testsuites>

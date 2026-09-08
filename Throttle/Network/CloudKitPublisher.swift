@@ -2,92 +2,176 @@ import CloudKit
 import Foundation
 import ThrottleShared
 
-/// Publishes the live usage/cockpit mirror to the user's **private** CloudKit
-/// database so the Throttle iOS companion can mirror it anywhere (LAN or
-/// cellular), with zero LorisLabs server in the path.
-///
-/// Doctrine: this is measure-only. It *reads* current state and writes a small
-/// read-only snapshot to the user's own iCloud — it never rewrites anything on
-/// the Mac. Fail-open like `TraycerReceiver`: if iCloud is signed out or the
-/// entitlement is missing, it silently disables and the meter is unaffected.
-///
-/// Opt-in: started from `AppDelegate` only when `throttleiCloudMirrorEnabled`.
-/// Single writer per device (fixed record name) → force-overwrite, no conflicts.
-/// Debounced to ≤1 write / 25 s (integer-percent changes below that are noise
-/// and CloudKit throttles aggressive writers).
+@MainActor
+protocol CloudKitPublishingBackend: AnyObject {
+    func accountStatus() async throws -> CKAccountStatus
+    func save(_ snapshot: ThrottleMirrorSnapshot) async throws
+    func cancel()
+}
+
+/// Publishes an opt-in, debounced mirror to the user's private CloudKit database.
+/// Each start/account change owns a generation: stale account checks, timers and
+/// saves cannot re-enable publishing or consume snapshots from a later account.
 @MainActor
 final class CloudKitPublisher: MirrorTransport {
     static let shared = CloudKitPublisher()
-    private init() {}
 
-    private var database: CKDatabase?
+    private let makeBackend: () -> any CloudKitPublishingBackend
+    private let notificationCenter: NotificationCenter
+    private let sleep: (TimeInterval) async throws -> Void
+    private let now: () -> Date
+    private let minInterval: TimeInterval
+    private var accountObserver: NSObjectProtocol?
+    private var backend: (any CloudKitPublishingBackend)?
+    private var startTask: Task<Void, Never>?
+    private var flushTask: Task<Void, Never>?
+    private var generation = UUID()
+    private var accountSubscription = UUID()
+    private var requested = false
     private var enabled = false
     private var pending: ThrottleMirrorSnapshot?
-    private var flushScheduled = false
-    private var lastSentAt = Date.distantPast
-    private var lastRecord: CKRecord?
-    private let minInterval: TimeInterval = 25
+    private var lastAttemptAt = Date.distantPast
 
-    /// Resolve the container + verify the iCloud account, then arm publishing.
+    init(
+        makeBackend: @escaping () -> any CloudKitPublishingBackend = { CloudKitDatabasePublisher() },
+        notificationCenter: NotificationCenter = .default,
+        minInterval: TimeInterval = 25,
+        now: @escaping () -> Date = Date.init,
+        sleep: @escaping (TimeInterval) async throws -> Void = { try await Task.sleep(for: .seconds($0)) }
+    ) {
+        self.makeBackend = makeBackend
+        self.notificationCenter = notificationCenter
+        self.minInterval = minInterval
+        self.now = now
+        self.sleep = sleep
+    }
+
     func start() {
-        let container = CKContainer(identifier: CloudKitSchema.containerID)
-        let db = container.privateCloudDatabase
-        Task { [weak self] in
-            let status = try? await container.accountStatus()
-            guard status == .available else {
-                NSLog("[CloudKitPublisher] iCloud unavailable (\(String(describing: status))) — mirror disabled")
-                return
+        guard !requested else { return }
+        requested = true
+        let subscription = accountSubscription
+        accountObserver = notificationCenter.addObserver(
+            forName: .CKAccountChanged, object: nil, queue: .main
+        ) { [weak self] _ in
+            // Revoke before returning to the main queue: an already queued flush
+            // must not submit the previous account's snapshot under the new account.
+            MainActor.assumeIsolated {
+                guard let self, self.accountSubscription == subscription else { return }
+                self.accountChanged()
             }
-            self?.database = db
-            self?.enabled = true
-            // Flush anything queued before the account check finished.
-            if self?.pending != nil { self?.scheduleFlush() }
         }
+        resolveAccount()
     }
 
     func stop() {
-        enabled = false
-        pending = nil
-        flushScheduled = false
+        requested = false
+        accountSubscription = UUID()
+        if let accountObserver { notificationCenter.removeObserver(accountObserver) }
+        accountObserver = nil
+        invalidate()
     }
 
-    /// Queue the latest snapshot for publishing. Cheap — safe to call on every
-    /// `AppState.refresh()`; the debounce coalesces bursts.
-    func publish(_ snap: ThrottleMirrorSnapshot) {
-        pending = snap                 // always hold the freshest
-        guard enabled else { return }  // will flush once start() arms us
+    func publish(_ snapshot: ThrottleMirrorSnapshot) {
+        // MirrorFanout retains this transport while opt-out is active. Do not
+        // retain those snapshots for a future start or a different iCloud user.
+        guard requested, backend != nil else { return }
+        pending = snapshot
         scheduleFlush()
     }
 
-    private func scheduleFlush() {
-        guard enabled, !flushScheduled else { return }
-        flushScheduled = true
-        let wait = max(0, minInterval - Date().timeIntervalSince(lastSentAt))
-        Task { [weak self] in
-            if wait > 0 {
-                try? await Task.sleep(nanoseconds: UInt64(wait * 1_000_000_000))
+    private func invalidate() {
+        generation = UUID()
+        enabled = false
+        pending = nil
+        startTask?.cancel()
+        flushTask?.cancel()
+        startTask = nil
+        flushTask = nil
+        backend?.cancel()
+        backend = nil
+        lastAttemptAt = .distantPast
+    }
+
+    private func accountChanged() {
+        guard requested else { return }
+        invalidate()
+        resolveAccount()
+    }
+
+    private func resolveAccount() {
+        let current = generation, candidate = makeBackend()
+        backend = candidate
+        startTask = Task { [weak self] in
+            let status = try? await candidate.accountStatus()
+            guard let self, self.generation == current, self.requested, !Task.isCancelled else { return }
+            self.startTask = nil
+            guard status == .available else {
+                self.pending = nil
+                self.backend = nil
+                NSLog("[CloudKitPublisher] iCloud unavailable — mirror disabled")
+                return
             }
-            await self?.flush()
+            self.enabled = true
+            self.scheduleFlush()
         }
     }
 
-    private func flush() async {
-        flushScheduled = false
-        guard enabled, let db = database, let snap = pending else { return }
-        pending = nil
-        do {
-            let record = try CloudKitRecordMapping.record(from: snap, existing: lastRecord)
-            // .allKeys = force overwrite ignoring the server change tag. Correct
-            // for a single-writer-per-device record: this Mac is the only author.
-            let (saveResults, _) = try await db.modifyRecords(
-                saving: [record], deleting: [], savePolicy: .allKeys, atomically: true)
-            if case .success(let saved)? = saveResults[record.recordID] {
-                lastRecord = saved
+    private func scheduleFlush() {
+        guard enabled, pending != nil, flushTask == nil, let backend else { return }
+        let current = generation
+        let wait = max(0, minInterval - now().timeIntervalSince(lastAttemptAt))
+        flushTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                if wait > 0 { try await self.sleep(wait) }
+                guard self.generation == current, self.enabled, !Task.isCancelled,
+                      let snapshot = self.pending else { return }
+                self.pending = nil
+                self.lastAttemptAt = self.now()
+                try await backend.save(snapshot)
+            } catch {
+                guard self.generation == current, !Task.isCancelled else { return }
+                if let error = error as? CKError, error.code == .notAuthenticated {
+                    self.accountChanged()
+                    return
+                }
+                NSLog("[CloudKitPublisher] publish failed (retries on next change): \(error.localizedDescription)")
             }
-            lastSentAt = Date()
-        } catch {
-            // Transient/network — the next state change supersedes this one.
-            NSLog("[CloudKitPublisher] publish failed (retries on next change): \(error.localizedDescription)")
+            guard self.generation == current, self.enabled, !Task.isCancelled else { return }
+            self.flushTask = nil
+            self.scheduleFlush()
         }
     }
+}
+
+/// A submitted CloudKit write can already have reached the server at opt-out.
+/// Cancel the operation, and let the publisher discard any late completion.
+@MainActor
+private final class CloudKitDatabasePublisher: CloudKitPublishingBackend {
+    private let container = CKContainer(identifier: CloudKitSchema.containerID)
+    private var operation: CKModifyRecordsOperation?
+
+    func accountStatus() async throws -> CKAccountStatus { try await container.accountStatus() }
+
+    func save(_ snapshot: ThrottleMirrorSnapshot) async throws {
+        // allKeys needs no cached record/change tag. Never carry a record across accounts.
+        let record = try CloudKitRecordMapping.record(from: snapshot)
+        let write = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
+        write.savePolicy = .allKeys
+        write.isAtomic = true
+        operation = write
+        defer { if operation === write { operation = nil } }
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                write.modifyRecordsResultBlock = { result in
+                    continuation.resume(with: result.mapError { $0 as Error })
+                }
+                container.privateCloudDatabase.add(write)
+            }
+        } onCancel: {
+            write.cancel()
+        }
+    }
+
+    func cancel() { operation?.cancel() }
 }

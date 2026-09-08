@@ -29,13 +29,13 @@ extension PlanMCPTools {
          agent already holds it. Only the holder may report progress afterwards.
          """,
          "inputSchema": ["type": "object",
-                         "properties": [
+                         "properties": retryProperties([
                             "project": projectProperty(),
                             "task_id": ["type": "string"],
                             "by": ["type": "string",
                                    "description": "runtime:session, e.g. codex:sess_ab"],
                             "mission_id": ["type": "string"]
-                         ],
+                         ]),
                          "required": ["task_id", "by"]]]
     }
 
@@ -47,7 +47,7 @@ extension PlanMCPTools {
          sha, a test count, a file path.
          """,
          "inputSchema": ["type": "object",
-                         "properties": [
+                         "properties": retryProperties([
                             "project": projectProperty(),
                             "task_id": ["type": "string"],
                             "by": ["type": "string"],
@@ -60,7 +60,7 @@ extension PlanMCPTools {
                             "ref": ["type": "string"],
                             "reason": ["type": "string"],
                             "summary": ["type": "string"]
-                         ],
+                         ]),
                          "required": ["task_id", "by", "type"]]]
     }
 
@@ -73,14 +73,14 @@ extension PlanMCPTools {
          that it is done. `rejected` must say what is missing.
          """,
          "inputSchema": ["type": "object",
-                         "properties": [
+                         "properties": retryProperties([
                             "project": projectProperty(),
                             "task_id": ["type": "string"],
                             "by": ["type": "string"],
                             "verdict": ["type": "string", "enum": ["verified", "rejected"]],
                             "reason": ["type": "string", "description": "what is missing, required when rejecting"],
                             "summary": ["type": "string"]
-                         ],
+                         ]),
                          "required": ["task_id", "by", "verdict"]]]
     }
 

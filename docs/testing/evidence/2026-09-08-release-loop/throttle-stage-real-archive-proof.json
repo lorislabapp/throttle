@@ -1,0 +1,14 @@
+{
+  "status": "pass",
+  "kind": "preexisting-real-sparkle-archive-signature",
+  "version": "3.5.0",
+  "build": "216",
+  "archive": "/Users/kevinnadjarian/GitHub/Throttle/build/recovery-3.5.0-216/public-staging/throttle/Throttle-3.5.0.dmg",
+  "bytes": 31083609,
+  "sha256": "7164e5557af745b524439feb31dee516ac02c4d4d5677c96197cf1d31e92ba93",
+  "signature_source": "/Users/kevinnadjarian/GitHub/Throttle/build/recovery-3.5.0-216/public-staging/throttle/appcast.xml",
+  "verifier": "CryptoKit Ed25519 over full archive bytes and exported public key",
+  "network": false,
+  "keychain": false,
+  "candidate_3_6_qualification": false
+}
