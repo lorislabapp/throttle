@@ -119,6 +119,24 @@ class MacOSEvidenceTests(unittest.TestCase):
         skipped["children"] = [{"nodeType": "Skip Message", "name": "Requires opt-in"}]
         self.assertEqual(runner.validate_reports(summary, tree, runner.REQUIRED_CASES)[0], [])
 
+    def test_skip_reason_filed_as_failure_message_is_accepted_only_under_an_allowed_skip(self):
+        # Xcode 26.6 labels the recorded skip reason "Failure Message" (run 34279369825).
+        summary, tree = reports()
+        skipped = next(case for case in leaves(tree) if case["result"] == "Skipped")
+        skipped["children"] = [{"nodeType": "Failure Message", "name": "Test skipped - Requires opt-in"}]
+        self.assertEqual(runner.validate_reports(summary, tree, runner.REQUIRED_CASES)[0], [])
+        for spelling in ("Failure Message", "Skip Message"):
+            summary, tree = reports()
+            passed = next(case for case in leaves(tree) if case["result"] == "Passed")
+            passed["children"] = [{"nodeType": spelling, "name": "Assertion text hidden under a green case"}]
+            self.assertIn("message_outside_allowed_skip:Assertion text hidden under a green case",
+                          runner.validate_reports(summary, tree, runner.REQUIRED_CASES)[0])
+        summary, tree = reports()
+        skipped = next(case for case in leaves(tree) if case["result"] == "Skipped")
+        skipped["children"] = [{"nodeType": "Failure Message", "name": "Nested", "children": [
+            {"nodeType": "Failure Message", "name": "Deeper"}]}]
+        self.assertIn("message_outside_allowed_skip:Deeper", runner.validate_reports(summary, tree, runner.REQUIRED_CASES)[0])
+
     def test_opt_in_test_may_pass_instead_of_skip_but_may_not_disappear(self):
         summary, tree = reports()
         skipped = next(case for case in leaves(tree) if case["result"] == "Skipped")

@@ -214,6 +214,26 @@ n'est pas typecheckable isolément ; CI n°6.
 Preuves locales : `swiftc -typecheck` des fichiers produit autonomes,
 SwiftLint 0.63.2 exit 0, `git diff --check` propre. CI n°7.
 
+## CI n°7 — septième lot (run 34279369825, HEAD `0def4c3`)
+
+- `ios-tests` **PASS** avec le démarrage explicite du simulateur ; Vault
+  Debug/Release, visionOS, quality, validator-evidence **PASS**.
+- `macos-tests` : **646 cas, 646 réussis** (5 skips autorisés), y compris
+  `testHibernate…` en 1,7 s avec sa preuve de non-fuite. Le job reste rouge
+  pour une seule erreur du **vérificateur** : `unknown_test_node_type:Failure
+  Message`. Lecture de `tests.json` : les cinq nœuds concernés sont les motifs
+  des cinq skips autorisés (« Test skipped - Set THROTTLE_RUN_EMBEDDED_MODEL_TEST=1… »
+  etc.), que xcresulttool 26.6 étiquette « Failure Message » là où le
+  vérificateur n'attendait que « Skip Message ». L'erreur était présente dans
+  chaque run précédent, masquée par de vrais échecs.
+
+### Huitième lot
+
+Le vérificateur accepte « Failure Message » et « Skip Message » **uniquement**
+sous un cas `Skipped` figurant dans les skips autorisés ; un message sous un
+cas réussi ou échoué, ou imbriqué, est refusé (`message_outside_allowed_skip`).
+Trois cas négatifs ajoutés ; 150/150 tests Python. Aucun changement Swift.
+
 ## Conservation et verdict
 
 Les preuves compactes sont dans [evidence/2026-09-08-release-loop](evidence/2026-09-08-release-loop).

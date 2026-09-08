@@ -197,17 +197,24 @@ def validate_reports(summary, tree, expected, *, scheme="Throttle"):
     if counts.get("failedTests") != 0 or counts.get("expectedFailures") != 0:
         errors.append("summary_failures")
 
-    def walk(node, bundle=None):
+    def walk(node, bundle=None, parent=None):
         if not isinstance(node, dict):
             errors.append("invalid_test_node")
             return
         kind = node.get("nodeType")
-        if kind not in {"Test Plan", "Unit test bundle", "Test Suite", "Test Case", "Skip Message", "Runtime Warning"}:
+        if kind not in {"Test Plan", "Unit test bundle", "Test Suite", "Test Case", "Skip Message", "Failure Message",
+                        "Runtime Warning"}:
             errors.append("unknown_test_node_type:" + str(kind))
         if kind == "Test Plan" and node.get("name") != scheme:
             errors.append("unexpected_test_plan")
-        if kind == "Skip Message" and not profile["skips"]:
-            errors.append("unexpected_skip_message")
+        if kind in {"Skip Message", "Failure Message"}:
+            # xcresulttool 26.6 files a skip's reason as "Failure Message". Either
+            # spelling is acceptable only under an explicitly allowed skipped case;
+            # a message under any passed or failed case is never a decoration.
+            allowed = (isinstance(parent, dict) and parent.get("nodeType") == "Test Case"
+                       and parent.get("result") == "Skipped" and parent.get("nodeIdentifier") in profile["skips"])
+            if not allowed:
+                errors.append("message_outside_allowed_skip:" + str(node.get("name")))
         if kind == "Unit test bundle":
             bundle = node.get("name")
             if bundle != profile["bundle"]:
@@ -234,7 +241,7 @@ def validate_reports(summary, tree, expected, *, scheme="Throttle"):
             errors.append("invalid_children")
             return
         for child in children:
-            walk(child, bundle)
+            walk(child, bundle, node)
 
     nodes = tree.get("testNodes")
     if not isinstance(nodes, list) or not nodes:
