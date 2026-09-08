@@ -1,0 +1,63 @@
+{
+  "scope": "Headless LocalProcess/Pty + exact OwnedProcessTermination/NativeProcessIdentity with stable test fixture; not full CockpitTab/XCTest app host",
+  "head": "a6dd34387081853a225818918244273659d17604",
+  "fixture_passes": 20,
+  "fixture_failures": 0,
+  "stop_seconds_min": 1.5208977083675563,
+  "stop_seconds_max": 1.5482281250297092,
+  "assertions": [
+    "exactly two processes per fixture",
+    "TERM and HUP ignored by primary child; >=1.45 seconds before confirmed stop",
+    "unrelated process retains exact UID/start-time identity",
+    "owned cleanup succeeds for all three fixtures"
+  ],
+  "swiftterm_revision": "849e8a4f3d6f79ddee07152400137f1370c32621",
+  "swiftterm_sources_match_pinned_commit": {
+    "LocalProcess.swift": true,
+    "Pty.swift": true
+  },
+  "compile_command": [
+    "swiftc",
+    "-swift-version",
+    "5",
+    "NativeProcessIdentity.swift",
+    "OwnedProcessTermination.swift",
+    "LocalProcess.swift",
+    "Pty.swift",
+    "Stubs.swift",
+    "Harness.swift",
+    "-o",
+    "lifecycle-native"
+  ],
+  "run_command": [
+    "./lifecycle-native",
+    "stable",
+    "20"
+  ],
+  "source_sha256": {
+    "ThrottleTests/ServiceTests/CockpitLifecycleTests.swift": "b48262acbd575b0dd87f7da310363f765cc6e8cfb3af32c4ba8bfcf6f83a2823",
+    "Throttle/Services/OwnedProcessTermination.swift": "c91da87b1960540a1c11b35a6dda77635275cb88b4602c8e925cd781efb426bc",
+    "Throttle/Services/NativeProcessIdentity.swift": "b2754ba4f3560d73a87740c54c69f904fa51aafb6ba5abbfc70ecb139aa4ddaa"
+  },
+  "evidence_sha256": {
+    "stable-20.log": "f9095f1e1c8fdbafad4d7bdd45150f6397a1bc909f1df9fabd58cab5ae1c355e",
+    "OwnedProcessTermination.swift": "c91da87b1960540a1c11b35a6dda77635275cb88b4602c8e925cd781efb426bc",
+    "Harness.swift": "153de7580f96ba3acabf97a955e0a389e645ec8f07a38d5dcbdcd75c4d2dad15",
+    "LocalProcess.swift": "97a7731705819d0556725bbf5581ad93c82e167bc79c7c8ac689456e5a71bb95",
+    "NativeProcessIdentity.swift": "b2754ba4f3560d73a87740c54c69f904fa51aafb6ba5abbfc70ecb139aa4ddaa",
+    "Stubs.swift": "bc0a9fd01de635937abc3eb626e3852234d105617bec5a34c5af54412423cf04",
+    "lifecycle-native": "6f3c1158d7f8d3d6e82b30c5cb3a1b8ebfa69a4b453a70beb73c797ca979f82e",
+    "Pty.swift": "1d0d58b08576187897fb99b1d93426f6da949e2f4821ff0b436be47882250e6f"
+  },
+  "local_checks": [
+    "swiftc -frontend -parse CockpitLifecycleTests.swift: pass",
+    "SwiftLint strict/no-cache: pass",
+    "git diff --check: pass"
+  ],
+  "limits": [
+    "Original headless fixture passed 30 local iterations; CI failure not reproduced locally.",
+    "Fixture now has no post-readiness descendant churn and actually exercises KILL, but full app-host lifecycle test needs fresh CI.",
+    "EPERM from old test was read after XCTest assertion and is not a reliable captured syscall error.",
+    "No production ownership/termination guard changed."
+  ]
+}

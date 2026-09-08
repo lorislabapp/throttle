@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "scope": "Vault evidence validator tests, including seven real macOS CLI sandbox confinement cases",
+  "checkout": "/Users/kevinnadjarian/GitHub/Throttle/build/release-loop-ci",
+  "base_head": "a6dd34387081853a225818918244273659d17604",
+  "command": "python3 -B -m unittest discover -s scripts/tests -p test_vault_evidence.py",
+  "execution_context": "approved execution outside the agent sandbox; candidates themselves run under /usr/bin/sandbox-exec",
+  "tests": 46,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "duration_seconds": 1.517,
+  "exit_code": 0,
+  "executed_source_sha256": {
+    "scripts/verify-vault-tests.py": "dffa2286542d05480f8c88cd53fc753b17c6ba7622aaa0a73168d93cec662740",
+    "scripts/tests/test_vault_evidence.py": "30a50f2e502a1c2006ed1ab932edcd564c22357d0c04d0fef6eace71c2b3ad14"
+  },
+  "current_source_sha256": {
+    "scripts/verify-vault-tests.py": "dffa2286542d05480f8c88cd53fc753b17c6ba7622aaa0a73168d93cec662740",
+    "scripts/tests/test_vault_evidence.py": "30a50f2e502a1c2006ed1ab932edcd564c22357d0c04d0fef6eace71c2b3ad14"
+  },
+  "sources_unchanged": true,
+  "log_file": null,
+  "log_status": "No full log was saved. Final output was observed in tool session 14173, chunk c19c9c; this receipt is a retrospective record of that execution, not a rerun.",
+  "observed_final_summary": "Ran 46 tests in 1.517s\n\nOK",
+  "passed_boundaries": [
+    "write outside fixture",
+    "write through fixture symlink to external path",
+    "loopback networking",
+    "process fork",
+    "Mach lookup of fictitious service",
+    "read of synthetic Keychains directory",
+    "missing sandbox rejected before executing candidate"
+  ],
+  "limitations": [
+    "No real Keychain service or production keys were accessed.",
+    "Actual Release product execution under this sandbox remains OPEN for stable Xcode26.6 CI.",
+    "ActivityKit iOS compilation and hosted tests remain OPEN for stable CI.",
+    "No tests, builds or CI rerun to create this handoff receipt."
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "scope": "39 validator tests and controlled fixture processes only; no real ResearchVault Release build or runtime",
+  "head": "a6dd34387081853a225818918244273659d17604",
+  "validator_tests": 39,
+  "command": [
+    "python3",
+    "-B",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "scripts/tests",
+    "-p",
+    "test_vault_evidence.py",
+    "-v"
+  ],
+  "exit_code": 0,
+  "checks": [
+    [
+      "/bin/sh",
+      "-n",
+      "Packages/ResearchVaultKit/Scripts/verify-crash-recovery.sh"
+    ],
+    [
+      "git",
+      "diff",
+      "--check"
+    ]
+  ],
+  "source_sha256": {
+    "scripts/verify-vault-tests.py": "15620ace638be7e911c4a9dcd5369a0252fa22288680eacf88629ff0bf344388",
+    "scripts/tests/test_vault_evidence.py": "f243eb4b212c8ebba9bbcd8b8aa75b3199b2cc399abf195b720d369b3f314c4a",
+    "Packages/ResearchVaultKit/Scripts/verify-crash-recovery.sh": "92f4d01803973a232bf187370ee2655ee93cf8747d8429940401beb898d23303",
+    ".github/workflows/ci.yml": "19ec825d469038937dd4496126f162b314070081c2864d8514c42bd0bdbaea21"
+  },
+  "log_sha256": "f86e33a9e02be54414e0f7eafd27b3a25d8fc1a87dcf3eb60aa73d17dcd2bf98"
+}

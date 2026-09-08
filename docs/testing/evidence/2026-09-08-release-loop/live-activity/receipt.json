@@ -1,0 +1,24 @@
+{
+  "status": "pass",
+  "scope": "five portable XCTest cases of exact LiveActivityOperationQueue source; iOS ActivityKit branch awaiting stable CI",
+  "checkout": "/Users/kevinnadjarian/GitHub/Throttle/build/release-loop-ci",
+  "base_head": "a6dd34387081853a225818918244273659d17604",
+  "sources": {
+    "ThrottleiOS/Services/ThrottleLiveActivity.swift": "462f813729d806d180ab29128d2c84324994ef58dc77fa1b0c34b93f79c38d45",
+    "ThrottleiOSTests/LiveActivityOperationQueueTests.swift": "e7c923aedd348ac05afb082660a3e791aacaad09b77fe7b2b5f819d798e91224"
+  },
+  "tests": 5,
+  "failures": 0,
+  "skips": 0,
+  "artifacts": {
+    "tests.xml": "77ef2a97abc617f01299b733d6e5223487d988e635f21cb5151e135fa1ad9f19",
+    "tests.log": "1ea935552adc7e3cdae64c5d596e26ca1bc9498cc6d9381010739e648071ce34"
+  },
+  "swift": "Apple Swift version 6.4 (swiftlang-6.4.0.33.1 clang-2100.3.33.1)\nTarget: arm64-apple-macosx27.0.0",
+  "limitations": [
+    "SDK interfaces inspected locally Xcode27; full actual ActivityKit typecheck not attempted with disk pressure",
+    "Stable Xcode26.6 iOS CI build and hosted tests required",
+    "No ActivityKit/device or account behavior acceptance performed"
+  ],
+  "disk_available_bytes": 1536000000
+}

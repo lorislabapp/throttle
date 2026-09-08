@@ -1,0 +1,312 @@
+{
+  "findings": 51,
+  "verified": [
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-ios-34260476621/sources-before.json",
+      "line": 20,
+      "matched": "5b1f0f6:ThrottleShared/Sources/ThrottleShared/EdgeAgentService+API.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-ios-34260476621/sources-before.json",
+      "line": 32,
+      "matched": "5b1f0f6:ThrottleShared/Sources/ThrottleShared/KeychainStore.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-ios-34260476621/sources-after.json",
+      "line": 20,
+      "matched": "5b1f0f6:ThrottleShared/Sources/ThrottleShared/EdgeAgentService+API.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-ios-34260476621/sources-after.json",
+      "line": 32,
+      "matched": "5b1f0f6:ThrottleShared/Sources/ThrottleShared/KeychainStore.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-ios-34260476621/receipt.json",
+      "line": 44,
+      "matched": "5b1f0f6:ThrottleShared/Sources/ThrottleShared/EdgeAgentService+API.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-ios-34260476621/receipt.json",
+      "line": 56,
+      "matched": "5b1f0f6:ThrottleShared/Sources/ThrottleShared/KeychainStore.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/manifest-sha256.json",
+      "line": 39,
+      "matched": "docs/testing/evidence/2026-09-08-release-loop/project-key-receipt.json",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-vault-34260476621/sources-after.json",
+      "line": 35,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Sources/ResearchVaultKeychain/VaultMasterKeyStore.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-vault-34260476621/sources-after.json",
+      "line": 64,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Sources/ResearchVaultStore/VaultKeyDerivation.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-vault-34260476621/sources-after.json",
+      "line": 99,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Tests/ResearchVaultKeychainTests/VaultMasterKeyStoreTests.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-vault-34260476621/sources-before.json",
+      "line": 35,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Sources/ResearchVaultKeychain/VaultMasterKeyStore.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-vault-34260476621/sources-before.json",
+      "line": 64,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Sources/ResearchVaultStore/VaultKeyDerivation.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-vault-34260476621/sources-before.json",
+      "line": 99,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Tests/ResearchVaultKeychainTests/VaultMasterKeyStoreTests.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-vault-34260476621/receipt.json",
+      "line": 42,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Sources/ResearchVaultKeychain/VaultMasterKeyStore.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-vault-34260476621/receipt.json",
+      "line": 71,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Sources/ResearchVaultStore/VaultKeyDerivation.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-vault-34260476621/receipt.json",
+      "line": 106,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Tests/ResearchVaultKeychainTests/VaultMasterKeyStoreTests.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-before.json",
+      "line": 35,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Sources/ResearchVaultKeychain/VaultMasterKeyStore.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-before.json",
+      "line": 64,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Sources/ResearchVaultStore/VaultKeyDerivation.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-before.json",
+      "line": 99,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Tests/ResearchVaultKeychainTests/VaultMasterKeyStoreTests.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-before.json",
+      "line": 164,
+      "matched": "5b1f0f6:Throttle/Network/OAuthUsageProvider.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-before.json",
+      "line": 204,
+      "matched": "5b1f0f6:Throttle/Services/ClaudeAPIKeyProtocol.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-before.json",
+      "line": 205,
+      "matched": "5b1f0f6:Throttle/Services/ClaudeAPIKeyProvider.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-before.json",
+      "line": 336,
+      "matched": "5b1f0f6:Throttle/Services/TokenEstimate.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-before.json",
+      "line": 522,
+      "matched": "5b1f0f6:ThrottleShared/Sources/ThrottleShared/EdgeAgentService+API.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-before.json",
+      "line": 534,
+      "matched": "5b1f0f6:ThrottleShared/Sources/ThrottleShared/KeychainStore.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-before.json",
+      "line": 570,
+      "matched": "5b1f0f6:ThrottleTests/ServiceTests/ClaudeAPIKeyProtocolTests.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-before.json",
+      "line": 629,
+      "matched": "5b1f0f6:ThrottleTests/ServiceTests/TokenEstimateTests.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/receipt.json",
+      "line": 51,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Sources/ResearchVaultKeychain/VaultMasterKeyStore.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/receipt.json",
+      "line": 80,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Sources/ResearchVaultStore/VaultKeyDerivation.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/receipt.json",
+      "line": 115,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Tests/ResearchVaultKeychainTests/VaultMasterKeyStoreTests.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/receipt.json",
+      "line": 180,
+      "matched": "5b1f0f6:Throttle/Network/OAuthUsageProvider.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/receipt.json",
+      "line": 220,
+      "matched": "5b1f0f6:Throttle/Services/ClaudeAPIKeyProtocol.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/receipt.json",
+      "line": 221,
+      "matched": "5b1f0f6:Throttle/Services/ClaudeAPIKeyProvider.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/receipt.json",
+      "line": 352,
+      "matched": "5b1f0f6:Throttle/Services/TokenEstimate.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/receipt.json",
+      "line": 538,
+      "matched": "5b1f0f6:ThrottleShared/Sources/ThrottleShared/EdgeAgentService+API.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/receipt.json",
+      "line": 550,
+      "matched": "5b1f0f6:ThrottleShared/Sources/ThrottleShared/KeychainStore.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/receipt.json",
+      "line": 586,
+      "matched": "5b1f0f6:ThrottleTests/ServiceTests/ClaudeAPIKeyProtocolTests.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/receipt.json",
+      "line": 645,
+      "matched": "5b1f0f6:ThrottleTests/ServiceTests/TokenEstimateTests.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-after.json",
+      "line": 35,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Sources/ResearchVaultKeychain/VaultMasterKeyStore.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-after.json",
+      "line": 64,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Sources/ResearchVaultStore/VaultKeyDerivation.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-after.json",
+      "line": 99,
+      "matched": "5b1f0f6:Packages/ResearchVaultKit/Tests/ResearchVaultKeychainTests/VaultMasterKeyStoreTests.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-after.json",
+      "line": 164,
+      "matched": "5b1f0f6:Throttle/Network/OAuthUsageProvider.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-after.json",
+      "line": 204,
+      "matched": "5b1f0f6:Throttle/Services/ClaudeAPIKeyProtocol.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-after.json",
+      "line": 205,
+      "matched": "5b1f0f6:Throttle/Services/ClaudeAPIKeyProvider.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-after.json",
+      "line": 336,
+      "matched": "5b1f0f6:Throttle/Services/TokenEstimate.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-after.json",
+      "line": 522,
+      "matched": "5b1f0f6:ThrottleShared/Sources/ThrottleShared/EdgeAgentService+API.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-after.json",
+      "line": 534,
+      "matched": "5b1f0f6:ThrottleShared/Sources/ThrottleShared/KeychainStore.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-after.json",
+      "line": 570,
+      "matched": "5b1f0f6:ThrottleTests/ServiceTests/ClaudeAPIKeyProtocolTests.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/ci-macos-34254678879/sources-after.json",
+      "line": 629,
+      "matched": "5b1f0f6:ThrottleTests/ServiceTests/TokenEstimateTests.swift",
+      "classification": "verified SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/local-vault-source-equivalence.json",
+      "line": 33,
+      "matched": "a6dd343:Packages/ResearchVaultKit/Sources/ResearchVaultKeychain/VaultMasterKeyStore.swift",
+      "classification": "verified package source SHA-256 fingerprint, not a credential"
+    },
+    {
+      "file": "docs/testing/evidence/2026-09-08-release-loop/local-vault-source-equivalence.json",
+      "line": 62,
+      "matched": "a6dd343:Packages/ResearchVaultKit/Sources/ResearchVaultStore/VaultKeyDerivation.swift",
+      "classification": "verified package source SHA-256 fingerprint, not a credential"
+    }
+  ],
+  "unresolved": []
+}

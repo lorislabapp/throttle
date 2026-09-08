@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "checkout": "/Users/kevinnadjarian/GitHub/Throttle/build/release-loop-ci",
+  "head_under_review": "a6dd34387081853a225818918244273659d17604",
+  "current_tests": 4,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "quality_release_block_sha256": "dc19ff6af6486b797b9e888d1051758fa14de126d21625cff22295ef6d75028e",
+  "test_source_sha256": "124546885cb9acaa5fc0dd7dc64f4ced77591d73df08c9238386074b7fe6466f",
+  "block_and_tests_unchanged_during_run": true,
+  "prior_counterproof": {
+    "test_methods": 3,
+    "failing_methods": [
+      "test_each_notarization_script_must_default_to_disabled",
+      "test_each_notarization_script_must_have_the_explicit_flag",
+      "test_syntax_error_in_each_release_script_is_rejected"
+    ],
+    "assertion_failures": 5,
+    "errors": 0,
+    "workflow_sha256": "038ee405982e68714773ac754def69cdf9799cd89cccfab9568557d82ed6f79d"
+  },
+  "scope": "actual quality release-script run block executed with real bash syntax and grep against isolated files; unrelated node/python steps stubbed; no release script execution, signing, build or upload",
+  "artifacts_sha256": {
+    "current-tests.log": "8756340444f7388202243d5ba118578dcae76a6281286aab85e8ab16c0e5c9ea",
+    "prior-counterproof.log": "b164c3045ef2f32e4687cd2aaa5716b37d1cd0944480bc6b304acf8476cd08a4"
+  }
+}

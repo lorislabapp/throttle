@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "checkout": "/Users/kevinnadjarian/GitHub/Throttle/build/release-loop-ci",
+  "base": "a6dd343",
+  "current_tests": 4,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "quality_release_block_sha256": "dc19ff6af6486b797b9e888d1051758fa14de126d21625cff22295ef6d75028e",
+  "test_source_sha256": "9dac4760476e9668a5ca5f135de99aabf847a28dae47531282dfca33c5b8cf75",
+  "block_and_tests_unchanged": true,
+  "prior_counterproof": {
+    "test_methods": 3,
+    "failing_methods": [
+      "test_each_notarization_script_must_default_to_disabled",
+      "test_each_notarization_script_must_have_the_explicit_flag",
+      "test_syntax_error_in_each_release_script_is_rejected"
+    ],
+    "assertion_failures": 7,
+    "errors": 0
+  },
+  "scope": "real CI run block with bash/grep and isolated synthetic script files; unrelated node/python validations stubbed; no script execution, build, signing or upload",
+  "artifacts_sha256": {
+    "current-tests-final.log": "4f1da91f6d897ec76f2da91c12078de6a1b36814b2c8a316210723eb03a2a3a8",
+    "prior-counterproof-final.log": "0fcfb4ecd8c25fd55fb6764600b99053b5738327f002648ef1870d5fc7976f49",
+    "ci-a6dd343.yml": "038ee405982e68714773ac754def69cdf9799cd89cccfab9568557d82ed6f79d"
+  }
+}

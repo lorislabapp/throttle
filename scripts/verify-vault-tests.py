@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run every Debug ResearchVaultKit package test and verify native evidence.
+"""Run every Debug or Release ResearchVaultKit package test with native evidence.
 
 Both XCTest and Swift Testing must report every discovered function without a
 skip. Swift Testing XML aggregates parameterized functions, so its native event
@@ -7,10 +7,12 @@ stream must additionally complete every argument ID enumerated by the runtime.
 Swift's lazy --list-tests discovery currently omits argument IDs: argument
 completeness is relative to runtime metadata, not an independent denominator.
 If discovery does provide argument IDs, the two inventories must agree exactly.
-This lane does not qualify a signed XPC service, real Keychain, live corpus,
-release binaries, or the full Scripts/verify.sh oracle/crash recovery workflow.
+Release additionally exercises transaction/migration crash rollback and the
+direct CLI refusal using the same build products. Neither configuration qualifies
+a signed XPC service, real Keychain, live corpus or the full verify.sh workflow.
 """
 import argparse
+import hashlib
 import importlib.util
 import json
 import math
@@ -19,6 +21,7 @@ import pathlib
 import platform
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -41,11 +44,111 @@ REQUIRED_CASES = {
     "ResearchVaultXPCTests.ResearchVaultXPCTests/ownerReasoningDispatch()",
 }
 CASE_PATTERN = re.compile(r"[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*/[A-Za-z_]\w*(?:\([^\s/]*\))?")
+RELEASE_DISABLED = b"research-vault-mcp: direct Release mode disabled\n"
+INITIALIZE_REQUEST = b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}\n'
+SANDBOX_EXEC = pathlib.Path("/usr/bin/sandbox-exec")
+CLI_SANDBOX_PROFILE = """(version 1)
+(allow default)
+(deny network*)
+(deny mach-lookup)
+(deny process-fork)
+(deny file-write*)
+(allow file-write* (subpath (param "FIXTURE")))
+(deny file-read* (regex #"(^|/)Keychains(/|$)"))
+"""
 
 
 def require(condition, message):
     if not condition:
         raise EvidenceError(message)
+
+
+def package_flags(scratch, configuration):
+    require(configuration in {"debug", "release"}, "unknown_build_configuration")
+    return ["--package-path", str(PACKAGE), "--scratch-path", str(scratch), "--build-system", "native",
+            "-c", configuration, "--jobs", "2"]
+
+
+def validate_crash_recovery(records):
+    expected = [
+        {"status": "prepared-write"},
+        {"status": "expected-crash", "scenario": "crash-write", "exitCode": 86},
+        {"status": "pass", "scenario": "write", "rows": 1},
+        {"status": "prepared-migration"},
+        {"status": "expected-crash", "scenario": "crash-migration", "exitCode": 86},
+        {"status": "pass", "scenario": "migration", "schemaVersion": 0},
+    ]
+    # Exact type-aware comparison: JSON true must not stand in for the row count.
+    require(json.dumps(records, sort_keys=True) == json.dumps(expected, sort_keys=True), "incomplete_or_failed_crash_recovery")
+    return records
+
+
+def validate_cli_refusal(exit_code, stdout, stderr):
+    require(type(exit_code) is int and exit_code == 1 and stdout == b"" and stderr == RELEASE_DISABLED,
+            "release_cli_did_not_explicitly_refuse")
+
+
+def sandbox_cli_command(command, fixture):
+    require(platform.system() == "Darwin" and SANDBOX_EXEC.is_file() and os.access(SANDBOX_EXEC, os.X_OK),
+            "release_cli_sandbox_unavailable")
+    return [str(SANDBOX_EXEC), "-D", "FIXTURE=" + str(fixture.resolve(strict=True)), "-p", CLI_SANDBOX_PROFILE, *command]
+
+
+def run_cli_refusal(binary, fixture, evidence, label, commands, *, ephemeral=False):
+    fixture.mkdir()
+    inbox = fixture / "inbox"
+    inbox.mkdir()
+    # Both invocations are syntactically complete; a generic usage/startup error
+    # cannot be mistaken for the Release-only denial. No corpus path is passed.
+    command = [str(binary), "--database", str(fixture / "vault.ccsql"), "--inbox", str(inbox),
+               "--project", "throttle", "--maximum-sensitivity", "internal"]
+    if ephemeral:
+        command.append("--ephemeral-testing-key")
+    # This boundary remains effective if a candidate accidentally enables the
+    # direct owner or moves the Release guard after its Keychain initialization.
+    # Keep HOME and the candidate's arguments unchanged; a generic sandbox or
+    # startup error is still a failure, never evidence of the Release denial.
+    command = sandbox_cli_command(command, fixture)
+    entry = {"argv": command, "timeout_seconds": 30, "expected_exit_code": 1,
+             "stdin_sha256": hashlib.sha256(INITIALIZE_REQUEST).hexdigest(),
+             "sandbox_profile_sha256": hashlib.sha256(CLI_SANDBOX_PROFILE.encode()).hexdigest()}
+    commands.append(entry)
+    started = time.monotonic()
+    stdout_path, stderr_path = evidence / (label + ".stdout"), evidence / (label + ".stderr")
+    # Pipes keep the child from needing a write exception for evidence files
+    # outside its fixture. Only this parent writes the captured diagnostics.
+    process = subprocess.Popen(command, cwd=fixture, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                               start_new_session=True)
+    try:
+        stdout, stderr = process.communicate(INITIALIZE_REQUEST, timeout=30)
+        entry["exit_code"] = process.returncode
+    except (subprocess.TimeoutExpired, KeyboardInterrupt):
+        os.killpg(process.pid, signal.SIGKILL)
+        stdout, stderr = process.communicate()
+        stdout_path.write_bytes(stdout)
+        stderr_path.write_bytes(stderr)
+        entry["exit_code"] = 124
+        raise EvidenceError("release_cli_timeout_or_interruption")
+    finally:
+        entry["duration_seconds"] = round(time.monotonic() - started, 3)
+    stdout_path.write_bytes(stdout)
+    stderr_path.write_bytes(stderr)
+    validate_cli_refusal(entry["exit_code"], stdout, stderr)
+    require(list(fixture.iterdir()) == [inbox] and not list(inbox.iterdir()), "release_cli_created_local_state")
+    return {"scenario": label, "status": "pass", "exit_code": entry["exit_code"], "diagnostic": RELEASE_DISABLED.decode().strip(),
+            "sandbox_profile_sha256": entry["sandbox_profile_sha256"]}
+
+
+def release_products(bin_path):
+    hashes = {}
+    for name in ("research-vault-crash-probe", "research-vault-mcp"):
+        path = bin_path / name
+        require(path.is_file() and not path.is_symlink() and os.access(path, os.X_OK), "missing_release_product:" + name)
+        with path.open("rb") as stream:
+            require(stream.read(4) in {b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xca\xfe\xba\xbe", b"\xbe\xba\xfe\xca"},
+                    "release_product_is_not_macho:" + name)
+        hashes[name] = sha256(path)
+    return hashes
 
 
 def inventory(text):
@@ -265,6 +368,7 @@ def framework_snapshot(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-parent", type=pathlib.Path, required=True)
+    parser.add_argument("--configuration", choices=("debug", "release"), default="debug")
     args = parser.parse_args()
     args.output_parent.mkdir(parents=True, exist_ok=True)
     output = pathlib.Path(tempfile.mkdtemp(prefix="throttle-vault-", dir=args.output_parent)).resolve()
@@ -285,12 +389,13 @@ def main():
             versions[name] = destination.read_text().strip()
             require(bool(versions[name]), "missing_tool_version")
         require(shutil.disk_usage(output).free >= 4 * 1024 ** 3, "insufficient_disk_before_build")
-        flags = ["--package-path", str(PACKAGE), "--scratch-path", str(scratch), "--build-system", "native", "-c", "debug", "--jobs", "2"]
+        flags = package_flags(scratch, args.configuration)
         run_command(["swift", "build", *flags, "--build-tests"], ROOT, log, 1800, commands)
         bin_report = evidence / "bin-path.txt"
         run_command(["swift", "build", *flags, "--show-bin-path"], ROOT, log, 120, commands, bin_report)
         bin_path = pathlib.Path(bin_report.read_text().strip()).resolve(strict=True)
         require(bin_path.is_relative_to(scratch), "build_path_outside_unique_scratch")
+        require(bin_path.name == args.configuration, "wrong_build_configuration_directory")
         original = bin_path / "SQLCipher.framework"
         staged = bin_path / "PackageFrameworks/SQLCipher.framework"
         framework = framework_snapshot(original)
@@ -336,6 +441,26 @@ def main():
             completed["swift_testing"] = validate_events(read_records(discovery), read_records(events), expected_testing)
         except (EvidenceError, OSError) as error:
             errors.append("swift_testing_events:" + str(error))
+        if args.configuration == "release":
+            products = release_products(bin_path)
+            (evidence / "release-products.json").write_text(json.dumps(products, indent=2) + "\n")
+            crash_output = evidence / "release-crash-recovery.jsonl"
+            try:
+                run_command(["/bin/sh", str(PACKAGE / "Scripts/verify-crash-recovery.sh"), "release", "--product-directory", str(bin_path)],
+                            PACKAGE, log, 180, commands, crash_output)
+                completed["release_crash_recovery"] = validate_crash_recovery(read_records(crash_output))
+            except (EvidenceError, OSError) as error:
+                errors.append("release_crash_recovery:" + str(error))
+            try:
+                # If the ephemeral invocation is accidentally enabled, stop
+                # before attempting the direct path without the testing key.
+                completed["release_ephemeral_refusal"] = run_cli_refusal(bin_path / "research-vault-mcp", output / "ephemeral-fixture",
+                                                                          evidence, "release-rejects-ephemeral-key", commands, ephemeral=True)
+                completed["release_direct_refusal"] = run_cli_refusal(bin_path / "research-vault-mcp", output / "direct-fixture",
+                                                                       evidence, "release-rejects-direct-stdio", commands)
+            except (EvidenceError, OSError) as error:
+                errors.append("release_cli_refusal:" + str(error))
+            require(release_products(bin_path) == products, "release_products_changed_during_gates")
         require(framework_snapshot(original) == framework_snapshot(staged) == framework, "sqlcipher_changed_during_tests")
     except (EvidenceError, OSError, subprocess.SubprocessError, ValueError, KeyError, TypeError) as error:
         errors.append(str(error))
@@ -347,7 +472,8 @@ def main():
         except (EvidenceError, OSError, subprocess.SubprocessError) as error:
             errors.append(str(error))
     artifacts = {str(path.relative_to(evidence)): sha256(path) for path in sorted(evidence.rglob("*")) if path.is_file()}
-    receipt = {"schema_version": 1, "scope": "ResearchVaultKit all discovered Debug package functions and runtime-announced arguments; no live Keychain, signed XPC or full Vault acceptance",
+    receipt = {"schema_version": 1, "configuration": args.configuration,
+               "scope": "ResearchVaultKit all discovered " + args.configuration + " package functions and runtime-announced arguments; Release also requires crash rollback and CLI refusal; no live Keychain, signed XPC or full Vault acceptance",
                "status": "PASS" if not errors else "FAIL", "head": head, "errors": errors,
                "duration_seconds": round(time.time() - started, 3), "source_sha256": sources,
                "tools": versions, "commands": commands, "completed": completed, "artifact_sha256": artifacts}

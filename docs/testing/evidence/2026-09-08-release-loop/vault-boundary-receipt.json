@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "test_count": 15,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "source_sha256": {
+    "Packages/ResearchVaultKit/Scripts/verify-ipc-boundary.sh": "5291d2822a33a0a1bf8ea4f5f4f8f6e067c482f4b77841f58a6d6e2188e974c7",
+    "scripts/tests/test_vault_boundary.py": "1d097b624989b9d37ae2e108270a42ea031a34f2c5743e70d03e1f5608dbd59a"
+  },
+  "sources_unchanged": true,
+  "scope": "real POSIX shell gate against isolated model and client fixtures; actual grep I/O error plus controlled tool failures; no external client repository read",
+  "log_sha256": "6ede9b765f76e95da2774678ed40444d4dc8044e981fa908c27788eb787175fd"
+}

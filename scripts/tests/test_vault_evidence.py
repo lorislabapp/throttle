@@ -3,8 +3,11 @@ import copy
 import importlib.util
 import json
 import pathlib
+import subprocess
+import sys
 import tempfile
 import unittest
+from unittest import mock
 import xml.etree.ElementTree as ET
 
 
@@ -250,7 +253,233 @@ class VaultFrameworkEvidenceTests(unittest.TestCase):
 
     def test_empty_framework_is_not_evidence(self):
         with tempfile.TemporaryDirectory() as directory, self.assertRaises(validator.EvidenceError):
-            validator.framework_snapshot(pathlib.Path(directory))
+                validator.framework_snapshot(pathlib.Path(directory))
+
+
+class VaultReleaseEvidenceTests(unittest.TestCase):
+    def crash_records(self):
+        return [
+            {"status": "prepared-write"},
+            {"status": "expected-crash", "scenario": "crash-write", "exitCode": 86},
+            {"status": "pass", "scenario": "write", "rows": 1},
+            {"status": "prepared-migration"},
+            {"status": "expected-crash", "scenario": "crash-migration", "exitCode": 86},
+            {"status": "pass", "scenario": "migration", "schemaVersion": 0},
+        ]
+
+    def test_both_configurations_use_the_same_explicit_scratch_and_native_backend(self):
+        scratch = pathlib.Path("/private/tmp/vault-evidence-fixture/build")
+        debug = validator.package_flags(scratch, "debug")
+        release = validator.package_flags(scratch, "release")
+        self.assertEqual(release, ["release" if value == "debug" else value for value in debug])
+        self.assertEqual(release[release.index("--scratch-path") + 1], str(scratch))
+        self.assertEqual(release[release.index("--build-system") + 1], "native")
+        with self.assertRaises(validator.EvidenceError):
+            validator.package_flags(scratch, "relase")
+
+    def test_crash_recovery_requires_both_actual_crashes_and_both_verified_rollbacks(self):
+        records = self.crash_records()
+        self.assertEqual(validator.validate_crash_recovery(records), records)
+        variants = [[], records[:-1], records[1:], records[::-1], records + [records[-1]]]
+        for index, field, value in ((1, "exitCode", 0), (4, "exitCode", 1), (2, "rows", 2),
+                                    (2, "rows", True), (5, "schemaVersion", 99), (5, "status", "failed")):
+            changed = copy.deepcopy(records)
+            changed[index][field] = value
+            variants.append(changed)
+        for variant in variants:
+            with self.subTest(variant=variant), self.assertRaises(validator.EvidenceError):
+                validator.validate_crash_recovery(variant)
+
+    def test_generic_errors_missing_diagnostics_and_stdio_responses_are_not_refusals(self):
+        validator.validate_cli_refusal(1, b"", validator.RELEASE_DISABLED)
+        for code, stdout, stderr in ((0, b"", validator.RELEASE_DISABLED), (1, b"", b""),
+                                     (1, b"", b"usage: --database path\n"), (1, b"", b"research-vault-mcp: startup failed\n"),
+                                     (1, b'{"jsonrpc":"2.0","result":{}}\n', validator.RELEASE_DISABLED),
+                                     (86, b"", validator.RELEASE_DISABLED), (True, b"", validator.RELEASE_DISABLED)):
+            with self.subTest(code=code, stderr=stderr), self.assertRaises(validator.EvidenceError):
+                validator.validate_cli_refusal(code, stdout, stderr)
+
+    def test_cli_invocations_supply_valid_paths_and_initialize_and_preserve_fixture(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            executable = root / "fixture-refusal"
+            executable.write_text("#!" + sys.executable + "\n" +
+                "import json,sys\n" +
+                "assert sys.argv[1:9:2] == ['--database','--inbox','--project','--maximum-sensitivity']\n" +
+                "assert sys.argv[6] == 'throttle' and sys.argv[8] == 'internal'\n" +
+                "assert json.loads(sys.stdin.readline())['method'] == 'initialize'\n" +
+                "sys.stderr.buffer.write(" + repr(validator.RELEASE_DISABLED) + ")\nraise SystemExit(1)\n")
+            executable.chmod(0o755)
+            for ephemeral in (True, False):
+                commands = []
+                name = "ephemeral" if ephemeral else "direct"
+                proof = validator.run_cli_refusal(executable, root / name, root, name, commands, ephemeral=ephemeral)
+                self.assertEqual(proof["status"], "pass")
+                self.assertEqual(commands[0]["exit_code"], commands[0]["expected_exit_code"])
+                self.assertEqual("--ephemeral-testing-key" in commands[0]["argv"], ephemeral)
+                self.assertTrue((root / name / "inbox").is_dir())
+                self.assertFalse((root / name / "vault.ccsql").exists())
+
+    def test_a_refusal_that_creates_database_state_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            executable = root / "fixture-writes-before-refusal"
+            executable.write_text("#!" + sys.executable + "\nimport pathlib,sys\n" +
+                "pathlib.Path(sys.argv[2]).write_text('unexpected state')\n" +
+                "sys.stderr.buffer.write(" + repr(validator.RELEASE_DISABLED) + ")\nraise SystemExit(1)\n")
+            executable.chmod(0o755)
+            with self.assertRaisesRegex(validator.EvidenceError, "created_local_state"):
+                validator.run_cli_refusal(executable, root / "fixture", root, "refusal", [], ephemeral=True)
+
+    def test_release_product_receipt_rejects_missing_script_or_symlink_products(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            with self.assertRaisesRegex(validator.EvidenceError, "missing_release_product"):
+                validator.release_products(root)
+            for name in ("research-vault-crash-probe", "research-vault-mcp"):
+                path = root / name
+                path.write_bytes(b"#!/bin/sh\nexit 0\n")
+                path.chmod(0o755)
+            with self.assertRaisesRegex(validator.EvidenceError, "not_macho"):
+                validator.release_products(root)
+            (root / "research-vault-crash-probe").unlink()
+            (root / "research-vault-crash-probe").symlink_to("/bin/sh")
+            with self.assertRaisesRegex(validator.EvidenceError, "missing_release_product"):
+                validator.release_products(root)
+
+
+class VaultCLISandboxTests(unittest.TestCase):
+    def assert_confined(self, root, body, *, ephemeral=False):
+        executable = root / "candidate"
+        executable.write_text("#!" + sys.executable + "\nimport sys\n" + body +
+                              "\nsys.stderr.buffer.write(" + repr(validator.RELEASE_DISABLED) + ")\nraise SystemExit(1)\n")
+        executable.chmod(0o755)
+        commands = []
+        proof = validator.run_cli_refusal(executable, root / "fixture", root, "sandbox", commands, ephemeral=ephemeral)
+        self.assertEqual(proof["status"], "pass")
+        self.assertEqual(commands[0]["argv"][0], "/usr/bin/sandbox-exec")
+        self.assertEqual(len(proof["sandbox_profile_sha256"]), 64)
+
+    def test_write_outside_fixture_is_denied_even_before_the_exact_release_refusal(self):
+        for ephemeral in (True, False):
+            with self.subTest(ephemeral=ephemeral), tempfile.TemporaryDirectory() as directory:
+                root = pathlib.Path(directory)
+                outside = root / "outside-fixture"
+                self.assert_confined(root, "import pathlib\ntry:\n    pathlib.Path(" + repr(str(outside)) +
+                    ").write_text('must not escape')\nexcept PermissionError:\n    pass\nelse:\n    raise SystemExit(92)\n",
+                    ephemeral=ephemeral)
+                self.assertFalse(outside.exists())
+
+    def test_fixture_symlink_cannot_escape_the_write_boundary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            outside = root / "outside-fixture"
+            self.assert_confined(root, "import pathlib\nlink=pathlib.Path('escape')\nlink.symlink_to(" + repr(str(outside)) +
+                ")\ntry:\n    link.write_text('must not escape')\nexcept PermissionError:\n    pass\nelse:\n"
+                "    raise SystemExit(92)\nfinally:\n    link.unlink()\n")
+            self.assertFalse(outside.exists())
+
+    def test_network_is_denied_without_contacting_an_external_host(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assert_confined(pathlib.Path(directory), "import socket\ntry:\n    connection=socket.socket()\n"
+                "    connection.connect(('127.0.0.1',9))\nexcept OSError as error:\n    assert error.errno in (1,13),error\n"
+                "else:\n    raise SystemExit(92)\n")
+
+    def test_process_fork_is_denied(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assert_confined(pathlib.Path(directory), "import os\ntry:\n    child=os.fork()\n"
+                "except PermissionError:\n    pass\nelse:\n    if child==0:\n        os._exit(92)\n"
+                "    os.waitpid(child,0)\n    raise SystemExit(92)\n")
+
+    def test_mach_lookup_is_denied_for_a_fictitious_service_without_accessing_keychain(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assert_confined(pathlib.Path(directory), "import ctypes\nlib=ctypes.CDLL('/usr/lib/libSystem.B.dylib')\n"
+                "port=ctypes.c_uint32.in_dll(lib,'bootstrap_port').value\nresult=ctypes.c_uint32()\n"
+                "lib.bootstrap_look_up.argtypes=[ctypes.c_uint32,ctypes.c_char_p,ctypes.POINTER(ctypes.c_uint32)]\n"
+                "status=lib.bootstrap_look_up(port,b'com.lorislab.throttle.sandbox.nonexistent',ctypes.byref(result))\n"
+                "assert status==1100,status\n")  # BOOTSTRAP_NOT_PRIVILEGED, not UNKNOWN_SERVICE (1102).
+
+    def test_keychain_named_fixture_cannot_be_read_without_using_any_real_keychain(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            keys = root / "Keychains"
+            keys.mkdir()
+            dummy = keys / "synthetic-marker"
+            dummy.write_text("synthetic test data only")
+            self.assert_confined(root, "import pathlib\ntry:\n    pathlib.Path(" + repr(str(dummy)) +
+                ").read_bytes()\nexcept PermissionError:\n    pass\nelse:\n    raise SystemExit(92)\n")
+
+    def test_missing_sandbox_fails_before_the_candidate_can_run(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            with mock.patch.object(validator, "SANDBOX_EXEC", root / "missing-sandbox"), \
+                    mock.patch.object(validator.subprocess, "Popen") as process, \
+                    self.assertRaisesRegex(validator.EvidenceError, "release_cli_sandbox_unavailable"):
+                validator.run_cli_refusal(root / "never-executed", root / "fixture", root, "unavailable", [])
+            process.assert_not_called()
+
+
+class VaultCrashScriptReuseTests(unittest.TestCase):
+    SCRIPT = ROOT / "Packages/ResearchVaultKit/Scripts/verify-crash-recovery.sh"
+
+    def fixture(self, root, crash_status=86):
+        product = root / "product"
+        product.mkdir()
+        (product / "SQLCipher.framework").mkdir()
+        (product / "SQLCipher.framework/SQLCipher").write_bytes(b"fixture-framework")
+        probe = product / "research-vault-crash-probe"
+        probe.write_text("#!/bin/sh\ncase \"$1\" in\n" +
+            "prepare-write) echo '{\"status\":\"prepared-write\"}' ;;\n" +
+            "prepare-migration) echo '{\"status\":\"prepared-migration\"}' ;;\n" +
+            "crash-write|crash-migration) exit " + str(crash_status) + " ;;\n" +
+            "verify-write) echo '{\"status\":\"pass\",\"scenario\":\"write\",\"rows\":1}' ;;\n" +
+            "verify-migration) echo '{\"status\":\"pass\",\"scenario\":\"migration\",\"schemaVersion\":0}' ;;\n" +
+            "*) exit 99 ;;\nesac\n")
+        probe.chmod(0o755)
+        tools = root / "tools"
+        tools.mkdir()
+        swift = tools / "swift"
+        swift.write_text("#!/bin/sh\necho 'unexpected Swift build' >&2\nexit 99\n")
+        swift.chmod(0o755)
+        return product, {"PATH": str(tools) + ":/usr/bin:/bin", "LC_ALL": "C"}
+
+    def test_existing_crash_script_reuses_product_without_any_swift_build(self):
+        with tempfile.TemporaryDirectory() as directory:
+            product, environment = self.fixture(pathlib.Path(directory))
+            result = subprocess.run(["/bin/sh", str(self.SCRIPT), "release", "--product-directory", str(product)],
+                                    env=environment, capture_output=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            records = [json.loads(line) for line in result.stdout.splitlines()]
+            self.assertEqual(len(validator.validate_crash_recovery(records)), 6)
+            self.assertEqual((product / "PackageFrameworks/SQLCipher.framework/SQLCipher").read_bytes(), b"fixture-framework")
+
+    def test_script_rejects_wrong_crash_exit_even_if_probe_could_print_green_verification(self):
+        with tempfile.TemporaryDirectory() as directory:
+            product, environment = self.fixture(pathlib.Path(directory), crash_status=0)
+            result = subprocess.run(["/bin/sh", str(self.SCRIPT), "release", "--product-directory", str(product)],
+                                    env=environment, capture_output=True, timeout=10)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn(b"unexpected crash-probe exit: 0", result.stderr)
+            with self.assertRaises(validator.EvidenceError):
+                validator.validate_crash_recovery([json.loads(line) for line in result.stdout.splitlines()])
+
+    def test_script_rejects_invalid_paths_arguments_and_missing_or_nonexecutable_probe(self):
+        with tempfile.TemporaryDirectory() as directory:
+            product, environment = self.fixture(pathlib.Path(directory))
+            variants = [["release", "--product-directory", "relative"], ["release", "--product-directory"],
+                        ["release", "--product-directory", str(product / "missing")], ["unknown"]]
+            for arguments in variants:
+                result = subprocess.run(["/bin/sh", str(self.SCRIPT), *arguments], env=environment, capture_output=True, timeout=10)
+                self.assertEqual(result.returncode, 2, (arguments, result.stderr))
+                self.assertNotIn(b"unexpected Swift build", result.stderr)
+            probe = product / "research-vault-crash-probe"
+            for state in ("not_executable", "missing", "directory"):
+                if state == "not_executable": probe.chmod(0o644)
+                elif state == "missing": probe.unlink()
+                else: probe.mkdir()
+                result = subprocess.run(["/bin/sh", str(self.SCRIPT), "release", "--product-directory", str(product)],
+                                        env=environment, capture_output=True, timeout=10)
+                self.assertEqual(result.returncode, 2, (state, result.stderr))
 
 
 # Captured by Swift 6.4 / Testing 2078, 2026-09-08, from a real tiny package:

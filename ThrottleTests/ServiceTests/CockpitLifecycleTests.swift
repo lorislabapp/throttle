@@ -30,7 +30,7 @@ final class CockpitLifecycleTests: XCTestCase {
         let identity = tab.sessionId
         tab.pauseReason = .user
         let stopped = await tab.hibernate()
-        XCTAssertTrue(stopped)
+        XCTAssertTrue(stopped, tab.stopIssue ?? "Both owned terminal groups must have exited")
         XCTAssertTrue(tab.isHibernated)
         XCTAssertFalse(tab.isStopping)
         XCTAssertNil(tab.stopIssue)
@@ -177,10 +177,12 @@ final class CockpitLifecycleTests: XCTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let terminal = DroppableTerminalView(frame: NSRect(x: 0, y: 0, width: 320, height: 200))
         let childReady = directory.appendingPathComponent("child-ready")
-        let child = (ignoresTerm ? "trap '' TERM; " : "")
+        // exec keeps the child's PID stable after readiness and never creates
+        // an uncaptured sleep grandchild. Ignoring HUP as well as TERM prevents
+        // PTY hangup from accidentally bypassing the KILL escalation scenario.
+        let child = (ignoresTerm ? "trap '' TERM HUP; " : "")
             + "printf ready > " + MissionRuntimeService.shellQuote(childReady.path)
-            + "; remaining=30; while [ \"$remaining\" -gt 0 ]; do /bin/sleep 1; "
-            + "remaining=$((remaining - 1)); done"
+            + "; exec /bin/sleep 30"
         let command = "trap 'exit 0' TERM; /bin/sh -c " + MissionRuntimeService.shellQuote(child) + " & wait"
         terminal.startProcess(executable: "/bin/sh", args: ["-c", command],
             environment: ["PATH=/usr/bin:/bin", "LC_ALL=C"])
@@ -190,7 +192,7 @@ final class CockpitLifecycleTests: XCTestCase {
         }
         // Register the root immediately, so even a failed readiness assertion
         // leaves an owned scope for asynchronous teardown while SwiftTerm reaps.
-        // The writer also exits on its own after 30 sleeps if the runner dies.
+        // The child also exits on its own after 30 seconds if the runner dies.
         let initialScope = OwnedProcessTermination.Scope(members: [
             .init(identity: identity, group: getpgid(pid))
         ])
@@ -199,7 +201,7 @@ final class CockpitLifecycleTests: XCTestCase {
         fixtures.append(fixture)
         try await eventually { FileManager.default.fileExists(atPath: childReady.path) }
         fixture.scope = try XCTUnwrap(OwnedProcessTermination.capture(roots: [identity]))
-        XCTAssertGreaterThanOrEqual(fixture.scope.members.count, 2)
+        XCTAssertEqual(fixture.scope.members.count, 2, "The fixture must contain only the shell and its stable child")
         return fixture
     }
 
@@ -220,8 +222,11 @@ final class CockpitLifecycleTests: XCTestCase {
             XCTAssertFalse(current.map { OwnedProcessTermination.sameProcess($0, member.identity) } == true)
         }
         for group in fixture.scope.groups {
-            XCTAssertEqual(kill(-group, 0), -1)
-            XCTAssertEqual(errno, ESRCH)
+            let result = kill(-group, 0), error = errno
+            // Assertion/reporting code may change errno; retain the syscall's
+            // actual result before calling into XCTest.
+            XCTAssertEqual(result, -1, "Captured process group \(group) still exists")
+            XCTAssertEqual(error, ESRCH, "Captured process group \(group) exit is unconfirmed")
         }
     }
 }

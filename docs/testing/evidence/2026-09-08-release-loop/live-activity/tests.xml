@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites>
+<testsuite name="TestResults" errors="0" tests="5" failures="0" time="0.32849591499999997">
+<testcase classname="ThrottleTests.LiveActivityOperationQueueTests" name="testNewSnapshotSupersedesAnOlderQueuedSnapshot" time="0.089017458">
+</testcase>
+<testcase classname="ThrottleTests.LiveActivityOperationQueueTests" name="testOldCleanupDoesNotRevokeTheNewAccountActivity" time="0.053656875">
+</testcase>
+<testcase classname="ThrottleTests.LiveActivityOperationQueueTests" name="testRetiredActivityCannotReceiveAFutureUpdate" time="0.063339125">
+</testcase>
+<testcase classname="ThrottleTests.LiveActivityOperationQueueTests" name="testRevocationRejectsAnUpdateStillWaitingInTheQueue" time="0.057310791">
+</testcase>
+<testcase classname="ThrottleTests.LiveActivityOperationQueueTests" name="testRevocationWaitsForAnUpdateAlreadyInFlight" time="0.065171666">
+</testcase>
+</testsuite>
+</testsuites>

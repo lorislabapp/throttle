@@ -1,0 +1,9 @@
+{
+  "status": "FAIL",
+  "reason": "corpusDrift",
+  "expected_corpus_sha256": "e8ac68ed3a117328fe0bb16d84bcd7626df809e316164d60cca562c6c4758d4f",
+  "observed_corpus_sha256": "dd452661a1d6a8c3303559c3400078adfc3934c67ba1637335601dcaae641278",
+  "documents": 65,
+  "chunks": 738,
+  "note": "No private corpus or query data included. Golden set not rebaselined."
+}

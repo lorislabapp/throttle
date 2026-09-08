@@ -1,0 +1,1950 @@
+{
+  "errors" : [
+
+  ],
+  "values" : [
+    {
+      "disabledTests" : [
+
+      ],
+      "enabledTests" : [
+        {
+          "identifier" : "ThrottleTests/ActivityFilterTests/testActiveRequiresActivity()"
+        },
+        {
+          "identifier" : "ThrottleTests/ActivityFilterTests/testAllPassesEverything()"
+        },
+        {
+          "identifier" : "ThrottleTests/ActivityFilterTests/testLiveRequiresARunningProcess()"
+        },
+        {
+          "identifier" : "ThrottleTests/ActivityFilterTests/testNilVisibleSetMeansNoFiltering()"
+        },
+        {
+          "identifier" : "ThrottleTests/ActivityFilterTests/testQuietBeyondHysteresisIsIdleNotActive()"
+        },
+        {
+          "identifier" : "ThrottleTests/ActivityFilterTests/testRateLimitedIsActive()"
+        },
+        {
+          "identifier" : "ThrottleTests/ActivityFilterTests/testRecentOutputWithinHysteresisIsActive()"
+        },
+        {
+          "identifier" : "ThrottleTests/ActivityFilterTests/testSelectedTabStaysVisibleEvenWhenFilteredOut()"
+        },
+        {
+          "identifier" : "ThrottleTests/ActivityFilterTests/testVisibleSetKeepsDisplayOrder()"
+        },
+        {
+          "identifier" : "ThrottleTests/ActivityFilterTests/testWaitingOnUserIsActive()"
+        },
+        {
+          "identifier" : "ThrottleTests/AppTestHostIsolationTests/testActivationKeepsPreviewStateAndCannotConnectInstalledServices()"
+        },
+        {
+          "identifier" : "ThrottleTests/AppTestHostIsolationTests/testHostedDelegateUsesMigratedMemoryDatabaseWithoutLicense()"
+        },
+        {
+          "identifier" : "ThrottleTests/AppTestHostIsolationTests/testWorkbenchTestHostHasNoProductionClientOrFolderMonitor()"
+        },
+        {
+          "identifier" : "ThrottleTests/AutoRelaunchPolicyTests/testDoesNotRelaunchAFailedTask()"
+        },
+        {
+          "identifier" : "ThrottleTests/AutoRelaunchPolicyTests/testNeverRelaunchesATaskSomeoneHolds()"
+        },
+        {
+          "identifier" : "ThrottleTests/AutoRelaunchPolicyTests/testNeverRelaunchesATaskThatWasNeverRejected()"
+        },
+        {
+          "identifier" : "ThrottleTests/AutoRelaunchPolicyTests/testRelaunchesARejectedTaskWithinBudget()"
+        },
+        {
+          "identifier" : "ThrottleTests/AutoRelaunchPolicyTests/testStopsAtTheRetryCeiling()"
+        },
+        {
+          "identifier" : "ThrottleTests/AutoRelaunchPolicyTests/testStopsWhenTheNextAttemptWouldPassTheCap()"
+        },
+        {
+          "identifier" : "ThrottleTests/AutoRelaunchPolicyTests/testWillNotSpendBlind()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_codeExecutionEnginesAreRefused()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_gitVersionSucceeds()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsAnd()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsArgUnderDotAWS()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsArgUnderDotSSH()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsArgUnderKeychains()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsBackslash()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsBacktickSubstitution()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsBashShell()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsCommandSubstitution()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsCurl()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsEmpty()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsPipe()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsPython()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsRedirection()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsRm()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsSemicolon()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_rejectsWhitespaceOnly()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_relativeCredentialPathIsRefused()"
+        },
+        {
+          "identifier" : "ThrottleTests/BashSandboxTests/test_run_resolvesDotDotTraversal()"
+        },
+        {
+          "identifier" : "ThrottleTests/BrevityHookServiceTests/test_hookSettingsGenerateBothRequiredEvents()"
+        },
+        {
+          "identifier" : "ThrottleTests/BrevityHookServiceTests/test_hookSettingsPreserveExistingUserHooksAndAreIdempotent()"
+        },
+        {
+          "identifier" : "ThrottleTests/BrevityHookServiceTests/test_sessionStartPayloadUsesAdditionalContext()"
+        },
+        {
+          "identifier" : "ThrottleTests/BrevityHookServiceTests/test_userPromptSubmitPayloadUsesAdditionalContext()"
+        },
+        {
+          "identifier" : "ThrottleTests/CacheBreakEvenTests/testCacheGoesColdExactlyAtTTL()"
+        },
+        {
+          "identifier" : "ThrottleTests/CacheBreakEvenTests/testColdCachePaysImmediately()"
+        },
+        {
+          "identifier" : "ThrottleTests/CacheBreakEvenTests/testEmptyPrefixIsNil()"
+        },
+        {
+          "identifier" : "ThrottleTests/CacheBreakEvenTests/testNothingToTrimIsNil()"
+        },
+        {
+          "identifier" : "ThrottleTests/CacheBreakEvenTests/testTrimmingTheEntirePrefixIsNil()"
+        },
+        {
+          "identifier" : "ThrottleTests/CacheBreakEvenTests/testWarmCacheFatTrimPaysImmediately()"
+        },
+        {
+          "identifier" : "ThrottleTests/CacheBreakEvenTests/testWarmCacheThinTrimTakesManyTurns()"
+        },
+        {
+          "identifier" : "ThrottleTests/CacheBustAnalyzerTests/test_advice_isCauseSpecific()"
+        },
+        {
+          "identifier" : "ThrottleTests/CacheBustAnalyzerTests/test_classifiesModelSwapAndPrefixChurn()"
+        },
+        {
+          "identifier" : "ThrottleTests/CacheBustAnalyzerTests/test_excludesSmallWritesAndLongGaps()"
+        },
+        {
+          "identifier" : "ThrottleTests/CacheBustAnalyzerTests/test_firstEventOfSessionNeverCounts()"
+        },
+        {
+          "identifier" : "ThrottleTests/CalibrationEngineTests/test_anchorAt90Percent_setsCapFromObservedTotal()"
+        },
+        {
+          "identifier" : "ThrottleTests/CalibrationEngineTests/test_manualOverride_replacesAnyExisting()"
+        },
+        {
+          "identifier" : "ThrottleTests/ClaudeAPIKeyProtocolTests/test_buildRequestBody_includesToolDefinitionsForReadFileAndListFiles()"
+        },
+        {
+          "identifier" : "ThrottleTests/ClaudeAPIKeyProtocolTests/test_parseSSEEvents_extractsMultipleToolUsesInOrder()"
+        },
+        {
+          "identifier" : "ThrottleTests/ClaudeAPIKeyProtocolTests/test_parseSSEEvents_extractsSingleToolUseAndItsAccumulatedJSON()"
+        },
+        {
+          "identifier" : "ThrottleTests/ClaudeAPIKeyProtocolTests/test_parseSSEEvents_handlesEmptyInputObject()"
+        },
+        {
+          "identifier" : "ThrottleTests/ClaudeAPIKeyProtocolTests/test_parseSSEEvents_handlesMalformedInputJSON_returnsEmptyInputNotCrash()"
+        },
+        {
+          "identifier" : "ThrottleTests/ClaudeAPIKeyProtocolTests/test_rebuildMessages_lastAssistantToolUseAndUserToolResultGoNative()"
+        },
+        {
+          "identifier" : "ThrottleTests/ClaudeAPIKeyProtocolTests/test_rebuildMessages_noPriorToolUses_isPlainTextThroughout()"
+        },
+        {
+          "identifier" : "ThrottleTests/ClaudeAPIKeyProtocolTests/test_renderAsFencedBlock_emitsExactFormatExistingParserExpects()"
+        },
+        {
+          "identifier" : "ThrottleTests/ClaudeProjectDirNameTests/testAccentedPathKeepsTheLetterAndDashesTheAccent()"
+        },
+        {
+          "identifier" : "ThrottleTests/ClaudeProjectDirNameTests/testPrecomposedAccentBecomesASingleDash()"
+        },
+        {
+          "identifier" : "ThrottleTests/ClaudeProjectDirNameTests/testSpacesAndDotsCollapseLikeBefore()"
+        },
+        {
+          "identifier" : "ThrottleTests/CloudKitPublisherTests/testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck()"
+        },
+        {
+          "identifier" : "ThrottleTests/CloudKitPublisherTests/testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart()"
+        },
+        {
+          "identifier" : "ThrottleTests/CloudKitPublisherTests/testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount()"
+        },
+        {
+          "identifier" : "ThrottleTests/CloudKitPublisherTests/testCancelledDebounceCannotConsumeSnapshotAfterRestart()"
+        },
+        {
+          "identifier" : "ThrottleTests/CloudKitPublisherTests/testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot()"
+        },
+        {
+          "identifier" : "ThrottleTests/CloudKitPublisherTests/testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots()"
+        },
+        {
+          "identifier" : "ThrottleTests/CloudKitPublisherTests/testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck()"
+        },
+        {
+          "identifier" : "ThrottleTests/CockpitCountdownTests/testCanonicalCWDNormalizesTrailingComponents()"
+        },
+        {
+          "identifier" : "ThrottleTests/CockpitCountdownTests/test_countdown_formats()"
+        },
+        {
+          "identifier" : "ThrottleTests/CockpitLifecycleTests/testHandoffCreatesTargetOnlyAfterSourceStopAndPreservesMission()"
+        },
+        {
+          "identifier" : "ThrottleTests/CockpitLifecycleTests/testHibernateConfirmsBothTerminalTreesBeforeReleasingViewsAndKeepsNativeIdentity()"
+        },
+        {
+          "identifier" : "ThrottleTests/CockpitLifecycleTests/testModelStopClearsSessionsOnlyAfterEveryCapturedTreeHasExited()"
+        },
+        {
+          "identifier" : "ThrottleTests/CockpitLifecycleTests/testModelStopFailureKeepsAllTabsAndCancelsQuittingState()"
+        },
+        {
+          "identifier" : "ThrottleTests/CockpitLifecycleTests/testStaleProcessIdentityCannotConfirmStopOrCreateHandoffTarget()"
+        },
+        {
+          "identifier" : "ThrottleTests/CockpitLifecycleTests/testUnknownOwnerKeepsTerminalVisibleAndBlocksHandoffCloseAndWake()"
+        },
+        {
+          "identifier" : "ThrottleTests/CockpitPermissionTests/testForgedPermissionMenuOnlyRequestsUserAttention()"
+        },
+        {
+          "identifier" : "ThrottleTests/CockpitUsageGenerationTests/testStatisticsRejectAResultFromThePreviousNativeIdentityOrProcessGeneration()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexProgressServiceTests/testFailureWinsAfterWork()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexProgressServiceTests/testProjectsLifecycleWithoutCopyingMessageContent()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexProgressServiceTests/testRequestUserInputBecomesActionRequired()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexRolloutLocatorTests/testFindsTheRolloutCarryingTheSessionID()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexRolloutLocatorTests/testNewlineScanMatchesSplitSemantics()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexRolloutLocatorTests/testUnknownSessionFindsNothing()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexUsageIngesterTests/testAStaleRereadNeverLowersASessionTotal()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexUsageIngesterTests/testAWindowSizedTotalWithNoComponentsIsNotStored()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexUsageIngesterTests/testRepeatedIngestOfTheSameRolloutDoesNotAccumulate()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexUsageIngesterTests/testSessionIDFallsBackToTheRolloutFilenameUUID()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexUsageIngesterTests/testUncachedInputExcludesWhatTheCacheServed()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexUsageServiceTests/testDecodesExactModelOnlyFromTurnContext()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexUsageServiceTests/testDecodesProviderNativeUsageAndRateLimits()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexUsageServiceTests/testFreshnessRejectsOldOrFutureObservations()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexUsageServiceTests/testLatestFileAndLatestEventWin()"
+        },
+        {
+          "identifier" : "ThrottleTests/CodexUsageServiceTests/testUnknownOrEmptyEnvelopeFailsClosed()"
+        },
+        {
+          "identifier" : "ThrottleTests/ColdStartScannerTests/testWatcherDetectsNewTopLevelTranscriptInsideExistingProjectDirectory()"
+        },
+        {
+          "identifier" : "ThrottleTests/ColdStartScannerTests/testWatcherDoesNotReportSubagentTranscript()"
+        },
+        {
+          "identifier" : "ThrottleTests/ColdStartScannerTests/test_scanInsertsEventsAndUpdatesFileState()"
+        },
+        {
+          "identifier" : "ThrottleTests/ColdStartScannerTests/test_scanIsIncrementalOnRerun()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContentStoreTests/test_cmvThreePass_preservesDependenciesAndRehydratesRawToolOutput()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContentStoreTests/test_cmvThreePass_stripsOnlySupersededPreCompactionProse()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContentStoreTests/test_get_nilForUnknown()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContentStoreTests/test_get_rejectsMalformedHash()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContentStoreTests/test_preview_persistsNothing()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContentStoreTests/test_put_get_roundtrip()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContentStoreTests/test_put_isContentAddressedAndIdempotent()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContentStoreTests/test_trimSnapshot_imagePointerRehydrates()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContextFirewallTests/testFocusedPacketSelectsExactEvidenceAndRehydratesOriginal()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContextFirewallTests/testSmallInputIsReturnedInFullWithLineNumbers()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContextFirewallTests/testWebPacketCarriesPromptInjectionBoundary()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContextPacketEvidenceTests/test_corruptionCannotRehydrateOrProduceAValidPointer()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContextPacketEvidenceTests/test_numberingAndMetadataStayInsideTheContextBudget()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContextPacketEvidenceTests/test_pointerRequiresAnExactHash()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContextPacketEvidenceTests/test_selectedEvidenceKeepsExactOriginalAndUntrustedBoundary()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContextPacketEvidenceTests/test_sourceMetadataCannotExhaustTheBudget()"
+        },
+        {
+          "identifier" : "ThrottleTests/ContextPacketEvidenceTests/test_writeFailureIsExplicitAndDoesNotAdvertiseRehydration()"
+        },
+        {
+          "identifier" : "ThrottleTests/DatabaseQueriesTests/test_composition_groupsEachFamilySeparately()"
+        },
+        {
+          "identifier" : "ThrottleTests/DatabaseQueriesTests/test_insertEvents_thenSumAfterTimestamp()"
+        },
+        {
+          "identifier" : "ThrottleTests/DatabaseQueriesTests/test_totalTokens_modelTier_appliesWeightedSum()"
+        },
+        {
+          "identifier" : "ThrottleTests/DatabaseQueriesTests/test_totalTokens_weightsCacheReadAtOneTenth()"
+        },
+        {
+          "identifier" : "ThrottleTests/DatabaseQueriesTests/test_upsertCalibration_replacesOnConflict()"
+        },
+        {
+          "identifier" : "ThrottleTests/DeadSkillServiceTests/test_deadMCPTokens_zeroWithoutProbe()"
+        },
+        {
+          "identifier" : "ThrottleTests/DeadSkillServiceTests/test_folding_countsOnlyDeadAndProbedMCP()"
+        },
+        {
+          "identifier" : "ThrottleTests/DeadSkillServiceTests/test_folding_doesNotMutateOriginal()"
+        },
+        {
+          "identifier" : "ThrottleTests/DeadSkillServiceTests/test_folding_sumsMultipleDeadServers()"
+        },
+        {
+          "identifier" : "ThrottleTests/DeltaMemStoreTests/test_addDelta_toUnknownRoot_isRejected()"
+        },
+        {
+          "identifier" : "ThrottleTests/DeltaMemStoreTests/test_addRoot_resolvesBareBody()"
+        },
+        {
+          "identifier" : "ThrottleTests/DeltaMemStoreTests/test_delta_appliesOnlyToMatchingScope()"
+        },
+        {
+          "identifier" : "ThrottleTests/DeltaMemStoreTests/test_findRoot_caseInsensitive()"
+        },
+        {
+          "identifier" : "ThrottleTests/DeltaMemStoreTests/test_globalDelta_appliesEverywhere()"
+        },
+        {
+          "identifier" : "ThrottleTests/DeltaMemStoreTests/test_importOKF_becomesRecallableRoot()"
+        },
+        {
+          "identifier" : "ThrottleTests/DeltaMemStoreTests/test_persistsAcrossLoad()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testBuildTasksNeverFanOut()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testCapScalesWithTheMachineNotWithAConstant()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testCapabilityIsAbandonedWhenThatRuntimeIsOutOfWindow()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testClearHeadroomGapDecidesWithMediumConfidence()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testCriticalPressureAllowsNothing()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testEveryRuntimeExhaustedTellsTheUserToWait()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testHeavierSessionsLowerTheCapOnTheSameMachine()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testMemoryCapBeatsAGenerousSpendCap()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testNoMultiplierIsShownForASingleAgent()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testResearchFansOutWithinTheSpendCap()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testSimilarHeadroomAbstainsRatherThanGuessing()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testSoleCapabilityHolderWinsWithHighConfidence()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testTightSpendCapForcesOneAgentDespiteFreeMemory()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testTwoHoldersIsATieNotASignal()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testUnmeasuredMachineStaysConservative()"
+        },
+        {
+          "identifier" : "ThrottleTests/DispatchAdvisorTests/testWarningPressureAllowsAtMostOne()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testAbsentScopeDoesNotUnlearnTheModel()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testCacheAwareSavingFloorsAtZeroRatherThanGoingNegative()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testCacheAwareSavingIsNeverLargerThanTheRawSaving()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testCodexPressureCountsToo()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testDiagnosticsNameOnlyTheScopePresentInTheSnapshot()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testFableIsATierAndNotOther()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testIndexerKeepsSourceDirectoriesThatLookAlike()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testIndexerPrunesVirtualenvsWhateverTheyAreCalled()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testInjectingHookClaimsNoSaving()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testInjectingHookPredicateIsAlwaysValidSQL()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testPlanAdvisorDerivesItsRatesFromTheOneTable()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testPortfolioLayoutSettlesAndStopsStepping()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testPricesAndMultipliersComeFromOneTable()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testScopedCapNamesAndFiltersTheModelTheServerStated()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testScopedCapNeverBecomesTheHeadlinePressure()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testScopedWeeklyCarriesTheModelAnthropicNamed()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testTrimmingHookKeepsItsSaving()"
+        },
+        {
+          "identifier" : "ThrottleTests/DisplayedNumbersTests/testUnnamedScopeIsNotGivenAModelName()"
+        },
+        {
+          "identifier" : "ThrottleTests/EdgeDeployServiceTests/testEdgeMCPDefinitionRejectsCleartextRemoteURL()"
+        },
+        {
+          "identifier" : "ThrottleTests/EdgeDeployServiceTests/testEdgeMCPDefinitionRejectsMalformedBaseURL()"
+        },
+        {
+          "identifier" : "ThrottleTests/EdgeDeployServiceTests/testEdgeMCPDefinitionRoutesToBearerGatedStreamableEndpoint()"
+        },
+        {
+          "identifier" : "ThrottleTests/EmbeddedModelRuntimeTests/testEndToEndDelegationWhenExplicitlyEnabled()"
+        },
+        {
+          "identifier" : "ThrottleTests/EmbeddedModelRuntimeTests/testEndToEndInferenceWhenExplicitlyEnabled()"
+        },
+        {
+          "identifier" : "ThrottleTests/EmbeddedModelRuntimeTests/testModelMetadataIsPinnedToHTTPS()"
+        },
+        {
+          "identifier" : "ThrottleTests/ExactModePollPolicyTests/test_cappedButResetInPast_ignored()"
+        },
+        {
+          "identifier" : "ThrottleTests/ExactModePollPolicyTests/test_cappedWindow_backsOffUntilReset()"
+        },
+        {
+          "identifier" : "ThrottleTests/ExactModePollPolicyTests/test_cappedWindow_cappedAt15min()"
+        },
+        {
+          "identifier" : "ThrottleTests/ExactModePollPolicyTests/test_failure_exponentialBackoff()"
+        },
+        {
+          "identifier" : "ThrottleTests/ExactModePollPolicyTests/test_failure_withFreshSnapshot_retriesFastNotBackoff()"
+        },
+        {
+          "identifier" : "ThrottleTests/ExactModePollPolicyTests/test_highNotCapped_60s()"
+        },
+        {
+          "identifier" : "ThrottleTests/ExactModePollPolicyTests/test_low_5min()"
+        },
+        {
+          "identifier" : "ThrottleTests/ExactModePollPolicyTests/test_noFreshSnapshot_fiveMinutes()"
+        },
+        {
+          "identifier" : "ThrottleTests/ExactSnapshotTests/test_decodesCanonicalResponse()"
+        },
+        {
+          "identifier" : "ThrottleTests/ExactSnapshotTests/test_isFresh_olderThanTenMinutes_returnsFalse()"
+        },
+        {
+          "identifier" : "ThrottleTests/ExactSnapshotTests/test_isFresh_withinTenMinutes_returnsTrue()"
+        },
+        {
+          "identifier" : "ThrottleTests/GlobalRAGOnboardingWindowControllerTests/testRetainedPolicyDoesNotReleaseWindowDuringCloseCallback()"
+        },
+        {
+          "identifier" : "ThrottleTests/GlobalRAGOnboardingWindowControllerTests/testSetupUsesMovableResizableMacWindow()"
+        },
+        {
+          "identifier" : "ThrottleTests/GlobalRAGServiceTests/testAutomaticContextIsTokenBoundedAndExplicitLimitCanExpandIt()"
+        },
+        {
+          "identifier" : "ThrottleTests/GlobalRAGServiceTests/testDiscoveryAndConfiguredKnowledgeAreRankedWithProvenance()"
+        },
+        {
+          "identifier" : "ThrottleTests/GlobalRAGServiceTests/testDiscoveryDoesNotFollowProjectSymlinks()"
+        },
+        {
+          "identifier" : "ThrottleTests/GlobalRAGServiceTests/testImportRefusesSecretLookingFields()"
+        },
+        {
+          "identifier" : "ThrottleTests/GlobalRAGServiceTests/testJSONAndYAMLProfilesRoundTrip()"
+        },
+        {
+          "identifier" : "ThrottleTests/GlobalRAGServiceTests/testLiveLocalProposalWhenExplicitlyEnabled()"
+        },
+        {
+          "identifier" : "ThrottleTests/GlobalRAGServiceTests/testLocalProposalDecoderAcceptsBoundedReviewableHandoff()"
+        },
+        {
+          "identifier" : "ThrottleTests/GlobalRAGServiceTests/testLocalProposalDecoderRejectsMalformedOversizedAndInstructionalOutput()"
+        },
+        {
+          "identifier" : "ThrottleTests/GlobalRAGServiceTests/testOnboardingScanBuildsAnEditablePortableProfile()"
+        },
+        {
+          "identifier" : "ThrottleTests/GlobalRAGServiceTests/testPortfolioScanIsBoundedForLargeSyntheticRoot()"
+        },
+        {
+          "identifier" : "ThrottleTests/HealthCheckServiceTests/testCriticalCockpitLabelsHaveFrenchRuntimeTranslations()"
+        },
+        {
+          "identifier" : "ThrottleTests/HealthCheckServiceTests/testOrphanClassifierRejectsUnrelatedNodeDaemons()"
+        },
+        {
+          "identifier" : "ThrottleTests/HealthCheckServiceTests/testTrackingAllowsARecentWriteToSettle()"
+        },
+        {
+          "identifier" : "ThrottleTests/HealthCheckServiceTests/testTrackingFailsOnlyWhenTranscriptBytesRemainPending()"
+        },
+        {
+          "identifier" : "ThrottleTests/HealthCheckServiceTests/testTrackingOldEventIsHealthyWhenTranscriptOffsetsAreCaughtUp()"
+        },
+        {
+          "identifier" : "ThrottleTests/LocalDelegationServiceTests/testAllowsOnlyBoundedTaskKinds()"
+        },
+        {
+          "identifier" : "ThrottleTests/LocalDelegationServiceTests/testDraftAlwaysRequiresPlannerReview()"
+        },
+        {
+          "identifier" : "ThrottleTests/LocalDelegationServiceTests/testInventedEvidenceRequiresReviewAndIsNotRepeated()"
+        },
+        {
+          "identifier" : "ThrottleTests/LocalDelegationServiceTests/testMalformedOutputEscalates()"
+        },
+        {
+          "identifier" : "ThrottleTests/LocalDelegationServiceTests/testSynthesisStaysReviewRequiredEvenWithExactQuotes()"
+        },
+        {
+          "identifier" : "ThrottleTests/LocalDelegationServiceTests/testValidatesExactEvidenceAsVerified()"
+        },
+        {
+          "identifier" : "ThrottleTests/LocalWorkerLiveRouteTests/testConfiguredOllamaServesProjectAssistantWithoutBusinessContext()"
+        },
+        {
+          "identifier" : "ThrottleTests/LocalWorkerModelSelectionTests/testExactOllamaTagWins()"
+        },
+        {
+          "identifier" : "ThrottleTests/LocalWorkerModelSelectionTests/testMissingModelDoesNotInventASelection()"
+        },
+        {
+          "identifier" : "ThrottleTests/LocalWorkerModelSelectionTests/testUntaggedAliasResolvesLatestTag()"
+        },
+        {
+          "identifier" : "ThrottleTests/MenuBarCountdownTests/testDays()"
+        },
+        {
+          "identifier" : "ThrottleTests/MenuBarCountdownTests/testHoursCarryMinutes()"
+        },
+        {
+          "identifier" : "ThrottleTests/MenuBarCountdownTests/testMinutes()"
+        },
+        {
+          "identifier" : "ThrottleTests/MenuBarCountdownTests/testUnderAMinuteClampsToNow()"
+        },
+        {
+          "identifier" : "ThrottleTests/MigrationsTests/test_freshDatabase_appliesAllMigrations()"
+        },
+        {
+          "identifier" : "ThrottleTests/MigrationsTests/test_migrationsAreIdempotent()"
+        },
+        {
+          "identifier" : "ThrottleTests/MissionRuntimeServiceTests/testCapabilityCompatibilityReadsNamesOnlyAcrossProviders()"
+        },
+        {
+          "identifier" : "ThrottleTests/MissionRuntimeServiceTests/testClaudeIdentityValidationAndPortableContext()"
+        },
+        {
+          "identifier" : "ThrottleTests/MissionRuntimeServiceTests/testCodexDiscoveryBuildsOneSharedIndexForMultipleTabs()"
+        },
+        {
+          "identifier" : "ThrottleTests/MissionRuntimeServiceTests/testCodexDiscoveryReadsOnlyMatchingSessionMetadata()"
+        },
+        {
+          "identifier" : "ThrottleTests/MissionRuntimeServiceTests/testCodexPortableContextExcludesToolsAndSystemMaterial()"
+        },
+        {
+          "identifier" : "ThrottleTests/MissionRuntimeServiceTests/testHandoffRendersProviderNeutralSafetyPacket()"
+        },
+        {
+          "identifier" : "ThrottleTests/MissionRuntimeServiceTests/testProcessDrainDoesNotDeadlockWhenOutputExceedsPipeCapacity()"
+        },
+        {
+          "identifier" : "ThrottleTests/MissionRuntimeServiceTests/testProcessRunnerTimesOut()"
+        },
+        {
+          "identifier" : "ThrottleTests/MissionRuntimeServiceTests/testRoutingUsesCodexOnlyAfterConfirmedLimitInAuto()"
+        },
+        {
+          "identifier" : "ThrottleTests/MissionRuntimeServiceTests/testShellQuoteHandlesApostrophesWithoutInterpolation()"
+        },
+        {
+          "identifier" : "ThrottleTests/MouseReportFilterWheelTests/testKeyboardInputUntouched()"
+        },
+        {
+          "identifier" : "ThrottleTests/MouseReportFilterWheelTests/testMotionAndClicksStillDropped()"
+        },
+        {
+          "identifier" : "ThrottleTests/MouseReportFilterWheelTests/testSharedWheelEncoderProducesBoundedSGRReports()"
+        },
+        {
+          "identifier" : "ThrottleTests/MouseReportFilterWheelTests/testTrackpadFallbackProducesNormalCursorKeys()"
+        },
+        {
+          "identifier" : "ThrottleTests/MouseReportFilterWheelTests/testTrackpadFallbackRespectsApplicationCursorMode()"
+        },
+        {
+          "identifier" : "ThrottleTests/MouseReportFilterWheelTests/testWheelReportsPass()"
+        },
+        {
+          "identifier" : "ThrottleTests/MouseReportFilterWheelTests/testWheelWithModifiersPasses()"
+        },
+        {
+          "identifier" : "ThrottleTests/NativeSessionBindingTests/testAmbiguousOwnedSessionsDoNotSelectTheNewest()"
+        },
+        {
+          "identifier" : "ThrottleTests/NativeSessionBindingTests/testBoundTabsNeverAdoptAnotherConversationInTheSameFolder()"
+        },
+        {
+          "identifier" : "ThrottleTests/NativeSessionBindingTests/testFreshClaudeTabsGetDistinctLaunchIdentities()"
+        },
+        {
+          "identifier" : "ThrottleTests/NativeSessionBindingTests/testInProcessSubagentWriterDoesNotHideOrReplaceItsParent()"
+        },
+        {
+          "identifier" : "ThrottleTests/NativeSessionBindingTests/testInternalAndUnknownCodexOriginsCannotBecomeUserSessions()"
+        },
+        {
+          "identifier" : "ThrottleTests/NativeSessionBindingTests/testMissingSavedIdentityPersistsUntilAnActualPickerChoice()"
+        },
+        {
+          "identifier" : "ThrottleTests/NativeSessionBindingTests/testNewCodexTabDoesNotResumeAnExistingCWDConversation()"
+        },
+        {
+          "identifier" : "ThrottleTests/NativeSessionBindingTests/testOnlyWritableDescriptorsAreOwnershipEvidence()"
+        },
+        {
+          "identifier" : "ThrottleTests/NativeSessionBindingTests/testToolAndSubagentDescriptorsCannotBindTheForegroundMission()"
+        },
+        {
+          "identifier" : "ThrottleTests/NotebookLMImportJobTests/testConflictingPayloadAndInvalidInventoryFailClosed()"
+        },
+        {
+          "identifier" : "ThrottleTests/NotebookLMImportJobTests/testGatewayCodecAcceptsOnlyBoundedTypedPayloads()"
+        },
+        {
+          "identifier" : "ThrottleTests/NotebookLMImportJobTests/testGatewayCodecReadsOnlyBoundedExportRootReceipts()"
+        },
+        {
+          "identifier" : "ThrottleTests/NotebookLMImportJobTests/testGatewayCodecRejectsNegativeNotebookSourceCount()"
+        },
+        {
+          "identifier" : "ThrottleTests/NotebookLMImportJobTests/testGatewayStdioTransportUsesConfiguredEnvironmentWithoutExternalAccess()"
+        },
+        {
+          "identifier" : "ThrottleTests/NotebookLMImportJobTests/testMismatchedExportIdentityFailsClosed()"
+        },
+        {
+          "identifier" : "ThrottleTests/NotebookLMImportJobTests/testPauseRestartAndRerunAreIdempotent()"
+        },
+        {
+          "identifier" : "ThrottleTests/NotebookLMImportJobTests/testPermutedExportOrderReconcilesAgainstCompleteInventory()"
+        },
+        {
+          "identifier" : "ThrottleTests/NotebookLMImportJobTests/testRecordedLiveExportsReconcileWhenExplicitFixtureIsProvided()"
+        },
+        {
+          "identifier" : "ThrottleTests/NotebookLMMigrationImporterTests/testImportIsContentAddressedAndMarksCopiedTextOpen()"
+        },
+        {
+          "identifier" : "ThrottleTests/NotebookLMMigrationImporterTests/testInvalidProjectKeyFailsBeforeReading()"
+        },
+        {
+          "identifier" : "ThrottleTests/NotebookLMMigrationImporterTests/testSymlinkedDocumentOutsideExportFailsClosed()"
+        },
+        {
+          "identifier" : "ThrottleTests/OKFStoreTests/test_search_byTitleAndTag()"
+        },
+        {
+          "identifier" : "ThrottleTests/OKFStoreTests/test_serialize_hasFrontmatter()"
+        },
+        {
+          "identifier" : "ThrottleTests/OKFStoreTests/test_serialize_parse_roundTrip()"
+        },
+        {
+          "identifier" : "ThrottleTests/OKFStoreTests/test_slug()"
+        },
+        {
+          "identifier" : "ThrottleTests/OKFStoreTests/test_write_read_andList()"
+        },
+        {
+          "identifier" : "ThrottleTests/OllamaEmbeddingProviderTests/testAFailedCallYieldsNilRatherThanAPartialBatch()"
+        },
+        {
+          "identifier" : "ThrottleTests/OllamaEmbeddingProviderTests/testAVectorOfTheWrongWidthIsRefusedRatherThanStored()"
+        },
+        {
+          "identifier" : "ThrottleTests/OllamaEmbeddingProviderTests/testRecordsCarryTheirModelThroughPersistence()"
+        },
+        {
+          "identifier" : "ThrottleTests/OllamaEmbeddingProviderTests/testTheSynchronousPathIsRefusedSoNoCallerBlocksOnTheNetwork()"
+        },
+        {
+          "identifier" : "ThrottleTests/OllamaEmbeddingProviderTests/testVectorsOfTheExpectedWidthAreAccepted()"
+        },
+        {
+          "identifier" : "ThrottleTests/OutputStyleShadowingDetectorTests/test_detectsLocalOutputStyleThatOverridesGlobalSettings()"
+        },
+        {
+          "identifier" : "ThrottleTests/OutputStyleShadowingDetectorTests/test_emptyOrNonStringOutputStyleDoesNotWarn()"
+        },
+        {
+          "identifier" : "ThrottleTests/OutputStyleShadowingDetectorTests/test_identicalLocalStyleStillWarnsBecauseProjectIsPinned()"
+        },
+        {
+          "identifier" : "ThrottleTests/OutputStyleShadowingDetectorTests/test_missingOrMalformedLocalSettingsDoNotWarn()"
+        },
+        {
+          "identifier" : "ThrottleTests/OwnedProcessTerminationTests/testNeverCapturesThrottleItselfForTermination()"
+        },
+        {
+          "identifier" : "ThrottleTests/OwnedProcessTerminationTests/testObservedGroupDriftPreventsAnAutomaticStopReceipt()"
+        },
+        {
+          "identifier" : "ThrottleTests/OwnedProcessTerminationTests/testReparentingDoesNotChangeTheOwnedIdentity()"
+        },
+        {
+          "identifier" : "ThrottleTests/OwnedProcessTerminationTests/testSuspendedGroupCanExitAndNoReplacementPIDIsAccepted()"
+        },
+        {
+          "identifier" : "ThrottleTests/OwnedProcessTerminationTests/testTermIgnoringOrphanIsKilledWithoutTouchingAnotherSession()"
+        },
+        {
+          "identifier" : "ThrottleTests/PauseReasonTests/testDeliberateFreezesSurviveFocus()"
+        },
+        {
+          "identifier" : "ThrottleTests/PauseReasonTests/testEveryReasonExplainsItself()"
+        },
+        {
+          "identifier" : "ThrottleTests/PauseReasonTests/testFocusWakesOnlyResourceDrivenFreezes()"
+        },
+        {
+          "identifier" : "ThrottleTests/PauseReasonTests/testOnlyResourceFreezesEscalateToHibernate()"
+        },
+        {
+          "identifier" : "ThrottleTests/PauseReasonTests/testUnpausedTabHasNoReason()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanAdvisorAPIFigureTests/testTheSplitReachesTheAdvisorAndEachFamilyIsPricedAtItsOwnRate()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanAdvisorAPIFigureTests/testUnratedFamilyFallsBackToSonnetAndTheBasisSaysSo()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanAdvisorAPIFigureTests/testUpperBoundIsEvaluatedFromCompositionAndNotAssumed()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationCardTests/test_aDetachedWorktreeSaysSoInsteadOfDrawingNothing()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationCardTests/test_aRunInOneProjectLeavesAnotherProjectsButtonAlone()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationCardTests/test_aSessionIsFoundWhetherItSitsOnTheDirectoryOrInsideIt()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationCardTests/test_aWorktreeACockpitSessionIsWorkingInIsKeptAndTheCardSaysSo()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationCardTests/test_anAssessmentLandingAfterARebindIsNotWrittenIntoTheNewProject()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationCardTests/test_anIntegratedWorktreeIsRemovedWhenNothingIsLivingInIt()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationCardTests/test_bindingToAnotherProjectForgetsTheStoredError()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationCardTests/test_theCardBlocksOnTrackedChangesOnlyAndAlwaysSaysWhy()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationCardTests/test_theKeptWorktreeIsStillReportedAfterATabSwitch()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationCardTests/test_theReportStopsTheDayTheDirectoryGoes()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationCardTests/test_theStoredErrorClearsOnceTheWorktreeIsBackOnItsBranch()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationFlowTests/test_aRunLandingAfterATabSwitchWritesNothingIntoTheNewProject()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationFlowTests/test_aTabSwitchMidIntegrationDoesNotReArmTheButton()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationFlowTests/test_integrateAsksForConsentBeforeItRunsAnythingThenStopsAsking()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationFlowTests/test_integrateRebasesABehindTaskBeforeMerging()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationFlowTests/test_integrateRefusesATaskThatIsNotDone()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationFlowTests/test_integrateRefusesWithoutAVerifyCommand()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationFlowTests/test_integrateRunsTheWholeSequenceOnce()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationFlowTests/test_integrateStopsAtAFailingVerification()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationFlowTests/test_theAssessmentIsCachedRatherThanReadOnEveryDraw()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationFlowTests/test_theDiffIsFetchedOnlyWhenItIsOpened()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanIntegrationFlowTests/test_theTaskVerifyCommandOverridesTheProjectOne()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanMCPToolsTests/testClaimAnnouncesTheSotaGate()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanMCPToolsTests/testClaimCannotBeForgedThroughTheEventTool()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanMCPToolsTests/testClaimRefusesAnUnknownTask()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanMCPToolsTests/testClaimRefusesAnUnmetDependency()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanMCPToolsTests/testClaimSucceedsThenBlocksASecondAgent()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanMCPToolsTests/testEventRefusedFromANonOwner()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanMCPToolsTests/testEventRefusedOnAnUnclaimedTask()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanMCPToolsTests/testGatedCompletionParksInReviewRatherThanDone()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanMCPToolsTests/testPlanReadListsOnlyActionableLeaves()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanMCPToolsTests/testPlanReadReportsAnAbsentPlanPlainly()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanMCPToolsTests/testProgressAndCompletionMoveTheTask()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanMCPToolsTests/testReleaseHandsTheTaskBack()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanMCPToolsTests/testRouterRecognizesEveryPlanToolAndRejectsUnknownOnes()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanOrientationTests/testActiveMissionOwnsInitialSelection()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanOrientationTests/testFirstReadyLeafIsSelectedInsteadOfPhaseHeader()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanOrientationTests/testIntegratedDependencyCountsAsFinished()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanOrientationTests/testUnmetDependencyIsReportedExplicitly()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionIntegrationEventsTests/testCheckedIsAcceptedOnADoneTaskWhoeverWroteIt()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionIntegrationEventsTests/testCheckedIsRefusedBeforeTheTaskIsDone()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionIntegrationEventsTests/testIntegratedDependencyDoesNotBlockItsDependent()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionIntegrationEventsTests/testIntegratedMovesADoneTaskAndIsItselfTerminal()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionIntegrationEventsTests/testRollupCountsIntegratedChildrenAsFinished()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testBlockedThenUnblocked()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testBrokenChainIsCarriedIntoTheState()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testClaimSetsOwnerAndRuntime()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testCompletedWithGateParksInReview()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testCompletedWithoutGateIsDone()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testDependencyBlocksAnUnstartedLeaf()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testDependencyDoesNotOverrideRunning()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testDependencySatisfiedUnblocks()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testDuplicateSeqIsRejected()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testEventsAfterTerminalAreRejected()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testEvidenceAccumulates()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testFailedIsTerminal()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testFailedLeafSurfacesOnTheParent()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testLowestSeqWinsRegardlessOfFileOrder()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testNoEventsIsPending()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testNonOwnerProgressIsRejected()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testParentIsDoneOnlyWhenEveryLeafIsDone()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testParentRollsUpPercentAndStatus()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testPhaseIsBlockedOnlyWhenNothingInItCanMove()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testProgressMovesToRunning()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testRejectionSendsTheTaskBackAndFreesIt()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testReleaseFreesTheTaskAndKeepsProgress()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testSecondClaimIsRejected()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testTheAuthorCannotKeepReportingAfterCompleting()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testThirdRejectionStopsTheLoop()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testVerdictFromTheOtherFamilyFinishesTheTask()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testVerdictFromTheSameFamilyIsRefused()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanProjectionTests/testVerdictOnAnUngatedTaskIsRefused()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanStoreTests/testAppendAssignsIncreasingSeqAndChainsHashes()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanStoreTests/testDependencyStillBlocksWhenUpstreamIsUnfinished()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanStoreTests/testEditedLogBreaksTheChain()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanStoreTests/testEditingTheFinalLineIsNotDetected()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanStoreTests/testFullyRewrittenChainIsIndistinguishable()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanStoreTests/testMissingPlanThrows()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanStoreTests/testReplayIsCachedUntilTheLogChanges()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanStoreTests/testResolveAppliesDependenciesAndRollup()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanStoreTests/testStateCacheIsFullyRebuildable()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanStoreTests/testTaskWithNoLogReadsAsEmpty()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanStoreTests/testUnknownTaskThrows()"
+        },
+        {
+          "identifier" : "ThrottleTests/PlanStoreTests/testUnsafeTaskIDIsRefused()"
+        },
+        {
+          "identifier" : "ThrottleTests/ProjectIntakeTests/testAFindingWithoutASourceIsRefused()"
+        },
+        {
+          "identifier" : "ThrottleTests/ProjectIntakeTests/testAnExistingPlanEndsIntake()"
+        },
+        {
+          "identifier" : "ThrottleTests/ProjectIntakeTests/testBootstrapWritesAPlanAndThenRefusesToOverwriteIt()"
+        },
+        {
+          "identifier" : "ThrottleTests/ProjectIntakeTests/testBuildAlwaysDependsOnTheViabilityVerdict()"
+        },
+        {
+          "identifier" : "ThrottleTests/ProjectIntakeTests/testBuildArtefactsAreNotMistakenForSource()"
+        },
+        {
+          "identifier" : "ThrottleTests/ProjectIntakeTests/testEmptyDirectoryIsAnIdeaNotACodebase()"
+        },
+        {
+          "identifier" : "ThrottleTests/ProjectIntakeTests/testFindingsAccumulateAcrossCalls()"
+        },
+        {
+          "identifier" : "ThrottleTests/ProjectIntakeTests/testGreenfieldStartsWithTheIdeaAndExistingCodeStartsWithReading()"
+        },
+        {
+          "identifier" : "ThrottleTests/ProjectIntakeTests/testReadmeOnlyIsStillAnIdea()"
+        },
+        {
+          "identifier" : "ThrottleTests/ProjectIntakeTests/testScoringRefusesWhileAPillarIsEmpty()"
+        },
+        {
+          "identifier" : "ThrottleTests/ProjectIntakeTests/testScoringWorksOnceEveryPillarHasEvidence()"
+        },
+        {
+          "identifier" : "ThrottleTests/ProjectIntakeTests/testSourceFilesMakeItUnplannedCode()"
+        },
+        {
+          "identifier" : "ThrottleTests/ProjectIntakeTests/testTemplateProducesAConnectedTree()"
+        },
+        {
+          "identifier" : "ThrottleTests/ProjectIntakeTests/testViabilityTextNamesTheMissingPillars()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptCacheImpactServiceTests/test_latestUsesLastRequestInputFootprintNotCumulativeSessionTokens()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptCacheImpactServiceTests/test_repricesSameContextForTargetModel()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptCacheImpactServiceTests/test_smallOrMissingContextDoesNotWarn()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerModelTests/test_accept_movesToResultAndRecordsHistory()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerModelTests/test_appliedScreenKeepsTheResultVisibleInsteadOfDroppingHome()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerModelTests/test_beginCompose_movesHomeToComposeAndKeepsTheDraft()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerModelTests/test_fail_keepsTheDraftSoNothingTypedIsLost()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerModelTests/test_historyTitle_isTheFirstLineTrimmed()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerModelTests/test_history_isCappedAndNewestFirst()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerModelTests/test_rationaleVisibility_alwaysAndNeverIgnoreTheMode()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerModelTests/test_rationaleVisibility_collapsedStartsHiddenButRemainsReachable()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerModelTests/test_rationaleVisibility_missionOnlyIsTheDefaultBehaviour()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerModelTests/test_refinerSettings_defaultToInsertLocalAndMissionOnly()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_insertionPayload_keepsInteriorNewlines()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_insertionPayload_stripsTrailingNewlinesSoInsertNeverFires()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_insertionPayload_thenValidate_isTheExactContractInsertRelieson()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_localOnlyExcludesEveryNetworkProvider()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_metrics_countsLinesBytesAndApproxTokens()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_metrics_emptyTextIsZeroLinesAndOneToken()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_networkAllowedExcludesOnlyProvidersAlreadyTried()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_parse_extractsProposalAndWhyBullets()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_parse_keepsInteriorFencesThatBelongToThePrompt()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_parse_stripsAnOuterCodeFenceTheModelAddedAnyway()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_parse_withoutDelimitersFallsBackToTheDraftAndReportsNoChange()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_refine_fallsThroughToTheNextProviderWhenTheFirstFails()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_refine_rejectsAControlSequenceBeforeSpendingAnything()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_refine_rejectsAControlSequenceReturnedByTheProvider()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_refine_withAnEmptyAnswerThrowsEmpty()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_refine_withNoProviderThrowsNoProvider()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_systemPrompt_alwaysAsksForTheDelimiters()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_systemPrompt_carriesTheNudgeInstruction()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_systemPrompt_loopModeDemandsATerminationCondition()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_systemPrompt_namesTheRuntimeSoIdiomsDiffer()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_validate_acceptsOrdinaryMultilinePrompt()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_validate_rejectsEscapeAndNul()"
+        },
+        {
+          "identifier" : "ThrottleTests/PromptRefinerServiceTests/test_validate_rejectsOverOneMebibyte()"
+        },
+        {
+          "identifier" : "ThrottleTests/ReadFirewallScannerTests/test_flagsMoreThan150KBReadPayloadInOneTurn()"
+        },
+        {
+          "identifier" : "ThrottleTests/ReadFirewallScannerTests/test_flagsThreeSequentialReadsAcrossInterleavedResults()"
+        },
+        {
+          "identifier" : "ThrottleTests/ReadFirewallScannerTests/test_installerDefinitionPinsRequestedLocalStack()"
+        },
+        {
+          "identifier" : "ThrottleTests/ReadFirewallScannerTests/test_nonReadToolBreaksSequentialReads()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferGitTests/testBundleCarriesStagedUnstagedUntrackedAndDeletedFilesWithoutChangingIndex()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferGitTests/testIgnoredFilesRequireTheExplicitIncludeListAndMissingEntriesFail()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferGitTests/testSubdirectoryRefusesTransferBeforeCreatingArtifacts()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferJournalTests/testMissingWindowStateRestoresAnUnspawnedTransferEvenWhenLocalDirectoryIsMissing()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferJournalTests/testOrphanRecoveryReportsUnreadableJournalWithoutHidingExistingTabs()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferJournalTests/testPickerFailsClosedForUnreadableJournalButKnownOtherIdentityCanResume()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferJournalTests/testPreparationReservationBlocksAliasesAndPickerAcrossSuspension()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferJournalTests/testPreparedTransferSurvivesRelaunchAndPreventsDuplicateWriter()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferJournalTests/testReturnRequiresStopAndVerifiedHashBeforeReleasingLocalWriter()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferJournalTests/testReturnReservationStillBlocksAliasesAfterDurableJournalRelease()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferJournalTests/testStreamingHashCoversBytesPastFirstChunk()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferJournalTests/testTruncatedOrMismatchedJournalCannotPermitLocalResume()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferJournalTests/testUpdateCannotRebindIdentityOrEndpoint()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferReturnTests/testDivergentLocalConversationOrCodeRetainsBothCopiesAndNeverReplacesUserFiles()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferReturnTests/testInterruptedReturnWithCodeAlreadyAppliedCompletesTheConversation()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferReturnTests/testPartialMetadataStagingCannotPoisonRetryOrReplaceExistingManifest()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferReturnTests/testPublicationPreservesAConcurrentWriterAndRestoresItsLocalInode()"
+        },
+        {
+          "identifier" : "ThrottleTests/RemoteTransferReturnTests/testReturnRestoresCurrentWorkAndConversationWithoutChangingBranchOrIndexAndRetries()"
+        },
+        {
+          "identifier" : "ThrottleTests/RepoIndexerTests/test_corpusStore_persistAndLoad()"
+        },
+        {
+          "identifier" : "ThrottleTests/RepoIndexerTests/test_deletedFile_isEvicted()"
+        },
+        {
+          "identifier" : "ThrottleTests/RepoIndexerTests/test_incremental_skipsUnchanged_reembedsChanged()"
+        },
+        {
+          "identifier" : "ThrottleTests/RepoIndexerTests/test_indexes_eligibleFiles_skipsExcludedAndBinary()"
+        },
+        {
+          "identifier" : "ThrottleTests/RepoIndexerTests/test_reindex_evictsStaleChunksFromShrunkFile()"
+        },
+        {
+          "identifier" : "ThrottleTests/ResearchVaultFolderSourceStoreTests/testDisplayNameCarriesTheParentFolder()"
+        },
+        {
+          "identifier" : "ThrottleTests/ResearchVaultFolderSourceStoreTests/testFolderFingerprintDetectsOnlyNewAndRevisedSupportedFiles()"
+        },
+        {
+          "identifier" : "ThrottleTests/ResearchVaultFolderSourceStoreTests/testLibraryFolderRoutesFilesToTheProjectInTheirPath()"
+        },
+        {
+          "identifier" : "ThrottleTests/ResearchVaultSpaceStoreTests/testExistingProjectKeysMigrateOneToOneBesidePortfolio()"
+        },
+        {
+          "identifier" : "ThrottleTests/ResearchVaultURLIntakeTests/testHTMLBecomesOpenReceiptWithURLSource()"
+        },
+        {
+          "identifier" : "ThrottleTests/ResearchVaultURLIntakeTests/testRejectsNonHTTPS()"
+        },
+        {
+          "identifier" : "ThrottleTests/ResearchVaultURLIntakeTests/testRejectsOversizedBody()"
+        },
+        {
+          "identifier" : "ThrottleTests/ResearchVaultURLIntakeTests/testRejectsUnsupportedAndEmptyContent()"
+        },
+        {
+          "identifier" : "ThrottleTests/ResearchVaultWorkbenchProjectionTests/projections()"
+        },
+        {
+          "identifier" : "ThrottleTests/ResearchVaultWorkbenchProjectionTests/reasoningSelectors()"
+        },
+        {
+          "identifier" : "ThrottleTests/ResearchVaultWorkbenchProjectionTests/savedViews()"
+        },
+        {
+          "identifier" : "ThrottleTests/ReviewedPasteServiceTests/testAcceptsReviewedBuildLogLargerThanLegacy64KiBLimit()"
+        },
+        {
+          "identifier" : "ThrottleTests/ReviewedPasteServiceTests/testChallengeBindsExactBytesAndExpires()"
+        },
+        {
+          "identifier" : "ThrottleTests/ReviewedPasteServiceTests/testRejectsEscapeNulAndOversizePayloads()"
+        },
+        {
+          "identifier" : "ThrottleTests/ReviewedPasteServiceTests/testReviewThresholds()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticAutoIndexerTests/test_disabled_skips()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticAutoIndexerTests/test_enabled_indexesMultipleRepos_thenIncrementalNoop()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticAutoIndexerTests/test_memoryPressure_skips()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticAutoIndexerTests/test_missingRoot_skippedGracefully()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticIndexTests/test_chunkWithLines_tracksStartLine()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticIndexTests/test_chunk_emptyText()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticIndexTests/test_chunk_hardSplitsOverlongParagraph()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticIndexTests/test_chunk_packsParagraphsUnderLimit()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticIndexTests/test_chunk_splitsWhenOverLimit()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticIndexTests/test_index_countsChunks_andDedupesByDoc()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticIndexTests/test_index_storesLineMetadata()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticIndexTests/test_persistence_roundTrip()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticIndexTests/test_searchHybrid_keywordFallbackWhenNoEmbedder()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticIndexTests/test_searchHybrid_returnsTopWithEmbedder()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticIndexTests/test_search_emptyWhenEmbedderUnavailable()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticIndexTests/test_search_returnsSemanticallyNearestChunk()"
+        },
+        {
+          "identifier" : "ThrottleTests/SemanticIndexTests/test_terms_filtersShortTokens()"
+        },
+        {
+          "identifier" : "ThrottleTests/SessionFileParserTests/test_parsesSampleSessionFromOffsetZero()"
+        },
+        {
+          "identifier" : "ThrottleTests/SessionFileParserTests/test_resumesFromOffset()"
+        },
+        {
+          "identifier" : "ThrottleTests/SessionFileParserTests/test_returnsEmptyForEmptyFile()"
+        },
+        {
+          "identifier" : "ThrottleTests/SessionResourceEnvelopeTests/testCPURequiresThreeConsecutiveHighSamples()"
+        },
+        {
+          "identifier" : "ThrottleTests/SessionResourceEnvelopeTests/testMemoryEnvelopeHasSafeOrdering()"
+        },
+        {
+          "identifier" : "ThrottleTests/SessionStateDotTests/testConstructingDotDoesNotObserveSessionStateInParent()"
+        },
+        {
+          "identifier" : "ThrottleTests/SessionStateDotTests/testDotBodyObservesSessionStateForShapeAndTooltip()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationHardeningTests/test_rebase_ignoresBuildOutputAVerificationLeftBehind()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationHardeningTests/test_rebase_refusesModifiedTrackedFiles()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationHardeningTests/test_verify_killsADescendantThatIgnoresSIGTERM()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationHardeningTests/test_verify_leavesNoDescendantRunningAfterATimeout()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationHardeningTests/test_verify_passesWhenASuccessfulCommandLeavesSomethingRunning()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationOutputTests/testDisplayLimitReportsTruncationBelowTheCollectorByteLimit()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationOutputTests/testSmallOutputIsUnchanged()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationOutputTests/testSplitUTF8AtTailBoundaryDoesNotEraseTheDiagnostic()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationOutputTests/testVerboseCommandKeepsABoundedTailWhileDraining()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationRefusalTests/test_aRealConflictKeepsItsPathsAndDropsTheMessages()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationRefusalTests/test_anOptionErrorIsUnknownRatherThanAListOfConflicts()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationRefusalTests/test_assess_readsTheBranchOfAWorktreeSittingOnIt()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationRefusalTests/test_assess_refusesADetachedHEADEvenOnTheBranchTip()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationRefusalTests/test_assess_refusesAWorktreeThatLeftItsBranch()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationRefusalTests/test_emptyAndTruncatedOutputAreUnknown()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationRefusalTests/test_integrate_ignoresUntrackedFilesTheVerificationLeftBehind()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationRefusalTests/test_integrate_leavesTheWorktreeForItsCallerToDecideOn()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationRefusalTests/test_integrate_refusesADetachedRepositoryHEAD()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationRefusalTests/test_integrate_refusesARedCheck()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationRefusalTests/test_integrate_refusesWhenTheTaskItselfMovedAfterTheCheck()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationRefusalTests/test_integrate_stillRefusesModifiedTrackedFiles()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationRefusalTests/test_removeWorktree_dropsTheWorktreeOfAnIntegratedTask()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationRefusalTests/test_removeWorktree_keepsAWorktreeThatStillHoldsWorkAndSaysWhy()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_assess_namesTheConflictingFileWithoutTouchingTheWorktree()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_assess_refusesWhenThereIsNoWorktree()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_assess_reportsFilesAndAheadCount()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_assess_seesUncommittedWork()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_diff_returnsTheTextAgainstTheMergeBase()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_integrate_fastForwardsTheBaseAndLogsTheSHA()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_integrate_refusesADirtyWorktree()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_integrate_refusesAGatedTaskWithoutAVerdict()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_integrate_refusesAnUnverifiedTask()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_integrate_refusesWhenTheBaseMovedAfterTheCheck()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_rebaseAbortFailed_carriesBothOutputsAndComparesByValue()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_rebase_abortsAndRestoresTheOriginalSHAOnConflict()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_rebase_replaysTheTaskOnTheAdvancedBase()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_verify_killsAHungCommandAtTheTimeoutAndReportsIt()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_verify_recordsAFailureWithItsOutput()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_verify_recordsAGreenCheckStampedWithBothSHAs()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskIntegrationServiceTests/test_verify_runsInsideTheWorktreeNotTheRepo()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskLauncherTests/testKickoffNamesTheBoundaryAndHowToReport()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskLauncherTests/testKickoffWarnsAboutTheSotaGate()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskLauncherTests/testPrepareCreatesAWorktreeAndClaimsTheTask()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskLauncherTests/testPrepareRefusesATaskSomeoneElseAlreadyHolds()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskLauncherTests/testPrepareRefusesAnUnknownTask()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskWorktreeServiceTests/testCreateIsIdempotent()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskWorktreeServiceTests/testCreateMakesAWorktreeOnItsOwnBranch()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskWorktreeServiceTests/testForceRemovesWorkOnlyWhenExplicitlyAsked()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskWorktreeServiceTests/testRemoveAcceptsAnEmptyWorktree()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskWorktreeServiceTests/testRemoveRefusesUncommittedWork()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskWorktreeServiceTests/testRemoveRefusesUnmergedCommits()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskWorktreeServiceTests/testRemovingAnAbsentWorktreeIsNotAnError()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskWorktreeServiceTests/testStatusReportsDirtyAndUnmergedSeparately()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskWorktreeServiceTests/testTheDefaultBaseStillSeesUnmergedCommits()"
+        },
+        {
+          "identifier" : "ThrottleTests/TaskWorktreeServiceTests/testUnsafeTaskIDIsRefused()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_ansiColourAndCachedGoOutput()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_cargo()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_failureFirstAndErrorOnlyPytestSummaries()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_failureFromAnotherRunnerCannotBecomeGreen()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_go_fail()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_go_ok()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_invalidAndEmptyCountsCannotBecomeGreen()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_jest_failedFirstOrder()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_jest_passOnly()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_laterSuccessDoesNotEraseFailureInTheSameObservedTail()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_noFalsePositiveOnProse()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_pytest_passOnly()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_pytest_withFailures()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_summaryMentionedInProseIsNotObservedResult()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_swift()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeDetectorTests/test_swiftTestingOrNodeFailureAfterXCTestSuccessIsNotGreen()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeStoreTests/test_failedAttemptsContributeToCostPerGreen()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeStoreTests/test_malformedOrEmptyResultsCannotBecomeGreen()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeStoreTests/test_missingCostsAndResetsCannotMakeMetricCheaper()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeStoreTests/test_stableOrderAndIndependentSessions()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeStoreTests/test_unrelatedProjectsAndAllFailuresDoNotCreateCostPerGreen()"
+        },
+        {
+          "identifier" : "ThrottleTests/TestOutcomeStoreTests/test_windowUsesHistoricalCostAnchor()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokenEstimateTests/test_defaultIsDense()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokenEstimateTests/test_proseVsDense_ratio()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokenEstimateTests/test_zeroAndNegative()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptBenchmarkTests/test_benchmark_compressesGreenTestAndBuildOutputs()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptBenchmarkTests/test_benchmark_safetyInvariants_failuresAndJsonAreNoOps()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptBenchmarkTests/test_report_aggregate_isMeasured()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptHookTests/test_compress_endToEnd_greenCargoShrinks()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptHookTests/test_isTestCommand_recognizesRunners()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptHookTests/test_isTestCommand_rejectsNonTests()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptHookTests/test_scriptContents_hasFailOpenInvariants()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptHookTests/test_serializedByteCount_acceptsContainersAndRejectsUnsupportedValues()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptHookTests/test_serializedByteCount_acceptsTopLevelStringResponse()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptHookTests/test_testRunnerRecipe_collapsesGreenCargo()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptHookTests/test_testRunnerRecipe_keepsWarnings()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptHookTests/test_testRunnerRecipe_nilWhenNoSummary()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptHookTests/test_testRunnerRecipe_noopOnFailure()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptHookTests/test_testRunnerRecipe_noopOnGoFail()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptHookTests/test_trampoline_disabledByEnv_neverCallsBinary()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptHookTests/test_trampoline_noopWhenBinaryMissing()"
+        },
+        {
+          "identifier" : "ThrottleTests/TokoptHookTests/test_trampoline_passesStdinThroughToPresentBinary()"
+        },
+        {
+          "identifier" : "ThrottleTests/TranscriptMemoryInstallerTests/testCodexInstallerRefusesToOverwriteUnmanagedSameName()"
+        },
+        {
+          "identifier" : "ThrottleTests/TranscriptMemoryInstallerTests/testCodexManagedBlockInstallUpdateAndRemovePreservesSiblings()"
+        },
+        {
+          "identifier" : "ThrottleTests/TranscriptMemoryInstallerTests/testGlobalRAGCodexManagedInstructionIsIdempotentAndReversible()"
+        },
+        {
+          "identifier" : "ThrottleTests/TranscriptMemoryInstallerTests/testGlobalRAGCodexUsesNonEmptyOverrideAccordingToDocumentedPrecedence()"
+        },
+        {
+          "identifier" : "ThrottleTests/TranscriptMemoryInstallerTests/testGlobalRAGHookOwnershipIsFailClosed()"
+        },
+        {
+          "identifier" : "ThrottleTests/TranscriptMemoryInstallerTests/testGlobalRAGSessionHookMergeAndRemovalPreserveSiblingHooks()"
+        },
+        {
+          "identifier" : "ThrottleTests/TranscriptMemoryInstallerTests/testGlobalRAGSessionInstallerFullIsolatedLifecycle()"
+        },
+        {
+          "identifier" : "ThrottleTests/TranscriptMemoryInstallerTests/test_healing_addsMissingArgs()"
+        },
+        {
+          "identifier" : "ThrottleTests/TranscriptMemoryInstallerTests/test_healing_nilWhenAlreadyCurrent()"
+        },
+        {
+          "identifier" : "ThrottleTests/TranscriptMemoryInstallerTests/test_healing_nilWhenNotInstalled()"
+        },
+        {
+          "identifier" : "ThrottleTests/TranscriptMemoryInstallerTests/test_healing_preservesOtherServers_andArgs()"
+        },
+        {
+          "identifier" : "ThrottleTests/TranscriptMemoryInstallerTests/test_healing_repointsStalePath()"
+        },
+        {
+          "identifier" : "ThrottleTests/TraycerDecoderTests/test_decodesRealCapture_sessionIdOnEveryEvent()"
+        },
+        {
+          "identifier" : "ThrottleTests/TraycerDecoderTests/test_dropsUninterestingEvents()"
+        },
+        {
+          "identifier" : "ThrottleTests/TraycerDecoderTests/test_failOpen_onGarbage()"
+        },
+        {
+          "identifier" : "ThrottleTests/TraycerDecoderTests/test_skillActivated_carriesSkillName()"
+        },
+        {
+          "identifier" : "ThrottleTests/TraycerDecoderTests/test_toolResult_forSkillTool()"
+        },
+        {
+          "identifier" : "ThrottleTests/TraycerStoreTests/test_events_forSession_orderedBySequence()"
+        },
+        {
+          "identifier" : "ThrottleTests/TraycerStoreTests/test_insert_thenReplay_isIdempotent()"
+        },
+        {
+          "identifier" : "ThrottleTests/TraycerStoreTests/test_skillCounts_findsSessionTag()"
+        },
+        {
+          "identifier" : "ThrottleTests/UsageExtractorTests/test_extractsUsageFromAssistantLine()"
+        },
+        {
+          "identifier" : "ThrottleTests/UsageExtractorTests/test_returnsNilForAssistantWithoutUsage()"
+        },
+        {
+          "identifier" : "ThrottleTests/UsageExtractorTests/test_returnsNilForMalformedJson()"
+        },
+        {
+          "identifier" : "ThrottleTests/UsageExtractorTests/test_returnsNilForUserLine()"
+        },
+        {
+          "identifier" : "ThrottleTests/VectorStoreTests/test_nlEmbedding_similarTextRanksHigher()"
+        },
+        {
+          "identifier" : "ThrottleTests/VectorStoreTests/test_persistence_roundTrip()"
+        },
+        {
+          "identifier" : "ThrottleTests/VectorStoreTests/test_search_emptyQueryOrZeroVector()"
+        },
+        {
+          "identifier" : "ThrottleTests/VectorStoreTests/test_search_ranksByCosineSimilarity()"
+        },
+        {
+          "identifier" : "ThrottleTests/VectorStoreTests/test_search_respectsK_andSkipsDimMismatch()"
+        },
+        {
+          "identifier" : "ThrottleTests/VectorStoreTests/test_upsert_dedupesById()"
+        },
+        {
+          "identifier" : "ThrottleTests/VerifyConsentTests/test_aCommandIsNotGrantedUntilItIsGranted()"
+        },
+        {
+          "identifier" : "ThrottleTests/VerifyConsentTests/test_changingTheCommandRevokesTheGrant()"
+        },
+        {
+          "identifier" : "ThrottleTests/VerifyConsentTests/test_grantsDoNotCrossProjects()"
+        },
+        {
+          "identifier" : "ThrottleTests/WarningDetectorTests/test_detects80PercentSessionWarning()"
+        },
+        {
+          "identifier" : "ThrottleTests/WarningDetectorTests/test_detects90PercentWeeklyWarning()"
+        },
+        {
+          "identifier" : "ThrottleTests/WarningDetectorTests/test_returnsNilForMalformedJson()"
+        },
+        {
+          "identifier" : "ThrottleTests/WarningDetectorTests/test_returnsNilForRegularMessage()"
+        },
+        {
+          "identifier" : "ThrottleTests/WebNavigationPlannerTests/testDropsPrivateAndNonHTTPDestinations()"
+        },
+        {
+          "identifier" : "ThrottleTests/WebNavigationPlannerTests/testRanksQueryLinksAndDeduplicatesTrackingVariants()"
+        },
+        {
+          "identifier" : "ThrottleTests/WebURLPolicyTests/testAllowsPublicHTTPSLiteralWithoutDNS()"
+        },
+        {
+          "identifier" : "ThrottleTests/WebURLPolicyTests/testRejectsCredentialsAndInternalSuffixes()"
+        },
+        {
+          "identifier" : "ThrottleTests/WebURLPolicyTests/testRejectsPrivateAndSpecialAddressesWithoutDNS()"
+        },
+        {
+          "identifier" : "ThrottleTests/WebURLPolicyTests/testUserConfiguredServiceRedirectsStayOnTheExactOrigin()"
+        },
+        {
+          "identifier" : "ThrottleTests/WebURLPolicyTests/testUserConfiguredServicesRequireHTTPSOrPrivateHTTP()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_emptyWindow_returnsFullDuration()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_session5h_resetMatchesOldestEventPlusFiveHours()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_session5h_sumsLastFiveHours()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_weeklyAll_resetUsesRollingWindow_notFixedAnchor()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_weeklyAll_sumsLastSevenDays_excludingOlder()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_weeklySonnet_displayNameThatIsNotABareFamilyWord_stillMatches()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_weeklySonnet_emptyWindow_doesNotCountAsAFailedMatch()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_weeklySonnet_filtersByModel()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_weeklySonnet_isAlwaysNarrowerThanWeeklyAll()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_weeklySonnet_resetIgnoresNonSonnetEvents()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_weeklySonnet_scopedToFable_countsMythosToo()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_weeklySonnet_tokenThatMatchesNothing_fallsBackToTheDefault()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_weeklySonnet_tokenThatMatches_isKept()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_weeklySonnet_unknownFamily_fallsBackToMatchingTheName()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_weeklySonnet_unstatedScope_defaultsToSonnet()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_weeklySonnet_usedBeforeButNotThisWeek_isARealZeroNotABrokenToken()"
+        },
+        {
+          "identifier" : "ThrottleTests/WindowCalculatorTests/test_weeklySonnet_vendorOnlyName_doesNotMatchEveryModel()"
+        }
+      ],
+      "testPlan" : "Throttle"
+    }
+  ]
+}

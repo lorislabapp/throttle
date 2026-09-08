@@ -1,0 +1,990 @@
+{
+  "dependencies" : [
+    {
+      "identity" : "sqlcipher.swift",
+      "requirement" : {
+        "exact" : [
+          "4.18.0"
+        ]
+      },
+      "type" : "sourceControl",
+      "url" : "https://github.com/sqlcipher/SQLCipher.swift.git"
+    }
+  ],
+  "manifest_display_name" : "ResearchVaultKit",
+  "name" : "ResearchVaultKit",
+  "path" : "/Users/runner/work/throttle/throttle/Packages/ResearchVaultKit",
+  "platforms" : [
+    {
+      "name" : "macos",
+      "version" : "14.0"
+    },
+    {
+      "name" : "ios",
+      "version" : "17.0"
+    }
+  ],
+  "products" : [
+    {
+      "name" : "ResearchVaultModel",
+      "targets" : [
+        "ResearchVaultModel"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    },
+    {
+      "name" : "ResearchVaultReasoning",
+      "targets" : [
+        "ResearchVaultReasoning"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    },
+    {
+      "name" : "ResearchVaultIPCModel",
+      "targets" : [
+        "ResearchVaultIPCModel"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    },
+    {
+      "name" : "ResearchVaultSynthesis",
+      "targets" : [
+        "ResearchVaultSynthesis"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    },
+    {
+      "name" : "ResearchVaultXPCClient",
+      "targets" : [
+        "ResearchVaultXPCClient"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    },
+    {
+      "name" : "ResearchVaultXPC",
+      "targets" : [
+        "ResearchVaultXPC"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    },
+    {
+      "name" : "ResearchVaultServiceRuntime",
+      "targets" : [
+        "ResearchVaultServiceRuntime"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    },
+    {
+      "name" : "ResearchVaultStore",
+      "targets" : [
+        "ResearchVaultStore"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    },
+    {
+      "name" : "ResearchVaultSQLCipher",
+      "targets" : [
+        "ResearchVaultSQLCipher"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    },
+    {
+      "name" : "ResearchVaultKeychain",
+      "targets" : [
+        "ResearchVaultKeychain"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    },
+    {
+      "name" : "ResearchVaultIngestion",
+      "targets" : [
+        "ResearchVaultIngestion"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    },
+    {
+      "name" : "ResearchVaultGateway",
+      "targets" : [
+        "ResearchVaultGateway"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    },
+    {
+      "name" : "ResearchVaultMCP",
+      "targets" : [
+        "ResearchVaultMCP"
+      ],
+      "type" : {
+        "library" : [
+          "automatic"
+        ]
+      }
+    },
+    {
+      "name" : "research-vault-crash-probe",
+      "targets" : [
+        "research-vault-crash-probe"
+      ],
+      "type" : {
+        "executable" : null
+      }
+    },
+    {
+      "name" : "research-vault-catalog-probe",
+      "targets" : [
+        "research-vault-catalog-probe"
+      ],
+      "type" : {
+        "executable" : null
+      }
+    },
+    {
+      "name" : "research-vault-benchmark",
+      "targets" : [
+        "research-vault-benchmark"
+      ],
+      "type" : {
+        "executable" : null
+      }
+    },
+    {
+      "name" : "research-vault-synthesis-security-probe",
+      "targets" : [
+        "research-vault-synthesis-security-probe"
+      ],
+      "type" : {
+        "executable" : null
+      }
+    },
+    {
+      "name" : "research-vault-mcp",
+      "targets" : [
+        "research-vault-mcp"
+      ],
+      "type" : {
+        "executable" : null
+      }
+    },
+    {
+      "name" : "research-vault-agent-hook",
+      "targets" : [
+        "research-vault-agent-hook"
+      ],
+      "type" : {
+        "executable" : null
+      }
+    },
+    {
+      "name" : "research-vault-reasoning-differential",
+      "targets" : [
+        "research-vault-reasoning-differential"
+      ],
+      "type" : {
+        "executable" : null
+      }
+    },
+    {
+      "name" : "research-vault-reasoning-benchmark",
+      "targets" : [
+        "research-vault-reasoning-benchmark"
+      ],
+      "type" : {
+        "executable" : null
+      }
+    },
+    {
+      "name" : "research-vault-xpc-service",
+      "targets" : [
+        "research-vault-xpc-service"
+      ],
+      "type" : {
+        "executable" : null
+      }
+    }
+  ],
+  "targets" : [
+    {
+      "c99name" : "research_vault_xpc_service",
+      "module_type" : "SwiftTarget",
+      "name" : "research-vault-xpc-service",
+      "path" : "Sources/research-vault-xpc-service",
+      "product_memberships" : [
+        "research-vault-xpc-service"
+      ],
+      "sources" : [
+        "ResearchVaultXPCServiceMain.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultServiceRuntime"
+      ],
+      "type" : "executable"
+    },
+    {
+      "c99name" : "research_vault_synthesis_security_probe",
+      "module_type" : "SwiftTarget",
+      "name" : "research-vault-synthesis-security-probe",
+      "path" : "Sources/research-vault-synthesis-security-probe",
+      "product_memberships" : [
+        "research-vault-synthesis-security-probe"
+      ],
+      "sources" : [
+        "main.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultSynthesis"
+      ],
+      "type" : "executable"
+    },
+    {
+      "c99name" : "research_vault_reasoning_differential",
+      "module_type" : "SwiftTarget",
+      "name" : "research-vault-reasoning-differential",
+      "path" : "Sources/research-vault-reasoning-differential",
+      "product_memberships" : [
+        "research-vault-reasoning-differential"
+      ],
+      "sources" : [
+        "main.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultReasoning"
+      ],
+      "type" : "executable"
+    },
+    {
+      "c99name" : "research_vault_reasoning_benchmark",
+      "module_type" : "SwiftTarget",
+      "name" : "research-vault-reasoning-benchmark",
+      "path" : "Sources/research-vault-reasoning-benchmark",
+      "product_memberships" : [
+        "research-vault-reasoning-benchmark"
+      ],
+      "sources" : [
+        "main.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultReasoning"
+      ],
+      "type" : "executable"
+    },
+    {
+      "c99name" : "research_vault_mcp",
+      "module_type" : "SwiftTarget",
+      "name" : "research-vault-mcp",
+      "path" : "Sources/research-vault-mcp",
+      "product_memberships" : [
+        "research-vault-mcp"
+      ],
+      "sources" : [
+        "ResearchVaultMCPMain.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultMCP",
+        "ResearchVaultGateway",
+        "ResearchVaultKeychain",
+        "ResearchVaultStore",
+        "ResearchVaultSQLCipher"
+      ],
+      "type" : "executable"
+    },
+    {
+      "c99name" : "research_vault_crash_probe",
+      "module_type" : "SwiftTarget",
+      "name" : "research-vault-crash-probe",
+      "path" : "Sources/research-vault-crash-probe",
+      "product_memberships" : [
+        "research-vault-crash-probe"
+      ],
+      "sources" : [
+        "main.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultSQLCipher"
+      ],
+      "type" : "executable"
+    },
+    {
+      "c99name" : "research_vault_catalog_probe",
+      "module_type" : "SwiftTarget",
+      "name" : "research-vault-catalog-probe",
+      "path" : "Sources/research-vault-catalog-probe",
+      "product_memberships" : [
+        "research-vault-catalog-probe"
+      ],
+      "sources" : [
+        "main.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultIngestion"
+      ],
+      "type" : "executable"
+    },
+    {
+      "c99name" : "research_vault_benchmark",
+      "module_type" : "SwiftTarget",
+      "name" : "research-vault-benchmark",
+      "path" : "Sources/research-vault-benchmark",
+      "product_memberships" : [
+        "research-vault-benchmark"
+      ],
+      "sources" : [
+        "BenchmarkMain.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultIngestion",
+        "ResearchVaultSQLCipher"
+      ],
+      "type" : "executable"
+    },
+    {
+      "c99name" : "research_vault_agent_hook",
+      "module_type" : "SwiftTarget",
+      "name" : "research-vault-agent-hook",
+      "path" : "Sources/research-vault-agent-hook",
+      "product_memberships" : [
+        "research-vault-agent-hook"
+      ],
+      "sources" : [
+        "ResearchVaultAgentHookMain.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultMCP"
+      ],
+      "type" : "executable"
+    },
+    {
+      "c99name" : "ResearchVaultXPCTests",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultXPCTests",
+      "path" : "Tests/ResearchVaultXPCTests",
+      "sources" : [
+        "ResearchVaultQueryEnvelopeTests.swift",
+        "ResearchVaultReceiptBatchReaderTests.swift",
+        "ResearchVaultXPCTests.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultXPCClient",
+        "ResearchVaultXPC",
+        "ResearchVaultServiceRuntime"
+      ],
+      "type" : "test"
+    },
+    {
+      "c99name" : "ResearchVaultXPCClient",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultXPCClient",
+      "path" : "Sources/ResearchVaultXPCClient",
+      "product_memberships" : [
+        "ResearchVaultXPCClient",
+        "ResearchVaultXPC",
+        "ResearchVaultServiceRuntime",
+        "research-vault-xpc-service"
+      ],
+      "sources" : [
+        "ResearchVaultClient.swift",
+        "ResearchVaultReceiptBatchReader.swift",
+        "ResearchVaultXPCClient.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultIPCModel",
+        "ResearchVaultModel"
+      ],
+      "type" : "library"
+    },
+    {
+      "c99name" : "ResearchVaultXPC",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultXPC",
+      "path" : "Sources/ResearchVaultXPC",
+      "product_memberships" : [
+        "ResearchVaultXPC",
+        "ResearchVaultServiceRuntime",
+        "research-vault-xpc-service"
+      ],
+      "sources" : [
+        "ResearchVaultListenerDelegates.swift",
+        "ResearchVaultOwnerService.swift",
+        "ResearchVaultXPC.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultXPCClient",
+        "ResearchVaultIPCModel",
+        "ResearchVaultGateway"
+      ],
+      "type" : "library"
+    },
+    {
+      "c99name" : "ResearchVaultSynthesisTests",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultSynthesisTests",
+      "path" : "Tests/ResearchVaultSynthesisTests",
+      "sources" : [
+        "ResearchVaultSynthesisTests.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultSynthesis"
+      ],
+      "type" : "test"
+    },
+    {
+      "c99name" : "ResearchVaultSynthesisSecurityTests",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultSynthesisSecurityTests",
+      "path" : "Tests/ResearchVaultSynthesisSecurityTests",
+      "sources" : [
+        "SynthesisGroundingTests.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultSynthesis"
+      ],
+      "type" : "test"
+    },
+    {
+      "c99name" : "ResearchVaultSynthesis",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultSynthesis",
+      "path" : "Sources/ResearchVaultSynthesis",
+      "product_memberships" : [
+        "ResearchVaultSynthesis",
+        "research-vault-synthesis-security-probe"
+      ],
+      "sources" : [
+        "ResearchVaultSynthesis.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultIPCModel",
+        "ResearchVaultModel"
+      ],
+      "type" : "library"
+    },
+    {
+      "c99name" : "ResearchVaultStoreTests",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultStoreTests",
+      "path" : "Tests/ResearchVaultStoreTests",
+      "sources" : [
+        "EncryptedObjectStoreTests.swift",
+        "ReceiptStoreTests.swift",
+        "VaultKeyDerivationTests.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultModel",
+        "ResearchVaultStore"
+      ],
+      "type" : "test"
+    },
+    {
+      "c99name" : "ResearchVaultStore",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultStore",
+      "path" : "Sources/ResearchVaultStore",
+      "product_memberships" : [
+        "ResearchVaultXPC",
+        "ResearchVaultServiceRuntime",
+        "ResearchVaultStore",
+        "ResearchVaultSQLCipher",
+        "ResearchVaultGateway",
+        "ResearchVaultMCP",
+        "research-vault-crash-probe",
+        "research-vault-benchmark",
+        "research-vault-mcp",
+        "research-vault-agent-hook",
+        "research-vault-xpc-service"
+      ],
+      "sources" : [
+        "ClaimSearchStore.swift",
+        "EncryptedObjectStore.swift",
+        "ReceiptStore.swift",
+        "VaultKeyDerivation.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultModel"
+      ],
+      "type" : "library"
+    },
+    {
+      "c99name" : "ResearchVaultServiceRuntime",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultServiceRuntime",
+      "path" : "Sources/ResearchVaultServiceRuntime",
+      "product_memberships" : [
+        "ResearchVaultServiceRuntime",
+        "research-vault-xpc-service"
+      ],
+      "sources" : [
+        "ResearchVaultServiceRuntime.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultXPC",
+        "ResearchVaultGateway",
+        "ResearchVaultKeychain",
+        "ResearchVaultModel",
+        "ResearchVaultStore",
+        "ResearchVaultSQLCipher"
+      ],
+      "type" : "library"
+    },
+    {
+      "c99name" : "ResearchVaultSQLCipherTests",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultSQLCipherTests",
+      "path" : "Tests/ResearchVaultSQLCipherTests",
+      "product_dependencies" : [
+        "SQLCipher"
+      ],
+      "sources" : [
+        "SQLCipherHistoricalBackupTests.swift",
+        "SQLCipherReasoningStoreTests.swift",
+        "SQLCipherReceiptStoreTests.swift",
+        "SQLCipherReviewStateTests.swift",
+        "SQLCipherRuntimeTests.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultModel",
+        "ResearchVaultReasoning",
+        "ResearchVaultStore",
+        "ResearchVaultSQLCipher"
+      ],
+      "type" : "test"
+    },
+    {
+      "c99name" : "ResearchVaultSQLCipher",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultSQLCipher",
+      "path" : "Sources/ResearchVaultSQLCipher",
+      "product_dependencies" : [
+        "SQLCipher"
+      ],
+      "product_memberships" : [
+        "ResearchVaultXPC",
+        "ResearchVaultServiceRuntime",
+        "ResearchVaultSQLCipher",
+        "ResearchVaultGateway",
+        "ResearchVaultMCP",
+        "research-vault-crash-probe",
+        "research-vault-benchmark",
+        "research-vault-mcp",
+        "research-vault-agent-hook",
+        "research-vault-xpc-service"
+      ],
+      "sources" : [
+        "SQLCipherConnection.swift",
+        "SQLCipherOwnerProjects.swift",
+        "SQLCipherReasoningStore.swift",
+        "SQLCipherReceiptRetrieval.swift",
+        "SQLCipherReceiptStore+Documents.swift",
+        "SQLCipherReceiptStore+Import.swift",
+        "SQLCipherReceiptStore+Maintenance.swift",
+        "SQLCipherReceiptStore+Query.swift",
+        "SQLCipherReceiptStore+Receipts.swift",
+        "SQLCipherReceiptStore.swift",
+        "SQLCipherRuntime.swift",
+        "SQLCipherSchema+Documents.swift",
+        "SQLCipherSchema+OwnerProjects.swift",
+        "SQLCipherSchema+Reasoning.swift",
+        "SQLCipherSchema+Receipts.swift",
+        "SQLCipherSchema+Spaces.swift",
+        "SQLCipherSchema.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultModel",
+        "ResearchVaultReasoning",
+        "ResearchVaultStore",
+        "ResearchVaultIngestion"
+      ],
+      "type" : "library"
+    },
+    {
+      "c99name" : "ResearchVaultReasoningTests",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultReasoningTests",
+      "path" : "Tests/ResearchVaultReasoningTests",
+      "resources" : [
+        {
+          "path" : "/Users/runner/work/throttle/throttle/Packages/ResearchVaultKit/Tests/ResearchVaultReasoningTests/Fixtures/positive-datalog-golden.json",
+          "rule" : {
+            "process" : {
+
+            }
+          }
+        }
+      ],
+      "sources" : [
+        "ResearchReceiptProjectionTests.swift",
+        "ResearchVaultReasoningGoldenTests.swift",
+        "ResearchVaultReasoningTests.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultReasoning"
+      ],
+      "type" : "test"
+    },
+    {
+      "c99name" : "ResearchVaultReasoning",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultReasoning",
+      "path" : "Sources/ResearchVaultReasoning",
+      "product_memberships" : [
+        "ResearchVaultReasoning",
+        "ResearchVaultXPC",
+        "ResearchVaultServiceRuntime",
+        "ResearchVaultSQLCipher",
+        "ResearchVaultGateway",
+        "ResearchVaultMCP",
+        "research-vault-crash-probe",
+        "research-vault-benchmark",
+        "research-vault-mcp",
+        "research-vault-agent-hook",
+        "research-vault-reasoning-differential",
+        "research-vault-reasoning-benchmark",
+        "research-vault-xpc-service"
+      ],
+      "sources" : [
+        "ResearchLogic.swift",
+        "ResearchReceiptProjection.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultModel"
+      ],
+      "type" : "library"
+    },
+    {
+      "c99name" : "ResearchVaultOwnerSecurityTests",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultOwnerSecurityTests",
+      "path" : "Tests/ResearchVaultOwnerSecurityTests",
+      "sources" : [
+        "OwnerBatchSecurityTests.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultModel",
+        "ResearchVaultStore",
+        "ResearchVaultSQLCipher"
+      ],
+      "type" : "test"
+    },
+    {
+      "c99name" : "ResearchVaultModelTests",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultModelTests",
+      "path" : "Tests/ResearchVaultModelTests",
+      "sources" : [
+        "ResearchReceiptTests.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultModel"
+      ],
+      "type" : "test"
+    },
+    {
+      "c99name" : "ResearchVaultModel",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultModel",
+      "path" : "Sources/ResearchVaultModel",
+      "product_memberships" : [
+        "ResearchVaultModel",
+        "ResearchVaultReasoning",
+        "ResearchVaultIPCModel",
+        "ResearchVaultSynthesis",
+        "ResearchVaultXPCClient",
+        "ResearchVaultXPC",
+        "ResearchVaultServiceRuntime",
+        "ResearchVaultStore",
+        "ResearchVaultSQLCipher",
+        "ResearchVaultIngestion",
+        "ResearchVaultGateway",
+        "ResearchVaultMCP",
+        "research-vault-crash-probe",
+        "research-vault-catalog-probe",
+        "research-vault-benchmark",
+        "research-vault-synthesis-security-probe",
+        "research-vault-mcp",
+        "research-vault-agent-hook",
+        "research-vault-reasoning-differential",
+        "research-vault-reasoning-benchmark",
+        "research-vault-xpc-service"
+      ],
+      "sources" : [
+        "ResearchReceipt.swift",
+        "VaultAuthorization.swift"
+      ],
+      "type" : "library"
+    },
+    {
+      "c99name" : "ResearchVaultMCPTests",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultMCPTests",
+      "path" : "Tests/ResearchVaultMCPTests",
+      "sources" : [
+        "ResearchVaultMCPProtocolHandlerTests.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultMCP",
+        "ResearchVaultGateway",
+        "ResearchVaultSQLCipher",
+        "ResearchVaultIngestion",
+        "ResearchVaultIPCModel"
+      ],
+      "type" : "test"
+    },
+    {
+      "c99name" : "ResearchVaultMCP",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultMCP",
+      "path" : "Sources/ResearchVaultMCP",
+      "product_memberships" : [
+        "ResearchVaultMCP",
+        "research-vault-mcp",
+        "research-vault-agent-hook"
+      ],
+      "sources" : [
+        "ResearchVaultAgentHook.swift",
+        "ResearchVaultMCPProtocolHandler.swift",
+        "ResearchVaultMCPWireTypes.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultGateway",
+        "ResearchVaultIngestion",
+        "ResearchVaultIPCModel",
+        "ResearchVaultModel",
+        "ResearchVaultSQLCipher"
+      ],
+      "type" : "library"
+    },
+    {
+      "c99name" : "ResearchVaultKeychainTests",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultKeychainTests",
+      "path" : "Tests/ResearchVaultKeychainTests",
+      "sources" : [
+        "VaultMasterKeyStoreTests.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultKeychain"
+      ],
+      "type" : "test"
+    },
+    {
+      "c99name" : "ResearchVaultKeychain",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultKeychain",
+      "path" : "Sources/ResearchVaultKeychain",
+      "product_memberships" : [
+        "ResearchVaultServiceRuntime",
+        "ResearchVaultKeychain",
+        "research-vault-mcp",
+        "research-vault-xpc-service"
+      ],
+      "sources" : [
+        "VaultMasterKeyStore.swift"
+      ],
+      "type" : "library"
+    },
+    {
+      "c99name" : "ResearchVaultIngestionTests",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultIngestionTests",
+      "path" : "Tests/ResearchVaultIngestionTests",
+      "sources" : [
+        "DeepSearshCatalogImporterTests.swift",
+        "ManualResearchFileImporterTests.swift",
+        "NotebookLMMigrationImporterTests.swift",
+        "ResearchDocumentChunkerTests.swift",
+        "ResearchDocumentTextExtractorTests.swift",
+        "ResearchEmbeddingTests.swift",
+        "ResearchReceiptInboxTests.swift",
+        "ResearchVaultGoldenSetTests.swift",
+        "ResearchVaultMarkdownExporterTests.swift",
+        "RetrievalBenchmarkTests.swift",
+        "RetrievalQualityGateTests.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultIngestion"
+      ],
+      "type" : "test"
+    },
+    {
+      "c99name" : "ResearchVaultIngestion",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultIngestion",
+      "path" : "Sources/ResearchVaultIngestion",
+      "product_memberships" : [
+        "ResearchVaultXPC",
+        "ResearchVaultServiceRuntime",
+        "ResearchVaultSQLCipher",
+        "ResearchVaultIngestion",
+        "ResearchVaultGateway",
+        "ResearchVaultMCP",
+        "research-vault-crash-probe",
+        "research-vault-catalog-probe",
+        "research-vault-benchmark",
+        "research-vault-mcp",
+        "research-vault-agent-hook",
+        "research-vault-xpc-service"
+      ],
+      "sources" : [
+        "DeepSearshCatalogImporter.swift",
+        "ManualResearchFileImporter.swift",
+        "NotebookLMMigrationImporter.swift",
+        "NotebookLMMigrationModel.swift",
+        "ResearchDocumentChunker.swift",
+        "ResearchDocumentOCR.swift",
+        "ResearchDocumentTextExtractor.swift",
+        "ResearchEmbedding.swift",
+        "ResearchReceiptInbox.swift",
+        "ResearchVaultGoldenSet.swift",
+        "ResearchVaultMarkdownExporter.swift",
+        "RetrievalBenchmark.swift",
+        "RetrievalQualityGate.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultIPCModel",
+        "ResearchVaultModel"
+      ],
+      "type" : "library"
+    },
+    {
+      "c99name" : "ResearchVaultIPCModelTests",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultIPCModelTests",
+      "path" : "Tests/ResearchVaultIPCModelTests",
+      "sources" : [
+        "ResearchVaultIPCModelTests.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultIPCModel"
+      ],
+      "type" : "test"
+    },
+    {
+      "c99name" : "ResearchVaultIPCModel",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultIPCModel",
+      "path" : "Sources/ResearchVaultIPCModel",
+      "product_memberships" : [
+        "ResearchVaultIPCModel",
+        "ResearchVaultSynthesis",
+        "ResearchVaultXPCClient",
+        "ResearchVaultXPC",
+        "ResearchVaultServiceRuntime",
+        "ResearchVaultSQLCipher",
+        "ResearchVaultIngestion",
+        "ResearchVaultGateway",
+        "ResearchVaultMCP",
+        "research-vault-crash-probe",
+        "research-vault-catalog-probe",
+        "research-vault-benchmark",
+        "research-vault-synthesis-security-probe",
+        "research-vault-mcp",
+        "research-vault-agent-hook",
+        "research-vault-xpc-service"
+      ],
+      "sources" : [
+        "ResearchVaultContextEncoding.swift",
+        "ResearchVaultIPCModel.swift",
+        "ResearchVaultProjectAdmission.swift",
+        "ResearchVaultReasoningDTO.swift",
+        "ResearchVaultReceiptDTO.swift",
+        "ResearchVaultReceiptProvenance.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultModel"
+      ],
+      "type" : "library"
+    },
+    {
+      "c99name" : "ResearchVaultGatewayTests",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultGatewayTests",
+      "path" : "Tests/ResearchVaultGatewayTests",
+      "sources" : [
+        "OwnerProjectAdmissionTests.swift",
+        "ReceiptContextTests.swift",
+        "ResearchVaultGatewayTests.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultGateway",
+        "ResearchVaultSQLCipher",
+        "ResearchVaultIngestion",
+        "ResearchVaultReasoning"
+      ],
+      "type" : "test"
+    },
+    {
+      "c99name" : "ResearchVaultGateway",
+      "module_type" : "SwiftTarget",
+      "name" : "ResearchVaultGateway",
+      "path" : "Sources/ResearchVaultGateway",
+      "product_memberships" : [
+        "ResearchVaultXPC",
+        "ResearchVaultServiceRuntime",
+        "ResearchVaultGateway",
+        "ResearchVaultMCP",
+        "research-vault-mcp",
+        "research-vault-agent-hook",
+        "research-vault-xpc-service"
+      ],
+      "sources" : [
+        "ResearchVaultContextAssembler.swift",
+        "ResearchVaultGateway.swift"
+      ],
+      "target_dependencies" : [
+        "ResearchVaultModel",
+        "ResearchVaultIPCModel",
+        "ResearchVaultIngestion",
+        "ResearchVaultReasoning",
+        "ResearchVaultSQLCipher"
+      ],
+      "type" : "library"
+    }
+  ],
+  "tools_version" : "6.0"
+}

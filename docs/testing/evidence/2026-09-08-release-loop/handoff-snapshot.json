@@ -1,0 +1,53 @@
+{
+  "recorded_at_utc": "2026-09-08T18:41:19.545022+00:00",
+  "checkout": "/Users/kevinnadjarian/GitHub/Throttle/build/release-loop-ci",
+  "branch": "qualification/3.6.0-release-loop-ci",
+  "head": "a6dd34387081853a225818918244273659d17604",
+  "third_candidate_committed": false,
+  "third_ci_started": false,
+  "draft_pr": "https://github.com/lorislabapp/throttle/pull/3",
+  "implementation_sha256": {
+    ".github/workflows/ci.yml": "19ec825d469038937dd4496126f162b314070081c2864d8514c42bd0bdbaea21",
+    "Packages/ResearchVaultKit/Scripts/verify-crash-recovery.sh": "92f4d01803973a232bf187370ee2655ee93cf8747d8429940401beb898d23303",
+    "ThrottleTests/ServiceTests/CockpitLifecycleTests.swift": "b48262acbd575b0dd87f7da310363f765cc6e8cfb3af32c4ba8bfcf6f83a2823",
+    "ThrottleTests/ServiceTests/HealthCheckServiceTests.swift": "2405e9d1ea887e67aa9ec0901fbe9e83afba9b9b5d7e29a1a93f95bd0bf1d7eb",
+    "ThrottleiOS/Services/ThrottleLiveActivity.swift": "462f813729d806d180ab29128d2c84324994ef58dc77fa1b0c34b93f79c38d45",
+    "ThrottleiOSTests/LiveActivityOperationQueueTests.swift": "e7c923aedd348ac05afb082660a3e791aacaad09b77fe7b2b5f819d798e91224",
+    "scripts/tests/test_release_ci_gates.py": "9dac4760476e9668a5ca5f135de99aabf847a28dae47531282dfca33c5b8cf75",
+    "scripts/tests/test_research_vault_bundle.py": "93c22d83bd353d9d706d49dd9cb9572382fffe48d01ce32ebe866a92767a0e41",
+    "scripts/tests/test_vault_evidence.py": "30a50f2e502a1c2006ed1ab932edcd564c22357d0c04d0fef6eace71c2b3ad14",
+    "scripts/verify-research-vault-bundle.sh": "831c490ad58b8406b7e9309db83b542bd4f2c97f9afa9ce8dd21a7924d6443de",
+    "scripts/verify-vault-tests.py": "dffa2286542d05480f8c88cd53fc753b17c6ba7622aaa0a73168d93cec662740"
+  },
+  "handoff": "/Users/kevinnadjarian/GitHub/Throttle/build/context-testing-3.6.0/docs/THROTTLE-HANDOFF-2026-09-08-CODEX-TO-CLAUDE-SOTA.md",
+  "handoff_sha256": "0460fcc60dde66d71693004e57c528f46dff0c364ab769c80fa392d86d29ffdc",
+  "verification": {
+    "last_full_python": {
+      "cases": 142,
+      "status": "PASS",
+      "limitation": "before final seven CLI confinement tests"
+    },
+    "vault_validator_after_confinement": {
+      "cases": 46,
+      "status": "PASS",
+      "source": "release-cli-confinement-receipt.json; complete raw log not saved"
+    },
+    "native_lifecycle_stable_fixture": {
+      "iterations": 20,
+      "status": "PASS",
+      "limitation": "headless harness; original CI failure not reproduced locally; full host rerun required"
+    },
+    "latest_ci": {
+      "run": 34260476621,
+      "status": "FAIL",
+      "macos": {
+        "passed": 638,
+        "failed": 2,
+        "allowed_skips": 5
+      },
+      "ios": "compile failure; correction not yet run in CI"
+    },
+    "release_verdict": "NO-GO"
+  },
+  "frozen_for": "Claude Code handover requested by user to preserve credits"
+}

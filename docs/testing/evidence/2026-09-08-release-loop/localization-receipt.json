@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "scope": "Foundation resource selection probe against compiled production xcstrings; one label; full app test pending CI",
+  "observed": "implicit=Dashboard; explicit=Tableau de bord",
+  "forced_process_languages": [
+    "en"
+  ],
+  "catalog_sha256": "7a68d8aea88573a8a6bc82ef46f777964af95daa228cb63b37cc80134c0272c5",
+  "test_sha256": "2405e9d1ea887e67aa9ec0901fbe9e83afba9b9b5d7e29a1a93f95bd0bf1d7eb",
+  "reference": "https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/LoadingResources/Strings/Strings.html"
+}

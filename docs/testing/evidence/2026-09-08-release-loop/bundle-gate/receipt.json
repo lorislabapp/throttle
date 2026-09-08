@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "checkout": "/Users/kevinnadjarian/GitHub/Throttle/build/release-loop-ci",
+  "current_tests": 9,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "sources_sha256": {
+    "scripts/verify-research-vault-bundle.sh": "831c490ad58b8406b7e9309db83b542bd4f2c97f9afa9ce8dd21a7924d6443de",
+    "scripts/tests/test_research_vault_bundle.py": "93c22d83bd353d9d706d49dd9cb9572382fffe48d01ce32ebe866a92767a0e41"
+  },
+  "sources_unchanged": true,
+  "prior_counterproof": {
+    "methods": 3,
+    "failing_methods": [
+      "test_failed_entitlements_are_rejected_even_with_valid_plist_output",
+      "test_failed_entitlements_without_output_are_not_evidence_of_absence",
+      "test_failed_main_or_agent_metadata_is_rejected_even_with_valid_output"
+    ],
+    "failure_assertions": 4,
+    "errors": 0,
+    "source_sha256": "b87067445cff8f3e856ee62f190c9211c590bc8be16665fb78fb89bfd8731e14"
+  },
+  "scope": "real bundle shell checker and PlistBuddy; synthetic bundle files plus simulated codesign and otool status/output; no real signature, signing identity, app launch, build or CloudKit qualification",
+  "policy": "same identifiers/teams, forbid get-task-allow, require nested secure timestamps; structural mode remains signed=0",
+  "artifacts_sha256": {
+    "current-tests.log": "764a26e23c57dd9ffeec4d94d7c4f167f91062a971d09d982b9444b1831c668a",
+    "prior-counterproof.log": "8f8a7df19bbf86246f680f4914c3ca08e5f951c917730b4e77f859d895baac24",
+    "change.patch": "0aa21cb1e7eda6960d6abf4ca02d9a91afd0612d41524f784eaa389dac5a70a2"
+  }
+}

@@ -61,8 +61,12 @@ final class HealthCheckServiceTests: XCTestCase {
         XCTAssertEqual(HealthCheckService.orphanedClaudePIDs(from: processList), [102, 103])
     }
 
-    func testCriticalCockpitLabelsHaveFrenchRuntimeTranslations() {
+    func testCriticalCockpitLabelsHaveFrenchRuntimeTranslations() throws {
         let french = Locale(identifier: "fr")
+        // Select the shipped language independently of the runner's preferred
+        // language. A formatting locale alone does not select Bundle resources.
+        let frenchURL = try XCTUnwrap(Bundle.main.url(forResource: "fr", withExtension: "lproj"))
+        let frenchBundle = try XCTUnwrap(Bundle(url: frenchURL))
         let expected: [(String.LocalizationValue, String)] = [
             ("Dashboard", "Tableau de bord"),
             ("Tabs", "Onglets"),
@@ -80,7 +84,7 @@ final class HealthCheckServiceTests: XCTestCase {
         ]
 
         for (key, translation) in expected {
-            XCTAssertEqual(String(localized: key, locale: french), translation)
+            XCTAssertEqual(String(localized: key, bundle: frenchBundle, locale: french), translation)
         }
     }
 }

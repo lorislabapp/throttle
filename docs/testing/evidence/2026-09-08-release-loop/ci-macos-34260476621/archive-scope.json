@@ -1,0 +1,6 @@
+{
+  "full_xcresult": "retained in the original GitHub Actions artifact and local downloaded evidence",
+  "github_run": 34260476621,
+  "artifact": "macos-tests-1064a75f8b6731fec537b3cdf122f9016dc05f7f-1",
+  "tracked_scope": "native extracted reports, inventories, hashes and compressed log; not the full xcresult directory"
+}

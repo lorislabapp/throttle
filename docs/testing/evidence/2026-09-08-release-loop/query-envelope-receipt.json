@@ -1,0 +1,35 @@
+{
+  "status": "pass",
+  "scope": "in-process XPC search service, owner trust policy and Inbox batch reader",
+  "completed_tests": 21,
+  "new_envelope_cases": [
+    "exactWireBoundary()",
+    "longScopeWithEscapedUnicode()",
+    "malformedRequestsStayInvalid()",
+    "oversizedMessageStopsBeforeGateway()",
+    "semanticLimitsRemainEnforced()",
+    "thirdPartyGrantStaysFixed()"
+  ],
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "query_utf8_bytes": 4096,
+  "wire_bytes": 65536,
+  "project_count": 64,
+  "project_ascii_characters": 128,
+  "signed_XPC_qualified": false,
+  "sources_sha256": {
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultIPCModel.swift": "46b47a620bd85a9bb3e5c9736722a5c71bc0192cab7f536cc9884b5b919c676e",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultXPC/ResearchVaultXPC.swift": "f18c57b54f82ff06240894ee763f289330901130c868b28f59c65a070e293ccb",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultXPCClient/ResearchVaultClient.swift": "6ba1c98624f1ff16e036fb04999ce50565a5375cc926d091b8a9b706fbbba67b",
+    "Packages/ResearchVaultKit/Tests/ResearchVaultXPCTests/ResearchVaultQueryEnvelopeTests.swift": "07c3aff1b89ee65f4acbf4f911da6abad1b2cd03aa13215020562b250a0c955e"
+  },
+  "report_sha256": "5b4760010ff37062b6cbe3e88d7969c660c0ef8cfdfb44508e5d5a44934e1d7f",
+  "reports": [
+    "/private/tmp/throttle-query-envelope-results.xml",
+    "/private/tmp/throttle-query-envelope-results.log"
+  ],
+  "build_log": "/private/tmp/throttle-query-envelope-build.log",
+  "build_exit": 0,
+  "build_seconds": 44.1
+}

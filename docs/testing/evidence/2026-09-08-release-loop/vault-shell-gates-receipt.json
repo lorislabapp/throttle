@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "current_tests": 19,
+  "current_failures": 0,
+  "current_errors": 0,
+  "current_skips": 0,
+  "source_sha256": {
+    "Packages/ResearchVaultKit/Scripts/verify-reasoning-supply-chain.sh": "16a9825abc192257b76f884b6fd1d3baf67e89508056f3a8d9acaf27062464f7",
+    "Packages/ResearchVaultKit/Scripts/verify-agent-hook.sh": "356eca2c6f9eca148da379a0319c78bd8362516be3b3de1083715dcf1ee105f6",
+    "Packages/ResearchVaultKit/Scripts/package-mcp-helper.sh": "43b2868be15bbc6d245061c6c70de48adb19a0f929bf7aa9136215f75120a7f9",
+    "scripts/tests/test_vault_script_gates.py": "da13c301f256133423aa0fbabcaa5e4614f5e583557af9671cd2b478d2fcc4e6"
+  },
+  "sources_unchanged": true,
+  "pre_fix_counterproof": {
+    "tests": 8,
+    "failing_methods": [
+      "gate_proof.AgentHookGateTests.test_find_partial_one_file_then_error_is_not_idempotence",
+      "gate_proof.AgentHookGateTests.test_missing_find_or_failed_counter_cannot_pass",
+      "gate_proof.MCPPackageGateTests.test_partial_find_manifest_cannot_be_packaged",
+      "gate_proof.MCPPackageGateTests.test_partial_otool_output_with_error_is_rejected",
+      "gate_proof.MCPPackageGateTests.test_partial_sort_manifest_cannot_be_packaged",
+      "gate_proof.ReasoningSupplyChainGateTests.test_bundle_symlink_cannot_turn_the_contents_scan_into_an_empty_scan",
+      "gate_proof.ReasoningSupplyChainGateTests.test_find_error_with_empty_or_partial_output_fails",
+      "gate_proof.ReasoningSupplyChainGateTests.test_grep_errors_are_not_absence"
+    ],
+    "failure_assertions": 11,
+    "errors": 0,
+    "sources_sha256": {
+      "package-mcp-helper.sh": "1da7cd2c18c48ded77ef2d203530932b5d804911e5b7c9c305d3f06f6dda3785",
+      "verify-reasoning-supply-chain.sh": "0a33b75423c603551b1f6d93e5c7bd319375ce239d1279052d93b1fa46ac7cb8",
+      "verify-agent-hook.sh": "3bfe98c0e1058cfd54ca73caf55886ee9da3b30decfde76d5925ae1fa203df7d"
+    }
+  },
+  "scope": "real shell gates with isolated fixtures; Swift/otool binaries and jq/agent responses stubbed, not runtime application qualification",
+  "earlier_probes": "receipt.json and receipt-final.json retained; final extension also closes the bundle-root symlink empty traversal",
+  "artifacts_sha256": {
+    "current-tests-qualified.log": "66ead992ba91319bd8407fb74316b9b09e791e66a51ed5190c2b72437a3412a4",
+    "pre-fix-counterproof-qualified.log": "d1e15449c5ad7f889f68b77fdf35af6bf83dad299be9b6b2adfab674395341cf"
+  }
+}

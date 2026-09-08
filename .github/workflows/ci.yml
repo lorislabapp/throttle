@@ -69,10 +69,15 @@ jobs:
           include-hidden-files: true
 
   vault-tests:
-    # Independent package lane: both test engines, every argument, no opt-in skip.
-    # Debug package tests do not qualify signed XPC or the full Vault workflow.
+    # Each configuration runs independently; Release also exercises real crash
+    # rollback and the CLI refusal using the same build products.
+    # Package evidence does not qualify signed XPC or the full Vault workflow.
     runs-on: macos-26
     timeout-minutes: 70
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [debug, release]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Select stable Xcode
@@ -82,16 +87,52 @@ jobs:
       - name: Verify the Vault evidence validator
         run: python3 -B -m unittest discover -s scripts/tests -p 'test_vault_evidence.py' -v
       - name: Run every Vault package test and verify native evidence
-        run: python3 -B scripts/verify-vault-tests.py --output-parent "$RUNNER_TEMP/throttle-vault-evidence"
+        run: python3 -B scripts/verify-vault-tests.py --configuration "${{ matrix.configuration }}" --output-parent "$RUNNER_TEMP/throttle-vault-evidence"
       - name: Preserve exact Vault package test evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: vault-tests-${{ github.sha }}-${{ github.run_attempt }}
+          name: vault-tests-${{ matrix.configuration }}-${{ github.sha }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/throttle-vault-evidence/*/evidence/
           if-no-files-found: error
           retention-days: 14
           include-hidden-files: true
+
+  visionos-build:
+    # Shared companion services must also compile on the spatial target.
+    # This is a simulator build, not device or App Store acceptance.
+    runs-on: macos-26
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Select stable Xcode
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1
+        with:
+          xcode-version: latest-stable
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Build the visionOS companion in Release
+        run: |
+          set -euo pipefail
+          EVIDENCE="$RUNNER_TEMP/throttle-visionos-evidence"
+          mkdir -p "$EVIDENCE"
+          git rev-parse HEAD > "$EVIDENCE/git-head.txt"
+          xcodebuild -version > "$EVIDENCE/xcode.txt"
+          xcodegen generate
+          xcodebuild build -project Throttle.xcodeproj -scheme ThrottleVision \
+            -configuration Release -destination 'generic/platform=visionOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/throttle-visionos-build" \
+            -disableAutomaticPackageResolution -skipPackagePluginValidation \
+            -skipMacroValidation CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee "$EVIDENCE/build.log"
+      - name: Preserve visionOS build evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: visionos-build-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/throttle-visionos-evidence/
+          if-no-files-found: error
+          retention-days: 14
 
   validator-evidence:
     # Deliberately independent of the GUI build/lint: this subset needs no
@@ -249,8 +290,10 @@ jobs:
 
       - name: Enforce fail-closed release scripts
         run: |
-          bash -n scripts/build-dmg.sh scripts/finalize-dmg.sh scripts/smoke-test.sh \
-                  scripts/verify-public-release.sh
+          for release_script in scripts/build-dmg.sh scripts/finalize-dmg.sh scripts/smoke-test.sh \
+                                scripts/verify-public-release.sh; do
+            bash -n "$release_script"
+          done
           # The publish path is as load-bearing as the build path: a syntax error in
           # either only shows up mid-release, after notarization.
           node --check scripts/publish-release.mjs
@@ -262,8 +305,10 @@ jobs:
           # publish-release must keep proving the deploy with the stamp, never with
           # the trigger's status code (it has returned 500 on deploys that landed).
           grep -q 'deploy-stamp.txt' scripts/publish-release.mjs
-          grep -REn 'NOTARIZE=false' scripts/build-dmg.sh scripts/finalize-dmg.sh
-          grep -REn -- '--notarize' scripts/build-dmg.sh scripts/finalize-dmg.sh
+          for release_script in scripts/build-dmg.sh scripts/finalize-dmg.sh; do
+            grep -En '^NOTARIZE=false$' "$release_script"
+            grep -En -- '--notarize' "$release_script"
+          done
           sh scripts/assert-no-match.sh -REn 'mirrored — read-only|Your data never leaves your iCloud|Vos données ne quittent jamais' \
             design/appstore/make-screenshots.py design/appstore/listing.md
           grep -REn 'same local network|même réseau local' design/appstore/listing.md

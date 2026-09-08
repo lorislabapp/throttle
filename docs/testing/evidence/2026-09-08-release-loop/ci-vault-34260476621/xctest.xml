@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites>
+<testsuite name="TestResults" errors="0" tests="42" failures="0" time="12.254189788999998">
+<testcase classname="ResearchVaultStoreTests.EncryptedObjectStoreTests" name="testObjectIDCannotEscapeStoreDirectory" time="0.095715334">
+</testcase>
+<testcase classname="ResearchVaultStoreTests.EncryptedObjectStoreTests" name="testRoundTripIsIdempotentAndDoesNotWritePlaintext" time="0.1121765">
+</testcase>
+<testcase classname="ResearchVaultStoreTests.EncryptedObjectStoreTests" name="testSamePlaintextHasDifferentIdentityAcrossVaults" time="0.098745666">
+</testcase>
+<testcase classname="ResearchVaultStoreTests.EncryptedObjectStoreTests" name="testTamperedEnvelopeFailsIntegrityCheck" time="0.095807333">
+</testcase>
+<testcase classname="ResearchVaultStoreTests.ReceiptStoreTests" name="testCrossProjectImportAndReadFailClosed" time="0.077732417">
+</testcase>
+<testcase classname="ResearchVaultStoreTests.ReceiptStoreTests" name="testImportIsIdempotent" time="0.092118041">
+</testcase>
+<testcase classname="ResearchVaultStoreTests.ReceiptStoreTests" name="testListOnlyReturnsExplicitlyAuthorizedProjectsAndSensitivity" time="0.1009465">
+</testcase>
+<testcase classname="ResearchVaultStoreTests.ReceiptStoreTests" name="testReceiptIDReuseWithDifferentValidContentIsConflict" time="0.082417125">
+</testcase>
+<testcase classname="ResearchVaultModelTests.ResearchReceiptTests" name="testAuthorizationHasNoImplicitWildcard" time="0.116230125">
+</testcase>
+<testcase classname="ResearchVaultModelTests.ResearchReceiptTests" name="testDuplicateSourceIDsFailClosed" time="0.091770333">
+</testcase>
+<testcase classname="ResearchVaultModelTests.ResearchReceiptTests" name="testProjectKeyRejectsPathsAndTraversal" time="0.112394333">
+</testcase>
+<testcase classname="ResearchVaultModelTests.ResearchReceiptTests" name="testSealingIsDeterministicAndValid" time="0.138845417">
+</testcase>
+<testcase classname="ResearchVaultModelTests.ResearchReceiptTests" name="testSupportedClaimRequiresKnownEvidence" time="0.104896334">
+</testcase>
+<testcase classname="ResearchVaultModelTests.ResearchReceiptTests" name="testTamperedReceiptFailsClosed" time="0.103072791">
+</testcase>
+<testcase classname="ResearchVaultModelTests.ResearchReceiptTests" name="testVerifiedClaimCannotOmitEvidence" time="0.212923209">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReasoningStoreTests" name="testApprovedEvidencePersistsSnapshotAndMismatchPurgesCache" time="0.468125458">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReasoningStoreTests" name="testFailedReplacementPreservesPriorGenerationAndCache" time="0.343216">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReasoningStoreTests" name="testQuarantinedReceiptCannotCreateActiveBaseFact" time="0.274931042">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReceiptStoreTests" name="testAnAcronymIsNotMistakenForAFunctionWord" time="0.293873625">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReceiptStoreTests" name="testBackupIsEncryptedVerifiedAndRestoresUnderNewKey" time="1.783472167">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReceiptStoreTests" name="testBackupNeverOverwritesExistingDestination" time="0.268313917">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReceiptStoreTests" name="testDocumentIDConflictAndUnauthorizedImportFailClosed" time="0.285699208">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReceiptStoreTests" name="testDocumentImportSearchIdempotenceAndPolicyIsolation" time="0.30471625">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReceiptStoreTests" name="testFTSInputCannotInjectOperatorsOrEscapePolicy" time="0.2693835">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReceiptStoreTests" name="testFunctionWordsDoNotDecideWhichClaimMatches" time="0.302767875">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReceiptStoreTests" name="testOwnerBatchPreflightPreventsPartialUnauthorizedImport" time="0.276711208">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReceiptStoreTests" name="testPersistentImportSearchIntegrityAndReopen" time="0.44959075">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReceiptStoreTests" name="testProjectAndSensitivityFiltersApplyBeforeFTSResults" time="0.37161925">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReceiptStoreTests" name="testReceiptIDConflictRollsBackWithoutChangingAcceptedReceipt" time="0.289934875">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReceiptStoreTests" name="testTamperedBackupCannotBeRestoredAndLeavesNoFinalDatabase" time="0.866271333">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReviewStateTests" name="testApprovedReceiptIsVisible" time="0.294505833">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReviewStateTests" name="testApproveMakesReceiptSearchableAndIsIdempotent" time="0.330627583">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReviewStateTests" name="testQuarantinedDocumentIsInvisibleToSearch" time="0.357677875">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReviewStateTests" name="testQuarantinedReceiptIsInvisibleToSearchAndReads" time="0.341344791">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReviewStateTests" name="testQuarantineListShowsPendingOnlyWithinAuthorization" time="0.288440542">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReviewStateTests" name="testRejectDeletesReceiptAndAllowsReimport" time="0.351402375">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherReviewStateTests" name="testV3DatabaseMigratesExistingRowsAsApproved" time="0.648870291">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherRuntimeTests" name="testInvalidKeyLengthFailsBeforeCreatingDatabase" time="0.119662916">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherRuntimeTests" name="testOfficialRuntimeEncryptsDatabaseHeaderAndReopens" time="0.441369459">
+</testcase>
+<testcase classname="ResearchVaultSQLCipherTests.SQLCipherRuntimeTests" name="testWrongKeyCannotReadSchema" time="0.420807125">
+</testcase>
+<testcase classname="ResearchVaultStoreTests.VaultKeyDerivationTests" name="testDatabaseKeyIsDeterministicAndVaultScoped" time="0.089202333">
+</testcase>
+<testcase classname="ResearchVaultKeychainTests.VaultMasterKeyStoreTests" name="testFixedStoreRequiresExactly256Bits" time="0.08586075">
+</testcase>
+</testsuite>
+</testsuites>

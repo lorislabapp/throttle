@@ -88,10 +88,23 @@ fi
 if [ "$require_signed" -eq 1 ]; then
     codesign --verify --deep --strict --verbose=2 "$app"
 
-    main_identifier="$(codesign -dvv "$app" 2>&1 | sed -n 's/^Identifier=//p')"
-    agent_identifier="$(codesign -dvv "$agent_app" 2>&1 | sed -n 's/^Identifier=//p')"
-    main_team="$(codesign -dvv "$app" 2>&1 | sed -n 's/^TeamIdentifier=//p')"
-    agent_team="$(codesign -dvv "$agent_app" 2>&1 | sed -n 's/^TeamIdentifier=//p')"
+    read_codesign() {
+        # Never parse partial output from a failed signature observation. In a
+        # pipeline, sed/grep previously hid codesign's failure status.
+        if signing_details=$(codesign "$@" 2>&1); then
+            printf '%s\n' "$signing_details"
+        else
+            echo "codesign inspection failed; bundle signature qualification refused" >&2
+            return 1
+        fi
+    }
+
+    main_details="$(read_codesign -dvv "$app")"
+    agent_details="$(read_codesign -dvv "$agent_app")"
+    main_identifier="$(printf '%s\n' "$main_details" | sed -n 's/^Identifier=//p')"
+    agent_identifier="$(printf '%s\n' "$agent_details" | sed -n 's/^Identifier=//p')"
+    main_team="$(printf '%s\n' "$main_details" | sed -n 's/^TeamIdentifier=//p')"
+    agent_team="$(printf '%s\n' "$agent_details" | sed -n 's/^TeamIdentifier=//p')"
 
     [ "$main_identifier" = "com.lorislab.throttle" ] || {
         echo "unexpected Throttle signing identifier: $main_identifier" >&2
@@ -110,11 +123,12 @@ if [ "$require_signed" -eq 1 ]; then
         exit 1
     }
 
-    if codesign -d --entitlements - "$agent_app" 2>&1 \
-        | grep -q 'com.apple.security.get-task-allow'; then
-        echo "ResearchVaultAgent requests forbidden get-task-allow entitlement" >&2
-        exit 1
-    fi
+    agent_entitlements="$(read_codesign -d --entitlements - "$agent_app")"
+    case "$agent_entitlements" in
+        *'com.apple.security.get-task-allow'*)
+            echo "ResearchVaultAgent requests forbidden get-task-allow entitlement" >&2
+            exit 1 ;;
+    esac
 
     for distribution_code in \
         "$sparkle_updater" \
@@ -122,7 +136,7 @@ if [ "$require_signed" -eq 1 ]; then
         "$sparkle_downloader" \
         "$sparkle_installer"
     do
-        distribution_details="$(codesign -dvvv "$distribution_code" 2>&1)"
+        distribution_details="$(read_codesign -dvvv "$distribution_code")"
         distribution_team="$(printf '%s\n' "$distribution_details" | sed -n 's/^TeamIdentifier=//p')"
         [ "$distribution_team" = "TDV6D5L785" ] || {
             echo "unexpected nested Team ID for $distribution_code: ${distribution_team:-missing}" >&2

@@ -1,0 +1,45 @@
+{
+  "Headers": {
+    "symlink": "Versions/Current/Headers"
+  },
+  "Modules": {
+    "symlink": "Versions/Current/Modules"
+  },
+  "Resources": {
+    "symlink": "Versions/Current/Resources"
+  },
+  "SQLCipher": {
+    "symlink": "Versions/Current/SQLCipher"
+  },
+  "Versions/A/Headers/SQLCipher.h": {
+    "sha256": "bbf549dd8f214a134abb474e7d426d947ab3861079b07464ba89b7700aaa9d66",
+    "mode": 420
+  },
+  "Versions/A/Headers/sqlite3.h": {
+    "sha256": "8a9d1bff44d75174ca6dea3ea9bac50a6104d86facb566647b8bb839375b7b3a",
+    "mode": 420
+  },
+  "Versions/A/Modules/module.modulemap": {
+    "sha256": "24d34e0fb33463a5f32ef5228d4f554bb374a6df1f0b74b560fe60fd71f6bea2",
+    "mode": 420
+  },
+  "Versions/A/Resources/Info.plist": {
+    "sha256": "40f02027a17eabd6e0ae6cd4e56fcde208fd4a29a140a78853dc308a299bb15b",
+    "mode": 420
+  },
+  "Versions/A/Resources/PrivacyInfo.xcprivacy": {
+    "sha256": "9362796ba800a7b4169834eff8bde990866f40114ff7baac002b8bae543e8dd1",
+    "mode": 420
+  },
+  "Versions/A/SQLCipher": {
+    "sha256": "08907511604083d1fd3f178867199fb998882a6e0227553526d3fc2221415bbc",
+    "mode": 493
+  },
+  "Versions/A/_CodeSignature/CodeResources": {
+    "sha256": "d4557a33b026ee931214746532cbdd3c44d130a2140be3a8b4696ef760e6d04b",
+    "mode": 420
+  },
+  "Versions/Current": {
+    "symlink": "A"
+  }
+}
