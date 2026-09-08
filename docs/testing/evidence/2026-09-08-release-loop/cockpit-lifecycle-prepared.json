@@ -1,0 +1,31 @@
+{
+  "status": "PREPARED_NOT_EXECUTED",
+  "base": "cdae2c718ac47bbfae19ca2f6fa17ceb077d89d7",
+  "filesInitiallyClean": true,
+  "productDelta": "one MainActor policy default true and one existing launch guard conjunct only",
+  "beforeSHA256": {
+    "Throttle/UI/Cockpit/MultiCockpitModel.swift": "167cad1d61cdacc663c631833131595e3ee85d6480c817507f3f0147ba273199",
+    "Throttle/UI/Cockpit/MultiCockpitModel+Lifecycle.swift": "7c9324921d82d5acbb5753e944b6d33823cb3af8b52a227110125d923f708316"
+  },
+  "sourceSHA256": {
+    "Throttle/UI/Cockpit/MultiCockpitModel.swift": "5209cf304fa2b88dfdfc4a2cbd84fdc4aa99a20aeee24b27de8fe809d63a71d6",
+    "Throttle/UI/Cockpit/MultiCockpitModel+Lifecycle.swift": "b473debe237cb5009541983606d3f2c82c8576886c866f8b1987d01074658408",
+    "ThrottleTests/ServiceTests/CockpitLifecycleTests.swift": "a3e696e7cda21b923cfc80ff5d9f78ec45b4da8062f4144baf3f2f05a6cee4b8"
+  },
+  "testMethods": [
+    "testHibernateConfirmsBothTerminalTreesBeforeReleasingViewsAndKeepsNativeIdentity",
+    "testUnknownOwnerKeepsTerminalVisibleAndBlocksHandoffCloseAndWake",
+    "testStaleProcessIdentityCannotConfirmStopOrCreateHandoffTarget",
+    "testModelStopFailureKeepsAllTabsAndCancelsQuittingState",
+    "testModelStopClearsSessionsOnlyAfterEveryCapturedTreeHasExited",
+    "testHandoffCreatesTargetOnlyAfterSourceStopAndPreservesMission"
+  ],
+  "parseExit": 0,
+  "swiftLint0632Exit": 0,
+  "diffCheckExit": 0,
+  "runtime": "NOT RUN; no process fixture or provider launched",
+  "appHostedTests": "NOT RUN; awaiting regenerated app test target and sufficient disk",
+  "fixtureSafety": "Minimal PATH/LC_ALL only; sh -c, no profiles/provider; immediate root registration; teardown recaptures owned descendants; writer exits after 30 sleeps; evidence retained if stop unconfirmed",
+  "typecheck": "Incomplete: cached Throttle module requires CSQLite unavailable on the direct compiler search path; no full typecheck/build pass claimed",
+  "xctestActorTeardownCompileProbeExit": 0
+}

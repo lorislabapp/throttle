@@ -1,5 +1,12 @@
 # Throttle — current work ledger
 
+## SOTA integration — active implementation
+
+Implement the approved local-first, personal-then-product plan on this integration
+checkout, preserving concurrent CI/CloudKit/release changes. Bounded progress and
+all remaining personal/product gates: [SOTA implementation ledger](testing/sota-integration-ledger.md).
+No release or cross-app adoption is implied by local test results.
+
 ## Workflow / context validation — 2026-09-08
 
 Current local integration: `feat/context-testing-3.6.0` in

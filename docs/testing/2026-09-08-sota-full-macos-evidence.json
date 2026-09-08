@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "kind": "sanitized-full-macos-evidence-summary",
+  "scope": "full-macos-isolated-ad-hoc-debug-tests",
+  "status": "fail",
+  "build_status": "pass",
+  "native_test_report_status": "pass",
+  "test_report_errors": [],
+  "errors": [
+    "sources_changed_or_not_recorded"
+  ],
+  "git_head": "cdae2c718ac47bbfae19ca2f6fa17ceb077d89d7",
+  "duration_seconds": 634.794,
+  "architecture": "arm64",
+  "tools": {
+    "xcode": "Xcode 27.0\nBuild version 27A5252f",
+    "swift": "Apple Swift version 6.4 (swiftlang-6.4.0.33.1 clang-2100.3.33.1)\nTarget: arm64-apple-macosx27.0.0",
+    "macos": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0\nBuildVersion:\t\t26A5421a",
+    "xcodegen": "Version: 2.44.1",
+    "xcresulttool": "xcresulttool version 25114, schema version: 0.4.0 (legacy commands format version: 3.60)"
+  },
+  "expected_case_count": 675,
+  "case_counts": {
+    "Passed": 670,
+    "Skipped": 5
+  },
+  "actual_skips": [
+    "EmbeddedModelRuntimeTests/testEndToEndDelegationWhenExplicitlyEnabled()",
+    "EmbeddedModelRuntimeTests/testEndToEndInferenceWhenExplicitlyEnabled()",
+    "GlobalRAGServiceTests/testLiveLocalProposalWhenExplicitlyEnabled()",
+    "LocalWorkerLiveRouteTests/testConfiguredOllamaServesProjectAssistantWithoutBusinessContext()",
+    "NotebookLMImportJobTests/testRecordedLiveExportsReconcileWhenExplicitFixtureIsProvided()"
+  ],
+  "source_file_count": 667,
+  "changed_source_paths": [
+    "Packages/ResearchVaultKit/Scripts/verify-ipc-boundary.sh"
+  ],
+  "added_source_paths": [],
+  "removed_source_paths": [],
+  "raw_artifact_directory_name": "throttle-macos-g3m_prz3/evidence",
+  "raw_receipt_sha256": "c7b6a20c8b43dad0f4033a4c53d38b9e4106967ba8b26d75178196a50ae0b189",
+  "top_level_evidence_sha256": {
+    "enumeration.json": "a48a624b1508d3dfe60b677ccdc48b2933480bfd4950f1115f149c458b788d2c",
+    "macos.txt": "e26a9e3904144edfd38c8174dd8f8dfa41cf21344f13a530608064f53be88870",
+    "runner.log": "08f04ebeb006f6be99245586c17f666310cab8944add7c09b45f09dc3a464ae1",
+    "sources-after.json": "77fb275e4ae1ba308c77ca9777ba7eb2a9ba5319699ac672d9df6dbaa3830249",
+    "sources-before.json": "090e4aba5d5c376549b386c3f3d1579be59abd501c12cae78965deb66402bce5",
+    "summary.json": "64fc236e4e91eec3a45c46bbc55a5633d35d972ad7aeececf9f4c12dbca0aff6",
+    "swift.txt": "8272247ef2e1cf7f05e610c32f39b2b965e1259426b4568037da9b617d6218a7",
+    "tests.json": "85004f59f7b6e3b56b12d3ba76d2a3fbf1d3a4219ce302cbf9c36cd00264cb0c",
+    "xcode.txt": "61ae57787d0c361d60a4f50c03d7d55204de6ed000e4f1d8ce063588070ac506",
+    "xcodegen.txt": "3c4ffcfb28a616a2eb2421c091b359d31ff598d0f2b05867a37102832a27ef72",
+    "xcresulttool.txt": "0d2a2130bd798548896b7969e5be779f66e78c96b9be9c239ab6056f479bb0f6"
+  },
+  "limitations": [
+    "All native cases are accounted for but a concurrent script change invalidates the strict source snapshot.",
+    "Debug ad hoc host, not Developer ID, signed XPC, iCloud account or physical UI acceptance.",
+    "Thread Performance Checker warnings remain an open responsiveness investigation.",
+    "Subsequent replay stopped at the unchanged 10 GiB free-space gate; cached build data and original reports were preserved.",
+    "Raw xcresult, reports and log remain in a temporary task directory; this summary does not replace them."
+  ]
+}

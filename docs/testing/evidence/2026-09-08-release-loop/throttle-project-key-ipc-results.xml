@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="TestResults" errors="0" tests="4" failures="0" skipped="0" time="0.002203208">
+    <testcase classname="ResearchVaultIPCModelTests.ResearchVaultIPCModelTests" name="validation()" time="0.001164667" />
+    <testcase classname="ResearchVaultIPCModelTests.ResearchVaultIPCModelTests" name="secretlessRequest()" time="0.001309792" />
+    <testcase classname="ResearchVaultIPCModelTests.ResearchVaultIPCModelTests" name="projectKeyBoundaryRoundTrip()" time="0.001789417" />
+    <testcase classname="ResearchVaultIPCModelTests.ResearchVaultIPCModelTests" name="projectScopeValidation()" time="0.001322625" />
+  </testsuite>
+</testsuites>

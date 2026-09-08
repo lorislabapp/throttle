@@ -5,7 +5,7 @@ import OSLog
 /// Captures crash + hang diagnostics via Apple's MetricKit and persists them
 /// alongside the app log. No third-party telemetry, no network calls — the
 /// payloads stay in `~/Library/Application Support/com.lorislab.throttle/`
-/// and are picked up by `DiagnosticsExporter` when the user runs Export.
+/// and are not included in the allowlisted support diagnostics export.
 ///
 /// MetricKit on macOS surfaces payloads on launch, ~24h after the
 /// crash/hang occurred. We log a one-liner per payload so the user (and

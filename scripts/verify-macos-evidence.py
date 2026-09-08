@@ -111,7 +111,7 @@ def simulator_destination(report, requested=None):
     return "platform=iOS Simulator,id=" + identifier, {"name": name, "udid": identifier, "runtime": runtime}
 
 
-def build_arguments(output, scheme, destination):
+def build_arguments(output, scheme, destination, derived_data_path=None):
     profile_for_scheme(scheme)
     if scheme == "ThrottleiOS" and not re.fullmatch(r"platform=iOS Simulator,id=[A-Fa-f0-9-]{36}", destination):
         raise EvidenceError("ios_destination_must_be_simulator_uuid")
@@ -119,7 +119,8 @@ def build_arguments(output, scheme, destination):
         raise EvidenceError("unexpected_macos_destination")
     return ["xcodebuild", "-project", "Throttle.xcodeproj", "-scheme", scheme,
             "-configuration", "Debug", "-destination", destination,
-            "-derivedDataPath", str(output / "DerivedData"),
+            # A task-owned cache may be reused; reports and snapshots never are.
+            "-derivedDataPath", str(derived_data_path.resolve() if derived_data_path else output / "DerivedData"),
             "-disableAutomaticPackageResolution", "-skipPackagePluginValidation", "-skipMacroValidation",
             "-jobs", "2", "-parallel-testing-enabled", "NO",
             "CODE_SIGN_STYLE=Manual", "CODE_SIGN_IDENTITY=-", "DEVELOPMENT_TEAM=",
@@ -319,6 +320,8 @@ def main():
     parser.add_argument("--output-parent", type=pathlib.Path, required=True)
     parser.add_argument("--scheme", choices=("Throttle", "ThrottleiOS"), default="Throttle")
     parser.add_argument("--destination", help="iOS Simulator UUID destination; omitted selects an available iPhone simulator")
+    parser.add_argument("--derived-data-path", type=pathlib.Path,
+                        help="Reuse a task-owned Xcode cache; reports and source snapshots stay in a new directory")
     args = parser.parse_args()
     profile = profile_for_scheme(args.scheme)
     args.output_parent.mkdir(parents=True, exist_ok=True)
@@ -362,7 +365,7 @@ def main():
         run_command(["xcodegen", "generate"], ROOT, log, 120, commands)
         sources = source_snapshot(scheme=args.scheme)
         (evidence / "sources-before.json").write_text(json.dumps(sources, indent=2) + "\n")
-        base = build_arguments(output, args.scheme, destination)
+        base = build_arguments(output, args.scheme, destination, args.derived_data_path)
         run_command(base + ["build-for-testing"], ROOT, log, 2100, commands)
         run_command(base + ["test-without-building", "-enumerate-tests", "-test-enumeration-style", "flat",
                            "-test-enumeration-format", "json", "-test-enumeration-output-path",

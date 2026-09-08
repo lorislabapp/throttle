@@ -1,0 +1,19 @@
+test_command_exit_zero_does_not_make_missing_report_pass (test_macos_evidence.MacOSEvidenceTests.test_command_exit_zero_does_not_make_missing_report_pass) ... ok
+test_empty_unknown_truncated_or_failed_summary_cannot_pass (test_macos_evidence.MacOSEvidenceTests.test_empty_unknown_truncated_or_failed_summary_cannot_pass) ... ok
+test_enumeration_rejects_disabled_duplicate_missing_and_unknown_cases (test_macos_evidence.MacOSEvidenceTests.test_enumeration_rejects_disabled_duplicate_missing_and_unknown_cases) ... ok
+test_extra_case_duplicate_and_wrong_target_fail (test_macos_evidence.MacOSEvidenceTests.test_extra_case_duplicate_and_wrong_target_fail) ... ok
+test_green_container_cannot_hide_failure_and_failed_container_cannot_hide_green_cases (test_macos_evidence.MacOSEvidenceTests.test_green_container_cannot_hide_failure_and_failed_container_cannot_hide_green_cases) ... ok
+test_json_duplicate_keys_nonfinite_and_truncation_fail (test_macos_evidence.MacOSEvidenceTests.test_json_duplicate_keys_nonfinite_and_truncation_fail) ... ok
+test_malformed_tree_empty_inventory_and_count_mismatch_fail (test_macos_evidence.MacOSEvidenceTests.test_malformed_tree_empty_inventory_and_count_mismatch_fail) ... ok
+test_missing_case_fails_even_with_consistent_green_summary (test_macos_evidence.MacOSEvidenceTests.test_missing_case_fails_even_with_consistent_green_summary) ... ok
+test_native_enumeration_and_five_explicit_skips_pass (test_macos_evidence.MacOSEvidenceTests.test_native_enumeration_and_five_explicit_skips_pass) ... ok
+test_nonzero_command_and_timeout_are_failures (test_macos_evidence.MacOSEvidenceTests.test_nonzero_command_and_timeout_are_failures) ... ok
+test_opt_in_test_may_pass_instead_of_skip_but_may_not_disappear (test_macos_evidence.MacOSEvidenceTests.test_opt_in_test_may_pass_instead_of_skip_but_may_not_disappear) ... ok
+test_snapshot_includes_ignored_generated_project_and_detects_changed_inputs (test_macos_evidence.MacOSEvidenceTests.test_snapshot_includes_ignored_generated_project_and_detects_changed_inputs) ... ok
+test_unknown_status_expected_failure_and_unexpected_skip_fail (test_macos_evidence.MacOSEvidenceTests.test_unknown_status_expected_failure_and_unexpected_skip_fail) ... ok
+test_warnings_and_recorded_skip_messages_are_not_extra_tests (test_macos_evidence.MacOSEvidenceTests.test_warnings_and_recorded_skip_messages_are_not_extra_tests) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.098s
+
+OK

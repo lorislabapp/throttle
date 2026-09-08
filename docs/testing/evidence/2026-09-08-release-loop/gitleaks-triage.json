@@ -1,0 +1,98 @@
+[
+  {
+    "fingerprint": "cdae2c718ac47bbfae19ca2f6fa17ceb077d89d7:docs/testing/evidence/2026-09-08/vault-source-snapshot.json:generic-api-key:15",
+    "source_hash_entry": true,
+    "matching_source_paths": [
+      "Packages/ResearchVaultKit/Sources/ResearchVaultKeychain/VaultMasterKeyStore.swift"
+    ],
+    "classification": "verified_source_digest"
+  },
+  {
+    "fingerprint": "cdae2c718ac47bbfae19ca2f6fa17ceb077d89d7:docs/testing/evidence/2026-09-08/vault-source-snapshot.json:generic-api-key:31",
+    "source_hash_entry": true,
+    "matching_source_paths": [
+      "Packages/ResearchVaultKit/Sources/ResearchVaultStore/VaultKeyDerivation.swift"
+    ],
+    "classification": "verified_source_digest"
+  },
+  {
+    "fingerprint": "cdae2c718ac47bbfae19ca2f6fa17ceb077d89d7:docs/testing/evidence/2026-09-08/vault-source-snapshot.json:generic-api-key:59",
+    "source_hash_entry": true,
+    "matching_source_paths": [
+      "Packages/ResearchVaultKit/Tests/ResearchVaultKeychainTests/VaultMasterKeyStoreTests.swift"
+    ],
+    "classification": "verified_source_digest"
+  },
+  {
+    "fingerprint": "cdae2c718ac47bbfae19ca2f6fa17ceb077d89d7:docs/testing/evidence/2026-09-08-integration/final-source-snapshot.json:generic-api-key:18",
+    "source_hash_entry": true,
+    "matching_source_paths": [
+      "Throttle/Network/OAuthUsageProvider.swift"
+    ],
+    "classification": "verified_source_digest"
+  },
+  {
+    "fingerprint": "cdae2c718ac47bbfae19ca2f6fa17ceb077d89d7:docs/testing/evidence/2026-09-08-integration/final-source-snapshot.json:generic-api-key:93",
+    "source_hash_entry": true,
+    "matching_source_paths": [
+      "Throttle/Services/ClaudeAPIKeyProvider.swift"
+    ],
+    "classification": "verified_source_digest"
+  },
+  {
+    "fingerprint": "cdae2c718ac47bbfae19ca2f6fa17ceb077d89d7:docs/testing/evidence/2026-09-08-integration/final-source-snapshot.json:generic-api-key:117",
+    "source_hash_entry": true,
+    "matching_source_paths": [
+      "Throttle/Services/TokenEstimate.swift"
+    ],
+    "classification": "verified_source_digest"
+  },
+  {
+    "fingerprint": "cdae2c718ac47bbfae19ca2f6fa17ceb077d89d7:docs/testing/evidence/2026-09-08-integration/final-source-snapshot.json:generic-api-key:145",
+    "source_hash_entry": true,
+    "matching_source_paths": [
+      "Throttle/Services/ClaudeAPIKeyProtocol.swift"
+    ],
+    "classification": "verified_source_digest"
+  },
+  {
+    "fingerprint": "cdae2c718ac47bbfae19ca2f6fa17ceb077d89d7:docs/testing/evidence/2026-09-08-integration/final-source-snapshot.json:generic-api-key:412",
+    "source_hash_entry": true,
+    "matching_source_paths": [
+      "ThrottleTests/ServiceTests/TokenEstimateTests.swift"
+    ],
+    "classification": "verified_source_digest"
+  },
+  {
+    "fingerprint": "cdae2c718ac47bbfae19ca2f6fa17ceb077d89d7:docs/testing/evidence/2026-09-08-integration/final-source-snapshot.json:generic-api-key:445",
+    "source_hash_entry": true,
+    "matching_source_paths": [
+      "ThrottleTests/ServiceTests/ClaudeAPIKeyProtocolTests.swift"
+    ],
+    "classification": "verified_source_digest"
+  },
+  {
+    "fingerprint": "cdae2c718ac47bbfae19ca2f6fa17ceb077d89d7:docs/testing/evidence/2026-09-08-integration/final-source-snapshot.json:generic-api-key:480",
+    "source_hash_entry": true,
+    "matching_source_paths": [
+      "Packages/ResearchVaultKit/Sources/ResearchVaultKeychain/VaultMasterKeyStore.swift"
+    ],
+    "classification": "verified_source_digest"
+  },
+  {
+    "fingerprint": "cdae2c718ac47bbfae19ca2f6fa17ceb077d89d7:docs/testing/evidence/2026-09-08-integration/final-source-snapshot.json:generic-api-key:519",
+    "source_hash_entry": true,
+    "matching_source_paths": [
+      "Packages/ResearchVaultKit/Sources/ResearchVaultStore/VaultKeyDerivation.swift"
+    ],
+    "classification": "verified_source_digest"
+  },
+  {
+    "fingerprint": "cdae2c718ac47bbfae19ca2f6fa17ceb077d89d7:docs/testing/evidence/2026-09-08-integration/final-source-snapshot.json:generic-api-key:558",
+    "source_hash_entry": true,
+    "matching_source_paths": [
+      "Packages/ResearchVaultKit/Tests/ResearchVaultKeychainTests/VaultMasterKeyStoreTests.swift"
+    ],
+    "classification": "verified_source_digest"
+  }
+]

@@ -21,16 +21,9 @@ struct InlineAboutPane: View {
             }
             SettingsHair()
             SettingsRow(title: "Export diagnostics",
-                        sub: exportStatus.isEmpty ? "Anonymized stats .zip to Desktop — token totals only." : exportStatus) {
-                SettingsButton(title: "Export") {
-                    exportStatus = String(localized: "Building…")
-                    Task { @MainActor in
-                        if let url = await runDiagnosticsExport() {
-                            exportStatus = "Saved: \(url.lastPathComponent)"
-                            NSWorkspace.shared.activateFileViewerSelecting([url])
-                        } else { exportStatus = String(localized: "Failed — see log.") }
-                    }
-                }
+                        sub: exportStatus.isEmpty
+                            ? String(localized: "Summary .zip to Desktop — no logs or raw errors.") : exportStatus) {
+                SettingsButton(title: String(localized: "Preview diagnostics")) { previewDiagnostics() }
             }
             SettingsHair()
             SettingsRow(title: "Export usage CSV",
@@ -113,10 +106,15 @@ struct InlineAboutPane: View {
     }
 
     @MainActor
-    func runDiagnosticsExport() async -> URL? {
+    func previewDiagnostics() {
         guard let url = try? DatabaseManager.databaseURL(),
-              let pool = try? DatabasePool(path: url.path) else { return nil }
-        return DiagnosticsExporter.exportToDesktop(database: pool)
+              let pool = try? DatabasePool(path: url.path) else {
+            exportStatus = String(localized: "Diagnostics preview unavailable. Try again.")
+            return
+        }
+        exportStatus = ""
+        DiagnosticsPreviewWindowController.shared.show(report: DiagnosticsExporter.buildReport(database: pool),
+                                                       onExport: DiagnosticsExporter.exportToDesktop(report:))
     }
 
     @MainActor

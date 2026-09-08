@@ -1,0 +1,31 @@
+Building for debugging...
+[1 / 5]
+[2 / 6] Throttle
+[3 / 7] Throttle
+[8 / 12] Throttle
+[11 / 15] ThrottleTests-product
+[13 / 17] ThrottleTests-product
+[19 / 21] ThrottleTests-product
+Build complete! (4,29 s)
+Test Suite 'Selected tests' started at 2026-09-08 17:34:36.373.
+Test Suite 'ThrottleTests.xctest' started at 2026-09-08 17:34:36.376.
+Test Suite 'CloudKitPublisherTests' started at 2026-09-08 17:34:36.376.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck]' passed (0.021 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount]' passed (0.009 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testCancelledDebounceCannotConsumeSnapshotAfterRestart]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testCancelledDebounceCannotConsumeSnapshotAfterRestart]' passed (0.011 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot]' passed (0.011 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots]' passed (0.007 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck]' started.
+2026-09-08 17:34:36.437 xctest[7791:15616326] [CloudKitPublisher] iCloud unavailable — mirror disabled
+Test Case '-[ThrottleTests.CloudKitPublisherTests testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck]' passed (0.003 seconds).
+Test Suite 'CloudKitPublisherTests' passed at 2026-09-08 17:34:36.439.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.062 (0.063) seconds
+Test Suite 'ThrottleTests.xctest' passed at 2026-09-08 17:34:36.439.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.062 (0.063) seconds
+Test Suite 'Selected tests' passed at 2026-09-08 17:34:36.439.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.062 (0.066) seconds

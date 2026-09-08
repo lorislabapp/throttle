@@ -9,7 +9,7 @@ import GRDB
 /// Format: one row per event, ISO-8601 timestamp, columns sized for
 /// Excel/Numbers/Google Sheets without escaping headaches. No usage
 /// content is exported — just token counts, timestamps, model name,
-/// and project path. Same privacy posture as DiagnosticsExporter.
+/// and project path. This is more sensitive than the allowlisted support summary.
 @MainActor
 enum CSVExporter {
     static func exportToDesktop(database: any DatabaseReader) -> URL? {

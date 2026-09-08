@@ -332,13 +332,15 @@ struct ProjectAssistantTab: View {
             .help(String(localized: "Run local audit (no AI, no tokens)"))
             .accessibilityLabel(String(localized: "Run local audit"))
             Button {
-                exportDiagnosticsToDesktop()
+                DiagnosticsPreviewWindowController.shared.show(
+                    report: DiagnosticsExporter.buildReport(database: appState.database),
+                    onExport: DiagnosticsExporter.exportToDesktop(report:))
             } label: {
                 Image(systemName: "ladybug").font(.caption)
             }
             .buttonStyle(.borderless)
-            .help(String(localized: "Export diagnostics to Desktop"))
-            .accessibilityLabel(String(localized: "Export diagnostics to Desktop"))
+            .help(String(localized: "Preview diagnostics"))
+            .accessibilityLabel(String(localized: "Preview diagnostics"))
             Button {
                 forceShowOnboarding = true
             } label: {
@@ -985,22 +987,6 @@ struct ProjectAssistantTab: View {
         transcript.append(ChatMessage(role: .assistant, content: markdown))
     }
 
-    /// Export the diagnostics bundle to ~/Desktop/ via the existing
-    /// `DiagnosticsExporter` and post a one-line confirmation in the
-    /// chat. The bundle contains DB snapshot, recent crash logs, and
-    /// app state — no AI involvement, suitable for emailing support.
-    private func exportDiagnosticsToDesktop() {
-        let database = appState.database
-        let confirmation: String
-        if let url = DiagnosticsExporter.exportToDesktop(database: database) {
-            confirmation = String(localized: "Diagnostics exported to ") + url.path
-            // Reveal in Finder so the user can find it without hunting.
-            NSWorkspace.shared.activateFileViewerSelecting([url])
-        } else {
-            confirmation = String(localized: "Diagnostics export failed — check the app log.")
-        }
-        transcript.append(ChatMessage(role: .assistant, content: "_\(confirmation)_"))
-    }
 }
 
 /// Three pulsing dots shown while the assistant message hasn't started

@@ -155,11 +155,15 @@ struct TaskEvent: Codable, Sendable, Equatable {
     /// name is spelled out because SwiftLint's `identifier_name` floors at 3
     /// characters.
     var passed: Bool?
+    /// Nil on legacy events: absence is not a stronger level of proof.
+    var receipt: WorkflowEvidenceReceipt?
+    /// Nil on legacy events. Retries with the same identity cannot append twice.
+    var eventID: UUID?
 
     init(seq: Int, timestamp: Date, author: String, type: TaskEventType, prev: String? = nil,
          pct: Int? = nil, note: String? = nil, kind: String? = nil, ref: String? = nil,
          reason: String? = nil, summary: String? = nil, missionID: String? = nil,
-         passed: Bool? = nil) {
+         passed: Bool? = nil, receipt: WorkflowEvidenceReceipt? = nil, eventID: UUID? = UUID()) {
         self.seq = seq
         self.timestamp = timestamp
         self.author = author
@@ -173,6 +177,8 @@ struct TaskEvent: Codable, Sendable, Equatable {
         self.summary = summary
         self.missionID = missionID
         self.passed = passed
+        self.receipt = receipt
+        self.eventID = eventID
     }
 
     /// The runtime half of `by`, used for display and for lot E's
@@ -183,7 +189,7 @@ struct TaskEvent: Codable, Sendable, Equatable {
     // grepped by agents, where `at`/`by`/`ok` earn their brevity even though the
     // Swift-side names spell them out.
     enum CodingKeys: String, CodingKey {
-        case seq, prev, pct, note, kind, ref, reason, summary, missionID, type
+        case seq, prev, pct, note, kind, ref, reason, summary, missionID, type, receipt, eventID
         case passed = "ok"
         case timestamp = "at"
         case author = "by"
@@ -203,10 +209,11 @@ struct TaskCheck: Codable, Sendable, Equatable {
     let passed: Bool
     let stamp: String
     let ranAt: Date
+    var receipt: WorkflowEvidenceReceipt?
 
     // The wire format keeps `ok`/`at`, matching the NDJSON log's own short keys.
     enum CodingKeys: String, CodingKey {
-        case stamp
+        case stamp, receipt
         case passed = "ok"
         case ranAt = "at"
     }

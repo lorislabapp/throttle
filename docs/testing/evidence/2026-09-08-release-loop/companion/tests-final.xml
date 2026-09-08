@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites>
+<testsuite name="TestResults" errors="0" tests="26" failures="0" time="2.17145579">
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testAccountNotificationScrubsBeforeItsAsynchronousRefreshStarts" time="0.09014475">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testBootstrapHidesUnverifiedCacheAndScrubsDifferentOwnerBeforeFetch" time="0.081692125">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testDelayedAccountAResponseCannotRepopulateAccountB" time="0.086253125">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testDifferentOwnerCannotInheritPreviousPushSubscription" time="0.078805542">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testIdentityChangedWithoutNotificationRejectsFetchedRecordAndPairing" time="0.075723666">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testIdentityFailureAfterRecordDoesNotRestorePreviousAuthorization" time="0.0964985">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testLateFailureCannotOverwriteTheNewAccountState" time="0.148861166">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testLateIdentityCannotBindItsCacheToTheNextAccount" time="0.099906041">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testLateSubscriptionCannotRestorePushAuthorizationAfterAccountChange" time="0.078171791">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testSameProvenOwnerRetainsCacheWhenNoNewSnapshotExists" time="0.068037125">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testSignOutImmediatelyRevokesMirrorPeerAndErrors" time="0.059135084">
+</testcase>
+<testcase classname="ThrottleTests.CloudKitSubscriberPrivacyTests" name="testUnownedLegacyCacheIsNotAssignedToFirstAccount" time="0.063863375">
+</testcase>
+<testcase classname="ThrottleTests.CompanionHostIsolationTests" name="testDefaultStoreUsesOnlyTestDefaultsAndNotificationsStayDisabled" time="0.080136375">
+</testcase>
+<testcase classname="ThrottleTests.CompanionHostIsolationTests" name="testHostedTestsUseTheirOwnDefaultsAndCannotStartTheSharedPeer" time="0.068067167">
+</testcase>
+<testcase classname="ThrottleTests.CompanionHostIsolationTests" name="testProductionCloudBackendRejectsAllEntrypointsBeforeOpeningContainer" time="0.060868292">
+</testcase>
+<testcase classname="ThrottleTests.MirrorStorePrivacyTests" name="testEncodingAlreadyInFlightCannotWriteAfterScrub" time="0.060288667">
+</testcase>
+<testcase classname="ThrottleTests.MirrorStorePrivacyTests" name="testSupersededEncodingCannotOverwriteNewerHistoryAndSecretsNeverPersist" time="0.071507209">
+</testcase>
+<testcase classname="ThrottleTests.MirrorStorePrivacyTests" name="testWidgetNeverFallsBackToLegacyCacheOrPublishesAnotherOwnersHistory" time="0.077268417">
+</testcase>
+<testcase classname="ThrottleTests.MirrorStorePrivacyTests" name="testWidgetPublicationIsRevokedUntilTheCachedOwnerIsProven" time="0.065895875">
+</testcase>
+<testcase classname="ThrottleTests.PeerClientPrivacyTests" name="testDetachSuppressesQueuedTerminalCallbacksAndOutgoingWrites" time="0.107129375">
+</testcase>
+<testcase classname="ThrottleTests.PeerClientPrivacyTests" name="testMissingPairingRevokesExistingConnectorAndTerminalImmediately" time="0.078351416">
+</testcase>
+<testcase classname="ThrottleTests.PeerClientPrivacyTests" name="testReattachmentCannotDeliverPreviousTerminalBytesToEitherView" time="0.106052833">
+</testcase>
+<testcase classname="ThrottleTests.PeerClientPrivacyTests" name="testRetiredViewsDetachCannotDisconnectTheNewAttachment" time="0.09409175">
+</testcase>
+<testcase classname="ThrottleTests.PeerClientPrivacyTests" name="testRotationRejectsOldSnapshotAndConnectionStateButAcceptsNewConnector" time="0.111229583">
+</testcase>
+<testcase classname="ThrottleTests.PeerClientPrivacyTests" name="testStopRejectsCallbacksAlreadyQueuedAndCapturedByOldConnector" time="0.079636791">
+</testcase>
+<testcase classname="ThrottleTests.TerminalIdentityPrivacyTests" name="testAuthenticationStartedForAnOldTerminalCannotUnlockAfterInvalidation" time="0.08383975">
+</testcase>
+</testsuite>
+</testsuites>

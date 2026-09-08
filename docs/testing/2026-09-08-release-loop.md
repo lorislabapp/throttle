@@ -234,6 +234,45 @@ sous un cas `Skipped` figurant dans les skips autorisés ; un message sous un
 cas réussi ou échoué, ou imbriqué, est refusé (`message_outside_allowed_skip`).
 Trois cas négatifs ajoutés ; 150/150 tests Python. Aucun changement Swift.
 
+## CI n°8 — huitième lot (run 34281635340, HEAD `f846790`) : **première CI entièrement verte**
+
+`quality`, `validator-evidence`, `vault-tests (debug)`, `vault-tests (release)`,
+`macos-tests` (646 cas, 5 skips autorisés), `ios-tests`, `visionos-build` :
+tous **PASS**. Le dépôt étant public, ces runs n'ont consommé aucune minute
+facturable.
+
+Ce que cette CI verte prouve : les suites natives et les vérificateurs sur
+runner hébergé, pour ce candidat seul. Ce qu'elle ne prouve pas, inchangé :
+la réconciliation avec `feat/context-testing-3.6.0` (9 conflits mesurés à
+blanc), le benchmark de recherche (corpusDrift), les dix tâches réelles,
+les parcours comptes/appareils/sessions, et l'artefact signé. Le verdict
+**NO-GO publication** tient.
+
+## Réconciliation avec `feat/context-testing-3.6.0` (9 septembre 2026)
+
+Branche d'intégration `integration/3.6.0-sota-release`, créée depuis `f846790`
+(B, CI verte) et fusionnant `083b615` (A, chantier SOTA/PlanStore/diagnostics
+et confidentialité companion). Fusion à blanc préalable : 9 conflits.
+
+| Fichier | Tranché | Pourquoi |
+|---|---|---|
+| `.github/workflows/ci.yml` | B | surensemble de A (mêmes étapes + iOS, visionOS, faux verts corrigés) |
+| `ThrottleiOS/Services/ThrottleLiveActivity.swift` | B | `LiveActivityOperationQueue` prouvée en CI ; A portait l'ancienne version à jeton de génération, entièrement remplacée |
+| `ThrottleiOS/Views/RemoteTerminalView.swift` | B | contenu identique des deux côtés |
+| `ThrottleTests/ServiceTests/CockpitLifecycleTests.swift` | B | mêmes tests, fixture stabilisée et diagnostics prouvés (646/646) |
+| `scripts/verify-vault-tests.py`, `test_vault_evidence.py` | B | surensemble (matrice Debug/Release, confinement, testabilité) |
+| `scripts/verify-macos-evidence.py`, `test_macos_evidence.py` | B **+ port de A** | B ajoute `--scheme`/`--destination` ; l'option `--derived-data-path` de A est portée dans `build_arguments` avec un test (le cache seul change, jamais les rapports) |
+| `docs/testing/2026-09-08-release-loop.md` | B | journal continué ici |
+
+Tout le reste de A (125 fichiers : PlanStore, diagnostics, reçus de workflow,
+retry MCP, tests de confidentialité iOS, vérificateurs core, journaux SOTA)
+fusionne sans conflit. Sur l'arbre fusionné : 151/151 tests Python,
+SwiftLint 0.63.2 exit 0 (baseline de A comprise), `git diff --check` propre,
+`swiftc -typecheck` des fichiers produit autonomes. **Aucune compilation
+native du candidat unifié n'a encore eu lieu** : c'est la CI de cette branche,
+à lancer sur accord explicite. Les 670 tests locaux de A comme les 646 de B
+ne valent pas pour l'arbre fusionné.
+
 ## Conservation et verdict
 
 Les preuves compactes sont dans [evidence/2026-09-08-release-loop](evidence/2026-09-08-release-loop).

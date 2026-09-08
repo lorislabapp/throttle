@@ -1,0 +1,24 @@
+{
+  "scope": "Synthetic Vision probe only; no production OCR policy changed",
+  "earlier_cpu_accurate": {
+    "status": "fail",
+    "seconds": 12.183669,
+    "error": "Foundation._GenericObjCError.nilError"
+  },
+  "cpu_fast": {
+    "status": "pass",
+    "seconds": 0.308704972,
+    "recovered_text": "CHIFFREMENT DE LA BASE"
+  },
+  "cpu_accurate_after_space_change": {
+    "status": "pass",
+    "seconds": 60.79540693759918,
+    "recovered_text": "CHIFFREMENT DE LA BASE"
+  },
+  "actual_scanned_pdf_after_probe": {
+    "status": "fail",
+    "seconds": 75.663,
+    "error": "ocrUnavailable page 1"
+  },
+  "conclusion": "OPEN; isolated probe success does not qualify the PDF ingestion path. Low free disk was observed, causality not established."
+}

@@ -137,6 +137,16 @@ class MacOSEvidenceTests(unittest.TestCase):
             {"nodeType": "Failure Message", "name": "Deeper"}]}]
         self.assertIn("message_outside_allowed_skip:Deeper", runner.validate_reports(summary, tree, runner.REQUIRED_CASES)[0])
 
+    def test_reused_derived_data_changes_only_the_cache_argument(self):
+        output = pathlib.Path("/private/tmp/throttle-macos-fixture")
+        destination = "platform=macOS,arch=" + runner.platform.machine()
+        fresh = runner.build_arguments(output, "Throttle", destination)
+        reused = runner.build_arguments(output, "Throttle", destination, pathlib.Path("/private/tmp/task-cache"))
+        self.assertEqual(fresh[fresh.index("-derivedDataPath") + 1], str(output / "DerivedData"))
+        self.assertEqual(reused[reused.index("-derivedDataPath") + 1], "/private/tmp/task-cache")
+        self.assertEqual([a for a in fresh if a != str(output / "DerivedData")],
+                         [a for a in reused if a != "/private/tmp/task-cache"])
+
     def test_opt_in_test_may_pass_instead_of_skip_but_may_not_disappear(self):
         summary, tree = reports()
         skipped = next(case for case in leaves(tree) if case["result"] == "Skipped")

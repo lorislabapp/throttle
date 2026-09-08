@@ -1,0 +1,7 @@
+{
+  "scan": "staged candidate diff",
+  "findings": 1,
+  "classification": "not a credential; existing UserDefaults key ThresholdNotifier.firedKey",
+  "value_kind": "application preference key",
+  "status": "reviewed"
+}

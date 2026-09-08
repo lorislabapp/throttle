@@ -1,0 +1,9 @@
+{
+  "recorded_at": "2026-09-08T16:33:20.117111+00:00",
+  "base_receipt": "/private/tmp/throttle-query-envelope-receipt.json",
+  "base_receipt_sha256": "eb71c790579cb7a054417a85d37dbf09968360f7a68e131e2f4566e194b87f48",
+  "source": "Packages/ResearchVaultKit/Tests/ResearchVaultXPCTests/ResearchVaultQueryEnvelopeTests.swift",
+  "change": "format-only wrap of temporary-directory path expression to satisfy 120-column lint; no rebuild performed after this whitespace-only change",
+  "previous_sha256": "07c3aff1b89ee65f4acbf4f911da6abad1b2cd03aa13215020562b250a0c955e",
+  "current_sha256": "3b16d79b2c5a64ff2449383b63ad9598719629ca7b0b68fd1c2a1d5b5deb6f1d"
+}

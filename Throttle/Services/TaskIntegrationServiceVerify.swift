@@ -53,13 +53,20 @@ extension TaskIntegrationService {
     ) throws -> Verdict {
         let worktree = try existingWorktree(taskID, in: repo)
         let stamp = try assess(taskID: taskID, in: repo).stamp
+        let startedAt = Date()
         let result = shell(command, in: worktree, timeout: timeout)
-        let verdict = Verdict(passed: result.ok, output: boundedVerificationOutput(result.output),
+        let after = try? assess(taskID: taskID, in: repo)
+        let unchanged = after?.stamp == stamp && after?.hasLooseWork == false
+        let receipt = WorkflowEvidenceReceipt.command(command, stamp: stamp,
+            startedAt: startedAt, finishedAt: Date(), result: (result.ok, unchanged))
+        let changedNotice = "\n[throttle] Inputs changed or could not be rechecked; verification is incomplete."
+        let output = result.output + (unchanged ? "" : changedNotice)
+        let verdict = Verdict(passed: result.ok && unchanged, output: boundedVerificationOutput(output),
                               stamp: stamp)
 
         try store?.append(TaskEvent(seq: 0, timestamp: Date(), author: author, type: .checked,
                                     ref: stamp, reason: verdict.passed ? nil : verdict.output,
-                                    summary: command, passed: verdict.passed),
+                                    summary: command, passed: verdict.passed, receipt: receipt),
                           to: taskID)
         return verdict
     }

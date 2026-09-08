@@ -1,0 +1,46 @@
+{
+  "scope": "light validator tests and tiny native schema probe only; no ResearchVault package build/run",
+  "validator_command": [
+    "python3",
+    "-B",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "scripts/tests",
+    "-p",
+    "test_vault_evidence.py",
+    "-v"
+  ],
+  "validator_tests": 30,
+  "validator_exit": 0,
+  "native_schema_probe": {
+    "swift_testing_functions": 2,
+    "xctest_functions": 1,
+    "functions": [
+      "ProbeTests.SampleSuite/parameter(value:)",
+      "ProbeTests.SampleSuite/plain()"
+    ],
+    "argument_inventory_origin": {
+      "ProbeTests.SampleSuite/parameter(value:)": "runtime_metadata_only"
+    },
+    "argument_inventory_limit": "Runtime-only argument metadata has no independent pre-run denominator; function coverage always uses pre-run discovery.",
+    "argument_cases": [
+      {
+        "test": "ProbeTests.SampleSuite/parameter(value:)",
+        "argument_id": "Parameterized test case ID: argumentIDs: [Testing.Test.Case.Argument.ID(bytes: [172, 141, 131, 66, 187, 178, 54, 45, 19, 240, 165, 89, 163, 98, 27, 180, 7, 1, 19, 104, 137, 81, 100, 182, 40, 165, 79, 127, 195, 63, 196, 60])], discriminator: 0, isStable: true"
+      },
+      {
+        "test": "ProbeTests.SampleSuite/parameter(value:)",
+        "argument_id": "Parameterized test case ID: argumentIDs: [Testing.Test.Case.Argument.ID(bytes: [193, 0, 249, 92, 25, 19, 249, 199, 47, 193, 244, 239, 8, 71, 225, 231, 35, 255, 224, 189, 224, 179, 110, 95, 54, 193, 63, 129, 254, 140, 38, 237])], discriminator: 0, isStable: true"
+      }
+    ]
+  },
+  "source_sha256": {
+    "scripts/verify-vault-tests.py": "7a3f808976d08de19f79909b0bdd17585c73457935d97217a0ccd0fe16959c5b",
+    "scripts/tests/test_vault_evidence.py": "446cbfbdedd8d4c114a7192a7eca32dd9dc465dd5f37b0befd04c2d396cf4ce4",
+    ".github/workflows/ci.yml": "a1848bbd9eb4ce47f156c6490f073b42ff82eaa5bd653f92bebdefde2e2fd21e",
+    "scripts/verify-macos-evidence.py": "8858b26f694449283745fca5b59ccdd427ce8f675ad22c625bb95e5e93c1a783"
+  },
+  "log_sha256": "7944642ba2f103fda2e2ba064526293a1260e4bbd96b1c3207102f7633b826aa"
+}

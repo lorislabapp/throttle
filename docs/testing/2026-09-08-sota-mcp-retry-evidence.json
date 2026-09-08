@@ -1,0 +1,229 @@
+{
+  "schema": 1,
+  "kind": "sanitized-core-evidence-summary",
+  "recorded_date": "2026-09-08",
+  "scope": "core-validator-subset",
+  "status": "pass",
+  "reported_cases": 121,
+  "duration_seconds": 80.312,
+  "exit_codes": [
+    0,
+    0
+  ],
+  "errors": [],
+  "raw_artifact_directory_name": "throttle-core-evidence-cuh5m75u",
+  "raw_receipt_sha256": "b28b40c8b508b4633c395ffd190e2c23acd8cf4e411a3841833e9eca0590d1d8",
+  "sources_sha256": {
+    "Throttle/Services/TestOutcomeDetector.swift": "f51439146f30ba7bad2104513112654a90f3abf585b778c07d77d73515c844bb",
+    "Throttle/Services/TestOutcomeStore.swift": "189480fc85da9148388ab6b07badcc8691d39d71e46e6eee0dadf1679496fa2a",
+    "Throttle/Services/ContextFirewall.swift": "51015f4cb0564ce68a1f4253fcdc9d7b72b9f0ef518d01f606b95346434f3793",
+    "Throttle/Services/ContentStore.swift": "3f855fd3d5ecd7ef198e0b7b2ec4df7794827ec38cd172e7bedf2ef0eabbec89",
+    "Throttle/Models/PlanModels.swift": "085635818b11be388abbe024cee040cf863fa1c717e1b4192ebdac861fc812e1",
+    "Throttle/Models/WorkflowEvidenceReceipt.swift": "726a8dad53f3c6247d6da737f275973519697d00a86c1bc6e85929fdf63a2a22",
+    "Throttle/Services/PlanProjection.swift": "a4744d75079a9320948a39243e1e88ee9619fd261edd7a1182b25ee27ab60d02",
+    "Throttle/Services/PlanStore.swift": "5a641979eab443215c03a99c9650489fc81eddde8d8156f54e64b2a7358ae034",
+    "Throttle/Services/PlanMCPTools.swift": "282af1f4e48692eddbc303ff206c7fb681d6b43211475eebfedd2eda39a04baf",
+    "Throttle/Services/PlanMCPRetry.swift": "090e1b57bf1cbae52e1aa9fff4572971cdf1c65e489b3aed8a664bf61e1b9491",
+    "Throttle/Services/PlanMCPTaskRouter.swift": "f305d2cc035378ea476d8e3ad06f6b0b3f35598117540c5e71bea4f4984d4b27",
+    "Throttle/Services/DiagnosticReport.swift": "79c87db58a2e12202cbf9625d595f9274dd53b6e4290c42c8f468782d95a58a6",
+    "Throttle/Services/DiagnosticArchive.swift": "93afd690d95049827855460b8ba9d6993e271d0f86fc7f2b5049c273adefa583",
+    "Throttle/Services/TaskWorktreeService.swift": "76f34aed5252a70f61f0e5cda0bf53f057cc6a133606d589df64f2ead497c986",
+    "Throttle/Services/TaskIntegrationService.swift": "01eccc857e4b55966a23dd6b6b2505ec22f17668a9bd2c45c236047b52755d68",
+    "Throttle/Services/TaskIntegrationServiceVerify.swift": "fd29269e9e71be05b767fa3b32961549803d90df02af22a79b224a2007d2c9e0",
+    "Throttle/Services/TaskIntegrationVerifyChild.swift": "bc5eb20b742aeb2221da76a5d19f80a5da657352d5b7579a9b2e4293c16dc12e",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultModel/ResearchReceipt.swift": "54f3078dc01cc93221a6be41bc4f67984c3a6a0fda07e5f27f553674f4f57950",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultModel/VaultAuthorization.swift": "69c0ce7097abee499f110ba84fbfab9cf153dc60ac9e7b43ea0b3e0f11d6c390",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultIPCModel.swift": "46b47a620bd85a9bb3e5c9736722a5c71bc0192cab7f536cc9884b5b919c676e",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultContextEncoding.swift": "f8cfe59fb0f88c50162c9788aa3be162b3f7aad4b870dd387d12ff4e3c1f079f",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultProjectAdmission.swift": "60ef0dfdbb52bb6712d4f71d6e09276a482c2b3f7c337c731a188135b9c6d23d",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultReasoningDTO.swift": "d1cb4f5cce9451810d42f46639084a9ae1c1c3b49d05046fdfd4d70b173bc07b",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultReceiptDTO.swift": "be76c716a726341771066393155b82d7776ee9d1ac27c2690220e38b3554251f",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultReceiptProvenance.swift": "2e77e8424c0d9882de0143d94bb87c6645199831b958e6b0e0f40630464528cb",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIngestion/RetrievalBenchmark.swift": "b77189f321b88135fbaa8a950d8ff2b03d2779443d36c3bf1326b48bb24b3f3d",
+    "Packages/ResearchVaultKit/Sources/ResearchVaultIngestion/RetrievalQualityGate.swift": "3d740cbb3e667dcb9a56368bfc03efca06eddf7c9fd51b0e1500d08b83e6bf74",
+    "ThrottleTests/ServiceTests/TestOutcomeDetectorTests.swift": "59b7d056c2bbc060d9d2feee91ef82ae613555af64cdb2f9ca7928bada1561d8",
+    "ThrottleTests/ServiceTests/TestOutcomeStoreTests.swift": "8f11d6df41c3bdff28b2388b66f2670a413e44aae9adb6b4f48e457e11680958",
+    "ThrottleTests/ServiceTests/ContextPacketEvidenceTests.swift": "271fc14533d0223c252bc951a0eb3b6f082dc7978fd58c89e08d4fe4a0276894",
+    "ThrottleTests/ServiceTests/PlanStoreTests.swift": "87e07576665f0a56b0f0a865fe5c8f8b431673fa537e80d09acea4009689e780",
+    "ThrottleTests/ServiceTests/WorkflowFoundationTests.swift": "2cd9e1ebb64f0ae20eb413d4b6a6bdf5ee2822482e7842e2705d43d3d469ee6d",
+    "ThrottleTests/ServiceTests/PlanMCPRetryTests.swift": "1a011e31cce6f0e2c77cb274d0ec56ab3b1ff6377334bd730768968e7edc4df8",
+    "ThrottleTests/ServiceTests/PlanMCPTaskRouterTests.swift": "33649d1869efb5bc95f872f821253a8b8a8c1da7a1b67bf1c2de0fb8cdee5352",
+    "ThrottleTests/ServiceTests/DiagnosticReportTests.swift": "2f1771c0a2fe3761fafa26eafd0e086b9b0627e07659eec7a7714d62594159e4",
+    "ThrottleTests/ServiceTests/DiagnosticArchiveTests.swift": "14acf953a62f3bae4ac3f9b0f588b5e3768f8d7aa54f788f37ff44bf84561f09",
+    "ThrottleTests/ServiceTests/WorkflowEvidenceReceiptTests.swift": "d5754a6e3a5516cb841e78dd910859dbbebd06d2a5e5ad831a98197afb907051",
+    "ThrottleTests/ServiceTests/TaskIntegrationServiceTests.swift": "ee4fee9c32cd4a5238ff1b9293b467e42362dabdcaa629cc3fd2dd6714a0b1c1",
+    "ThrottleTests/ServiceTests/TaskIntegrationRefusalTests.swift": "d78a508d4972ab6198e0da357a3c347faa12a2befde5920cc43cd0211f0575d3",
+    "ThrottleTests/ServiceTests/TaskIntegrationOutputTests.swift": "78024f8145efeee64c3d6d85c9d0936581e1fb807c31c5602a11395796e9a78b",
+    "ThrottleTests/ServiceTests/TaskIntegrationHardeningTests.swift": "9bdd35543742e5db6579847a5601accde836e2544eeb4a9208283c3709b6e7b5",
+    "Packages/ResearchVaultKit/Tests/ResearchVaultIngestionTests/RetrievalBenchmarkTests.swift": "516552dfce5aa65d62ab2a1e9f3431eaccf8c87a48201db4a901b8d29faf351b",
+    "Packages/ResearchVaultKit/Tests/ResearchVaultIngestionTests/RetrievalQualityGateTests.swift": "8678b44eb02f03f8aea8f55cb55d614a60ae72ff4dd4c8b883a6f8d0ba5814d0"
+  },
+  "expected_cases": {
+    "TestOutcomeDetectorTests": [
+      "test_pytest_passOnly",
+      "test_pytest_withFailures",
+      "test_cargo",
+      "test_jest_failedFirstOrder",
+      "test_jest_passOnly",
+      "test_swift",
+      "test_go_ok",
+      "test_go_fail",
+      "test_noFalsePositiveOnProse",
+      "test_failureFirstAndErrorOnlyPytestSummaries",
+      "test_laterSuccessDoesNotEraseFailureInTheSameObservedTail",
+      "test_failureFromAnotherRunnerCannotBecomeGreen",
+      "test_summaryMentionedInProseIsNotObservedResult",
+      "test_invalidAndEmptyCountsCannotBecomeGreen",
+      "test_ansiColourAndCachedGoOutput",
+      "test_swiftTestingOrNodeFailureAfterXCTestSuccessIsNotGreen"
+    ],
+    "TestOutcomeStoreTests": [
+      "test_failedAttemptsContributeToCostPerGreen",
+      "test_windowUsesHistoricalCostAnchor",
+      "test_missingCostsAndResetsCannotMakeMetricCheaper",
+      "test_malformedOrEmptyResultsCannotBecomeGreen",
+      "test_stableOrderAndIndependentSessions",
+      "test_unrelatedProjectsAndAllFailuresDoNotCreateCostPerGreen"
+    ],
+    "ContextPacketEvidenceTests": [
+      "test_corruptionCannotRehydrateOrProduceAValidPointer",
+      "test_pointerRequiresAnExactHash",
+      "test_numberingAndMetadataStayInsideTheContextBudget",
+      "test_sourceMetadataCannotExhaustTheBudget",
+      "test_writeFailureIsExplicitAndDoesNotAdvertiseRehydration",
+      "test_selectedEvidenceKeepsExactOriginalAndUntrustedBoundary"
+    ],
+    "PlanStoreTests": [
+      "testAppendAssignsIncreasingSeqAndChainsHashes",
+      "testEditedLogBreaksTheChain",
+      "testEditingTheFinalLineIsNotDetected",
+      "testFullyRewrittenChainIsIndistinguishable",
+      "testUnsafeTaskIDIsRefused",
+      "testMissingPlanThrows",
+      "testUnknownTaskThrows",
+      "testResolveAppliesDependenciesAndRollup",
+      "testDependencyStillBlocksWhenUpstreamIsUnfinished",
+      "testStateCacheIsFullyRebuildable",
+      "testReplayIsCachedUntilTheLogChanges",
+      "testTaskWithNoLogReadsAsEmpty"
+    ],
+    "WorkflowFoundationTests": [
+      "test_concurrentClaimsAcrossInstancesHaveOneWinner",
+      "test_concurrentAppendsPreserveAllEventsAndSequence",
+      "test_partialLogIsPreservedAndRejectsAppend",
+      "test_eventEndpointCannotBypassCounterReview",
+      "test_staleOwnerCannotWriteAfterReassignment",
+      "test_symlinkedLogDoesNotWriteOutsideProject",
+      "test_eventRetryIsIdempotentAndConflictingReuseIsRefused",
+      "test_projectLockIsVisibleToAnotherProcessAndReleased"
+    ],
+    "PlanMCPRetryTests": [
+      "test_jsonRetryMetadataRejectsPartialMalformedAndBooleanValues",
+      "test_concurrentIdenticalClaimRetriesWriteOneEvent",
+      "test_lostReleaseResponseCanBeRetriedAfterReassignmentWithoutReclaiming",
+      "test_changedPayloadAuthorAndExpectedSequenceAreNotValidRetries",
+      "test_staleNewEventIsRefusedEvenWhenTheSameAuthorOwnsANewClaim",
+      "test_verdictRetryDoesNotIncrementRejectionCountTwice"
+    ],
+    "PlanMCPTaskRouterTests": [
+      "test_routerRejectsInvalidMetadataBeforeAnyMutation",
+      "test_routerCarriesIdentityAndSequenceThroughClaimEventAndVerdict",
+      "test_routerPreservesLegacyClaimsAndReportsAStaleNewIntent"
+    ],
+    "DiagnosticReportTests": [
+      "test_exportAllowsOnlySummary",
+      "test_privateCanariesCannotEnterVersionFields",
+      "test_unavailableCountsAreNotZero"
+    ],
+    "DiagnosticArchiveTests": [
+      "test_archiveContainsExactlyTheReviewedSummaryAndNoAdjacentFiles",
+      "test_exportUsesTheFrozenValueAndSanitizesCanariesInsideTheZip",
+      "test_repeatedExportsArePrivateDistinctAndPreserveTheFirstArchive",
+      "test_invalidDestinationDoesNotReplaceAFileOrLeaveStagingData"
+    ],
+    "WorkflowEvidenceReceiptTests": [
+      "test_commandSuccessDoesNotProveTests",
+      "test_changedInputsAreIncompleteEvenWithExitZero",
+      "test_testInventoryRequiresExactCoverageAndExplicitSkips",
+      "test_unknownSchemaAndMissingEvidenceAreNotPromoted"
+    ],
+    "TaskIntegrationServiceTests": [
+      "test_assess_reportsFilesAndAheadCount",
+      "test_assess_namesTheConflictingFileWithoutTouchingTheWorktree",
+      "test_assess_seesUncommittedWork",
+      "test_assess_refusesWhenThereIsNoWorktree",
+      "test_diff_returnsTheTextAgainstTheMergeBase",
+      "test_rebase_replaysTheTaskOnTheAdvancedBase",
+      "test_rebase_abortsAndRestoresTheOriginalSHAOnConflict",
+      "test_rebaseAbortFailed_carriesBothOutputsAndComparesByValue",
+      "test_verify_recordsAGreenCheckStampedWithBothSHAs",
+      "test_verify_recordsAFailureWithItsOutput",
+      "test_verify_runsInsideTheWorktreeNotTheRepo",
+      "test_verify_killsAHungCommandAtTheTimeoutAndReportsIt",
+      "test_integrate_fastForwardsTheBaseAndLogsTheSHA",
+      "test_integrate_refusesAnUnverifiedTask",
+      "test_integrate_refusesWhenTheBaseMovedAfterTheCheck",
+      "test_integrate_refusesAGatedTaskWithoutAVerdict",
+      "test_integrate_refusesADirtyWorktree"
+    ],
+    "TaskIntegrationRefusalTests": [
+      "testVerificationRecordsCommandReceiptWithoutClaimingTestCoverage",
+      "testVerificationThatChangesTrackedInputsCannotPass",
+      "test_anOptionErrorIsUnknownRatherThanAListOfConflicts",
+      "test_aRealConflictKeepsItsPathsAndDropsTheMessages",
+      "test_emptyAndTruncatedOutputAreUnknown",
+      "test_integrate_refusesWhenTheTaskItselfMovedAfterTheCheck",
+      "test_integrate_refusesARedCheck",
+      "test_integrate_ignoresUntrackedFilesTheVerificationLeftBehind",
+      "test_integrate_stillRefusesModifiedTrackedFiles",
+      "test_integrate_refusesADetachedRepositoryHEAD",
+      "test_assess_readsTheBranchOfAWorktreeSittingOnIt",
+      "test_assess_refusesAWorktreeThatLeftItsBranch",
+      "test_assess_refusesADetachedHEADEvenOnTheBranchTip",
+      "test_integrate_leavesTheWorktreeForItsCallerToDecideOn",
+      "test_removeWorktree_dropsTheWorktreeOfAnIntegratedTask",
+      "test_removeWorktree_keepsAWorktreeThatStillHoldsWorkAndSaysWhy"
+    ],
+    "TaskIntegrationOutputTests": [
+      "testVerboseCommandKeepsABoundedTailWhileDraining",
+      "testSmallOutputIsUnchanged",
+      "testDisplayLimitReportsTruncationBelowTheCollectorByteLimit",
+      "testSplitUTF8AtTailBoundaryDoesNotEraseTheDiagnostic"
+    ],
+    "TaskIntegrationHardeningTests": [
+      "test_rebase_refusesModifiedTrackedFiles",
+      "test_rebase_ignoresBuildOutputAVerificationLeftBehind",
+      "test_verify_leavesNoDescendantRunningAfterATimeout",
+      "test_verify_killsADescendantThatIgnoresSIGTERM",
+      "test_verify_passesWhenASuccessfulCommandLeavesSomethingRunning"
+    ],
+    "RetrievalBenchmarkTests": [
+      "metrics",
+      "invalid",
+      "abstention",
+      "addingAbstentionsDoesNotImproveRecall",
+      "unmeasuredAbstention"
+    ],
+    "RetrievalQualityGateTests": [
+      "rejectsInvalidEvidence",
+      "largeSample",
+      "noClaims",
+      "conservativePromotion",
+      "promotesMeasuredGain",
+      "claimsAndCitations"
+    ]
+  },
+  "runner_sha256": "44066ccbe470b16cffe1caccd62d2996d2a04d44465cc2b2906eecbcee46fd70",
+  "manifest_sha256": "f8a4b7bf87251619086abcb9ec54c4464d82fe90d5162e8c81e6dc371e26ba15",
+  "log_sha256": "39eaae5c9c7f1713a2aa531ab0bec538488488324487cf3a0bd1a0f28ca7cc63",
+  "results_sha256": {
+    "swift-testing.xml": "9c2ade99b8b8c89cf0f473abcdabdfa0678795354970b1781b2152df8ae8b55f",
+    "xctest.xml": "730f1877513c4ab182b63487a6050c4c34e813ef305919e1789073e9238a698d"
+  },
+  "limitations": [
+    "Exact copied production-source subset including the live task argument router, not a full app or live stdio MCP session.",
+    "Authenticated caller identity, crash recovery and legacy-client generation protection remain unqualified.",
+    "Full macOS verifier stopped before build at 8151040000 free bytes; it ran zero hosted cases.",
+    "Raw artifacts remain in temporary directories; this summary does not replace logs/XML."
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "recorded_at": "2026-09-08T16:50:32.483147+00:00",
+  "testCount": 7,
+  "tests": [
+    "testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck",
+    "testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart",
+    "testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount",
+    "testCancelledDebounceCannotConsumeSnapshotAfterRestart",
+    "testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot",
+    "testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots",
+    "testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck"
+  ],
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "scope": "isolated exact Swift 6 production source and XCTest copies with controlled CloudKit backend; no application host or CloudKit service",
+  "sourceSHA256": {
+    "Throttle/Network/CloudKitPublisher.swift": "e08d54bebee57b348080a288f5a1df2172fd0ece75d927798477677c78819124",
+    "ThrottleTests/ServiceTests/CloudKitPublisherTests.swift": "b97ea590c178bd865ec8341569819015ffbc8198cf6e273c8c965b0710b9b408",
+    "ThrottleShared/Sources/ThrottleShared/CloudKitSchema.swift": "807eeb104a2d903e1bd8403e629d1e73feb492f6384030764a4dbc63c71f59c0",
+    "ThrottleShared/Sources/ThrottleShared/CloudKitRecordMapping.swift": "40e9ca8c7c0f10e279f30af471cdfbbe8f69a649e66c82b69afabb7b728b03a6",
+    "ThrottleShared/Sources/ThrottleShared/ThrottleMirrorSnapshot.swift": "6fb333312b39b72c9f225acf5a6572338900f8fe611ba866413dcd2cd7ceb346",
+    "ThrottleShared/Sources/ThrottleShared/MirrorTransport.swift": "dd0ca2faebe1fd41136e6c25421cd206c79bdefafbf3bf53a2acc28b2975aedc"
+  },
+  "report": "/private/tmp/throttle-cloudkit-publisher-20260908-opzgkc5n/publisher-notification-current.xml",
+  "reportSHA256": "72b1678e8bfb733ebdaa946a394b93f7e88c156e20e9df5bd5043fc19784abbf",
+  "before": {
+    "status": "FAIL",
+    "tests": 1,
+    "assertionFailures": 3,
+    "sourceSHA256": "429b6066292171dc988c85f28241f1d0c6748d0a2989ab7ab4676466005c2229",
+    "log": "/private/tmp/throttle-cloudkit-publisher-20260908-opzgkc5n/publisher-notification-before-retry.log",
+    "logSHA256": "97eddc809fc2e8804459fca64a2e38bc0fc7db5536a906de96ee6cb5d368ed8c"
+  },
+  "after": {
+    "buildSeconds": 1.64,
+    "buildExit": 0,
+    "tests": 7,
+    "log": "/private/tmp/throttle-cloudkit-publisher-20260908-opzgkc5n/publisher-notification-after-build.log",
+    "logSHA256": "59050eb1753de535615381648bd25ab4a7f8a211399fa5f6abdcb47a494182c1"
+  },
+  "runner": "swift test --skip-build --parallel --num-workers 1 --filter CloudKitPublisherTests --xunit-output publisher-notification-current.xml",
+  "lint": "SwiftLint strict passed, no diagnostics",
+  "limitation": "Already submitted server writes cannot be recalled at opt-out; real CloudKit account-switch qualification remains open"
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="TestResults" errors="0" tests="5" failures="0" skipped="0" time="0.377812">
+    <testcase classname="ResearchVaultGatewayTests.OwnerProjectAdmissionTests" name="malformedAdmission()" time="0.26153525" />
+    <testcase classname="ResearchVaultGatewayTests.OwnerProjectAdmissionTests" name="longProjectKeyScopedSearch()" time="0.287041208" />
+    <testcase classname="ResearchVaultGatewayTests.OwnerProjectAdmissionTests" name="persistentOwnerGrant()" time="0.377442958" />
+    <testcase classname="ResearchVaultGatewayTests.OwnerProjectAdmissionTests" name="metadataCannotGrant()" time="0.266059167" />
+    <testcase classname="ResearchVaultGatewayTests.OwnerProjectAdmissionTests" name="concurrentAdmissions()" time="0.270811583" />
+  </testsuite>
+</testsuites>

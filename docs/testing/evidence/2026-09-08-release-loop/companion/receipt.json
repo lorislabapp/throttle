@@ -1,0 +1,73 @@
+{
+  "status": "pass",
+  "scope": "portable macOS XCTest of exact companion privacy sources; not iOS UI or service qualification",
+  "tests": 26,
+  "failures": 0,
+  "skips": 0,
+  "sources_sha256": {
+    "ThrottleiOS/Services/CompanionRuntime.swift": "ddae694cc68f1ecdb6c3522ce6fd42392991f4ee772f3e7abe576199d20f9d0b",
+    "ThrottleiOS/Services/MirrorCloudBackend.swift": "1323112f84e3550206c87dc1cd6fa47a086ddd3c9ce8c05ab30efe1ab4aa8474",
+    "ThrottleiOS/Services/CloudKitSubscriber.swift": "afb846685333ab7629279c0ea7a71f5cef1eaaae3dd93866ee46b138f550330a",
+    "ThrottleiOS/Services/ThresholdNotifier.swift": "8bbfa7915eb9b9b9428fc9e88098cdba6cad18d533b9ceb3bacd0be908004378",
+    "ThrottleiOS/Services/PeerClient.swift": "fde1c3429b199eaf153fc61b410637a9d7b332ff019f6253631b15270afebcf6",
+    "ThrottleiOS/Services/MirrorStore.swift": "2be775fe4de5d798d7f194233862c71beb42287015906bf0b0ad83eb5e1b31e8",
+    "ThrottleiOSTests/PeerClientPrivacyTests.swift": "0da964ee46fe945fb3dc0f6a4d0bbbb071ab42e9f456d5f359fb21faab069385",
+    "ThrottleiOSTests/MirrorPrivacyTestSupport.swift": "1dbc0e7532b7732f4e07044018235ec9ba6355e37364cf8ddaa79eaae85c5d00",
+    "ThrottleiOSTests/CloudKitSubscriberPrivacyTests.swift": "e387689c4c3c39c59731df0f2ef311da9e391e5600bab24302527362f928502c",
+    "ThrottleiOSTests/MirrorStorePrivacyTests.swift": "aea70b03cf6cac75918fc35bf123f667d7fa7f7d05eb2ca7bd7b629ecd9ef889",
+    "ThrottleiOSTests/CompanionHostIsolationTests.swift": "079ed2678de25a4af3105b3462f193a9c4a53fc61440ab5ef7d237ef650b4f45",
+    "ThrottleShared/Sources/ThrottleShared/ThrottleMirrorSnapshot.swift": "6fb333312b39b72c9f225acf5a6572338900f8fe611ba866413dcd2cd7ceb346",
+    "ThrottleShared/Sources/ThrottleShared/CloudKitRecordMapping.swift": "40e9ca8c7c0f10e279f30af471cdfbbe8f69a649e66c82b69afabb7b728b03a6",
+    "ThrottleShared/Sources/ThrottleShared/CloudKitSchema.swift": "807eeb104a2d903e1bd8403e629d1e73feb492f6384030764a4dbc63c71f59c0",
+    "ThrottleShared/Sources/ThrottlePeer/PeerPairing.swift": "0e7cf8ccd56f6538c02aa2188c87e92b113df2863b335b3c7ad5f8ce2633d5a3",
+    "ThrottleShared/Sources/ThrottlePeer/PeerMessage.swift": "8dad8b24335f1ad9783e0683ea47aa2ff97e2cfb468c980c9c27457631f329d9",
+    "ThrottleShared/Sources/ThrottlePeer/PeerAdvertiser.swift": "174c40703375d22018f2a176f4407c69d2d67088caff989721cde34132c03533",
+    "ThrottleShared/Sources/ThrottlePeer/PeerTLS.swift": "a2e588a231eac4e08fa8bf3b525728a37e84308a992b8b3a24c9d485a58b1006",
+    "ThrottleShared/Sources/ThrottlePeer/CatchupBuffer.swift": "7d4a771d2ddf79361749eeb4da18f4287d691d76e4de2dd138faef4a2f4b7e83",
+    "ThrottleShared/Sources/ThrottlePeer/PeerConnector.swift": "676129a031e754c10911b6b36b035070fb9d16b5e8d797223e0c024059c159c8",
+    "ThrottleShared/Sources/ThrottlePeer/PredictiveEcho.swift": "1a38e7f84de8bcba1e686bbb16517edcbce28a70ac3ec4e02ab0c3531fa2f96a",
+    "ThrottleShared/Sources/ThrottlePeer/PeerTerminal.swift": "1fa740218873c7c98f0664e9a918023b62f57f12342300e4a40c19f5d11010e9",
+    "ThrottleiOS/Services/TerminalLockState.swift": "66e9c07ad5d0a1b50f2b7549ff2ea99902effbde28834773e88f5f97b691661c",
+    "ThrottleiOSTests/TerminalIdentityPrivacyTests.swift": "d5d06e55b7b0250447d8dd665c9c92b72099bce1a231624ebf903e86cea6dee7",
+    "ThrottleShared/Sources/ThrottleShared/MirrorWidgetPublication.swift": "ad526c14267a4794f18528f55b8f906108ad59036b88ce1a109df2dc68f7ea9e"
+  },
+  "uncompiled_ios_files_sha256": {
+    "ThrottleiOS/Services/ThrottleLiveActivity.swift": "1d8b0dd28ea589830b653b126f35a12591a89cb4eb51f9053b7b513eee81db88",
+    "ThrottleiOS/AppDelegate.swift": "1a5e4f5271f14002da4769b8edc841218c8a356d8d786a6d9e15f0f5a9aff573",
+    "ThrottleiOS/ThrottleiOSApp.swift": "0279031d63161f552c9e599e4e914e0c094a6f1b8ad9e7cf8c7e43c40096fc3e",
+    "ThrottleiOS/Views/RemoteTerminalView.swift": "f7a61a710e2d8d042f2f7edb023445684b5ef8872a0a9d98980fb98ae194fe3d",
+    "ThrottleiOSWidget/ThrottleiOSWidget.swift": "7fa5c0dc66cc3a95e7d2f873c6b25a9de2d7dadacdb293a7227d2872d64a5a80",
+    "ThrottleiOSTests/RemoteTerminalPrivacyTests.swift": "74015faeccd9f400feeae5c8ed712cad58c2660752d1ee8c6748aa5945c1ba22"
+  },
+  "platform_stub": "MirrorUI.countdown presentation helper only; ActivityKit iOS branch is not compiled on macOS",
+  "mutant_counterproof": {
+    "scope": "temporary copy with post-fetch identity check, LAN generation guards and post-encoding guard removed",
+    "executed_cases": 22,
+    "failing_cases": [
+      "testDelayedAccountAResponseCannotRepopulateAccountB",
+      "testIdentityChangedWithoutNotificationRejectsFetchedRecordAndPairing",
+      "testIdentityFailureAfterRecordDoesNotRestorePreviousAuthorization",
+      "testLateFailureCannotOverwriteTheNewAccountState",
+      "testEncodingAlreadyInFlightCannotWriteAfterScrub",
+      "testSupersededEncodingCannotOverwriteNewerHistoryAndSecretsNeverPersist",
+      "testReattachmentCannotDeliverPreviousTerminalBytesToEitherView",
+      "testRotationRejectsOldSnapshotAndConnectionStateButAcceptsNewConnector",
+      "testStopRejectsCallbacksAlreadyQueuedAndCapturedByOldConnector"
+    ],
+    "failure_assertions": 20,
+    "original_checkout_mutated": false
+  },
+  "test_host": "system CloudKit entrypoints reject before CKContainer initialization; defaults isolated; shared peer disabled; notifications disabled",
+  "artifacts_sha256": {
+    "tests-final.xml": "bbb0501623625b7413d65fa8ae185cad871db1daf7357544cf5557f918b4cda3",
+    "tests-native-final.log": "00c240eb791047c782127631a1ba119034bf94bea11463f569542f21164c8eb3",
+    "mutant-tests.xml": "ac6f680c1831ca50ca5fbe0e2f0eefc34605d815fa591943a38a53833a17ba60",
+    "mutant-native-tests.log": "87a0073399277718d3f74919c6c1fb0ca57cc4407a5557176ccf84f9b09f9b6e"
+  },
+  "remaining": [
+    "iOS compile and hosted XCTest run (includes real SwiftTerm engine lifecycle test)",
+    "ActivityKit/notifications/UI privacy on device",
+    "CloudKit account-switch acceptance with authorized accounts",
+    "autonomous widget with app stopped during account change"
+  ]
+}
