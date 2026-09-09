@@ -47,7 +47,8 @@ struct CockpitPlanView: View {
             cwd: task.workingDirectory.path,
             runtime: task.runtime,
             missionID: task.missionID,
-            initialPrompt: task.kickoff
+            initialPrompt: task.kickoff,
+            launchEnvironment: [PlanMCPAuthority.environmentKey + "=" + task.authorityDescriptor.path]
         )
     }
 

@@ -147,7 +147,8 @@ final class CockpitTab: Identifiable {
         runtime: AgentRuntime = .claudeCode,
         missionID: UUID = UUID(),
         resumeSessionId: String? = nil,
-        initialPrompt: String? = nil
+        initialPrompt: String? = nil,
+        launchEnvironment: [String] = []
     ) {
         self.projectName = projectName
         self.cwd = cwd
@@ -156,7 +157,14 @@ final class CockpitTab: Identifiable {
         self.resumeSessionId = resumeSessionId
         self.sessionId = resumeSessionId
         self.initialPrompt = initialPrompt
+        self.launchEnvironment = launchEnvironment
     }
+
+    /// `KEY=value` entries added to the runtime's environment for this tab only,
+    /// such as the plan authority descriptor of a launched task. Not persisted:
+    /// a restored tab restarts as a legacy caller rather than with a grant it
+    /// can no longer prove was meant for it.
+    let launchEnvironment: [String]
 
     var isSpawned: Bool { terminal != nil }
 

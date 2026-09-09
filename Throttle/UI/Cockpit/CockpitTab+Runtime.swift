@@ -66,7 +66,7 @@ extension CockpitTab {
         }
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let shellName = (shell as NSString).lastPathComponent
-        let env = Self.terminalEnvironment()
+        let env = Self.terminalEnvironment() + launchEnvironment
         term.startProcess(executable: shell, args: [], environment: env, execName: "-\(shellName)")
         rootProcessIdentity = term.process.flatMap { NativeProcessIdentity.capture($0.shellPid) }
         if let rootProcessIdentity { LiveAgentRoots.register(rootProcessIdentity) }

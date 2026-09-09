@@ -284,10 +284,29 @@ integration CI):
   a blank project for an unattributed session, and leaves no header-only file
   behind on failure. `CSVExporterTests` reproduce both.
 
+- **L2 capability-bound callers (implemented after the design above).**
+  `PlanMCPAuthority` is a private 0600 descriptor the launcher writes in the
+  user's Application Support — never inside a repository — naming the plan's
+  repository and the task's worktree, the author the runtime speaks as and the
+  operations it may perform (`read`, `event`, `verdict`; never another
+  `claim`). `TaskLauncher.prepare` writes it in the same transaction as the
+  claim; the Cockpit passes its path to that tab's runtime only through
+  `THROTTLE_PLAN_AUTHORITY`, and the MCP router measures every task call
+  against it. No descriptor: legacy caller, unchanged. Present: narrowed.
+  Unreadable, world-readable, foreign-owned, symlinked, malformed or expired:
+  every call refused, because a launcher that meant to narrow rights must
+  not silently widen them. A restored tab restarts as a legacy caller.
+  Tests: descriptor loading and refusals, symlinked project resolution,
+  router refusals, launcher writes 0600 outside the repo with the right grant.
+- **L3 instrument.** `scripts/pilot-metrics.py` aggregates the ten-task
+  registry without inventing a number (4 tests; committed registry: 0/10).
+- **L4 foundations.** ShadowReplay's bound arithmetic is pinned by tests and
+  the frozen certification set has a stable digest.
+
 Not done: hosted UI acceptance of the diagnostics preview, outbound canaries
 on the CloudKit/LAN mirror payloads (iOS privacy tests exist on the SOTA
 branch), crash testing with a real killed writer, native xcresult import,
-capability descriptor enforcement.
+the ten measured tasks themselves.
 
 ## Exact next gate and continuation
 

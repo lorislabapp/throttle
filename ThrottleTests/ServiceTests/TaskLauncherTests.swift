@@ -59,6 +59,20 @@ final class TaskLauncherTests: XCTestCase {
         let state = try PlanStore(projectRoot: repo).state(for: "T1.1")
         XCTAssertEqual(state.owner, "codex:a")
         XCTAssertEqual(state.missionID, plan.missionID.uuidString)
+
+        // The runtime is launched with a private grant: this plan's repository and
+        // its worktree, this author, reporting only — never another claim.
+        addTeardownBlock { try? FileManager.default.removeItem(at: plan.authorityDescriptor) }
+        let attributes = try FileManager.default.attributesOfItem(atPath: plan.authorityDescriptor.path)
+        XCTAssertEqual((attributes[.posixPermissions] as? Int).map { $0 & 0o777 }, 0o600)
+        XCTAssertFalse(plan.authorityDescriptor.path.hasPrefix(repo.path), "never inside a repository")
+        let environment = [PlanMCPAuthority.environmentKey: plan.authorityDescriptor.path]
+        let grant = try XCTUnwrap(try PlanMCPAuthority.load(environment: environment).get())
+        XCTAssertEqual(grant.author, "codex:a")
+        XCTAssertEqual(grant.operations, [.read, .event, .verdict])
+        XCTAssertNil(grant.refusal(project: plan.workingDirectory.path, author: "codex:a", operation: .event))
+        XCTAssertNil(grant.refusal(project: repo.path, author: "codex:a", operation: .read))
+        XCTAssertNotNil(grant.refusal(project: repo.path, author: "codex:a", operation: .claim))
     }
 
     /// The button may have been drawn before another agent claimed the task.

@@ -16,6 +16,9 @@ enum TaskLauncher {
         let branch: String
         let kickoff: String
         let missionID: UUID
+        /// The private grant the runtime is launched with: this plan's repository
+        /// and this worktree, this author, reporting only — never another claim.
+        let authorityDescriptor: URL
     }
 
     enum LaunchError: Error, Equatable {
@@ -62,10 +65,34 @@ enum TaskLauncher {
                                    type: .claimed, missionID: missionID.uuidString),
                          to: taskID)
 
+        let authority = PlanMCPAuthority(projectRoots: [repo, worktree], author: author,
+                                         operations: [.read, .event, .verdict], expiresAt: nil)
+        let descriptor = try writeAuthority(authority, missionID: missionID)
         return LaunchPlan(taskID: taskID, runtime: runtime, workingDirectory: worktree,
                           branch: try TaskWorktreeService.branchName(for: taskID),
                           kickoff: kickoff(for: task, author: author, plan: plan),
-                          missionID: missionID)
+                          missionID: missionID, authorityDescriptor: descriptor)
+    }
+
+    /// Descriptors live in the user's own Application Support, never inside a
+    /// repository an agent could commit, and are created exclusively with 0600.
+    static var authorityDirectory: URL {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
+        return support.appendingPathComponent("Throttle/authority", isDirectory: true)
+    }
+
+    static func writeAuthority(_ authority: PlanMCPAuthority, missionID: UUID,
+                               directory: URL = authorityDirectory) throws -> URL {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
+                                                attributes: [.posixPermissions: 0o700])
+        let url = directory.appendingPathComponent(missionID.uuidString + ".json")
+        let descriptor = Darwin.open(url.path, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
+        guard descriptor >= 0 else { throw PlanStoreError.unsafeStorage }
+        let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+        try handle.write(contentsOf: try authority.encoded())
+        try handle.close()
+        return url
     }
 
     /// The prompt the agent opens on. It states the task, the boundary it must not

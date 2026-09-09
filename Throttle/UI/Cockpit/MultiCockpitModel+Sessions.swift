@@ -72,7 +72,8 @@ extension MultiCockpitModel {
         cwd: String,
         runtime: AgentRuntime? = nil,
         missionID: UUID = UUID(),
-        initialPrompt: String? = nil
+        initialPrompt: String? = nil,
+        launchEnvironment: [String] = []
     ) -> CockpitTab? {
         guard !isQuitting else { return nil }
         let selectedRuntime = runtime ?? runtimeForNewMission
@@ -84,7 +85,8 @@ extension MultiCockpitModel {
             cwd: cwd,
             runtime: selectedRuntime,
             missionID: missionID,
-            initialPrompt: kickoff
+            initialPrompt: kickoff,
+            launchEnvironment: launchEnvironment
         )
         wire(s)
         sessions.append(s)
