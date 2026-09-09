@@ -50,16 +50,52 @@ dual protocol, and a retrieval benchmark bound to a frozen private corpus.
       app, Live Activity, notifications, Face ID, terminal, VoiceOver;
       Codex↔Claude resume, real Quit, Mac→Linux→Mac conversation.
 
+## Acted on from the 2026-09-09 research
+
+The four reports in `docs/research/` are the evidence behind these.
+
+- [x] **Router is cache-aware.** Caches are model-scoped, so a mid-session
+      detour strands a write proportional to the whole conversation. The
+      advisor now takes the live session's cache position, refuses to advise
+      local inside a warm session, and states what the detour would cost.
+- [x] **Re-entry after absence.** A digest built when the cockpit regains
+      focus after ten minutes or more: what was waiting on a person, what moved
+      on, what stayed quiet, and what the absence cost. Silent sessions fold
+      into one line; the panel does not appear when there is nothing but
+      silence to report.
+- [x] **Alarm discipline** in that digest. Only work where a person is the
+      blocker reaches the top tier. A loop suspicion is a heuristic and is
+      offered as "a guess worth checking, not a verdict"; a rate limit that has
+      already lifted is history, not a demand. Spend and progress are status.
+- [x] **visionOS**: frozen, with the four conditions that would justify
+      revisiting written down in
+      `docs/testing/2026-09-09-visionos-decision.md`.
+
 ## SOTA ledger items still open
 
 From `docs/testing/sota-integration-ledger.md` (increment of 2026-09-09):
 
-- [ ] L1: hosted acceptance of the diagnostics preview; outbound canaries on
-      the CloudKit and LAN mirror payloads.
-- [ ] L2: crash testing with a real killed writer; native xcresult import.
+- [ ] L1: hosted acceptance of the diagnostics preview.
+- [x] L1: outbound canaries on the mirror payload. `OutboundPolicy` moved to
+      `ThrottleShared` and applied to every free-form name in the snapshot —
+      device, project, model, hosts — so the guarantee holds for CloudKit and
+      the LAN peer alike. The pairing secret is deliberate and untouched.
+- [x] L2: crash testing with a real killed writer (`PlanStoreCrashTests`):
+      torn tail refused not repaired, acknowledged events survive, a lock whose
+      holder died is released by the kernel.
+- [x] L2: native xcresult import. `WorkflowResultImporter` reads the inventory
+      `xcresulttool` records and upgrades a passing command receipt to a
+      test-inventory one; an unfamiliar result state is unresolved rather than
+      a pass, a stale bundle is refused, and a run whose inputs moved is never
+      rescued by an inventory.
 - [ ] L3: the cockpit workflow itself (PlanStore is hardened, the surface and
       the full journey are not).
-- [ ] L4: frozen evaluation cases, repetitions, human adjudication.
+- [x] L4: repetitions. A case replayed under the same configuration carries a
+      repetition group; the ledger reports agreement across repeats and names
+      the groups that disagreed. A bound may only be quoted when there are
+      enough adjudicated claims, none of them false, and no repeat that
+      disagreed with itself — the arithmetic still produces a number, the gate
+      is what refuses to publish it. Freezing and adjudication already existed.
 - [ ] L5: retrieval/abstention/isolation comparison — the dense challenger is
       measured `measured_not_promoted`; BM25 stays production until a
       significant, product-relevant gain is measured.

@@ -150,6 +150,34 @@ final class MultiCockpitModel {
     /// canonical working set. Until then, persisting would write garbage.
     var sessionsLoaded = false
 
+    /// When the cockpit last lost the user's attention, and the reading built
+    /// for the moment it comes back. Both are memory only: a digest that
+    /// survived a relaunch would describe an absence nobody had.
+    @ObservationIgnored var awaySince: Date?
+    var reentryDigest: SessionReentryDigest?
+
+    /// Call when the app stops being frontmost. The first such moment starts
+    /// the absence; later ones do not restart it, or a person glancing at
+    /// another window would never accumulate one.
+    func noteAttentionLeft(at date: Date = Date()) {
+        guard awaySince == nil else { return }
+        awaySince = date
+    }
+
+    /// Call when the app becomes frontmost again. Produces a digest only when
+    /// the absence was long enough to have cost something, and only when there
+    /// is something other than silence to report.
+    func noteAttentionReturned(at date: Date = Date()) {
+        defer { awaySince = nil }
+        guard let awaySince else { return }
+        let digest = SessionReentryService.digest(
+            snapshots: sessions.map(\.reentrySnapshot), awaySince: awaySince, now: date
+        )
+        reentryDigest = (digest?.isWorthShowing == true) ? digest : nil
+    }
+
+    func dismissReentryDigest() { reentryDigest = nil }
+
     static let hmFormatter: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "h:mm a"; return f
     }()

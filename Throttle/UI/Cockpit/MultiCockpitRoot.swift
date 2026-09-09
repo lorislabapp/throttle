@@ -59,6 +59,7 @@ struct MultiCockpitRoot: View {
             if !model.duplicateCwds.isEmpty { duplicateBanner }
             if !model.rateLimitedSessions.isEmpty { rateLimitBanner }
             if let n = model.autoPauseCountdown { autoPauseBanner(n) } else if let hint = model.pacingHint { pacingBanner(hint) }
+            if let digest = model.reentryDigest { reentryPanel(digest) }
             if let loop = model.loopSessions.first { loopBanner(loop) }
             if let leak = model.leakSessions.first { leakBanner(leak) }
             HStack(spacing: 0) {
@@ -82,12 +83,24 @@ struct MultiCockpitRoot: View {
         .onReceive(NotificationCenter.default.publisher(for: .cockpitNotificationsDenied)) { _ in
             showNotifBanner = true
         }
+        // Coming back is the expensive part: rebuilding the picture costs more
+        // than reading it did. These two note the absence so the panel above
+        // can answer "what happened while I was away" instead of restating now.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+            model.noteAttentionLeft()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            model.noteAttentionReturned()
+        }
         .sheet(isPresented: $showHealth) { HealthCheckView().environment(appState) }
         .sheet(isPresented: $showActivity) { WorkActivityView().environment(appState) }
         .sheet(isPresented: $showSetup) { ClaudeSetupView() }
         .sheet(isPresented: $showWhatsNew) { WhatsNewView() }
         .sheet(item: $pendingHandoff) { handoff in
-            MissionHandoffSheet(handoff: handoff) { confirmed in
+            MissionHandoffSheet(
+                handoff: handoff,
+                sourceCache: model.sessions.first { $0.id == handoff.sourceTabID }?.promptCacheImpact
+            ) { confirmed in
                 Task { _ = await model.continueMission(confirmed.sourceTabID, with: confirmed) }
                 pendingHandoff = nil
             } onCancel: {

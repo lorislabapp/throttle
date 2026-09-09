@@ -97,6 +97,11 @@ enum ShadowReplayService {
         /// Why the human overturned (or upheld) the pipeline. The failure MODE is
         /// what tunes the prompt and the validator; a bare count never did.
         var adjudicationNote: String?
+        /// Cases replayed from the same source under the same configuration
+        /// share this. A bound computed from single runs quietly assumes the
+        /// pipeline is deterministic; sampled decoding is not, so agreement
+        /// across repeats is a precondition for the bound, not a nicety.
+        var repetitionGroupID: String?
 
         // MARK: Material to adjudicate FROM
 
@@ -146,37 +151,6 @@ enum ShadowReplayService {
         }
         var falseVerified: Int { certified.filter(\.isFalseVerified).count }
 
-        /// Exact one-sided 95% upper bound on the false-`verified` rate, given
-        /// zero observed false positives: 1 − α^(1/n), not the 3/n
-        /// approximation. nil once a false positive exists — then the rate is
-        /// measured, not bounded — and nil below `minimumForBound`, where the
-        /// bound is arithmetically real but too weak to mean anything.
-        var falseVerifiedBound95: Double? {
-            let n = certifiedVerifiedClaims
-            guard n >= Self.minimumForBound, falseVerified == 0 else { return nil }
-            return 1 - pow(0.05, 1.0 / Double(n))
-        }
-
-        /// Below this many cases the bound exceeds 25% — reporting it invites
-        /// the reader to hear "proven" where the arithmetic says "unknown".
-        static let minimumForBound = 10
-
-        /// Cases needed, all passing, to push the 95% bound under `target`.
-        /// 299 for 1%, 99 for 3%, 598 for 0.5% — the numbers behind the
-        /// golden-set sizing, derived rather than copied.
-        static func casesNeeded(forBound target: Double, confidence: Double = 0.95) -> Int {
-            guard target > 0, target < 1, confidence > 0, confidence < 1 else { return .max }
-            return Int(ceil(log(1 - confidence) / log(1 - target)))
-        }
-
-        /// Kept as a SECONDARY signal: it bounds hard failures (escalate/error),
-        /// which are the cases the pipeline correctly refused. Useful for sizing
-        /// how often the local model gives up, useless as a safety claim — a
-        /// wrong `verified` never appears in it.
-        var hardFailureBound95: Double? {
-            guard replayed >= Self.minimumForBound, hardFailures == 0 else { return nil }
-            return 1 - pow(0.05, 1.0 / Double(replayed))
-        }
         static let empty = Ledger(entries: [])
     }
 

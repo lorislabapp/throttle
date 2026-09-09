@@ -24,13 +24,44 @@ enum RouterAdvisorService {
         }
     }
 
+    /// What leaving a warm session would cost. Caches are model-scoped, so a
+    /// detour to another model does not read the context that is already paid
+    /// for; coming back rebuilds it at the write rate. The number is the
+    /// session's own context repriced, not an average.
+    struct Detour: Sendable, Equatable {
+        let contextTokens: Int
+        let strandedEUR: Double
+
+        var line: String {
+            let tokens = contextTokens >= 1_000
+                ? "\(contextTokens / 1_000)k" : "\(contextTokens)"
+            return String(format: "leaving this session strands %@ of warm context (~€%.2f to rebuild)",
+                          tokens, strandedEUR)
+        }
+    }
+
     struct Advice: Sendable, Equatable {
         let recommendation: Recommendation
         let reasons: [String]
         /// Personal evidence line from the shadow-replay ledger, when any exists
         /// for this family of ask ("11 replays, 0 hard failures").
         let history: String?
+        /// Present only when the advice was given inside a session that already
+        /// holds a warm cache — what a detour would throw away.
+        let detour: Detour?
+
+        init(recommendation: Recommendation, reasons: [String],
+             history: String? = nil, detour: Detour? = nil) {
+            self.recommendation = recommendation
+            self.reasons = reasons
+            self.history = history
+            self.detour = detour
+        }
     }
+
+    /// Below this, the warm context is not worth protecting: rebuilding it costs
+    /// less than the awkwardness of refusing a reasonable local detour.
+    static let sessionAffinityFloor = 5_000
 
     // Signals from the research's feature table. Criticality and breadth force
     // frontier; only a bounded artifact class with no counter-signal earns local.
@@ -52,8 +83,36 @@ enum RouterAdvisorService {
 
     /// Pure and fast — safe to call on every keystroke of an objective field.
     /// `ledger` is injected so callers load it once, not per keypress.
+    /// `session` is the live session's cache position, when the ask is being
+    /// made inside one. Passing it turns on session affinity: the advice may
+    /// still be local at a session boundary, but never in the middle of a
+    /// conversation whose warm context a detour would strand.
     static func advise(objective: String,
-                       ledger: ShadowReplayService.Ledger = ShadowReplayService.loadLedger()) -> Advice {
+                       ledger: ShadowReplayService.Ledger = ShadowReplayService.loadLedger(),
+                       session: PromptCacheImpact? = nil) -> Advice {
+        let advice = judge(objective: objective, ledger: ledger)
+        return applyingSessionAffinity(advice, session: session)
+    }
+
+    /// Session affinity, applied after the judgement rather than inside it, so
+    /// the rules stay readable and the cost is stated rather than hidden in a
+    /// verdict. It only ever moves advice towards frontier.
+    static func applyingSessionAffinity(_ advice: Advice, session: PromptCacheImpact?) -> Advice {
+        guard let session, session.contextTokens >= sessionAffinityFloor else { return advice }
+        let detour = Detour(contextTokens: session.contextTokens, strandedEUR: session.rebuildEUR)
+        guard advice.recommendation == .local else {
+            return Advice(recommendation: advice.recommendation, reasons: advice.reasons,
+                          history: advice.history, detour: detour)
+        }
+        return Advice(
+            recommendation: .frontier,
+            reasons: [detour.line + " — route between sessions, not inside one"] + advice.reasons,
+            history: advice.history, detour: detour
+        )
+    }
+
+    private static func judge(objective: String,
+                              ledger: ShadowReplayService.Ledger) -> Advice {
         let text = objective.trimmingCharacters(in: .whitespacesAndNewlines)
         guard text.count >= 12 else {
             return Advice(recommendation: .uncertain,

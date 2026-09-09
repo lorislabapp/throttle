@@ -6,6 +6,19 @@ extension CockpitTab {
 
     /// A question claude printed and is (best-effort) waiting on.
     struct Question: Identifiable { let id = UUID(); let text: String; let askedAt = Date() }
+    /// The tab reduced to what a returning reader needs. Kept beside the live
+    /// state so the digest can be built from plain values and tested without a
+    /// running cockpit.
+    var reentrySnapshot: SessionReentrySnapshot {
+        SessionReentrySnapshot(
+            id: id, name: projectName, isLive: isLive, isHibernated: isHibernated,
+            needsInput: needsInput, latestQuestion: latestQuestion,
+            questionAskedAt: questions.last?.askedAt, stopIssue: stopIssue,
+            rateLimitedUntil: rateLimitedUntil, repeatedTool: loopSignal?.repeatedTool,
+            repeats: loopSignal?.repeats ?? 0, lastActivityAt: lastActivityAt, spentEUR: eur
+        )
+    }
+
     /// The latest question text, for inline display.
     var latestQuestion: String? { questions.last?.text }
     var isRateLimited: Bool { (rateLimitedUntil.map { $0 > Date() }) ?? false }

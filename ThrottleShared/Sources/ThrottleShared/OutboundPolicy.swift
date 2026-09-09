@@ -1,18 +1,18 @@
 import Foundation
 
-/// The one rule every export shares: credential-shaped strings never leave,
-/// whatever the file is for. Exports remain data boundaries — a usage CSV on
+/// The one rule every outbound payload shares: credential-shaped strings never
+/// leave, whatever they are travelling in. Exports remain data boundaries — a usage CSV on
 /// the Desktop still names the user's own projects — but a token that ended up
 /// in a path, a model name or a note is masked at the boundary, not trusted
 /// to have been kept out upstream. The masks name the kind, never the value.
-enum OutboundPolicy {
-    struct Pattern: Sendable {
-        let kind: String
-        let regex: NSRegularExpression
+public enum OutboundPolicy {
+    public struct Pattern: Sendable {
+        public let kind: String
+        public let regex: NSRegularExpression
     }
 
     /// Ordered from most to least specific so a token is named by its narrowest kind.
-    static let patterns: [Pattern] = [
+    public static let patterns: [Pattern] = [
         ("anthropic-key", #"sk-ant-[A-Za-z0-9_\-]{8,}"#),
         ("github-token", #"(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}"#),
         ("github-token", #"github_pat_[A-Za-z0-9_]{20,}"#),
@@ -27,7 +27,7 @@ enum OutboundPolicy {
     }
 
     /// Masks every credential-shaped substring; clean text comes back unchanged.
-    static func scrub(_ text: String) -> String {
+    public static func scrub(_ text: String) -> String {
         var output = text
         for pattern in patterns {
             let range = NSRange(output.startIndex..., in: output)
@@ -40,7 +40,7 @@ enum OutboundPolicy {
 
     /// The kinds present in a text, for tests and for a preview that must say
     /// what was masked without repeating it.
-    static func findings(in text: String) -> [String] {
+    public static func findings(in text: String) -> [String] {
         patterns.filter { $0.regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil }
             .map(\.kind)
     }

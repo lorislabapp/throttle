@@ -4,6 +4,9 @@ import ThrottleShared
 
 struct MissionHandoffSheet: View {
     let handoff: MissionHandoff
+    /// The source session's cache position, so the advisory can say what this
+    /// handoff actually strands instead of pricing an average conversation.
+    let sourceCache: PromptCacheImpact?
     let onContinue: (MissionHandoff) -> Void
     let onCancel: () -> Void
     @State var objective: String
@@ -18,10 +21,12 @@ struct MissionHandoffSheet: View {
 
     init(
         handoff: MissionHandoff,
+        sourceCache: PromptCacheImpact? = nil,
         onContinue: @escaping (MissionHandoff) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.handoff = handoff
+        self.sourceCache = sourceCache
         self.onContinue = onContinue
         self.onCancel = onCancel
         _objective = State(initialValue: handoff.objective)
@@ -64,7 +69,8 @@ struct MissionHandoffSheet: View {
                             .font(.system(size: 9, weight: .semibold, design: .monospaced))
                             .padding(.horizontal, 6).padding(.vertical, 2)
                             .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.primary.opacity(0.25)))
-                        Text(([advice.reasons.first, advice.history].compactMap { $0 }).joined(separator: " · "))
+                        Text(([advice.reasons.first, advice.detour?.line, advice.history]
+                            .compactMap { $0 }).joined(separator: " · "))
                             .font(.system(size: 10.5)).foregroundStyle(.secondary)
                             .lineLimit(2)
                     }
@@ -72,10 +78,12 @@ struct MissionHandoffSheet: View {
             }
             .onAppear {
                 replayLedger = ShadowReplayService.loadLedger()
-                routerAdvice = RouterAdvisorService.advise(objective: objective, ledger: replayLedger)
+                routerAdvice = RouterAdvisorService.advise(objective: objective, ledger: replayLedger,
+                                                          session: sourceCache)
             }
             .onChange(of: objective) {
-                routerAdvice = RouterAdvisorService.advise(objective: objective, ledger: replayLedger)
+                routerAdvice = RouterAdvisorService.advise(objective: objective, ledger: replayLedger,
+                                                          session: sourceCache)
             }
 
             VStack(alignment: .leading, spacing: 8) {

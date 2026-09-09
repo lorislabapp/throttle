@@ -1,4 +1,5 @@
 @testable import Throttle
+import ThrottleShared
 import XCTest
 
 /// Canaries are synthetic: shaped like real credentials, never real ones.
