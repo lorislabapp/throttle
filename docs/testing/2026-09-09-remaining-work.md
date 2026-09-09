@@ -50,6 +50,27 @@ dual protocol, and a retrieval benchmark bound to a frozen private corpus.
       app, Live Activity, notifications, Face ID, terminal, VoiceOver;
       Codex↔Claude resume, real Quit, Mac→Linux→Mac conversation.
 
+## Acted on from the 2026-09-09 research
+
+The four reports in `docs/research/` are the evidence behind these.
+
+- [x] **Router is cache-aware.** Caches are model-scoped, so a mid-session
+      detour strands a write proportional to the whole conversation. The
+      advisor now takes the live session's cache position, refuses to advise
+      local inside a warm session, and states what the detour would cost.
+- [ ] **Re-entry after absence.** The human-factors evidence says the feature
+      is not the live view: rebuilding situation awareness costs about a third
+      of capacity even in a management-by-exception system, and resuming an
+      interrupted task took 25 min 26 s in Mark et al. 2005. Nothing in
+      Throttle addresses the moment attention comes back.
+- [ ] **Alarm discipline.** A tool call or a token tick is a status, not an
+      alarm; the industrial standard is at most one alarm per ten minutes and
+      three priorities. Below 0.70 reliability a detector is worse than none.
+- [ ] **visionOS**: keep `ThrottleVision` frozen as the small windowed slice it
+      is, with an explicit kill condition. The market read is negative as a
+      product and the transport needs no entitlement, so there is nothing to
+      hurry.
+
 ## SOTA ledger items still open
 
 From `docs/testing/sota-integration-ledger.md` (increment of 2026-09-09):

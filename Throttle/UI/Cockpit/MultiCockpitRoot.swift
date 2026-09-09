@@ -87,7 +87,10 @@ struct MultiCockpitRoot: View {
         .sheet(isPresented: $showSetup) { ClaudeSetupView() }
         .sheet(isPresented: $showWhatsNew) { WhatsNewView() }
         .sheet(item: $pendingHandoff) { handoff in
-            MissionHandoffSheet(handoff: handoff) { confirmed in
+            MissionHandoffSheet(
+                handoff: handoff,
+                sourceCache: model.sessions.first { $0.id == handoff.sourceTabID }?.promptCacheImpact
+            ) { confirmed in
                 Task { _ = await model.continueMission(confirmed.sourceTabID, with: confirmed) }
                 pendingHandoff = nil
             } onCancel: {
