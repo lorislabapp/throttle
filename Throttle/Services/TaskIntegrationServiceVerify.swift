@@ -57,8 +57,18 @@ extension TaskIntegrationService {
         let result = shell(command, in: worktree, timeout: timeout)
         let after = try? assess(taskID: taskID, in: repo)
         let unchanged = after?.stamp == stamp && after?.hasLooseWork == false
-        let receipt = WorkflowEvidenceReceipt.command(command, stamp: stamp,
+        var receipt = WorkflowEvidenceReceipt.command(command, stamp: stamp,
             startedAt: startedAt, finishedAt: Date(), result: (result.ok, unchanged))
+        // The stamp covers the two revisions; these name the rest of the inputs.
+        let untracked = TaskIntegrationService.git(["ls-files", "--others", "--exclude-standard", "-z"], in: worktree)
+        receipt.untrackedDigest = untracked.ok
+            ? WorkflowEvidenceReceipt.digest(ofUntracked: untracked.output.split(separator: "\0").map(String.init))
+            : nil
+        let toolchain = shell("xcode-select -p && xcodebuild -version", in: worktree, timeout: 30)
+        receipt.environmentDigest = toolchain.ok
+            ? WorkflowEvidenceReceipt.digest(environment: ProcessInfo.processInfo.environment,
+                                             toolchain: toolchain.output)
+            : nil
         let changedNotice = "\n[throttle] Inputs changed or could not be rechecked; verification is incomplete."
         let output = result.output + (unchanged ? "" : changedNotice)
         let verdict = Verdict(passed: result.ok && unchanged, output: boundedVerificationOutput(output),

@@ -60,6 +60,39 @@ final class PlanStoreTests: XCTestCase {
         XCTAssertEqual(read.events.last?.pct, 40)
     }
 
+    /// The crash the fsync exists for: a torn trailing write reads as an invalid
+    /// chain, stops further appends and is never trimmed behind the user's back.
+    func testTornTrailingWriteIsRefusedNotRepaired() throws {
+        try writePlan(twoLeafPlan)
+        let store = PlanStore(projectRoot: root)
+        try store.append(event(.claimed), to: "T1.1")
+        try store.append(event(.progress, pct: 40), to: "T1.1")
+
+        let log = root.appendingPathComponent(".throttle/log/T1.1.ndjson")
+        var bytes = try Data(contentsOf: log)
+        bytes.removeLast(9)
+        try bytes.write(to: log)
+        let torn = try Data(contentsOf: log)
+
+        let read = try PlanStore(projectRoot: root).events(for: "T1.1")
+        XCTAssertFalse(read.chainValid)
+        XCTAssertEqual(read.events.count, 1, "the intact prefix is still readable")
+        XCTAssertThrowsError(try store.append(event(.progress, pct: 70), to: "T1.1")) { error in
+            XCTAssertEqual(error as? PlanStoreError, .invalidLog("T1.1"))
+        }
+        XCTAssertEqual(try Data(contentsOf: log), torn, "a refused append leaves the torn log untouched")
+    }
+
+    /// The first event of a task creates its log file; the directory entry is
+    /// flushed with it, so a fresh store on the same directory sees the event.
+    func testFirstEventIsVisibleToAFreshStoreAndSurvivesADroppedCache() throws {
+        try writePlan(twoLeafPlan)
+        try PlanStore(projectRoot: root).append(event(.claimed), to: "T1.2")
+        let fresh = try PlanStore(projectRoot: root).events(for: "T1.2")
+        XCTAssertEqual(fresh.events.map(\.seq), [1])
+        XCTAssertTrue(fresh.chainValid)
+    }
+
     /// What the chain actually buys: an edit to any line but the last is caught,
     /// because the following line's `prev` no longer matches.
     func testEditedLogBreaksTheChain() throws {

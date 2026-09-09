@@ -12,6 +12,7 @@ enum PlanStoreError: Error, Equatable {
     case invalidLog(String)
     case eventIdentityConflict
     case staleSequence
+    case writeNotDurable
 }
 
 /// Reads and writes a project's `.throttle/` directory.
@@ -237,10 +238,32 @@ final class PlanStore: @unchecked Sendable {
               info.st_nlink == 1 else { throw PlanStoreError.unsafeStorage }
         let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: false)
         try handle.write(contentsOf: Data(line.utf8))
-        try handle.synchronize()
+        try Self.synchronize(descriptor)
+        if existing.isEmpty { try Self.synchronizeDirectory(logDir) }
 
         replayCache[taskID] = nil
         return stamped
+    }
+
+    /// `fsync` lets the drive keep the line in its own cache; on Apple storage
+    /// only `F_FULLFSYNC` asks for durable media. A crash in between leaves at
+    /// most a torn trailing line, which `eventsImpl` reports as an invalid chain
+    /// and `appendImpl` refuses to build on — never a silently trimmed log.
+    static func synchronize(_ descriptor: Int32) throws {
+        guard fcntl(descriptor, F_FULLFSYNC) == 0 || fsync(descriptor) == 0 else {
+            throw PlanStoreError.writeNotDurable
+        }
+    }
+
+    /// A new log's directory entry needs its own flush, or a crash can drop the
+    /// whole file while the store already reported its first event as written.
+    private static func synchronizeDirectory(_ url: URL) throws {
+        let descriptor = Darwin.open(url.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+        guard descriptor >= 0 else { throw PlanStoreError.unsafeStorage }
+        defer { Darwin.close(descriptor) }
+        guard fcntl(descriptor, F_FULLFSYNC) == 0 || fsync(descriptor) == 0 else {
+            throw PlanStoreError.writeNotDurable
+        }
     }
 
     // MARK: - Projection

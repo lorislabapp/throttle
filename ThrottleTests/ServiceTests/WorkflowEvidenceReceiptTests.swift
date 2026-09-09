@@ -36,6 +36,32 @@ final class WorkflowEvidenceReceiptTests: XCTestCase {
         XCTAssertFalse(receipt.provesCompleteTests())
     }
 
+    func test_inputDigestsAreOrderInsensitiveAllowlistedAndOptional() throws {
+        let untracked = WorkflowEvidenceReceipt.digest(ofUntracked: ["b.txt", "a/c.log", "b.txt", ""])
+        XCTAssertEqual(untracked, WorkflowEvidenceReceipt.digest(ofUntracked: ["a/c.log", "b.txt"]))
+        XCTAssertNotEqual(untracked, WorkflowEvidenceReceipt.digest(ofUntracked: []))
+        XCTAssertEqual(untracked.count, 64)
+
+        let base = ["PATH": "/usr/bin", "DEVELOPER_DIR": "/Applications/Xcode.app", "HOME": "/Users/a"]
+        var leaked = base
+        leaked["ANTHROPIC_API_KEY"] = "sk-synthetic"
+        leaked["HOME"] = "/Users/b"
+        XCTAssertEqual(WorkflowEvidenceReceipt.digest(environment: base, toolchain: "Xcode 26.6"),
+                       WorkflowEvidenceReceipt.digest(environment: leaked, toolchain: "Xcode 26.6"),
+                       "only allowlisted keys shape the digest; secrets and HOME never do")
+        XCTAssertNotEqual(WorkflowEvidenceReceipt.digest(environment: base, toolchain: "Xcode 26.6"),
+                          WorkflowEvidenceReceipt.digest(environment: base, toolchain: "Xcode 26.5"))
+
+        // A receipt written before the digests existed still decodes, with nothing claimed.
+        let data = try JSONEncoder().encode(command)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertNil(object["untrackedDigest"])
+        let decoded = try JSONDecoder().decode(WorkflowEvidenceReceipt.self, from: data)
+        XCTAssertNil(decoded.untrackedDigest)
+        XCTAssertNil(decoded.environmentDigest)
+        XCTAssertFalse(decoded.provesCompleteTests())
+    }
+
     func test_unknownSchemaAndMissingEvidenceAreNotPromoted() throws {
         var receipt = command
         receipt.schemaVersion = 99

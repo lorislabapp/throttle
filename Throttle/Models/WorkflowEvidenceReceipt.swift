@@ -19,6 +19,11 @@ struct WorkflowEvidenceReceipt: Codable, Sendable, Equatable {
     var expectedTests: [String]?
     var passedTests: [String]?
     var skippedTests: [String]?
+    /// Inputs a revision stamp cannot see, recorded so the receipt names the
+    /// files and toolchain it was true for. Absent on receipts written before
+    /// they were captured; they never widen or narrow what a receipt proves.
+    var untrackedDigest: String?
+    var environmentDigest: String?
 
     static func command(_ command: String, stamp: String, startedAt: Date,
                         finishedAt: Date, result: (succeeded: Bool, revisionsUnchanged: Bool)) -> Self {
@@ -27,6 +32,26 @@ struct WorkflowEvidenceReceipt: Codable, Sendable, Equatable {
              inputStamp: stamp,
              commandDigest: SHA256.hash(data: Data(command.utf8)).map { String(format: "%02x", $0) }.joined(),
              startedAt: startedAt, finishedAt: finishedAt)
+    }
+
+    /// Environment variables that change what a verification command runs.
+    /// Anything else — credentials included — is deliberately not part of the
+    /// digest, so a receipt can be shown without leaking the shell.
+    static let environmentKeys = ["DEVELOPER_DIR", "PATH", "SDKROOT", "TOOLCHAINS"]
+
+    /// Order-insensitive digest of untracked paths; an empty list still digests,
+    /// so "nothing untracked" is distinguishable from "not recorded".
+    static func digest(ofUntracked paths: [String]) -> String {
+        digest(Array(Set(paths.filter { !$0.isEmpty })).sorted().joined(separator: "\n"))
+    }
+
+    static func digest(environment: [String: String], toolchain: String) -> String {
+        let pairs = environmentKeys.compactMap { key in environment[key].map { key + "=" + $0 } }
+        return digest((pairs + ["toolchain=" + toolchain]).joined(separator: "\n"))
+    }
+
+    private static func digest(_ text: String) -> String {
+        SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 
     /// Conservative qualification. Command-only and older/unknown schemas never
