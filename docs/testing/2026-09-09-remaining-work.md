@@ -67,10 +67,9 @@ The four reports in `docs/research/` are the evidence behind these.
       blocker reaches the top tier. A loop suspicion is a heuristic and is
       offered as "a guess worth checking, not a verdict"; a rate limit that has
       already lifted is history, not a demand. Spend and progress are status.
-- [ ] **visionOS**: keep `ThrottleVision` frozen as the small windowed slice it
-      is, with an explicit kill condition. The market read is negative as a
-      product and the transport needs no entitlement, so there is nothing to
-      hurry.
+- [x] **visionOS**: frozen, with the four conditions that would justify
+      revisiting written down in
+      `docs/testing/2026-09-09-visionos-decision.md`.
 
 ## SOTA ledger items still open
 
