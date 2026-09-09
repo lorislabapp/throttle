@@ -83,7 +83,11 @@ From `docs/testing/sota-integration-ledger.md` (increment of 2026-09-09):
 - [x] L2: crash testing with a real killed writer (`PlanStoreCrashTests`):
       torn tail refused not repaired, acknowledged events survive, a lock whose
       holder died is released by the kernel.
-- [ ] L2: native xcresult import.
+- [x] L2: native xcresult import. `WorkflowResultImporter` reads the inventory
+      `xcresulttool` records and upgrades a passing command receipt to a
+      test-inventory one; an unfamiliar result state is unresolved rather than
+      a pass, a stale bundle is refused, and a run whose inputs moved is never
+      rescued by an inventory.
 - [ ] L3: the cockpit workflow itself (PlanStore is hardened, the surface and
       the full journey are not).
 - [ ] L4: frozen evaluation cases, repetitions, human adjudication.

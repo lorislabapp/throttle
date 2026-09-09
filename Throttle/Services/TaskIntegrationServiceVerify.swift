@@ -69,6 +69,12 @@ extension TaskIntegrationService {
             ? WorkflowEvidenceReceipt.digest(environment: ProcessInfo.processInfo.environment,
                                              toolchain: toolchain.output)
             : nil
+        // A command's exit code says a command ran. If the command left a result
+        // bundle, read the inventory Xcode recorded and let the receipt make the
+        // stronger claim; if it did not, the receipt stays a command receipt.
+        if let inventory = try? resultInventory(in: worktree, after: startedAt) {
+            receipt = WorkflowResultImporter.upgraded(receipt, with: inventory)
+        }
         let changedNotice = "\n[throttle] Inputs changed or could not be rechecked; verification is incomplete."
         let output = result.output + (unchanged ? "" : changedNotice)
         let verdict = Verdict(passed: result.ok && unchanged, output: boundedVerificationOutput(output),
@@ -79,6 +85,19 @@ extension TaskIntegrationService {
                                     summary: command, passed: verdict.passed, receipt: receipt),
                           to: taskID)
         return verdict
+    }
+
+    /// The bundle a verification command is expected to leave. One conventional
+    /// location, taken only when it was written by this run: an older bundle
+    /// left over from a previous verification would describe another tree.
+    static func resultInventory(in worktree: URL, after: Date = .distantPast) throws
+        -> WorkflowResultImporter.Inventory {
+        let bundle = worktree.appendingPathComponent("build/verify.xcresult")
+        let attributes = try FileManager.default.attributesOfItem(atPath: bundle.path)
+        guard let modified = attributes[.modificationDate] as? Date, modified >= after else {
+            throw WorkflowResultImporter.ImportError.bundleUnreadable("stale result bundle")
+        }
+        return try WorkflowResultImporter.inventory(fromBundle: bundle)
     }
 
     /// Runs `command` and collects its combined output without ever blocking on the
