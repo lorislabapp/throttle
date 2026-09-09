@@ -5,6 +5,7 @@ import XCTest
 /// The usage CSV is the user's own data on their own disk. It must actually be
 /// produced — the previous query named a column the table never had — and it
 /// must not carry a credential-shaped string, whatever put it in a path.
+@MainActor
 final class CSVExporterTests: XCTestCase {
     private var directory = URL(fileURLWithPath: "/")
 
