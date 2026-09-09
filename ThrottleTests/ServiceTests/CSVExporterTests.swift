@@ -9,13 +9,14 @@ import XCTest
 final class CSVExporterTests: XCTestCase {
     private var directory = URL(fileURLWithPath: "/")
 
-    override func setUpWithError() throws {
+    // The async variants run on the class's actor; the throwing ones do not.
+    override func setUp() async throws {
         directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("csv-export-tests-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         try? FileManager.default.removeItem(at: directory)
     }
 
