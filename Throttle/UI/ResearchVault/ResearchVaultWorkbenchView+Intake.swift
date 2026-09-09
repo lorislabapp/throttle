@@ -254,6 +254,11 @@ extension ResearchVaultWorkbenchView {
                     total: Double(model.notebookLMImportProgress.total)
                 )
                 .padding(.bottom, 10)
+                .accessibilityLabel(Text("NotebookLM import"))
+                .accessibilityValue(Text(String(
+                    localized: "\(model.notebookLMImportProgress.completed) of "
+                        + "\(model.notebookLMImportProgress.total) sources"
+                )))
             }
         }
         notebookSyncControls

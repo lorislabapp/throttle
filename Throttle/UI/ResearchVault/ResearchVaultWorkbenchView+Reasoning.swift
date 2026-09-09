@@ -96,6 +96,7 @@ extension ResearchVaultWorkbenchView {
                                         Spacer()
                                         if fact.id == model.selectedReasoningFactID {
                                             Image(systemName: "checkmark.circle.fill")
+                                                .accessibilityHidden(true)
                                         }
                                     }
                                     Text(fact.arguments.joined(separator: " → "))

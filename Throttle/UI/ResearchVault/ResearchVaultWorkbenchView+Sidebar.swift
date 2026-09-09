@@ -171,6 +171,13 @@ extension ResearchVaultWorkbenchView {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? .isSelected : [])
+        // The count is a digit beside a word on screen; spoken, it needs the
+        // noun or VoiceOver reads "Claims, 12" as two unrelated things.
+        .accessibilityLabel(Text(facet.localizedTitle))
+        .accessibilityValue(Text(model.hasSearched || count > 0
+            ? String(localized: "\(count) item(s)")
+            : String(localized: "nothing yet")))
+        .keyboardShortcut(facet.shortcut, modifiers: .command)
     }
 
     /// The space narrows by project; the selected saved view narrows further.

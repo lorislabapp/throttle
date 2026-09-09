@@ -29,8 +29,11 @@ dual protocol, and a retrieval benchmark bound to a frozen private corpus.
       staging folder it syncs into; "Sync now" re-runs the Lot 2 job for those
       only. New material lands in quarantine, unchanged sources count as
       already present, and turning a notebook off forgets its folder.
-- [ ] **Accessibility audit** of the Workbench: VoiceOver, keyboard, Reduce
-      Motion.
+- [x] **Accessibility audit** of the Workbench — recorded in
+      `docs/testing/2026-09-09-vault-workbench-accessibility.md`. Reduce Motion
+      needs no branch (the window animates nothing); Command-1..6 switch panes;
+      spoken counts, progress, status region and decorative icons fixed. A real
+      VoiceOver pass on the running app is still owed.
 
 ## Evidence gates that only Kevin can close
 

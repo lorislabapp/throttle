@@ -41,7 +41,10 @@ extension ResearchVaultWorkbenchView {
             Text("Research Vault")
                 .font(.system(size: 15, weight: .semibold))
             Spacer()
-            if model.isBusy { ProgressView().controlSize(.small) }
+            if model.isBusy {
+                ProgressView().controlSize(.small)
+                    .accessibilityLabel(Text("Working"))
+            }
             Button("Add to vault…") { showAddToVault = true }
                 .disabled(!vaultIsOn)
                 .help(vaultIsOn
@@ -60,6 +63,7 @@ extension ResearchVaultWorkbenchView {
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
                 Text(model.selectedSpace.name)
                     .font(.system(size: 12, weight: .semibold))
                     .padding(.horizontal, 8)
@@ -199,8 +203,13 @@ extension ResearchVaultWorkbenchView {
                     Text("SQLCipher \(health.cipherVersion)").font(.system(size: 11.5, design: .monospaced))
                 }
             }
+            // Every outcome this window reports lands here, so it is spoken as
+            // one region a reader can return to rather than a line that changed
+            // somewhere off screen.
             Text(model.status)
                 .fixedSize(horizontal: false, vertical: true)
+                .accessibilityLabel(Text(model.status))
+                .accessibilityAddTraits(.updatesFrequently)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .font(.system(size: 11.5).monospacedDigit())
