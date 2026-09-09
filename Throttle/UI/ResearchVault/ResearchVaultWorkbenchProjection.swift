@@ -53,19 +53,48 @@ struct ResearchVaultSavedView: Codable, Equatable, Identifiable {
     var query: String
     var projectKey: String?
     var evidenceStatus: ResearchEvidenceStatus?
+    /// Filters added after the first version. They decode as absent on views
+    /// saved before they existed, which reads as "no restriction" — an old view
+    /// must keep showing what it always showed.
+    var sourceKind: ResearchSourceKind?
+    /// Only material observed within this many days. nil means any age.
+    var withinDays: Int?
 
     init(
         id: UUID = UUID(),
         name: String,
         query: String,
         projectKey: String? = nil,
-        evidenceStatus: ResearchEvidenceStatus? = nil
+        evidenceStatus: ResearchEvidenceStatus? = nil,
+        sourceKind: ResearchSourceKind? = nil,
+        withinDays: Int? = nil
     ) {
         self.id = id
         self.name = name
         self.query = query
+        self.sourceKind = sourceKind
+        self.withinDays = withinDays.map { max(1, $0) }
         self.projectKey = projectKey
         self.evidenceStatus = evidenceStatus
+    }
+}
+
+extension ResearchVaultSavedView {
+    /// A saved view is a filter, never a copy: it decides whether a receipt is
+    /// shown, and holds no corpus data of its own. An unset filter restricts
+    /// nothing, so an older view keeps its meaning.
+    func matches(_ receipt: ResearchReceipt, now: Date = Date()) -> Bool {
+        if let projectKey, receipt.projectKey != projectKey { return false }
+        if let evidenceStatus, !receipt.findings.contains(where: { $0.status == evidenceStatus }) {
+            return false
+        }
+        if let sourceKind, !receipt.sources.contains(where: { $0.kind == sourceKind }) { return false }
+        if let withinDays {
+            let horizon = now.addingTimeInterval(-Double(withinDays) * 86_400)
+            let seen = receipt.sources.map(\.observedAt).max() ?? receipt.createdAt
+            if max(seen, receipt.createdAt) < horizon { return false }
+        }
+        return true
     }
 }
 

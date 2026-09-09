@@ -19,10 +19,12 @@ dual protocol, and a retrieval benchmark bound to a frozen private corpus.
 - [x] **Sources panel** — hash and sensitivity were already shown; the row now
       reads its origin in words (NotebookLM notebook and one-based index),
       says how many claims rest on it, and flags content that changed since.
-- [ ] **Versions and drift** — a revised source marks the claims that rested on
-      it; taxonomy drift audit.
-- [ ] **Saved views** are query-only today; the spec asks for project, source,
-      theme and date filters.
+- [x] **Versions and drift** — the Revisions pane already lists a source's
+      versions with the claims each one touched, beside a taxonomy audit.
+- [x] **Saved views** — a view now carries project, evidence status, source kind
+      and a freshness window, captures what is on screen when saved, and
+      narrows every pane when selected. Views written before these filters
+      decode with them unset, so they keep showing what they always showed.
 - [ ] **Opt-in NotebookLM sync** — per-notebook toggle, re-running the Lot 2
       job (idempotent by hash), new material landing in quarantine. Never
       silent.

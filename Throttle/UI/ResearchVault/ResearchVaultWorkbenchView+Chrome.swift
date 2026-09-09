@@ -94,11 +94,38 @@ extension ResearchVaultWorkbenchView {
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             } else {
+                viewFilters
                 secondaryActions
             }
         }
         .padding(.horizontal, 40)
         .padding(.top, 24)
+    }
+
+    /// What a saved view remembers besides the words: the kind of source and how
+    /// recent it must be. Both default to no restriction, so the panes show
+    /// everything until the reader narrows them on purpose.
+    var viewFilters: some View {
+        HStack(spacing: 14) {
+            Picker("Source", selection: $model.savedViewSourceKind) {
+                Text("Any source").tag(ResearchSourceKind?.none)
+                ForEach(ResearchSourceKind.allCases, id: \.self) { kind in
+                    Text(kind.rawValue.capitalized).tag(ResearchSourceKind?.some(kind))
+                }
+            }
+            .accessibilityLabel("Filter by source kind")
+            Picker("Seen", selection: $model.savedViewWithinDays) {
+                Text("Any time").tag(Int?.none)
+                ForEach([7, 30, 90, 365], id: \.self) { days in
+                    Text("Last \(days) days").tag(Int?.some(days))
+                }
+            }
+            .accessibilityLabel("Filter by how recently the source was seen")
+            Spacer()
+        }
+        .labelsHidden()
+        .font(.system(size: 12))
+        .frame(maxWidth: 420)
     }
 
     /// Both actions state their own reason when they cannot run. A control that

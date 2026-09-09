@@ -173,9 +173,10 @@ extension ResearchVaultWorkbenchView {
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
+    /// The space narrows by project; the selected saved view narrows further.
     var scopedApprovedReceipts: [ResearchReceipt] {
         let scope = Set(model.selectedProjectKeys)
-        return model.approvedReceipts.filter { scope.contains($0.projectKey) }
+        return model.viewedApprovedReceipts.filter { scope.contains($0.projectKey) }
     }
 
     @ViewBuilder

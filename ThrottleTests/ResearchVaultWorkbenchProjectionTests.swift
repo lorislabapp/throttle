@@ -5,6 +5,59 @@ import Testing
 
 @Suite("Research Vault Workbench projections")
 struct ResearchVaultWorkbenchProjectionTests {
+    @Test("a saved view filters and holds no corpus data, and an old view still shows everything")
+    func savedViewFilters() throws {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let source = ResearchSource(
+            id: "s-1", kind: .url, locator: "https://example.com/a",
+            observedAt: now.addingTimeInterval(-3 * 86_400),
+            sha256: String(repeating: "a", count: 64)
+        )
+        let receipt = try ResearchReceipt.seal(
+            sessionID: "session", agentID: "agent", projectKey: "throttle", question: "q",
+            findings: [ResearchFinding(claim: "One", status: .verified, evidenceIDs: [source.id])],
+            sources: [source], sensitivity: .internal,
+            createdAt: now.addingTimeInterval(-3 * 86_400)
+        )
+
+        #expect(ResearchVaultSavedView(name: "all", query: "q").matches(receipt, now: now),
+                "a view saved before these filters existed restricts nothing")
+        #expect(ResearchVaultSavedView(name: "v", query: "q", projectKey: "throttle")
+            .matches(receipt, now: now))
+        #expect(!ResearchVaultSavedView(name: "v", query: "q", projectKey: "other")
+            .matches(receipt, now: now))
+        #expect(ResearchVaultSavedView(name: "v", query: "q", evidenceStatus: .verified)
+            .matches(receipt, now: now))
+        #expect(!ResearchVaultSavedView(name: "v", query: "q", evidenceStatus: .contradicted)
+            .matches(receipt, now: now))
+        #expect(ResearchVaultSavedView(name: "v", query: "q", sourceKind: .url)
+            .matches(receipt, now: now))
+        #expect(!ResearchVaultSavedView(name: "v", query: "q", sourceKind: .repository)
+            .matches(receipt, now: now))
+        #expect(ResearchVaultSavedView(name: "v", query: "q", withinDays: 7)
+            .matches(receipt, now: now))
+        #expect(!ResearchVaultSavedView(name: "v", query: "q", withinDays: 1)
+            .matches(receipt, now: now))
+        #expect(ResearchVaultSavedView(name: "v", query: "q", withinDays: 0).withinDays == 1,
+                "a window of no days would show nothing; it is clamped to one")
+
+        // Filters travel; corpus text never does.
+        let encoded = try JSONEncoder().encode(
+            ResearchVaultSavedView(name: "v", query: "topic", sourceKind: .url, withinDays: 30)
+        )
+        let json = try #require(String(data: encoded, encoding: .utf8))
+        #expect(json.contains("\"sourceKind\"") && json.contains("\"withinDays\""))
+        #expect(!json.contains("example.com") && !json.contains("One"))
+        let decoded = try JSONDecoder().decode(ResearchVaultSavedView.self, from: encoded)
+        #expect(decoded.sourceKind == .url && decoded.withinDays == 30)
+
+        // A view written by the previous version decodes with the new filters unset.
+        let legacy = Data(#"{"id":"\#(UUID().uuidString)","name":"v","query":"q"}"#.utf8)
+        let old = try JSONDecoder().decode(ResearchVaultSavedView.self, from: legacy)
+        #expect(old.sourceKind == nil && old.withinDays == nil)
+        #expect(old.matches(receipt, now: now))
+    }
+
     @Test("a source says where it came from, what rests on it, and whether it moved")
     func sourceStanding() throws {
         let notebook = ResearchSource(
