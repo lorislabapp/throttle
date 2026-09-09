@@ -12,14 +12,26 @@ relais, pas une déclaration de plan terminé ni une autorisation de nettoyage.
   Deux correctifs produit réels (arrêt confirmé malgré un zombie non récolté ;
   hibernation qui récolte son shell), trois correctifs de qualification.
 - **A est sauvegardé** : `feat/context-testing-3.6.0` @ `083b615`, poussé.
-- **Réconciliation A→B faite, locale seulement** :
-  `integration/3.6.0-sota-release` @ `c2888fa` dans
-  `build/integration-3.6.0`, **non poussée, jamais compilée en CI**. Table
-  des 9 conflits dans le journal. Prochaine étape = push + un run CI, sur
-  accord explicite de Kevin (dépôt public : minutes gratuites).
-- Non committé : le paragraphe « CI n°8 » du journal dans le worktree B
-  (déjà repris dans la branche d'intégration) ; les 21 fichiers de
-  `~/GitHub/Throttle` (`feat/research-vault-lots-1-4`), jamais touchés.
+- **Réconciliation A→B→C faite et prouvée** : `integration/3.6.0-sota-release`
+  (worktree `build/integration-3.6.0`, PR draft #4) — le candidat unifié
+  `bdac13b` a passé la CI complète (run 34312608324 : macOS, iOS, Vault ×2,
+  visionOS, quality, validator). C (`feat/research-vault-lots-1-4`) est
+  committé (`32988f4`) et poussé.
+- **Lots livrés ensuite sur cette branche (9 septembre)** — voir le ledger
+  [sota-integration-ledger.md](testing/sota-integration-ledger.md), section
+  « Increment of 2026-09-09 » : gel versionné du corpus benchmark (manifeste
+  privé, gate corpusDrift fermé côté mécanisme, revue du gel = Kevin),
+  durabilité PlanStore (F_FULLFSYNC), reçus avec empreintes non-suivis/toolchain,
+  `OutboundPolicy` + export CSV réparé (bug réel : colonne inexistante),
+  `pilot-metrics.py`, bornes ShadowReplay testées + digest du jeu gelé,
+  `PlanMCPAuthority` (appelants MCP à capacités restreintes, aligné sur la
+  spec MCP 2026-07-28 pour stdio). Chaque lot : lint 0.63.2, diff-check,
+  Python 155/155 ; les tests Swift sont vérifiés par la CI de la PR #4.
+- Ce qui ne peut être fait que par Kevin : revue du gel de corpus (65 documents
+  listés dans `~/Library/Application Support/Throttle/research-vault/`),
+  ≥ 20 questions humaines pour le benchmark, les 10 tâches mesurées
+  (`docs/testing/pilot-10-tasks.csv`, agrégées par `scripts/pilot-metrics.py`),
+  parcours appareils/sessions, artefact signé.
 - Les sections 1–6 ci-dessous restent valables pour les gates non fermés :
   benchmark corpusDrift, dix tâches réelles, parcours appareils/sessions,
   artefact signé. Verdict **NO-GO publication** inchangé.
