@@ -7,7 +7,9 @@ import XCTest
 /// detour would cost rather than leaving the reader to discover it on the bill.
 final class RouterAdvisorCacheTests: XCTestCase {
     private let empty = ShadowReplayService.Ledger.empty
-    private let boundedAsk = "summarize the release notes for this build"
+    /// Deliberately free of every criticality and breadth marker: this suite is
+    /// about affinity, so the underlying verdict must be local on its own.
+    private let boundedAsk = "summarize these meeting notes into three bullets"
 
     private func cache(_ tokens: Int, model: String = "claude-sonnet-5") -> PromptCacheImpact? {
         PromptCacheImpactService.estimate(contextTokens: tokens, model: model)
