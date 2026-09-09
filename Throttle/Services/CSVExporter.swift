@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import GRDB
+import ThrottleShared
 
 /// Exports the full `usage_events` history as a CSV file on the user's
 /// Desktop. Power users (Anthropic Pro Max, multi-org accounts) ask for

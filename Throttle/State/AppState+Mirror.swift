@@ -67,5 +67,11 @@ extension AppState {
             edgeHost: nil,
             edgePort: nil,
             edgeToken: nil)
+        // The names in this payload come from the machine and the filesystem —
+        // a Mac's name, a project folder — so they are whatever a person once
+        // typed. Masking credential shapes here means the guarantee holds for
+        // every transport that carries the snapshot, not just the one in front
+        // of us. The pairing secret is deliberate and stays as it is.
+        .scrubbedForPublication()
     }
 }

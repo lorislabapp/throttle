@@ -76,9 +76,15 @@ The four reports in `docs/research/` are the evidence behind these.
 
 From `docs/testing/sota-integration-ledger.md` (increment of 2026-09-09):
 
-- [ ] L1: hosted acceptance of the diagnostics preview; outbound canaries on
-      the CloudKit and LAN mirror payloads.
-- [ ] L2: crash testing with a real killed writer; native xcresult import.
+- [ ] L1: hosted acceptance of the diagnostics preview.
+- [x] L1: outbound canaries on the mirror payload. `OutboundPolicy` moved to
+      `ThrottleShared` and applied to every free-form name in the snapshot —
+      device, project, model, hosts — so the guarantee holds for CloudKit and
+      the LAN peer alike. The pairing secret is deliberate and untouched.
+- [x] L2: crash testing with a real killed writer (`PlanStoreCrashTests`):
+      torn tail refused not repaired, acknowledged events survive, a lock whose
+      holder died is released by the kernel.
+- [ ] L2: native xcresult import.
 - [ ] L3: the cockpit workflow itself (PlanStore is hardened, the surface and
       the full journey are not).
 - [ ] L4: frozen evaluation cases, repetitions, human adjudication.
