@@ -40,8 +40,20 @@ Scripts/verify-agent-hook.sh
 # Set RESEARCH_VAULT_ALLOW_BENCHMARK_SKIP=1 to opt out deliberately (a machine
 # with no corpus checkout); the skip is then loud and still recorded.
 research_vault_deepsearsh_root="${RESEARCH_VAULT_DEEPSEARSH_ROOT:-/Users/kevinnadjarian/GitHub/DeepSearsh}"
+# A frozen corpus manifest (private, outside the repository) binds the benchmark
+# to a reviewed corpus; drift is refused with a named report instead of a bare
+# hash. Human questions, when present, are the only basis for a quality claim.
+research_vault_manifest="${RESEARCH_VAULT_CORPUS_MANIFEST:-$HOME/Library/Application Support/Throttle/research-vault/golden-set.manifest.json}"
+research_vault_human_queries="${RESEARCH_VAULT_HUMAN_QUERIES:-$HOME/Library/Application Support/Throttle/research-vault/golden-set.human-queries.json}"
+benchmark_arguments=()
+if [ -r "$research_vault_manifest" ]; then
+    benchmark_arguments+=(--manifest "$research_vault_manifest")
+fi
+if [ -r "$research_vault_human_queries" ]; then
+    benchmark_arguments+=(--human-queries "$research_vault_human_queries")
+fi
 if [ -r "$research_vault_deepsearsh_root/catalog.jsonl" ]; then
-    swift run research-vault-benchmark "$research_vault_deepsearsh_root"
+    swift run research-vault-benchmark "$research_vault_deepsearsh_root" "${benchmark_arguments[@]}"
     RESEARCH_VAULT_DEEPSEARSH_ROOT="$research_vault_deepsearsh_root" \
         Scripts/verify-mcp-process.sh
 elif [ "${RESEARCH_VAULT_ALLOW_BENCHMARK_SKIP:-0}" = "1" ]; then

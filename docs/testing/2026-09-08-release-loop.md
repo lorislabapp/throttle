@@ -273,6 +273,45 @@ native du candidat unifié n'a encore eu lieu** : c'est la CI de cette branche,
 à lancer sur accord explicite. Les 670 tests locaux de A comme les 646 de B
 ne valent pas pour l'arbre fusionné.
 
+## Gate benchmark : gel versionné du corpus (9 septembre 2026)
+
+Le benchmark refusait de démarrer (`corpusDrift`) parce que le hash du corpus
+privé était épinglé **dans le source** (`ResearchVaultGoldenSet.expectedCorpusSHA256`,
+gel du 31 août) et que le corpus a évolué (65 documents). Remplacer ce hash
+pour rendre le test vert aurait été un faux vert ; le source n'est pas modifié.
+
+Mécanisme ajouté (`research-vault-benchmark`, package `ResearchVaultKit`) :
+
+- `--freeze PATH` écrit un **manifeste privé** (identifiants + hash de chaque
+  document, hash du corpus, hash du jeu de cas dérivé, date) **hors dépôt** :
+  `~/Library/Application Support/Throttle/research-vault/golden-set.manifest.json`.
+  Un manifeste préexistant est diffé et la dérive (ajoutés / retirés / réécrits)
+  est écrite à côté (`*.drift.json`) — c'est la pièce que relit le réviseur.
+- `--manifest PATH` lie l'exécution au gel : corpus différent → `refused`
+  avec les comptes de dérive et le chemin du rapport (exit 2) ; générateur de
+  requêtes modifié → `generatorChanged` ; manifeste incohérent → refusé.
+- `--human-queries PATH` charge des **questions humaines** (validées contre
+  le corpus : document inconnu, abstention contradictoire, doublon, question
+  copiant un titre → refus). En dessous de 20 cas elles sont rapportées, jamais
+  décisives ; à partir de 20, elles deviennent un gate et le rapport passe de
+  `derived_titles_only` à `human_queries`. Modèle :
+  [golden-set.human-queries.example.json](golden-set.human-queries.example.json).
+- `Scripts/verify.sh` transmet ces fichiers s'ils existent
+  (`RESEARCH_VAULT_CORPUS_MANIFEST`, `RESEARCH_VAULT_HUMAN_QUERIES`).
+
+Résultat réel sur le corpus local, gel du 9 septembre : **65 documents,
+268 requêtes dérivées, recall@10 1,00, MRR 0,982, nDCG 0,987, abstention 1,00,
+CPU p95 10 ms — PASS**, puis `--manifest` → PASS et re-gel → dérive 0/0/0.
+Aucun identifiant privé ne figure dans le dépôt ni dans la sortie standard.
+Tests : 16 fonctions Swift Testing (manifeste, dérive nommée, générateur
+modifié, questions humaines) sur les 4 suites concernées.
+
+**Ce qui reste de ce gate :** (1) la revue indépendante du premier gel — le
+manifeste liste les 65 documents, Kevin confirme qu'ils sont bien le corpus
+voulu ; (2) au moins 20 questions humaines avec leurs documents pertinents,
+seule base d'une affirmation de qualité (les 268 requêtes dérivées des titres
+prouvent la plomberie).
+
 ## Conservation et verdict
 
 Les preuves compactes sont dans [evidence/2026-09-08-release-loop](evidence/2026-09-08-release-loop).

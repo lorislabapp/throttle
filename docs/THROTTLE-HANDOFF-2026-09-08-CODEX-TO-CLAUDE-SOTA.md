@@ -3,6 +3,27 @@
 Enregistré le 8 septembre 2026 à la demande de Kevin. Ceci est un passage de
 relais, pas une déclaration de plan terminé ni une autorisation de nettoyage.
 
+## 0. Reprise Claude Code — état au 9 septembre 2026 (lire en premier)
+
+- **B est vert** : `qualification/3.6.0-release-loop-ci` @ `f846790`, run CI
+  34281635340 entièrement PASS (macOS 646 cas, iOS, Vault Debug/Release,
+  visionOS, quality, validator-evidence). Huit lots `cbb0936`→`f846790`,
+  détaillés dans [le journal release](testing/2026-09-08-release-loop.md).
+  Deux correctifs produit réels (arrêt confirmé malgré un zombie non récolté ;
+  hibernation qui récolte son shell), trois correctifs de qualification.
+- **A est sauvegardé** : `feat/context-testing-3.6.0` @ `083b615`, poussé.
+- **Réconciliation A→B faite, locale seulement** :
+  `integration/3.6.0-sota-release` @ `c2888fa` dans
+  `build/integration-3.6.0`, **non poussée, jamais compilée en CI**. Table
+  des 9 conflits dans le journal. Prochaine étape = push + un run CI, sur
+  accord explicite de Kevin (dépôt public : minutes gratuites).
+- Non committé : le paragraphe « CI n°8 » du journal dans le worktree B
+  (déjà repris dans la branche d'intégration) ; les 21 fichiers de
+  `~/GitHub/Throttle` (`feat/research-vault-lots-1-4`), jamais touchés.
+- Les sections 1–6 ci-dessous restent valables pour les gates non fermés :
+  benchmark corpusDrift, dix tâches réelles, parcours appareils/sessions,
+  artefact signé. Verdict **NO-GO publication** inchangé.
+
 ## 1. Checkout exact et précautions
 
 - Dossier de départ de la session : `/Users/kevinnadjarian/GitHub/Throttle`.

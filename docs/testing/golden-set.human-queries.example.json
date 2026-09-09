@@ -1,0 +1,14 @@
+{
+  "formatVersion": 1,
+  "cases": [
+    {
+      "query": "where did we decide how long diagnostics are retained before export?",
+      "relevantDocumentIDs": ["<documentID from the private catalog>"]
+    },
+    {
+      "query": "what did the payroll audit of 2031 conclude?",
+      "relevantDocumentIDs": [],
+      "expectedAbstention": true
+    }
+  ]
+}
