@@ -133,6 +133,16 @@ struct ResearchClaimsBoardTests {
         ).claims(in: .proof).count == 2, "only a contradiction moves a claim")
     }
 
+    @Test("a claim reference round-trips through its stable id and refuses anything else")
+    func referenceParsing() throws {
+        let reference = ResearchClaimReference(receiptID: "r-1", findingIndex: 3)
+        #expect(ResearchClaimReference(stableID: reference.stableID) == reference)
+        for bad in ["", "r-1", "r-1#finding-", "r-1#finding--1", "r-1#finding-01",
+                    "r-1#finding-x", "#finding-0", "r-1#finding-0#finding-1"] {
+            #expect(ResearchClaimReference(stableID: bad) == nil, "\(bad) is not a reference")
+        }
+    }
+
     @Test("an approved receipt with nothing in it is reported rather than hidden")
     func emptyReceipt() throws {
         let receipt = try receipt([], sources: [source("alpha")])

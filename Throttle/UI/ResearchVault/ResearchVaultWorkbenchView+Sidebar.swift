@@ -200,7 +200,7 @@ extension ResearchVaultWorkbenchView {
         case .sources:
             sourceList
         case .claims:
-            claimList
+            claimsBoard
         case .timeline:
             timelineList
         case .revisions:

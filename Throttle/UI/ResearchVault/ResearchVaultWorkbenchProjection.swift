@@ -1,5 +1,7 @@
 import Foundation
+import ResearchVaultIPCModel
 import ResearchVaultModel
+import ResearchVaultReasoning
 
 struct ResearchVaultSpace: Codable, Equatable, Identifiable {
     enum Kind: String, Codable { case portfolio, project }
@@ -88,7 +90,14 @@ enum ResearchVaultSavedViewStore {
 }
 
 struct ResearchVaultSourceRow: Identifiable, Equatable {
-    var id: String { receiptID + "\u{0}" + source.id }
+    /// One source can be cited by several receipts, so a row is identified by
+    /// the pair. A claim navigates with the same key, built here so the two
+    /// sides cannot drift apart.
+    static func rowID(receiptID: String, sourceID: String) -> String {
+        receiptID + "\u{0}" + sourceID
+    }
+
+    var id: String { Self.rowID(receiptID: receiptID, sourceID: source.id) }
     let receiptID: String
     let projectKey: String
     let sensitivity: ResearchSensitivity
@@ -143,6 +152,36 @@ enum ResearchVaultWorkbenchProjection {
                 return $0.source.observedAt > $1.source.observedAt
             }
             return $0.id < $1.id
+        }
+    }
+
+    /// The hash each source carries today, newest observation wins. A claim
+    /// made against an older hash is what the board calls drift.
+    static func latestSourceHashes(receipts: [ResearchReceipt]) -> [String: String] {
+        var observedAt: [String: Date] = [:]
+        var hashes: [String: String] = [:]
+        for receipt in receipts {
+            for source in receipt.sources where (observedAt[source.id] ?? .distantPast) <= source.observedAt {
+                observedAt[source.id] = source.observedAt
+                hashes[source.id] = source.sha256
+            }
+        }
+        return hashes
+    }
+
+    /// Contradictions the owner actually promoted. An unasserted candidate is
+    /// not a contradiction, and a fact whose arguments do not read back as
+    /// claim references is ignored rather than half-applied.
+    static func promotedContradictions(
+        facts: [ResearchVaultReasoningFactDTO]
+    ) -> [ResearchRelationCandidate] {
+        facts.compactMap { fact in
+            guard fact.asserted, fact.predicate == ResearchRelationKind.contradicts.rawValue,
+                  fact.arguments.count == 2,
+                  let subject = ResearchClaimReference(stableID: fact.arguments[0]),
+                  let object = ResearchClaimReference(stableID: fact.arguments[1]),
+                  subject != object else { return nil }
+            return ResearchRelationCandidate(relation: .contradicts, subject: subject, object: object)
         }
     }
 

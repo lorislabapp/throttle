@@ -16,7 +16,7 @@ extension ResearchVaultWorkbenchView {
             if rows.isEmpty {
                 ContentUnavailableView("No approved sources", systemImage: "doc.badge.clock")
             } else {
-                List(rows) { row in
+                List(rows, selection: $model.selectedSourceID) { row in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Text(row.source.locator).font(.callout.weight(.semibold))
@@ -33,39 +33,6 @@ extension ResearchVaultWorkbenchView {
                             .font(.caption2.monospaced())
                             .foregroundStyle(.tertiary)
                             .textSelection(.enabled)
-                    }
-                    .accessibilityElement(children: .combine)
-                }
-            }
-        }
-    }
-
-    var claimList: some View {
-        let rows = ResearchVaultWorkbenchProjection.claims(receipts: scopedApprovedReceipts)
-        return Group {
-            if rows.isEmpty {
-                ContentUnavailableView("No reviewed claims", systemImage: "checkmark.message")
-            } else {
-                List(rows) { row in
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(row.status.rawValue).font(.caption2.weight(.bold))
-                            Text(row.projectKey).font(.caption).foregroundStyle(.secondary)
-                            Spacer()
-                            Text(row.createdAt.formatted()).font(.caption2.monospacedDigit())
-                        }
-                        Text(row.claim).textSelection(.enabled)
-                        Group {
-                            if row.evidenceIDs.isEmpty {
-                                Text("No evidence ID attached")
-                            } else {
-                                Text("Evidence: \(row.evidenceIDs.joined(separator: ", "))")
-                            }
-                        }
-                        .font(.caption2.monospaced())
-                        .foregroundStyle(
-                            row.evidenceIDs.isEmpty ? Color.orange : Color.secondary
-                        )
                     }
                     .accessibilityElement(children: .combine)
                 }

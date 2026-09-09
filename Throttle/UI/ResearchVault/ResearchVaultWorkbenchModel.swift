@@ -3,6 +3,7 @@ import Observation
 import ResearchVaultIngestion
 import ResearchVaultIPCModel
 import ResearchVaultModel
+import ResearchVaultReasoning
 import ResearchVaultSynthesis
 import ResearchVaultXPCClient
 import ServiceManagement
@@ -36,6 +37,16 @@ final class ResearchVaultWorkbenchModel {
     var reasoningDetail: ResearchVaultReasoningQueryResponse?
     var reasoningGeneration: Int64?
     var selectedReasoningFactID: String?
+    /// Set when a claim sends the reader to the source it rests on.
+    var selectedSourceID: String?
+
+    var latestSourceHashes: [String: String] {
+        ResearchVaultWorkbenchProjection.latestSourceHashes(receipts: approvedReceipts)
+    }
+
+    var promotedContradictions: [ResearchRelationCandidate] {
+        ResearchVaultWorkbenchProjection.promotedContradictions(facts: reasoningFacts)
+    }
     var reasoningRelation = ResearchVaultReasoningRelationKind.dependsOn
     var reasoningSubject: ResearchVaultReasoningClaimReference?
     var reasoningObject: ResearchVaultReasoningClaimReference?
