@@ -244,6 +244,51 @@ python3 -B scripts/verify-macos-evidence.py \
 Recheck that cache's existence after reboot. An output of 670 passed tests does
 not override a changed-source receipt; only a fresh stable run closes this gate.
 
+## Increment of 2026-09-09 (Claude Code, integration branch)
+
+Reference for the caller-authentication question, verified against the MCP
+specification revision 2026-07-28 (Authorization, "Protocol Requirements"):
+*implementations using an STDIO transport SHOULD NOT follow the authorization
+specification and instead retrieve credentials from the environment.* For a
+stdio server launched by the host, the caller's identity is the operating
+system's: whoever can spawn the process under this user already holds every
+right the process has. "Authenticated capability-bound callers" for
+Throttle's stdio MCP therefore means OS identity plus a capability descriptor
+carried by the environment or a 0600 file the launcher owns — not OAuth. A
+design is recorded, not implemented; nothing here widens what a caller may do.
+
+Implemented in this increment (hosted verification pending on the
+integration CI):
+
+- **L2 durability.** `PlanStore` appends now request `F_FULLFSYNC` (with
+  `fsync` fallback) and flush the log directory when a task's first event
+  creates its file; a failed flush is `writeNotDurable`, never a silent
+  success. A torn trailing write reads as an invalid chain, stops further
+  appends and is never trimmed: `testTornTrailingWriteIsRefusedNotRepaired`,
+  `testFirstEventIsVisibleToAFreshStoreAndSurvivesADroppedCache`.
+- **L2 receipts.** `WorkflowEvidenceReceipt` records two inputs a revision
+  stamp cannot see: a digest of untracked paths (`git ls-files --others
+  --exclude-standard`) and a digest of the allowlisted environment
+  (`DEVELOPER_DIR`, `PATH`, `SDKROOT`, `TOOLCHAINS`) plus the toolchain
+  version. They name the environment a receipt was true for; they never widen
+  or narrow what it proves, and receipts written before them still decode.
+  Credentials and `HOME` never shape the digest (tested).
+- **L1 outbound policy.** `OutboundPolicy.scrub` is the one rule every export
+  shares: credential-shaped strings (Anthropic, GitHub, Apple auth keys, AWS,
+  Slack, bearer tokens, private-key blocks) are masked by kind at the boundary.
+  Applied to the usage CSV; diagnostics already export typed values only.
+- **Defect found and fixed while wiring it.** `CSVExporter` selected a
+  `project_path` column that `usage_events` never had, so the About pane's CSV
+  export failed on every database and reported nothing. The export now
+  attributes each event through `file_state.encoded_project` by session, exports
+  a blank project for an unattributed session, and leaves no header-only file
+  behind on failure. `CSVExporterTests` reproduce both.
+
+Not done: hosted UI acceptance of the diagnostics preview, outbound canaries
+on the CloudKit/LAN mirror payloads (iOS privacy tests exist on the SOTA
+branch), crash testing with a real killed writer, native xcresult import,
+capability descriptor enforcement.
+
 ## Exact next gate and continuation
 
 1. Obtain adequate free space without deleting unrelated or rollback material.

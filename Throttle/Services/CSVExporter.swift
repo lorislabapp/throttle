@@ -14,21 +14,40 @@ import GRDB
 enum CSVExporter {
     static func exportToDesktop(database: any DatabaseReader) -> URL? {
         let fm = FileManager.default
-        let timestamp = ISO8601DateFormatter().string(from: Date())
-            .replacingOccurrences(of: ":", with: "")
         let desktop = fm.urls(for: .desktopDirectory, in: .userDomainMask).first
             ?? fm.homeDirectoryForCurrentUser.appendingPathComponent("Desktop")
-        let csvURL = desktop.appendingPathComponent("throttle-usage-\(timestamp).csv")
+        return export(database: database, to: desktop)
+    }
 
-        let header = "timestamp_iso,model,input_tokens,output_tokens,cache_create,cache_read,project_path\n"
+    /// The export is the user's own data on their own disk, so project paths
+    /// stay legible; credential-shaped strings are masked at this boundary all
+    /// the same (`OutboundPolicy`), whatever produced them upstream.
+    static func export(database: any DatabaseReader, to directory: URL) -> URL? {
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+            .replacingOccurrences(of: ":", with: "")
+        let csvURL = directory.appendingPathComponent("throttle-usage-\(timestamp).csv")
+
+        let header = "timestamp_iso,model,input_tokens,output_tokens,cache_create,cache_read,project\n"
         guard let handle = try? makeFileHandle(at: csvURL, header: header) else { return nil }
-        defer { try? handle.close() }
+        var complete = false
+        defer {
+            try? handle.close()
+            // A header-only file is not an export; leave nothing behind on failure.
+            if !complete { try? FileManager.default.removeItem(at: csvURL) }
+        }
 
+        // `usage_events` never carried a project column: the previous SELECT
+        // failed on every database and the export silently produced nothing.
+        // The project is the transcript's encoded directory, reached through
+        // the session's file state; a session without one exports blank.
         let sql = """
-            SELECT timestamp, model, input_tokens, output_tokens,
-                   cache_create, cache_read, project_path
-            FROM usage_events
-            ORDER BY timestamp ASC
+            SELECT u.timestamp, u.model, u.input_tokens, u.output_tokens,
+                   u.cache_create, u.cache_read,
+                   COALESCE((SELECT f.encoded_project FROM file_state f
+                             WHERE f.session_id = u.session_id AND f.encoded_project IS NOT NULL
+                             LIMIT 1), '') AS project
+            FROM usage_events u
+            ORDER BY u.timestamp ASC, u.id ASC
             """
         do {
             try database.read { db in
@@ -43,6 +62,7 @@ enum CSVExporter {
         } catch {
             return nil
         }
+        complete = true
         return csvURL
     }
 
@@ -66,8 +86,9 @@ enum CSVExporter {
         let o: Int = row["output_tokens"] ?? 0
         let cc: Int = row["cache_create"] ?? 0
         let cr: Int = row["cache_read"] ?? 0
-        let proj: String = row["project_path"] ?? ""
-        return "\(iso),\(escape(model)),\(i),\(o),\(cc),\(cr),\(escape(proj))\n"
+        let proj: String = row["project"] ?? ""
+        return "\(iso),\(escape(OutboundPolicy.scrub(model))),\(i),\(o),\(cc),\(cr),"
+            + "\(escape(OutboundPolicy.scrub(proj)))\n"
     }
 
     /// Quote any field that contains a comma, quote, or newline; double
