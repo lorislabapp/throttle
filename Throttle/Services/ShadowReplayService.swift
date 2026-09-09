@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// Shadow replay: the honest way to close the counterfactual that
