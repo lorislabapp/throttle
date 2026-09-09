@@ -90,7 +90,12 @@ From `docs/testing/sota-integration-ledger.md` (increment of 2026-09-09):
       rescued by an inventory.
 - [ ] L3: the cockpit workflow itself (PlanStore is hardened, the surface and
       the full journey are not).
-- [ ] L4: frozen evaluation cases, repetitions, human adjudication.
+- [x] L4: repetitions. A case replayed under the same configuration carries a
+      repetition group; the ledger reports agreement across repeats and names
+      the groups that disagreed. A bound may only be quoted when there are
+      enough adjudicated claims, none of them false, and no repeat that
+      disagreed with itself — the arithmetic still produces a number, the gate
+      is what refuses to publish it. Freezing and adjudication already existed.
 - [ ] L5: retrieval/abstention/isolation comparison — the dense challenger is
       measured `measured_not_promoted`; BM25 stays production until a
       significant, product-relevant gain is measured.

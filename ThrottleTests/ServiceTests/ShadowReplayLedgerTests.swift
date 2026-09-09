@@ -59,6 +59,55 @@ final class ShadowReplayLedgerTests: XCTestCase {
         XCTAssertNil(ShadowReplayService.Ledger(entries: Array(entries.prefix(5))).hardFailureBound95)
     }
 
+    /// A bound computed from single runs quietly assumes the pipeline is
+    /// deterministic. Sampled decoding is not, so repeats that disagree are
+    /// disqualifying: they say the thing being bounded is not stable enough.
+    func test_repeatsThatDisagreeWithThemselvesDisqualifyTheBound() throws {
+        let stable = ShadowReplayService.Ledger(entries: [
+            entry(0, repetitionGroup: "g1"), entry(1, repetitionGroup: "g1"),
+            entry(2, repetitionGroup: "g2"), entry(3, repetitionGroup: "g2")
+        ] + (4 ..< 14).map { entry($0) })
+        XCTAssertEqual(stable.repetitionAgreement, 1)
+        XCTAssertTrue(stable.unstableRepetitionGroups.isEmpty)
+        XCTAssertTrue(stable.boundIsQuotable.0)
+
+        let shaky = ShadowReplayService.Ledger(entries: [
+            entry(0, repetitionGroup: "g1"),
+            entry(1, status: "review_required", adjudicated: "review_required", repetitionGroup: "g1"),
+            entry(2, repetitionGroup: "g2"), entry(3, repetitionGroup: "g2")
+        ] + (4 ..< 14).map { entry($0) })
+        XCTAssertEqual(try XCTUnwrap(shaky.repetitionAgreement), 0.5, accuracy: 1e-12)
+        XCTAssertEqual(shaky.unstableRepetitionGroups, ["g1"])
+        XCTAssertFalse(shaky.boundIsQuotable.0)
+        XCTAssertEqual(shaky.boundIsQuotable.1, "1 repeated case(s) disagreed with themselves")
+        XCTAssertNotNil(shaky.falseVerifiedBound95,
+                        "the arithmetic still yields a number; the gate is what refuses to quote it")
+    }
+
+    func test_noRepeatAtAllIsNoEvidenceRatherThanFullAgreement() {
+        let ledger = ShadowReplayService.Ledger(entries: (0 ..< 12).map { entry($0) })
+        XCTAssertNil(ledger.repetitionAgreement)
+        XCTAssertTrue(ledger.unstableRepetitionGroups.isEmpty)
+        XCTAssertTrue(ledger.boundIsQuotable.0, "a bound is not blocked by repeats nobody ran")
+
+        let single = ShadowReplayService.Ledger(
+            entries: [entry(0, repetitionGroup: "g1")] + (1 ..< 12).map { entry($0) }
+        )
+        XCTAssertNil(single.repetitionAgreement, "one run is not a repeat")
+    }
+
+    func test_theQuotableGateNamesTheFirstThingThatIsWrong() {
+        let thin = ShadowReplayService.Ledger(entries: (0 ..< 4).map { entry($0) })
+        XCTAssertFalse(thin.boundIsQuotable.0)
+        XCTAssertEqual(thin.boundIsQuotable.1, "only 4 adjudicated verified claim(s); 10 is the floor")
+
+        var entries = (0 ..< 14).map { entry($0) }
+        entries[2] = entry(2, adjudicated: "escalate")
+        let overturned = ShadowReplayService.Ledger(entries: entries)
+        XCTAssertEqual(overturned.boundIsQuotable.1,
+                       "1 false verified — the rate is measured, not bounded")
+    }
+
     func test_theFrozenCertificationSetHasAStableIdentity() throws {
         let frozen = ShadowReplayService.Ledger(entries: [entry(0), entry(1), entry(2, stage: .exploratory)])
         let reordered = ShadowReplayService.Ledger(entries: [entry(1), entry(2, stage: .exploratory), entry(0)])
