@@ -24,7 +24,7 @@ final class ShadowReplayLedgerTests: XCTestCase {
         XCTAssertEqual(ShadowReplayService.Ledger.casesNeeded(forBound: 0.01, confidence: 1), .max)
     }
 
-    func test_onlyAdjudicatedCertificationClaimsBoundTheFalseVerifiedRate() {
+    func test_onlyAdjudicatedCertificationClaimsBoundTheFalseVerifiedRate() throws {
         var entries = (0 ..< 10).map { entry($0) }
         entries.append(entry(10, stage: .exploratory))
         entries.append(entry(11, adjudicated: nil))
@@ -50,7 +50,7 @@ final class ShadowReplayLedgerTests: XCTestCase {
                        "a refusal the human sharpened is the contract working, not a false verified")
     }
 
-    func test_hardFailureBoundIsSecondaryAndVanishesOnAnyHardFailure() {
+    func test_hardFailureBoundIsSecondaryAndVanishesOnAnyHardFailure() throws {
         let clean = ShadowReplayService.Ledger(entries: (0 ..< 12).map { entry($0) })
         XCTAssertEqual(try XCTUnwrap(clean.hardFailureBound95), 1 - pow(0.05, 1.0 / 12), accuracy: 1e-12)
         var entries = (0 ..< 12).map { entry($0) }
@@ -59,7 +59,7 @@ final class ShadowReplayLedgerTests: XCTestCase {
         XCTAssertNil(ShadowReplayService.Ledger(entries: Array(entries.prefix(5))).hardFailureBound95)
     }
 
-    func test_theFrozenCertificationSetHasAStableIdentity() {
+    func test_theFrozenCertificationSetHasAStableIdentity() throws {
         let frozen = ShadowReplayService.Ledger(entries: [entry(0), entry(1), entry(2, stage: .exploratory)])
         let reordered = ShadowReplayService.Ledger(entries: [entry(1), entry(2, stage: .exploratory), entry(0)])
         XCTAssertEqual(frozen.certificationCaseSetSHA256?.count, 64)
