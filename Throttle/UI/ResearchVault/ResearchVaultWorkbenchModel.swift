@@ -46,6 +46,10 @@ final class ResearchVaultWorkbenchModel {
 
     /// Filters the next saved view will capture. They narrow what a view shows;
     /// left unset it shows everything, which is what an older view does too.
+    /// Notebooks that opted into being re-exported, with the folder each one
+    /// syncs into. Empty means nothing syncs, which is the default.
+    var notebookSyncRecords: [ResearchVaultNotebookSyncRecord] = []
+
     var savedViewSourceKind: ResearchSourceKind?
     var savedViewWithinDays: Int?
 
@@ -92,6 +96,7 @@ final class ResearchVaultWorkbenchModel {
         }
         inboxFolderName = ResearchVaultInboxBookmarkStore.configuredFolderName
         savedViews = ResearchVaultSavedViewStore.load()
+        notebookSyncRecords = ResearchVaultNotebookSyncStore.load()
         spaces = ResearchVaultSpaceStore.load(projectKeys: ["cheatcode", "throttle"])
         folderSources = ResearchVaultFolderSourceStore.load()
         let identity = try? ResearchVaultCodeIdentity(

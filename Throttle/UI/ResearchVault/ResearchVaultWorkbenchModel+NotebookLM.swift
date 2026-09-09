@@ -83,6 +83,91 @@ extension ResearchVaultWorkbenchModel {
         }
     }
 
+    /// Turns this notebook's own sync on or off. Enabling remembers the staging
+    /// folder the reader picks; disabling forgets it. Nothing syncs by itself.
+    func setNotebookSync(_ enabled: Bool, notebookID: String, title: String) {
+        guard !isIsolatedHost else { return }
+        var folder: URL?
+        if enabled {
+            let panel = NSOpenPanel()
+            panel.title = String(localized: "Choose the staging folder this notebook syncs into")
+            panel.prompt = String(localized: "Enable Sync")
+            panel.canChooseDirectories = true
+            panel.canChooseFiles = false
+            panel.canCreateDirectories = true
+            panel.allowsMultipleSelection = false
+            guard panel.runModal() == .OK, let chosen = panel.url else { return }
+            folder = chosen
+        }
+        do {
+            let next = try ResearchVaultNotebookSyncStore.setting(
+                enabled, notebookID: notebookID, title: title, folder: folder, in: notebookSyncRecords
+            )
+            try ResearchVaultNotebookSyncStore.save(next)
+            notebookSyncRecords = next
+            status = enabled
+                ? String(localized: "Sync is on for this notebook. New sources still land in quarantine.")
+                : String(localized: "Sync is off for this notebook and its folder is forgotten.")
+        } catch {
+            status = String(localized: "The sync setting could not be stored, so nothing changed.")
+        }
+    }
+
+    /// Re-runs the export for every notebook whose own toggle is on, into the
+    /// folder each one remembers. Idempotent by hash: a source that has not
+    /// changed is counted as already present rather than imported twice.
+    func syncEnabledNotebooks() async {
+        guard !isIsolatedHost, notebookLMSyncEnabled, let client else {
+            status = String(localized: "Enable explicit NotebookLM export for this session first.")
+            return
+        }
+        guard !notebookSyncRecords.isEmpty else {
+            status = String(localized: "No notebook has sync turned on.")
+            return
+        }
+        isBusy = true
+        defer { isBusy = false }
+        var inserted = 0
+        var present = 0
+        var failed: [String] = []
+        for record in notebookSyncRecords {
+            do {
+                let folder = try ResearchVaultNotebookSyncStore.stagingFolder(for: record)
+                let accessed = folder.startAccessingSecurityScopedResource()
+                defer { if accessed { folder.stopAccessingSecurityScopedResource() } }
+                let gateway = try NotebookLMGatewayClient()
+                guard let notebook = try await gateway.listNotebooks()
+                    .first(where: { $0.id == record.notebookID }) else {
+                    failed.append(record.title)
+                    continue
+                }
+                let progress = try await NotebookLMImportJob(gateway: gateway)
+                    .run(notebook: notebook, stagingFolder: folder)
+                guard progress.phase == .complete else { failed.append(record.title); continue }
+                let counts = try await quarantineStagedImport(folder: folder, client: client)
+                inserted += counts.inserted
+                present += counts.present
+                updateSyncRecord(record.notebookID, sourceCount: progress.total)
+            } catch {
+                failed.append(record.title)
+            }
+        }
+        await checkHealth()
+        let summary = String(
+            localized: "Sync finished: \(inserted) new source(s) quarantined, \(present) already present."
+        )
+        status = failed.isEmpty
+            ? summary
+            : summary + " " + String(localized: "Unfinished: \(failed.joined(separator: ", ")).")
+    }
+
+    private func updateSyncRecord(_ notebookID: String, sourceCount: Int) {
+        guard let index = notebookSyncRecords.firstIndex(where: { $0.notebookID == notebookID }) else { return }
+        notebookSyncRecords[index].lastSyncedAt = Date()
+        notebookSyncRecords[index].lastSourceCount = sourceCount
+        try? ResearchVaultNotebookSyncStore.save(notebookSyncRecords)
+    }
+
     func pauseNotebookLMImport() async {
         await activeNotebookLMImportJob?.requestPause()
         status = String(localized: "Pause requested; the current source will finish safely.")

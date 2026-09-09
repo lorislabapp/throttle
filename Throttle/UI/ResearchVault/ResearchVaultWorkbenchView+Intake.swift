@@ -164,6 +164,52 @@ extension ResearchVaultWorkbenchView {
         }
     }
 
+    /// Sync is per notebook and never implicit: a notebook is re-exported only
+    /// while its own switch is on, into the folder it remembers, and what comes
+    /// back is quarantined like any other import.
+    @ViewBuilder
+    var notebookSyncControls: some View {
+        if !model.notebookLMNotebooks.isEmpty || !model.notebookSyncRecords.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("Keep in sync").font(.system(size: 12, weight: .semibold))
+                    Spacer()
+                    Button("Sync now") { Task { await model.syncEnabledNotebooks() } }
+                        .disabled(model.notebookSyncRecords.isEmpty || model.isBusy
+                            || !model.notebookLMSyncEnabled)
+                }
+                ForEach(model.notebookLMNotebooks) { notebook in
+                    let record = model.notebookSyncRecords.first { $0.notebookID == notebook.id }
+                    Toggle(isOn: Binding(
+                        get: { record != nil },
+                        set: { model.setNotebookSync($0, notebookID: notebook.id, title: notebook.title) }
+                    )) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(notebook.title)
+                            Text(Self.syncStanding(record))
+                                .font(.system(size: 11).monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .toggleStyle(.switch)
+                    .accessibilityHint(Text("Re-exports this notebook when you press Sync now."))
+                }
+            }
+            .font(.system(size: 12))
+            .padding(.bottom, 10)
+        }
+    }
+
+    static func syncStanding(_ record: ResearchVaultNotebookSyncRecord?) -> String {
+        guard let record else { return String(localized: "Not synced") }
+        guard let last = record.lastSyncedAt else {
+            return String(localized: "On — never run yet")
+        }
+        let when = last.formatted(date: .abbreviated, time: .shortened)
+        guard let count = record.lastSourceCount else { return String(localized: "On — last run \(when)") }
+        return String(localized: "On — \(count) source(s) at \(when)")
+    }
+
     @ViewBuilder
     var notebookLMRow: some View {
         occasionalRow(
@@ -210,6 +256,7 @@ extension ResearchVaultWorkbenchView {
                 .padding(.bottom, 10)
             }
         }
+        notebookSyncControls
         if model.migrationManifest != nil {
             Button("Save integrity manifest…") { model.saveMigrationManifest() }
                 .padding(.bottom, 10)

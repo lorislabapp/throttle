@@ -25,9 +25,10 @@ dual protocol, and a retrieval benchmark bound to a frozen private corpus.
       and a freshness window, captures what is on screen when saved, and
       narrows every pane when selected. Views written before these filters
       decode with them unset, so they keep showing what they always showed.
-- [ ] **Opt-in NotebookLM sync** — per-notebook toggle, re-running the Lot 2
-      job (idempotent by hash), new material landing in quarantine. Never
-      silent.
+- [x] **Opt-in NotebookLM sync** — a switch per notebook, each remembering the
+      staging folder it syncs into; "Sync now" re-runs the Lot 2 job for those
+      only. New material lands in quarantine, unchanged sources count as
+      already present, and turning a notebook off forgets its folder.
 - [ ] **Accessibility audit** of the Workbench: VoiceOver, keyboard, Reduce
       Motion.
 
