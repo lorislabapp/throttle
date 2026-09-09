@@ -32,7 +32,7 @@ final class ProductSignalsTests: XCTestCase {
         try write("diagnostic-a.json", daysAgo: 1, crashes: 2)
         try write("diagnostic-b.json", daysAgo: 1, crashes: 2)          // byte-identical duplicate
         try write("diagnostic-c.json", daysAgo: 3, hangs: 1)
-        try write("diagnostic-d.json", daysAgo: 3, cpu: 1, hangs: 0)    // same delivery, different content
+        try write("diagnostic-d.json", daysAgo: 3, hangs: 0, cpu: 1)    // same delivery, different content
         try write("diagnostic-e.json", daysAgo: 20, crashes: 5)          // outside the window, still counted
         try write("metric-f.json", daysAgo: 0, crashes: 9)               // metrics are not diagnostics
         try "not json".write(to: directory.appendingPathComponent("diagnostic-z.json"),
