@@ -16,16 +16,21 @@ extension ResearchVaultWorkbenchView {
             if rows.isEmpty {
                 ContentUnavailableView("No approved sources", systemImage: "doc.badge.clock")
             } else {
+                let claimCounts = ResearchVaultWorkbenchProjection
+                    .claimCountsBySource(receipts: scopedApprovedReceipts)
+                let latest = model.latestSourceHashes
                 List(rows, selection: $model.selectedSourceID) { row in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Text(row.source.locator).font(.callout.weight(.semibold))
+                                .lineLimit(1).truncationMode(.middle)
                             Spacer()
                             Text(row.sensitivity.rawValue.uppercased())
                                 .font(.caption2.weight(.bold))
                         }
                         Text(
-                            "\(row.projectKey) · \(row.source.kind.rawValue) · observed \(row.ageDays)d ago"
+                            "\(row.projectKey) · \(ResearchVaultWorkbenchProjection.origin(of: row.source))"
+                            + " · observed \(row.ageDays)d ago"
                         )
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
@@ -33,11 +38,26 @@ extension ResearchVaultWorkbenchView {
                             .font(.caption2.monospaced())
                             .foregroundStyle(.tertiary)
                             .textSelection(.enabled)
+                        Text(Self.sourceStanding(
+                            claims: claimCounts[row.source.id] ?? 0,
+                            hasMoved: latest[row.source.id].map { $0 != row.source.sha256 } == true
+                        ))
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
                     }
                     .accessibilityElement(children: .combine)
                 }
             }
         }
+    }
+
+    /// What this source is worth to the vault, in one line: how many claims
+    /// rest on it, and whether it still reads as it did when they were made.
+    static func sourceStanding(claims: Int, hasMoved: Bool) -> String {
+        let rest = claims == 0
+            ? "No claim rests on it"
+            : "\(claims) claim(s) rest on it"
+        return hasMoved ? rest + " · content changed since" : rest
     }
 
     var timelineList: some View {

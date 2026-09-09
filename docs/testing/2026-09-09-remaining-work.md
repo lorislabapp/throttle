@@ -11,13 +11,14 @@ Lots 1-4 shipped in 3.6.0: quarantine review state, parsers in the package,
 resumable NotebookLM import with sidecar provenance, MCP read/write with the
 dual protocol, and a retrieval benchmark bound to a frozen private corpus.
 
-- [ ] **Claims view** — findings across receipts grouped as proof, hypothesis,
-      contradiction and open question; every claim navigates to the exact
-      source it rests on. The model already carries it
-      (`ResearchFinding.status`, `evidenceIDs`, `ResearchReceipt.openQuestions`,
-      `ResearchRelationCandidate`); the projection and the surface do not exist.
-- [ ] **Sources panel** — per source: hash, origin (including the NotebookLM
-      notebook and index), freshness, sensitivity.
+- [x] **Claims view** — `ResearchClaimsProjector` + the Workbench pane: proof,
+      hypothesis, contradiction, unresolved and moved-source lanes, each claim
+      one click from the exact source. A promoted contradiction outranks
+      confidence; a source re-observed under a different hash demotes the claim
+      out of proof; dangling evidence is named, not dropped.
+- [x] **Sources panel** — hash and sensitivity were already shown; the row now
+      reads its origin in words (NotebookLM notebook and one-based index),
+      says how many claims rest on it, and flags content that changed since.
 - [ ] **Versions and drift** — a revised source marks the claims that rested on
       it; taxonomy drift audit.
 - [ ] **Saved views** are query-only today; the spec asks for project, source,
