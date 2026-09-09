@@ -58,14 +58,15 @@ The four reports in `docs/research/` are the evidence behind these.
       detour strands a write proportional to the whole conversation. The
       advisor now takes the live session's cache position, refuses to advise
       local inside a warm session, and states what the detour would cost.
-- [ ] **Re-entry after absence.** The human-factors evidence says the feature
-      is not the live view: rebuilding situation awareness costs about a third
-      of capacity even in a management-by-exception system, and resuming an
-      interrupted task took 25 min 26 s in Mark et al. 2005. Nothing in
-      Throttle addresses the moment attention comes back.
-- [ ] **Alarm discipline.** A tool call or a token tick is a status, not an
-      alarm; the industrial standard is at most one alarm per ten minutes and
-      three priorities. Below 0.70 reliability a detector is worse than none.
+- [x] **Re-entry after absence.** A digest built when the cockpit regains
+      focus after ten minutes or more: what was waiting on a person, what moved
+      on, what stayed quiet, and what the absence cost. Silent sessions fold
+      into one line; the panel does not appear when there is nothing but
+      silence to report.
+- [x] **Alarm discipline** in that digest. Only work where a person is the
+      blocker reaches the top tier. A loop suspicion is a heuristic and is
+      offered as "a guess worth checking, not a verdict"; a rate limit that has
+      already lifted is history, not a demand. Spend and progress are status.
 - [ ] **visionOS**: keep `ThrottleVision` frozen as the small windowed slice it
       is, with an explicit kill condition. The market read is negative as a
       product and the transport needs no entitlement, so there is nothing to
