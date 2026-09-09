@@ -200,6 +200,14 @@ extension ResearchVaultWorkbenchView {
         }
     }
 
+    /// A concatenated interpolation is not a localization key, so the two
+    /// counts are read here and handed to one whole key.
+    static func importStanding(_ progress: NotebookLMImportJob.Progress) -> String {
+        let done = progress.completed
+        let total = progress.total
+        return String(localized: "\(done) of \(total) sources")
+    }
+
     static func syncStanding(_ record: ResearchVaultNotebookSyncRecord?) -> String {
         guard let record else { return String(localized: "Not synced") }
         guard let last = record.lastSyncedAt else {
@@ -255,10 +263,7 @@ extension ResearchVaultWorkbenchView {
                 )
                 .padding(.bottom, 10)
                 .accessibilityLabel(Text("NotebookLM import"))
-                .accessibilityValue(Text(String(
-                    localized: "\(model.notebookLMImportProgress.completed) of "
-                        + "\(model.notebookLMImportProgress.total) sources"
-                )))
+                .accessibilityValue(Text(Self.importStanding(model.notebookLMImportProgress)))
             }
         }
         notebookSyncControls
