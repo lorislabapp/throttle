@@ -85,9 +85,9 @@ struct ResearchVaultWorkbenchProjectionTests {
         #expect(ResearchVaultWorkbenchProjection.origin(of: plain) == "repository",
                 "a fragment on another host is not a NotebookLM origin")
 
-        #expect(ResearchVaultWorkbenchView.sourceStanding(claims: 0, hasMoved: false)
+        #expect(ResearchVaultStandingText.source(claims: 0, hasMoved: false)
             == "No claim rests on it")
-        #expect(ResearchVaultWorkbenchView.sourceStanding(claims: 2, hasMoved: true)
+        #expect(ResearchVaultStandingText.source(claims: 2, hasMoved: true)
             == "2 claim(s) rest on it · content changed since")
     }
 

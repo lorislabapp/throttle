@@ -38,7 +38,7 @@ extension ResearchVaultWorkbenchView {
                             .font(.caption2.monospaced())
                             .foregroundStyle(.tertiary)
                             .textSelection(.enabled)
-                        Text(Self.sourceStanding(
+                        Text(ResearchVaultStandingText.source(
                             claims: claimCounts[row.source.id] ?? 0,
                             hasMoved: latest[row.source.id].map { $0 != row.source.sha256 } == true
                         ))
@@ -49,15 +49,6 @@ extension ResearchVaultWorkbenchView {
                 }
             }
         }
-    }
-
-    /// What this source is worth to the vault, in one line: how many claims
-    /// rest on it, and whether it still reads as it did when they were made.
-    static func sourceStanding(claims: Int, hasMoved: Bool) -> String {
-        let rest = claims == 0
-            ? "No claim rests on it"
-            : "\(claims) claim(s) rest on it"
-        return hasMoved ? rest + " · content changed since" : rest
     }
 
     var timelineList: some View {

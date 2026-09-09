@@ -186,7 +186,7 @@ extension ResearchVaultWorkbenchView {
                     )) {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(notebook.title)
-                            Text(Self.syncStanding(record))
+                            Text(ResearchVaultStandingText.sync(record))
                                 .font(.system(size: 11).monospacedDigit())
                                 .foregroundStyle(.secondary)
                         }
@@ -206,16 +206,6 @@ extension ResearchVaultWorkbenchView {
         let done = progress.completed
         let total = progress.total
         return String(localized: "\(done) of \(total) sources")
-    }
-
-    static func syncStanding(_ record: ResearchVaultNotebookSyncRecord?) -> String {
-        guard let record else { return String(localized: "Not synced") }
-        guard let last = record.lastSyncedAt else {
-            return String(localized: "On — never run yet")
-        }
-        let when = last.formatted(date: .abbreviated, time: .shortened)
-        guard let count = record.lastSourceCount else { return String(localized: "On — last run \(when)") }
-        return String(localized: "On — \(count) source(s) at \(when)")
     }
 
     @ViewBuilder
