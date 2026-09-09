@@ -16,16 +16,21 @@ extension ResearchVaultWorkbenchView {
             if rows.isEmpty {
                 ContentUnavailableView("No approved sources", systemImage: "doc.badge.clock")
             } else {
-                List(rows) { row in
+                let claimCounts = ResearchVaultWorkbenchProjection
+                    .claimCountsBySource(receipts: scopedApprovedReceipts)
+                let latest = model.latestSourceHashes
+                List(rows, selection: $model.selectedSourceID) { row in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Text(row.source.locator).font(.callout.weight(.semibold))
+                                .lineLimit(1).truncationMode(.middle)
                             Spacer()
                             Text(row.sensitivity.rawValue.uppercased())
                                 .font(.caption2.weight(.bold))
                         }
                         Text(
-                            "\(row.projectKey) · \(row.source.kind.rawValue) · observed \(row.ageDays)d ago"
+                            "\(row.projectKey) · \(ResearchVaultWorkbenchProjection.origin(of: row.source))"
+                            + " · observed \(row.ageDays)d ago"
                         )
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
@@ -33,39 +38,12 @@ extension ResearchVaultWorkbenchView {
                             .font(.caption2.monospaced())
                             .foregroundStyle(.tertiary)
                             .textSelection(.enabled)
-                    }
-                    .accessibilityElement(children: .combine)
-                }
-            }
-        }
-    }
-
-    var claimList: some View {
-        let rows = ResearchVaultWorkbenchProjection.claims(receipts: scopedApprovedReceipts)
-        return Group {
-            if rows.isEmpty {
-                ContentUnavailableView("No reviewed claims", systemImage: "checkmark.message")
-            } else {
-                List(rows) { row in
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(row.status.rawValue).font(.caption2.weight(.bold))
-                            Text(row.projectKey).font(.caption).foregroundStyle(.secondary)
-                            Spacer()
-                            Text(row.createdAt.formatted()).font(.caption2.monospacedDigit())
-                        }
-                        Text(row.claim).textSelection(.enabled)
-                        Group {
-                            if row.evidenceIDs.isEmpty {
-                                Text("No evidence ID attached")
-                            } else {
-                                Text("Evidence: \(row.evidenceIDs.joined(separator: ", "))")
-                            }
-                        }
-                        .font(.caption2.monospaced())
-                        .foregroundStyle(
-                            row.evidenceIDs.isEmpty ? Color.orange : Color.secondary
-                        )
+                        Text(ResearchVaultStandingText.source(
+                            claims: claimCounts[row.source.id] ?? 0,
+                            hasMoved: latest[row.source.id].map { $0 != row.source.sha256 } == true
+                        ))
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
                     }
                     .accessibilityElement(children: .combine)
                 }

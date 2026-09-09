@@ -41,7 +41,10 @@ extension ResearchVaultWorkbenchView {
             Text("Research Vault")
                 .font(.system(size: 15, weight: .semibold))
             Spacer()
-            if model.isBusy { ProgressView().controlSize(.small) }
+            if model.isBusy {
+                ProgressView().controlSize(.small)
+                    .accessibilityLabel(Text("Working"))
+            }
             Button("Add to vault…") { showAddToVault = true }
                 .disabled(!vaultIsOn)
                 .help(vaultIsOn
@@ -60,6 +63,7 @@ extension ResearchVaultWorkbenchView {
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
                 Text(model.selectedSpace.name)
                     .font(.system(size: 12, weight: .semibold))
                     .padding(.horizontal, 8)
@@ -94,11 +98,38 @@ extension ResearchVaultWorkbenchView {
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             } else {
+                viewFilters
                 secondaryActions
             }
         }
         .padding(.horizontal, 40)
         .padding(.top, 24)
+    }
+
+    /// What a saved view remembers besides the words: the kind of source and how
+    /// recent it must be. Both default to no restriction, so the panes show
+    /// everything until the reader narrows them on purpose.
+    var viewFilters: some View {
+        HStack(spacing: 14) {
+            Picker("Source", selection: $model.savedViewSourceKind) {
+                Text("Any source").tag(ResearchSourceKind?.none)
+                ForEach(ResearchSourceKind.allCases, id: \.self) { kind in
+                    Text(kind.rawValue.capitalized).tag(ResearchSourceKind?.some(kind))
+                }
+            }
+            .accessibilityLabel("Filter by source kind")
+            Picker("Seen", selection: $model.savedViewWithinDays) {
+                Text("Any time").tag(Int?.none)
+                ForEach([7, 30, 90, 365], id: \.self) { days in
+                    Text("Last \(days) days").tag(Int?.some(days))
+                }
+            }
+            .accessibilityLabel("Filter by how recently the source was seen")
+            Spacer()
+        }
+        .labelsHidden()
+        .font(.system(size: 12))
+        .frame(maxWidth: 420)
     }
 
     /// Both actions state their own reason when they cannot run. A control that
@@ -172,8 +203,13 @@ extension ResearchVaultWorkbenchView {
                     Text("SQLCipher \(health.cipherVersion)").font(.system(size: 11.5, design: .monospaced))
                 }
             }
+            // Every outcome this window reports lands here, so it is spoken as
+            // one region a reader can return to rather than a line that changed
+            // somewhere off screen.
             Text(model.status)
                 .fixedSize(horizontal: false, vertical: true)
+                .accessibilityLabel(Text(model.status))
+                .accessibilityAddTraits(.updatesFrequently)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .font(.system(size: 11.5).monospacedDigit())

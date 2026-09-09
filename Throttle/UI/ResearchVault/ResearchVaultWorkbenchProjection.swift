@@ -1,5 +1,7 @@
 import Foundation
+import ResearchVaultIPCModel
 import ResearchVaultModel
+import ResearchVaultReasoning
 
 struct ResearchVaultSpace: Codable, Equatable, Identifiable {
     enum Kind: String, Codable { case portfolio, project }
@@ -51,19 +53,48 @@ struct ResearchVaultSavedView: Codable, Equatable, Identifiable {
     var query: String
     var projectKey: String?
     var evidenceStatus: ResearchEvidenceStatus?
+    /// Filters added after the first version. They decode as absent on views
+    /// saved before they existed, which reads as "no restriction" — an old view
+    /// must keep showing what it always showed.
+    var sourceKind: ResearchSourceKind?
+    /// Only material observed within this many days. nil means any age.
+    var withinDays: Int?
 
     init(
         id: UUID = UUID(),
         name: String,
         query: String,
         projectKey: String? = nil,
-        evidenceStatus: ResearchEvidenceStatus? = nil
+        evidenceStatus: ResearchEvidenceStatus? = nil,
+        sourceKind: ResearchSourceKind? = nil,
+        withinDays: Int? = nil
     ) {
         self.id = id
         self.name = name
         self.query = query
+        self.sourceKind = sourceKind
+        self.withinDays = withinDays.map { max(1, $0) }
         self.projectKey = projectKey
         self.evidenceStatus = evidenceStatus
+    }
+}
+
+extension ResearchVaultSavedView {
+    /// A saved view is a filter, never a copy: it decides whether a receipt is
+    /// shown, and holds no corpus data of its own. An unset filter restricts
+    /// nothing, so an older view keeps its meaning.
+    func matches(_ receipt: ResearchReceipt, now: Date = Date()) -> Bool {
+        if let projectKey, receipt.projectKey != projectKey { return false }
+        if let evidenceStatus, !receipt.findings.contains(where: { $0.status == evidenceStatus }) {
+            return false
+        }
+        if let sourceKind, !receipt.sources.contains(where: { $0.kind == sourceKind }) { return false }
+        if let withinDays {
+            let horizon = now.addingTimeInterval(-Double(withinDays) * 86_400)
+            let seen = receipt.sources.map(\.observedAt).max() ?? receipt.createdAt
+            if max(seen, receipt.createdAt) < horizon { return false }
+        }
+        return true
     }
 }
 
@@ -88,7 +119,14 @@ enum ResearchVaultSavedViewStore {
 }
 
 struct ResearchVaultSourceRow: Identifiable, Equatable {
-    var id: String { receiptID + "\u{0}" + source.id }
+    /// One source can be cited by several receipts, so a row is identified by
+    /// the pair. A claim navigates with the same key, built here so the two
+    /// sides cannot drift apart.
+    static func rowID(receiptID: String, sourceID: String) -> String {
+        receiptID + "\u{0}" + sourceID
+    }
+
+    var id: String { Self.rowID(receiptID: receiptID, sourceID: source.id) }
     let receiptID: String
     let projectKey: String
     let sensitivity: ResearchSensitivity
@@ -143,6 +181,70 @@ enum ResearchVaultWorkbenchProjection {
                 return $0.source.observedAt > $1.source.observedAt
             }
             return $0.id < $1.id
+        }
+    }
+
+    /// Where a source came from, said in words rather than in a raw locator.
+    /// A NotebookLM export encodes its notebook and index in the locator; the
+    /// panel should read that back instead of showing the URL fragment.
+    static func origin(of source: ResearchSource) -> String {
+        let parts = source.locator.components(separatedBy: "#source-index=")
+        if parts.count == 2, let index = Int(parts[1]),
+           let host = URL(string: parts[0])?.host, host.contains("notebooklm") {
+            return "NotebookLM · notebook \(notebookName(parts[0])) · source \(index + 1)"
+        }
+        if source.locator.hasPrefix("notebooklm-export/") { return "NotebookLM export file" }
+        return source.kind.rawValue
+    }
+
+    private static func notebookName(_ notebookURL: String) -> String {
+        let identifier = URL(string: notebookURL)?.lastPathComponent ?? notebookURL
+        return identifier.isEmpty ? notebookURL : String(identifier.prefix(12))
+    }
+
+    /// How many approved claims rest on each source. A source nothing cites is
+    /// stored material, not evidence, and the panel says so rather than
+    /// implying every row carries weight.
+    static func claimCountsBySource(receipts: [ResearchReceipt]) -> [String: Int] {
+        var counts: [String: Int] = [:]
+        for receipt in receipts {
+            let known = Set(receipt.sources.map(\.id))
+            for finding in receipt.findings {
+                for sourceID in Set(finding.evidenceIDs) where known.contains(sourceID) {
+                    counts[sourceID, default: 0] += 1
+                }
+            }
+        }
+        return counts
+    }
+
+    /// The hash each source carries today, newest observation wins. A claim
+    /// made against an older hash is what the board calls drift.
+    static func latestSourceHashes(receipts: [ResearchReceipt]) -> [String: String] {
+        var observedAt: [String: Date] = [:]
+        var hashes: [String: String] = [:]
+        for receipt in receipts {
+            for source in receipt.sources where (observedAt[source.id] ?? .distantPast) <= source.observedAt {
+                observedAt[source.id] = source.observedAt
+                hashes[source.id] = source.sha256
+            }
+        }
+        return hashes
+    }
+
+    /// Contradictions the owner actually promoted. An unasserted candidate is
+    /// not a contradiction, and a fact whose arguments do not read back as
+    /// claim references is ignored rather than half-applied.
+    static func promotedContradictions(
+        facts: [ResearchVaultReasoningFactDTO]
+    ) -> [ResearchRelationCandidate] {
+        facts.compactMap { fact in
+            guard fact.asserted, fact.predicate == ResearchRelationKind.contradicts.rawValue,
+                  fact.arguments.count == 2,
+                  let subject = ResearchClaimReference(stableID: fact.arguments[0]),
+                  let object = ResearchClaimReference(stableID: fact.arguments[1]),
+                  subject != object else { return nil }
+            return ResearchRelationCandidate(relation: .contradicts, subject: subject, object: object)
         }
     }
 

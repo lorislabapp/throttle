@@ -18,6 +18,17 @@ public struct ResearchClaimReference: Codable, Hashable, Sendable {
     }
 
     public var stableID: String { receiptID + "#finding-" + String(findingIndex) }
+
+    /// Reads back a reference a fact argument carries. Anything that is not
+    /// exactly this shape is refused rather than guessed: a receipt id may
+    /// itself contain no separator, so a malformed argument is not a reference.
+    public init?(stableID: String) {
+        let parts = stableID.components(separatedBy: "#finding-")
+        guard parts.count == 2, !parts[0].isEmpty,
+              let index = Int(parts[1]), index >= 0,
+              String(index) == parts[1] else { return nil }
+        self.init(receiptID: parts[0], findingIndex: index)
+    }
 }
 
 public struct ResearchRelationCandidate: Codable, Hashable, Sendable {

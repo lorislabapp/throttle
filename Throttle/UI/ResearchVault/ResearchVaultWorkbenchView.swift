@@ -28,6 +28,19 @@ struct ResearchVaultWorkbenchView: View {
 
         var id: String { rawValue }
 
+        /// Command-1 to Command-6, in the order the sidebar lists them, so the
+        /// whole window is reachable without a pointer.
+        var shortcut: KeyEquivalent {
+            switch self {
+            case .evidence: "1"
+            case .sources: "2"
+            case .claims: "3"
+            case .timeline: "4"
+            case .revisions: "5"
+            case .reasoning: "6"
+            }
+        }
+
         var localizedTitle: LocalizedStringKey {
             switch self {
             case .evidence: "Evidence"

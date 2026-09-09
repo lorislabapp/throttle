@@ -3,6 +3,7 @@ import Observation
 import ResearchVaultIngestion
 import ResearchVaultIPCModel
 import ResearchVaultModel
+import ResearchVaultReasoning
 import ResearchVaultSynthesis
 import ResearchVaultXPCClient
 import ServiceManagement
@@ -36,6 +37,25 @@ final class ResearchVaultWorkbenchModel {
     var reasoningDetail: ResearchVaultReasoningQueryResponse?
     var reasoningGeneration: Int64?
     var selectedReasoningFactID: String?
+    /// Set when a claim sends the reader to the source it rests on.
+    var selectedSourceID: String?
+
+    var latestSourceHashes: [String: String] {
+        ResearchVaultWorkbenchProjection.latestSourceHashes(receipts: approvedReceipts)
+    }
+
+    /// Filters the next saved view will capture. They narrow what a view shows;
+    /// left unset it shows everything, which is what an older view does too.
+    /// Notebooks that opted into being re-exported, with the folder each one
+    /// syncs into. Empty means nothing syncs, which is the default.
+    var notebookSyncRecords: [ResearchVaultNotebookSyncRecord] = []
+
+    var savedViewSourceKind: ResearchSourceKind?
+    var savedViewWithinDays: Int?
+
+    var promotedContradictions: [ResearchRelationCandidate] {
+        ResearchVaultWorkbenchProjection.promotedContradictions(facts: reasoningFacts)
+    }
     var reasoningRelation = ResearchVaultReasoningRelationKind.dependsOn
     var reasoningSubject: ResearchVaultReasoningClaimReference?
     var reasoningObject: ResearchVaultReasoningClaimReference?
@@ -76,6 +96,7 @@ final class ResearchVaultWorkbenchModel {
         }
         inboxFolderName = ResearchVaultInboxBookmarkStore.configuredFolderName
         savedViews = ResearchVaultSavedViewStore.load()
+        notebookSyncRecords = ResearchVaultNotebookSyncStore.load()
         spaces = ResearchVaultSpaceStore.load(projectKeys: ["cheatcode", "throttle"])
         folderSources = ResearchVaultFolderSourceStore.load()
         let identity = try? ResearchVaultCodeIdentity(
@@ -181,7 +202,13 @@ final class ResearchVaultWorkbenchModel {
         guard !isIsolatedHost else { return }
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        let value = ResearchVaultSavedView(name: trimmed, query: trimmed)
+        // The view captures what is on screen, so reopening it restores the
+        // same reading rather than just the words that were typed.
+        let value = ResearchVaultSavedView(
+            name: trimmed, query: trimmed,
+            projectKey: selectedSpace.kind == .portfolio ? nil : selectedProjectKeys.first,
+            sourceKind: savedViewSourceKind, withinDays: savedViewWithinDays
+        )
         savedViews.insert(value, at: 0)
         do {
             try ResearchVaultSavedViewStore.save(savedViews)
@@ -196,7 +223,18 @@ final class ResearchVaultWorkbenchModel {
     func applySavedView() async {
         guard let value = savedViews.first(where: { $0.id == selectedSavedViewID }) else { return }
         query = value.query
+        savedViewSourceKind = value.sourceKind
+        savedViewWithinDays = value.withinDays
         await search()
+    }
+
+    /// The receipts the panes read. The selected saved view narrows them; with
+    /// no view selected, or a view that restricts nothing, everything shows.
+    var viewedApprovedReceipts: [ResearchReceipt] {
+        guard let value = savedViews.first(where: { $0.id == selectedSavedViewID }) else {
+            return approvedReceipts
+        }
+        return approvedReceipts.filter { value.matches($0) }
     }
 
     func loadQuarantine() async {

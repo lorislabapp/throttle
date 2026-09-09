@@ -168,6 +168,10 @@ targets:
         product: ResearchVaultSynthesis
       - package: ResearchVaultKit
         product: ResearchVaultIngestion
+      # The Workbench reads approved receipts as a claims board; the projection
+      # is deterministic and lives with the receipt model it interprets.
+      - package: ResearchVaultKit
+        product: ResearchVaultReasoning
       - target: ThrottleWidget
       # A separately signed process owns SQLCipher and the vault key. Throttle
       # embeds but never links this helper, preserving the one-SQLite-per-process
