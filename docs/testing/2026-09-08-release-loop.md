@@ -312,6 +312,23 @@ voulu ; (2) au moins 20 questions humaines avec leurs documents pertinents,
 seule base d'une affirmation de qualité (les 268 requêtes dérivées des titres
 prouvent la plomberie).
 
+## Branche d'intégration `integration/3.6.0-sota-release` — runs CI (9 septembre 2026)
+
+| Run | HEAD | Contenu | Résultat |
+|---|---|---|---|
+| 34312608324 | `bdac13b` | candidat unifié A+B+C, aucun lot nouveau | **tout vert** (macOS, iOS, Vault ×2, visionOS, quality, validateur) |
+| 34314056899 | `28dc7ae` | gel du corpus, durabilité PlanStore, reçus, OutboundPolicy + CSV | macOS rouge : `CSVExporterTests` appelait un exporter `@MainActor` hors isolation (compilation) |
+| 34315412135 | `491928c` | + pilote, ShadowReplay, PlanMCPAuthority, isolation corrigée | macOS/quality rouge : import CryptoKit perdu dans `ShadowReplayService` ; validateur rouge : `PlanMCPAuthority` absent du package core |
+| 34316826608 | `014bc1b` | + imports/listes corrigés (package core vérifié localement avant push) | macOS rouge : `XCTUnwrap` dans des tests non `throws` ; iOS, Vault ×2, visionOS, validateur verts |
+| (suivant) | `4f4b49e` | + `throws` ajoutés, signal MetricKit | à lire |
+
+Leçon consignée : chaque lot Swift de cette session a été validé par lint,
+diff-check et Python, mais **pas compilé localement** (Mac à 16 Go saturé par
+d'autres sessions ; deux tâches d'attente ont même été tuées pour mémoire).
+Les trois rouges successifs sont tous des erreurs de compilation de tests,
+aucune régression de comportement ; la CI publique reste l'unique compilateur
+de cette branche tant que la machine locale est chargée.
+
 ## Conservation et verdict
 
 Les preuves compactes sont dans [evidence/2026-09-08-release-loop](evidence/2026-09-08-release-loop).
