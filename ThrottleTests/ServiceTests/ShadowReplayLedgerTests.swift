@@ -6,13 +6,15 @@ import XCTest
 /// single overturned `verified` turns a bound into a measured rate.
 final class ShadowReplayLedgerTests: XCTestCase {
     private func entry(_ index: Int, status: String = "verified", stage: ShadowReplayService.Stage? = .certification,
-                       adjudicated: String? = "verified", source: String? = "src") -> ShadowReplayService.Entry {
+                       adjudicated: String? = "verified", source: String? = "src",
+                       repetitionGroup: String? = nil) -> ShadowReplayService.Entry {
         var entry = ShadowReplayService.Entry(ts: Int64(1_800_000_000 + index), sessionId: "s\(index)", project: "p",
                                               kind: "build", status: status, reason: "r", frontierWeightedTokens: 1,
                                               frontierEUR: 0, latencyMs: 1, askCharacters: 1, localCharacters: 1)
         entry.stage = stage?.rawValue
         entry.adjudicatedStatus = adjudicated
         entry.sourceSHA256 = source
+        entry.repetitionGroupID = repetitionGroup
         return entry
     }
 
