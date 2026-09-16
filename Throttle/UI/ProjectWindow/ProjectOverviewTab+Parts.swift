@@ -70,7 +70,7 @@ extension ProjectOverviewTab {
     func inspectorActions(taskID: String, settle decision: ProjectOverview.Decision?) -> some View {
         let root = project.url
         let cockpit = MultiCockpitModel.shared
-        let hasSession = root.map { cockpit.session(atProjectRoot: $0) != nil } ?? false
+        let hasSession = root != nil
         return HStack(spacing: 8) {
             Button("Show in Cockpit") {
                 guard let root, cockpit.focusPlan(projectRoot: root, taskID: taskID) else { return }
@@ -78,8 +78,7 @@ extension ProjectOverviewTab {
                 CockpitWindowController.shared.show(appState: appState)
             }
             .disabled(!hasSession)
-            .help(hasSession ? Text("Opens the Plan view on this task.")
-                             : Text("No cockpit session works in this project."))
+            .help(Text("Opens the Plan view on this task."))
             if let decision {
                 Button("Settle…") {
                     inspected = nil

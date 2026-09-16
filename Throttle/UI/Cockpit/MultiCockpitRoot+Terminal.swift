@@ -5,6 +5,24 @@ import ThrottleShared
 extension MultiCockpitRoot {
     // MARK: - Content (the active layout)
 
+    /// The page the navigation sidebar points at. Sessions keeps the historical
+    /// view modes as its own display options.
+    @ViewBuilder
+    var destinationContent: some View {
+        switch model.destination {
+        case .today:
+            CockpitTodayView(cockpit: model, projects: CockpitProjectsModel.shared)
+        case .project(let path):
+            CockpitProjectPage(cockpit: model, path: path).id(path)
+        case .portfolio:
+            PortfolioGraphView()
+        case .usage:
+            CockpitDashboardView(machine: model.machine).environment(appState)
+        case .sessions:
+            content
+        }
+    }
+
     @ViewBuilder
     var content: some View {
         if model.viewMode == .dashboard {

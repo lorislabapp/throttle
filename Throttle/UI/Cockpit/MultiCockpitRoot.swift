@@ -48,10 +48,27 @@ struct MultiCockpitRoot: View {
     var zsep: some View { Rectangle().fill(hair).frame(width: 1, height: 18) }
 
     var body: some View {
+        HStack(spacing: 0) {
+            CockpitNavigationSidebar(cockpit: model, projects: CockpitProjectsModel.shared)
+            Rectangle().fill(hair).frame(width: 1)
+            mainColumn
+        }
+        .sheet(isPresented: Binding(get: { model.isCommandPaletteOpen },
+                                    set: { model.isCommandPaletteOpen = $0 })) {
+            CockpitCommandPalette(cockpit: model, projects: CockpitProjectsModel.shared)
+        }
+        .background {
+            Button("") { model.isCommandPaletteOpen = true }
+                .keyboardShortcut("k", modifiers: .command)
+                .opacity(0).accessibilityHidden(true)
+        }
+    }
+
+    var mainColumn: some View {
         VStack(spacing: 0) {
             topBar
             Rectangle().fill(hair).frame(height: 1)
-            globalStrip
+            if model.destination == .sessions { globalStrip }
             if let tab = model.active {
                 CockpitTransitionBanner(tab: tab) { model.forgetUnconfirmedSession(tab.id) }
             }
@@ -64,7 +81,7 @@ struct MultiCockpitRoot: View {
             if let loop = model.loopSessions.first { loopBanner(loop) }
             if let leak = model.leakSessions.first { leakBanner(leak) }
             HStack(spacing: 0) {
-                content
+                destinationContent
                 if showSidebar {
                     Rectangle().fill(hair).frame(width: 1)
                     CockpitSidebar(tab: $sidebarTab)

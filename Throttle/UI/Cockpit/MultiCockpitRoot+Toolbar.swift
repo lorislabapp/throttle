@@ -28,7 +28,19 @@ extension MultiCockpitRoot {
             zsep
             routingMenu(compact: narrow)
             zsep
-            viewSwitcher(iconsOnly: narrow)
+            if model.destination == .sessions { viewSwitcher(iconsOnly: narrow) }
+            Button { model.isCommandPaletteOpen = true } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "magnifyingglass")
+                    if !narrow { Text("Search") }
+                    Text(verbatim: "⌘K").foregroundStyle(.tertiary)
+                }
+                .font(.system(size: 11.5)).foregroundStyle(.secondary)
+                .padding(.horizontal, 8).padding(.vertical, 5)
+                .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+            .help(Text("Search projects, sessions, decisions and plan tasks"))
             Spacer(minLength: 6)
             knowledgeMenu(compact: narrow)
             ToolbarToggle(icon: "sidebar.trailing", label: String(localized: "Panel"), isOn: showSidebar,
@@ -223,7 +235,7 @@ extension MultiCockpitRoot {
     /// label (icon-only when narrow), active item raised onto an elevated surface.
     func viewSwitcher(iconsOnly: Bool) -> some View {
         HStack(spacing: 1) {
-            ForEach(MultiCockpitModel.ViewMode.allCases) { mode in
+            ForEach([MultiCockpitModel.ViewMode.rail, .tabs, .mission]) { mode in
                 SwitcherItem(icon: viewIcon(mode), label: mode.label,
                              isOn: model.viewMode == mode, iconOnly: iconsOnly) {
                     model.viewMode = mode

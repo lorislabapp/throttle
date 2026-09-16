@@ -8822,6 +8822,243 @@
         "en": { "stringUnit": { "state": "translated", "value": "Plan" } },
         "fr": { "stringUnit": { "state": "translated", "value": "Plan" } }
       }
+    },
+    "%lld active · %lld asleep": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld actives · %lld en veille" } } }
+    },
+    "%lld blocked or failed": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld bloquée(s) ou échouée(s)" } } }
+    },
+    "%lld decision(s) waiting": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld décision(s) en attente" } } }
+    },
+    "%lld item(s) · all projects": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld élément(s) · tous les projets" } } }
+    },
+    "%lld task(s) blocked or failed": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld tâche(s) bloquée(s) ou échouée(s)" } } }
+    },
+    "%lld/%lld verified": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld/%lld vérifiées" } } }
+    },
+    "A session is waiting for you": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Une session vous attend" } } }
+    },
+    "Details in Usage and costs": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Détail dans Usage et coûts" } } }
+    },
+    "Esc to close": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Échap pour fermer" } } }
+    },
+    "Go to": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aller à" } } }
+    },
+    "Memory %@ of %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Mémoire %@ sur %@" } } }
+    },
+    "No project has a plan yet. Open a session in a project folder, then choose Plan to start one.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun projet n’a encore de plan. Ouvrez une session dans le dossier d’un projet, puis choisissez Plan pour en créer un." } } }
+    },
+    "Nothing matches.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun résultat." } } }
+    },
+    "Nothing waits on you": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rien ne vous attend" } } }
+    },
+    "Plans read %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Plans lus %@" } } }
+    },
+    "Projects": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Projets" } } }
+    },
+    "Renews %@ · subscription, not billed per use": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Se renouvelle %@ · abonnement, sans facturation à l’usage" } } }
+    },
+    "Search a project, a session, a decision…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rechercher un projet, une session, une décision…" } } }
+    },
+    "Search a project, a session…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rechercher un projet, une session…" } } }
+    },
+    "Search projects, sessions, decisions and plan tasks": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rechercher projets, sessions, décisions et tâches du plan" } } }
+    },
+    "This folder has no Claude Code history yet": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ce dossier n’a pas encore d’historique Claude Code" } } }
+    },
+    "What waits on you": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ce qui vous attend" } } }
+    },
+    "You will see it here as soon as a session asks a question or a decision is needed.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vous le verrez ici dès qu’une session pose une question ou qu’une décision est nécessaire." } } }
+    },
+    "active": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "active" } } }
+    },
+    "asleep": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "en veille" } } }
+    },
+    "progress verified by tests, not declared": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "progrès vérifié par test, pas déclaré" } } }
+    },
+    "cockpit.nav.loadingProjects": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Reading plans…" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Lecture des plans…" } }
+      }
+    },
+    "cockpit.nav.noPlans": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No project has a plan yet." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Aucun projet n’a encore de plan." } }
+      }
+    },
+    "cockpit.nav.portfolio": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Portfolio map" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Carte du portefeuille" } }
+      }
+    },
+    "cockpit.nav.sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Sessions" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Sessions" } }
+      }
+    },
+    "cockpit.nav.today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Today" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Aujourd’hui" } }
+      }
+    },
+    "cockpit.nav.usage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Usage and costs" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Usage et coûts" } }
+      }
+    },
+    "cockpit.nav.projects": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Projects" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Projets" } }
+      }
+    },
+    "cockpit.nav.work": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Work" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Travail" } }
+      }
+    },
+    "palette.group.decisions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Decisions" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Décisions" } }
+      }
+    },
+    "palette.group.destinations": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Go to" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Aller à" } }
+      }
+    },
+    "palette.group.projects": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Projects" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Projets" } }
+      }
+    },
+    "palette.group.sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Sessions" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Sessions" } }
+      }
+    },
+    "palette.group.tasks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Plan tasks" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Tâches du plan" } }
+      }
+    },
+    "today.action.answer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Answer" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Répondre" } }
+      }
+    },
+    "today.action.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open the project" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Ouvrir le projet" } }
+      }
+    },
+    "today.action.settle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Settle" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Trancher" } }
+      }
+    },
+    "today.kind.blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Blocked" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Blocage" } }
+      }
+    },
+    "today.kind.decision": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Decision" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Décision" } }
+      }
+    },
+    "today.kind.question": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Question" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Question" } }
+      }
     }
   },
   "version": "1.0"

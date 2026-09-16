@@ -69,7 +69,7 @@ let package = Package(
             name: "ResearchVaultIPCModel",
             dependencies: [
                 "ResearchVaultModel",
-                .product(name: "ThrottleVaultContract", package: "ThrottleVaultContract"),
+                .product(name: "ThrottleVaultContract", package: "ThrottleVaultContract")
             ]
         ),
         .target(
@@ -81,7 +81,7 @@ let package = Package(
             dependencies: [
                 "ResearchVaultIPCModel", "ResearchVaultModel",
                 .product(name: "ThrottleVaultContract", package: "ThrottleVaultContract"),
-                .product(name: "ThrottleVaultClient", package: "ThrottleVaultClient"),
+                .product(name: "ThrottleVaultClient", package: "ThrottleVaultClient")
             ],
             linkerSettings: [
                 .linkedFramework("Security"),

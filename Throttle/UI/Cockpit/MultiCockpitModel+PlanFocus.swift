@@ -10,14 +10,12 @@ extension MultiCockpitModel {
         return matches.first { !$0.isHibernated } ?? matches.first
     }
 
-    /// Opens the Plan view on one task of a project. Returns false when no
-    /// session works in that project, rather than showing another project's plan.
+    /// Opens the project's page on its plan, with the task selected. The page
+    /// binds to the project folder itself, so no session needs to be open.
     @discardableResult
     func focusPlan(projectRoot: URL, taskID: String) -> Bool {
-        guard let tab = session(atProjectRoot: projectRoot) else { return false }
         pendingPlanSelection = taskID
-        activeID = tab.id
-        viewMode = .plan
+        destination = .project(path: projectRoot.standardizedFileURL.path)
         return true
     }
 }

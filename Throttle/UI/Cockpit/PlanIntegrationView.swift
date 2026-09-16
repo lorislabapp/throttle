@@ -22,6 +22,9 @@ struct CockpitSpecialView: View {
 /// view's already-large body.
 struct CockpitPlanView: View {
     let cockpit: MultiCockpitModel
+    /// A project page shows its own plan whatever session is active; nil keeps
+    /// the historical behaviour of following the active session's folder.
+    var fixedProjectRoot: URL?
     @State private var planModel = PlanModel()
     @State private var showInstructions = false
 
@@ -88,6 +91,7 @@ struct CockpitPlanView: View {
     }
 
     private var activeProjectRoot: URL? {
+        if let fixedProjectRoot { return fixedProjectRoot }
         guard let cwd = cockpit.active?.cwd, !cwd.isEmpty else { return nil }
         return URL(fileURLWithPath: cwd, isDirectory: true)
     }
