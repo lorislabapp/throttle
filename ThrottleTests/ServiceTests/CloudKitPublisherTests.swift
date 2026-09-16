@@ -6,6 +6,36 @@ import XCTest
 
 @MainActor
 final class CloudKitPublisherTests: XCTestCase {
+    func testExplicitDeletionRequiresAnAvailableAccountAndStopsPublishing() async throws {
+        let backend = CloudPublisherBackendFake()
+        let publisher = CloudKitPublisher(makeBackend: { backend }, minInterval: 0)
+        let deletion = Task { try await publisher.deleteMirror() }
+        try await eventually { backend.accountWaiter != nil }
+        try backend.resolveAccount(.available)
+        try await eventually { backend.deleteWaiter != nil }
+        backend.resolveDelete()
+        try await deletion.value
+        publisher.publish(snapshot("must stay local"))
+        await settle()
+        XCTAssertTrue(backend.saved.isEmpty)
+        XCTAssertEqual(backend.deletions, 1)
+    }
+
+    func testExplicitDeletionRefusesAnUnavailableAccount() async throws {
+        let backend = CloudPublisherBackendFake()
+        let publisher = CloudKitPublisher(makeBackend: { backend }, minInterval: 0)
+        let deletion = Task { try await publisher.deleteMirror() }
+        try await eventually { backend.accountWaiter != nil }
+        try backend.resolveAccount(.noAccount)
+        do {
+            try await deletion.value
+            XCTFail("Deletion must not be reported when iCloud is unavailable")
+        } catch let error as CloudKitPublisher.DeletionError {
+            XCTAssertEqual(error, .iCloudUnavailable)
+        }
+        XCTAssertEqual(backend.deletions, 0)
+    }
+
     func testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots() async throws {
         let first = CloudPublisherBackendFake(), second = CloudPublisherBackendFake()
         var backends = [first, second]
@@ -207,12 +237,14 @@ final class CloudKitPublisherTests: XCTestCase {
 @MainActor
 private final class CloudPublisherBackendFake: CloudKitPublishingBackend {
     var accountWaiter: CheckedContinuation<CKAccountStatus, Error>?
+    var deleteWaiter: CheckedContinuation<Void, Error>?
     var accountLabel = "account-A"
     private var saveWaiters: [CheckedContinuation<Void, Error>] = []
     private(set) var saved: [ThrottleMirrorSnapshot] = []
     private(set) var savedAccountLabels: [String] = []
     private(set) var cancellations = 0
     private(set) var maximumConcurrentSaves = 0
+    private(set) var deletions = 0
 
     func accountStatus() async throws -> CKAccountStatus {
         try await withCheckedThrowingContinuation { accountWaiter = $0 }
@@ -227,6 +259,11 @@ private final class CloudPublisherBackendFake: CloudKitPublishingBackend {
         }
     }
 
+    func deleteSnapshot() async throws {
+        deletions += 1
+        try await withCheckedThrowingContinuation { deleteWaiter = $0 }
+    }
+
     func cancel() { cancellations += 1 }
 
     func resolveAccount(_ status: CKAccountStatus) throws {
@@ -239,6 +276,11 @@ private final class CloudPublisherBackendFake: CloudKitPublishingBackend {
         let waiter = try XCTUnwrap(saveWaiters.first)
         saveWaiters.removeFirst()
         if let error { waiter.resume(throwing: error) } else { waiter.resume() }
+    }
+
+    func resolveDelete() {
+        deleteWaiter?.resume()
+        deleteWaiter = nil
     }
 }
 

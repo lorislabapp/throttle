@@ -69,10 +69,16 @@ final class TaskLauncherTests: XCTestCase {
         let environment = [PlanMCPAuthority.environmentKey: plan.authorityDescriptor.path]
         let grant = try XCTUnwrap(try PlanMCPAuthority.load(environment: environment).get())
         XCTAssertEqual(grant.author, "codex:a")
+        XCTAssertEqual(grant.taskID, "T1.1")
+        XCTAssertEqual(grant.missionID, plan.missionID)
         XCTAssertEqual(grant.operations, [.read, .event, .verdict])
-        XCTAssertNil(grant.refusal(project: plan.workingDirectory.path, author: "codex:a", operation: .event))
-        XCTAssertNil(grant.refusal(project: repo.path, author: "codex:a", operation: .read))
-        XCTAssertNotNil(grant.refusal(project: repo.path, author: "codex:a", operation: .claim))
+        XCTAssertGreaterThan(grant.expiresAt, grant.issuedAt)
+        XCTAssertNil(grant.refusal(project: plan.workingDirectory.path, author: "codex:a",
+                                   operation: .event, requestedTaskID: "T1.1"))
+        XCTAssertNil(grant.refusal(project: repo.path, author: "codex:a",
+                                   operation: .read, requestedTaskID: nil))
+        XCTAssertNotNil(grant.refusal(project: repo.path, author: "codex:a",
+                                      operation: .claim, requestedTaskID: "T1.1"))
     }
 
     /// The button may have been drawn before another agent claimed the task.
@@ -94,6 +100,76 @@ final class TaskLauncherTests: XCTestCase {
                                                      base: "main")) { error in
             XCTAssertEqual(error as? TaskLauncher.LaunchError, .unknownTask("T9.9"))
         }
+    }
+
+    func testAuthorityDescriptorRefusesASymlinkedDirectory() throws {
+        let outside = FileManager.default.temporaryDirectory
+            .appendingPathComponent("authority-outside-\(UUID().uuidString)", isDirectory: true)
+        let link = FileManager.default.temporaryDirectory
+            .appendingPathComponent("authority-link-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+        defer {
+            try? FileManager.default.removeItem(at: link)
+            try? FileManager.default.removeItem(at: outside)
+        }
+        let now = Date(timeIntervalSince1970: 1_000)
+        let authority = PlanMCPAuthority(
+            projectRoots: [repo],
+            author: "codex:a",
+            operations: [.read],
+            taskID: "T1.1",
+            missionID: UUID(),
+            issuedAt: now,
+            expiresAt: now.addingTimeInterval(600)
+        )
+
+        XCTAssertThrowsError(try TaskLauncher.writeAuthority(
+            authority,
+            missionID: authority.missionID,
+            directory: link
+        )) { error in
+            XCTAssertEqual(error as? PlanStoreError, .unsafeStorage)
+        }
+    }
+
+    func testPreparePinsRecipeAndInstructionsBeforeLaunching() throws {
+        try writeRecipePlan(revision: 1)
+        let launch = try TaskLauncher.prepare(
+            taskID: "T1.1",
+            runtime: .codex,
+            repo: repo,
+            author: "codex:a",
+            base: "main"
+        )
+        addTeardownBlock { try? FileManager.default.removeItem(at: launch.authorityDescriptor) }
+        let claim = try XCTUnwrap(
+            PlanStore(projectRoot: repo).events(for: "T1.1").events.first
+        )
+        XCTAssertEqual(claim.recipeID, .bugWithRegression)
+        XCTAssertEqual(claim.recipeDigest, WorkflowRecipeCatalog.bugWithRegression.digest)
+        XCTAssertEqual(claim.instructionSnapshotDigest?.count, 64)
+        XCTAssertTrue(launch.kickoff.contains("Workflow recipe bug-with-regression r1"))
+        XCTAssertTrue(launch.kickoff.contains("grants no tools or permissions"))
+    }
+
+    func testInvalidRecipeIsRefusedBeforeAWorktreeIsCreated() throws {
+        try writeRecipePlan(revision: 99)
+        let path = try TaskWorktreeService.path(for: "T1.1", in: repo)
+
+        XCTAssertThrowsError(try TaskLauncher.prepare(
+            taskID: "T1.1",
+            runtime: .codex,
+            repo: repo,
+            author: "codex:a",
+            base: "main"
+        )) { error in
+            XCTAssertEqual(
+                error as? WorkflowClaimContractError,
+                .unavailableRecipe("T1.1")
+            )
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: path.path))
     }
 
     // MARK: - The prompt the agent believes
@@ -125,4 +201,28 @@ final class TaskLauncherTests: XCTestCase {
         XCTAssertTrue(gated.contains("Do not report it to the user as finished"))
         XCTAssertFalse(plain.contains("SOTA-gated"))
     }
+
+    private func writeRecipePlan(revision: Int) throws {
+        let plan = Plan(
+            projectId: "p",
+            title: "Recipe",
+            tasks: [
+                PlanTask(
+                    id: "T1.1",
+                    title: "First",
+                    recipe: WorkflowRecipeReference(
+                        id: .bugWithRegression,
+                        revision: revision
+                    )
+                )
+            ]
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        try encoder.encode(plan).write(
+            to: repo.appendingPathComponent(".throttle/plan.json"),
+            options: .atomic
+        )
+    }
+
 }

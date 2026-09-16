@@ -65,4 +65,32 @@ check_boundary 'IPC request surface contains an owner capability or grant' \
 check_boundary 'Client directly imports a privileged Research Vault module' "$privileged_import" \
     "$client_root/Package.swift" "$client_root/Sources"
 
+# The standalone contract package must stay free of every product module, not
+# only the privileged ones, and must expose no owner capability or grant.
+contract_root="$package_root/../ThrottleVaultContract/Sources/ThrottleVaultContract"
+if [ ! -d "$contract_root" ]; then
+    printf 'Vault contract source directory is missing\n' >&2
+    exit 2
+fi
+check_boundary 'Vault contract imports a product module' \
+    'import[[:space:]]+(ResearchVault|ThrottleShared|ThrottlePeer|ThrottleMCP|ThrottleMirror)' \
+    "$contract_root"
+check_boundary 'Vault contract surface contains an owner capability or grant' \
+    'func[[:space:]]+(import|backup|restore)|database(URL|Path)|masterKey' \
+    "$contract_root"
+
+# The standalone client package speaks the contract over NSXPC. It may import
+# nothing from the product and must never carry a grant, key or database path.
+client_package_root="$package_root/../ThrottleVaultClient/Sources/ThrottleVaultClient"
+if [ ! -d "$client_package_root" ]; then
+    printf 'Vault client source directory is missing\n' >&2
+    exit 2
+fi
+check_boundary 'Vault client imports a product module' \
+    'import[[:space:]]+(ResearchVault|ThrottleShared|ThrottlePeer|ThrottleMCP|ThrottleMirror)' \
+    "$client_package_root"
+check_boundary 'Vault client carries a grant, key or database path' \
+    'VaultAuthorization|EndpointPolicy|database(URL|Path)|masterKey|SecItem(Add|Copy|Update|Delete)' \
+    "$client_package_root"
+
 echo '{"status":"pass","scenario":"ipc-boundary-no-privileged-client-dependency"}'

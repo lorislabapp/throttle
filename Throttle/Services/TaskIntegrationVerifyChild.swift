@@ -26,7 +26,14 @@ extension TaskIntegrationService {
             self.descriptor = descriptor
             let stopped = DispatchSemaphore(value: 0)
             self.stopped = stopped
-            let queue = DispatchQueue(label: "com.lorislab.throttle.verify-output")
+            // `shell` is an explicit user action and waits, bounded, for this reader
+            // to signal EOF/cancellation. Keep the signaling side at least as urgent
+            // as its possible UI waiter so the wait cannot invert queue priorities.
+            // The queue does no command work: it only drains already-available bytes.
+            let queue = DispatchQueue(
+                label: "com.lorislab.throttle.verify-output",
+                qos: .userInteractive
+            )
             let source = DispatchSource.makeReadSource(fileDescriptor: descriptor, queue: queue)
             self.source = source
             source.setEventHandler {

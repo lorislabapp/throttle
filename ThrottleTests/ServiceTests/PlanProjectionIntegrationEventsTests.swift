@@ -40,6 +40,49 @@ final class PlanProjectionIntegrationEventsTests: XCTestCase {
         XCTAssertNil(projected.lastCheck)
     }
 
+    func testCandidateIsNotDoneOnTheWorkersWord() {
+        let projected = PlanProjection.project(task: task("T1"), events: [
+            TaskEvent(seq: 1, timestamp: at(0), author: "codex:a", type: .claimed),
+            TaskEvent(seq: 2, timestamp: at(1), author: "codex:a",
+                      type: .candidateComplete, summary: "ready")
+        ])
+        XCTAssertEqual(projected.status, .candidate)
+        XCTAssertEqual(projected.pct, 100)
+        XCTAssertEqual(projected.summary, "ready")
+        XCTAssertNil(projected.owner, "the worker's lease ends with its candidate")
+        XCTAssertEqual(projected.runtime, "codex", "the producer remains known for independent review")
+    }
+
+    func testOnlyPassingCoordinatorCheckPromotesCandidate() {
+        let events = [
+            TaskEvent(seq: 1, timestamp: at(0), author: "codex:a", type: .claimed),
+            TaskEvent(seq: 2, timestamp: at(1), author: "codex:a", type: .candidateComplete),
+            TaskEvent(seq: 3, timestamp: at(2), author: "throttle:app", type: .checked,
+                      ref: "abc+def", passed: false),
+            TaskEvent(seq: 4, timestamp: at(3), author: "throttle:app", type: .checked,
+                      ref: "abc+def", passed: true)
+        ]
+        let failed = PlanProjection.project(task: task("T1"), events: Array(events.prefix(3)))
+        XCTAssertEqual(failed.status, .candidate)
+        XCTAssertEqual(failed.lastCheck?.passed, false)
+        XCTAssertEqual(PlanProjection.project(task: task("T1"), events: events).status, .done)
+    }
+
+    func testGatedCandidateNeedsGreenCheckBeforeIndependentReview() {
+        let events = [
+            TaskEvent(seq: 1, timestamp: at(0), author: "codex:a", type: .claimed),
+            TaskEvent(seq: 2, timestamp: at(1), author: "codex:a", type: .candidateComplete)
+        ]
+        XCTAssertEqual(PlanProjection.project(task: task("T1", sotaGate: true),
+                                               events: events).status, .candidate)
+        let checked = events + [
+            TaskEvent(seq: 3, timestamp: at(2), author: "throttle:app", type: .checked,
+                      ref: "abc+def", passed: true)
+        ]
+        XCTAssertEqual(PlanProjection.project(task: task("T1", sotaGate: true),
+                                               events: checked).status, .review)
+    }
+
     func testIntegratedMovesADoneTaskAndIsItselfTerminal() {
         let projected = PlanProjection.project(task: task("T1"), events: [
             TaskEvent(seq: 1, timestamp: at(0), author: "codex:a", type: .claimed),

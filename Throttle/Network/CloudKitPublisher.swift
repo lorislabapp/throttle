@@ -6,6 +6,7 @@ import ThrottleShared
 protocol CloudKitPublishingBackend: AnyObject {
     func accountStatus() async throws -> CKAccountStatus
     func save(_ snapshot: ThrottleMirrorSnapshot) async throws
+    func deleteSnapshot() async throws
     func cancel()
 }
 
@@ -31,6 +32,14 @@ final class CloudKitPublisher: MirrorTransport {
     private var enabled = false
     private var pending: ThrottleMirrorSnapshot?
     private var lastAttemptAt = Date.distantPast
+
+    enum DeletionError: LocalizedError, Equatable {
+        case iCloudUnavailable
+
+        var errorDescription: String? {
+            String(localized: "iCloud is unavailable. The mirrored copy was not deleted.")
+        }
+    }
 
     init(
         makeBackend: @escaping () -> any CloudKitPublishingBackend = { CloudKitDatabasePublisher() },
@@ -69,6 +78,18 @@ final class CloudKitPublisher: MirrorTransport {
         if let accountObserver { notificationCenter.removeObserver(accountObserver) }
         accountObserver = nil
         invalidate()
+    }
+
+    /// Deletes the single server-side mirror only after an explicit UI action.
+    /// Opt-out remains a separate, non-destructive operation.
+    func deleteMirror() async throws {
+        stop()
+        let candidate = makeBackend()
+        defer { candidate.cancel() }
+        guard try await candidate.accountStatus() == .available else {
+            throw DeletionError.iCloudUnavailable
+        }
+        try await candidate.deleteSnapshot()
     }
 
     func publish(_ snapshot: ThrottleMirrorSnapshot) {
@@ -171,6 +192,38 @@ private final class CloudKitDatabasePublisher: CloudKitPublishingBackend {
         } onCancel: {
             write.cancel()
         }
+    }
+
+    func deleteSnapshot() async throws {
+        let id = CKRecord.ID(recordName: CloudKitSchema.recordName())
+        let write = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: [id])
+        write.isAtomic = true
+        operation = write
+        defer { if operation === write { operation = nil } }
+        do {
+            try await withTaskCancellationHandler {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    write.modifyRecordsResultBlock = { result in
+                        continuation.resume(with: result.mapError { $0 as Error })
+                    }
+                    container.privateCloudDatabase.add(write)
+                }
+            } onCancel: {
+                write.cancel()
+            }
+        } catch {
+            guard Self.snapshotWasAlreadyAbsent(error) else { throw error }
+        }
+    }
+
+    private static func snapshotWasAlreadyAbsent(_ error: Error) -> Bool {
+        guard let cloudError = error as? CKError else { return false }
+        if cloudError.code == .unknownItem { return true }
+        guard cloudError.code == .partialFailure,
+              let partial = cloudError.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error],
+              !partial.isEmpty
+        else { return false }
+        return partial.values.allSatisfy { ($0 as? CKError)?.code == .unknownItem }
     }
 
     func cancel() { operation?.cancel() }

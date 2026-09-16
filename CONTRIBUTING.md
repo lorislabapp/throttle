@@ -1,12 +1,14 @@
-# Contributing to Throttle Meter
+# Contributing to Throttle
 
-Thanks for considering a contribution. This is the open-source meter that ships inside the commercial [Throttle](https://lorislab.fr/throttle) app — improvements here improve both.
+Thanks for considering a contribution. This repository contains the current
+Throttle product surfaces listed in the README. Check the root licence and any
+path-specific notices before redistributing source or artifacts.
 
 ## Quick start
 
 ```bash
-git clone https://github.com/lorislabapp/throttle-meter.git
-cd throttle-meter
+git clone https://github.com/lorislabapp/throttle.git
+cd throttle
 brew install xcodegen
 xcodegen generate
 open Throttle.xcodeproj
@@ -19,7 +21,10 @@ xcodebuild test -project Throttle.xcodeproj -scheme Throttle \
   -destination 'platform=macOS'
 ```
 
-All 21 tests should pass on a clean checkout. If they don't, that's a bug — please open an issue.
+The test inventory evolves with the product. The command must finish with zero
+unexpected failures; live-provider tests may skip only when they name their
+explicit opt-in or missing fixture. Include the exact command, toolchain and
+result bundle when reporting a failure.
 
 ## What kinds of PRs are welcome
 
@@ -36,8 +41,8 @@ All 21 tests should pass on a clean checkout. If they don't, that's a bug — pl
 ## What kinds of PRs are not a fit
 
 - New features that change the product's scope (please open an issue first to discuss)
-- Telemetry, analytics, crash reporting (deliberate design choice — Throttle Meter is local-only)
-- Pro-tier features (paywall, optimizer wizard, license client) — those live in the private commercial repo
+- Undisclosed telemetry, analytics or data transfer
+- Changes to licensing, paid-product boundaries or public distribution without prior maintainer review
 - Adding dependencies that pull in cloud services
 - Bundle ID or signing changes
 

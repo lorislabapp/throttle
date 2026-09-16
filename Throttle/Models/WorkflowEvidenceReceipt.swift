@@ -24,6 +24,10 @@ struct WorkflowEvidenceReceipt: Codable, Sendable, Equatable {
     /// they were captured; they never widen or narrow what a receipt proves.
     var untrackedDigest: String?
     var environmentDigest: String?
+    /// Requirements captured before execution. Nil on legacy receipts.
+    var contractDigest: String?
+    /// Complete task boundary captured before execution. Nil on legacy tasks.
+    var workContractDigest: String?
 
     static func command(_ command: String, stamp: String, startedAt: Date,
                         finishedAt: Date, result: (succeeded: Bool, revisionsUnchanged: Bool)) -> Self {
@@ -69,5 +73,34 @@ struct WorkflowEvidenceReceipt: Codable, Sendable, Equatable {
             && passed.count == passedTests.count && skipped.count == skippedTests.count
             && passed.isDisjoint(with: skipped) && passed.union(skipped) == expected
             && skipped.isSubset(of: allowedSkips)
+    }
+}
+
+/// The test obligation of a task. This is one slice of its work contract, not
+/// approval to execute commands, change requirements, or publish anything.
+struct WorkflowVerificationContract: Codable, Sendable, Equatable {
+    var schemaVersion: Int = 1
+    var revision: Int
+    var requiredTests: [String]
+    var allowedSkips: [String] = []
+
+    var digest: String? {
+        guard schemaVersion == 1, revision > 0, !requiredTests.isEmpty,
+              requiredTests.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
+              Set(requiredTests).count == requiredTests.count,
+              Set(allowedSkips).count == allowedSkips.count,
+              Set(allowedSkips).isSubset(of: Set(requiredTests)) else { return nil }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(self) else { return nil }
+        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
+
+    func accepts(_ receipt: WorkflowEvidenceReceipt?, stamp: String) -> Bool {
+        guard let digest, let receipt, receipt.contractDigest == digest,
+              receipt.inputStamp == stamp,
+              receipt.provesCompleteTests(allowedSkips: Set(allowedSkips)),
+              let passed = receipt.passedTests, let skipped = receipt.skippedTests else { return false }
+        return Set(requiredTests).isSubset(of: Set(passed).union(skipped))
     }
 }

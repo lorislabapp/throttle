@@ -31,6 +31,8 @@ settings:
       ENABLE_HARDENED_RUNTIME: YES
 
 packages:
+  ThrottleMCPContracts:
+    path: Packages/ThrottleMCPContracts
   ThrottleShared:
     path: ThrottleShared
   GRDB:
@@ -141,6 +143,7 @@ targets:
         PROVISIONING_PROFILE_SPECIFIER: "Throttle DevID iCloud"
     dependencies:
       - package: GRDB
+      - package: ThrottleMCPContracts
       - package: Sparkle
       - package: SwiftTerm
       # Embedded Apple-Silicon inference. Model weights are installed on
@@ -403,6 +406,8 @@ targets:
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/Throttle.app/Contents/MacOS/Throttle
     dependencies:
       - target: Throttle
+      - package: ThrottleMCPContracts
+        link: false
       # GRDB is linked by the host app (Throttle) and resolved at runtime via
       # BUNDLE_LOADER/TEST_HOST. `link: false` keeps `import GRDB` compiling in the
       # tests WITHOUT embedding a second copy into the .xctest bundle — a duplicate

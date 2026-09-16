@@ -26,32 +26,85 @@ FILES = {
         "Throttle/Services/ContextFirewall.swift",
         "Throttle/Services/ContentStore.swift",
         "Throttle/Models/PlanModels.swift",
+        "Throttle/Models/ResearchDossier.swift",
+        "Throttle/Models/WorkflowRecipeModels.swift",
+        "Throttle/Models/WorkflowWorkContract.swift",
+        "Throttle/Models/WorkflowReviewModels.swift",
+        "Throttle/Models/BudgetAdmissionModels.swift",
+        "Throttle/Models/WorkflowSecurityFinding.swift",
+        "Throttle/Models/WorkflowDesignContract.swift",
+        "Throttle/Models/ProjectKnowledgeModels.swift",
+        "Throttle/Models/WorkflowReleaseModels.swift",
+        "Throttle/Models/WorkflowDependencyModels.swift",
+        "Throttle/Models/WorkflowPlatformModels.swift",
+        "Throttle/Models/WorkflowTechnologyReuseModels.swift",
+        "Throttle/Models/WorkflowIPModels.swift",
+        "Throttle/Models/WorkflowProductCycleContract.swift",
         "Throttle/Models/WorkflowEvidenceReceipt.swift",
         "Throttle/Services/WorkflowResultImporter.swift",
         "Throttle/Services/PlanProjection.swift",
         "Throttle/Services/PlanStore.swift",
         "Throttle/Services/PlanMCPTools.swift",
+        "Throttle/Services/PlanMCPSchemas.swift",
+        "Throttle/Services/PlanMCPIntakeTools.swift",
+        "Throttle/Services/PlanMCPReviewTools.swift",
+        "Throttle/Services/PlanMCPRecipeTools.swift",
+        "Throttle/Services/WorkflowClaimContract.swift",
+        "Throttle/Services/WorkflowReviewGate.swift",
+        "Throttle/Services/WorkflowReleaseLedgerStore.swift",
+        "Throttle/Services/WorkflowReleaseLedgerStorage.swift",
+        "Throttle/Services/BudgetAdmissionStore.swift",
+        "Throttle/Services/BudgetAdmissionStorage.swift",
+        "Throttle/Services/TaskBudgetAdmission.swift",
+        "Throttle/Services/RedTeamCampaignStore.swift",
+        "Throttle/Services/RedTeamCampaignStorage.swift",
+        "Throttle/Services/ProjectKnowledgeExplorer.swift",
+        "Throttle/Services/ProjectKnowledgeExplorerReceipt.swift",
+        "Throttle/Services/ProjectKnowledgeExplorerSearch.swift",
+        "Throttle/Services/ProjectKnowledgeMCP.swift",
+        "Throttle/Services/ProjectIntakeService.swift",
+        "Throttle/Services/PlanTemplate.swift",
+        "Throttle/Services/ResearchDossierStore.swift",
         "Throttle/Services/PlanMCPRetry.swift",
         "Throttle/Services/PlanMCPTaskRouter.swift",
         "Throttle/Services/PlanMCPAuthority.swift",
+        "Throttle/Services/PlanMCPAuthorityRevocation.swift",
+        "Throttle/Services/PlanMCPAuthorityLifecycle.swift",
+        "Throttle/Models/ProjectInstructionModels.swift",
+        "Throttle/Services/ProjectInstructionService.swift",
+        "Throttle/Services/ProjectInstructionDiscovery.swift",
+        "Throttle/Services/ProjectInstructionReconciler.swift",
         "Throttle/Services/DiagnosticReport.swift",
         "Throttle/Services/DiagnosticArchive.swift",
         "Throttle/Services/TaskWorktreeService.swift",
         "Throttle/Services/TaskIntegrationService.swift",
+        "Throttle/Services/TaskIntegrationServiceReview.swift",
         "Throttle/Services/TaskIntegrationServiceVerify.swift",
         "Throttle/Services/TaskIntegrationVerifyChild.swift",
     ],
+    "Sources/ThrottleShared": [
+        "ThrottleShared/Sources/ThrottleShared/OutboundPolicy.swift",
+    ],
+    "Sources/ThrottleMCPContracts": [
+        "Packages/ThrottleMCPContracts/Sources/ThrottleMCPContracts/ThrottleMCPSchemas.swift",
+        "Packages/ThrottleMCPContracts/Sources/ThrottleMCPContracts/ProjectExploreSchema.swift",
+    ],
+    "Sources/ThrottleVaultContract": [
+        "Packages/ThrottleVaultContract/Sources/ThrottleVaultContract/ResearchReceipt.swift",
+        "Packages/ThrottleVaultContract/Sources/ThrottleVaultContract/ResearchVaultIPCModel.swift",
+        "Packages/ThrottleVaultContract/Sources/ThrottleVaultContract/ResearchVaultContextEncoding.swift",
+        "Packages/ThrottleVaultContract/Sources/ThrottleVaultContract/ResearchVaultProjectAdmission.swift",
+        "Packages/ThrottleVaultContract/Sources/ThrottleVaultContract/ResearchVaultReasoningDTO.swift",
+        "Packages/ThrottleVaultContract/Sources/ThrottleVaultContract/ResearchVaultReceiptDTO.swift",
+        "Packages/ThrottleVaultContract/Sources/ThrottleVaultContract/ResearchVaultReceiptProvenance.swift",
+        "Packages/ThrottleVaultContract/Sources/ThrottleVaultContract/ResearchVaultServiceIdentity.swift",
+    ],
     "Sources/ResearchVaultModel": [
-        "Packages/ResearchVaultKit/Sources/ResearchVaultModel/ResearchReceipt.swift",
+        "Packages/ResearchVaultKit/Sources/ResearchVaultModel/ResearchVaultModel.swift",
         "Packages/ResearchVaultKit/Sources/ResearchVaultModel/VaultAuthorization.swift",
     ],
     "Sources/ResearchVaultIPCModel": [
         "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultIPCModel.swift",
-        "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultContextEncoding.swift",
-        "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultProjectAdmission.swift",
-        "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultReasoningDTO.swift",
-        "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultReceiptDTO.swift",
-        "Packages/ResearchVaultKit/Sources/ResearchVaultIPCModel/ResearchVaultReceiptProvenance.swift",
     ],
     "Sources/ResearchVaultIngestion": [
         "Packages/ResearchVaultKit/Sources/ResearchVaultIngestion/RetrievalBenchmark.swift",
@@ -63,14 +116,36 @@ FILES = {
                             "ThrottleTests/ServiceTests/PlanStoreTests.swift",
                             "ThrottleTests/ServiceTests/WorkflowFoundationTests.swift",
                             "ThrottleTests/ServiceTests/PlanMCPRetryTests.swift",
+                            "ThrottleTests/ServiceTests/PlanMCPToolsTests.swift",
+                            "ThrottleTests/ServiceTests/PlanMCPSchemaContractTests.swift",
                             "ThrottleTests/ServiceTests/PlanMCPTaskRouterTests.swift",
                             "ThrottleTests/ServiceTests/PlanMCPAuthorityTests.swift",
+                            "ThrottleTests/ServiceTests/PlanMCPAuthorityLifecycleTests.swift",
+                            "ThrottleTests/ServiceTests/ProjectInstructionServiceTests.swift",
                             "ThrottleTests/ServiceTests/DiagnosticReportTests.swift",
                             "ThrottleTests/ServiceTests/DiagnosticArchiveTests.swift",
                             "ThrottleTests/ServiceTests/WorkflowEvidenceReceiptTests.swift",
+                            "ThrottleTests/ServiceTests/WorkflowRecipeTests.swift",
+                            "ThrottleTests/ServiceTests/WorkflowWorkContractTests.swift",
+                            "ThrottleTests/ServiceTests/WorkflowReviewGateTests.swift",
+                            "ThrottleTests/ServiceTests/WorkflowReviewMCPTests.swift",
+                            "ThrottleTests/ServiceTests/BudgetAdmissionStoreTests.swift",
+                            "ThrottleTests/ServiceTests/TaskBudgetAdmissionTests.swift",
+                            "ThrottleTests/ServiceTests/TaskBudgetLifecycleTests.swift",
+                            "ThrottleTests/ServiceTests/RedTeamCampaignStoreTests.swift",
+                            "ThrottleTests/ServiceTests/WorkflowDesignContractTests.swift",
+                            "ThrottleTests/ServiceTests/ProjectKnowledgeExplorerTests.swift",
+                            "ThrottleTests/ServiceTests/WorkflowReleaseGateTests.swift",
+                            "ThrottleTests/ServiceTests/WorkflowReleaseLedgerStoreTests.swift",
+                            "ThrottleTests/ServiceTests/WorkflowDependencyEvaluatorTests.swift",
+                            "ThrottleTests/ServiceTests/WorkflowParityAuditorTests.swift",
+                            "ThrottleTests/ServiceTests/WorkflowTechnologyReuseTests.swift",
+                            "ThrottleTests/ServiceTests/WorkflowIPEvaluatorTests.swift",
+                            "ThrottleTests/ServiceTests/WorkflowContractIntegrationTests.swift",
                             "ThrottleTests/ServiceTests/WorkflowResultImporterTests.swift",
                             "ThrottleTests/ServiceTests/TaskIntegrationServiceTests.swift",
                             "ThrottleTests/ServiceTests/TaskIntegrationRefusalTests.swift",
+                            "ThrottleTests/ServiceTests/TaskIntegrationWorkContractTests.swift",
                             "ThrottleTests/ServiceTests/TaskIntegrationOutputTests.swift",
                             "ThrottleTests/ServiceTests/TaskIntegrationHardeningTests.swift"],
     "Tests/ResearchVaultIngestionTests": [
@@ -81,11 +156,14 @@ FILES = {
 MANIFEST = '''// swift-tools-version: 6.0
 import PackageDescription
 let package = Package(name: "ThrottleCoreEvidence", platforms: [.macOS(.v14)], targets: [
-    .target(name: "Throttle"),
-    .target(name: "ResearchVaultModel"),
-    .target(name: "ResearchVaultIPCModel", dependencies: ["ResearchVaultModel"]),
+    .target(name: "Throttle", dependencies: ["ThrottleShared", "ThrottleMCPContracts"]),
+    .target(name: "ThrottleShared"),
+    .target(name: "ThrottleMCPContracts"),
+    .target(name: "ThrottleVaultContract"),
+    .target(name: "ResearchVaultModel", dependencies: ["ThrottleVaultContract"]),
+    .target(name: "ResearchVaultIPCModel", dependencies: ["ResearchVaultModel", "ThrottleVaultContract"]),
     .target(name: "ResearchVaultIngestion", dependencies: ["ResearchVaultIPCModel"]),
-    .testTarget(name: "ThrottleTests", dependencies: ["Throttle"]),
+    .testTarget(name: "ThrottleTests", dependencies: ["Throttle", "ThrottleMCPContracts"]),
     .testTarget(name: "ResearchVaultIngestionTests", dependencies: ["ResearchVaultIngestion"]),
 ])
 '''
@@ -127,7 +205,11 @@ def main():
     parser.add_argument("--output-parent", type=pathlib.Path)
     parser.add_argument("--scratch-path", type=pathlib.Path,
                         help="Reuse a task-owned Swift build cache; evidence stays in a new directory")
+    parser.add_argument("--timeout-seconds", type=int, default=900,
+                        help="Per-pass timeout recorded in the receipt (default: 900)")
     args = parser.parse_args()
+    if args.timeout_seconds < 60:
+        parser.error("--timeout-seconds must be at least 60")
     if args.output_parent:
         args.output_parent.mkdir(parents=True, exist_ok=True)
     output = pathlib.Path(tempfile.mkdtemp(prefix="throttle-core-evidence-", dir=args.output_parent))
@@ -160,7 +242,7 @@ def main():
         for command in commands:
             process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
             try:
-                codes.append(process.wait(timeout=900))
+                codes.append(process.wait(timeout=args.timeout_seconds))
             except subprocess.TimeoutExpired:
                 os.killpg(process.pid, signal.SIGKILL)
                 process.wait()
@@ -176,6 +258,7 @@ def main():
         errors.append("sources_changed_during_run")
     receipt = {"schema": 1, "scope": "core-validator-subset", "status": "pass" if not errors else "fail",
                "started_at_unix": started, "duration_seconds": round(time.time() - started, 3),
+               "timeout_seconds": args.timeout_seconds,
                "commands": commands, "exit_codes": codes, "reported_cases": case_count,
                "expected_cases": expected,
                "sources_sha256": hashes, "errors": errors,

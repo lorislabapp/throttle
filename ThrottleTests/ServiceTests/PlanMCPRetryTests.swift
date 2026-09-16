@@ -85,7 +85,7 @@ final class PlanMCPRetryTests: XCTestCase {
     func test_staleNewEventIsRefusedEvenWhenTheSameAuthorOwnsANewClaim() throws {
         let root = try fixture()
         _ = PlanMCPTools.claimText(project: root.path, taskID: "task", author: "codex:a", missionID: nil)
-        let stale = event(root, type: "completed", sequence: 1)
+        let stale = event(root, type: "candidate_complete", sequence: 1)
         _ = PlanMCPTools.eventText(event(root, type: "released", sequence: 1))
         _ = PlanMCPTools.claimText(project: root.path, taskID: "task", author: "codex:a", missionID: nil)
         XCTAssertTrue(PlanMCPTools.eventText(stale).hasPrefix("Refused:"))
@@ -95,14 +95,16 @@ final class PlanMCPRetryTests: XCTestCase {
     func test_verdictRetryDoesNotIncrementRejectionCountTwice() throws {
         let root = try fixture()
         _ = PlanMCPTools.claimText(project: root.path, taskID: "task", author: "codex:a", missionID: nil)
-        _ = PlanMCPTools.eventText(event(root, type: "completed", sequence: 1))
+        _ = PlanMCPTools.eventText(event(root, type: "candidate_complete", sequence: 1))
+        let store = PlanStore(projectRoot: root)
+        try store.append(TaskEvent(seq: 0, timestamp: Date(), author: "throttle:test",
+                                   type: .checked, ref: "candidate+base", passed: true), to: "task")
         let request = PlanMCPTools.VerdictRequest(project: root.path, taskID: "task", author: "claude:judge",
             verdict: "rejected", reason: "Missing test", summary: nil,
-            retry: .init(eventID: UUID(), expectedSequence: 2))
+            retry: .init(eventID: UUID(), expectedSequence: 3))
         XCTAssertFalse(PlanMCPTools.verdictText(request).hasPrefix("Refused:"))
         XCTAssertTrue(PlanMCPTools.verdictText(request).hasPrefix("Already recorded"))
-        let store = PlanStore(projectRoot: root)
         XCTAssertEqual(try store.state(for: "task").rejectionCount, 1)
-        XCTAssertEqual(try store.events(for: "task").events.count, 3)
+        XCTAssertEqual(try store.events(for: "task").events.count, 4)
     }
 }

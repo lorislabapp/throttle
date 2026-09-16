@@ -23,10 +23,29 @@ struct CockpitSpecialView: View {
 struct CockpitPlanView: View {
     let cockpit: MultiCockpitModel
     @State private var planModel = PlanModel()
+    @State private var showInstructions = false
 
     var body: some View {
-        PlanTreeView(model: planModel, context: context, onLaunch: launch,
-                     onShowSession: showActiveSession)
+        VStack(spacing: 0) {
+            if activeProjectRoot != nil {
+                HStack {
+                    Spacer()
+                    Button("Project Instructions", systemImage: "doc.badge.gearshape") {
+                        showInstructions = true
+                    }
+                    .controlSize(.small)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 6)
+                Divider()
+            }
+            PlanTreeView(
+                model: planModel,
+                context: context,
+                onLaunch: launch,
+                onShowSession: showActiveSession
+            )
+        }
             .onAppear {
                 planModel.onAutoRelaunch = launch
                 planModel.isDirectoryHeldBySession = {
@@ -38,6 +57,11 @@ struct CockpitPlanView: View {
             .onChange(of: cockpit.activeID) { _, _ in
                 planModel.bind(to: activeProjectRoot)
                 planModel.orient(to: cockpit.active?.missionID)
+            }
+            .sheet(isPresented: $showInstructions) {
+                if let root = activeProjectRoot {
+                    ProjectInstructionReviewView(projectRoot: root)
+                }
             }
     }
 
@@ -76,13 +100,13 @@ struct CockpitPlanView: View {
 
     private func sessionState(_ session: CockpitTab) -> String {
         switch session.state {
-        case .dormant: return "not started"
-        case .hibernated: return "hibernated"
-        case .rateLimited: return "rate limited"
-        case .paused: return "paused"
-        case .working: return "working"
-        case .waiting: return "waiting for you"
-        case .idle: return "idle"
+        case .dormant: return String(localized: "not started")
+        case .hibernated: return String(localized: "hibernated")
+        case .rateLimited: return String(localized: "rate limited")
+        case .paused: return String(localized: "paused")
+        case .working: return String(localized: "working")
+        case .waiting: return String(localized: "waiting for you")
+        case .idle: return String(localized: "idle")
         }
     }
 }
@@ -97,26 +121,23 @@ struct CockpitPlanView: View {
 extension PlanTreeView {
 
     @ViewBuilder
+    private func contractStatus(_ task: PlanTask, _ state: TaskState, _ assessment: Assessment) -> some View {
+        if let contract = task.effectiveVerificationContract {
+            Text(contract.accepts(state.lastCheck?.receipt, stamp: assessment.stamp)
+                 && state.lastCheck?.passed == true
+                 ? String(localized: "Required tests verified for this revision")
+                 : String(localized: "Required tests awaiting valid evidence"))
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder
     func integration(_ task: PlanTask, _ state: TaskState) -> some View {
         if state.status == .integrated {
-            VStack(alignment: .leading, spacing: 4) {
-                section("INTEGRATED")
-                Text(state.integratedSHA.map { String($0.prefix(10)) } ?? "—")
-                    .font(.system(size: 11, design: .monospaced))
-                    .textSelection(.enabled)
-                // A worktree that did not go away is a directory still on disk after
-                // the merge, and the user is the one who has to deal with it. Read
-                // back off disk rather than remembered from the run, so it still says
-                // this after a tab switch and after a relaunch.
-                if let kept = model.keptWorktreePath(for: task.id) {
-                    Text("Worktree kept").font(.system(size: 11)).foregroundStyle(.secondary)
-                    Text(kept).font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(.tertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .textSelection(.enabled)
-                }
-            }
-        } else if state.status == .done, let assessment = model.assessment(for: task.id) {
+            integratedStatus(task, state)
+        } else if state.status == .candidate || state.status == .done,
+                  let assessment = model.assessment(for: task.id) {
             VStack(alignment: .leading, spacing: 6) {
                 section("INTEGRATION")
                 shape(assessment)
@@ -128,6 +149,7 @@ extension PlanTreeView {
                         .textSelection(.enabled)
                 }
                 controls(task.id, assessment)
+                contractStatus(task, state, assessment)
                 if let check = state.lastCheck {
                     Text(check.receipt == nil
                          ? String(localized: "Historical check — evidence coverage not recorded")
@@ -143,13 +165,30 @@ extension PlanTreeView {
                 }
                 diffDisclosure(task.id)
             }
-        } else if state.status == .done, let reason = model.assessmentError(for: task.id) {
+        } else if state.status == .candidate || state.status == .done,
+                  let reason = model.assessmentError(for: task.id) {
             // A `done` task the user is looking for the button on, and there is a
             // reason there isn't one. Saying it is the whole point: the card used to
             // render as an empty space, which reads as Throttle having forgotten.
             VStack(alignment: .leading, spacing: 4) {
                 section("INTEGRATION")
                 Text(reason).font(.system(size: 11)).foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+        }
+    }
+
+    private func integratedStatus(_ task: PlanTask, _ state: TaskState) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            section("INTEGRATED")
+            Text(state.integratedSHA.map { String($0.prefix(10)) } ?? "—")
+                .font(.system(size: 11, design: .monospaced))
+                .textSelection(.enabled)
+            if let kept = model.keptWorktreePath(for: task.id) {
+                Text("Worktree kept").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(kept).font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
             }
@@ -208,7 +247,10 @@ extension PlanTreeView {
     private func buttons(_ taskID: String, _ assessment: Assessment) -> some View {
         HStack(spacing: 8) {
             Button(model.integrationStep == .idle
-                   ? "Integrate" : model.integrationStep.rawValue.capitalized) {
+                   ? (model.state(taskID).status == .candidate
+                        ? String(localized: "Verify candidate")
+                        : String(localized: "Integrate"))
+                   : model.integrationStep.rawValue.capitalized) {
                 // The previous refusal goes before the new attempt, not after it:
                 // old red text under a button reading "Rebasing" describes nothing.
                 integrationError = nil
@@ -269,12 +311,16 @@ extension PlanTreeView {
     /// service refuses on tracked modifications only, so this reads the same thing.
     static func blockReason(_ assessment: Assessment) -> String? {
         if case .conflicted = assessment.mergeability {
-            return "Blocked: the files above conflict with the base. Resolve them in the "
-                + "worktree and commit, then this can merge."
+            return String(localized: """
+            Blocked: the files above conflict with the base. Resolve them in the \
+            worktree and commit, then this can merge.
+            """)
         }
         if assessment.hasLooseWork {
-            return "Blocked: the worktree has uncommitted changes to tracked files. "
-                + "Commit or discard them in it first."
+            return String(localized: """
+            Blocked: the worktree has uncommitted changes to tracked files. Commit or \
+            discard them in it first.
+            """)
         }
         return nil
     }

@@ -25,7 +25,7 @@ final class CloudKitSubscriberPrivacyTests: XCTestCase {
         XCTAssertNil(store.latest)
     }
 
-    func testSameProvenOwnerRetainsCacheWhenNoNewSnapshotExists() async throws {
+    func testSameProvenOwnerScrubsCacheWhenServerConfirmsSnapshotDeletion() async throws {
         let defaults = try MirrorPrivacyFixture.defaults()
         try MirrorPrivacyFixture.seedCache(defaults)
         let store = MirrorPrivacyFixture.store(defaults)
@@ -33,8 +33,9 @@ final class CloudKitSubscriberPrivacyTests: XCTestCase {
                                             pair: { _ in }, notifications: nil)
         let changed = await subscriber.fetchLatest()
         XCTAssertFalse(changed)
-        XCTAssertEqual(store.latest, MirrorPrivacyFixture.snapshot())
-        XCTAssertEqual(store.history.count, 1)
+        XCTAssertNil(store.latest)
+        XCTAssertTrue(store.history.isEmpty)
+        XCTAssertNil(defaults.data(forKey: MirrorStorage.latestSnapshotKey))
     }
 
     func testUnownedLegacyCacheIsNotAssignedToFirstAccount() async throws {

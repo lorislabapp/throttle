@@ -1,20 +1,13 @@
 import Darwin
 import Foundation
 
-/// Who this MCP process may act as, and on what.
+/// A narrowing grant for one launched runtime, task and mission.
 ///
-/// For a stdio server the caller's identity is the operating system's: whoever
-/// launched the process under this user already holds its rights, and the MCP
-/// specification (2026-07-28, Authorization, "Protocol Requirements") says a
-/// stdio server takes its credentials from the environment rather than from an
-/// authorization flow. What the environment can add is a *narrowing*: a
-/// descriptor the launcher writes for one runtime, naming the project root it
-/// may touch, the author it speaks as and the operations it may perform.
-///
-/// No descriptor means a legacy caller and unchanged behaviour. A descriptor
-/// that is present is enforced on every call; one that is present but
-/// unreadable, world-readable, malformed or expired refuses every mutation,
-/// because a launcher that meant to narrow rights must not silently widen them.
+/// Stdio still inherits the user's operating-system rights. This descriptor
+/// therefore cannot be an OS sandbox; it makes Throttle's own MCP surface
+/// fail closed outside one explicit capability and leaves a durable revocation
+/// fact. The descriptor is re-read on every call so expiry and revocation take
+/// effect without trusting a long-lived in-memory copy.
 struct PlanMCPAuthority: Codable, Equatable, Sendable {
     enum Operation: String, Codable, Sendable, CaseIterable { case read, claim, event, verdict }
 
@@ -23,25 +16,53 @@ struct PlanMCPAuthority: Codable, Equatable, Sendable {
         case unsafe(String)
         case malformed(String)
         case expired
+        case revoked
+    }
+
+    struct RevocationReceipt: Codable, Equatable, Sendable {
+        var schemaVersion = 1
+        var grantID: UUID
+        var missionID: UUID
+        var taskID: String
+        var revokedAt: Date
+        var revokedBy: String
+        var reason: String
     }
 
     static let environmentKey = "THROTTLE_PLAN_AUTHORITY"
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
 
     var schemaVersion: Int
+    var grantID: UUID
+    var missionID: UUID
+    var taskID: String
+    var issuedAt: Date
+    var expiresAt: Date
     /// Resolved paths a call may name as its project: the repository holding
     /// the plan and the task's own worktree, never a sibling.
     var projectRoots: [String]
     var author: String
     var operations: Set<Operation>
-    var expiresAt: Date?
 
-    init(projectRoots: [URL], author: String, operations: Set<Operation>, expiresAt: Date?) {
+    init(
+        projectRoots: [URL],
+        author: String,
+        operations: Set<Operation>,
+        taskID: String,
+        missionID: UUID,
+        issuedAt: Date,
+        expiresAt: Date,
+        grantID: UUID = UUID()
+    ) {
         schemaVersion = Self.currentSchemaVersion
+        self.grantID = grantID
+        self.missionID = missionID
+        self.taskID = taskID
+        self.issuedAt = issuedAt
+        self.expiresAt = expiresAt
         self.projectRoots = Array(Set(projectRoots.map(Self.resolved))).sorted()
         self.author = author
         self.operations = operations
-        self.expiresAt = expiresAt
     }
 
     static func resolved(_ url: URL) -> String {
@@ -51,24 +72,29 @@ struct PlanMCPAuthority: Codable, Equatable, Sendable {
     // MARK: - Loading
 
     /// nil when the environment names no descriptor (legacy caller).
-    static func load(environment: [String: String] = ProcessInfo.processInfo.environment,
-                     now: Date = Date()) -> Result<PlanMCPAuthority?, Failure> {
+    static func load(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        now: Date = Date()
+    ) -> Result<PlanMCPAuthority?, Failure> {
         guard let path = environment[environmentKey], !path.isEmpty else { return .success(nil) }
-        let descriptor = Darwin.open(path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
-        guard descriptor >= 0 else { return .failure(.unreadable(path)) }
-        defer { Darwin.close(descriptor) }
-        var info = stat()
-        guard fstat(descriptor, &info) == 0, (info.st_mode & S_IFMT) == S_IFREG else {
-            return .failure(.unreadable(path))
+        let descriptorURL = URL(fileURLWithPath: path)
+        switch readPrivateFile(descriptorURL) {
+        case .failure(let failure):
+            return .failure(failure)
+        case .success(let data):
+            switch decode(data, now: now) {
+            case .failure(let failure):
+                return .failure(failure)
+            case .success(let authority?):
+                switch revocationStatus(for: authority.grantID, descriptorURL: descriptorURL) {
+                case .failure(let failure): return .failure(failure)
+                case .success(true): return .failure(.revoked)
+                case .success(false): return .success(authority)
+                }
+            case .success(nil):
+                return .failure(.malformed("empty_authority"))
+            }
         }
-        // The descriptor is this user's private grant: any group or world bit,
-        // or a foreign owner, and it may have been planted or read by another.
-        guard info.st_uid == geteuid(), info.st_mode & 0o077 == 0, info.st_size <= 64 * 1024 else {
-            return .failure(.unsafe(path))
-        }
-        let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: false)
-        guard let data = try? handle.readToEnd() else { return .failure(.unreadable(path)) }
-        return decode(data, now: now)
     }
 
     static func decode(_ data: Data, now: Date) -> Result<PlanMCPAuthority?, Failure> {
@@ -77,35 +103,55 @@ struct PlanMCPAuthority: Codable, Equatable, Sendable {
         guard let authority = try? decoder.decode(PlanMCPAuthority.self, from: data) else {
             return .failure(.malformed("undecodable"))
         }
-        guard authority.schemaVersion == currentSchemaVersion else { return .failure(.malformed("schema_version")) }
-        guard !authority.projectRoots.isEmpty, authority.projectRoots.allSatisfy({ $0.hasPrefix("/") }),
-              !authority.author.isEmpty else {
-            return .failure(.malformed("project_roots_or_author"))
+        guard authority.schemaVersion == currentSchemaVersion else {
+            return .failure(.malformed("schema_version"))
         }
-        if let expiresAt = authority.expiresAt, expiresAt <= now { return .failure(.expired) }
+        let rootsAreCanonical = authority.projectRoots.allSatisfy {
+            $0.hasPrefix("/") && resolved(URL(fileURLWithPath: $0, isDirectory: true)) == $0
+        }
+        guard !authority.projectRoots.isEmpty,
+              rootsAreCanonical,
+              nonempty(authority.author),
+              nonempty(authority.taskID),
+              !authority.operations.isEmpty,
+              authority.issuedAt < authority.expiresAt,
+              authority.issuedAt <= now.addingTimeInterval(300) else {
+            return .failure(.malformed("grant_fields"))
+        }
+        guard authority.expiresAt > now else { return .failure(.expired) }
         return .success(authority)
     }
 
     func encoded() throws -> Data {
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.sortedKeys]
-        return try encoder.encode(self)
+        try Self.encoder.encode(self)
     }
 
     // MARK: - Decisions
 
-    /// The refusal a call earns under this descriptor, or nil when it is within
-    /// the grant. The project is compared as a resolved path, so a symlink or a
-    /// trailing slash cannot reach a sibling repository.
-    func refusal(project: String?, author caller: String, operation: Operation) -> String? {
-        let requested = Self.resolved(URL(fileURLWithPath: project ?? FileManager.default.currentDirectoryPath,
-                                          isDirectory: true))
+    /// The refusal a call earns under this grant, or nil when it is within the
+    /// exact project, author, task, operation and time window.
+    func refusal(
+        project: String?,
+        author caller: String,
+        operation: Operation,
+        requestedTaskID: String?,
+        now: Date = Date()
+    ) -> String? {
+        guard expiresAt > now else {
+            return Self.refusal(for: .expired)
+        }
+        let requested = Self.resolved(URL(
+            fileURLWithPath: project ?? FileManager.default.currentDirectoryPath,
+            isDirectory: true
+        ))
         guard projectRoots.contains(requested) else {
             return "Refused: this runtime may only act on its own project."
         }
         guard caller == author else {
             return "Refused: this runtime speaks as \(author), not \(caller)."
+        }
+        if operation != .read, requestedTaskID != taskID {
+            return "Refused: this grant is bound to task \(taskID)."
         }
         guard operations.contains(operation) else {
             return "Refused: this runtime was not granted \(operation.rawValue)."
@@ -113,13 +159,17 @@ struct PlanMCPAuthority: Codable, Equatable, Sendable {
         return nil
     }
 
-    /// Every mutation is refused when a configured descriptor cannot be trusted.
     static func refusal(for failure: Failure) -> String {
         switch failure {
         case .unreadable: return "Refused: the runtime's authority descriptor is unreadable."
         case .unsafe: return "Refused: the runtime's authority descriptor is not private to this user."
         case .malformed: return "Refused: the runtime's authority descriptor is malformed."
         case .expired: return "Refused: the runtime's authority descriptor has expired."
+        case .revoked: return "Refused: the runtime's authority grant has been revoked."
         }
+    }
+
+    static func nonempty(_ value: String) -> Bool {
+        !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }

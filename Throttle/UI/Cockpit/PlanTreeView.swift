@@ -1,31 +1,16 @@
 import SwiftUI
-
-struct PlanViewContext: Equatable {
-    var projectName = "No active project"
-    var projectPath = "Select a Cockpit session to choose the project plan."
-    var sessionLabel: String?
-    var runtime: String?
-    var state: String?
-}
-
-/// The Plan segment: a project's task tree on the left, the selected task's log on
-/// the right.
-///
-/// Read-only on purpose. The plan's authority is the log an agent wrote, so the UI
+/// A project's task tree beside the selected task's log. The plan's authority is its log,
 /// shows what happened rather than offering a second, conflicting way to say it.
 struct PlanTreeView: View {
-
     let model: PlanModel
     var context = PlanViewContext()
-    /// The cockpit opens the session; this view only asks for it. Keeps the
-    /// "advisory, never automatic" rule visible in the type signature.
+    /// The cockpit opens the session; this view only asks for it.
     var onLaunch: ((TaskLauncher.LaunchPlan) -> Void)?
     var onShowSession: (() -> Void)?
 
     @State var launchError: String?
     @State var integrationError: String?
-    /// The task whose diff is open, if any. Kept here rather than in the model:
-    /// which disclosure is unfolded is a property of this view, not of the plan.
+    /// The task whose diff is open, if any.
     @State var expandedDiff: String?
 
     private let hair = Color.primary.opacity(0.10)
@@ -181,7 +166,8 @@ struct PlanTreeView: View {
 
             Spacer(minLength: 8)
 
-            if let runtime = state.runtime, state.status != .done, state.status != .failed {
+            if let runtime = state.runtime, state.status != .candidate, state.status != .done,
+               state.status != .failed {
                 Text(runtime.uppercased())
                     .font(.system(size: 9, weight: .medium)).kerning(0.4)
                     .foregroundStyle(.secondary)
@@ -219,7 +205,7 @@ struct PlanTreeView: View {
         case .done, .integrated:    return .green
         case .failed:               return .red
         case .running, .claimed:    return .blue
-        case .review:               return .purple
+        case .candidate, .review:   return .purple
         case .blocked:              return .orange
         case .pending:              return .secondary.opacity(0.5)
         }
@@ -237,6 +223,8 @@ struct PlanTreeView: View {
 
                     nextAction(task, state)
                     facts(task, state)
+                    designDetails(task)
+                    productCycleDetails(task)
 
                     if !state.evidence.isEmpty {
                         section("EVIDENCE")
@@ -246,6 +234,8 @@ struct PlanTreeView: View {
                                 .textSelection(.enabled)
                         }
                     }
+
+                    reviewDetails(state)
 
                     if !state.rejected.isEmpty {
                         section("REJECTED EVENTS")
@@ -288,26 +278,30 @@ struct PlanTreeView: View {
         }
     }
 
+}
+extension PlanTreeView {
     private func facts(_ task: PlanTask, _ state: TaskState) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            fact("Status", state.status.rawValue)
+            fact("Status", statusText(state.status))
             fact("Progress", "\(state.pct)%")
             fact("Kind", task.kind.rawValue)
             if let owner = state.owner { fact("Held by", owner) }
             if let mission = state.missionID { fact("Mission", mission) }
+            budgetFacts(state)
             if let hint = task.runtimeHint, state.owner == nil { fact("Suggested", hint) }
-            if task.sotaGate { fact("Gate", "SOTA — completion parks in review") }
+            if task.sotaGate {
+                fact("Gate", String(localized: "SOTA — green verification requires review"))
+            }
             if !task.dependsOn.isEmpty { fact("Depends on", task.dependsOn.joined(separator: ", ")) }
             if let summary = state.summary { fact("Summary", summary) }
             if state.rejectionCount > 0 {
                 fact("Rejected", "\(state.rejectionCount)× of \(PlanProjection.maxRejections)")
             }
             if let judge = state.verdictBy { fact("Verdict by", judge) }
-            if !state.chainValid { fact("Chain", "does not verify") }
+            if !state.chainValid { fact("Chain", String(localized: "does not verify")) }
         }
     }
-
-    private func fact(_ label: String, _ value: String) -> some View {
+    func fact(_ label: LocalizedStringKey, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(label).font(.system(size: 10, weight: .medium)).kerning(0.3)
                 .foregroundStyle(.secondary).frame(width: 78, alignment: .leading)
@@ -337,25 +331,35 @@ struct PlanTreeView: View {
     private func nextStepText(_ task: PlanTask, _ state: TaskState) -> String {
         if let dependency = model.unmetDependencies(for: task).first {
             let title = model.plan?.task(dependency)?.title ?? dependency
-            return "Finish \(dependency) — \(title) — before this task can start."
+            return String(localized: "Finish \(dependency) — \(title) — before this task can start.")
         }
         switch state.status {
-        case .pending: return "Ready to start. Review the recommendation, then launch an agent."
+        case .pending:
+            return String(localized: "Ready to start. Review the recommendation, then launch an agent.")
         case .claimed, .running:
-            return "Continue in \(state.runtime?.capitalized ?? "the assigned") session; it owns this task."
-        case .blocked: return state.blockedReason.map { "Resolve the blocker: \($0)" } ?? "Resolve the reported blocker."
-        case .review: return "Review the evidence with the opposite runtime before accepting completion."
-        case .done: return "Review the diff and verification result, then integrate the task."
-        case .integrated: return "Integrated. Select the next ready task in the plan."
-        case .failed: return "Inspect the log, then release or retry this task explicitly."
+            let runtime = state.runtime?.capitalized ?? String(localized: "the assigned")
+            return String(localized: "Continue in \(runtime) session; it owns this task.")
+        case .blocked:
+            return state.blockedReason.map { String(localized: "Resolve the blocker: \($0)") }
+                ?? String(localized: "Resolve the reported blocker.")
+        case .candidate:
+            return String(localized: "Run the declared verification. Only a green coordinator decision can finish it.")
+        case .review:
+            return String(localized: "Review the evidence with the opposite runtime before accepting completion.")
+        case .done:
+            return String(localized: "Review the diff and verification result, then integrate the task.")
+        case .integrated:
+            return String(localized: "Integrated. Select the next ready task in the plan.")
+        case .failed:
+            return String(localized: "Inspect the log, then release or retry this task explicitly.")
         }
     }
-
     private func nextStepIcon(_ status: TaskStatus) -> String {
         switch status {
         case .pending: return "play.circle"
         case .blocked: return "lock"
         case .claimed, .running: return "arrow.right.circle"
+        case .candidate: return "doc.badge.ellipsis"
         case .review: return "checkmark.message"
         case .done: return "arrow.triangle.merge"
         case .integrated: return "checkmark.circle"
@@ -365,23 +369,24 @@ struct PlanTreeView: View {
 
     private func statusText(_ status: TaskStatus) -> String {
         switch status {
-        case .pending: return "Ready"
-        case .blocked: return "Blocked"
-        case .claimed: return "Assigned"
-        case .running: return "Running"
-        case .review: return "Review"
-        case .done: return "Done"
-        case .failed: return "Failed"
-        case .integrated: return "Integrated"
+        case .pending: return String(localized: "Ready")
+        case .blocked: return String(localized: "Blocked")
+        case .claimed: return String(localized: "Assigned")
+        case .running: return String(localized: "Running")
+        case .candidate: return String(localized: "Candidate")
+        case .review: return String(localized: "Review")
+        case .done: return String(localized: "Done")
+        case .failed: return String(localized: "Failed")
+        case .integrated: return String(localized: "Integrated")
         }
     }
 
-    func section(_ title: String) -> some View {
+    func section(_ title: LocalizedStringKey) -> some View {
         Text(title).font(.system(size: 10, weight: .semibold)).kerning(0.5)
             .foregroundStyle(.secondary).padding(.top, 4)
     }
 
-    private func message(_ title: String, detail: String?) -> some View {
+    private func message(_ title: LocalizedStringKey, detail: String?) -> some View {
         VStack(spacing: 6) {
             Text(title).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
             if let detail {

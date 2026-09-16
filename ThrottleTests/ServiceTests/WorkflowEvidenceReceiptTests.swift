@@ -71,4 +71,52 @@ final class WorkflowEvidenceReceiptTests: XCTestCase {
         XCTAssertNil(event.receipt)
         XCTAssertNil(event.eventID)
     }
+
+    func testContractRequiresIndependentTestObligationsAndCurrentInputs() {
+        var contract = WorkflowVerificationContract(revision: 1, requiredTests: ["one", "two"])
+        var receipt = command
+        receipt.contractDigest = contract.digest
+        XCTAssertFalse(contract.accepts(nil, stamp: "task+base"))
+        XCTAssertFalse(contract.accepts(receipt, stamp: "task+base"))
+        receipt.scope = .testInventory
+        receipt.expectedTests = ["one"]
+        receipt.passedTests = ["one"]
+        receipt.skippedTests = []
+        XCTAssertTrue(receipt.provesCompleteTests(), "the bundle can describe a smaller suite")
+        XCTAssertFalse(contract.accepts(receipt, stamp: "task+base"))
+        receipt.expectedTests = ["one", "two"]
+        receipt.passedTests = ["one", "two"]
+        XCTAssertTrue(contract.accepts(receipt, stamp: "task+base"))
+        XCTAssertFalse(contract.accepts(receipt, stamp: "new+base"))
+        contract.revision = 2
+        XCTAssertFalse(contract.accepts(receipt, stamp: "task+base"))
+        contract.revision = 1
+        contract.requiredTests = ["one"]
+        XCTAssertFalse(contract.accepts(receipt, stamp: "task+base"), "silent weakening invalidates the receipt")
+    }
+
+    func testContractRejectsInvalidRequirementsAndUnapprovedSkips() throws {
+        var contract = WorkflowVerificationContract(revision: 1, requiredTests: ["one", "two"])
+        var receipt = command
+        receipt.scope = .testInventory
+        receipt.expectedTests = ["one", "two"]
+        receipt.passedTests = ["one"]
+        receipt.skippedTests = ["two"]
+        receipt.contractDigest = contract.digest
+        XCTAssertFalse(contract.accepts(receipt, stamp: "task+base"))
+        contract.allowedSkips = ["two"]
+        receipt.contractDigest = contract.digest
+        XCTAssertTrue(contract.accepts(receipt, stamp: "task+base"))
+        let decoded = try JSONDecoder().decode(WorkflowVerificationContract.self,
+                                               from: JSONEncoder().encode(contract))
+        XCTAssertEqual(decoded.digest, contract.digest)
+        for requirements in [[], [""], ["  "], ["one", "one"]] {
+            contract.requiredTests = requirements
+            XCTAssertNil(contract.digest)
+            XCTAssertFalse(contract.accepts(receipt, stamp: "task+base"))
+        }
+        contract.requiredTests = ["one", "two"]
+        contract.schemaVersion = 99
+        XCTAssertNil(contract.digest)
+    }
 }

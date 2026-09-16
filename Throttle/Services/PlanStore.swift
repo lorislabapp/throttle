@@ -46,6 +46,11 @@ final class PlanStore: @unchecked Sendable {
         self.root = projectRoot.standardizedFileURL.resolvingSymlinksInPath()
     }
 
+    /// The canonical root this store actually protects. Services that maintain
+    /// a second project-local ledger must use this value rather than re-resolving
+    /// the caller's path differently.
+    var projectRoot: URL { root }
+
     /// Never call a different store instance from this closure. Do not perform
     /// network work or launch a runtime while holding the transaction.
     func mutate<T>(_ body: (PlanStore) throws -> T) throws -> T {

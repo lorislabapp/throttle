@@ -9,6 +9,7 @@ enum TaskIntegrationError: Error, Equatable {
     /// and it conflicted" apart from "may still be half-done". Carries both outputs:
     /// the original rebase failure and the abort's own failure.
     case rebaseAbortFailed(rebaseOutput: String, abortOutput: String)
+    case scopeViolation([String])
     /// A guard that held. Rendered to the user as-is, so each case says which one.
     case refused(Refusal)
 
@@ -232,6 +233,12 @@ enum TaskIntegrationService {
                 "The repository is on a detached HEAD — check out the base branch before integrating.")
         }
         let assessment = try assess(taskID: taskID, in: repo)
+        let persistedTask = try validatedTaskContract(
+            taskID: taskID,
+            callerTask: task,
+            assessment: assessment,
+            store: store
+        )
         // Tracked modifications only. The verification this integration depends on
         // just ran an arbitrary project command in that worktree, and a build or
         // coverage artefact it left behind would otherwise turn a green minutes-long
@@ -243,9 +250,21 @@ enum TaskIntegrationService {
 
         let state = try store.state(for: taskID)
         if task.sotaGate {
-            guard state.verdictBy != nil else { throw TaskIntegrationError.refused(.ungated) }
+            try validateReviewGate(task: persistedTask, state: state)
         }
         guard let check = state.lastCheck, check.passed, check.stamp == assessment.stamp else {
+            throw TaskIntegrationError.refused(.unverified)
+        }
+        // Read the persisted requirements, not the caller's potentially stale task.
+        // A removed contract also invalidates evidence collected under that contract.
+        let contract = persistedTask.effectiveVerificationContract
+        guard contract.map({ $0.accepts(check.receipt, stamp: assessment.stamp) })
+            ?? (check.receipt?.contractDigest == nil) else {
+            throw TaskIntegrationError.refused(.unverified)
+        }
+        guard persistedTask.workContract.map({
+            check.receipt?.workContractDigest == $0.digest
+        }) ?? (check.receipt?.workContractDigest == nil) else {
             throw TaskIntegrationError.refused(.unverified)
         }
 
@@ -257,6 +276,26 @@ enum TaskIntegrationService {
         try store.append(TaskEvent(seq: 0, timestamp: Date(), author: author,
                                    type: .integrated, ref: sha), to: taskID)
         return sha
+    }
+
+    private static func validatedTaskContract(
+        taskID: String,
+        callerTask: PlanTask,
+        assessment: Assessment,
+        store: PlanStore
+    ) throws -> PlanTask {
+        guard let persisted = try store.loadPlan().task(taskID),
+              persisted.contractIsValid,
+              persisted.workContract?.digest == callerTask.workContract?.digest else {
+            throw TaskIntegrationError.refused(.unverified)
+        }
+        if let contract = persisted.workContract {
+            let disallowed = contract.disallowedChanges(assessment.files.map(\.path))
+            guard disallowed.isEmpty else {
+                throw TaskIntegrationError.scopeViolation(disallowed)
+            }
+        }
+        return persisted
     }
 
     /// Removes an integrated task's worktree, and returns the reason it is still

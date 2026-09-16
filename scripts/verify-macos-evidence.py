@@ -44,7 +44,9 @@ REQUIRED_CASES = {
 SOURCE_PREFIXES = (
     "Throttle/", "ThrottleTests/", "ThrottleShared/", "ThrottleWidget/",
     "ResearchVaultAgent/", "Packages/ResearchVaultKit/", "Throttle.xcodeproj/",
-    "edge-agent/",
+    "edge-agent/", "Packages/ThrottlePeerProtocol/", "Packages/ThrottleMCPContracts/",
+    "Packages/ThrottleMirrorContract/", "Packages/ThrottleVaultContract/",
+    "Packages/ThrottleVaultClient/",
 )
 SOURCE_FILES = {"project.yml", ".github/workflows/ci.yml", "scripts/verify-macos-evidence.py"}
 IOS_REQUIRED_CASES = {
@@ -53,7 +55,10 @@ IOS_REQUIRED_CASES = {
     "CompanionHostIsolationTests/testDefaultStoreUsesOnlyTestDefaultsAndNotificationsStayDisabled()",
     "RemoteTerminalPrivacyTests/testInvalidationRetiresBothBuffersScrollbackAndOldParserState()",
 }
-IOS_SOURCE_PREFIXES = ("ThrottleiOS/", "ThrottleiOSTests/", "ThrottleiOSWidget/", "ThrottleShared/", "Throttle.xcodeproj/")
+IOS_SOURCE_PREFIXES = (
+    "ThrottleiOS/", "ThrottleiOSTests/", "ThrottleiOSWidget/", "ThrottleShared/",
+    "Throttle.xcodeproj/", "Packages/ThrottlePeerProtocol/", "Packages/ThrottleMirrorContract/",
+)
 
 
 class EvidenceError(ValueError):

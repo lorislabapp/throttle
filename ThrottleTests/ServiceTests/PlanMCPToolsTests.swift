@@ -55,7 +55,8 @@ final class PlanMCPToolsTests: XCTestCase {
     func testRouterRecognizesEveryPlanToolAndRejectsUnknownOnes() {
         let names = [
             "throttle_plan_bootstrap", "throttle_research_record", "throttle_viability_read",
-            "throttle_task_verdict", "throttle_plan_read", "throttle_task_claim", "throttle_task_event"
+            "throttle_task_verdict", "throttle_plan_read", "throttle_task_claim",
+            "throttle_task_event", "throttle_project_explore"
         ]
         for name in names {
             var response = ""
@@ -103,12 +104,13 @@ final class PlanMCPToolsTests: XCTestCase {
         XCTAssertTrue(text.contains("Refused"))
     }
 
-    /// The agent is told up front that finishing will not finish it, so it does not
-    /// report success to the user on the strength of its own `completed`.
+    /// The agent is told up front that its candidate needs both deterministic
+    /// verification and independent review before it can finish.
     func testClaimAnnouncesTheSotaGate() {
         let text = PlanMCPTools.claimText(project: project, taskID: "T1.3",
                           author: "codex:a", missionID: nil)
-        XCTAssertTrue(text.contains("SOTA-gated"))
+        XCTAssertTrue(text.contains("candidate_complete"))
+        XCTAssertTrue(text.contains("independent counter-analysis"))
     }
 
     // MARK: - Events
@@ -140,7 +142,7 @@ final class PlanMCPToolsTests: XCTestCase {
         XCTAssertTrue(text.contains("Refused"))
     }
 
-    func testProgressAndCompletionMoveTheTask() {
+    func testProgressAndCandidateRequireThrottleCheckBeforeUnblockingDependency() throws {
         _ = PlanMCPTools.claimText(project: project, taskID: "T1.1",
                           author: "codex:a", missionID: nil)
         let progress = PlanMCPTools.eventText(PlanMCPTools.EventRequest(
@@ -150,25 +152,42 @@ final class PlanMCPToolsTests: XCTestCase {
         XCTAssertTrue(progress.contains("running"))
         XCTAssertTrue(progress.contains("40%"))
 
-        let done = PlanMCPTools.eventText(PlanMCPTools.EventRequest(
+        let candidate = PlanMCPTools.eventText(PlanMCPTools.EventRequest(
             project: project, taskID: "T1.1", author: "codex:a",
-            type: "completed", pct: nil, note: nil, kind: nil,
+            type: "candidate_complete", pct: nil, note: nil, kind: nil,
             ref: nil, reason: nil, summary: "shipped"))
-        XCTAssertTrue(done.contains("done"))
+        XCTAssertTrue(candidate.contains("candidate"))
+        XCTAssertFalse(actionableSection(PlanMCPTools.planReadText(project: project)).contains("T1.2"))
 
+        let store = PlanStore(projectRoot: URL(fileURLWithPath: project))
+        try store.append(TaskEvent(seq: 0, timestamp: Date(), author: "throttle:test", type: .checked,
+                                   ref: "candidate+base", passed: true), to: "T1.1")
         XCTAssertTrue(actionableSection(PlanMCPTools.planReadText(project: project)).contains("T1.2"),
-                      "finishing T1.1 must unblock its dependant")
+                      "only Throttle's green decision unblocks the dependant")
     }
 
-    func testGatedCompletionParksInReviewRatherThanDone() {
+    func testGatedCandidateParksOnlyAfterThrottleCheck() throws {
         _ = PlanMCPTools.claimText(project: project, taskID: "T1.3",
                           author: "codex:a", missionID: nil)
         let text = PlanMCPTools.eventText(PlanMCPTools.EventRequest(
             project: project, taskID: "T1.3", author: "codex:a",
-            type: "completed", pct: nil, note: nil, kind: nil,
+            type: "candidate_complete", pct: nil, note: nil, kind: nil,
             ref: nil, reason: nil, summary: "claims done"))
-        XCTAssertTrue(text.contains("review"))
-        XCTAssertTrue(text.contains("counter-analysis"))
+        XCTAssertTrue(text.contains("candidate"))
+        let store = PlanStore(projectRoot: URL(fileURLWithPath: project))
+        try store.append(TaskEvent(seq: 0, timestamp: Date(), author: "throttle:test", type: .checked,
+                                   ref: "candidate+base", passed: true), to: "T1.3")
+        XCTAssertEqual(try store.state(for: "T1.3").status, .review)
+    }
+
+    func testAgentCannotWriteLegacyCompletedEvent() {
+        _ = PlanMCPTools.claimText(project: project, taskID: "T1.1",
+                                   author: "codex:a", missionID: nil)
+        let text = PlanMCPTools.eventText(PlanMCPTools.EventRequest(
+            project: project, taskID: "T1.1", author: "codex:a",
+            type: "completed", pct: nil, note: nil, kind: nil,
+            ref: nil, reason: nil, summary: nil))
+        XCTAssertTrue(text.contains("not an agent's to write"))
     }
 
     func testReleaseHandsTheTaskBack() {

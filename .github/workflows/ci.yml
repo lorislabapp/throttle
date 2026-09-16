@@ -218,6 +218,21 @@ jobs:
         working-directory: edge-agent
         run: npm test
 
+      - name: Test standalone LAN protocol conformance
+        run: swift test --package-path Packages/ThrottlePeerProtocol
+
+      - name: Test standalone MCP contract compatibility
+        run: swift test --package-path Packages/ThrottleMCPContracts
+
+      - name: Test standalone mirror read contract
+        run: swift test --package-path Packages/ThrottleMirrorContract
+
+      - name: Test standalone vault client contract
+        run: swift test --package-path Packages/ThrottleVaultContract
+
+      - name: Test standalone vault client
+        run: swift test --package-path Packages/ThrottleVaultClient
+
       - name: Test shared Swift packages
         run: swift test --package-path ThrottleShared
 

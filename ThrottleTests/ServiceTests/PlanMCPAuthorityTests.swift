@@ -5,6 +5,8 @@ import XCTest
 /// every call is measured against it; broken, every call is refused.
 final class PlanMCPAuthorityTests: XCTestCase {
     private var root = URL(fileURLWithPath: "/")
+    private let grantID = UUID(uuidString: "11111111-1111-1111-1111-111111111111") ?? UUID()
+    private let missionID = UUID(uuidString: "22222222-2222-2222-2222-222222222222") ?? UUID()
 
     override func setUpWithError() throws {
         root = FileManager.default.temporaryDirectory
@@ -21,7 +23,16 @@ final class PlanMCPAuthorityTests: XCTestCase {
 
     private func grant(operations: Set<PlanMCPAuthority.Operation> = [.read, .claim, .event],
                        expiresAt: Date? = nil) -> PlanMCPAuthority {
-        PlanMCPAuthority(projectRoots: [project], author: "codex:t1", operations: operations, expiresAt: expiresAt)
+        PlanMCPAuthority(
+            projectRoots: [project],
+            author: "codex:t1",
+            operations: operations,
+            taskID: "T1",
+            missionID: missionID,
+            issuedAt: Date(timeIntervalSince1970: 1),
+            expiresAt: expiresAt ?? Date(timeIntervalSince1970: 2_100_000_000),
+            grantID: grantID
+        )
     }
 
     private func write(_ authority: PlanMCPAuthority, permissions: Int = 0o600) throws -> String {
@@ -41,20 +52,75 @@ final class PlanMCPAuthorityTests: XCTestCase {
         let environment = [PlanMCPAuthority.environmentKey: path]
         let loaded = try XCTUnwrap(try PlanMCPAuthority.load(environment: environment).get())
         XCTAssertEqual(loaded, grant())
-        XCTAssertNil(loaded.refusal(project: project.path, author: "codex:t1", operation: .claim))
-        XCTAssertNil(loaded.refusal(project: project.path + "/", author: "codex:t1", operation: .read),
+        XCTAssertNil(loaded.refusal(project: project.path, author: "codex:t1", operation: .claim,
+                                    requestedTaskID: "T1"))
+        XCTAssertNil(loaded.refusal(project: project.path + "/", author: "codex:t1", operation: .read,
+                                    requestedTaskID: nil),
                      "a trailing slash is the same project")
-        XCTAssertNotNil(loaded.refusal(project: root.path, author: "codex:t1", operation: .claim),
+        XCTAssertNotNil(loaded.refusal(project: root.path, author: "codex:t1", operation: .claim,
+                                       requestedTaskID: "T1"),
                         "a sibling directory is another project")
-        XCTAssertNotNil(loaded.refusal(project: project.path, author: "codex:t2", operation: .claim))
-        XCTAssertNotNil(loaded.refusal(project: project.path, author: "codex:t1", operation: .verdict),
+        XCTAssertNotNil(loaded.refusal(project: project.path, author: "codex:t2", operation: .claim,
+                                       requestedTaskID: "T1"))
+        XCTAssertNotNil(loaded.refusal(project: project.path, author: "codex:t1", operation: .verdict,
+                                       requestedTaskID: "T1"),
                         "verdict was not granted")
     }
 
     func test_symlinkedProjectResolvesToTheGrantedRoot() throws {
         let link = root.appendingPathComponent("alias")
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: project)
-        XCTAssertNil(grant().refusal(project: link.path, author: "codex:t1", operation: .read))
+        XCTAssertNil(grant().refusal(project: link.path, author: "codex:t1", operation: .read,
+                                     requestedTaskID: nil))
+    }
+
+    func testGrantIsBoundToOneTaskAndRechecksItsDeadline() {
+        let authority = grant()
+        XCTAssertNotNil(authority.refusal(
+            project: project.path,
+            author: "codex:t1",
+            operation: .event,
+            requestedTaskID: "T2"
+        ))
+        XCTAssertEqual(authority.refusal(
+            project: project.path,
+            author: "codex:t1",
+            operation: .event,
+            requestedTaskID: "T1",
+            now: Date(timeIntervalSince1970: 2_100_000_001)
+        ), PlanMCPAuthority.refusal(for: .expired))
+    }
+
+    func testRevocationPersistsAPrivateReceiptAndStopsFutureCalls() throws {
+        let descriptor = URL(fileURLWithPath: try write(grant()))
+        let receipt = try PlanMCPAuthority.revoke(
+            descriptorURL: descriptor,
+            by: "throttle:test",
+            reason: "task released",
+            now: Date(timeIntervalSince1970: 1_800_000_000)
+        )
+        XCTAssertEqual(receipt.grantID, grantID)
+        XCTAssertEqual(receipt.taskID, "T1")
+        XCTAssertEqual(
+            PlanMCPAuthority.load(
+                environment: [PlanMCPAuthority.environmentKey: descriptor.path],
+                now: Date(timeIntervalSince1970: 1_800_000_001)
+            ),
+            .failure(.revoked)
+        )
+        let marker = descriptor.deletingLastPathComponent()
+            .appendingPathComponent("revocations/\(grantID.uuidString).json")
+        let attributes = try FileManager.default.attributesOfItem(atPath: marker.path)
+        XCTAssertEqual((attributes[.posixPermissions] as? Int).map { $0 & 0o777 }, 0o600)
+        XCTAssertEqual(
+            try PlanMCPAuthority.revoke(
+                descriptorURL: descriptor,
+                by: "ignored",
+                reason: "cannot rewrite the first receipt",
+                now: Date(timeIntervalSince1970: 1_800_000_002)
+            ),
+            receipt
+        )
     }
 
     func test_unsafeMalformedOrExpiredDescriptorsRefuseEverything() throws {
@@ -66,7 +132,7 @@ final class PlanMCPAuthorityTests: XCTestCase {
                                              now: Date(timeIntervalSince1970: 11)), .failure(.expired))
         XCTAssertEqual(PlanMCPAuthority.decode(Data("{}".utf8), now: Date()), .failure(.malformed("undecodable")))
         var wrongSchema = grant()
-        wrongSchema.schemaVersion = 2
+        wrongSchema.schemaVersion = 99
         XCTAssertEqual(PlanMCPAuthority.decode(try wrongSchema.encoded(), now: Date()),
                        .failure(.malformed("schema_version")))
         let missing = root.appendingPathComponent("absent.json").path

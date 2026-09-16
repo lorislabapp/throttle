@@ -339,7 +339,7 @@ def validate_events(discovery_records, execution_records, expected):
 
 def source_snapshot():
     paths = subprocess.check_output(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"], cwd=ROOT)
-    selected = {path for path in paths.decode().split("\0") if path and (path.startswith("Packages/ResearchVaultKit/") or path in {
+    selected = {path for path in paths.decode().split("\0") if path and (path.startswith(("Packages/ResearchVaultKit/", "Packages/ThrottleVaultContract/", "Packages/ThrottleVaultClient/")) or path in {
         "scripts/verify-vault-tests.py", "scripts/verify-macos-evidence.py", "scripts/tests/test_vault_evidence.py", ".github/workflows/ci.yml"})}
     require("Packages/ResearchVaultKit/Package.resolved" in selected, "missing_dependency_lock")
     require(any(path.startswith("Packages/ResearchVaultKit/Tests/") for path in selected), "missing_test_sources")

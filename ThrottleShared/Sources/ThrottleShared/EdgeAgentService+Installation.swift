@@ -28,24 +28,8 @@ extension EdgeAgentService {
                 command -v tmux >/dev/null || (apt-get update -qq && apt-get install -y tmux)
                 command -v git >/dev/null || (apt-get update -qq && apt-get install -y git)
                 """),
-            DeployStep(label: "ttyd 1.7.7 (checksummed)", script: """
-                set -euo pipefail
-                command -v ttyd >/dev/null && exit 0
-                ARCH=$(uname -m)
-                curl -fsSL -o /tmp/ttyd.$ARCH https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.$ARCH
-                cat <<'SUMS' > /tmp/ttyd.sha256
-                \(ttydChecksums)
-                SUMS
-                ( cd /tmp && grep "ttyd.$ARCH$" ttyd.sha256 | sha256sum -c - )
-                install -m 755 /tmp/ttyd.$ARCH /usr/local/bin/ttyd
-                rm -f /tmp/ttyd.$ARCH /tmp/ttyd.sha256
-                """),
-            DeployStep(label: "claude CLI", script: """
-                set -euo pipefail
-                export PATH="$HOME/.local/bin:$PATH"
-                command -v claude >/dev/null || curl -fsSL https://claude.ai/install.sh | bash
-                grep -q "local/bin" ~/.profile 2>/dev/null || printf '\\nif [ -d "$HOME/.local/bin" ] ; then\\n    PATH="$HOME/.local/bin:$PATH"\\nfi\\n' >> ~/.profile
-                """),
+            DeployStep(label: "ttyd 1.7.7 (checksummed)", script: ttydInstallationScript(ttydChecksums)),
+            DeployStep(label: "claude CLI", script: claudeDeployStepScript),
             DeployStep(label: "Agent \(agentVersionHint)", script: """
                 set -euo pipefail
                 mkdir -p /opt/throttle-agent
@@ -74,6 +58,21 @@ extension EdgeAgentService {
                 tailscale serve status
                 """)
         ]
+    }
+
+    static func ttydInstallationScript(_ checksums: String) -> String {
+        """
+        set -euo pipefail
+        command -v ttyd >/dev/null && exit 0
+        ARCH=$(uname -m)
+        curl -fsSL -o /tmp/ttyd.$ARCH https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.$ARCH
+        cat <<'SUMS' > /tmp/ttyd.sha256
+        \(checksums)
+        SUMS
+        ( cd /tmp && grep "ttyd.$ARCH$" ttyd.sha256 | sha256sum -c - )
+        install -m 755 /tmp/ttyd.$ARCH /usr/local/bin/ttyd
+        rm -f /tmp/ttyd.$ARCH /tmp/ttyd.sha256
+        """
     }
 
     /// The bundled agent source (`throttle-agent.mjs` in the app bundle), or nil if
@@ -122,6 +121,7 @@ extension EdgeAgentService {
         EnvironmentFile=/etc/throttle-agent.env
         LoadCredential=agent-token:/etc/throttle-agent.token
         Environment=HOME=/root
+        Environment=DISABLE_AUTOUPDATER=1
         WorkingDirectory=/opt/throttle-agent
         ExecStart=\(nodeExecutable) /opt/throttle-agent/throttle-agent.mjs
         Restart=on-failure

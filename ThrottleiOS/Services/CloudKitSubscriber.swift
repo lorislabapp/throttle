@@ -130,7 +130,10 @@ final class CloudKitSubscriber {
         switch result {
         case .success(let snapshot):
             mirror.lastError = nil
-            guard let snapshot else { return false }
+            guard let snapshot else {
+                mirror.scrub()
+                return false
+            }
             mirror.ingest(snapshot)
             pair(snapshot)
             return true

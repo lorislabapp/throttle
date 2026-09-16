@@ -1,0 +1,304 @@
+{
+  "constants" : {
+    "citationSchemaVersion" : 2,
+    "contractVersion" : 1,
+    "maximumOwnerRequestBytes" : 1048576,
+    "maximumQueryBytes" : 4096,
+    "maximumReasoningFactsPerResponse" : 256,
+    "maximumReasoningRelations" : 128,
+    "maximumReceiptsPerRequest" : 32,
+    "maximumResponseBytes" : 2097152,
+    "maximumResultCharacters" : 50000,
+    "maximumSearchRequestBytes" : 65536,
+    "receiptSchemaVersion" : 1
+  },
+  "distributionRequirement" : "anchor apple generic and identifier \"com.example.synthetic-client\" and certificate leaf[subject.OU] = \"ABCDE12345\" and (certificate leaf[field.1.2.840.113635.100.6.1.9] exists or certificate leaf[field.1.2.840.113635.100.6.1.12] exists or (certificate 1[field.1.2.840.113635.100.6.2.6] exists and certificate leaf[field.1.2.840.113635.100.6.1.13] exists))",
+  "samples" : {
+    "contextBundle" : {
+      "contractVersion" : 1,
+      "items" : [
+        {
+          "citation" : {
+            "chunkOrdinal" : 2,
+            "documentID" : "doc-1",
+            "evidenceStatus" : "SUPPORTED",
+            "excerptSHA256" : "abababababababababababababababababababababababababababababababab",
+            "indexGeneration" : "gen-1",
+            "libraryPath" : "library/synthetic.md",
+            "locator" : "synthetic.md#L10",
+            "observedAt" : 1787832000000,
+            "origins" : [
+              "manual"
+            ],
+            "plaintextSHA256" : "abababababababababababababababababababababababababababababababab",
+            "receiptProvenance" : {
+              "findingIndex" : 0,
+              "receiptID" : "8f6ff598-fc26-4ad8-a3d7-fc16bcd7e1a0",
+              "sealedContentHash" : "abababababababababababababababababababababababababababababababab",
+              "sources" : [
+                {
+                  "id" : "src-1",
+                  "kind" : "file",
+                  "locator" : "/synthetic/path.md",
+                  "observedAt" : 1787832000000,
+                  "sha256" : "abababababababababababababababababababababababababababababababab"
+                }
+              ]
+            },
+            "schemaVersion" : 2,
+            "sourceModifiedAt" : 1787745600000,
+            "title" : "Synthetic title"
+          },
+          "excerpt" : "Synthetic excerpt with / slash",
+          "heading" : "Synthetic heading",
+          "score" : 0.75
+        }
+      ],
+      "maximumSensitivity" : "internal",
+      "projectKeys" : [
+        "throttle"
+      ],
+      "query" : "synthetic vault query",
+      "truncated" : false
+    },
+    "errorPayload" : {
+      "code" : "invalid_request",
+      "contractVersion" : 1
+    },
+    "healthResponse" : {
+      "chunkCount" : 9,
+      "cipherIntegrityPassed" : true,
+      "cipherVersion" : "4.18.0",
+      "contractVersion" : 1,
+      "documentCount" : 2,
+      "foreignKeysPassed" : true,
+      "quickCheckPassed" : true,
+      "receiptCount" : 3,
+      "schemaVersion" : 4
+    },
+    "projectAdmissionRequest" : {
+      "contractVersion" : 1,
+      "projectKeys" : [
+        "throttle",
+        "cheatcode"
+      ]
+    },
+    "projectAdmissionResponse" : {
+      "contractVersion" : 1,
+      "projectKeys" : [
+        "throttle",
+        "cheatcode"
+      ]
+    },
+    "quarantineListRequest" : {
+      "contractVersion" : 1
+    },
+    "quarantineListResponse" : {
+      "contractVersion" : 1,
+      "items" : [
+        {
+          "createdAtMS" : 1787832000000,
+          "firstSourceLocator" : "/synthetic/path.md",
+          "projectKey" : "throttle",
+          "question" : "Synthetic question?",
+          "receiptID" : "8f6ff598-fc26-4ad8-a3d7-fc16bcd7e1a0",
+          "sensitivity" : "internal",
+          "sourceCount" : 1
+        }
+      ]
+    },
+    "reasoningPromotionRequest" : {
+      "contractVersion" : 1,
+      "relations" : [
+        {
+          "object" : {
+            "findingIndex" : 1,
+            "receiptID" : "0d3c2b3e-6a4f-4c9d-9a3e-2f1b7c8d9e0f"
+          },
+          "relation" : "supersedes",
+          "subject" : {
+            "findingIndex" : 0,
+            "receiptID" : "8f6ff598-fc26-4ad8-a3d7-fc16bcd7e1a0"
+          },
+          "validFrom" : 1787745600000,
+          "validUntil" : 1787832000000
+        }
+      ],
+      "removingFactIDs" : [
+        "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+      ]
+    },
+    "reasoningQuery" : {
+      "contractVersion" : 1,
+      "factID" : "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "kind" : "why",
+      "limit" : 16
+    },
+    "reasoningQueryResponse" : {
+      "addedFactIDs" : [
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      ],
+      "contractVersion" : 1,
+      "derivations" : [
+        {
+          "conclusionFactID" : "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "premiseFactIDs" : [
+            "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+          ],
+          "ruleID" : "rule-1"
+        }
+      ],
+      "facts" : [
+        {
+          "arguments" : [
+            "8f6ff598-fc26-4ad8-a3d7-fc16bcd7e1a0",
+            "0d3c2b3e-6a4f-4c9d-9a3e-2f1b7c8d9e0f"
+          ],
+          "asserted" : true,
+          "id" : "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "predicate" : "supersedes",
+          "projectKey" : "throttle",
+          "receiptIDs" : [
+            "8f6ff598-fc26-4ad8-a3d7-fc16bcd7e1a0"
+          ],
+          "sensitivity" : "internal",
+          "sourceIDs" : [
+            "src-1"
+          ]
+        }
+      ],
+      "generation" : 7,
+      "kind" : "why",
+      "removedFactIDs" : [
+
+      ],
+      "truncated" : false,
+      "updatedFactIDs" : [
+        "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+      ]
+    },
+    "reasoningRefreshResponse" : {
+      "baseFactCount" : 12,
+      "contractVersion" : 1,
+      "derivedFactCount" : 3,
+      "generation" : 7,
+      "relationCount" : 1,
+      "shadowMode" : true
+    },
+    "receiptExportRequest" : {
+      "afterReceiptID" : "8f6ff598-fc26-4ad8-a3d7-fc16bcd7e1a0",
+      "contractVersion" : 1,
+      "limit" : 8
+    },
+    "receiptExportResponse" : {
+      "contractVersion" : 1,
+      "nextReceiptID" : "8f6ff598-fc26-4ad8-a3d7-fc16bcd7e1a0",
+      "receipts" : [
+        {
+          "agentID" : "synthetic-agent",
+          "contentHash" : "f8f7b4220c27d813c64874dc9f1a745b6af395a063a55727e1862251928a2c07",
+          "createdAt" : 1787832000000,
+          "findings" : [
+            {
+              "claim" : "Synthetic claim",
+              "evidenceIDs" : [
+                "src-1"
+              ],
+              "status" : "SUPPORTED"
+            }
+          ],
+          "openQuestions" : [
+            "Synthetic open question"
+          ],
+          "parentAgentID" : "synthetic-parent",
+          "projectKey" : "throttle",
+          "question" : "Synthetic question?",
+          "receiptID" : "8f6ff598-fc26-4ad8-a3d7-fc16bcd7e1a0",
+          "schemaVersion" : 1,
+          "sensitivity" : "internal",
+          "sessionID" : "synthetic-session",
+          "sources" : [
+            {
+              "id" : "src-1",
+              "kind" : "file",
+              "locator" : "/synthetic/path.md",
+              "observedAt" : 1787832000000,
+              "sha256" : "abababababababababababababababababababababababababababababababab"
+            }
+          ]
+        }
+      ]
+    },
+    "receiptImportRequest" : {
+      "contractVersion" : 1,
+      "receipts" : [
+        {
+          "agentID" : "synthetic-agent",
+          "contentHash" : "f8f7b4220c27d813c64874dc9f1a745b6af395a063a55727e1862251928a2c07",
+          "createdAt" : 1787832000000,
+          "findings" : [
+            {
+              "claim" : "Synthetic claim",
+              "evidenceIDs" : [
+                "src-1"
+              ],
+              "status" : "SUPPORTED"
+            }
+          ],
+          "openQuestions" : [
+            "Synthetic open question"
+          ],
+          "parentAgentID" : "synthetic-parent",
+          "projectKey" : "throttle",
+          "question" : "Synthetic question?",
+          "receiptID" : "8f6ff598-fc26-4ad8-a3d7-fc16bcd7e1a0",
+          "schemaVersion" : 1,
+          "sensitivity" : "internal",
+          "sessionID" : "synthetic-session",
+          "sources" : [
+            {
+              "id" : "src-1",
+              "kind" : "file",
+              "locator" : "/synthetic/path.md",
+              "observedAt" : 1787832000000,
+              "sha256" : "abababababababababababababababababababababababababababababababab"
+            }
+          ]
+        }
+      ]
+    },
+    "receiptImportResponse" : {
+      "alreadyPresentReceipts" : 0,
+      "contractVersion" : 1,
+      "insertedReceipts" : 1
+    },
+    "reviewRequest" : {
+      "action" : "approve",
+      "contractVersion" : 1,
+      "receiptIDs" : [
+        "8f6ff598-fc26-4ad8-a3d7-fc16bcd7e1a0"
+      ]
+    },
+    "reviewResponse" : {
+      "contractVersion" : 1,
+      "processed" : 1
+    },
+    "searchRequest" : {
+      "contractVersion" : 1,
+      "limit" : 4,
+      "maximumCharacters" : 2048,
+      "projectKeys" : [
+        "throttle",
+        "cheatcode"
+      ],
+      "query" : "synthetic vault query"
+    }
+  },
+  "serviceContract" : {
+    "cheatCodeQueryServiceName" : "com.lorislab.throttle.research-vault.query.cheatcode",
+    "serviceSigningIdentifier" : "com.lorislab.throttle.research-vault-agent",
+    "teamIdentifier" : "TDV6D5L785",
+    "throttleOwnerServiceName" : "com.lorislab.throttle.research-vault.owner.throttle",
+    "throttleQueryServiceName" : "com.lorislab.throttle.research-vault.query.throttle"
+  }
+}

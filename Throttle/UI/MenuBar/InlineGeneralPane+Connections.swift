@@ -24,7 +24,7 @@ extension InlineGeneralPane {
                 }
                 Toggle("", isOn: appState.isPro ? $mirrorOn : .constant(false))
                     .labelsHidden().toggleStyle(.switch).tint(.accentColor)
-                    .disabled(!appState.isPro)
+                    .disabled(!appState.isPro || mirrorDeletionInFlight)
                     .onChange(of: mirrorOn) { _, on in
                         guard appState.isPro else { return }
                         UserDefaults.standard.set(on, forKey: "throttleiCloudMirrorEnabled")
@@ -39,6 +39,25 @@ extension InlineGeneralPane {
                             mirrorNote = "Off — the iPhone keeps its last synced snapshot."
                         }
                     }
+                if appState.isPro && !mirrorOn {
+                    Button("Delete iCloud copy…", role: .destructive) {
+                        showingMirrorDeletion = true
+                    }
+                    .controlSize(.small)
+                    .disabled(mirrorDeletionInFlight)
+                    .confirmationDialog(
+                        "Delete the mirrored copy from iCloud?",
+                        isPresented: $showingMirrorDeletion,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Delete iCloud copy", role: .destructive) { deleteMirrorCopy() }
+                    } message: {
+                        Text("""
+                        Throttle will keep the mirror off. Connected iPhones clear their \
+                        cached copy after refresh.
+                        """)
+                    }
+                }
             }
         }
         if mirrorOn && appState.isPro {
@@ -119,5 +138,21 @@ extension InlineGeneralPane {
             SettingsButton(title: "Check now") { UpdaterService.shared.checkForUpdates() }
         }
         SettingsNote(text: "Throttle \(currentVersionLabel) · updates are signed and verified before install.")
+    }
+
+    private func deleteMirrorCopy() {
+        mirrorDeletionInFlight = true
+        Task { @MainActor in
+            defer { mirrorDeletionInFlight = false }
+            do {
+                try await CloudKitPublisher.shared.deleteMirror()
+                mirrorNote = String(localized: "Deleted from private iCloud storage.")
+            } catch {
+                mirrorNote = String.localizedStringWithFormat(
+                    String(localized: "Could not delete the iCloud copy: %@"),
+                    error.localizedDescription
+                )
+            }
+        }
     }
 }

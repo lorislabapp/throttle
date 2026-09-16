@@ -105,20 +105,9 @@ extension PlanMCPTools {
 extension PlanMCPTools {
     /// Bootstrap is the sole useful plan command before a plan exists.
     static var advertisedSchemas: [[String: Any]] {
-        hasPlan() ? schemas : [planBootstrapSchema()]
-    }
-
-    static func routeCall(
-        name: String,
-        arguments: [String: Any]?,
-        id: Any?
-    ) {
-        routeCall(
-            name: name,
-            arguments: arguments,
-            onResult: { ThrottleMCPServer.respond(id: id, result: ThrottleMCPServer.textResult($0)) },
-            onError: { ThrottleMCPServer.respond(id: id, error: $0) }
-        )
+        var result = hasPlan() ? schemas : [planBootstrapSchema()]
+        result.append(ProjectKnowledgeMCP.schema)
+        return result
     }
 
     static func routeCall(
@@ -126,6 +115,8 @@ extension PlanMCPTools {
         onResult: (String) -> Void, onError: ([Any]) -> Void
     ) {
         switch name {
+        case "throttle_project_explore":
+            onResult(ProjectKnowledgeMCP.call(arguments))
         case "throttle_plan_bootstrap", "throttle_research_record", "throttle_viability_read":
             routeIntakeCall(name, arguments, onResult, onError)
         case "throttle_task_verdict", "throttle_plan_read", "throttle_task_claim", "throttle_task_event":

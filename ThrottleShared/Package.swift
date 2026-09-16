@@ -16,14 +16,22 @@ let package = Package(
         // Network/CryptoKit deps stay out of the pure contract library.
         .library(name: "ThrottlePeer", targets: ["ThrottlePeer"])
     ],
+    dependencies: [
+        .package(path: "../Packages/ThrottlePeerProtocol"),
+        .package(path: "../Packages/ThrottleMirrorContract")
+    ],
     targets: [
         .target(
             name: "ThrottleShared",
+            dependencies: [.product(name: "ThrottleMirrorContract", package: "ThrottleMirrorContract")],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .target(
             name: "ThrottlePeer",
-            dependencies: ["ThrottleShared"],
+            dependencies: [
+                "ThrottleShared",
+                .product(name: "ThrottlePeerProtocol", package: "ThrottlePeerProtocol")
+            ],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .executableTarget(
@@ -33,7 +41,8 @@ let package = Package(
         ),
         .testTarget(
             name: "ThrottleSharedTests",
-            dependencies: ["ThrottleShared"]
+            dependencies: ["ThrottleShared"],
+            resources: [.copy("Fixtures")]
         ),
         .testTarget(
             name: "ThrottlePeerTests",

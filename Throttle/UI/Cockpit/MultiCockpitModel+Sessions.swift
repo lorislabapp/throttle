@@ -152,6 +152,7 @@ extension MultiCockpitModel {
     func close(_ id: UUID) async {
         guard !isQuitting, let tab = sessions.first(where: { $0.id == id }), !tab.isTransitioning,
               await tab.hibernate(), let index = sessions.firstIndex(where: { $0.id == id }) else { return }
+        guard revokeAuthorityBeforeClose(tab) else { return }
         sessions.remove(at: index)
         recomputeSortOrder()
         if activeID == id { activeID = sessions.first?.id }
@@ -164,10 +165,24 @@ extension MultiCockpitModel {
     func forgetUnconfirmedSession(_ id: UUID) {
         guard !isQuitting, let index = sessions.firstIndex(where: { $0.id == id }),
               sessions[index].stopIssue != nil, !sessions[index].isTransitioning else { return }
+        guard revokeAuthorityBeforeClose(sessions[index]) else { return }
         sessions.remove(at: index)
         recomputeSortOrder()
         if activeID == id { activeID = sessions.first(where: { $0.isSpawned && !$0.isTransitioning })?.id }
         persist()
+    }
+
+    private func revokeAuthorityBeforeClose(_ tab: CockpitTab) -> Bool {
+        switch PlanMCPAuthorityLifecycle.closeSession(
+            launchEnvironment: tab.launchEnvironment,
+            actor: "throttle:cockpit"
+        ) {
+        case .inactive, .revoked:
+            return true
+        case .failed(let reason):
+            tab.stopIssue = "The task authority could not be revoked (\(reason)). The session remains visible."
+            return false
+        }
     }
 
     func move(dragged: UUID, onto target: UUID) {

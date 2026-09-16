@@ -33,14 +33,23 @@ struct PlanTask: Codable, Sendable, Equatable, Identifiable {
     /// Read and displayed by lot A, interpreted by lot D (dispatcher).
     var runtimeHint: String?
     /// Read and displayed by lot A, interpreted by lot E (counter-analysis).
-    /// When set, `completed` lands the task in `.review` rather than `.done`.
+    /// When set, a green check sends a candidate to review rather than done.
     var sotaGate: Bool
     /// Overrides `Plan.verify` for this task, when set.
     var verify: String?
+    /// Independent requirements for integration, never inferred from a result bundle.
+    var verificationContract: WorkflowVerificationContract?
+    /// A versioned workflow guide. It adds evidence obligations, never authority.
+    var recipe: WorkflowRecipeReference?
+    /// The complete, versioned task boundary. Legacy fields above remain decodable.
+    var workContract: WorkflowWorkContract?
 
     init(id: String, parent: String? = nil, order: Int = 0, title: String,
          kind: TaskKind = .build, dependsOn: [String] = [],
-         runtimeHint: String? = nil, sotaGate: Bool = false, verify: String? = nil) {
+         runtimeHint: String? = nil, sotaGate: Bool = false, verify: String? = nil,
+         verificationContract: WorkflowVerificationContract? = nil,
+         recipe: WorkflowRecipeReference? = nil,
+         workContract: WorkflowWorkContract? = nil) {
         self.id = id
         self.parent = parent
         self.order = order
@@ -50,6 +59,9 @@ struct PlanTask: Codable, Sendable, Equatable, Identifiable {
         self.runtimeHint = runtimeHint
         self.sotaGate = sotaGate
         self.verify = verify
+        self.verificationContract = verificationContract
+        self.recipe = recipe
+        self.workContract = workContract
     }
 
     // Hand-written so a plan authored by a human or by an agent survives missing
@@ -65,6 +77,26 @@ struct PlanTask: Codable, Sendable, Equatable, Identifiable {
         runtimeHint = try box.decodeIfPresent(String.self, forKey: .runtimeHint)
         sotaGate = try box.decodeIfPresent(Bool.self, forKey: .sotaGate) ?? false
         verify = try box.decodeIfPresent(String.self, forKey: .verify)
+        verificationContract = try box.decodeIfPresent(WorkflowVerificationContract.self, forKey: .verificationContract)
+        recipe = try box.decodeIfPresent(WorkflowRecipeReference.self, forKey: .recipe)
+        workContract = try box.decodeIfPresent(WorkflowWorkContract.self, forKey: .workContract)
+    }
+
+    var effectiveVerificationContract: WorkflowVerificationContract? {
+        workContract?.verification ?? verificationContract
+    }
+
+    var effectiveRecipe: WorkflowRecipeReference? {
+        workContract?.recipe ?? recipe
+    }
+
+    var contractIsValid: Bool {
+        guard workContract?.isValid ?? true else { return false }
+        if let embedded = workContract?.verification, let legacy = verificationContract,
+           embedded != legacy { return false }
+        if let embedded = workContract?.recipe, let legacy = recipe,
+           embedded != legacy { return false }
+        return true
     }
 }
 
@@ -121,6 +153,9 @@ struct Plan: Codable, Sendable, Equatable {
 
 enum TaskEventType: String, Codable, Sendable {
     case claimed, progress, evidence, blocked, unblocked, completed, failed, released
+    /// A worker's claim that its output is ready. Only Throttle's subsequent
+    /// `checked` event may promote it to done or to counter-analysis.
+    case candidateComplete = "candidate_complete"
     /// Counter-analysis verdicts. Only a runtime from a different family may emit
     /// them: a judge scoring its own family rates it higher, and self-refinement
     /// by the same model amplifies that bias rather than cancelling it.
@@ -157,13 +192,27 @@ struct TaskEvent: Codable, Sendable, Equatable {
     var passed: Bool?
     /// Nil on legacy events: absence is not a stronger level of proof.
     var receipt: WorkflowEvidenceReceipt?
+    /// Recipe and instruction identities captured at claim time.
+    var recipeID: WorkflowRecipeID?
+    var recipeDigest: String?
+    var instructionSnapshotDigest: String?
+    var workContractDigest: String?
+    /// Local admission proof only. It does not claim provider-side enforcement.
+    var budgetReservationID: UUID?
+    var budgetLedgerRevision: Int?
+    var reviewReport: WorkflowReviewReport?
     /// Nil on legacy events. Retries with the same identity cannot append twice.
     var eventID: UUID?
 
     init(seq: Int, timestamp: Date, author: String, type: TaskEventType, prev: String? = nil,
          pct: Int? = nil, note: String? = nil, kind: String? = nil, ref: String? = nil,
          reason: String? = nil, summary: String? = nil, missionID: String? = nil,
-         passed: Bool? = nil, receipt: WorkflowEvidenceReceipt? = nil, eventID: UUID? = UUID()) {
+         passed: Bool? = nil, receipt: WorkflowEvidenceReceipt? = nil,
+         recipeID: WorkflowRecipeID? = nil, recipeDigest: String? = nil,
+         instructionSnapshotDigest: String? = nil, workContractDigest: String? = nil,
+         budgetReservationID: UUID? = nil, budgetLedgerRevision: Int? = nil,
+         reviewReport: WorkflowReviewReport? = nil,
+         eventID: UUID? = UUID()) {
         self.seq = seq
         self.timestamp = timestamp
         self.author = author
@@ -178,6 +227,13 @@ struct TaskEvent: Codable, Sendable, Equatable {
         self.missionID = missionID
         self.passed = passed
         self.receipt = receipt
+        self.recipeID = recipeID
+        self.recipeDigest = recipeDigest
+        self.instructionSnapshotDigest = instructionSnapshotDigest
+        self.workContractDigest = workContractDigest
+        self.budgetReservationID = budgetReservationID
+        self.budgetLedgerRevision = budgetLedgerRevision
+        self.reviewReport = reviewReport
         self.eventID = eventID
     }
 
@@ -190,6 +246,10 @@ struct TaskEvent: Codable, Sendable, Equatable {
     // Swift-side names spell them out.
     enum CodingKeys: String, CodingKey {
         case seq, prev, pct, note, kind, ref, reason, summary, missionID, type, receipt, eventID
+        case recipeID, recipeDigest, instructionSnapshotDigest
+        case workContractDigest
+        case budgetReservationID, budgetLedgerRevision
+        case reviewReport
         case passed = "ok"
         case timestamp = "at"
         case author = "by"
@@ -199,7 +259,7 @@ struct TaskEvent: Codable, Sendable, Equatable {
 // MARK: - Projection
 
 enum TaskStatus: String, Codable, Sendable {
-    case pending, blocked, claimed, running, review, done, failed, integrated
+    case pending, blocked, claimed, running, candidate, review, done, failed, integrated
 }
 
 /// The verification Throttle ran, stamped with the two SHAs it was true for. It
@@ -269,4 +329,7 @@ struct TaskState: Codable, Sendable, Equatable {
     var rejected: [RejectedEvent] = []
     var lastCheck: TaskCheck?
     var integratedSHA: String?
+    var budgetReservationID: UUID?
+    var budgetLedgerRevision: Int?
+    var lastReview: WorkflowReviewReport?
 }

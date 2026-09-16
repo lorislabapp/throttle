@@ -22,61 +22,8 @@ enum PlanMCPTools {
         var verdict: String
         var reason: String?
         var summary: String?
+        var reviewReport: WorkflowReviewReport?
         var retry = MutationRetry()
-    }
-
-    static func verdictText(_ request: VerdictRequest) -> String {
-        do {
-            return try store(request.project).mutate { verdictText(request, store: $0) }
-        } catch {
-            return "Refused: the plan mutation could not be safely persisted."
-        }
-    }
-
-    private static func verdictText(_ request: VerdictRequest, store: PlanStore) -> String {
-        let taskID = request.taskID
-        let author = request.author
-        let verdict = request.verdict
-        let reason = request.reason
-        let summary = request.summary
-        guard let type = TaskEventType(rawValue: verdict),
-              type == .verified || type == .rejected else {
-            return "Refused: verdict must be 'verified' or 'rejected'."
-        }
-        if type == .rejected, (reason ?? "").trimmingCharacters(in: .whitespaces).isEmpty {
-            return "Refused: a rejection has to say what is missing, or the next agent repeats the same work."
-        }
-        guard let plan = try? store.loadPlan(), plan.task(taskID) != nil else {
-            return "Refused: no task \(taskID) in this plan."
-        }
-        var event = TaskEvent(seq: 0, timestamp: Date(), author: author, type: type,
-                              reason: reason, summary: summary)
-        if let replay = retryResponse(&event, retry: request.retry, taskID: taskID, store: store) { return replay }
-        guard let current = try? store.state(for: taskID) else {
-            return "Refused: could not read the log for \(taskID)."
-        }
-        guard current.status == .review else {
-            return "Refused: \(taskID) is \(current.status.rawValue), not awaiting review."
-        }
-        let judge = String(author.prefix(while: { $0 != ":" }))
-        if judge == current.runtime {
-            return "Refused: \(judge) did this work. A judge from the same model family rates it"
-                + " higher than it should — the verdict has to come from the other runtime."
-        }
-
-        guard (try? store.append(event, to: taskID)) != nil,
-              let after = try? store.state(for: taskID) else {
-            return "Refused: could not write the log for \(taskID)."
-        }
-        if after.status == .failed {
-            return "\(taskID) → failed after \(after.rejectionCount) rejections. The loop stops here;"
-                + " it needs a human, or a smaller task."
-        }
-        if after.status == .pending {
-            return "\(taskID) → back to pending (rejection \(after.rejectionCount)"
-                + " of \(PlanProjection.maxRejections))."
-        }
-        return "\(taskID) → \(after.status.rawValue)."
     }
 
     // MARK: - Read
@@ -135,53 +82,6 @@ enum PlanMCPTools {
 
     // MARK: - Write
 
-    static func claimText(project: String?, taskID: String,
-                          author: String, missionID: String?, retry: MutationRetry = MutationRetry()) -> String {
-        do {
-            return try store(project).mutate {
-                claimText(store: $0, taskID: taskID, author: author, missionID: missionID, retry: retry)
-            }
-        } catch {
-            return "Refused: the plan mutation could not be safely persisted."
-        }
-    }
-
-    private static func claimText(store: PlanStore, taskID: String,
-                                  author: String, missionID: String?, retry: MutationRetry) -> String {
-        guard let plan = try? store.loadPlan() else { return "Refused: no plan at this project root." }
-        guard let task = plan.task(taskID) else { return "Refused: no task \(taskID) in this plan." }
-        var event = TaskEvent(seq: 0, timestamp: Date(), author: author, type: .claimed, missionID: missionID)
-        if let replay = retryResponse(&event, retry: retry, taskID: taskID, store: store) { return replay }
-
-        guard let current = try? store.state(for: taskID) else {
-            return "Refused: could not read the log for \(taskID)."
-        }
-        if let owner = current.owner {
-            return "Refused: \(taskID) is already held by \(owner). Pick another task from throttle_plan_read."
-        }
-        let unmet = task.dependsOn.filter { (try? store.state(for: $0))?.status != .done }
-        if !unmet.isEmpty {
-            return "Refused: \(taskID) depends on \(unmet.joined(separator: ", ")), which is not done."
-        }
-        guard current.chainValid, current.status == .pending,
-              plan.isLeafByID[taskID] == true else {
-            return "Refused: this task is not an actionable leaf with a valid history."
-        }
-
-        guard let written = try? store.append(event, to: taskID) else {
-            return "Refused: could not write the log for \(taskID)."
-        }
-        var out = """
-        Claimed \(taskID) — \(task.title) (seq \(written.seq)).
-        You now own it: report with throttle_task_event, and release it if you stop.
-        """
-        if task.sotaGate {
-            out += "\nThis task is SOTA-gated: `completed` parks it in review for"
-                + " counter-analysis, it does not finish it."
-        }
-        return out
-    }
-
     /// Grouped rather than passed loose: the tool takes ten fields, and a long
     /// positional signature is exactly where a `reason` quietly lands in `ref`.
     struct EventRequest {
@@ -215,12 +115,12 @@ enum PlanMCPTools {
             return "Refused: unknown event type '\(request.type)'."
         }
         let allowed: Set<TaskEventType> = [.progress, .evidence, .blocked, .unblocked,
-                                           .completed, .failed, .released]
+                                           .candidateComplete, .failed, .released]
         guard allowed.contains(eventType) else {
             return "Refused: '\(request.type)' is not an agent's to write."
                 + " Use throttle_task_claim to take a task; checks and integrations are Throttle's to write."
         }
-        guard let plan = try? store.loadPlan(), plan.task(taskID) != nil else {
+        guard let plan = try? store.loadPlan(), let task = plan.task(taskID) else {
             return "Refused: no task \(taskID) in this plan."
         }
         var event = TaskEvent(seq: 0, timestamp: Date(), author: author, type: eventType,
@@ -236,18 +136,62 @@ enum PlanMCPTools {
         guard owner == author else {
             return "Refused: \(taskID) is held by \(owner), not \(author)."
         }
+        if eventType == .candidateComplete,
+           let refusal = recipeRefusal(
+               task: task,
+               author: author,
+               project: request.project,
+               store: store
+        ) {
+            return refusal
+        }
+
+        if let refusal = budgetSettlementRefusal(
+            eventType: eventType,
+            state: current,
+            store: store
+        ) {
+            return refusal
+        }
 
         guard (try? store.append(event, to: taskID)) != nil,
               let after = try? store.state(for: taskID) else {
             return "Refused: could not write the log for \(taskID)."
         }
-        var out = "\(taskID) → \(after.status.rawValue) (\(after.pct)%)."
-        if after.status == .review {
-            out += " Gated, so it is parked for counter-analysis rather than done."
+        return eventResponse(taskID: taskID, state: after)
+    }
+
+    /// Terminal worker events close the local hold before the plan advances. A
+    /// missing meter is represented conservatively by the reserved upper bound;
+    /// it is never relabelled as measured provider usage.
+    private static func budgetSettlementRefusal(
+        eventType: TaskEventType,
+        state: TaskState,
+        store: PlanStore
+    ) -> String? {
+        let terminal: Set<TaskEventType> = [.candidateComplete, .failed, .released]
+        guard terminal.contains(eventType), let reservationID = state.budgetReservationID else {
+            return nil
         }
-        if !after.chainValid {
-            out += " ⚠︎ This log's hash chain does not verify — something wrote it outside Throttle."
+        do {
+            try TaskBudgetAdmission.settleUpperBound(
+                reservationID: reservationID,
+                projectRoot: store.projectRoot
+            )
+            return nil
+        } catch {
+            return "Refused: the local budget hold could not be reconciled; the task remains held."
         }
-        return out
+    }
+
+    private static func eventResponse(taskID: String, state: TaskState) -> String {
+        var output = "\(taskID) → \(state.status.rawValue) (\(state.pct)%)."
+        if state.status == .candidate {
+            output += " Awaiting Throttle's verification; the worker cannot mark it done."
+        }
+        if !state.chainValid {
+            output += " ⚠︎ This log's hash chain does not verify — something wrote it outside Throttle."
+        }
+        return output
     }
 }

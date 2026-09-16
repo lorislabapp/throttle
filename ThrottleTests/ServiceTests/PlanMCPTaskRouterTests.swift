@@ -35,11 +35,10 @@ final class PlanMCPTaskRouterTests: XCTestCase {
         let owner: [String: Any] = ["project": root.path, "task_id": "task", "by": "codex:a"]
         let claim = owner.merging(["event_id": UUID().uuidString, "expected_seq": 0]) { _, value in value }
         let completion = owner.merging(["event_id": UUID().uuidString, "expected_seq": 1,
-                                        "type": "completed"]) { _, value in value }
+                                        "type": "candidate_complete"]) { _, value in value }
         let verdict: [String: Any] = ["project": root.path, "task_id": "task", "by": "claude:judge",
-                                     "verdict": "verified", "event_id": UUID().uuidString, "expected_seq": 2]
-        for (name, arguments) in [("throttle_task_claim", claim), ("throttle_task_event", completion),
-                                  ("throttle_task_verdict", verdict)] {
+                                     "verdict": "verified", "event_id": UUID().uuidString, "expected_seq": 3]
+        for (name, arguments) in [("throttle_task_claim", claim), ("throttle_task_event", completion)] {
             let first = route(name, arguments)
             XCTAssertNil(first.1)
             XCTAssertFalse(try XCTUnwrap(first.0).hasPrefix("Refused:"))
@@ -48,7 +47,15 @@ final class PlanMCPTaskRouterTests: XCTestCase {
             XCTAssertTrue(try XCTUnwrap(retry.0).hasPrefix("Already recorded"))
         }
         let store = PlanStore(projectRoot: root)
-        XCTAssertEqual(try store.events(for: "task").events.count, 3)
+        try store.append(TaskEvent(seq: 0, timestamp: Date(), author: "throttle:test",
+                                   type: .checked, ref: "candidate+base", passed: true), to: "task")
+        let firstVerdict = route("throttle_task_verdict", verdict)
+        XCTAssertNil(firstVerdict.1)
+        XCTAssertFalse(try XCTUnwrap(firstVerdict.0).hasPrefix("Refused:"))
+        let retriedVerdict = route("throttle_task_verdict", verdict)
+        XCTAssertNil(retriedVerdict.1)
+        XCTAssertTrue(try XCTUnwrap(retriedVerdict.0).hasPrefix("Already recorded"))
+        XCTAssertEqual(try store.events(for: "task").events.count, 4)
         XCTAssertEqual(try store.state(for: "task").status, .done)
     }
 

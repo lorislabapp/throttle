@@ -53,7 +53,8 @@ final class SystemMirrorCloudBackend: MirrorCloudBackend {
         }
         let subscription = CKQuerySubscription(
             recordType: CloudKitSchema.recordType, predicate: NSPredicate(value: true),
-            subscriptionID: Self.subscriptionID, options: [.firesOnRecordCreation, .firesOnRecordUpdate])
+            subscriptionID: Self.subscriptionID,
+            options: [.firesOnRecordCreation, .firesOnRecordUpdate, .firesOnRecordDeletion])
         let info = CKSubscription.NotificationInfo()
         info.shouldSendContentAvailable = true
         subscription.notificationInfo = info

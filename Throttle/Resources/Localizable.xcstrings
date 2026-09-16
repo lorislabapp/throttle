@@ -6936,6 +6936,594 @@
     "macOS could not change the Research Vault service.": {
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "macOS n’a pas pu modifier le service du Coffre de recherche." } } }
+    },
+    "Project Instructions": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Instructions du projet" } } }
+    },
+    "INTEGRATION": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "INTÉGRATION" } } }
+    },
+    "INTEGRATED": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "INTÉGRÉE" } } }
+    },
+    "Worktree kept": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Worktree conservé" } } }
+    },
+    "Conflicts with the base in:": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Conflits avec la base dans :" } } }
+    },
+    "This git cannot say whether it merges cleanly (needs 2.38).": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Cette version de Git ne peut pas confirmer une fusion propre (version 2.38 requise)." } } }
+    },
+    "Allow this command": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Autoriser cette commande" } } }
+    },
+    "Required tests verified for this revision": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tests requis vérifiés pour cette révision" } } }
+    },
+    "Required tests awaiting valid evidence": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tests requis en attente de preuves valides" } } }
+    },
+    "Blocked: the files above conflict with the base. Resolve them in the worktree and commit, then this can merge.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Bloqué : les fichiers ci-dessus sont en conflit avec la base. Résolvez-les dans le worktree et committez, puis la fusion sera possible." } } }
+    },
+    "Blocked: the worktree has uncommitted changes to tracked files. Commit or discard them in it first.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Bloqué : le worktree contient des modifications non committées dans des fichiers suivis. Committez-les ou annulez-les d’abord." } } }
+    },
+    "not started": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "non démarrée" } } }
+    },
+    "hibernated": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "en veille prolongée" } } }
+    },
+    "rate limited": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "limitée" } } }
+    },
+    "paused": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "en pause" } } }
+    },
+    "working": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "en cours" } } }
+    },
+    "waiting for you": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "en attente de vous" } } }
+    },
+    "idle": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "inactive" } } }
+    },
+    "Budget hold": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Réservation du budget" } } }
+    },
+    "Enforcement": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Application" } } }
+    },
+    "local admission only": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "admission locale uniquement" } } }
+    },
+    "INDEPENDENT REVIEW": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "REVUE INDÉPENDANTE" } } }
+    },
+    "Reviewer": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Réviseur" } } }
+    },
+    "Candidate": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Candidat" } } }
+    },
+    "Report": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rapport" } } }
+    },
+    "RECOMMENDATION": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "RECOMMANDATION" } } }
+    },
+    "No clear choice — pick one": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun choix clair — choisissez" } } }
+    },
+    "Every runtime is out of window until %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tous les environnements sont hors fenêtre jusqu’à %@" } } }
+    },
+    "≈%@× the tokens of a single agent": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "≈%@× les tokens d’un seul agent" } } }
+    },
+    "Launch": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Lancer" } } }
+    },
+    "Choose…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisir…" } } }
+    },
+    "Change…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Changer…" } } }
+    },
+    "Taken by %@ a moment ago.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Pris par %@ il y a un instant." } } }
+    },
+    "No task %@ in this plan.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune tâche %@ dans ce plan." } } }
+    },
+    "Budget refused: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Budget refusé : %@" } } }
+    },
+    "PASS": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "RÉUSSI" } } }
+    },
+    "FAIL": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "ÉCHEC" } } }
+    },
+    "NOT VERIFIED": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "NON VÉRIFIÉ" } } }
+    },
+    "N/A": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "S.O." } } }
+    },
+    "No active project": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun projet actif" } } }
+    },
+    "Select a Cockpit session to choose the project plan.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Sélectionnez une session du cockpit pour choisir le plan du projet." } } }
+    },
+    "PLAN": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "PLAN" } } }
+    },
+    "Show session": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Afficher la session" } } }
+    },
+    "No active session — this plan is not attached to a running agent.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune session active — ce plan n’est relié à aucun agent en cours." } } }
+    },
+    "NEXT STEP": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "ÉTAPE SUIVANTE" } } }
+    },
+    "This project's plan could not be read.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le plan de ce projet n’a pas pu être lu." } } }
+    },
+    "No plan in this project": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun plan dans ce projet" } } }
+    },
+    "Start from the idea": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Partir de l’idée" } } }
+    },
+    "Start from what's here": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Partir de l’existant" } } }
+    },
+    "This task's log was written outside Throttle — its hash chain does not verify.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le journal de cette tâche a été écrit hors de Throttle — sa chaîne de hachage ne se vérifie pas." } } }
+    },
+    "EVIDENCE": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "PREUVES" } } }
+    },
+    "REJECTED EVENTS": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "ÉVÉNEMENTS REJETÉS" } } }
+    },
+    "LOG": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "JOURNAL" } } }
+    },
+    "Select a task.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Sélectionnez une tâche." } } }
+    },
+    "Status": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "État" } } }
+    },
+    "Progress": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Progression" } } }
+    },
+    "Kind": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Type" } } }
+    },
+    "Held by": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Détenue par" } } }
+    },
+    "Mission": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Mission" } } }
+    },
+    "Suggested": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Suggéré" } } }
+    },
+    "Gate": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Gate" } } }
+    },
+    "Summary": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Résumé" } } }
+    },
+    "Rejected": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rejeté" } } }
+    },
+    "Verdict by": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Verdict par" } } }
+    },
+    "Chain": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Chaîne" } } }
+    },
+    "SOTA — green verification requires review": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "SOTA — une vérification verte exige une revue" } } }
+    },
+    "does not verify": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "ne se vérifie pas" } } }
+    },
+    "WHAT TO DO NOW": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "À FAIRE MAINTENANT" } } }
+    },
+    "Finish %@ — %@ — before this task can start.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Terminez %@ — %@ — avant de démarrer cette tâche." } } }
+    },
+    "Ready to start. Review the recommendation, then launch an agent.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Prête à démarrer. Vérifiez la recommandation, puis lancez un agent." } } }
+    },
+    "the assigned": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "attribué" } } }
+    },
+    "Continue in %@ session; it owns this task.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Continuez dans la session %@ ; elle détient cette tâche." } } }
+    },
+    "Resolve the blocker: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Résolvez le blocage : %@" } } }
+    },
+    "Resolve the reported blocker.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Résolvez le blocage signalé." } } }
+    },
+    "Run the declared verification. Only a green coordinator decision can finish it.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Exécutez la vérification déclarée. Seule une décision verte du coordinateur peut la terminer." } } }
+    },
+    "Review the evidence with the opposite runtime before accepting completion.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Faites revoir les preuves par l’autre environnement avant d’accepter la fin." } } }
+    },
+    "Review the diff and verification result, then integrate the task.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vérifiez le diff et le résultat, puis intégrez la tâche." } } }
+    },
+    "Integrated. Select the next ready task in the plan.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Intégrée. Sélectionnez la prochaine tâche prête dans le plan." } } }
+    },
+    "Inspect the log, then release or retry this task explicitly.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Inspectez le journal, puis libérez ou relancez explicitement cette tâche." } } }
+    },
+    "Ready": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Prête" } } }
+    },
+    "Blocked": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Bloquée" } } }
+    },
+    "Assigned": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Attribuée" } } }
+    },
+    "Running": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "En cours" } } }
+    },
+    "Failed": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Échouée" } } }
+    },
+    "Integrated": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Intégrée" } } }
+    },
+    "DESIGN CONTRACT": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "CONTRAT DE CONCEPTION" } } }
+    },
+    "Journey": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Parcours" } } }
+    },
+    "Entry": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Entrée" } } }
+    },
+    "Design tool": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Outil de conception" } } }
+    },
+    "Unspecified": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Non précisé" } } }
+    },
+    "Runtime, keyboard, VoiceOver and platform evidence remain separate proofs.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Les preuves d’exécution, de clavier, de VoiceOver et de plateforme restent distinctes." } } }
+    },
+    "%@ — verified": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%@ — vérifié" } } }
+    },
+    "%@ — unavailable": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%@ — indisponible" } } }
+    },
+    "PRODUCT CYCLE": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "CYCLE PRODUIT" } } }
+    },
+    "Release": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Release" } } }
+    },
+    "Version": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Version" } } }
+    },
+    "Source": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Source" } } }
+    },
+    "Targets": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Cibles" } } }
+    },
+    "Dependency": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Dépendance" } } }
+    },
+    "Decision": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Décision" } } }
+    },
+    "Reuse": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Réutilisation" } } }
+    },
+    "Mode": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Mode" } } }
+    },
+    "Pinned": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Épinglé" } } }
+    },
+    "Parity": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Parité" } } }
+    },
+    "Verified": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vérifié" } } }
+    },
+    "IP": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "PI" } } }
+    },
+    "IP gate": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Gate PI" } } }
+    },
+    "ready": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "prêt" } } }
+    },
+    "blocked": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "bloqué" } } }
+    },
+    "These are pinned decisions and gates. Installation, upload, licensing and publication remain separate effects.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ces décisions et gates sont figés. L’installation, l’envoi, la licence et la publication restent des effets distincts." } } }
+    },
+    "Restore the exact previous instruction file?": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Restaurer exactement le fichier d’instructions précédent ?" } } }
+    },
+    "Restore previous file": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Restaurer le fichier précédent" } } }
+    },
+    "Rollback is refused if the file changed after Throttle applied it.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La restauration est refusée si le fichier a changé après son application par Throttle." } } }
+    },
+    "Applicable sources": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Sources applicables" } } }
+    },
+    "No instruction files discovered.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun fichier d’instructions trouvé." } } }
+    },
+    "Prepare a managed section": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Préparer une section gérée" } } }
+    },
+    "Target": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Cible" } } }
+    },
+    "Section identifier": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Identifiant de section" } } }
+    },
+    "Section title": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Titre de section" } } }
+    },
+    "Source references, comma separated": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Références des sources, séparées par des virgules" } } }
+    },
+    "Prepare exact proposal": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Préparer la proposition exacte" } } }
+    },
+    "Exact review": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Revue exacte" } } }
+    },
+    "I reviewed this exact proposed content": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "J’ai vérifié exactement ce contenu proposé" } } }
+    },
+    "Apply reviewed proposal": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Appliquer la proposition vérifiée" } } }
+    },
+    "Writing creates a private proposal, review, backup and receipt.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "L’écriture crée une proposition privée, une revue, une sauvegarde et un reçu." } } }
+    },
+    "(empty file)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "(fichier vide)" } } }
+    },
+    "Last verified apply": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Dernière application vérifiée" } } }
+    },
+    "Rollback last apply": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Restaurer la dernière application" } } }
+    },
+    "Scan the project before proposing a change.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Analysez le projet avant de proposer une modification." } } }
+    },
+    "Found %lld applicable instruction source(s).": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld source(s) d’instructions applicable(s) trouvée(s)." } } }
+    },
+    "Instruction scan refused: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Analyse des instructions refusée : %@" } } }
+    },
+    "Scan the project before preparing a diff.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Analysez le projet avant de préparer un diff." } } }
+    },
+    "No change: the managed section already matches.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune modification : la section gérée correspond déjà." } } }
+    },
+    "Exact proposal ready for review. No file has been changed.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Proposition exacte prête à être vérifiée. Aucun fichier n’a été modifié." } } }
+    },
+    "Proposal refused: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Proposition refusée : %@" } } }
+    },
+    "Prepare and review an exact proposal first.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Préparez et vérifiez d’abord une proposition exacte." } } }
+    },
+    "Reviewed instructions applied and verified.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Instructions vérifiées, appliquées et contrôlées." } } }
+    },
+    "Apply refused: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Application refusée : %@" } } }
+    },
+    "Last instruction change rolled back and verified.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Dernière modification des instructions restaurée et vérifiée." } } }
+    },
+    "Rollback refused: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Restauration refusée : %@" } } }
+    },
+    "iCloud is unavailable. The mirrored copy was not deleted.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "iCloud est indisponible. La copie miroir n’a pas été supprimée." } } }
+    },
+    "Delete iCloud copy…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Supprimer la copie iCloud…" } } }
+    },
+    "Delete the mirrored copy from iCloud?": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Supprimer la copie miroir d’iCloud ?" } } }
+    },
+    "Delete iCloud copy": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Supprimer la copie iCloud" } } }
+    },
+    "Throttle will keep the mirror off. Connected iPhones clear their cached copy after refresh.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Throttle gardera le miroir désactivé. Les iPhone connectés effaceront leur copie en cache après actualisation." } } }
+    },
+    "Deleted from private iCloud storage.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Copie supprimée du stockage iCloud privé." } } }
+    },
+    "Could not delete the iCloud copy: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Impossible de supprimer la copie iCloud : %@" } } }
     }
   },
   "version": "1.0"

@@ -2,9 +2,11 @@ import Foundation
 
 // Shared by the live MCP adapter and isolated argument-boundary tests.
 extension PlanMCPTools {
-    /// Resolved once per process: the descriptor names one runtime's grant and
-    /// cannot change underneath it.
-    static let processAuthority = PlanMCPAuthority.load()
+    /// Re-read for every call so expiration and revocation take effect in a live
+    /// stdio server without relying on the runtime to restart cooperatively.
+    static var processAuthority: Result<PlanMCPAuthority?, PlanMCPAuthority.Failure> {
+        PlanMCPAuthority.load()
+    }
 
     static func routeTaskCall(
         _ name: String, _ args: [String: Any]?,
@@ -25,7 +27,9 @@ extension PlanMCPTools {
             result(verdictText(VerdictRequest(
                 project: args?["project"] as? String, taskID: taskID, author: author,
                 verdict: verdict, reason: args?["reason"] as? String,
-                summary: args?["summary"] as? String, retry: retry
+                summary: args?["summary"] as? String,
+                reviewReport: decodeReviewReport(args?["review_report"]),
+                retry: retry
             )))
         case "throttle_plan_read":
             result(planReadText(project: args?["project"] as? String))
@@ -39,6 +43,14 @@ extension PlanMCPTools {
         default:
             routeEventCall(args, retry: retry, result, error)
         }
+    }
+
+    private static func decodeReviewReport(_ object: Any?) -> WorkflowReviewReport? {
+        guard let object, JSONSerialization.isValidJSONObject(object),
+              let data = try? JSONSerialization.data(withJSONObject: object) else { return nil }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try? decoder.decode(WorkflowReviewReport.self, from: data)
     }
 
     /// A present descriptor narrows every call; a broken one refuses them all;
@@ -57,7 +69,9 @@ extension PlanMCPTools {
             return PlanMCPAuthority.refusal(for: failure)
         case .success(let grant?):
             return grant.refusal(project: args?["project"] as? String,
-                                 author: (args?["by"] as? String) ?? grant.author, operation: operation)
+                                 author: (args?["by"] as? String) ?? grant.author,
+                                 operation: operation,
+                                 requestedTaskID: args?["task_id"] as? String)
         case .success(nil):
             return nil
         }

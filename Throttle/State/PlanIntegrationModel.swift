@@ -85,8 +85,8 @@ extension PlanModel {
 
     func integrationDiff(for taskID: String) -> String { integration.diffs[taskID] ?? "" }
 
-    /// Reads what the task would merge, off the main actor. Only a `.done` task has
-    /// anything to assess; anything else drops the cached entry, which is what
+    /// Reads what the task would merge, off the main actor. A candidate and a
+    /// `.done` task have work to assess; anything else drops the cached entry, which is what
     /// clears the card once the merge landed.
     ///
     /// The rebind check is on the *write*, not on the call. `assess` shells out to
@@ -102,7 +102,7 @@ extension PlanModel {
         }
         let status = state(taskID).status
         integration.keptWorktreePaths[taskID] = survivingWorktree(taskID, in: root, status: status)
-        guard status == .done else {
+        guard status == .candidate || status == .done else {
             integration.assessments[taskID] = nil
             integration.errors[taskID] = nil
             return
@@ -142,9 +142,9 @@ extension PlanModel {
 /// Split from the extension above to stay under SwiftLint's `type_body_length`.
 extension PlanModel {
 
-    /// Runs rebase → verify → merge and returns nil on success, or the refusal to
-    /// show. Stops at the first thing that says no; nothing is written to the base
-    /// branch unless all three passed.
+    /// Runs rebase → verify → decision → merge and returns nil on success, or the
+    /// refusal to show. A SOTA candidate stops in review after a green check; nothing
+    /// is written to the base branch before it later reaches done.
     ///
     /// Async because the middle step runs the project's own check command, which
     /// can take minutes — on the actor that draws, that is a frozen app.
@@ -157,12 +157,9 @@ extension PlanModel {
         guard integration.steps[root.path, default: .idle] == .idle else {
             return "An integration is already running."
         }
-        // Only the card gated this before. A `.review` task would have run the
-        // project's verify command for nothing: `checked` is accepted only on a task
-        // that reached `.done`, so the event would have been silently rejected and
-        // the integration refused as unverified — after minutes of shelling out.
-        guard state(taskID).status == .done else {
-            return "\(taskID) is \(state(taskID).status.rawValue), not done — nothing to integrate yet."
+        let status = state(taskID).status
+        guard status == .candidate || status == .done else {
+            return "\(taskID) is \(status.rawValue), not ready for verification or integration."
         }
         guard let command = verifyCommand(for: taskID) else {
             return "No verify command in this plan — add `verify` to the plan or the task."
@@ -209,6 +206,11 @@ extension PlanModel {
             guard verdict.passed else {
                 return "The verification failed, so nothing was merged.\n"
                     + String(verdict.output.suffix(600))
+            }
+            let checked = try store.state(for: taskID)
+            if checked.status == .review { return nil }
+            guard checked.status == .done else {
+                return "The candidate has no coordinator decision, so nothing was merged."
             }
             integration.steps[root.path] = .merging
             _ = try await Self.offMain {
@@ -288,12 +290,15 @@ extension PlanModel {
             return "The rebase conflicted and could not be undone — the worktree may still "
                 + "be mid-rebase. Run `git rebase --abort` in it.\n"
                 + String(rebaseOutput.suffix(300)) + "\n" + String(abortOutput.suffix(300))
+        case .scopeViolation(let paths):
+            return "The task changed paths outside its approved work contract:\n"
+                + paths.joined(separator: "\n")
         case .refused(.dirty):
             return "The worktree still holds uncommitted changes."
         case .refused(.behind):
             return "The base moved — rebase again before integrating."
         case .refused(.unverified):
-            return "No green check for these exact commits."
+            return "No passing verification for these exact commits and required test contract."
         case .refused(.ungated):
             return "SOTA-gated: counter-analysis has not ruled on it."
         case .refused(.detached):

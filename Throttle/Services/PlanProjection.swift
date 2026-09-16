@@ -51,7 +51,7 @@ enum PlanProjection {
 
     private static func isTerminal(_ status: TaskStatus) -> Bool {
         switch status {
-        case .done, .failed, .integrated: return true
+        case .candidate, .done, .failed, .integrated: return true
         case .pending, .blocked, .claimed, .running, .review: return false
         }
     }
@@ -67,7 +67,10 @@ enum PlanProjection {
         // Throttle's own bookkeeping on a finished task. Neither is an agent's report,
         // so neither goes through ownership — and neither is accepted before the task
         // is actually done.
-        if event.type == .checked || event.type == .integrated {
+        if event.type == .checked {
+            return state.status == .candidate || state.status == .done ? nil : .terminal
+        }
+        if event.type == .integrated {
             return state.status == .done ? nil : .terminal
         }
         if isTerminal(state.status) { return .terminal }
@@ -96,29 +99,20 @@ enum PlanProjection {
 
         if applyOwnerReport(event, to: &state) { return }
 
+        if applyCompletion(event, to: &state, gated: gated) { return }
+
         switch event.type {
         case .blocked, .unblocked:
             state.status = event.type == .blocked ? .blocked : .running
             state.blockedReason = event.type == .blocked ? event.reason : nil
 
-        case .completed:
-            state.pct = 100
-            state.summary = event.summary
-            // A gated task is never finished on its own agent's word; it parks in
-            // review until counter-analysis rules on it.
-            state.status = gated ? .review : .done
-
         case .failed:
             state.status = .failed
             state.summary = event.reason
 
-        case .claimed, .progress, .evidence, .verified, .rejected:
+        case .claimed, .progress, .evidence, .verified, .rejected,
+             .completed, .candidateComplete, .checked:
             break   // handled by applyOwnerReport / applyVerdict, before this switch
-
-        case .checked:
-            state.lastCheck = TaskCheck(passed: event.passed ?? false,
-                                        stamp: event.ref ?? "",
-                                        ranAt: event.timestamp, receipt: event.receipt)
 
         case .integrated:
             state.status = .integrated
@@ -130,6 +124,36 @@ enum PlanProjection {
             state.runtime = nil
             state.status = .pending
             state.blockedReason = nil
+        }
+    }
+
+    private static func applyCompletion(
+        _ event: TaskEvent, to state: inout TaskState, gated: Bool
+    ) -> Bool {
+        switch event.type {
+        case .completed:
+            // Historical logs retain their original meaning. New MCP calls cannot
+            // write this event; they write candidate_complete below.
+            state.pct = 100
+            state.summary = event.summary
+            state.status = gated ? .review : .done
+            return true
+        case .candidateComplete:
+            state.pct = 100
+            state.summary = event.summary
+            state.owner = nil
+            state.status = .candidate
+            return true
+        case .checked:
+            state.lastCheck = TaskCheck(passed: event.passed ?? false,
+                                        stamp: event.ref ?? "",
+                                        ranAt: event.timestamp, receipt: event.receipt)
+            if state.status == .candidate, event.passed == true {
+                state.status = gated ? .review : .done
+            }
+            return true
+        default:
+            return false
         }
     }
 
@@ -191,6 +215,8 @@ enum PlanProjection {
             state.status = .claimed
             state.startedAt = state.startedAt ?? event.timestamp
             if let mission = event.missionID { state.missionID = mission }
+            state.budgetReservationID = event.budgetReservationID
+            state.budgetLedgerRevision = event.budgetLedgerRevision
             return true
         case .progress:
             state.status = .running
@@ -210,11 +236,13 @@ enum PlanProjection {
     private static func applyVerdict(_ event: TaskEvent, to state: inout TaskState) -> Bool {
         switch event.type {
         case .verified:
+            state.lastReview = event.reviewReport
             state.status = .done
             state.verdictBy = event.author
             state.summary = event.summary ?? state.summary
             return true
         case .rejected:
+            state.lastReview = event.reviewReport
             state.rejectionCount += 1
             state.verdictBy = event.author
             state.owner = nil
@@ -233,7 +261,9 @@ enum PlanProjection {
         if children.allSatisfy({ isFinished($0.status) }) { return .done }
         if children.contains(where: { $0.status == .failed }) { return .failed }
         if children.contains(where: { $0.status == .running || $0.status == .claimed
-                                       || $0.status == .review }) { return .running }
+                                       || $0.status == .candidate || $0.status == .review }) {
+            return .running
+        }
         // Blocked only when nothing in it can move. A phase with one actionable
         // leaf and one waiting on it is not blocked — reading it that way tells
         // the user there is nothing to do at the exact moment there is.

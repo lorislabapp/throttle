@@ -56,14 +56,4 @@ extension PlanMCPTools {
             return try retryAcknowledgement(&event, retry: retry, taskID: taskID, store: store)
         } catch { return "Refused: invalid retry identity, changed payload, stale sequence or unreadable history." }
     }
-
-    static func retryProperties(_ properties: [String: Any]) -> [String: Any] {
-        properties.merging([
-            "event_id": ["type": "string", "format": "uuid",
-                         "description": "Retry UUID. Send with expected_seq; reuse both and the identical payload."],
-            "expected_seq": ["type": "integer", "minimum": 0, "maximum": 9_007_199_254_740_991,
-                             "description": "Task seq from throttle_plan_read. Required with event_id."
-                            ]
-        ]) { _, value in value }
-    }
 }

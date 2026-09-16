@@ -53,12 +53,17 @@ extension TaskIntegrationService {
     ) throws -> Verdict {
         let worktree = try existingWorktree(taskID, in: repo)
         let stamp = try assess(taskID: taskID, in: repo).stamp
+        let task = try store?.loadPlan().task(taskID)
+        let contract = task?.effectiveVerificationContract
+        let workContractDigest = task?.workContract?.digest
         let startedAt = Date()
         let result = shell(command, in: worktree, timeout: timeout)
         let after = try? assess(taskID: taskID, in: repo)
         let unchanged = after?.stamp == stamp && after?.hasLooseWork == false
         var receipt = WorkflowEvidenceReceipt.command(command, stamp: stamp,
             startedAt: startedAt, finishedAt: Date(), result: (result.ok, unchanged))
+        receipt.contractDigest = contract?.digest
+        receipt.workContractDigest = workContractDigest
         // The stamp covers the two revisions; these name the rest of the inputs.
         let untracked = TaskIntegrationService.git(["ls-files", "--others", "--exclude-standard", "-z"], in: worktree)
         receipt.untrackedDigest = untracked.ok
@@ -76,8 +81,15 @@ extension TaskIntegrationService {
             receipt = WorkflowResultImporter.upgraded(receipt, with: inventory)
         }
         let changedNotice = "\n[throttle] Inputs changed or could not be rechecked; verification is incomplete."
-        let output = result.output + (unchanged ? "" : changedNotice)
-        let verdict = Verdict(passed: result.ok && unchanged, output: boundedVerificationOutput(output),
+        let currentTask = try store?.loadPlan().task(taskID)
+        let currentContract = currentTask?.effectiveVerificationContract
+        let contractSatisfied = contract == currentContract
+            && workContractDigest == currentTask?.workContract?.digest
+            && (contract.map { $0.accepts(receipt, stamp: stamp) } ?? true)
+        let contractNotice = "\n[throttle] Required test evidence is missing, incomplete, or the contract changed."
+        let output = result.output + (unchanged ? "" : changedNotice) + (contractSatisfied ? "" : contractNotice)
+        let verdict = Verdict(passed: result.ok && unchanged && contractSatisfied,
+                              output: boundedVerificationOutput(output),
                               stamp: stamp)
 
         try store?.append(TaskEvent(seq: 0, timestamp: Date(), author: author, type: .checked,

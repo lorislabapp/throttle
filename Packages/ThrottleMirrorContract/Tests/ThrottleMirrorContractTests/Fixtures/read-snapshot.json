@@ -1,0 +1,30 @@
+{
+  "deviceName": "Synthetic Mac",
+  "fiveHour": {
+    "resetsAt": "2027-01-15T08:00:00Z",
+    "utilization": 25
+  },
+  "publishedAt": "2027-01-15T07:43:20Z",
+  "savedTokensThisWeek": 42,
+  "schemaVersion": 2,
+  "sessionCount": 1,
+  "sevenDay": {
+    "utilization": 50
+  },
+  "sevenDaySonnet": {
+    "resetsAt": "2027-01-15T08:00:00Z",
+    "utilization": 25
+  },
+  "tabs": [
+    {
+      "id": "synthetic-tab",
+      "isLive": true,
+      "model": "example-model",
+      "needsInput": true,
+      "projectName": "Example",
+      "state": "waiting"
+    }
+  ],
+  "weeklyCostEUR": 1.25,
+  "weeklyTokens": 1234
+}
