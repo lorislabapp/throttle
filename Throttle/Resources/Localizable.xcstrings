@@ -8128,6 +8128,54 @@
     "transcript not found or holds no user request": {
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "transcription introuvable ou sans demande utilisateur" } } }
+    },
+    "Away %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Absence : %@" } } }
+    },
+    "question": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "question" } } }
+    },
+    "stopped": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "arrêtée" } } }
+    },
+    "limit %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "limite %@" } } }
+    },
+    "Hide details": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Masquer les détails" } } }
+    },
+    "Details": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Détails" } } }
+    },
+    "Expanded": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Déplié" } } }
+    },
+    "Collapsed": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Replié" } } }
+    },
+    "%lld moved on": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld ont avancé" } } }
+    },
+    "%lld quiet": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld calme(s)" } } }
+    },
+    "%lld moved on · %lld quiet": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld ont avancé · %lld calme(s)" } } }
+    },
+    "+%lld waiting": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "+%lld en attente" } } }
     }
   },
   "version": "1.0"

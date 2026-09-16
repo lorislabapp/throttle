@@ -115,6 +115,24 @@ final class SessionReentryDigestTests: XCTestCase {
         )).spentWhileAwayEUR, "an unknown cost is not reported as zero")
     }
 
+    func test_onlyBlockedSessionsCarryAChipWord() throws {
+        let digest = try XCTUnwrap(SessionReentryService.digest(
+            snapshots: [snapshot("A", needsInput: true, question: "Go?"), snapshot("B", activeAgo: 60)],
+            awaySince: awaySince, now: now
+        ))
+        XCTAssertEqual(digest.items(in: .waitingOnYou).first?.badge, String(localized: "question"))
+        XCTAssertNil(digest.items(in: .moved).first?.badge, "progress never earns a chip")
+    }
+
+    @MainActor
+    func test_theCollapsedStripCountsWhatDoesNotNeedYou() {
+        XCTAssertNil(MultiCockpitRoot.restLine(moved: 0, quiet: 0))
+        XCTAssertEqual(MultiCockpitRoot.restLine(moved: 2, quiet: 0), String(localized: "\(2) moved on"))
+        XCTAssertEqual(MultiCockpitRoot.restLine(moved: 0, quiet: 3), String(localized: "\(3) quiet"))
+        XCTAssertEqual(MultiCockpitRoot.restLine(moved: 1, quiet: 3),
+                       String(localized: "\(1) moved on · \(3) quiet"))
+    }
+
     @MainActor
     func test_theQuietLineFoldsRatherThanListing() {
         XCTAssertEqual(MultiCockpitRoot.quietLine([]), "")
