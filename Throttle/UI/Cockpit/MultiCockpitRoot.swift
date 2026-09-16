@@ -19,6 +19,7 @@ struct MultiCockpitRoot: View {
     @State var activeStyle = OutputStyleManager.activeName()
     @State var hoveredSession: UUID?
     @State var expandedFeed: UUID?
+    @State var reentryExpanded = false
     @State var remoteSvc = RemoteSessionsService.shared   // edge-agent sessions in the rail
     @State var selectedRemoteID: String?  // remote session shown over the terminal area
     @State var railFilter = ""            // rail search — shown only when crowded

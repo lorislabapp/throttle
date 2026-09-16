@@ -54,6 +54,8 @@ struct SessionReentryDigest: Sendable, Equatable {
         /// Why it is in this tier, when that is a judgement rather than a fact.
         let note: String?
         let since: Date
+        /// A word or two for the collapsed strip, when the tier needs one.
+        var badge: String?
     }
 
     let awaySince: Date
@@ -125,28 +127,29 @@ enum SessionReentryService {
         _ snapshot: SessionReentrySnapshot, awaySince: Date, now: Date
     ) -> SessionReentryDigest.Item {
         func make(_ tier: SessionReentryDigest.Tier, _ headline: String,
-                  note: String? = nil, since: Date) -> SessionReentryDigest.Item {
+                  note: String? = nil, badge: String? = nil, since: Date) -> SessionReentryDigest.Item {
             SessionReentryDigest.Item(id: snapshot.id, name: snapshot.name, tier: tier,
-                                      headline: headline, note: note, since: since)
+                                      headline: headline, note: note, since: since, badge: badge)
         }
 
         if snapshot.needsInput, let question = snapshot.latestQuestion {
             let asked = snapshot.questionAskedAt ?? snapshot.lastActivityAt
             let waited = SessionReentryDigest.duration(now.timeIntervalSince(asked))
             return make(.waitingOnYou, String(localized: "Asked: \(Self.oneLine(question))"),
-                        note: String(localized: "waiting \(waited)"), since: asked)
+                        note: String(localized: "waiting \(waited)"),
+                        badge: String(localized: "question"), since: asked)
         }
         if let issue = snapshot.stopIssue {
             return make(.waitingOnYou, Self.oneLine(issue),
                         note: String(localized: "the session recorded this and stopped"),
-                        since: snapshot.lastActivityAt)
+                        badge: String(localized: "stopped"), since: snapshot.lastActivityAt)
         }
         // A limit that has already lifted is history, not a thing to resolve.
         if let until = snapshot.rateLimitedUntil, until > now {
             let time = until.formatted(date: .omitted, time: .shortened)
             return make(.waitingOnYou, String(localized: "Rate limited until \(time)"),
                         note: String(localized: "nothing to do but wait or switch model"),
-                        since: snapshot.lastActivityAt)
+                        badge: String(localized: "limit \(time)"), since: snapshot.lastActivityAt)
         }
         if let tool = snapshot.repeatedTool, snapshot.repeats >= loopMentionThreshold {
             return make(.moved, String(localized: "Repeated \(tool) \(snapshot.repeats) times with nothing written"),
