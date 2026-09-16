@@ -73,6 +73,10 @@ final class ResearchVaultWorkbenchModel {
     let isIsolatedHost = AppDelegate.isIsolatedHost
     let client: ResearchVaultClient?
     var activeNotebookLMImportJob: NotebookLMImportJob?
+    /// The notebook a sync run is exporting right now; nil between runs.
+    var syncingNotebookID: String?
+    /// Set by Stop: the current source finishes, the remaining notebooks wait.
+    var syncStopRequested = false
     var folderMonitor: ResearchVaultFolderMonitor?
 
     var selectedSpace: ResearchVaultSpace {

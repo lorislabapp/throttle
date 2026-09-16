@@ -8346,6 +8346,74 @@
     "Source: %@": {
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Source : %@" } } }
+    },
+    "Choose the notebooks Throttle re-exports when you ask. Nothing is automatic.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisissez les carnets que Throttle ré-exporte quand vous le demandez. Rien n’est automatique." } } }
+    },
+    "Sync %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Synchroniser %@" } } }
+    },
+    "Sync of %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Synchronisation de %@" } } }
+    },
+    "Last sync: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Dernière synchro : %@" } } }
+    },
+    "Syncing…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Synchronisation…" } } }
+    },
+    "Sync %lld notebook(s)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Synchroniser %lld carnet(s)" } } }
+    },
+    "Stop": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Arrêter" } } }
+    },
+    "In progress": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "En cours" } } }
+    },
+    "In progress — %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "En cours — %@" } } }
+    },
+    "Waiting": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "En attente" } } }
+    },
+    "Never": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Jamais" } } }
+    },
+    "Stopping after the current source. Nothing already received is lost.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Arrêt après la source en cours. Rien de ce qui est déjà reçu n’est perdu." } } }
+    },
+    "You can stop at any time; nothing already received is lost.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vous pouvez arrêter à tout moment ; rien de ce qui est déjà reçu n’est perdu." } } }
+    },
+    "Unavailable: NotebookLM export is not allowed. Turn it on below.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Indisponible : l’export NotebookLM n’est pas autorisé. Activez-le ci-dessous." } } }
+    },
+    "Select at least one notebook.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Cochez au moins un carnet." } } }
+    },
+    "Will re-export %@ to NotebookLM. What comes back is quarantined for review.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ré-exportera %@ vers NotebookLM. Ce qui revient sera placé en quarantaine pour relecture." } } }
+    },
+    "Required for Sync. What comes back is quarantined before it enters the vault.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Nécessaire pour synchroniser. Ce qui revient est placé en quarantaine avant d’entrer dans le coffre." } } }
     }
   },
   "version": "1.0"

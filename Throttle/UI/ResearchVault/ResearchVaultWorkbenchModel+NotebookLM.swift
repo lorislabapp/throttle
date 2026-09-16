@@ -126,29 +126,24 @@ extension ResearchVaultWorkbenchModel {
             return
         }
         isBusy = true
-        defer { isBusy = false }
+        syncStopRequested = false
+        defer {
+            isBusy = false
+            syncingNotebookID = nil
+            activeNotebookLMImportJob = nil
+            notebookLMImportProgress = .idle
+        }
         var inserted = 0
         var present = 0
         var failed: [String] = []
         for record in notebookSyncRecords {
-            do {
-                let folder = try ResearchVaultNotebookSyncStore.stagingFolder(for: record)
-                let accessed = folder.startAccessingSecurityScopedResource()
-                defer { if accessed { folder.stopAccessingSecurityScopedResource() } }
-                let gateway = try NotebookLMGatewayClient()
-                guard let notebook = try await gateway.listNotebooks()
-                    .first(where: { $0.id == record.notebookID }) else {
-                    failed.append(record.title)
-                    continue
-                }
-                let progress = try await NotebookLMImportJob(gateway: gateway)
-                    .run(notebook: notebook, stagingFolder: folder)
-                guard progress.phase == .complete else { failed.append(record.title); continue }
-                let counts = try await quarantineStagedImport(folder: folder, client: client)
+            if syncStopRequested { failed.append(record.title); continue }
+            syncingNotebookID = record.notebookID
+            notebookLMImportProgress = .idle
+            if let counts = await syncOneNotebook(record, client: client) {
                 inserted += counts.inserted
                 present += counts.present
-                updateSyncRecord(record.notebookID, sourceCount: progress.total)
-            } catch {
+            } else {
                 failed.append(record.title)
             }
         }
@@ -161,11 +156,51 @@ extension ResearchVaultWorkbenchModel {
             : summary + " " + String(localized: "Unfinished: \(failed.joined(separator: ", ")).")
     }
 
+    /// One notebook of a sync run. nil means it did not finish, which the run
+    /// reports by name instead of counting it as done.
+    private func syncOneNotebook(
+        _ record: ResearchVaultNotebookSyncRecord, client: ResearchVaultClient
+    ) async -> (inserted: Int, present: Int)? {
+        do {
+            let folder = try ResearchVaultNotebookSyncStore.stagingFolder(for: record)
+            let accessed = folder.startAccessingSecurityScopedResource()
+            defer { if accessed { folder.stopAccessingSecurityScopedResource() } }
+            let gateway = try NotebookLMGatewayClient()
+            guard let notebook = try await gateway.listNotebooks()
+                .first(where: { $0.id == record.notebookID }) else {
+                return nil
+            }
+            let job = NotebookLMImportJob(gateway: gateway)
+            activeNotebookLMImportJob = job
+            let monitor = Task { @MainActor in
+                while !Task.isCancelled {
+                    notebookLMImportProgress = await job.progress
+                    try? await Task.sleep(for: .milliseconds(250))
+                }
+            }
+            defer { monitor.cancel() }
+            let progress = try await job.run(notebook: notebook, stagingFolder: folder)
+            guard progress.phase == .complete else { return nil }
+            let counts = try await quarantineStagedImport(folder: folder, client: client)
+            updateSyncRecord(record.notebookID, sourceCount: progress.total)
+            return (counts.inserted, counts.present)
+        } catch {
+            return nil
+        }
+    }
+
     private func updateSyncRecord(_ notebookID: String, sourceCount: Int) {
         guard let index = notebookSyncRecords.firstIndex(where: { $0.notebookID == notebookID }) else { return }
         notebookSyncRecords[index].lastSyncedAt = Date()
         notebookSyncRecords[index].lastSourceCount = sourceCount
         try? ResearchVaultNotebookSyncStore.save(notebookSyncRecords)
+    }
+
+    /// Stop keeps what already arrived: the source in flight finishes, what was
+    /// staged is still quarantined on the next run, and nothing is discarded.
+    func stopNotebookSync() async {
+        syncStopRequested = true
+        await activeNotebookLMImportJob?.requestPause()
     }
 
     func pauseNotebookLMImport() async {

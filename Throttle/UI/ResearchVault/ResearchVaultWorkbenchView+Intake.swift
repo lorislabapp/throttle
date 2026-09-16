@@ -164,42 +164,6 @@ extension ResearchVaultWorkbenchView {
         }
     }
 
-    /// Sync is per notebook and never implicit: a notebook is re-exported only
-    /// while its own switch is on, into the folder it remembers, and what comes
-    /// back is quarantined like any other import.
-    @ViewBuilder
-    var notebookSyncControls: some View {
-        if !model.notebookLMNotebooks.isEmpty || !model.notebookSyncRecords.isEmpty {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("Keep in sync").font(.system(size: 12, weight: .semibold))
-                    Spacer()
-                    Button("Sync now") { Task { await model.syncEnabledNotebooks() } }
-                        .disabled(model.notebookSyncRecords.isEmpty || model.isBusy
-                            || !model.notebookLMSyncEnabled)
-                }
-                ForEach(model.notebookLMNotebooks) { notebook in
-                    let record = model.notebookSyncRecords.first { $0.notebookID == notebook.id }
-                    Toggle(isOn: Binding(
-                        get: { record != nil },
-                        set: { model.setNotebookSync($0, notebookID: notebook.id, title: notebook.title) }
-                    )) {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(notebook.title)
-                            Text(ResearchVaultStandingText.sync(record))
-                                .font(.system(size: 11).monospacedDigit())
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .toggleStyle(.switch)
-                    .accessibilityHint(Text("Re-exports this notebook when you press Sync now."))
-                }
-            }
-            .font(.system(size: 12))
-            .padding(.bottom, 10)
-        }
-    }
-
     /// A concatenated interpolation is not a localization key, so the two
     /// counts are read here and handed to one whole key.
     static func importStanding(_ progress: NotebookLMImportJob.Progress) -> String {
@@ -220,9 +184,14 @@ extension ResearchVaultWorkbenchView {
         ) {
             Task { await model.loadNotebookLMNotebooks() }
         }
-        Toggle("Allow NotebookLM export", isOn: $model.notebookLMSyncEnabled)
-            .toggleStyle(.checkbox)
-            .font(.system(size: 12))
+        Toggle(isOn: $model.notebookLMSyncEnabled) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Allow NotebookLM export").font(.system(size: 12, weight: .medium))
+                Text("Required for Sync. What comes back is quarantined before it enters the vault.")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+        }
+            .toggleStyle(.switch)
             .padding(.bottom, 8)
             .help("Opt in for this session. Throttle never exports in the background.")
         if !model.notebookLMNotebooks.isEmpty {
