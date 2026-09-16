@@ -8414,6 +8414,343 @@
     "Required for Sync. What comes back is quarantined before it enters the vault.": {
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Nécessaire pour synchroniser. Ce qui revient est placé en quarantaine avant d’entrer dans le coffre." } } }
+    },
+    "The plan could not be read": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le plan n’a pas pu être lu" } } }
+    },
+    "No plan for this project": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun plan pour ce projet" } } }
+    },
+    "The overview appears once the project has a plan in .throttle/plan.json.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La vue d’ensemble apparaît dès que le projet a un plan dans .throttle/plan.json." } } }
+    },
+    "Objective": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Objectif" } } }
+    },
+    "contract rev. %lld": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "contrat rév. %lld" } } }
+    },
+    "BLOCKING": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "BLOQUANT" } } }
+    },
+    "WISH": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "SOUHAIT" } } }
+    },
+    "No task carries a work contract yet, so there is no stated objective to show.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune tâche ne porte encore de contrat de travail : il n’y a pas d’objectif déclaré à afficher." } } }
+    },
+    "Verified progress": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Progrès vérifié" } } }
+    },
+    "Declared by agents: %lld%% · self-reported, not verified.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Déclaré par les agents : %lld %% · auto-déclaré, non vérifié." } } }
+    },
+    "Verified progress: %lld of %lld tasks integrated or verified.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Progrès vérifié : %lld tâches sur %lld intégrées ou vérifiées." } } }
+    },
+    "Pending decisions": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Décisions attendues" } } }
+    },
+    "Pending decisions · %lld": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Décisions attendues · %lld" } } }
+    },
+    "for you to settle": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "à trancher par vous" } } }
+    },
+    "Nothing waits on a decision.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune décision n’est en attente." } } }
+    },
+    "Opened": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouverte le" } } }
+    },
+    "Changes": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Changements" } } }
+    },
+    "No integration, verdict or block recorded yet.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune intégration, aucun verdict ni blocage enregistré pour l’instant." } } }
+    },
+    "Change": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Changement" } } }
+    },
+    "When": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Quand" } } }
+    },
+    "By": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Par" } } }
+    },
+    "Reason": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Motif" } } }
+    },
+    "Evidence · %lld receipts": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Preuves · %lld reçus" } } }
+    },
+    "log chain valid": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "chaîne du journal valide" } } }
+    },
+    "log chain broken": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "chaîne du journal rompue" } } }
+    },
+    "No verification has run yet.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune vérification n’a encore tourné." } } }
+    },
+    "%lld passed": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld réussis" } } }
+    },
+    "%lld failed": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld échoués" } } }
+    },
+    "%lld incomplete": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld incomplets" } } }
+    },
+    "Expected": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Attendus" } } }
+    },
+    "Passed": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Passés" } } }
+    },
+    "Skipped": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ignorés" } } }
+    },
+    "Ran": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Exécuté le" } } }
+    },
+    "Costs · 4 kinds, never added up": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Coûts · 4 natures, jamais additionnées" } } }
+    },
+    "Subscription quota": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Quota d’abonnement" } } }
+    },
+    "not measured per project": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "non mesuré par projet" } } }
+    },
+    "API invoice": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Facture API" } } }
+    },
+    "Throttle does not see your invoice": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Throttle ne voit pas votre facture" } } }
+    },
+    "Throttle internal estimate": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Estimation interne Throttle" } } }
+    },
+    "this month · local calculation, not the invoice": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "ce mois · calcul local, pas la facture" } } }
+    },
+    "Throttle budget reserve": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Réserve budgétaire Throttle" } } }
+    },
+    "of which %@ protected for verification": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "dont %@ protégés pour la vérification" } } }
+    },
+    "no budget ledger for this project": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "aucun budget configuré pour ce projet" } } }
+    },
+    "SHA": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "SHA" } } }
+    },
+    "Last check": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Dernière vérification" } } }
+    },
+    "passed": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "réussie" } } }
+    },
+    "failed": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "échouée" } } }
+    },
+    "Owner": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Responsable" } } }
+    },
+    "— (no receipt)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "— (aucun reçu)" } } }
+    },
+    "Task": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tâche" } } }
+    },
+    "%@ · open since %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%@ · ouverte depuis le %@" } } }
+    },
+    "overview.bucket.integrated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Integrated" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Intégrée" } }
+      }
+    },
+    "overview.bucket.verified": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Verified" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Vérifiée" } }
+      }
+    },
+    "overview.bucket.candidate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Awaiting review" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "En attente de relecture" } }
+      }
+    },
+    "overview.bucket.inProgress": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "In progress" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "En cours" } }
+      }
+    },
+    "overview.bucket.blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Blocked" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Bloquée" } }
+      }
+    },
+    "overview.bucket.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Failed" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Échouée" } }
+      }
+    },
+    "overview.bucket.pending": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Not started" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Pas commencée" } }
+      }
+    },
+    "overview.event.integrated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Integrated" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Intégrée" } }
+      }
+    },
+    "overview.event.verified": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Verified" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Vérifiée" } }
+      }
+    },
+    "overview.event.rejected": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Rejected" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Rejetée" } }
+      }
+    },
+    "overview.event.blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Blocked" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Bloquée" } }
+      }
+    },
+    "overview.event.unblocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Unblocked" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Débloquée" } }
+      }
+    },
+    "overview.event.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Failed" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Échouée" } }
+      }
+    },
+    "overview.proof.passed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Passed" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Réussi" } }
+      }
+    },
+    "overview.proof.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Failed" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Échoué" } }
+      }
+    },
+    "overview.proof.incomplete": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Incomplete" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Incomplet" } }
+      }
+    },
+    "overview.cost.known": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "known" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "connu" } }
+      }
+    },
+    "overview.cost.estimated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "estimated" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "estimé" } }
+      }
+    },
+    "overview.cost.unmeasured": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "not measured" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "non mesuré" } }
+      }
     }
   },
   "version": "1.0"

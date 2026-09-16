@@ -21,6 +21,7 @@ struct ProjectWindowRoot: View {
         case files     = "Files"
         case optimizer = "Optimizer"
         case assistant = "Assistant"
+        case overview  = "Overview"
         var id: String { rawValue }
 
         var localizedTitle: String {
@@ -29,6 +30,7 @@ struct ProjectWindowRoot: View {
             case .files:     return String(localized: "Files")
             case .optimizer: return String(localized: "Optimizer")
             case .assistant: return String(localized: "Assistant")
+            case .overview:  return String(localized: "Overview")
             }
         }
 
@@ -37,7 +39,7 @@ struct ProjectWindowRoot: View {
         /// the trial experience to non-Pro users.
         var requiresPro: Bool {
             switch self {
-            case .stats, .files: return false
+            case .stats, .files, .overview: return false
             case .optimizer, .assistant: return true
             }
         }
@@ -124,6 +126,8 @@ struct ProjectWindowRoot: View {
                         proLockPlaceholder(title: String(localized: "Optimizer"),
                                             message: String(localized: "Edit CLAUDE.md, settings.json, and hooks with backup, diff preview, and one-click rollback. Pro feature."))
                     }
+                case .overview:
+                    ProjectOverviewTab(project: project)
                 case .assistant:
                     if appState.isPro {
                         ProjectAssistantTab(project: project)
