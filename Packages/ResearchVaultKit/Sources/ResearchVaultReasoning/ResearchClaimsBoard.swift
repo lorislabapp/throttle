@@ -150,3 +150,46 @@ public enum ResearchClaimsProjector {
         }
     }
 }
+
+/// The board read as one list, riskiest first: what disagrees, then what
+/// moved under a claim, then what nobody settled, then what carries no weight,
+/// and proof last because proof asks nothing of the reader.
+///
+/// A contradiction is one row holding both sides, never two rows a reader has
+/// to find and line up. Each claim appears exactly once.
+public enum ResearchClaimsRiskList {
+    public enum Row: Equatable, Sendable {
+        case claim(ResearchClaim)
+        /// A contradicted claim with every claim recorded against it.
+        case opposed(ResearchClaim, against: [ResearchClaim])
+
+        public var lane: ResearchClaim.Lane {
+            switch self {
+            case .claim(let claim), .opposed(let claim, _): claim.lane
+            }
+        }
+    }
+
+    public static let lanes: [ResearchClaim.Lane] = [.contradiction, .drifted, .openQuestion, .hypothesis, .proof]
+
+    public static func rows(_ board: ResearchClaimsBoard, lane filter: ResearchClaim.Lane? = nil) -> [Row] {
+        let byID = Dictionary(board.claims.map { ($0.reference.stableID, $0) }, uniquingKeysWith: { first, _ in first })
+        var shown: Set<String> = []
+        var rows: [Row] = []
+        for lane in lanes where filter == nil || filter == lane {
+            for claim in board.claims(in: lane) where !shown.contains(claim.reference.stableID) {
+                shown.insert(claim.reference.stableID)
+                let against = claim.contradicts
+                    .compactMap { byID[$0.stableID] }
+                    .filter { !shown.contains($0.reference.stableID) }
+                if against.isEmpty {
+                    rows.append(.claim(claim))
+                } else {
+                    against.forEach { shown.insert($0.reference.stableID) }
+                    rows.append(.opposed(claim, against: against))
+                }
+            }
+        }
+        return rows
+    }
+}

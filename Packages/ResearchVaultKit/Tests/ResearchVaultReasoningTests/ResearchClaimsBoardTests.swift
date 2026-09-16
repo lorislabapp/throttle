@@ -133,6 +133,38 @@ struct ResearchClaimsBoardTests {
         ).claims(in: .proof).count == 2, "only a contradiction moves a claim")
     }
 
+    @Test("the risk list puts both sides of a contradiction in one row and proof last")
+    func riskList() throws {
+        let alpha = source("alpha")
+        let beta = source("beta", hash: "c")
+        let first = try receipt([
+            ResearchFinding(claim: "It is A", status: .verified, evidenceIDs: [alpha.id]),
+            ResearchFinding(claim: "Settled", status: .verified, evidenceIDs: [alpha.id]),
+            ResearchFinding(claim: "Maybe", status: .hypothesis, evidenceIDs: [])
+        ], sources: [alpha])
+        let second = try receipt(
+            [ResearchFinding(claim: "It is B", status: .verified, evidenceIDs: [beta.id])],
+            sources: [beta], offset: 10
+        )
+        let relation = ResearchRelationCandidate(
+            relation: .contradicts,
+            subject: ResearchClaimReference(receiptID: second.receiptID, findingIndex: 0),
+            object: ResearchClaimReference(receiptID: first.receiptID, findingIndex: 0)
+        )
+        let board = ResearchClaimsProjector.board(approvedReceipts: [first, second], relations: [relation])
+
+        let rows = ResearchClaimsRiskList.rows(board)
+        #expect(rows.map(\.lane) == [.contradiction, .hypothesis, .proof])
+        guard case .opposed(let claim, let against) = rows.first else {
+            Issue.record("a contradiction is one row holding both sides"); return
+        }
+        #expect(claim.text == "It is A")
+        #expect(against.map(\.text) == ["It is B"])
+
+        #expect(ResearchClaimsRiskList.rows(board, lane: .proof).map(\.lane) == [.proof])
+        #expect(ResearchClaimsRiskList.rows(board, lane: .drifted).isEmpty)
+    }
+
     @Test("a claim reference round-trips through its stable id and refuses anything else")
     func referenceParsing() throws {
         let reference = ResearchClaimReference(receiptID: "r-1", findingIndex: 3)
