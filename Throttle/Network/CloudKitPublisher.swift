@@ -184,7 +184,9 @@ private final class CloudKitDatabasePublisher: CloudKitPublishingBackend {
         defer { if operation === write { operation = nil } }
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                write.modifyRecordsResultBlock = { result in
+                // @Sendable: CloudKit calls this on its own queue. Without it the closure
+                // inherits this class's MainActor isolation and macOS 27 traps (SIGTRAP).
+                write.modifyRecordsResultBlock = { @Sendable result in
                     continuation.resume(with: result.mapError { $0 as Error })
                 }
                 container.privateCloudDatabase.add(write)
@@ -203,7 +205,9 @@ private final class CloudKitDatabasePublisher: CloudKitPublishingBackend {
         do {
             try await withTaskCancellationHandler {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                    write.modifyRecordsResultBlock = { result in
+                    // @Sendable: CloudKit calls this on its own queue. Without it the closure
+                // inherits this class's MainActor isolation and macOS 27 traps (SIGTRAP).
+                write.modifyRecordsResultBlock = { @Sendable result in
                         continuation.resume(with: result.mapError { $0 as Error })
                     }
                     container.privateCloudDatabase.add(write)
