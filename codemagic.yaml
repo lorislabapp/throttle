@@ -1,0 +1,89 @@
+# CI for the private product core (lorislabapp/throttle-core).
+#
+# GitHub Actions is disabled on this repository on purpose: private repos bill
+# macOS minutes, and the build-cost rule is $0. Codemagic's free tier covers
+# private repositories on macOS, so the same evidence gates run here instead.
+#
+# Every workflow is MANUAL. The free allowance is a monthly budget of macOS
+# minutes; a push must not spend it. Start a build from the Codemagic UI or API
+# when a revision is ready to be proven.
+#
+# The gates mirror .github/workflows/ci.yml exactly — same scripts, same
+# evidence directories, same pinned SwiftLint — so a result here means what it
+# means there. Nothing in this file signs, notarizes or publishes.
+
+definitions:
+  swiftlint: &swiftlint
+    name: Install SwiftLint (pinned)
+    script: |
+      set -euo pipefail
+      SWIFTLINT_VERSION=0.63.2
+      curl -fsSL -o /tmp/swiftlint.zip \
+        "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/portable_swiftlint.zip"
+      unzip -q -o /tmp/swiftlint.zip -d /tmp/swiftlint
+      INSTALLED="$(/tmp/swiftlint/swiftlint version)"
+      [ "$INSTALLED" = "$SWIFTLINT_VERSION" ] || { echo "SwiftLint $INSTALLED != $SWIFTLINT_VERSION"; exit 1; }
+      echo "THROTTLE_SWIFTLINT_BIN=/tmp/swiftlint/swiftlint" >> "$CM_ENV"
+  toolchain: &toolchain
+    name: Record the toolchain this evidence was produced with
+    script: |
+      xcodebuild -version
+      swift --version
+      sw_vers
+
+workflows:
+  core-evidence:
+    name: Core — validators, contracts and lint
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    environment:
+      xcode: latest
+    triggering:
+      events: []
+    scripts:
+      - *toolchain
+      - *swiftlint
+      - name: Python validator suite
+        script: python3 -B -m unittest discover -s scripts/tests -p 'test_*.py' -v
+      - name: SwiftLint ratchet
+        script: scripts/verify-swiftlint.sh
+      - name: Isolated core evidence
+        script: python3 -B scripts/verify-core-evidence.py --output-parent "$CM_BUILD_DIR/evidence/core"
+    artifacts:
+      - evidence/**
+
+  macos-tests:
+    name: macOS — full app-hosted suite
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    environment:
+      xcode: latest
+    triggering:
+      events: []
+    scripts:
+      - *toolchain
+      - name: Evidence validator tests
+        script: python3 -B -m unittest discover -s scripts/tests -p 'test_macos_evidence.py' -v
+      - name: macOS evidence run
+        script: python3 -B scripts/verify-macos-evidence.py --output-parent "$CM_BUILD_DIR/evidence/macos"
+    artifacts:
+      - evidence/**
+
+  vault-tests:
+    name: Research Vault — Debug and Release
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    environment:
+      xcode: latest
+    triggering:
+      events: []
+    scripts:
+      - *toolchain
+      - name: Vault evidence validator tests
+        script: python3 -B -m unittest discover -s scripts/tests -p 'test_vault_evidence.py' -v
+      - name: Vault suite, Debug
+        script: python3 -B scripts/verify-vault-tests.py --configuration debug --output-parent "$CM_BUILD_DIR/evidence/vault-debug"
+      - name: Vault suite, Release
+        script: python3 -B scripts/verify-vault-tests.py --configuration release --output-parent "$CM_BUILD_DIR/evidence/vault-release"
+    artifacts:
+      - evidence/**
