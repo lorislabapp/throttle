@@ -172,7 +172,10 @@ public enum ResearchClaimsRiskList {
 
     public static let lanes: [ResearchClaim.Lane] = [.contradiction, .drifted, .openQuestion, .hypothesis, .proof]
 
-    public static func rows(_ board: ResearchClaimsBoard, lane filter: ResearchClaim.Lane? = nil) -> [Row] {
+    /// `source` keeps only rows where some claim rests on that source id, so a
+    /// source's count opens exactly the claims it counted.
+    public static func rows(_ board: ResearchClaimsBoard, lane filter: ResearchClaim.Lane? = nil,
+                            source: String? = nil) -> [Row] {
         let byID = Dictionary(board.claims.map { ($0.reference.stableID, $0) }, uniquingKeysWith: { first, _ in first })
         var shown: Set<String> = []
         var rows: [Row] = []
@@ -190,6 +193,13 @@ public enum ResearchClaimsRiskList {
                 }
             }
         }
-        return rows
+        guard let source else { return rows }
+        return rows.filter { row in
+            let claims: [ResearchClaim] = switch row {
+            case .claim(let claim): [claim]
+            case .opposed(let claim, let against): [claim] + against
+            }
+            return claims.contains { $0.evidence.contains { $0.source.id == source } }
+        }
     }
 }

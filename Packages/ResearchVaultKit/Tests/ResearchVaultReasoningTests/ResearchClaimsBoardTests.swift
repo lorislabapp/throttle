@@ -163,6 +163,9 @@ struct ResearchClaimsBoardTests {
 
         #expect(ResearchClaimsRiskList.rows(board, lane: .proof).map(\.lane) == [.proof])
         #expect(ResearchClaimsRiskList.rows(board, lane: .drifted).isEmpty)
+        #expect(ResearchClaimsRiskList.rows(board, source: beta.id).count == 1,
+                "a source opens the contradiction it takes part in, both sides together")
+        #expect(ResearchClaimsRiskList.rows(board, source: alpha.id).map(\.lane) == [.contradiction, .proof])
     }
 
     @Test("a claim reference round-trips through its stable id and refuses anything else")

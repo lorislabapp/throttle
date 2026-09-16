@@ -36,7 +36,7 @@ extension ResearchVaultWorkbenchView {
     }
 
     private func claimsList(_ board: ResearchClaimsBoard) -> some View {
-        let rows = ResearchClaimsRiskList.rows(board, lane: claimsLane)
+        let rows = ResearchClaimsRiskList.rows(board, lane: claimsLane, source: claimsSourceID)
         return LazyVStack(alignment: .leading, spacing: 0) {
             if rows.isEmpty {
                 Text("Nothing in this lane.")
@@ -52,7 +52,7 @@ extension ResearchVaultWorkbenchView {
                     openQuestionRow(question)
                 }
             }
-            if claimsLane == nil, !board.emptyReceiptIDs.isEmpty {
+            if claimsLane == nil, claimsSourceID == nil, !board.emptyReceiptIDs.isEmpty {
                 footnote(String(localized: "\(board.emptyReceiptIDs.count) approved receipt(s) carry no finding."))
                     .padding(.vertical, 10)
             }
@@ -60,7 +60,7 @@ extension ResearchVaultWorkbenchView {
     }
 
     private func showsQuestions(_ board: ResearchClaimsBoard) -> Bool {
-        (claimsLane == nil || claimsLane == .openQuestion) && !board.openQuestions.isEmpty
+        claimsSourceID == nil && (claimsLane == nil || claimsLane == .openQuestion) && !board.openQuestions.isEmpty
     }
 
     // MARK: Filter
@@ -74,7 +74,19 @@ extension ResearchVaultWorkbenchView {
                              count: counts[lane] ?? 0, lane: lane)
             }
             Spacer(minLength: 8)
-            Text("Sorted by risk").font(.caption).foregroundStyle(.secondary)
+            if let sourceID = claimsSourceID {
+                Button { claimsSourceID = nil } label: {
+                    Label(Self.sourceFilterTitle(sourceID, board: board), systemImage: "xmark.circle.fill")
+                        .labelStyle(.titleAndIcon)
+                        .lineLimit(1).truncationMode(.middle)
+                        .frame(maxWidth: 180)
+                }
+                .buttonStyle(.plain)
+                .font(.caption)
+                .help(Text("Show claims from every source"))
+            } else {
+                Text("Sorted by risk").font(.caption).foregroundStyle(.secondary)
+            }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 10)
@@ -85,7 +97,10 @@ extension ResearchVaultWorkbenchView {
     private func filterButton(title: LocalizedStringKey, systemImage: String?, count: Int,
                               lane: ResearchClaim.Lane?) -> some View {
         let isOn = claimsLane == lane
-        return Button { claimsLane = lane } label: {
+        return Button {
+            claimsLane = lane
+            if lane == nil { claimsSourceID = nil }
+        } label: {
             HStack(spacing: 5) {
                 if let systemImage { Image(systemName: systemImage).imageScale(.small) }
                 Text(title)
@@ -276,6 +291,11 @@ extension ResearchVaultWorkbenchView {
             ? NSColor(srgbRed: 0.94, green: 0.63, blue: 0.24, alpha: 1)
             : NSColor(srgbRed: 0.60, green: 0.35, blue: 0.09, alpha: 1)
     })
+
+    static func sourceFilterTitle(_ sourceID: String, board: ResearchClaimsBoard) -> String {
+        let locator = board.claims.lazy.flatMap(\.evidence).first { $0.source.id == sourceID }?.source.locator
+        return String(localized: "Source: \(locator ?? sourceID)")
+    }
 
     static func shortDate(_ date: Date) -> String {
         date.formatted(date: .numeric, time: .omitted)

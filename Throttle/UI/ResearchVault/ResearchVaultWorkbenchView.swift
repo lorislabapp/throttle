@@ -19,6 +19,8 @@ struct ResearchVaultWorkbenchView: View {
     @State var pane = WorkbenchPane.evidence
     /// The claims board shows every lane until a reader narrows it to one.
     @State var claimsLane: ResearchClaim.Lane?
+    /// Set when a source's claim count opened the board: only its claims show.
+    @State var claimsSourceID: String?
     @State var showAddToVault = false
 
     enum WorkbenchPane: String, CaseIterable, Identifiable {

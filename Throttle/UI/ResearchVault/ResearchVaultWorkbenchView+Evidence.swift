@@ -20,35 +20,73 @@ extension ResearchVaultWorkbenchView {
                     .claimCountsBySource(receipts: scopedApprovedReceipts)
                 let latest = model.latestSourceHashes
                 List(rows, selection: $model.selectedSourceID) { row in
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(row.source.locator).font(.callout.weight(.semibold))
-                                .lineLimit(1).truncationMode(.middle)
-                            Spacer()
-                            Text(row.sensitivity.rawValue.uppercased())
-                                .font(.caption2.weight(.bold))
-                        }
-                        Text(
-                            "\(row.projectKey) · \(ResearchVaultWorkbenchProjection.origin(of: row.source))"
-                            + " · observed \(row.ageDays)d ago"
-                        )
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        Text("SHA-256 \(row.source.sha256)")
-                            .font(.caption2.monospaced())
-                            .foregroundStyle(.tertiary)
-                            .textSelection(.enabled)
-                        Text(ResearchVaultStandingText.source(
-                            claims: claimCounts[row.source.id] ?? 0,
-                            hasMoved: latest[row.source.id].map { $0 != row.source.sha256 } == true
-                        ))
-                        .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                    }
-                    .accessibilityElement(children: .combine)
+                    sourceRow(row, claims: claimCounts[row.source.id] ?? 0,
+                              hasMoved: latest[row.source.id].map { $0 != row.source.sha256 } == true)
                 }
             }
         }
+    }
+
+    /// A source reads as what it is worth: its claim count sits beside the title
+    /// as the button that opens those claims, and a changed hash is said in
+    /// words on the metadata line, never by colour alone.
+    private func sourceRow(_ row: ResearchVaultSourceRow, claims: Int, hasMoved: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                Text(row.source.locator).font(.callout.weight(.semibold))
+                    .lineLimit(1).truncationMode(.middle)
+                Spacer(minLength: 4)
+                Text(row.sensitivity.rawValue.uppercased())
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+                claimCountPill(claims, sourceID: row.source.id)
+            }
+            HStack(spacing: 0) {
+                Text(verbatim: "\(row.projectKey) · \(ResearchVaultWorkbenchProjection.origin(of: row.source))")
+                Text(" · observed \(row.ageDays)d ago")
+                if hasMoved {
+                    Text(verbatim: " · ")
+                    Text("changed since").fontWeight(.semibold).foregroundStyle(Self.driftTint)
+                }
+            }
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.secondary)
+            Text("SHA-256 \(row.source.sha256)")
+                .font(.caption2.monospaced())
+                .foregroundStyle(.secondary)
+                .lineLimit(1).truncationMode(.middle)
+                .textSelection(.enabled)
+        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(verbatim: row.source.locator + ". "
+            + ResearchVaultStandingText.source(claims: claims, hasMoved: hasMoved)))
+        .accessibilityAction(named: Text("Show claims")) { openClaims(forSource: row.source.id) }
+    }
+
+    /// Zero is a fact about the source, so it keeps a pill too, hollow and grey.
+    private func claimCountPill(_ count: Int, sourceID: String) -> some View {
+        Button { openClaims(forSource: sourceID) } label: {
+            Text(verbatim: "\(count)")
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(count == 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+                .frame(minWidth: 22)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 1)
+                .background(count == 0 ? Color.clear : Color.primary.opacity(0.08),
+                            in: RoundedRectangle(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(count == 0 ? Color.primary.opacity(0.12) : Color.clear))
+                .contentShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .help(Text("\(count) claim(s) — open the claims board on this source"))
+    }
+
+    private func openClaims(forSource sourceID: String) {
+        claimsSourceID = sourceID
+        claimsLane = nil
+        pane = .claims
     }
 
     var timelineList: some View {

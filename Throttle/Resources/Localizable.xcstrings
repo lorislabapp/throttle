@@ -8322,6 +8322,30 @@
         "en": { "stringUnit": { "state": "translated", "value": "Stale" } },
         "fr": { "stringUnit": { "state": "translated", "value": "Périmée" } }
       }
+    },
+    " · observed %lldd ago": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": " · observée il y a %lld j" } } }
+    },
+    "changed since": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "modifiée depuis" } } }
+    },
+    "Show claims": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Afficher les affirmations" } } }
+    },
+    "%lld claim(s) — open the claims board on this source": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld affirmation(s) — ouvrir le tableau sur cette source" } } }
+    },
+    "Show claims from every source": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Afficher les affirmations de toutes les sources" } } }
+    },
+    "Source: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Source : %@" } } }
     }
   },
   "version": "1.0"
