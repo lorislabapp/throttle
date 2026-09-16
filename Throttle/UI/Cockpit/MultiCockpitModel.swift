@@ -68,6 +68,9 @@ final class MultiCockpitModel {
         active?.clearAttention()
     } }
     var viewMode: ViewMode = .dashboard   // the cover page is the landing view
+    /// A task another window asked the Plan view to show. Consumed once by
+    /// `CockpitPlanView` after it binds to the active session's project.
+    var pendingPlanSelection: String?
     /// Split-pane side shell visible? Per-tab shell (each session's own zsh in its
     /// cwd), toggled with ⌘⇧T or the toolbar button. Off by default.
     var showShell = false

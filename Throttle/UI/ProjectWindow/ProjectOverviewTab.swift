@@ -17,6 +17,8 @@ struct ProjectOverviewTab: View {
     @State var loading = true
     /// Id of the node whose inspector is open: a task, decision, change or proof.
     @State var inspected: String?
+    /// The decision whose "Settle" sheet is open.
+    @State var settling: ProjectOverview.Decision?
 
     var body: some View {
         Group {
@@ -36,6 +38,14 @@ struct ProjectOverviewTab: View {
             }
         }
         .task(id: project.id) { await reload() }
+        .sheet(item: $settling) { decision in
+            if let root = project.url {
+                SettleDecisionSheet(decision: decision, projectRoot: root) {
+                    settling = nil
+                    Task { await reload() }
+                }
+            }
+        }
     }
 
     private func columns(_ overview: ProjectOverview) -> some View {
@@ -69,7 +79,7 @@ struct ProjectOverviewTab: View {
 
     // MARK: Loading
 
-    private func reload() async {
+    func reload() async {
         loading = true
         defer { loading = false }
         guard let root = project.url else {

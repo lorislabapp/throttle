@@ -8751,6 +8751,70 @@
         "en": { "stringUnit": { "state": "translated", "value": "not measured" } },
         "fr": { "stringUnit": { "state": "translated", "value": "non mesuré" } }
       }
+    },
+    "Show in Cockpit": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Afficher dans le Cockpit" } } }
+    },
+    "Opens the Plan view on this task.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouvre la vue Plan sur cette tâche." } } }
+    },
+    "No cockpit session works in this project.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune session du Cockpit ne travaille dans ce projet." } } }
+    },
+    "Settle…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Trancher…" } } }
+    },
+    "an agent of another family": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "un agent d’une autre famille" } } }
+    },
+    "none — your decision counts": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "aucune — votre décision compte" } } }
+    },
+    "Settle a decision": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Trancher une décision" } } }
+    },
+    "Your choice": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Votre choix" } } }
+    },
+    "e.g. Keep MIT": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "ex. Garder MIT" } } }
+    },
+    "Why": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Pourquoi" } } }
+    },
+    "This decision is marked SOTA: an agent of another model family reviews it before it counts.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Décision marquée SOTA : un agent d’une autre famille de modèles la relit avant qu’elle compte." } } }
+    },
+    "Your decision counts as soon as it is recorded.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Votre décision compte dès qu’elle est enregistrée." } } }
+    },
+    "It is written to the task's log with your name and the time, and cannot be edited afterwards.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Elle est écrite dans le journal de la tâche avec votre nom et l’heure, et ne peut plus être modifiée ensuite." } } }
+    },
+    "Record decision": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Enregistrer la décision" } } }
+    },
+    "This decision is no longer open: someone or something has already taken it.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Cette décision n’est plus ouverte : quelqu’un ou un agent l’a déjà prise." } } }
+    },
+    "The decision could not be recorded: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La décision n’a pas pu être enregistrée : %@" } } }
     }
   },
   "version": "1.0"

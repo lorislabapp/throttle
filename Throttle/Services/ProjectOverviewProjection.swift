@@ -53,6 +53,10 @@ struct ProjectOverview: Equatable, Sendable {
         let title: String
         let openedAt: Date?
         let bucket: Bucket
+        /// A gated decision is reviewed by an agent of another family before it counts.
+        let sotaGate: Bool
+        /// Only an untouched decision can be settled from the overview.
+        var isOpen: Bool { bucket == .pending }
     }
 
     struct Change: Equatable, Sendable, Identifiable {
@@ -120,7 +124,10 @@ struct ProjectOverview: Equatable, Sendable {
                 plan.task(item.id)?.kind == .decision
                     && ![.verified, .integrated, .failed].contains(item.bucket)
             }
-            .map { Decision(id: $0.id, title: $0.title, openedAt: $0.state.startedAt, bucket: $0.bucket) }
+            .map { item in
+                Decision(id: item.id, title: item.title, openedAt: item.state.startedAt, bucket: item.bucket,
+                         sotaGate: plan.task(item.id)?.sotaGate ?? false)
+            }
 
         return ProjectOverview(
             planTitle: plan.title,

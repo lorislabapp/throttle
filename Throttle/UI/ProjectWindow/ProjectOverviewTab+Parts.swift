@@ -64,6 +64,34 @@ extension ProjectOverviewTab {
         .frame(width: 300, alignment: .leading)
     }
 
+    /// "Show in Cockpit" needs a session working in this project, because the
+    /// Plan view reads its project from the active session; without one the
+    /// button says why it cannot help instead of opening another project's plan.
+    func inspectorActions(taskID: String, settle decision: ProjectOverview.Decision?) -> some View {
+        let root = project.url
+        let cockpit = MultiCockpitModel.shared
+        let hasSession = root.map { cockpit.session(atProjectRoot: $0) != nil } ?? false
+        return HStack(spacing: 8) {
+            Button("Show in Cockpit") {
+                guard let root, cockpit.focusPlan(projectRoot: root, taskID: taskID) else { return }
+                inspected = nil
+                CockpitWindowController.shared.show(appState: appState)
+            }
+            .disabled(!hasSession)
+            .help(hasSession ? Text("Opens the Plan view on this task.")
+                             : Text("No cockpit session works in this project."))
+            if let decision {
+                Button("Settle…") {
+                    inspected = nil
+                    settling = decision
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .controlSize(.small)
+        .padding([.horizontal, .bottom], 14)
+    }
+
     func taskInspector(_ task: ProjectOverview.TaskItem) -> some View {
         let state = task.state
         var rows: [(String, String)] = []

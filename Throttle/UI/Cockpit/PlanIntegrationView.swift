@@ -53,16 +53,27 @@ struct CockpitPlanView: View {
                 }
                 planModel.bind(to: activeProjectRoot)
                 planModel.orient(to: cockpit.active?.missionID)
+                applyPendingSelection()
             }
             .onChange(of: cockpit.activeID) { _, _ in
                 planModel.bind(to: activeProjectRoot)
                 planModel.orient(to: cockpit.active?.missionID)
+                applyPendingSelection()
             }
+            .onChange(of: cockpit.pendingPlanSelection) { _, _ in applyPendingSelection() }
             .sheet(isPresented: $showInstructions) {
                 if let root = activeProjectRoot {
                     ProjectInstructionReviewView(projectRoot: root)
                 }
             }
+    }
+
+    /// A selection asked for from outside (the project overview) wins over the
+    /// orientation the view would pick by itself, once.
+    private func applyPendingSelection() {
+        guard let taskID = cockpit.pendingPlanSelection else { return }
+        planModel.selection = taskID
+        cockpit.pendingPlanSelection = nil
     }
 
     private func launch(_ task: TaskLauncher.LaunchPlan) {

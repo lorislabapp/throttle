@@ -57,7 +57,12 @@ extension ProjectOverviewTab {
                             Text(verbatim: Self.taskShort(task))
                                 .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
                         }
-                    } inspector: { taskInspector(task) }
+                    } inspector: {
+                        VStack(alignment: .leading, spacing: 0) {
+                            taskInspector(task)
+                            inspectorActions(taskID: task.id, settle: nil)
+                        }
+                    }
                 }
             }
         }
@@ -100,9 +105,15 @@ extension ProjectOverviewTab {
                         Text(Self.decisionLine(decision)).font(.system(size: 11.5)).foregroundStyle(.secondary)
                     }
                 } inspector: {
-                    inspector(kind: String(localized: "Decision"), id: decision.id, title: decision.title,
-                              status: Self.bucketWord(decision.bucket),
-                              rows: [(String(localized: "Opened"), decision.openedAt.map(Self.shortDate) ?? "—")])
+                    VStack(alignment: .leading, spacing: 0) {
+                        inspector(kind: String(localized: "Decision"), id: decision.id, title: decision.title,
+                                  status: Self.bucketWord(decision.bucket),
+                                  rows: [(String(localized: "Opened"), decision.openedAt.map(Self.shortDate) ?? "—"),
+                                         (String(localized: "Review"), decision.sotaGate
+                                            ? String(localized: "an agent of another family")
+                                            : String(localized: "none — your decision counts"))])
+                        inspectorActions(taskID: decision.id, settle: decision.isOpen ? decision : nil)
+                    }
                 }
             }
         }
