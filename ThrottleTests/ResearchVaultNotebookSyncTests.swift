@@ -99,3 +99,25 @@ struct ResearchVaultNotebookSyncTests {
         #expect(ResearchVaultStandingText.sync(ran).contains("7 source(s)"))
     }
 }
+
+@MainActor
+@Suite("Notebook sync wording")
+struct ResearchVaultNotebookSyncWordingTests {
+    @Test("the sentence beside Sync names the one thing in the way, or exactly what will happen")
+    func sentence() {
+        let blocked = ResearchVaultWorkbenchView.syncSentence(
+            exportAllowed: false, syncing: false, stopping: false, titles: ["Trottle"])
+        #expect(blocked == String(localized: "Unavailable: NotebookLM export is not allowed. Turn it on below."))
+        #expect(ResearchVaultWorkbenchView.syncSentence(
+            exportAllowed: true, syncing: false, stopping: false, titles: [])
+            == String(localized: "Select at least one notebook."))
+        let ready = ResearchVaultWorkbenchView.syncSentence(
+            exportAllowed: true, syncing: false, stopping: false, titles: ["Trottle", "LLM infra"])
+        #expect(ready.contains("Trottle") && ready.contains("LLM infra"))
+    }
+
+    @Test("an unselected notebook shows a dash, a selected one never run says Never")
+    func lastSync() {
+        #expect(ResearchVaultWorkbenchView.lastSyncLabel(nil) == "—")
+    }
+}
