@@ -16,7 +16,7 @@ extension MultiCockpitRoot {
                 Text(digest.headline)
                     .font(.system(size: 12, weight: .semibold))
                 if let spent = digest.spentWhileAwayEUR, spent > 0 {
-                    Text(String(format: "€%.2f spent", spent))
+                    Text(verbatim: String(localized: "€\(String(format: "%.2f", spent)) spent"))
                         .font(.system(size: 11).monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
@@ -79,9 +79,9 @@ extension MultiCockpitRoot {
 
     static func tierTitle(_ tier: SessionReentryDigest.Tier) -> String {
         switch tier {
-        case .waitingOnYou: return "WAITING ON YOU"
-        case .moved: return "MOVED ON"
-        case .quiet: return "QUIET"
+        case .waitingOnYou: return String(localized: "WAITING ON YOU")
+        case .moved: return String(localized: "MOVED ON")
+        case .quiet: return String(localized: "QUIET")
         }
     }
 
@@ -89,8 +89,8 @@ extension MultiCockpitRoot {
     /// returning reader can safely skip.
     static func quietLine(_ names: [String]) -> String {
         guard !names.isEmpty else { return "" }
-        if names.count <= 3 { return "Quiet: " + names.joined(separator: ", ") }
-        return "Quiet: " + names.prefix(3).joined(separator: ", ")
-            + " and \(names.count - 3) more"
+        if names.count <= 3 { return String(localized: "Quiet: \(names.joined(separator: ", "))") }
+        let shown = names.prefix(3).joined(separator: ", ")
+        return String(localized: "Quiet: \(shown) and \(names.count - 3) more")
     }
 }
