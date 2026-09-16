@@ -8815,6 +8815,13 @@
     "The decision could not be recorded: %@": {
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La décision n’a pas pu être enregistrée : %@" } } }
+    },
+    "cockpit.view.plan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Plan" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Plan" } }
+      }
     }
   },
   "version": "1.0"

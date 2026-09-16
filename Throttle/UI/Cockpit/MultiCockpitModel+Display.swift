@@ -13,7 +13,9 @@ extension MultiCockpitModel {
             case .tabs:      return String(localized: "Tabs")
             case .rail:      return String(localized: "Rail")
             case .mission:   return String(localized: "Overview")
-            case .portfolio, .plan: return self == .plan ? String(localized: "Plan") : String(localized: "Portfolio")
+            case .portfolio, .plan: return self == .plan
+                ? String(localized: "cockpit.view.plan", defaultValue: "Plan")   // a work plan, not a billing plan
+                : String(localized: "Portfolio")
             }
         }
     }
