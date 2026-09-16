@@ -1,0 +1,397 @@
+{
+  "canonicalization" : {
+    "absent_optional" : "a nil optional field is omitted, not written as null",
+    "dates" : "milliseconds since 1970-01-01T00:00:00Z as a JSON number",
+    "hash" : "lowercase hex SHA-256 of the canonical payload UTF-8 bytes",
+    "json" : "keys sorted, no insignificant whitespace, forward slashes not escaped, non-ASCII characters written literally",
+    "known_risk" : "fractional milliseconds are written with the platform's floating-point formatting; vectors use whole seconds so they stay portable",
+    "payload" : "every receipt field except contentHash"
+  },
+  "contract" : "Throttle Research Vault sealed receipt",
+  "reject_vectors" : [
+    {
+      "expect_error" : "unsupported_schema_version",
+      "name" : "unsupported-schema",
+      "receipt" : {
+        "agentID" : "agent-1",
+        "contentHash" : "d3e428bfd8d0993d81faeeb4be0001acf859d4a8cc3b4734781ce942f5f3b960",
+        "createdAt" : 1800000000000,
+        "findings" : [
+          {
+            "claim" : "The fixture exists.",
+            "evidenceIDs" : [
+              "s1"
+            ],
+            "status" : "VERIFIED"
+          }
+        ],
+        "openQuestions" : [
+
+        ],
+        "projectKey" : "example",
+        "question" : "What does the fixture claim?",
+        "receiptID" : "00000000-0000-4000-8000-000000000001",
+        "schemaVersion" : 2,
+        "sensitivity" : "internal",
+        "sessionID" : "session-1",
+        "sources" : [
+          {
+            "id" : "s1",
+            "kind" : "file",
+            "locator" : "notes/fixture.md",
+            "observedAt" : 1800000000000,
+            "sha256" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      }
+    },
+    {
+      "expect_error" : "invalid_receipt_id",
+      "name" : "receipt-id-not-a-uuid",
+      "receipt" : {
+        "agentID" : "agent-1",
+        "contentHash" : "d3e428bfd8d0993d81faeeb4be0001acf859d4a8cc3b4734781ce942f5f3b960",
+        "createdAt" : 1800000000000,
+        "findings" : [
+          {
+            "claim" : "The fixture exists.",
+            "evidenceIDs" : [
+              "s1"
+            ],
+            "status" : "VERIFIED"
+          }
+        ],
+        "openQuestions" : [
+
+        ],
+        "projectKey" : "example",
+        "question" : "What does the fixture claim?",
+        "receiptID" : "not-a-uuid",
+        "schemaVersion" : 1,
+        "sensitivity" : "internal",
+        "sessionID" : "session-1",
+        "sources" : [
+          {
+            "id" : "s1",
+            "kind" : "file",
+            "locator" : "notes/fixture.md",
+            "observedAt" : 1800000000000,
+            "sha256" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      }
+    },
+    {
+      "expect_error" : "invalid_project_key",
+      "name" : "project-key-uppercase",
+      "receipt" : {
+        "agentID" : "agent-1",
+        "contentHash" : "d3e428bfd8d0993d81faeeb4be0001acf859d4a8cc3b4734781ce942f5f3b960",
+        "createdAt" : 1800000000000,
+        "findings" : [
+          {
+            "claim" : "The fixture exists.",
+            "evidenceIDs" : [
+              "s1"
+            ],
+            "status" : "VERIFIED"
+          }
+        ],
+        "openQuestions" : [
+
+        ],
+        "projectKey" : "Example",
+        "question" : "What does the fixture claim?",
+        "receiptID" : "00000000-0000-4000-8000-000000000001",
+        "schemaVersion" : 1,
+        "sensitivity" : "internal",
+        "sessionID" : "session-1",
+        "sources" : [
+          {
+            "id" : "s1",
+            "kind" : "file",
+            "locator" : "notes/fixture.md",
+            "observedAt" : 1800000000000,
+            "sha256" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      }
+    },
+    {
+      "expect_error" : "empty_field",
+      "name" : "blank-question",
+      "receipt" : {
+        "agentID" : "agent-1",
+        "contentHash" : "d3e428bfd8d0993d81faeeb4be0001acf859d4a8cc3b4734781ce942f5f3b960",
+        "createdAt" : 1800000000000,
+        "findings" : [
+          {
+            "claim" : "The fixture exists.",
+            "evidenceIDs" : [
+              "s1"
+            ],
+            "status" : "VERIFIED"
+          }
+        ],
+        "openQuestions" : [
+
+        ],
+        "projectKey" : "example",
+        "question" : "   ",
+        "receiptID" : "00000000-0000-4000-8000-000000000001",
+        "schemaVersion" : 1,
+        "sensitivity" : "internal",
+        "sessionID" : "session-1",
+        "sources" : [
+          {
+            "id" : "s1",
+            "kind" : "file",
+            "locator" : "notes/fixture.md",
+            "observedAt" : 1800000000000,
+            "sha256" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      }
+    },
+    {
+      "expect_error" : "invalid_sha256",
+      "name" : "source-hash-not-sha256",
+      "receipt" : {
+        "agentID" : "agent-1",
+        "contentHash" : "d3e428bfd8d0993d81faeeb4be0001acf859d4a8cc3b4734781ce942f5f3b960",
+        "createdAt" : 1800000000000,
+        "findings" : [
+          {
+            "claim" : "The fixture exists.",
+            "evidenceIDs" : [
+              "s1"
+            ],
+            "status" : "VERIFIED"
+          }
+        ],
+        "openQuestions" : [
+
+        ],
+        "projectKey" : "example",
+        "question" : "What does the fixture claim?",
+        "receiptID" : "00000000-0000-4000-8000-000000000001",
+        "schemaVersion" : 1,
+        "sensitivity" : "internal",
+        "sessionID" : "session-1",
+        "sources" : [
+          {
+            "id" : "s1",
+            "kind" : "file",
+            "locator" : "notes/fixture.md",
+            "observedAt" : 1800000000000,
+            "sha256" : "ABC"
+          }
+        ]
+      }
+    },
+    {
+      "expect_error" : "evidence_required",
+      "name" : "verified-without-evidence",
+      "receipt" : {
+        "agentID" : "agent-1",
+        "contentHash" : "d3e428bfd8d0993d81faeeb4be0001acf859d4a8cc3b4734781ce942f5f3b960",
+        "createdAt" : 1800000000000,
+        "findings" : [
+          {
+            "claim" : "The fixture exists.",
+            "evidenceIDs" : [
+
+            ],
+            "status" : "VERIFIED"
+          }
+        ],
+        "openQuestions" : [
+
+        ],
+        "projectKey" : "example",
+        "question" : "What does the fixture claim?",
+        "receiptID" : "00000000-0000-4000-8000-000000000001",
+        "schemaVersion" : 1,
+        "sensitivity" : "internal",
+        "sessionID" : "session-1",
+        "sources" : [
+          {
+            "id" : "s1",
+            "kind" : "file",
+            "locator" : "notes/fixture.md",
+            "observedAt" : 1800000000000,
+            "sha256" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      }
+    },
+    {
+      "expect_error" : "missing_evidence",
+      "name" : "evidence-to-unknown-source",
+      "receipt" : {
+        "agentID" : "agent-1",
+        "contentHash" : "d3e428bfd8d0993d81faeeb4be0001acf859d4a8cc3b4734781ce942f5f3b960",
+        "createdAt" : 1800000000000,
+        "findings" : [
+          {
+            "claim" : "The fixture exists.",
+            "evidenceIDs" : [
+              "s9"
+            ],
+            "status" : "VERIFIED"
+          }
+        ],
+        "openQuestions" : [
+
+        ],
+        "projectKey" : "example",
+        "question" : "What does the fixture claim?",
+        "receiptID" : "00000000-0000-4000-8000-000000000001",
+        "schemaVersion" : 1,
+        "sensitivity" : "internal",
+        "sessionID" : "session-1",
+        "sources" : [
+          {
+            "id" : "s1",
+            "kind" : "file",
+            "locator" : "notes/fixture.md",
+            "observedAt" : 1800000000000,
+            "sha256" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      }
+    },
+    {
+      "expect_error" : "content_hash_mismatch",
+      "name" : "tampered-claim",
+      "receipt" : {
+        "agentID" : "agent-1",
+        "contentHash" : "d3e428bfd8d0993d81faeeb4be0001acf859d4a8cc3b4734781ce942f5f3b960",
+        "createdAt" : 1800000000000,
+        "findings" : [
+          {
+            "claim" : "The fixture exists, and more.",
+            "evidenceIDs" : [
+              "s1"
+            ],
+            "status" : "VERIFIED"
+          }
+        ],
+        "openQuestions" : [
+
+        ],
+        "projectKey" : "example",
+        "question" : "What does the fixture claim?",
+        "receiptID" : "00000000-0000-4000-8000-000000000001",
+        "schemaVersion" : 1,
+        "sensitivity" : "internal",
+        "sessionID" : "session-1",
+        "sources" : [
+          {
+            "id" : "s1",
+            "kind" : "file",
+            "locator" : "notes/fixture.md",
+            "observedAt" : 1800000000000,
+            "sha256" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      }
+    }
+  ],
+  "schema_version" : 1,
+  "seal_vectors" : [
+    {
+      "canonical_payload_utf8" : "{\"agentID\":\"agent-1\",\"createdAt\":1800000000000,\"findings\":[{\"claim\":\"The fixture exists.\",\"evidenceIDs\":[\"s1\"],\"status\":\"VERIFIED\"}],\"openQuestions\":[],\"projectKey\":\"example\",\"question\":\"What does the fixture claim?\",\"receiptID\":\"00000000-0000-4000-8000-000000000001\",\"schemaVersion\":1,\"sensitivity\":\"internal\",\"sessionID\":\"session-1\",\"sources\":[{\"id\":\"s1\",\"kind\":\"file\",\"locator\":\"notes/fixture.md\",\"observedAt\":1800000000000,\"sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}]}",
+      "content_hash" : "d3e428bfd8d0993d81faeeb4be0001acf859d4a8cc3b4734781ce942f5f3b960",
+      "name" : "minimal",
+      "note" : "One verified finding, one source, no parent, no open question, whole-second dates.",
+      "receipt" : {
+        "agentID" : "agent-1",
+        "contentHash" : "d3e428bfd8d0993d81faeeb4be0001acf859d4a8cc3b4734781ce942f5f3b960",
+        "createdAt" : 1800000000000,
+        "findings" : [
+          {
+            "claim" : "The fixture exists.",
+            "evidenceIDs" : [
+              "s1"
+            ],
+            "status" : "VERIFIED"
+          }
+        ],
+        "openQuestions" : [
+
+        ],
+        "projectKey" : "example",
+        "question" : "What does the fixture claim?",
+        "receiptID" : "00000000-0000-4000-8000-000000000001",
+        "schemaVersion" : 1,
+        "sensitivity" : "internal",
+        "sessionID" : "session-1",
+        "sources" : [
+          {
+            "id" : "s1",
+            "kind" : "file",
+            "locator" : "notes/fixture.md",
+            "observedAt" : 1800000000000,
+            "sha256" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      }
+    },
+    {
+      "canonical_payload_utf8" : "{\"agentID\":\"agent-2\",\"createdAt\":1800000001000,\"findings\":[{\"claim\":\"Unicode is kept as written: é, 日本語.\",\"evidenceIDs\":[\"s1\",\"s2\"],\"status\":\"SUPPORTED\"},{\"claim\":\"Still open.\",\"evidenceIDs\":[],\"status\":\"OPEN\"}],\"openQuestions\":[\"Is the slash escaped?\",\"Is the order of keys stable?\"],\"parentAgentID\":\"agent-parent\",\"projectKey\":\"example.project_2\",\"question\":\"Café, 日本語 and a/slash — are they preserved?\",\"receiptID\":\"00000000-0000-4000-8000-000000000002\",\"schemaVersion\":1,\"sensitivity\":\"confidential\",\"sessionID\":\"session-2\",\"sources\":[{\"id\":\"s1\",\"kind\":\"url\",\"locator\":\"https://example.com/a/b?c=d\",\"observedAt\":1800000000000,\"sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},{\"id\":\"s2\",\"kind\":\"repository\",\"locator\":\"example/repo\",\"observedAt\":1800000060000,\"sha256\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}]}",
+      "content_hash" : "7ef3cf570f09d0a739b0b6852d9b141ab3a714e8a6e0ea8e816b508aa9e7a1d3",
+      "name" : "unicode-slashes-parent-open",
+      "note" : "Non-ASCII text, slashes left unescaped, a parent agent, an OPEN finding without evidence and open questions.",
+      "receipt" : {
+        "agentID" : "agent-2",
+        "contentHash" : "7ef3cf570f09d0a739b0b6852d9b141ab3a714e8a6e0ea8e816b508aa9e7a1d3",
+        "createdAt" : 1800000001000,
+        "findings" : [
+          {
+            "claim" : "Unicode is kept as written: é, 日本語.",
+            "evidenceIDs" : [
+              "s1",
+              "s2"
+            ],
+            "status" : "SUPPORTED"
+          },
+          {
+            "claim" : "Still open.",
+            "evidenceIDs" : [
+
+            ],
+            "status" : "OPEN"
+          }
+        ],
+        "openQuestions" : [
+          "Is the slash escaped?",
+          "Is the order of keys stable?"
+        ],
+        "parentAgentID" : "agent-parent",
+        "projectKey" : "example.project_2",
+        "question" : "Café, 日本語 and a/slash — are they preserved?",
+        "receiptID" : "00000000-0000-4000-8000-000000000002",
+        "schemaVersion" : 1,
+        "sensitivity" : "confidential",
+        "sessionID" : "session-2",
+        "sources" : [
+          {
+            "id" : "s1",
+            "kind" : "url",
+            "locator" : "https://example.com/a/b?c=d",
+            "observedAt" : 1800000000000,
+            "sha256" : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          {
+            "id" : "s2",
+            "kind" : "repository",
+            "locator" : "example/repo",
+            "observedAt" : 1800000060000,
+            "sha256" : "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ]
+      }
+    }
+  ]
+}
