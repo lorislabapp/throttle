@@ -17,9 +17,9 @@ enum RouterAdvisorService {
         case local, frontier, uncertain
         var label: String {
             switch self {
-            case .local: return "Local-safe (est)"
-            case .frontier: return "Frontier"
-            case .uncertain: return "Uncertain → Frontier"
+            case .local: return String(localized: "Local-safe (est)")
+            case .frontier: return String(localized: "Frontier")
+            case .uncertain: return String(localized: "Uncertain → Frontier")
             }
         }
     }
@@ -35,8 +35,8 @@ enum RouterAdvisorService {
         var line: String {
             let tokens = contextTokens >= 1_000
                 ? "\(contextTokens / 1_000)k" : "\(contextTokens)"
-            return String(format: "leaving this session strands %@ of warm context (~€%.2f to rebuild)",
-                          tokens, strandedEUR)
+            let price = String(format: "%.2f", strandedEUR)
+            return String(localized: "leaving this session strands \(tokens) of warm context (~€\(price) to rebuild)")
         }
     }
 

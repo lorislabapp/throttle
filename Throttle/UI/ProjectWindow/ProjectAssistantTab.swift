@@ -619,7 +619,7 @@ struct ProjectAssistantTab: View {
                     Button {
                         applyContext = ApplyContext(patches: patches)
                     } label: {
-                        Label("Review & apply \(patches.count) change\(patches.count == 1 ? "" : "s")",
+                        Label("Review & apply \(patches.count) change(s)",
                               systemImage: "wand.and.rays")
                     }
                     .buttonStyle(.borderedProminent)

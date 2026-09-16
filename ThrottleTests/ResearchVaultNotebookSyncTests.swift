@@ -86,12 +86,12 @@ struct ResearchVaultNotebookSyncTests {
 
     @Test("the row says what sync has actually done, never more")
     func standing() {
-        #expect(ResearchVaultStandingText.sync(nil) == "Not synced")
+        #expect(ResearchVaultStandingText.sync(nil) == String(localized: "Not synced"))
         let never = ResearchVaultNotebookSyncRecord(
             notebookID: "nb", title: "N", stagingBookmark: Data([1]),
             lastSyncedAt: nil, lastSourceCount: nil
         )
-        #expect(ResearchVaultStandingText.sync(never) == "On — never run yet")
+        #expect(ResearchVaultStandingText.sync(never) == String(localized: "On — never run yet"))
         let ran = ResearchVaultNotebookSyncRecord(
             notebookID: "nb", title: "N", stagingBookmark: Data([1]),
             lastSyncedAt: Date(timeIntervalSince1970: 1_700_000_000), lastSourceCount: 7

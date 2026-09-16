@@ -65,8 +65,8 @@ final class SessionReentryDigestTests: XCTestCase {
         ))
         let item = try XCTUnwrap(above.items.first)
         XCTAssertEqual(item.tier, .moved, "a heuristic is never something you must resolve")
-        XCTAssertEqual(item.note, "a guess worth checking, not a verdict")
-        XCTAssertTrue(item.headline.contains("12 times"))
+        XCTAssertEqual(item.note, String(localized: "a guess worth checking, not a verdict"))
+        XCTAssertTrue(item.headline.contains("12"))
     }
 
     func test_aLimitThatHasAlreadyLiftedIsHistory() throws {
@@ -77,27 +77,31 @@ final class SessionReentryDigestTests: XCTestCase {
         XCTAssertEqual(digest.items.first?.tier, .moved, "nothing is asked of a person for a limit that lifted")
     }
 
+    // Expectations go through the catalog too, so the test holds in any locale.
     func test_theHeadlineNamesOneThingAndTheAbsenceIsReadable() throws {
+        let oneHour = String(localized: "\(1)h")
         let waiting = try XCTUnwrap(SessionReentryService.digest(
             snapshots: [snapshot("A", needsInput: true, question: "Go?"), snapshot("B", activeAgo: 60)],
             awaySince: awaySince, now: now
         ))
-        XCTAssertEqual(waiting.headline, "1 session(s) waiting on you after 1h")
+        XCTAssertEqual(waiting.headline, String(localized: "\(1) session(s) waiting on you after \(oneHour)"))
 
         let moved = try XCTUnwrap(SessionReentryService.digest(
             snapshots: [snapshot("B", activeAgo: 60)],
             awaySince: now.addingTimeInterval(-5_400), now: now
         ))
-        XCTAssertEqual(moved.headline, "1 session(s) moved on while you were away, 1h30")
+        let ninetyMinutes = String(localized: "\(1)h\("30")")
+        XCTAssertEqual(moved.headline,
+                       String(localized: "\(1) session(s) moved on while you were away, \(ninetyMinutes)"))
 
         let quiet = try XCTUnwrap(SessionReentryService.digest(
             snapshots: [snapshot("C", activeAgo: 9_000)],
             awaySince: awaySince, now: now
         ))
-        XCTAssertEqual(quiet.headline, "Nothing moved in 1h")
+        XCTAssertEqual(quiet.headline, String(localized: "Nothing moved in \(oneHour)"))
         XCTAssertFalse(quiet.isWorthShowing, "a panel with nothing in it should not appear")
-        XCTAssertEqual(SessionReentryDigest.duration(30), "under a minute")
-        XCTAssertEqual(SessionReentryDigest.duration(59 * 60), "59 min")
+        XCTAssertEqual(SessionReentryDigest.duration(30), String(localized: "under a minute"))
+        XCTAssertEqual(SessionReentryDigest.duration(59 * 60), String(localized: "\(59) min"))
     }
 
     func test_spendWhileAwayIsSummedOnlyFromWhatIsKnown() throws {
@@ -114,10 +118,10 @@ final class SessionReentryDigestTests: XCTestCase {
     @MainActor
     func test_theQuietLineFoldsRatherThanListing() {
         XCTAssertEqual(MultiCockpitRoot.quietLine([]), "")
-        XCTAssertEqual(MultiCockpitRoot.quietLine(["A", "B"]), "Quiet: A, B")
+        XCTAssertEqual(MultiCockpitRoot.quietLine(["A", "B"]), String(localized: "Quiet: \("A, B")"))
         XCTAssertEqual(MultiCockpitRoot.quietLine(["A", "B", "C", "D", "E"]),
-                       "Quiet: A, B, C and 2 more")
-        XCTAssertEqual(MultiCockpitRoot.tierTitle(.waitingOnYou), "WAITING ON YOU")
+                       String(localized: "Quiet: \("A, B, C") and \(2) more"))
+        XCTAssertEqual(MultiCockpitRoot.tierTitle(.waitingOnYou), String(localized: "WAITING ON YOU"))
     }
 
     @MainActor

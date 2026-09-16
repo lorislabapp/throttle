@@ -86,9 +86,9 @@ struct ResearchVaultWorkbenchProjectionTests {
                 "a fragment on another host is not a NotebookLM origin")
 
         #expect(ResearchVaultStandingText.source(claims: 0, hasMoved: false)
-            == "No claim rests on it")
+            == String(localized: "No claim rests on it"))
         #expect(ResearchVaultStandingText.source(claims: 2, hasMoved: true)
-            == "2 claim(s) rest on it · content changed since")
+            == String(localized: "\(2) claim(s) rest on it") + " · " + String(localized: "content changed since"))
     }
 
     @Test("only evidence a receipt actually carries counts towards a source")

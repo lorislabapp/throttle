@@ -73,21 +73,21 @@ struct SessionReentryDigest: Sendable, Equatable {
         let moved = items(in: .moved).count
         let away = Self.duration(awayDuration)
         if waiting > 0 {
-            return String(format: "%d session(s) waiting on you after %@", waiting, away)
+            return String(localized: "\(waiting) session(s) waiting on you after \(away)")
         }
         if moved > 0 {
-            return String(format: "%d session(s) moved on while you were away, %@", moved, away)
+            return String(localized: "\(moved) session(s) moved on while you were away, \(away)")
         }
-        return String(format: "Nothing moved in %@", away)
+        return String(localized: "Nothing moved in \(away)")
     }
 
     static func duration(_ seconds: TimeInterval) -> String {
         let minutes = Int(seconds / 60)
-        if minutes < 1 { return "under a minute" }
-        if minutes < 60 { return "\(minutes) min" }
+        if minutes < 1 { return String(localized: "under a minute") }
+        if minutes < 60 { return String(localized: "\(minutes) min") }
         let hours = minutes / 60
-        let rest = minutes % 60
-        return rest == 0 ? "\(hours)h" : "\(hours)h\(String(format: "%02d", rest))"
+        let rest = String(format: "%02d", minutes % 60)
+        return minutes % 60 == 0 ? String(localized: "\(hours)h") : String(localized: "\(hours)h\(rest)")
     }
 }
 
@@ -132,30 +132,36 @@ enum SessionReentryService {
 
         if snapshot.needsInput, let question = snapshot.latestQuestion {
             let asked = snapshot.questionAskedAt ?? snapshot.lastActivityAt
-            return make(.waitingOnYou, "Asked: " + Self.oneLine(question),
-                        note: "waiting " + SessionReentryDigest.duration(now.timeIntervalSince(asked)),
-                        since: asked)
+            let waited = SessionReentryDigest.duration(now.timeIntervalSince(asked))
+            return make(.waitingOnYou, String(localized: "Asked: \(Self.oneLine(question))"),
+                        note: String(localized: "waiting \(waited)"), since: asked)
         }
         if let issue = snapshot.stopIssue {
             return make(.waitingOnYou, Self.oneLine(issue),
-                        note: "the session recorded this and stopped", since: snapshot.lastActivityAt)
+                        note: String(localized: "the session recorded this and stopped"),
+                        since: snapshot.lastActivityAt)
         }
         // A limit that has already lifted is history, not a thing to resolve.
         if let until = snapshot.rateLimitedUntil, until > now {
-            return make(.waitingOnYou, "Rate limited until " + until.formatted(date: .omitted, time: .shortened),
-                        note: "nothing to do but wait or switch model", since: snapshot.lastActivityAt)
+            let time = until.formatted(date: .omitted, time: .shortened)
+            return make(.waitingOnYou, String(localized: "Rate limited until \(time)"),
+                        note: String(localized: "nothing to do but wait or switch model"),
+                        since: snapshot.lastActivityAt)
         }
         if let tool = snapshot.repeatedTool, snapshot.repeats >= loopMentionThreshold {
-            return make(.moved, "Repeated \(tool) \(snapshot.repeats) times with nothing written",
-                        note: "a guess worth checking, not a verdict", since: snapshot.lastActivityAt)
+            return make(.moved, String(localized: "Repeated \(tool) \(snapshot.repeats) times with nothing written"),
+                        note: String(localized: "a guess worth checking, not a verdict"),
+                        since: snapshot.lastActivityAt)
         }
         if snapshot.lastActivityAt > awaySince {
-            let verb = snapshot.isLive ? "Still working" : "Worked"
-            return make(.moved, verb + ", last spoke "
-                + SessionReentryDigest.duration(now.timeIntervalSince(snapshot.lastActivityAt)) + " ago",
-                since: snapshot.lastActivityAt)
+            let ago = SessionReentryDigest.duration(now.timeIntervalSince(snapshot.lastActivityAt))
+            let headline = snapshot.isLive
+                ? String(localized: "Still working, last spoke \(ago) ago")
+                : String(localized: "Worked, last spoke \(ago) ago")
+            return make(.moved, headline, since: snapshot.lastActivityAt)
         }
-        return make(.quiet, snapshot.isHibernated ? "Hibernated" : "Silent the whole time",
+        return make(.quiet, snapshot.isHibernated
+                        ? String(localized: "Hibernated") : String(localized: "Silent the whole time"),
                     since: snapshot.lastActivityAt)
     }
 
