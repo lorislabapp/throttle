@@ -8176,6 +8176,152 @@
     "+%lld waiting": {
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "+%lld en attente" } } }
+    },
+    "Sorted by risk": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tri : risque décroissant" } } }
+    },
+    "Filter by status": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Filtrer par statut" } } }
+    },
+    "Nothing in this lane.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rien dans cette catégorie." } } }
+    },
+    "Re-check": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Revérifier" } } }
+    },
+    "Opens the source as it reads now.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouvre la source telle qu’elle est aujourd’hui." } } }
+    },
+    "AGAINST": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "CONTRE" } } }
+    },
+    "No source · %@ · %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune source · %@ · %@" } } }
+    },
+    "Supported": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Étayée" } } }
+    },
+    "Hypothesis": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Hypothèse" } } }
+    },
+    "Contradicted": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Contredite" } } }
+    },
+    "Stale": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Périmée" } } }
+    },
+    "Proof": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Preuve" } } }
+    },
+    "Contradiction": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Contradiction" } } }
+    },
+    "Unresolved": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Non résolu" } } }
+    },
+    "Source moved": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Source modifiée" } } }
+    },
+    "%lld approved receipt(s) carry no finding.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld reçu(s) approuvé(s) sans constat." } } }
+    },
+    "The source changed after the claim. Neither confirmed nor refuted.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La source a changé après l’affirmation. Ni confirmée ni infirmée." } } }
+    },
+    "Cites %@, which this receipt does not carry.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Cite %@, que ce reçu ne contient pas." } } }
+    },
+    "%@ → now %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%@ → désormais %@" } } }
+    },
+    "%lld claims · %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld affirmations · %@" } } }
+    },
+    "Re-check before reuse": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "À revérifier" } } }
+    },
+    "Nobody settled it": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Personne n’a tranché" } } }
+    },
+    "Carries no weight": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ne pèse rien" } } }
+    },
+    "%lld source(s) unchanged": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld source(s) inchangée(s)" } } }
+    },
+    "This source changed after the claim was made.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Cette source a changé après l’affirmation." } } }
+    },
+    "Opens the source panel on this entry.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouvre le panneau Sources sur cette entrée." } } }
+    },
+    "claim.status.verified": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Verified" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Vérifiée" } }
+      }
+    },
+    "claim.status.supported": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Supported" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Étayée" } }
+      }
+    },
+    "claim.status.hypothesis": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Hypothesis" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Hypothèse" } }
+      }
+    },
+    "claim.status.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Ouverte" } }
+      }
+    },
+    "claim.status.contradicted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Contradicted" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Contredite" } }
+      }
+    },
+    "claim.status.stale": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Stale" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Périmée" } }
+      }
     }
   },
   "version": "1.0"

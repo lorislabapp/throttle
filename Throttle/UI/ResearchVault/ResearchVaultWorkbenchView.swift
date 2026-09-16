@@ -3,6 +3,7 @@ import Observation
 import ResearchVaultIngestion
 import ResearchVaultIPCModel
 import ResearchVaultModel
+import ResearchVaultReasoning
 import ResearchVaultSynthesis
 import ResearchVaultXPCClient
 import ServiceManagement
@@ -16,6 +17,8 @@ struct ResearchVaultWorkbenchView: View {
     @State var showReasoningPromotionConfirmation = false
     @State var showReasoningRetractionConfirmation = false
     @State var pane = WorkbenchPane.evidence
+    /// The claims board shows every lane until a reader narrows it to one.
+    @State var claimsLane: ResearchClaim.Lane?
     @State var showAddToVault = false
 
     enum WorkbenchPane: String, CaseIterable, Identifiable {
