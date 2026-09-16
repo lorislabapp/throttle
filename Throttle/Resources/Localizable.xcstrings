@@ -6936,6 +6936,1192 @@
     "macOS could not change the Research Vault service.": {
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "macOS n’a pas pu modifier le service du Coffre de recherche." } } }
+    },
+    "INTEGRATION": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "INTÉGRATION" } } }
+    },
+    "INTEGRATED": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "INTÉGRÉE" } } }
+    },
+    "Worktree kept": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Worktree conservé" } } }
+    },
+    "Conflicts with the base in:": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Conflits avec la base dans :" } } }
+    },
+    "This git cannot say whether it merges cleanly (needs 2.38).": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Cette version de Git ne peut pas confirmer une fusion propre (version 2.38 requise)." } } }
+    },
+    "Allow this command": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Autoriser cette commande" } } }
+    },
+    "not started": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "non démarrée" } } }
+    },
+    "hibernated": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "en veille prolongée" } } }
+    },
+    "rate limited": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "limitée" } } }
+    },
+    "paused": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "en pause" } } }
+    },
+    "working": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "en cours" } } }
+    },
+    "waiting for you": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "en attente de vous" } } }
+    },
+    "idle": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "inactive" } } }
+    },
+    "Candidate": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Candidat" } } }
+    },
+    "Report": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rapport" } } }
+    },
+    "RECOMMENDATION": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "RECOMMANDATION" } } }
+    },
+    "No clear choice — pick one": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun choix clair — choisissez" } } }
+    },
+    "≈%@× the tokens of a single agent": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "≈%@× les tokens d’un seul agent" } } }
+    },
+    "Launch": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Lancer" } } }
+    },
+    "Choose…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisir…" } } }
+    },
+    "Change…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Changer…" } } }
+    },
+    "Taken by %@ a moment ago.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Pris par %@ il y a un instant." } } }
+    },
+    "No task %@ in this plan.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune tâche %@ dans ce plan." } } }
+    },
+    "PASS": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "RÉUSSI" } } }
+    },
+    "FAIL": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "ÉCHEC" } } }
+    },
+    "No active project": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun projet actif" } } }
+    },
+    "Select a Cockpit session to choose the project plan.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Sélectionnez une session du cockpit pour choisir le plan du projet." } } }
+    },
+    "PLAN": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "PLAN" } } }
+    },
+    "Show session": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Afficher la session" } } }
+    },
+    "No active session — this plan is not attached to a running agent.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune session active — ce plan n’est relié à aucun agent en cours." } } }
+    },
+    "NEXT STEP": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "ÉTAPE SUIVANTE" } } }
+    },
+    "This project's plan could not be read.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le plan de ce projet n’a pas pu être lu." } } }
+    },
+    "No plan in this project": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun plan dans ce projet" } } }
+    },
+    "Start from the idea": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Partir de l’idée" } } }
+    },
+    "Start from what's here": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Partir de l’existant" } } }
+    },
+    "This task's log was written outside Throttle — its hash chain does not verify.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le journal de cette tâche a été écrit hors de Throttle — sa chaîne de hachage ne se vérifie pas." } } }
+    },
+    "EVIDENCE": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "PREUVES" } } }
+    },
+    "REJECTED EVENTS": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "ÉVÉNEMENTS REJETÉS" } } }
+    },
+    "LOG": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "JOURNAL" } } }
+    },
+    "Select a task.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Sélectionnez une tâche." } } }
+    },
+    "Status": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "État" } } }
+    },
+    "Progress": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Progression" } } }
+    },
+    "Kind": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Type" } } }
+    },
+    "Held by": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Détenue par" } } }
+    },
+    "Mission": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Mission" } } }
+    },
+    "Suggested": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Suggéré" } } }
+    },
+    "Gate": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Gate" } } }
+    },
+    "Summary": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Résumé" } } }
+    },
+    "Rejected": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rejeté" } } }
+    },
+    "Verdict by": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Verdict par" } } }
+    },
+    "Chain": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Chaîne" } } }
+    },
+    "does not verify": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "ne se vérifie pas" } } }
+    },
+    "WHAT TO DO NOW": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "À FAIRE MAINTENANT" } } }
+    },
+    "Finish %@ — %@ — before this task can start.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Terminez %@ — %@ — avant de démarrer cette tâche." } } }
+    },
+    "Ready to start. Review the recommendation, then launch an agent.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Prête à démarrer. Vérifiez la recommandation, puis lancez un agent." } } }
+    },
+    "the assigned": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "attribué" } } }
+    },
+    "Continue in %@ session; it owns this task.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Continuez dans la session %@ ; elle détient cette tâche." } } }
+    },
+    "Resolve the blocker: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Résolvez le blocage : %@" } } }
+    },
+    "Resolve the reported blocker.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Résolvez le blocage signalé." } } }
+    },
+    "Review the evidence with the opposite runtime before accepting completion.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Faites revoir les preuves par l’autre environnement avant d’accepter la fin." } } }
+    },
+    "Review the diff and verification result, then integrate the task.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vérifiez le diff et le résultat, puis intégrez la tâche." } } }
+    },
+    "Integrated. Select the next ready task in the plan.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Intégrée. Sélectionnez la prochaine tâche prête dans le plan." } } }
+    },
+    "Inspect the log, then release or retry this task explicitly.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Inspectez le journal, puis libérez ou relancez explicitement cette tâche." } } }
+    },
+    "Ready": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Prête" } } }
+    },
+    "Blocked": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Bloquée" } } }
+    },
+    "Assigned": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Attribuée" } } }
+    },
+    "Running": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "En cours" } } }
+    },
+    "Failed": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Échouée" } } }
+    },
+    "Integrated": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Intégrée" } } }
+    },
+    "Entry": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Entrée" } } }
+    },
+    "%@ — verified": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%@ — vérifié" } } }
+    },
+    "Release": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Release" } } }
+    },
+    "Version": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Version" } } }
+    },
+    "Source": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Source" } } }
+    },
+    "Dependency": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Dépendance" } } }
+    },
+    "Decision": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Décision" } } }
+    },
+    "Reuse": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Réutilisation" } } }
+    },
+    "Mode": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Mode" } } }
+    },
+    "Verified": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vérifié" } } }
+    },
+    "ready": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "prêt" } } }
+    },
+    "blocked": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "bloqué" } } }
+    },
+    "Target": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Cible" } } }
+    },
+    "Dismiss": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Fermer" } } }
+    },
+    "Opens this session.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouvre cette session." } } }
+    },
+    "WAITING ON YOU": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "VOUS ATTEND" } } }
+    },
+    "MOVED ON": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "A AVANCÉ" } } }
+    },
+    "QUIET": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "CALME" } } }
+    },
+    "Quiet: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Calme : %@" } } }
+    },
+    "Quiet: %@ and %lld more": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Calme : %@ et %lld autres" } } }
+    },
+    "€%@ spent": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%@ € dépensés" } } }
+    },
+    "%lld session(s) waiting on you after %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld session(s) vous attendent après %@" } } }
+    },
+    "%lld session(s) moved on while you were away, %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld session(s) ont avancé pendant votre absence (%@)" } } }
+    },
+    "Nothing moved in %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rien n’a bougé en %@" } } }
+    },
+    "under a minute": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "moins d’une minute" } } }
+    },
+    "Asked: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Question : %@" } } }
+    },
+    "waiting %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "en attente depuis %@" } } }
+    },
+    "the session recorded this and stopped": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "la session l’a consigné et s’est arrêtée" } } }
+    },
+    "Rate limited until %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Limite de débit jusqu’à %@" } } }
+    },
+    "nothing to do but wait or switch model": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "rien à faire sauf attendre ou changer de modèle" } } }
+    },
+    "Repeated %@ %lld times with nothing written": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%@ répété %lld fois sans rien écrire" } } }
+    },
+    "a guess worth checking, not a verdict": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "une supposition à vérifier, pas un verdict" } } }
+    },
+    "Still working, last spoke %@ ago": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Travaille encore, dernier message il y a %@" } } }
+    },
+    "Worked, last spoke %@ ago": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "A travaillé, dernier message il y a %@" } } }
+    },
+    "Hibernated": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "En hibernation" } } }
+    },
+    "Silent the whole time": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Silencieuse tout du long" } } }
+    },
+    "Local-safe (est)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Local sûr (estimé)" } } }
+    },
+    "Frontier": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Frontier" } } }
+    },
+    "Uncertain → Frontier": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Incertain → Frontier" } } }
+    },
+    "leaving this session strands %@ of warm context (~€%@ to rebuild)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "quitter cette session perd %@ de contexte chaud (~%@ € pour le reconstruire)" } } }
+    },
+    "MISSION %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "MISSION %@" } } }
+    },
+    "Continue this mission": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Poursuivre cette mission" } } }
+    },
+    "NEXT OBJECTIVE": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "PROCHAIN OBJECTIF" } } }
+    },
+    "PORTABLE CONTEXT": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "CONTEXTE PORTABLE" } } }
+    },
+    "SKILLS + MCP COMPATIBILITY": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "COMPATIBILITÉ SKILLS + MCP" } } }
+    },
+    "FRESH GIT SNAPSHOT": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "INSTANTANÉ GIT RÉCENT" } } }
+    },
+    "Continue with %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Poursuivre avec %@" } } }
+    },
+    "Switch to %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Passer à %@" } } }
+    },
+    "verify: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "vérifier : %@" } } }
+    },
+    "%lld file(s)  ": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld fichier(s)  " } } }
+    },
+    "%lld commit(s) behind — will rebase first": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld commit(s) de retard — un rebase sera fait d’abord" } } }
+    },
+    "Integrate": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Intégrer" } } }
+    },
+    "Open %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouvrir %@" } } }
+    },
+    "waiting for %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "en attente de %@" } } }
+    },
+    "Open %@: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouvrir %@ : %@" } } }
+    },
+    "iOS companion mirror (iCloud)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Miroir compagnon iOS (iCloud)" } } }
+    },
+    "Off-Wi-Fi control (Tailscale)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Contrôle hors Wi-Fi (Tailscale)" } } }
+    },
+    "Team policy (managed-settings.json)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Politique d’équipe (managed-settings.json)" } } }
+    },
+    "Export…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Exporter…" } } }
+    },
+    "Run sessions on your server": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Exécuter les sessions sur votre serveur" } } }
+    },
+    "Configure…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Configurer…" } } }
+    },
+    "Four options. Pick one — you can change it later via the toggle in the chat header.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Quatre options. Choisissez-en une — vous pourrez changer plus tard avec le sélecteur en haut de la conversation." } } }
+    },
+    "Free · local · private": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Gratuit · local · privé" } } }
+    },
+    "Qwen embedded": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Qwen intégré" } } }
+    },
+    "Free · local · no Ollama": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Gratuit · local · sans Ollama" } } }
+    },
+    "Qwen 3 1.7B runs directly inside Throttle through MLX. Project context never leaves this Mac and there is no cloud fallback.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Qwen 3 1.7B tourne directement dans Throttle grâce à MLX. Le contexte du projet ne quitte jamais ce Mac et il n’y a aucun repli vers le cloud." } } }
+    },
+    "Installing %lld%%": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Installation %lld %%" } } }
+    },
+    "Install & use": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Installer et utiliser" } } }
+    },
+    "Model card · Apache 2.0": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Fiche du modèle · Apache 2.0" } } }
+    },
+    "Free for you · uses your Claude Pro/Max plan": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Gratuit pour vous · utilise votre abonnement Claude Pro/Max" } } }
+    },
+    "Best quality · billed by Anthropic on your key": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Meilleure qualité · facturé par Anthropic sur votre clé" } } }
+    },
+    "Affects the API-key provider only. Embedded Qwen, Apple Intelligence, and Claude subscription manage their own model.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ne concerne que le fournisseur par clé API. Qwen intégré, Apple Intelligence et l’abonnement Claude gèrent leur propre modèle." } } }
+    },
+    "Refined prompts": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Prompts affinés" } } }
+    },
+    "What the cockpit refiner's apply button does. Insert never presses Return.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ce que fait le bouton Appliquer de l’affineur du cockpit. Insérer n’appuie jamais sur Entrée." } } }
+    },
+    "Explain changes": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Expliquer les changements" } } }
+    },
+    "When the refiner shows why it rewrote your draft.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Quand l’affineur montre pourquoi il a réécrit votre brouillon." } } }
+    },
+    "Refine with a local model only": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Affiner avec un modèle local uniquement" } } }
+    },
+    "Verify the changes took effect by re-reading the files.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vérifier que les changements ont pris effet en relisant les fichiers." } } }
+    },
+    "Audit the next-highest-impact finding from this conversation.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Auditer le constat suivant par ordre d’impact dans cette conversation." } } }
+    },
+    "Look at CLAUDE.md, hooks, or MCP config now.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Examiner maintenant CLAUDE.md, les hooks ou la configuration MCP." } } }
+    },
+    "Run local audit (deterministic, no AI).": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Lancer l’audit local (déterministe, sans IA)." } } }
+    },
+    "No claim rests on it": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune affirmation ne repose dessus" } } }
+    },
+    "%lld claim(s) rest on it": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld affirmation(s) reposent dessus" } } }
+    },
+    "content changed since": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "contenu modifié depuis" } } }
+    },
+    "Not synced": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Non synchronisé" } } }
+    },
+    "On — never run yet": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Activé — jamais lancé" } } }
+    },
+    "On — last run %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Activé — dernier lancement %@" } } }
+    },
+    "On — %lld source(s) at %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Activé — %lld source(s) le %@" } } }
+    },
+    "Choose the staging folder this notebook syncs into": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisissez le dossier de préparation où ce carnet se synchronise" } } }
+    },
+    "Enable Sync": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Activer la synchro" } } }
+    },
+    "Sync is on for this notebook. New sources still land in quarantine.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La synchro est activée pour ce carnet. Les nouvelles sources passent toujours en quarantaine." } } }
+    },
+    "Sync is off for this notebook and its folder is forgotten.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La synchro est désactivée pour ce carnet et son dossier est oublié." } } }
+    },
+    "The sync setting could not be stored, so nothing changed.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le réglage de synchro n’a pas pu être enregistré ; rien n’a changé." } } }
+    },
+    "No notebook has sync turned on.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucun carnet n’a la synchro activée." } } }
+    },
+    "Sync finished: %lld new source(s) quarantined, %lld already present.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Synchro terminée : %lld nouvelle(s) source(s) en quarantaine, %lld déjà présente(s)." } } }
+    },
+    "Unfinished: %@.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Inachevé : %@." } } }
+    },
+    "URL quarantined: %lld imported, %lld already present.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "URL mise en quarantaine : %lld importé(s), %lld déjà présent(s)." } } }
+    },
+    "URL import failed closed. Use one public HTTPS text or HTML page under 512 KiB.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "L’import d’URL a échoué de façon sûre. Utilisez une seule page publique HTTPS, texte ou HTML, de moins de 512 Kio." } } }
+    },
+    "Working": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "En cours" } } }
+    },
+    "Any source": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Toute source" } } }
+    },
+    "Filter by source kind": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Filtrer par type de source" } } }
+    },
+    "Seen": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vue" } } }
+    },
+    "Any time": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "N’importe quand" } } }
+    },
+    "Last %lld days": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld derniers jours" } } }
+    },
+    "Filter by how recently the source was seen": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Filtrer selon l’ancienneté de la source" } } }
+    },
+    "SQLCipher %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "SQLCipher %@" } } }
+    },
+    "Show source %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Afficher la source %@" } } }
+    },
+    "Add to %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ajouter à %@" } } }
+    },
+    "Everything is hashed, encrypted and held in quarantine until you approve it.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tout est haché, chiffré et gardé en quarantaine jusqu’à votre approbation." } } }
+    },
+    "Connect a research library": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Connecter une bibliothèque de recherche" } } }
+    },
+    "Connect…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Connecter…" } } }
+    },
+    "Watch a folder": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Surveiller un dossier" } } }
+    },
+    "Throttle keeps it in sync. Best for a research folder you already keep.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Throttle le garde synchronisé. Idéal pour un dossier de recherche que vous tenez déjà." } } }
+    },
+    "Choose folder…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisir un dossier…" } } }
+    },
+    "pick a project space first": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "choisissez d’abord un espace de projet" } } }
+    },
+    "Add files": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ajouter des fichiers" } } }
+    },
+    "Drop in individual notes, PDFs or exports.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Déposez des notes, des PDF ou des exports." } } }
+    },
+    "Choose files…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisir des fichiers…" } } }
+    },
+    "needs a project key": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "nécessite une clé de projet" } } }
+    },
+    "Import sealed receipts": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Importer des reçus scellés" } } }
+    },
+    "Signed .receipt files from another Mac.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Fichiers .receipt signés venant d’un autre Mac." } } }
+    },
+    "Inbox folder and sync": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Dossier Inbox et synchro" } } }
+    },
+    "Currently %@. Throttle empties it on demand.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Actuellement %@. Throttle le vide à la demande." } } }
+    },
+    "A drop folder Throttle empties on demand.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Un dossier de dépôt que Throttle vide à la demande." } } }
+    },
+    "Set up…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Configurer…" } } }
+    },
+    "Sync now": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Synchroniser" } } }
+    },
+    "Import a NotebookLM export": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Importer un export NotebookLM" } } }
+    },
+    "Local file, no Google connection.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Fichier local, sans connexion à Google." } } }
+    },
+    "Export to Markdown": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Exporter en Markdown" } } }
+    },
+    "One .md or a folder of them.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Un fichier .md ou un dossier de fichiers." } } }
+    },
+    "Import one URL": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Importer une URL" } } }
+    },
+    "HTTPS, single page, quarantined.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "HTTPS, une seule page, mise en quarantaine." } } }
+    },
+    "paste a URL below": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "collez une URL ci-dessous" } } }
+    },
+    "Keep in sync": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Garder synchronisé" } } }
+    },
+    "%lld of %lld sources": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld sur %lld sources" } } }
+    },
+    "List NotebookLM notebooks": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Lister les carnets NotebookLM" } } }
+    },
+    "Explicit read/export only; resumes where it stopped.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Lecture et export explicites uniquement ; reprend là où il s’est arrêté." } } }
+    },
+    "List…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Lister…" } } }
+    },
+    "Allow first": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Autoriser d’abord" } } }
+    },
+    "turn on the export permission below": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "activez l’autorisation d’export ci-dessous" } } }
+    },
+    "Resume import": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Reprendre l’import" } } }
+    },
+    "Start import": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Démarrer l’import" } } }
+    },
+    "NotebookLM import": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Import NotebookLM" } } }
+    },
+    "TRUNCATED": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "TRONQUÉ" } } }
+    },
+    "Receipt %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Reçu %@" } } }
+    },
+    "%lld item(s)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld élément(s)" } } }
+    },
+    "nothing yet": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "rien pour l’instant" } } }
+    },
+    "Runs on your Mac (macOS 26+ with Apple Intelligence enabled). Nothing leaves your device. Quality is OK for short questions; longer audits are better with Claude.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "S’exécute sur votre Mac (macOS 26 ou ultérieur avec Apple Intelligence activé). Rien ne quitte votre appareil. Qualité correcte pour les questions courtes ; les audits plus longs sont meilleurs avec Claude." } } }
+    },
+    "Installs the 968 MB Qwen 3 1.7B 4-bit model once, then runs fully offline inside Throttle. No Ollama daemon or account required.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Installe une seule fois le modèle Qwen 3 1.7B 4 bits (968 Mo), puis fonctionne entièrement hors ligne dans Throttle. Ni démon Ollama ni compte requis." } } }
+    },
+    "Sign in to claude.ai inside Throttle (one-time, per Mac). No Safari needed — Throttle has its own session. Each chat counts against your existing Claude subscription quota. Auto-detects your plan tier (Pro / Max 5x / Max 20x) so the meter calibration is right out of the box.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Connectez-vous à claude.ai dans Throttle (une fois par Mac). Safari n’est pas nécessaire : Throttle a sa propre session. Chaque conversation est décomptée du quota de votre abonnement Claude. Votre formule (Pro / Max 5x / Max 20x) est détectée automatiquement pour que le compteur soit bien calibré dès le départ." } } }
+    },
+    "Paste an Anthropic API key. Stored in macOS Keychain. Best answer quality for code-config audits. ~$0.001 per chat at Sonnet rates — cents per month for normal use.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Collez une clé API Anthropic. Elle est stockée dans le trousseau macOS. Meilleure qualité de réponse pour les audits de configuration. Environ 0,001 $ par conversation au tarif Sonnet, soit quelques centimes par mois en usage normal." } } }
+    },
+    "Review & apply %lld change(s)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vérifier et appliquer %lld modification(s)" } } }
+    },
+    "Throttle will hibernate the source first, then start a fresh %@ session with the reviewed packet. Only one agent writes in this checkout.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Throttle met d’abord la source en hibernation, puis démarre une nouvelle session %@ avec le paquet vérifié. Un seul agent écrit dans cette copie de travail." } } }
+    },
+    "No Claude or Codex configuration is modified. The reviewed packet includes a bounded excerpt of user/assistant text, without tool output or hidden reasoning; the target revalidates the repository.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune configuration Claude ou Codex n’est modifiée. Le paquet vérifié contient un extrait limité des échanges utilisateur/assistant, sans sortie d’outil ni raisonnement caché ; la cible revalide le dépôt." } } }
+    },
+    "This session's latest prompt is ≈%@ input tokens. Claude Code caches per model, so switching now may rebuild it for ≈€%@ (≈€%@ more than a warm read). Prefer switching after /clear or at the next task boundary.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le dernier prompt de cette session compte ≈%@ tokens d’entrée. Claude Code met en cache par modèle : changer maintenant peut le reconstruire pour ≈%@ € (≈%@ € de plus qu’une lecture en cache). Changez plutôt après /clear ou à la prochaine tâche." } } }
+    },
+    "transcript not found or holds no user request": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "transcription introuvable ou sans demande utilisateur" } } }
+    },
+    "Away %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Absence : %@" } } }
+    },
+    "question": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "question" } } }
+    },
+    "stopped": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "arrêtée" } } }
+    },
+    "limit %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "limite %@" } } }
+    },
+    "Hide details": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Masquer les détails" } } }
+    },
+    "Details": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Détails" } } }
+    },
+    "Expanded": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Déplié" } } }
+    },
+    "Collapsed": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Replié" } } }
+    },
+    "%lld moved on": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld ont avancé" } } }
+    },
+    "%lld quiet": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld calme(s)" } } }
+    },
+    "%lld moved on · %lld quiet": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld ont avancé · %lld calme(s)" } } }
+    },
+    "+%lld waiting": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "+%lld en attente" } } }
+    },
+    "Sorted by risk": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tri : risque décroissant" } } }
+    },
+    "Filter by status": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Filtrer par statut" } } }
+    },
+    "Nothing in this lane.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rien dans cette catégorie." } } }
+    },
+    "Re-check": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Revérifier" } } }
+    },
+    "Opens the source as it reads now.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouvre la source telle qu’elle est aujourd’hui." } } }
+    },
+    "AGAINST": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "CONTRE" } } }
+    },
+    "No source · %@ · %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune source · %@ · %@" } } }
+    },
+    "Supported": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Étayée" } } }
+    },
+    "Hypothesis": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Hypothèse" } } }
+    },
+    "Contradicted": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Contredite" } } }
+    },
+    "Stale": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Périmée" } } }
+    },
+    "Proof": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Preuve" } } }
+    },
+    "Contradiction": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Contradiction" } } }
+    },
+    "Unresolved": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Non résolu" } } }
+    },
+    "Source moved": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Source modifiée" } } }
+    },
+    "%lld approved receipt(s) carry no finding.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld reçu(s) approuvé(s) sans constat." } } }
+    },
+    "The source changed after the claim. Neither confirmed nor refuted.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "La source a changé après l’affirmation. Ni confirmée ni infirmée." } } }
+    },
+    "Cites %@, which this receipt does not carry.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Cite %@, que ce reçu ne contient pas." } } }
+    },
+    "%@ → now %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%@ → désormais %@" } } }
+    },
+    "%lld claims · %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld affirmations · %@" } } }
+    },
+    "Re-check before reuse": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "À revérifier" } } }
+    },
+    "Nobody settled it": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Personne n’a tranché" } } }
+    },
+    "Carries no weight": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ne pèse rien" } } }
+    },
+    "%lld source(s) unchanged": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld source(s) inchangée(s)" } } }
+    },
+    "This source changed after the claim was made.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Cette source a changé après l’affirmation." } } }
+    },
+    "Opens the source panel on this entry.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouvre le panneau Sources sur cette entrée." } } }
+    },
+    "claim.status.verified": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Verified" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Vérifiée" } }
+      }
+    },
+    "claim.status.supported": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Supported" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Étayée" } }
+      }
+    },
+    "claim.status.hypothesis": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Hypothesis" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Hypothèse" } }
+      }
+    },
+    "claim.status.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Ouverte" } }
+      }
+    },
+    "claim.status.contradicted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Contradicted" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Contredite" } }
+      }
+    },
+    "claim.status.stale": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Stale" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Périmée" } }
+      }
+    },
+    " · observed %lldd ago": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": " · observée il y a %lld j" } } }
+    },
+    "changed since": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "modifiée depuis" } } }
+    },
+    "Show claims": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Afficher les affirmations" } } }
+    },
+    "%lld claim(s) — open the claims board on this source": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld affirmation(s) — ouvrir le tableau sur cette source" } } }
+    },
+    "Show claims from every source": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Afficher les affirmations de toutes les sources" } } }
+    },
+    "Source: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Source : %@" } } }
+    },
+    "Choose the notebooks Throttle re-exports when you ask. Nothing is automatic.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisissez les carnets que Throttle ré-exporte quand vous le demandez. Rien n’est automatique." } } }
+    },
+    "Sync %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Synchroniser %@" } } }
+    },
+    "Sync of %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Synchronisation de %@" } } }
+    },
+    "Last sync: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Dernière synchro : %@" } } }
+    },
+    "Syncing…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Synchronisation…" } } }
+    },
+    "Sync %lld notebook(s)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Synchroniser %lld carnet(s)" } } }
+    },
+    "Stop": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Arrêter" } } }
+    },
+    "In progress": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "En cours" } } }
+    },
+    "In progress — %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "En cours — %@" } } }
+    },
+    "Waiting": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "En attente" } } }
+    },
+    "Never": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Jamais" } } }
+    },
+    "Stopping after the current source. Nothing already received is lost.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Arrêt après la source en cours. Rien de ce qui est déjà reçu n’est perdu." } } }
+    },
+    "You can stop at any time; nothing already received is lost.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vous pouvez arrêter à tout moment ; rien de ce qui est déjà reçu n’est perdu." } } }
+    },
+    "Unavailable: NotebookLM export is not allowed. Turn it on below.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Indisponible : l’export NotebookLM n’est pas autorisé. Activez-le ci-dessous." } } }
+    },
+    "Select at least one notebook.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Cochez au moins un carnet." } } }
+    },
+    "Will re-export %@ to NotebookLM. What comes back is quarantined for review.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ré-exportera %@ vers NotebookLM. Ce qui revient sera placé en quarantaine pour relecture." } } }
+    },
+    "Required for Sync. What comes back is quarantined before it enters the vault.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Nécessaire pour synchroniser. Ce qui revient est placé en quarantaine avant d’entrer dans le coffre." } } }
     }
   },
   "version": "1.0"
