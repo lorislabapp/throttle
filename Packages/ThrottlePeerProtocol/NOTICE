@@ -1,0 +1,18 @@
+ThrottlePeerProtocol
+Copyright (c) 2026 LorisLabs (Christine Martin) and contributors
+
+Licensed under the MIT License; see LICENSE in this directory. That licence is
+the one these files were already published under as part of Throttle — this
+file makes it explicit per package and does not change it.
+
+Provenance to review before distribution: the source comment in
+Sources/ThrottlePeerProtocol/PeerMessage.swift records that the frame layout
+was "modelled on Weave's MRPMessage shape but rewritten". The upstream project,
+its licence and whether any expression (as opposed to the idea of a
+length-prefixed header) was carried over have NOT been verified. Until they
+are, this package is not cleared for separate distribution.
+
+Third-party material: none bundled; Apple system frameworks only.
+
+Rights status: pending the review above and the ownership review described in
+docs/ip/decision-brief.md.
