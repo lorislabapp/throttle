@@ -128,21 +128,7 @@ extension PlanTreeView {
                     .font(.system(size: 11, weight: .medium)).foregroundStyle(.orange)
             }
 
-            HStack(spacing: 8) {
-                if let runtime = advice.runtime {
-                    Button("Launch") { launch(taskID: taskID, runtime: runtime) }
-                        .controlSize(.small)
-                }
-                Menu(advice.runtime == nil
-                     ? String(localized: "Choose…")
-                     : String(localized: "Change…")) {
-                    ForEach([AgentRuntime.claudeCode, .codex]) { runtime in
-                        Button(runtime.label) { launch(taskID: taskID, runtime: runtime) }
-                    }
-                }
-                .menuStyle(.borderlessButton).fixedSize().controlSize(.small)
-            }
-            .padding(.top, 2).popoverTip(LaunchTaskTip(), arrowEdge: .top)
+            launchRow(advice, taskID: taskID)
 
             if let launchError {
                 Text(launchError).font(.system(size: 11)).foregroundStyle(.red)
@@ -151,10 +137,46 @@ extension PlanTreeView {
         }
     }
 
+    func launchRow(_ advice: DispatchAdvice, taskID: String) -> some View {
+        HStack(spacing: 8) {
+            roleMenu(taskID: taskID)
+            if let runtime = advice.runtime {
+                Button("Launch") { launch(taskID: taskID, runtime: runtime) }
+                    .controlSize(.small)
+            }
+            Menu(advice.runtime == nil
+                 ? String(localized: "Choose…")
+                 : String(localized: "Change…")) {
+                ForEach([AgentRuntime.claudeCode, .codex]) { runtime in
+                    Button(runtime.label) { launch(taskID: taskID, runtime: runtime) }
+                }
+            }
+            .menuStyle(.borderlessButton).fixedSize().controlSize(.small)
+        }
+        .padding(.top, 2).popoverTip(LaunchTaskTip(), arrowEdge: .top)
+    }
+
+    func role(for taskID: String) -> AgentRole {
+        launchRoles[taskID] ?? model.plan?.task(taskID).map(AgentRole.suggested(for:)) ?? .builder
+    }
+
+    /// The specialty the agent takes on; suggested from the task's title.
+    func roleMenu(taskID: String) -> some View {
+        Menu {
+            ForEach(AgentRole.allCases) { role in
+                Button { launchRoles[taskID] = role } label: { Label(role.label, systemImage: role.symbol) }
+            }
+        } label: {
+            Label(role(for: taskID).label, systemImage: role(for: taskID).symbol)
+        }
+        .menuStyle(.borderlessButton).fixedSize().controlSize(.small)
+        .help(Text("Role the agent takes on this task"))
+    }
+
     func launch(taskID: String, runtime: AgentRuntime) {
         do {
             launchError = nil
-            onLaunch?(try model.prepareLaunch(taskID: taskID, runtime: runtime))
+            onLaunch?(try model.prepareLaunch(taskID: taskID, runtime: runtime, role: role(for: taskID)))
             CockpitOnboarding.markDone(.launchTask)
         } catch let error as TaskLauncher.LaunchError {
             switch error {
