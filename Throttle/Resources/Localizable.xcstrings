@@ -9183,6 +9183,10 @@
     "What is waiting for me in ${applicationName}": {
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Qu’est-ce qui m’attend sur ${applicationName}" } } }
+    },
+    "No session open in this project": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune session ouverte dans ce projet" } } }
     }
   },
   "version": "1.0"

@@ -96,8 +96,22 @@ struct CockpitPlanView: View {
         return URL(fileURLWithPath: cwd, isDirectory: true)
     }
 
+    /// The session this plan is about: on a project page, one working in that
+    /// project (never whichever session happens to be active elsewhere).
+    private var contextSession: CockpitTab? {
+        guard let fixedProjectRoot else { return cockpit.active }
+        let root = fixedProjectRoot.standardizedFileURL.path
+        let inProject = CockpitProjectsModel.shared.sessions(in: root, from: cockpit)
+        return inProject.first { $0.id == cockpit.activeID } ?? inProject.first { $0.isLive } ?? inProject.first
+    }
+
     private var context: PlanViewContext {
-        guard let active = cockpit.active else { return PlanViewContext() }
+        guard let active = contextSession else {
+            guard let fixedProjectRoot else { return PlanViewContext() }
+            return PlanViewContext(projectName: fixedProjectRoot.lastPathComponent,
+                                   projectPath: fixedProjectRoot.path,
+                                   sessionLabel: String(localized: "No session open in this project"))
+        }
         return PlanViewContext(
             projectName: active.projectName,
             projectPath: active.cwd,
@@ -108,8 +122,10 @@ struct CockpitPlanView: View {
     }
 
     private func showActiveSession() {
-        guard let active = cockpit.active else { return }
-        cockpit.wake(active.id)
+        guard let session = contextSession else { return }
+        cockpit.activeID = session.id
+        cockpit.wake(session.id)
+        cockpit.destination = .sessions
         cockpit.viewMode = .rail
     }
 
