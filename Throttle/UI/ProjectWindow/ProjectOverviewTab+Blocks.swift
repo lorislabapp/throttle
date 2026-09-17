@@ -15,10 +15,10 @@ extension ProjectOverviewTab {
                     .textSelection(.enabled)
                 ForEach(objective.requirements, id: \.id) { requirement in
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(requirement.blocking ? "BLOCKING" : "WISH")
+                        Text(requirement.blocking ? "Blocking" : "Not blocking")
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
                             .foregroundStyle(requirement.blocking ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
-                            .frame(width: 64, alignment: .leading)
+                            .frame(width: 92, alignment: .leading)
                         Text(requirement.statement).font(.system(size: 13))
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -43,10 +43,10 @@ extension ProjectOverviewTab {
                     .font(.system(size: 13, weight: .semibold).monospacedDigit())
             }
             progressBar(progress)
-            if let declared = overview.declaredPct {
-                Text("Declared by agents: \(declared)% · self-reported, not verified.")
-                    .font(.system(size: 11.5)).foregroundStyle(.secondary)
-            }
+            progressLegend(progress)
+            // The agents' own percentage is deliberately absent: it is not verification.
+            Text("The agents' self-reported % is not shown here: it is not verification.")
+                .font(.system(size: 11.5)).foregroundStyle(.secondary)
             VStack(spacing: 0) {
                 ForEach(overview.tasks) { task in
                     nodeButton(id: task.id) {
@@ -70,6 +70,30 @@ extension ProjectOverviewTab {
         .accessibilityLabel(Text(
             "Verified progress: \(progress.proven) of \(progress.total) tasks integrated or verified."
         ))
+    }
+
+    /// Every status with a count, each with its symbol, so the bar is never read by colour alone.
+    private func progressLegend(_ progress: ProjectOverview.Progress) -> some View {
+        HStack(spacing: 12) {
+            ForEach(ProjectOverview.Bucket.allCases.filter { $0 != .pending && progress.count($0) > 0 },
+                    id: \.self) { bucket in
+                HStack(spacing: 4) {
+                    bucketIcon(bucket)
+                    Text(verbatim: "\(progress.count(bucket)) \(Self.bucketWord(bucket).lowercased())")
+                }
+            }
+        }
+        .font(.system(size: 11.5).monospacedDigit())
+        .foregroundStyle(.secondary)
+    }
+
+    /// The SHA an integration landed as, or the reason a rejection or block gave.
+    static func changeDetail(_ change: ProjectOverview.Change) -> String? {
+        switch change.event.type {
+        case .integrated: change.event.ref.map { String($0.prefix(7)) }
+        case .rejected, .blocked, .failed: change.event.reason
+        default: nil
+        }
     }
 
     private func progressBar(_ progress: ProjectOverview.Progress) -> some View {
@@ -136,6 +160,10 @@ extension ProjectOverviewTab {
                          + Text(verbatim: " " + change.taskTitle))
                             .font(.system(size: 12.5)).lineLimit(1)
                         Spacer(minLength: 0)
+                        if let detail = Self.changeDetail(change) {
+                            Text(verbatim: detail).font(.system(size: 11, design: .monospaced))
+                                .foregroundStyle(.secondary).lineLimit(1)
+                        }
                     }
                 } inspector: {
                     inspector(kind: String(localized: "Change"), id: change.taskID, title: change.taskTitle,

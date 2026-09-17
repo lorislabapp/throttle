@@ -9059,6 +9059,18 @@
         "en": { "stringUnit": { "state": "translated", "value": "Question" } },
         "fr": { "stringUnit": { "state": "translated", "value": "Question" } }
       }
+    },
+    "The agents' self-reported % is not shown here: it is not verification.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Le % auto-déclaré par les agents n’est pas affiché ici : il ne vaut pas vérification." } } }
+    },
+    "Blocking": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Bloquante" } } }
+    },
+    "Not blocking": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Non bloquante" } } }
     }
   },
   "version": "1.0"
