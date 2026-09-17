@@ -34,18 +34,40 @@ public struct ManualResearchImportFile: Equatable, Sendable {
     }
 }
 
+/// The readable text of an imported file. A receipt proves a file was seen;
+/// this is what makes it searchable, and the two travel together so a folder
+/// can never index as "imported" and answer nothing.
+public struct ManualResearchImportDocument: Equatable, Sendable {
+    public let name: String
+    public let text: String
+    public let plaintextSHA256: String
+    public let byteCount: Int
+    public let modifiedAt: Date
+
+    public init(name: String, text: String, plaintextSHA256: String, byteCount: Int, modifiedAt: Date) {
+        self.name = name
+        self.text = text
+        self.plaintextSHA256 = plaintextSHA256
+        self.byteCount = byteCount
+        self.modifiedAt = modifiedAt
+    }
+}
+
 public struct ManualResearchImportBatch: Sendable {
     public let receipts: [ResearchReceipt]
     public let files: [ManualResearchImportFile]
+    public let documents: [ManualResearchImportDocument]
     public let aggregateSHA256: String
 
     public init(
         receipts: [ResearchReceipt],
         files: [ManualResearchImportFile],
+        documents: [ManualResearchImportDocument] = [],
         aggregateSHA256: String
     ) {
         self.receipts = receipts
         self.files = files
+        self.documents = documents
         self.aggregateSHA256 = aggregateSHA256
     }
 }
@@ -144,6 +166,14 @@ public struct ManualResearchFileImporter: Sendable {
         return ManualResearchImportBatch(
             receipts: receipts,
             files: importedFiles,
+            documents: documents.map { document in
+                let data = Data(document.text.utf8)
+                return ManualResearchImportDocument(
+                    name: document.name, text: document.text,
+                    plaintextSHA256: Self.sha256(data), byteCount: data.count,
+                    modifiedAt: document.modifiedAt
+                )
+            },
             aggregateSHA256: aggregate
         )
     }

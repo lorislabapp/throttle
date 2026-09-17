@@ -106,6 +106,26 @@ public actor ResearchVaultClient {
         return response
     }
 
+    /// Sends the text of documents so search can quote them. Receipts say a file
+    /// was seen; this is what makes it findable.
+    public func importDocuments(
+        _ documents: [ResearchVaultDocumentPayload]
+    ) async throws -> ResearchVaultDocumentImportResponse {
+        let request = try ResearchVaultDocumentImportRequest(documents: documents).validated()
+        let encoded = try encoder.encode(request)
+        guard encoded.count <= ResearchVaultIPCContract.maximumOwnerRequestBytes else {
+            throw ResearchVaultClientError.invalidConfiguration
+        }
+        let data = try await ownerCall { proxy, reply in
+            proxy.importDocuments(encoded, withReply: reply)
+        }
+        let response = try decode(ResearchVaultDocumentImportResponse.self, from: data)
+        guard response.contractVersion == ResearchVaultIPCContract.currentVersion else {
+            throw ResearchVaultClientError.invalidResponse
+        }
+        return response
+    }
+
     public func quarantine() async throws -> [ResearchVaultQuarantineItem] {
         let request = try ResearchVaultQuarantineListRequest().validated()
         let encoded = try encoder.encode(request)

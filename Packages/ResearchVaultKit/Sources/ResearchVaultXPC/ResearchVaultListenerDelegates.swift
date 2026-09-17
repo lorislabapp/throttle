@@ -48,6 +48,7 @@ public final class ResearchVaultOwnerListenerDelegate: NSObject, NSXPCListenerDe
     @unchecked Sendable {
     private let projectAdmitter: ResearchVaultProjectAdmitter
     private let importer: ResearchVaultReceiptImporter
+    private let documentImporter: ResearchVaultDocumentImporter
     private let quarantineLister: ResearchVaultQuarantineLister
     private let reviewer: ResearchVaultQuarantineReviewer
     private let exporter: ResearchVaultReceiptExporter
@@ -61,6 +62,9 @@ public final class ResearchVaultOwnerListenerDelegate: NSObject, NSXPCListenerDe
             throw ResearchVaultProjectAdmissionError.ownerRequired
         },
         importer: @escaping ResearchVaultReceiptImporter,
+        documentImporter: @escaping ResearchVaultDocumentImporter = { _ in
+            throw ResearchVaultDocumentImportError.unavailable
+        },
         quarantineLister: @escaping ResearchVaultQuarantineLister,
         reviewer: @escaping ResearchVaultQuarantineReviewer,
         exporter: @escaping ResearchVaultReceiptExporter,
@@ -73,6 +77,7 @@ public final class ResearchVaultOwnerListenerDelegate: NSObject, NSXPCListenerDe
         self.policy = policy
         self.projectAdmitter = projectAdmitter
         self.importer = importer
+        self.documentImporter = documentImporter
         self.quarantineLister = quarantineLister
         self.reviewer = reviewer
         self.exporter = exporter
@@ -98,6 +103,7 @@ public final class ResearchVaultOwnerListenerDelegate: NSObject, NSXPCListenerDe
         newConnection.exportedObject = ResearchVaultOwnerService(
             projectAdmitter: projectAdmitter,
             importer: importer,
+            documentImporter: documentImporter,
             quarantineLister: quarantineLister,
             reviewer: reviewer,
             exporter: exporter,

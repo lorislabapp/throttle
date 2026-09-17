@@ -38,3 +38,27 @@ extension Array {
         }
     }
 }
+
+extension Array where Element == ResearchVaultDocumentPayload {
+    /// Batches that fit one XPC message: the count limit and, before it, the
+    /// byte budget — four large documents do not fit where four small ones do.
+    func vaultDocumentBatches(
+        maximumCount: Int = ResearchVaultIPCContract.maximumDocumentsPerRequest,
+        maximumBytes: Int = ResearchVaultIPCContract.maximumOwnerRequestBytes / 2
+    ) -> [[ResearchVaultDocumentPayload]] {
+        var batches: [[ResearchVaultDocumentPayload]] = []
+        var current: [ResearchVaultDocumentPayload] = []
+        var bytes = 0
+        for payload in self {
+            if !current.isEmpty, current.count >= maximumCount || bytes + payload.byteCount > maximumBytes {
+                batches.append(current)
+                current = []
+                bytes = 0
+            }
+            current.append(payload)
+            bytes += payload.byteCount
+        }
+        if !current.isEmpty { batches.append(current) }
+        return batches
+    }
+}

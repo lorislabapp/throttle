@@ -13,6 +13,7 @@ import ThrottleVaultContract
 @objc public protocol ResearchVaultOwnerXPCProtocol {
     func admitProjects(_ request: Data, withReply reply: @escaping @Sendable (Data) -> Void)
     func importReceipts(_ request: Data, withReply reply: @escaping @Sendable (Data) -> Void)
+    func importDocuments(_ request: Data, withReply reply: @escaping @Sendable (Data) -> Void)
     func listQuarantine(_ request: Data, withReply reply: @escaping @Sendable (Data) -> Void)
     func reviewQuarantine(_ request: Data, withReply reply: @escaping @Sendable (Data) -> Void)
     func exportReceipts(_ request: Data, withReply reply: @escaping @Sendable (Data) -> Void)
