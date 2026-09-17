@@ -102,7 +102,20 @@ struct CockpitPlanView: View {
         guard let fixedProjectRoot else { return cockpit.active }
         let root = fixedProjectRoot.standardizedFileURL.path
         let inProject = CockpitProjectsModel.shared.sessions(in: root, from: cockpit)
-        return inProject.first { $0.id == cockpit.activeID } ?? inProject.first { $0.isLive } ?? inProject.first
+        return taskOwnerSession ?? inProject.first { $0.id == cockpit.activeID }
+            ?? inProject.first { $0.isLive } ?? inProject.first
+    }
+
+    /// The session that launched the task in progress: "Show session" must open
+    /// the agent doing the work, not whichever tab sits in the same folder.
+    private var taskOwnerSession: CockpitTab? {
+        let missions = Set(planModel.states.values.filter { [.claimed, .running].contains($0.status) }
+            .compactMap(\.missionID))
+        if let selection = planModel.selection, let mission = planModel.state(selection).missionID,
+           let owner = cockpit.sessions.first(where: { $0.missionID.uuidString == mission }) {
+            return owner
+        }
+        return cockpit.sessions.first { missions.contains($0.missionID.uuidString) }
     }
 
     private var context: PlanViewContext {
@@ -112,9 +125,11 @@ struct CockpitPlanView: View {
                                    projectPath: fixedProjectRoot.path,
                                    sessionLabel: String(localized: "No session open in this project"))
         }
+        // A session running in a worktree is named after the worktree ("T1.1");
+        // on a project page the project is the one the page is about.
         return PlanViewContext(
-            projectName: active.projectName,
-            projectPath: active.cwd,
+            projectName: fixedProjectRoot?.lastPathComponent ?? active.projectName,
+            projectPath: fixedProjectRoot?.path ?? active.cwd,
             sessionLabel: "Session \((active.sessionId ?? active.id.uuidString).prefix(8))",
             runtime: active.runtime.label,
             state: sessionState(active)

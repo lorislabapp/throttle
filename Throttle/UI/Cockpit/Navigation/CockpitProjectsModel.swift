@@ -80,7 +80,7 @@ final class CockpitProjectsModel {
         ))
     }
 
-    nonisolated private static func overview(at url: URL) -> ProjectOverview? {
+    nonisolated static func overview(at url: URL) -> ProjectOverview? {
         let store = PlanStore(projectRoot: url)
         guard store.planExists(), let resolved = try? store.resolveAll() else { return nil }
         var events: [String: [TaskEvent]] = [:]

@@ -46,6 +46,10 @@ struct ProjectOverview: Equatable, Sendable {
         let title: String
         let bucket: Bucket
         let state: TaskState
+        /// Dependencies not finished yet: a pending task with any is waiting, not ready.
+        var waitingOn: [String] = []
+        /// When its log last moved, for "since" on the flow board.
+        var lastActivity: Date?
     }
 
     struct Decision: Equatable, Sendable, Identifiable {
@@ -94,6 +98,8 @@ struct ProjectOverview: Equatable, Sendable {
     let decisions: [Decision]
     let changes: [Change]
     let evidence: Evidence
+    /// Why recent attempts failed or were sent back, newest first.
+    var lessons: [AttemptHistory.Lesson] = []
 
     /// Event types worth a line in "Changes": the ones that move a task between
     /// what a reader trusts and what they do not.
@@ -109,7 +115,9 @@ struct ProjectOverview: Equatable, Sendable {
         let leaves = plan.tasks.filter { isLeaf[$0.id] == true }
         let items = leaves.map { task in
             let state = states[task.id] ?? TaskState()
-            return TaskItem(id: task.id, title: task.title, bucket: Bucket(state.status), state: state)
+            return TaskItem(id: task.id, title: task.title, bucket: Bucket(state.status), state: state,
+                            waitingOn: PlanOrientation.unmetDependencies(for: task, states: states),
+                            lastActivity: events[task.id]?.last?.timestamp ?? state.startedAt)
         }
         let counts = Dictionary(grouping: items, by: \.bucket).mapValues(\.count)
 
@@ -137,7 +145,8 @@ struct ProjectOverview: Equatable, Sendable {
             declaredPct: declaredPct(plan: plan, states: states),
             decisions: decisions,
             changes: changes(plan: plan, events: events, limit: changeLimit),
-            evidence: Evidence(proofs: proofs(items), chainValid: items.allSatisfy { $0.state.chainValid })
+            evidence: Evidence(proofs: proofs(items), chainValid: items.allSatisfy { $0.state.chainValid }),
+            lessons: AttemptHistory.projectLessons(events: events)
         )
     }
 

@@ -53,4 +53,38 @@ final class PlanOrientationTests: XCTestCase {
             ["T1"]
         )
     }
+
+    private func state(_ status: TaskStatus, runtime: String? = nil) -> TaskState {
+        var value = TaskState()
+        value.status = status
+        value.runtime = runtime
+        return value
+    }
+
+    func testNextMovePointsAtTheReadyTaskNotTheSelectedBlockedOne() {
+        XCTAssertEqual(PlanOrientation.nextMove(plan: plan, states: [:]), .ready(taskID: "T1"))
+    }
+
+    func testNextMovePrefersFollowingTheWorkingAgent() {
+        let states = ["T1": state(.done), "T2": state(.running, runtime: "claudeCode")]
+        XCTAssertEqual(PlanOrientation.nextMove(plan: plan, states: states),
+                       .working(taskID: "T2", runtime: "claudeCode"))
+    }
+
+    func testNextMoveSurfacesFailureBeforeNewWork() {
+        XCTAssertEqual(PlanOrientation.nextMove(plan: plan, states: ["T1": state(.failed)]),
+                       .failed(taskID: "T1"))
+    }
+
+    func testNextMoveIsFinishedWhenEveryLeafIsDone() {
+        let states = ["T1": state(.done), "T2": state(.integrated), "T3": state(.done)]
+        XCTAssertEqual(PlanOrientation.nextMove(plan: plan, states: states), .finished)
+    }
+
+    func testSpaceKeyFoldsAccentsAndCase() {
+        XCTAssertEqual(ResearchVaultWorkbenchModel.spaceKey(for: " Éclair "), "eclair")
+        XCTAssertEqual(ResearchVaultWorkbenchModel.spaceKey(for: "Lumen Cam"), "lumencam")
+        XCTAssertNil(ResearchVaultWorkbenchModel.spaceKey(for: " — "))
+        XCTAssertEqual(ResearchVaultFolderSource.canonicalProjectKey("e-clair"), "eclair")
+    }
 }

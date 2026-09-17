@@ -9,6 +9,8 @@ struct PlanTreeView: View {
     var onShowSession: (() -> Void)?
 
     @State var launchError: String?
+    /// Roles picked before launching, per task; absent means the suggested one.
+    @State var launchRoles: [String: AgentRole] = [:]
     @State var integrationError: String?
     /// The task whose diff is open, if any.
     @State var expandedDiff: String?
@@ -75,30 +77,6 @@ struct PlanTreeView: View {
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 9)
-    }
-
-    @ViewBuilder
-    private var nextStepBanner: some View {
-        if let id = model.selection, let task = model.plan?.task(id) {
-            let state = model.state(id)
-            HStack(alignment: .center, spacing: 8) {
-                Image(systemName: nextStepIcon(state.status))
-                    .foregroundStyle(color(state.status))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("NEXT STEP").font(.system(size: 9, weight: .semibold)).kerning(0.5)
-                        .foregroundStyle(.secondary)
-                    Text(nextStepText(task, state))
-                        .font(.system(size: 11, weight: .medium)).lineLimit(2)
-                }
-                Spacer(minLength: 6)
-                if let dependency = model.unmetDependencies(for: task).first {
-                    Button("Open \(dependency)") { model.selection = dependency }
-                        .controlSize(.small)
-                }
-            }
-            .padding(.horizontal, 14).padding(.vertical, 8)
-            .background(Color.accentColor.opacity(0.045))
-        }
     }
 
     // MARK: - Tree
@@ -168,7 +146,7 @@ struct PlanTreeView: View {
 
             if let runtime = state.runtime, state.status != .candidate, state.status != .done,
                state.status != .failed {
-                Text(runtime.uppercased())
+                Text(verbatim: Self.runtimeName(runtime) ?? runtime)
                     .font(.system(size: 9, weight: .medium)).kerning(0.4)
                     .foregroundStyle(.secondary)
             }
@@ -337,7 +315,7 @@ extension PlanTreeView {
         case .pending:
             return String(localized: "Ready to start. Review the recommendation, then launch an agent.")
         case .claimed, .running:
-            let runtime = state.runtime?.capitalized ?? String(localized: "the assigned")
+            let runtime = Self.runtimeName(state.runtime) ?? String(localized: "the assigned")
             return String(localized: "Continue in \(runtime) session; it owns this task.")
         case .blocked:
             return state.blockedReason.map { String(localized: "Resolve the blocker: \($0)") }
@@ -354,19 +332,6 @@ extension PlanTreeView {
             return String(localized: "Inspect the log, then release or retry this task explicitly.")
         }
     }
-    private func nextStepIcon(_ status: TaskStatus) -> String {
-        switch status {
-        case .pending: return "play.circle"
-        case .blocked: return "lock"
-        case .claimed, .running: return "arrow.right.circle"
-        case .candidate: return "doc.badge.ellipsis"
-        case .review: return "checkmark.message"
-        case .done: return "arrow.triangle.merge"
-        case .integrated: return "checkmark.circle"
-        case .failed: return "exclamationmark.triangle"
-        }
-    }
-
     private func statusText(_ status: TaskStatus) -> String {
         switch status {
         case .pending: return String(localized: "Ready")

@@ -19,3 +19,24 @@ extension MultiCockpitModel {
         return true
     }
 }
+
+extension MultiCockpitModel {
+    /// Opens the session that launched a task, found by the mission it carries.
+    /// False when no open tab owns it (closed, or launched elsewhere).
+    @discardableResult
+    func showSession(forMission missionID: String?) -> Bool {
+        guard let missionID, let tab = sessions.first(where: { $0.missionID.uuidString == missionID }) else {
+            return false
+        }
+        wake(tab.id)
+        activeID = tab.id
+        destination = .sessions
+        viewMode = .rail
+        return true
+    }
+
+    func hasSession(forMission missionID: String?) -> Bool {
+        guard let missionID else { return false }
+        return sessions.contains { $0.missionID.uuidString == missionID }
+    }
+}

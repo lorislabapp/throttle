@@ -10,6 +10,9 @@ import SwiftUI
 struct ProjectOverviewTab: View {
     @Environment(AppState.self) var appState
     let project: ProjectInfo
+    /// The folder when the caller already knows it; decoding the Claude Code
+    /// folder name cannot recover non-ASCII names such as "Éclair".
+    var knownRoot: URL?
 
     @State var overview: ProjectOverview?
     @State var costs: ProjectCostReadout?
@@ -88,8 +91,10 @@ struct ProjectOverviewTab: View {
         // ProjectInfo.url is the fast, lossy decode: a hyphenated folder name
         // (Lumen-for-Frigate) would point at a path that does not exist.
         let naive = project.url
-        guard let root = await Task.detached(operation: {
-            ProjectsService.decodePath(encoded).map { URL(fileURLWithPath: $0, isDirectory: true) } ?? naive
+        guard let root = await Task.detached(operation: { [knownRoot] in
+            if let knownRoot { return knownRoot }
+            return
+                ProjectsService.decodePath(encoded).map { URL(fileURLWithPath: $0, isDirectory: true) } ?? naive
         }).value else {
             overview = nil
             return
