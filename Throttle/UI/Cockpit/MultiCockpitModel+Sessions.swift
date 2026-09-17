@@ -17,7 +17,10 @@ extension MultiCockpitModel {
     /// only on a real change so unchanged ticks publish no `@Observable` mutation.
     func refreshWaitingCount() {
         let n = sessions.reduce(into: 0) { $0 += $1.needsInput ? 1 : 0 }
-        if n != waitingCount { waitingCount = n }
+        if n != waitingCount {
+            waitingCount = n
+            CockpitProjectsModel.shared.publishWaiting(from: self)
+        }
     }
 
     /// cwds open in more than one SPAWNED tab — wasted RAM + tokens on the same

@@ -66,6 +66,18 @@ final class CockpitProjectsModel {
         summaries = loaded.0
         rootByWorkingDirectory = loaded.1
         lastScan = Date()
+        publishWaiting(from: MultiCockpitModel.shared)
+    }
+
+    /// Hands Siri and Shortcuts the same "what waits on you" the Today page shows.
+    func publishWaiting(from cockpit: MultiCockpitModel) {
+        ThrottleWaitingSnapshotStore.write(ThrottleWaitingSnapshot.make(
+            questions: cockpit.sessions.filter(\.needsInput).map { ($0.projectName, $0.latestQuestion) },
+            projects: summaries.map {
+                ThrottleWaitingProject(name: $0.name, decisions: $0.openDecisions.map(\.title),
+                                       blocked: $0.blockedCount)
+            }
+        ))
     }
 
     nonisolated private static func overview(at url: URL) -> ProjectOverview? {

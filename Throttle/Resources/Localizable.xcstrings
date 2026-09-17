@@ -9143,6 +9143,46 @@
     "Default": {
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Par défaut" } } }
+    },
+    "What waits on me": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Qu’est-ce qui m’attend" } } }
+    },
+    "Say which Claude sessions ask a question, which decisions nobody settled and which plan work is blocked.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Dit quelles sessions Claude posent une question, quelles décisions ne sont pas tranchées et quel travail du plan est bloqué." } } }
+    },
+    "Nothing waits on you.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rien ne vous attend." } } }
+    },
+    "%@ asks a question": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%@ pose une question" } } }
+    },
+    "decision in %@: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "décision dans %@ : %@" } } }
+    },
+    "%@: %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%@ : %@" } } }
+    },
+    "%lld thing(s) wait on you: %@.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld chose(s) vous attendent : %@." } } }
+    },
+    "Open Throttle once so it can see your sessions.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouvrez Throttle une fois pour qu’il voie vos sessions." } } }
+    },
+    "What waits on me in ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Qu’est-ce qui m’attend dans ${applicationName}" } } }
+    },
+    "What is waiting for me in ${applicationName}": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Qu’est-ce qui m’attend sur ${applicationName}" } } }
     }
   },
   "version": "1.0"
