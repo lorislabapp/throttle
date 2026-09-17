@@ -68,7 +68,7 @@ extension ProjectOverviewTab {
     /// Plan view reads its project from the active session; without one the
     /// button says why it cannot help instead of opening another project's plan.
     func inspectorActions(taskID: String, settle decision: ProjectOverview.Decision?) -> some View {
-        let root = project.url
+        let root = resolvedRoot ?? project.url
         let cockpit = MultiCockpitModel.shared
         let hasSession = root != nil
         return HStack(spacing: 8) {

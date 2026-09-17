@@ -56,7 +56,9 @@ struct CockpitProjectPage: View {
         .task(id: path) {
             let target = path
             projectInfo = await Task.detached(priority: .userInitiated) {
-                ProjectsService.listProjects(includeArchived: true).first { $0.projectPath == target }
+                ProjectsService.listProjects(includeArchived: true).first {
+                    ProjectsService.decodePath($0.encodedName) == target
+                }
             }.value
         }
         .onChange(of: cockpit.pendingPlanSelection) { _, selection in

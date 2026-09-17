@@ -33,8 +33,12 @@ final class CockpitProjectsModel {
         let loaded = await Task.detached(priority: .utility) { () -> ([Summary], [ProjectInfo]) in
             var summaries: [Summary] = []
             var without: [ProjectInfo] = []
-            for project in ProjectsService.listProjects() where project.pathExists {
-                guard let url = project.url else { continue }
+            // The listing does not probe the disk (pathExists is always false there and
+            // hyphenated names decode wrongly), so resolve each folder here, off the main actor.
+            for project in ProjectsService.listProjects() {
+                guard let path = ProjectsService.decodePath(project.encodedName),
+                      FileManager.default.fileExists(atPath: path) else { continue }
+                let url = URL(fileURLWithPath: path, isDirectory: true)
                 let store = PlanStore(projectRoot: url)
                 guard store.planExists() else { without.append(project); continue }
                 guard let resolved = try? store.resolveAll() else { continue }
@@ -43,7 +47,7 @@ final class CockpitProjectsModel {
                     events[task.id] = (try? store.events(for: task.id).events) ?? []
                 }
                 let overview = ProjectOverview.project(plan: resolved.plan, states: resolved.states, events: events)
-                summaries.append(Summary(path: url.path, name: project.displayName, overview: overview))
+                summaries.append(Summary(path: url.path, name: url.lastPathComponent, overview: overview))
             }
             return (summaries.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }, without)
         }.value

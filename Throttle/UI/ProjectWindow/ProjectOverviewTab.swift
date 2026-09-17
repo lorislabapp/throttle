@@ -19,6 +19,8 @@ struct ProjectOverviewTab: View {
     @State var inspected: String?
     /// The decision whose "Settle" sheet is open.
     @State var settling: ProjectOverview.Decision?
+    /// The project folder as it really is on disk, resolved once per load.
+    @State var resolvedRoot: URL?
 
     var body: some View {
         Group {
@@ -39,7 +41,7 @@ struct ProjectOverviewTab: View {
         }
         .task(id: project.id) { await reload() }
         .sheet(item: $settling) { decision in
-            if let root = project.url {
+            if let root = resolvedRoot ?? project.url {
                 SettleDecisionSheet(decision: decision, projectRoot: root) {
                     settling = nil
                     Task { await reload() }
@@ -82,11 +84,17 @@ struct ProjectOverviewTab: View {
     func reload() async {
         loading = true
         defer { loading = false }
-        guard let root = project.url else {
+        let encoded = project.encodedName
+        // ProjectInfo.url is the fast, lossy decode: a hyphenated folder name
+        // (Lumen-for-Frigate) would point at a path that does not exist.
+        let naive = project.url
+        guard let root = await Task.detached(operation: {
+            ProjectsService.decodePath(encoded).map { URL(fileURLWithPath: $0, isDirectory: true) } ?? naive
+        }).value else {
             overview = nil
             return
         }
-        let encoded = project.encodedName
+        resolvedRoot = root
         let database = appState.database
         let loaded = await Task.detached { () -> Result<Loaded, Error> in
             do {
