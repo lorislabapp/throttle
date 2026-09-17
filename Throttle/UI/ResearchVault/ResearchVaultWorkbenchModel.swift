@@ -64,6 +64,9 @@ final class ResearchVaultWorkbenchModel {
     }
     var selectedSpaceID = "project:throttle"
     var folderSources: [ResearchVaultFolderSource] = []
+    /// Why each folder failed its last refresh, so the sidebar can say which
+    /// one and what to do, instead of one count in the status line.
+    var folderErrors: [UUID: String] = [:]
     /// A query that returned nothing and a vault nobody has searched yet look
     /// identical in the results area, and they need opposite words.
     var hasSearched = false
@@ -114,6 +117,8 @@ final class ResearchVaultWorkbenchModel {
                 serviceIdentity: $0
             )
         }
+        backfillFolderDocumentsOnce()
+        autoConnectResearchLibraries()
         refreshState()
         installFolderMonitor()
     }
@@ -193,7 +198,8 @@ final class ResearchVaultWorkbenchModel {
     func refreshSpaces() {
         guard !isIsolatedHost else { return }
         let projectKeys = Set(approvedReceipts.map(\.projectKey))
-            .union(folderSources.map(\.projectKey))
+            // A library's own name is not a project; its files name theirs.
+            .union(folderSources.filter { $0.projectSegment == nil }.map(\.projectKey))
             .union(["cheatcode", "throttle"])
         spaces = ResearchVaultSpaceStore.load(projectKeys: projectKeys)
         try? ResearchVaultSpaceStore.saveProjectKeys(projectKeys)

@@ -124,8 +124,10 @@ extension ResearchVaultWorkbenchModel {
     }
 
     static func projectNames(under root: URL, segment: Int) -> Set<String> {
-        guard segment > 0 else { return Set(directories(in: root).map(\.lastPathComponent)) }
-        return Set(directories(in: root).flatMap { directories(in: $0).map(\.lastPathComponent) })
+        let names = segment > 0
+            ? directories(in: root).flatMap { directories(in: $0).map(\.lastPathComponent) }
+            : directories(in: root).map(\.lastPathComponent)
+        return Set(names.compactMap(ResearchVaultFolderSource.canonicalProjectKey))
     }
 
     static func directories(in url: URL) -> [URL] {
@@ -165,8 +167,10 @@ extension ResearchVaultWorkbenchModel {
             for source in sources {
                 do {
                     imported += try await syncFolderSource(source, client: client)
+                    folderErrors[source.id] = nil
                 } catch {
                     failed += 1
+                    folderErrors[source.id] = Self.folderErrorText(error)
                 }
             }
             folderSources = ResearchVaultFolderSourceStore.load()
@@ -193,10 +197,11 @@ extension ResearchVaultWorkbenchModel {
         client: ResearchVaultClient
     ) async throws -> Int {
         let folder = try ResearchVaultFolderSourceStore.resolve(source)
-        guard folder.startAccessingSecurityScopedResource() else {
+        let scoped = folder.startAccessingSecurityScopedResource()
+        guard scoped || !ResearchVaultFolderSourceStore.isSandboxed else {
             throw ResearchVaultFolderSourceError.unavailable
         }
-        defer { folder.stopAccessingSecurityScopedResource() }
+        defer { if scoped { folder.stopAccessingSecurityScopedResource() } }
         let scan = try ResearchVaultFolderSourceStore.changedFiles(for: source, at: folder)
         guard !scan.urls.isEmpty else { return 0 }
 
@@ -206,8 +211,10 @@ extension ResearchVaultWorkbenchModel {
         // size. Files are grouped by the project they belong to and imported a
         // batch at a time instead.
         var byProject: [String: [URL]] = [:]
+        var relativeByPath: [String: String] = [:]
         for file in scan.urls {
             byProject[source.projectKey(forRelativePath: file.relative), default: []].append(file.url)
+            relativeByPath[file.url.standardizedFileURL.path] = file.relative
         }
 
         var inserted = 0
@@ -226,6 +233,8 @@ extension ResearchVaultWorkbenchModel {
                     _ = try await client.review(ids: pendingIDs, action: .approve)
                 }
                 inserted += response.insertedReceipts
+                try await sendDocuments(batch, files: chunk, projectKey: projectKey,
+                                        relativeByPath: relativeByPath, client: client)
             }
         }
         try ResearchVaultFolderSourceStore.markSynced(
@@ -233,6 +242,51 @@ extension ResearchVaultWorkbenchModel {
             fingerprints: scan.fingerprints
         )
         return inserted
+    }
+
+    /// The text of the files just receipted. Receipts alone left the vault with
+    /// documents to show and nothing to search, which read on screen as an
+    /// import that had done nothing.
+    func sendDocuments(_ batch: ManualResearchImportBatch, files: [URL], projectKey: String,
+                       relativeByPath: [String: String], client: ResearchVaultClient) async throws {
+        var relativeByName: [String: String] = [:]
+        for file in files {
+            let path = file.standardizedFileURL.path
+            relativeByName[file.lastPathComponent] = relativeByPath[path] ?? file.lastPathComponent
+        }
+        let payloads = batch.documents.compactMap { document -> ResearchVaultDocumentPayload? in
+            guard document.byteCount <= ResearchVaultIPCContract.maximumDocumentBytes else { return nil }
+            let relative = relativeByName[document.name] ?? document.name
+            return ResearchVaultDocumentPayload(
+                documentID: "folder-\(projectKey)-\(document.plaintextSHA256.prefix(32))",
+                title: document.name,
+                projectKey: projectKey,
+                category: URL(fileURLWithPath: relative).deletingLastPathComponent().lastPathComponent,
+                libraryPath: relative,
+                origins: [],
+                content: document.text,
+                plaintextSHA256: document.plaintextSHA256,
+                byteCount: document.byteCount,
+                modifiedAt: document.modifiedAt,
+                sensitivity: ResearchSensitivity.confidential.rawValue
+            )
+        }
+        for group in payloads.vaultDocumentBatches() {
+            _ = try await client.importDocuments(group)
+        }
+    }
+
+    static func folderErrorText(_ error: Error) -> String {
+        switch error {
+        case ResearchVaultFolderSourceError.staleBookmark:
+            String(localized: "Access lost: remove it and add the folder again.")
+        case ResearchVaultFolderSourceError.unavailable:
+            String(localized: "The folder is missing or not reachable.")
+        case ResearchVaultFolderSourceError.tooManyFiles:
+            String(localized: "Too many files: pick a smaller folder.")
+        default:
+            String(localized: "Import failed: \(error.localizedDescription)")
+        }
     }
 
     func installFolderMonitor() {

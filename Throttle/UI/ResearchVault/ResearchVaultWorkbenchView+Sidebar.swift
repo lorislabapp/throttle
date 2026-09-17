@@ -34,6 +34,7 @@ extension ResearchVaultWorkbenchView {
                         selectedSpaceFolders
                     }
                 }
+                NewProjectSpaceButton(model: model, isEnabled: vaultIsOn)
 
                 sidebarHeader(model.hasSearched ? "Facets · this query" : "Facets")
                 ForEach(WorkbenchPane.allCases) { facet in
@@ -104,11 +105,19 @@ extension ResearchVaultWorkbenchView {
         }
         ForEach(spaceFolders) { source in
             HStack(spacing: 6) {
-                Text(source.name)
-                    .font(.system(size: 11.5, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.head)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: ResearchVaultFolderSourceStore.label(for: source))
+                        .font(.system(size: 11.5, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.head)
+                    if let problem = model.folderErrors[source.id] {
+                        Label(problem, systemImage: "exclamationmark.triangle.fill")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
                 Spacer(minLength: 0)
                 Button {
                     model.removeFolderSource(source.id)
@@ -116,7 +125,7 @@ extension ResearchVaultWorkbenchView {
                     Image(systemName: "minus.circle")
                 }
                 .buttonStyle(.borderless)
-                .accessibilityLabel("Remove \(source.name)")
+                .accessibilityLabel("Remove \(ResearchVaultFolderSourceStore.label(for: source))")
             }
             .padding(.leading, 25)
             .padding(.trailing, 10)
