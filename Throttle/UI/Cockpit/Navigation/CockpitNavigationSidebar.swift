@@ -21,7 +21,8 @@ struct CockpitNavigationSidebar: View {
                             .padding(.horizontal, 10).padding(.vertical, 4)
                     }
                     ForEach(projects.summaries) { summary in
-                        row(.project(path: summary.path), icon: "folder", subtitle: Self.projectHint(summary))
+                        row(.project(path: summary.path), icon: "folder",
+                            subtitle: projectSubtitle(summary))
                     }
                     row(.portfolio, icon: "point.3.filled.connected.trianglepath.dotted")
                     Button { ResearchVaultWindowController.shared.show(query: "") } label: {
@@ -41,7 +42,7 @@ struct CockpitNavigationSidebar: View {
         }
         .frame(width: 224)
         .background(.bar)
-        .task { await projects.refresh() }
+        .task(id: cockpit.sessions.map(\.cwd)) { await projects.refresh() }
     }
 
     // MARK: Rows
@@ -112,6 +113,14 @@ struct CockpitNavigationSidebar: View {
         return String(localized: "\(live) active · \(asleep) asleep")
     }
 
+    /// The plan state, then how many sessions work in the project.
+    private func projectSubtitle(_ summary: CockpitProjectsModel.Summary) -> String {
+        let count = projects.sessions(in: summary.path, from: cockpit).count
+        let hint = Self.projectHint(summary) ?? ""
+        guard count > 0 else { return hint }
+        return hint + " · " + String(localized: "\(count) session(s)")
+    }
+
     static func projectHint(_ summary: CockpitProjectsModel.Summary) -> String? {
         let decisions = summary.openDecisions.count
         if decisions > 0 {
@@ -120,7 +129,9 @@ struct CockpitNavigationSidebar: View {
         if summary.blockedCount > 0 {
             return String(localized: "\(summary.blockedCount) blocked or failed")
         }
-        let progress = summary.overview.progress
+        guard let progress = summary.overview?.progress else {
+            return String(localized: "No plan yet")
+        }
         return String(localized: "\(progress.proven)/\(progress.total) verified")
     }
 

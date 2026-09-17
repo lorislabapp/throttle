@@ -102,7 +102,7 @@ struct CockpitCommandPalette: View {
                 entries.append(Entry(id: "d:\(path)#\(decision.id)", group: .decisions, title: decision.title,
                                      detail: summary.name) { cockpit.destination = .project(path: path) })
             }
-            for task in summary.overview.tasks {
+            for task in summary.overview?.tasks ?? [] {
                 entries.append(Entry(id: "t:\(path)#\(task.id)", group: .tasks, title: task.title,
                                      detail: "\(summary.name) · \(ProjectOverviewTab.bucketWord(task.bucket))") {
                     cockpit.pendingPlanSelection = task.id

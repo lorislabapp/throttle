@@ -121,7 +121,7 @@ struct CockpitTodayView: View {
                     HStack(spacing: 14) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(verbatim: summary.name).font(.system(size: 13.5, weight: .semibold))
-                            if let objective = summary.overview.objective?.text {
+                            if let objective = summary.overview?.objective?.text {
                                 Text(verbatim: objective).font(.system(size: 11.5)).foregroundStyle(.secondary)
                                     .lineLimit(1)
                             }

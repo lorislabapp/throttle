@@ -9071,6 +9071,34 @@
     "Not blocking": {
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Non bloquante" } } }
+    },
+    "Open project %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouvrir le projet %@" } } }
+    },
+    "Attach to a project…": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rattacher à un projet…" } } }
+    },
+    "Detach from project (back to automatic)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Détacher du projet (retour à l’automatique)" } } }
+    },
+    "Choose the project folder for this session": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisissez le dossier du projet pour cette session" } } }
+    },
+    "Attach": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Rattacher" } } }
+    },
+    "No plan yet": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Pas encore de plan" } } }
+    },
+    "%lld session(s)": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld session(s)" } } }
     }
   },
   "version": "1.0"

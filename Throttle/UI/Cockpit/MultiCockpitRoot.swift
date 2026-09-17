@@ -20,6 +20,8 @@ struct MultiCockpitRoot: View {
     @State var hoveredSession: UUID?
     @State var expandedFeed: UUID?
     @State var reentryExpanded = false
+    /// ⌘K reaches the palette even while a terminal has the keyboard.
+    @State var paletteKeyMonitor: Any?
     @State var remoteSvc = RemoteSessionsService.shared   // edge-agent sessions in the rail
     @State var selectedRemoteID: String?  // remote session shown over the terminal area
     @State var railFilter = ""            // rail search — shown only when crowded
@@ -57,10 +59,20 @@ struct MultiCockpitRoot: View {
                                     set: { model.isCommandPaletteOpen = $0 })) {
             CockpitCommandPalette(cockpit: model, projects: CockpitProjectsModel.shared)
         }
-        .background {
-            Button("") { model.isCommandPaletteOpen = true }
-                .keyboardShortcut("k", modifiers: .command)
-                .opacity(0).accessibilityHidden(true)
+        .onAppear {
+            guard paletteKeyMonitor == nil else { return }
+            paletteKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                // A terminal view takes every key, so a SwiftUI shortcut never fires there.
+                let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+                guard flags == .command, event.charactersIgnoringModifiers == "k",
+                      event.window?.title.contains("Cockpit") == true else { return event }
+                model.isCommandPaletteOpen = true
+                return nil
+            }
+        }
+        .onDisappear {
+            if let paletteKeyMonitor { NSEvent.removeMonitor(paletteKeyMonitor) }
+            paletteKeyMonitor = nil
         }
     }
 

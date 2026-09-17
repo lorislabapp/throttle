@@ -9,6 +9,8 @@ extension MultiCockpitRoot {
     /// discoverable, not hidden behind a right-click only power users try.
     @ViewBuilder func sessionMenu(_ s: CockpitTab) -> some View {
         let target: AgentRuntime = s.runtime == .claudeCode ? .codex : .claudeCode
+        projectMenu(s)
+        Divider()
         Button {
             requestHandoff(s, to: target)
         } label: {
