@@ -9099,6 +9099,50 @@
     "%lld session(s)": {
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%lld session(s)" } } }
+    },
+    "wake ≈€%@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "réveil ≈%@ €" } } }
+    },
+    "Waking this session reloads ≈%@ tokens of context, about €%@.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Réveiller cette session recharge ≈%@ tokens de contexte, environ %@ €." } } }
+    },
+    "not launched": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "non lancée" } } }
+    },
+    "Filter sessions": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Filtrer les sessions" } } }
+    },
+    "Model": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Modèle" } } }
+    },
+    "Answers": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Réponses" } } }
+    },
+    "Exact quota": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Quota exact" } } }
+    },
+    "connected": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "connecté" } } }
+    },
+    "not connected": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "non connecté" } } }
+    },
+    "Portfolio setup": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Configuration du portefeuille" } } }
+    },
+    "Default": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Par défaut" } } }
     }
   },
   "version": "1.0"

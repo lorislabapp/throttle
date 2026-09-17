@@ -1,8 +1,10 @@
+import AppKit
 import SwiftUI
 
 /// The Cockpit's left column: four destinations always in view, projects under
 /// their own heading. It answers "where do I go" before anything else is shown.
 struct CockpitNavigationSidebar: View {
+    @Environment(AppState.self) private var appState
     @Bindable var cockpit: MultiCockpitModel
     var projects: CockpitProjectsModel
 
@@ -37,6 +39,8 @@ struct CockpitNavigationSidebar: View {
                 }
                 .padding(.horizontal, 8).padding(.vertical, 10)
             }
+            Divider()
+            settingsFooter
             Divider()
             machineFooter
         }
@@ -83,6 +87,58 @@ struct CockpitNavigationSidebar: View {
             .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
             .padding(.horizontal, 10).padding(.top, 14).padding(.bottom, 4)
             .accessibilityAddTraits(.isHeader)
+    }
+
+    /// The settings that used to crowd the top bar, each saying its current value
+    /// and opening the place where it changes.
+    private var settingsFooter: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            settingRow(String(localized: "Model"), value: cockpit.routingMode.label, icon: "arrow.triangle.branch") {
+                AIRoutingWindowController.shared.show()
+            }
+            settingRow(String(localized: "Answers"), value: Self.styleName(OutputStyleManager.activeName()),
+                       icon: "text.alignleft") {
+                OutputStyleWindowController.shared.show()
+            }
+            settingRow(String(localized: "Exact quota"),
+                       value: appState.exactSnapshot != nil ? String(localized: "connected")
+                                                           : String(localized: "not connected"),
+                       icon: "scope") {
+                cockpit.destination = .usage
+            }
+            settingRow(String(localized: "Plan"),
+                       value: appState.isPro ? "Pro" : String(localized: "Free"), icon: "person.crop.circle") {
+                if !appState.isPro, let url = URL(string: "https://lorislab.fr/throttle/buy") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            settingRow(String(localized: "Portfolio setup"), value: nil, icon: "square.stack.3d.up") {
+                GlobalRAGOnboardingWindowController.shared.show(canInstallMCP: appState.isPro) { _ in }
+            }
+        }
+        .padding(.horizontal, 8).padding(.vertical, 6)
+    }
+
+    private func settingRow(_ title: String, value: String?, icon: String,
+                            action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon).frame(width: 18).foregroundStyle(.secondary)
+                Text(verbatim: title).font(.system(size: 12))
+                Spacer(minLength: 4)
+                if let value {
+                    Text(verbatim: value).font(.system(size: 11.5)).foregroundStyle(.secondary).lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 10).padding(.vertical, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(verbatim: value.map { "\(title), \($0)" } ?? title))
+    }
+
+    static func styleName(_ name: String) -> String {
+        name == "Default" ? String(localized: "Default") : name.replacingOccurrences(of: "Throttle ", with: "")
     }
 
     private var machineFooter: some View {

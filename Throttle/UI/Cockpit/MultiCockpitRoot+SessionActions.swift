@@ -133,7 +133,14 @@ extension MultiCockpitRoot {
 
     func resumeImpactText(_ session: CockpitTab) -> String? {
         guard let impact = session.promptCacheImpact, impact.shouldWarn else { return nil }
-        return "≈\(fmtTok(impact.contextTokens)) input · ≈€\(String(format: "%.2f", impact.rebuildEUR))"
+        let price = String(format: "%.2f", impact.rebuildEUR)
+        return String(localized: "wake ≈€\(price)")
+    }
+
+    func resumeImpactHelp(_ session: CockpitTab) -> String? {
+        guard let impact = session.promptCacheImpact, impact.shouldWarn else { return nil }
+        let tokens = fmtTok(impact.contextTokens), price = String(format: "%.2f", impact.rebuildEUR)
+        return String(localized: "Waking this session reloads ≈\(tokens) tokens of context, about €\(price).")
     }
 
     /// One icon button in the rail-row hover cluster.
