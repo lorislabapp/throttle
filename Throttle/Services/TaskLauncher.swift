@@ -34,15 +34,16 @@ enum TaskLauncher {
         let author: String
         let base: String
         let missionID: UUID
+        let role: AgentRole
     }
 
     static func prepare(taskID: String, runtime: AgentRuntime, repo: URL,
                         author: String, base: String = "HEAD",
-                        missionID: UUID = UUID()) throws -> LaunchPlan {
+                        missionID: UUID = UUID(), role: AgentRole = .builder) throws -> LaunchPlan {
         let store = PlanStore(projectRoot: repo)
         return try store.mutate { store in
             try prepareLocked(taskID: taskID, runtime: runtime, repo: repo,
-                              context: PreparationContext(author: author, base: base, missionID: missionID),
+                              context: PreparationContext(author: author, base: base, missionID: missionID, role: role),
                               store: store)
         }
     }
@@ -93,7 +94,7 @@ enum TaskLauncher {
                 runtime: runtime,
                 workingDirectory: worktree,
                 branch: try TaskWorktreeService.branchName(for: taskID),
-                kickoff: kickoff(for: task, author: author, plan: plan, budgetAdmission: admission),
+                kickoff: retryAwareKickoff(task, plan, context, admission, store),
                 missionID: missionID,
                 authorityDescriptor: try descriptor.unwrapped(),
                 budgetAdmission: admission
@@ -159,6 +160,14 @@ enum TaskLauncher {
         return url
     }
 
+    /// The kickoff with what earlier attempts on the task taught and the chosen role.
+    private static func retryAwareKickoff(_ task: PlanTask, _ plan: Plan, _ context: PreparationContext,
+                                          _ admission: BudgetAdmissionDecision?, _ store: PlanStore) -> String {
+        let history = AttemptHistory.lessons(taskID: task.id, events: (try? store.events(for: task.id).events) ?? [])
+        return kickoff(for: task, author: context.author, plan: plan, budgetAdmission: admission,
+                       history: history, role: context.role)
+    }
+
     /// The prompt the agent opens on. It states the task, the boundary it must not
     /// cross, and how to report — an agent that does not know it should report
     /// leaves the plan looking stalled while it works.
@@ -166,7 +175,9 @@ enum TaskLauncher {
         for task: PlanTask,
         author: String,
         plan: Plan,
-        budgetAdmission: BudgetAdmissionDecision? = nil
+        budgetAdmission: BudgetAdmissionDecision? = nil,
+        history: [AttemptHistory.Lesson] = [],
+        role: AgentRole = .builder
     ) -> String {
         var lines = [
             "You are working on one task from this project's Throttle plan.",
@@ -195,6 +206,8 @@ enum TaskLauncher {
             "  throttle_task_event  released   — if you stop, so someone else can take it"
         ])
         lines.append(contentsOf: workContractLines(task.workContract))
+        lines.append(contentsOf: role.charter)
+        lines.append(contentsOf: AttemptHistory.kickoffLines(history))
         if let budgetAdmission {
             let amounts = budgetAdmission.reservation.request.amounts.map {
                 "\($0.value) \($0.resource.rawValue)"
