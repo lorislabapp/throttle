@@ -9297,6 +9297,455 @@
         "en": { "stringUnit": { "state": "translated", "value": "When a decision waits on you, open it from Today and choose Settle." } },
         "fr": { "stringUnit": { "state": "translated", "value": "Quand une décision vous attend, ouvrez-la depuis Aujourd’hui et choisissez Trancher." } }
       }
+    },
+    "Access lost: remove it and add the folder again.": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Access lost: remove it and add the folder again." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Accès perdu : retirez-le puis rajoutez le dossier." } }
+      }
+    },
+    "The folder is missing or not reachable.": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "The folder is missing or not reachable." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Le dossier est introuvable ou inaccessible." } }
+      }
+    },
+    "Too many files: pick a smaller folder.": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Too many files: pick a smaller folder." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Trop de fichiers : choisissez un dossier plus petit." } }
+      }
+    },
+    "Import failed: %@": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Import failed: %@" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Échec de l’import : %@" } }
+      }
+    },
+    "Space %@ created. Add the folder that holds its research.": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Space %@ created. Add the folder that holds its research." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Espace %@ créé. Ajoutez le dossier qui contient ses recherches." } }
+      }
+    },
+    "New project space…": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "New project space…" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Nouvel espace projet…" } }
+      }
+    },
+    "New project space": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "New project space" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Nouvel espace projet" } }
+      }
+    },
+    "Create a space for a project, then add its research folder": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Create a space for a project, then add its research folder" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Crée un espace pour un projet, puis ajoute son dossier de recherche" } }
+      }
+    },
+    "Name the project. Next, choose the folder that holds its research.": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Name the project. Next, choose the folder that holds its research." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Nommez le projet. Ensuite, choisissez le dossier qui contient ses recherches." } }
+      }
+    },
+    "e.g. Eclair": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "e.g. Eclair" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "ex. Éclair" } }
+      }
+    },
+    "Space: %@": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Space: %@" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Espace : %@" } }
+      }
+    },
+    "Create and choose folder…": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Create and choose folder…" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Créer et choisir le dossier…" } }
+      }
+    },
+    "%@ is working on %@. Follow it in its session.": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%@ is working on %@. Follow it in its session." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "%@ travaille sur %@. Suivez-le dans sa session." } }
+      }
+    },
+    "An agent": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "An agent" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Un agent" } }
+      }
+    },
+    "%@ failed. Open it to read why, then retry or release it.": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%@ failed. Open it to read why, then retry or release it." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "%@ a échoué. Ouvrez-la pour lire pourquoi, puis relancez-la ou libérez-la." } }
+      }
+    },
+    "%@ is finished and waits for its verification.": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%@ is finished and waits for its verification." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "%@ est terminée et attend sa vérification." } }
+      }
+    },
+    "Start %@: open it, then Launch.": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Start %@: open it, then Launch." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Commencez %@ : ouvrez-la, puis Lancer." } }
+      }
+    },
+    "Nothing can start yet: %@ waits on another task.": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Nothing can start yet: %@ waits on another task." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Rien ne peut démarrer : %@ attend une autre tâche." } }
+      }
+    },
+    "Every task in this plan is done.": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Every task in this plan is done." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Toutes les tâches de ce plan sont faites." } }
+      }
+    },
+    "%lld research library(ies) connected automatically. Importing locally…": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%lld research library(ies) connected automatically. Importing locally…" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "%lld bibliothèque(s) de recherche branchée(s) automatiquement. Import local en cours…" } }
+      }
+    },
+    "cockpit.view.flow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Flow" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Flux" } }
+      }
+    },
+    "flow.toStart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "To start" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "À démarrer" } }
+      }
+    },
+    "flow.working": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Agent working" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Agent au travail" } }
+      }
+    },
+    "flow.fixing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "To fix" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "À corriger" } }
+      }
+    },
+    "flow.checking": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Being verified" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "En vérification" } }
+      }
+    },
+    "flow.ready": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Ready to integrate" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Prêt à intégrer" } }
+      }
+    },
+    "flow.shipped": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Integrated" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Intégré" } }
+      }
+    },
+    "flow.waiting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Waiting" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "En attente" } }
+      }
+    },
+    "flow.toStart.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Ready tasks. Open one, then Launch an agent." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Tâches prêtes. Ouvrez-en une, puis lancez un agent." } }
+      }
+    },
+    "flow.working.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "An agent works on these in its own session." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Un agent y travaille dans sa propre session." } }
+      }
+    },
+    "flow.fixing.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Failed or sent back by verification. Throttle relaunches within your budget." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Échec ou renvoyée par la vérification. Throttle relance dans la limite de votre budget." } }
+      }
+    },
+    "flow.checking.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Finished by an agent; tests and a model of another family check them." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Terminées par un agent ; les tests et un modèle d’une autre famille les vérifient." } }
+      }
+    },
+    "flow.ready.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Verified. Review the diff, then integrate." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Vérifiées. Relisez le diff, puis intégrez." } }
+      }
+    },
+    "flow.shipped.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Merged into the project." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Fusionnées dans le projet." } }
+      }
+    },
+    "flow.waiting.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Blocked, or waiting for another task to finish." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Bloquées, ou en attente qu’une autre tâche se termine." } }
+      }
+    },
+    "%@ needs a fix. Open it to read why.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%@ needs a fix. Open it to read why." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "%@ doit être corrigée. Ouvrez-la pour lire pourquoi." } }
+      }
+    },
+    "%@ is verified. Review it and integrate.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%@ is verified. Review it and integrate." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "%@ est vérifiée. Relisez-la puis intégrez-la." } }
+      }
+    },
+    "flow.note.noSession": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No open session holds it: the agent stopped. Open it to relaunch or release." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Aucune session ouverte ne la tient : l’agent s’est arrêté. Ouvrez-la pour relancer ou libérer." } }
+      }
+    },
+    "Sent back %lld time(s)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Sent back %lld time(s)" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Renvoyée %lld fois" } }
+      }
+    },
+    "Waits for %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Waits for %@" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Attend %@" } }
+      }
+    },
+    "flow.health.noFailures": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No failed task" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Aucune tâche en échec" } }
+      }
+    },
+    "flow.health.failures": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "A task failed" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Une tâche a échoué" } }
+      }
+    },
+    "flow.health.proofs": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Latest tests pass" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Les derniers tests passent" } }
+      }
+    },
+    "flow.health.proofsRed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "A test run failed" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Un passage de tests a échoué" } }
+      }
+    },
+    "flow.health.proofsNone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No test run yet" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Aucun test lancé pour l’instant" } }
+      }
+    },
+    "flow.health.noDecision": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No decision waits on you" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Aucune décision ne vous attend" } }
+      }
+    },
+    "flow.health.decision": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "A decision waits on you" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Une décision vous attend" } }
+      }
+    },
+    "flow.health.log": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Plan log intact" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Journal du plan intact" } }
+      }
+    },
+    "flow.health.logBroken": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Plan log edited outside Throttle" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Journal du plan modifié hors de Throttle" } }
+      }
+    },
+    "role.builder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Builder" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Développeur" } }
+      }
+    },
+    "role.testWriter": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Test writer" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Tests" } }
+      }
+    },
+    "role.securityRedTeam": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Security red team" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Red team sécurité" } }
+      }
+    },
+    "role.docs": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Documentation" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Documentation" } }
+      }
+    },
+    "role.uiux": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "UI/UX" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "UI/UX" } }
+      }
+    },
+    "role.refactor": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Refactor" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Refactorisation" } }
+      }
+    },
+    "HEALTH": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "HEALTH" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "SANTÉ" } }
+      }
+    },
+    "RECENT ACTIVITY": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "RECENT ACTIVITY" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "ACTIVITÉ RÉCENTE" } }
+      }
+    },
+    "Nothing has moved yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Nothing has moved yet." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Rien n’a encore bougé." } }
+      }
+    },
+    "WORTH REMEMBERING": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "WORTH REMEMBERING" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "À RETENIR" } }
+      }
+    },
+    "The next agent on the task already gets these. Add one to CLAUDE.md to apply it everywhere.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "The next agent on the task already gets these. Add one to CLAUDE.md to apply it everywhere." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Le prochain agent sur la tâche les reçoit déjà. Ajoutez-en une à CLAUDE.md pour l’appliquer partout." } }
+      }
+    },
+    "Add to CLAUDE.md": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add to CLAUDE.md" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Ajouter à CLAUDE.md" } }
+      }
+    },
+    "Ignore": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Ignore" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Ignorer" } }
+      }
+    },
+    "CLAUDE.md could not be written: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "CLAUDE.md could not be written: %@" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Impossible d’écrire CLAUDE.md : %@" } }
+      }
+    },
+    "This project has no plan yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "This project has no plan yet" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Ce projet n’a pas encore de plan" } }
+      }
+    },
+    "Throttle proposes a starting plan from what is in the folder.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Throttle proposes a starting plan from what is in the folder." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Throttle propose un plan de départ à partir du contenu du dossier." } }
+      }
+    },
+    "Create the plan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Create the plan" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Créer le plan" } }
+      }
+    },
+    "Role the agent takes on this task": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Role the agent takes on this task" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Rôle que prend l’agent sur cette tâche" } }
+      }
     }
   },
   "version": "1.0"
