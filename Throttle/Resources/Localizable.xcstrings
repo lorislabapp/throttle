@@ -9187,6 +9187,116 @@
     "No session open in this project": {
       "extractionState": "manual",
       "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Aucune session ouverte dans ce projet" } } }
+    },
+    "First steps": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Premiers pas" } } }
+    },
+    "Hide": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Masquer" } } }
+    },
+    "To do": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "À faire" } } }
+    },
+    "Show me": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Me montrer" } } }
+    },
+    "Open a project": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouvrir un projet" } } }
+    },
+    "Each project gathers its plan, its sessions and what waits on you.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Chaque projet réunit son plan, ses sessions et ce qui vous attend." } } }
+    },
+    "Launch an agent on this task": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Lancer un agent sur cette tâche" } } }
+    },
+    "Pick a ready task, then Launch. Throttle opens a session that works on it and reports back here.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Choisissez une tâche prête, puis Lancer. Throttle ouvre une session qui y travaille et rend compte ici." } } }
+    },
+    "Settle it here": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Tranchez ici" } } }
+    },
+    "Your choice and your reason go into the task's log.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Votre choix et votre raison sont inscrits dans le journal de la tâche." } } }
+    },
+    "onboarding.openProject": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open a project" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Ouvrir un projet" } }
+      }
+    },
+    "onboarding.createPlan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Create its plan" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Créer son plan" } }
+      }
+    },
+    "onboarding.launchTask": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Launch an agent on a task" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Lancer un agent sur une tâche" } }
+      }
+    },
+    "onboarding.followSession": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Follow the agent's session" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Suivre la session de l’agent" } }
+      }
+    },
+    "onboarding.settleDecision": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Settle a decision" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Trancher une décision" } }
+      }
+    },
+    "onboarding.openProject.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "In the sidebar, under Projects, click the project you work on." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Dans la barre latérale, sous Projets, cliquez sur le projet sur lequel vous travaillez." } }
+      }
+    },
+    "onboarding.createPlan.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open Plan: Throttle proposes a starting plan for this project. Accept it." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Ouvrez Plan : Throttle propose un plan de départ pour ce projet. Acceptez-le." } }
+      }
+    },
+    "onboarding.launchTask.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "In Plan, pick a task marked Ready, then Launch (or Choose… to pick Claude or Codex)." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Dans Plan, choisissez une tâche « Prête », puis Lancer (ou Choisir… pour prendre Claude ou Codex)." } }
+      }
+    },
+    "onboarding.followSession.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open Sessions to watch the agent and answer its questions." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Ouvrez Sessions pour suivre l’agent et répondre à ses questions." } }
+      }
+    },
+    "onboarding.settleDecision.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "When a decision waits on you, open it from Today and choose Settle." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Quand une décision vous attend, ouvrez-la depuis Aujourd’hui et choisissez Trancher." } }
+      }
     }
   },
   "version": "1.0"

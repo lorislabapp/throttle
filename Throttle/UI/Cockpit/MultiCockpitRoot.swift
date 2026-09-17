@@ -60,6 +60,7 @@ struct MultiCockpitRoot: View {
             CockpitCommandPalette(cockpit: model, projects: CockpitProjectsModel.shared)
         }
         .onAppear {
+            OnboardingTips.configure()   // idempotent: a second call throws and is ignored
             guard paletteKeyMonitor == nil else { return }
             paletteKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
                 // A terminal view takes every key, so a SwiftUI shortcut never fires there.

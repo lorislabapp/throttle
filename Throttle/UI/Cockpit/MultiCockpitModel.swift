@@ -73,8 +73,14 @@ final class MultiCockpitModel {
     var pendingPlanSelection: String?
     /// Where the navigation sidebar points. Sessions keeps `viewMode` for its
     /// own display (rail, tabs, cards); the other destinations replace it.
+    /// Set by the first-steps checklist: the next project page opens on its plan.
+    var pendingProjectPlanPage = false
     var destination: CockpitDestination = .today {
         didSet {
+            if case .project = destination { CockpitOnboarding.markDone(.openProject) }
+            if destination == .sessions, UserDefaults.standard.bool(forKey: "cockpitOnboarding.done.launchTask") {
+                CockpitOnboarding.markDone(.followSession)
+            }
             // The old top-level pages now live in the sidebar; Sessions only shows sessions.
             if destination == .sessions, [.dashboard, .portfolio, .plan].contains(viewMode) { viewMode = .rail }
         }

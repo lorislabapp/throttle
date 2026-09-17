@@ -64,5 +64,9 @@ struct CockpitProjectPage: View {
         .onChange(of: cockpit.pendingPlanSelection) { _, selection in
             if selection != nil { page = .plan }
         }
+        .onAppear {
+            if cockpit.pendingPlanSelection != nil || cockpit.pendingProjectPlanPage { page = .plan }
+            cockpit.pendingProjectPlanPage = false
+        }
     }
 }

@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import TipKit
 
 /// The Cockpit's left column: four destinations always in view, projects under
 /// their own heading. It answers "where do I go" before anything else is shown.
@@ -15,6 +16,7 @@ struct CockpitNavigationSidebar: View {
                     row(.today, icon: "sun.max", badge: todayCount > 0 ? "\(todayCount)" : nil)
 
                     sectionHeader("cockpit.nav.projects", "Projects")
+                        .popoverTip(OpenProjectTip(), arrowEdge: .trailing)
                     if projects.summaries.isEmpty {
                         Text(projects.isLoading
                              ? String(localized: "cockpit.nav.loadingProjects", defaultValue: "Reading plans…")

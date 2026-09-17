@@ -1,4 +1,5 @@
 import SwiftUI
+import TipKit
 
 // The recommendation block and the launch it triggers, kept out of the tree view
 // so the part that spends the user's money reads on its own.
@@ -141,7 +142,7 @@ extension PlanTreeView {
                 }
                 .menuStyle(.borderlessButton).fixedSize().controlSize(.small)
             }
-            .padding(.top, 2)
+            .padding(.top, 2).popoverTip(LaunchTaskTip(), arrowEdge: .top)
 
             if let launchError {
                 Text(launchError).font(.system(size: 11)).foregroundStyle(.red)
@@ -154,6 +155,7 @@ extension PlanTreeView {
         do {
             launchError = nil
             onLaunch?(try model.prepareLaunch(taskID: taskID, runtime: runtime))
+            CockpitOnboarding.markDone(.launchTask)
         } catch let error as TaskLauncher.LaunchError {
             switch error {
             case .alreadyHeld(_, let owner):

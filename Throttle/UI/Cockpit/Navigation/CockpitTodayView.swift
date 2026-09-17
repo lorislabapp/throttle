@@ -12,6 +12,7 @@ struct CockpitTodayView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
+                OnboardingChecklistCard(cockpit: cockpit, projects: projects)
                 waitingCard
                 projectsCard
                 quotaCard

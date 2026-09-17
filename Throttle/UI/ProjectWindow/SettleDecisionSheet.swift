@@ -62,6 +62,7 @@ struct SettleDecisionSheet: View {
                 .init(choice: choice, rationale: rationale), taskID: decision.id, decidedBy: NSUserName(),
                 attempt: attempt, store: PlanStore(projectRoot: projectRoot)
             )
+            CockpitOnboarding.markDone(.settleDecision)
             onDone()
         } catch HumanDecisionRecorder.RecordError.notOpen {
             errorText = String(localized: "This decision is no longer open: someone or something has already taken it.")

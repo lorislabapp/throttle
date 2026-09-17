@@ -1,4 +1,5 @@
 import SwiftUI
+import TipKit
 
 extension ProjectOverviewTab {
 
@@ -85,6 +86,7 @@ extension ProjectOverviewTab {
                     settling = decision
                 }
                 .buttonStyle(.borderedProminent)
+                .popoverTip(SettleDecisionTip(), arrowEdge: .bottom)
             }
         }
         .controlSize(.small)
