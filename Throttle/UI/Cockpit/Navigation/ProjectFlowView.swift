@@ -6,6 +6,8 @@ struct ProjectFlowView: View {
     let cockpit: MultiCockpitModel
     let overview: ProjectOverview
     let projectRoot: URL
+    /// What each task has cost so far, measured from its own sessions.
+    var spend: [String: TaskSpend.Entry] = [:]
     /// Opens the Plan page on a task.
     let openInPlan: (String) -> Void
 
@@ -17,13 +19,14 @@ struct ProjectFlowView: View {
                 ScrollView(.horizontal) {
                     HStack(alignment: .top, spacing: 10) {
                         ForEach(PlanFlow.columns(overview)) { column in
-                            FlowColumnView(column: column, cockpit: cockpit, openInPlan: openInPlan)
+                            FlowColumnView(column: column, cockpit: cockpit, spend: spend, openInPlan: openInPlan)
                         }
                     }
                     .padding(16)
                 }
                 Divider()
-                FlowSidePanel(overview: overview, projectRoot: projectRoot, openInPlan: openInPlan)
+                FlowSidePanel(overview: overview, projectRoot: projectRoot, spend: spend,
+                              openInPlan: openInPlan)
                     .frame(width: 260)
             }
         }
@@ -61,6 +64,7 @@ struct ProjectFlowView: View {
 private struct FlowColumnView: View {
     let column: PlanFlow.Column
     let cockpit: MultiCockpitModel
+    let spend: [String: TaskSpend.Entry]
     let openInPlan: (String) -> Void
 
     var body: some View {
@@ -107,6 +111,12 @@ private struct FlowColumnView: View {
                         Text(verbatim: runtime).font(.system(size: 10)).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
+                    if let entry = spend[item.id], entry.measured {
+                        Text(verbatim: TaskSpend.format(entry.costEUR))
+                            .font(.system(size: 10, weight: .medium).monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .help(Text("Measured on this Mac, from this task's own sessions"))
+                    }
                     if let since = item.lastActivity {
                         Text(since, format: .relative(presentation: .numeric, unitsStyle: .abbreviated))
                             .font(.system(size: 10)).foregroundStyle(.tertiary)
@@ -132,11 +142,13 @@ private struct FlowColumnView: View {
 private struct FlowSidePanel: View {
     let overview: ProjectOverview
     let projectRoot: URL
+    let spend: [String: TaskSpend.Entry]
     let openInPlan: (String) -> Void
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
+                spendSection
                 VStack(alignment: .leading, spacing: 8) {
                     header("HEALTH")
                     ForEach(PlanFlow.health(overview)) { check in
@@ -171,6 +183,26 @@ private struct FlowSidePanel: View {
                 }
             }
             .padding(16)
+        }
+    }
+
+    /// What the plan has cost so far. Tasks nobody measured are counted apart:
+    /// an average over unknowns would read as a smaller bill, not a missing one.
+    @ViewBuilder
+    private var spendSection: some View {
+        let total = TaskSpend.total(spend)
+        if total.measured > 0 {
+            VStack(alignment: .leading, spacing: 4) {
+                header("SPENT ON THIS PLAN")
+                Text(verbatim: TaskSpend.format(total.costEUR))
+                    .font(.system(size: 20, weight: .semibold).monospacedDigit())
+                Text("\(total.measured) task(s) measured · \(total.unmeasured) without a session")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("API price of the tokens these sessions used. Not your subscription, and never added to it.")
+                    .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 

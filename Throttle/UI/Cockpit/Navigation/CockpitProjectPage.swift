@@ -23,6 +23,7 @@ struct CockpitProjectPage: View {
     /// The plan as a pipeline, re-read every few seconds while the Flow page is shown.
     @State private var flowOverview: ProjectOverview?
     @State private var flowLoaded = false
+    @State private var flowSpend: [String: TaskSpend.Entry] = [:]
     /// Read once per project: listing projects scans ~/.claude/projects.
     @State private var projectInfo: ProjectInfo?
 
@@ -78,6 +79,13 @@ struct CockpitProjectPage: View {
                     CockpitProjectsModel.overview(at: root)
                 }.value
                 flowLoaded = true
+                if let overview = flowOverview {
+                    let ids = overview.tasks.map(\.id)
+                    let database = appState.database
+                    flowSpend = await Task.detached(priority: .utility) {
+                        TaskSpend.spend(forTasks: ids, projectRoot: root, database: database)
+                    }.value
+                }
                 try? await Task.sleep(for: .seconds(4))
             }
         }
@@ -100,7 +108,8 @@ struct CockpitProjectPage: View {
     private var flowPage: some View {
         if let flowOverview {
             ProjectFlowView(cockpit: cockpit, overview: flowOverview,
-                            projectRoot: URL(fileURLWithPath: path, isDirectory: true)) { taskID in
+                            projectRoot: URL(fileURLWithPath: path, isDirectory: true),
+                            spend: flowSpend) { taskID in
                 cockpit.pendingPlanSelection = taskID
                 page = .plan
             }
