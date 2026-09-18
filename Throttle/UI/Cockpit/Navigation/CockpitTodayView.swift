@@ -15,6 +15,7 @@ struct CockpitTodayView: View {
                 OnboardingChecklistCard(cockpit: cockpit, projects: projects)
                 waitingCard
                 TodayFlowTiles(cockpit: cockpit, projects: projects)
+                OutsideAgentsCard(cockpit: cockpit)
                 projectsCard
                 quotaCard
             }

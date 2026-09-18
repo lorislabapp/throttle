@@ -29,7 +29,12 @@ extension CockpitTab {
     }
 
     private func nativeAgentCommand(home: URL, agentsFlag: String, journal: RemoteTransferJournal) throws -> String {
-        guard runtime.usesTranscript else { return ":" }
+        guard runtime.usesTranscript else {
+            // A terminal tab may be opened on one command — attaching to an agent
+            // that runs outside Throttle. Nothing else is interpolated into it.
+            guard let initialPrompt, !initialPrompt.isEmpty else { return ":" }
+            return initialPrompt
+        }
         if let savedID = sessionId ?? resumeSessionId {
             guard !RemoteTransferReservation.contains(runtime: remoteRuntime, nativeID: savedID),
                   try journal.outstanding(runtime: remoteRuntime, nativeID: savedID) == nil else {
