@@ -49,14 +49,16 @@ enum ClaudeAgentInventory {
     }
 
     /// Runs the CLI with a deadline; a hung or missing binary returns nothing
-    /// rather than blocking the Cockpit's refresh.
+    /// rather than blocking the Cockpit's refresh. Completed sessions are left
+    /// out — `--all` would add them back, and a card about what still waits on
+    /// you must not fill with agents that stopped months ago.
     static func load(timeout: TimeInterval = 6) async -> [Session] {
         guard let executable = executable() else { return [] }
         return await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .utility).async {
                 let process = Process()
                 process.executableURL = URL(fileURLWithPath: executable)
-                process.arguments = ["agents", "--json", "--all"]
+                process.arguments = ["agents", "--json"]
                 let pipe = Pipe()
                 process.standardOutput = pipe
                 process.standardError = FileHandle.nullDevice
