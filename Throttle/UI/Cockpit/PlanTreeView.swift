@@ -301,6 +301,7 @@ extension PlanTreeView {
                 }
                 .buttonStyle(.link).controlSize(.small)
             }
+            nextActionButton(task, state)
         }
         .padding(10)
         .background(Color.accentColor.opacity(0.07), in: RoundedRectangle(cornerRadius: 8))
@@ -321,9 +322,23 @@ extension PlanTreeView {
             return state.blockedReason.map { String(localized: "Resolve the blocker: \($0)") }
                 ?? String(localized: "Resolve the reported blocker.")
         case .candidate:
-            return String(localized: "Run the declared verification. Only a green coordinator decision can finish it.")
+            guard model.declaredVerifyCommand(for: task.id) != nil else {
+                return String(localized: """
+                    This plan declares no check for this task, so Throttle cannot verify it yet. \
+                    Add a verify line to the task in plan.json, then click Verify candidate.
+                    """)
+            }
+            return String(localized: """
+                Click Verify candidate below. Throttle runs the task's check; \
+                only a green result can finish it.
+                """)
         case .review:
-            return String(localized: "Review the evidence with the opposite runtime before accepting completion.")
+            let reviewer = TaskReviewLauncher.reviewer(for: state.runtime)
+            let builder = Self.runtimeName(state.runtime) ?? String(localized: "another runtime")
+            return String(localized: """
+                \(builder) did this work, so \(reviewer.label) has to judge it. \
+                Launch the review: it reads the evidence and records its verdict here.
+                """)
         case .done:
             return String(localized: "Review the diff and verification result, then integrate the task.")
         case .integrated:

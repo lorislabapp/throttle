@@ -84,7 +84,7 @@ final class PlanStore: @unchecked Sendable {
     // MARK: - Layout
 
     private var throttleDir: URL { root.appendingPathComponent(".throttle", isDirectory: true) }
-    private var planURL: URL { throttleDir.appendingPathComponent("plan.json") }
+    var planURL: URL { throttleDir.appendingPathComponent("plan.json") }
     private var logDir: URL { throttleDir.appendingPathComponent("log", isDirectory: true) }
     private var stateDir: URL { throttleDir.appendingPathComponent("state", isDirectory: true) }
 

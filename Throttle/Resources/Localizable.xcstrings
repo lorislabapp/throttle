@@ -1,6 +1,42 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "This plan declares no check for this task, so Throttle cannot verify it yet. Add a verify line to the task in plan.json, then click Verify candidate.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ce plan ne déclare aucune vérification pour cette tâche : Throttle ne peut pas encore la contrôler. Ajoutez une ligne verify à la tâche dans plan.json, puis cliquez sur Vérifier le candidat." } } }
+    },
+    "Click Verify candidate below. Throttle runs the task's check; only a green result can finish it.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Cliquez sur Vérifier le candidat ci-dessous. Throttle lance la vérification de la tâche ; seul un résultat vert peut la terminer." } } }
+    },
+    "%@ did this work, so %@ has to judge it. Launch the review: it reads the evidence and records its verdict here.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%1$@ a fait ce travail, donc %2$@ doit le juger. Lancez la revue : elle lit les preuves et enregistre son verdict ici." } } }
+    },
+    "another runtime": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "un autre environnement" } } }
+    },
+    "Launch review with %@": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Lancer la revue avec %@" } } }
+    },
+    "Opens a %@ session that may only read the plan and record one verdict on this task.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouvre une session %@ qui peut seulement lire le plan et enregistrer un verdict sur cette tâche." } } }
+    },
+    "Open plan.json": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Ouvrir plan.json" } } }
+    },
+    "%@ is %@ now, not awaiting review.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%1$@ est maintenant %2$@, pas en attente de revue." } } }
+    },
+    "%@ did this work and cannot judge it.": {
+      "extractionState": "manual",
+      "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "%@ a fait ce travail et ne peut pas le juger." } } }
+    },
     "Choose an available on-device model in Assistant to optimize instructions. Your provider preference has not changed.": {
       "extractionState": "manual",
       "localizations": {
