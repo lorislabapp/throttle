@@ -17,10 +17,7 @@ extension MultiCockpitRoot {
     func bringBack(_ session: CockpitTab) {
         guard !model.isQuitting, !session.isTransitioning, let remoteID = session.offloadedRemoteID,
               let nativeID = session.sessionId else { return }
-        guard !model.sessions.contains(where: {
-            $0 !== session && $0.runtime == session.runtime && $0.isSpawned
-                && ($0.isChoosingNativeSession || $0.sessionId?.caseInsensitiveCompare(nativeID) == .orderedSame)
-            }),
+        guard !model.sessions.contains(where: { $0.holdsOrMayChoose(nativeID, for: session) }),
             let reservation = RemoteTransferReservation.acquire(
                 runtime: session.remoteRuntime, nativeID: nativeID)
         else {

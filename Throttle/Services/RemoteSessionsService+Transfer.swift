@@ -59,10 +59,7 @@ extension RemoteSessionsService {
     }
 
     private func hasLocalAlias(for tab: CockpitTab, nativeID: String) -> Bool {
-        MultiCockpitModel.shared.sessions.contains {
-            $0 !== tab && $0.runtime == tab.runtime && $0.isSpawned
-                && ($0.isChoosingNativeSession || $0.sessionId?.caseInsensitiveCompare(nativeID) == .orderedSame)
-        }
+        MultiCockpitModel.shared.sessions.contains { $0.holdsOrMayChoose(nativeID, for: tab) }
     }
 
     private func startTransfer(

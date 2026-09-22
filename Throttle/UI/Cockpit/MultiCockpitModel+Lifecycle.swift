@@ -107,10 +107,8 @@ extension MultiCockpitModel {
     func wire(_ tab: CockpitTab) {
         tab.allowsProcessLaunch = { [weak self, weak tab] in
             guard let self, let tab, !self.isQuitting, self.sessionLaunchPolicy() else { return false }
-            if let nativeID = tab.sessionId, self.sessions.contains(where: {
-                $0 !== tab && $0.runtime == tab.runtime && $0.isSpawned
-                    && ($0.isChoosingNativeSession || $0.sessionId?.caseInsensitiveCompare(nativeID) == .orderedSame)
-            }) {
+            if let nativeID = tab.sessionId,
+               self.sessions.contains(where: { $0.holdsOrMayChoose(nativeID, for: tab) }) {
                 tab.resumeIssue =
                     "Another local tab is using or choosing this native conversation. Stop it before resuming."
                 return false
