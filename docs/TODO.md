@@ -18,6 +18,13 @@ checkout, preserving concurrent CI/CloudKit/release changes. Bounded progress an
 all remaining personal/product gates: [SOTA implementation ledger](testing/sota-integration-ledger.md).
 No release or cross-app adoption is implied by local test results.
 
+## Source audit — 2026-09-22
+
+The [T1.2 inventory](../audit-output/T1.2-gaps.md) applies to source snapshot
+`f49f7c6` (branch `feat/research-vault-lots-1-4`, declared 3.5.0), not to this
+branch's later source. It separates corrected documentation from unfinished
+integration, unverified runtime behavior and deliberate product exclusions.
+
 ## Workflow / context validation — 2026-09-08
 
 Current local integration: `feat/context-testing-3.6.0` in
