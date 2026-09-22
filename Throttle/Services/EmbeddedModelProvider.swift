@@ -5,22 +5,37 @@ import MLXLLM
 import MLXLMCommon
 import Tokenizers
 
-/// Qwen runs inside Throttle through MLX. No local server, account, API key,
-/// or network request is involved after the user explicitly installs the
-/// weights. The model is intentionally downloaded on demand rather than
-/// inflating every Sparkle update by roughly a gigabyte.
+/// One provider adapter, with an explicit execution destination. The on-device
+/// choice never probes or sends context to the configured server. The server
+/// choice reuses LocalWorkerRouter and does not require embedded model weights.
 struct EmbeddedModelProvider: AIProvider {
-    var displayName: String {
-        LocalWorkerRouter.configuredEndpoint == nil
-            ? "Qwen 3 1.7B (embedded)"
-            : "Local · \(LocalWorkerRouter.serverDisplayName)"
+    enum Destination: Sendable { case onDevice, selfHosted }
+    let destination: Destination
+
+    init(destination: Destination = .onDevice) {
+        self.destination = destination
     }
-    let kind: AIProviderKind = .embeddedModel
+
+    var displayName: String {
+        switch destination {
+        case .onDevice: return "Qwen 3 1.7B (on this Mac)"
+        case .selfHosted: return "Server · \(LocalWorkerRouter.serverDisplayName)"
+        }
+    }
+
+    var kind: AIProviderKind {
+        switch destination {
+        case .onDevice: return .embeddedModel
+        case .selfHosted: return .selfHostedModel
+        }
+    }
 
     var isAvailable: Bool {
         get async {
-            if EmbeddedModelRuntime.isInstalled { return true }
-            return await LocalWorkerRouter.shared.healthyServer() != nil
+            switch destination {
+            case .onDevice: return EmbeddedModelRuntime.isInstalled
+            case .selfHosted: return await LocalWorkerRouter.shared.healthyServer() != nil
+            }
         }
     }
 
@@ -28,46 +43,39 @@ struct EmbeddedModelProvider: AIProvider {
         messages: [ChatMessage],
         context: ProjectChatContext
     ) async throws -> AsyncThrowingStream<String, Error> {
-        guard EmbeddedModelRuntime.isInstalled else {
+        if destination == .onDevice, !EmbeddedModelRuntime.isInstalled {
             throw AIProviderError.unavailable(
-                reason: "Install the embedded Qwen model in Settings → Assistant first. No Ollama installation is required."
+                reason: "Install the embedded Qwen model in Settings → Assistant first. No server fallback was used."
+            )
+        }
+        if destination == .selfHosted, LocalWorkerRouter.configuredEndpoint == nil {
+            throw AIProviderError.unavailable(
+                reason: "Configure your Ollama server in Settings → Assistant before selecting Server."
             )
         }
 
         return AsyncThrowingStream { continuation in
             let task = Task {
                 do {
-                    if LocalWorkerRouter.configuredEndpoint != nil {
-                        do {
-                            let answer = try await LocalWorkerRouter.shared.chat(
-                                messages: messages,
-                                context: context
-                            )
-                            continuation.yield(answer)
-                            continuation.finish()
-                            return
-                        } catch where !EmbeddedModelRuntime.isInstalled {
-                            throw AIProviderError.unavailable(
-                                reason: "The selected self-hosted model is unreachable and no embedded model is installed. Local-only mode did not fall back to cloud."
-                            )
-                        } catch {
-                            // The user selected a local privacy boundary. A
-                            // configured server may fall back only to the
-                            // embedded same-device model, never to cloud.
+                    try Task.checkCancellation()
+                    switch destination {
+                    case .selfHosted:
+                        let answer = try await LocalWorkerRouter.shared.chat(messages: messages, context: context)
+                        try Task.checkCancellation()
+                        continuation.yield(answer)
+                    case .onDevice:
+                        let stream = try await EmbeddedModelRuntime.shared.stream(messages: messages, context: context)
+                        for try await chunk in stream {
+                            try Task.checkCancellation()
+                            continuation.yield(chunk)
                         }
                     }
-                    let stream = try await EmbeddedModelRuntime.shared.stream(
-                        messages: messages,
-                        context: context
-                    )
-                    for try await chunk in stream {
-                        try Task.checkCancellation()
-                        continuation.yield(chunk)
-                    }
                     continuation.finish()
+                } catch is CancellationError {
+                    continuation.finish(throwing: CancellationError())
                 } catch {
                     continuation.finish(throwing: AIProviderError.unavailable(
-                        reason: "Embedded Qwen: \(error.localizedDescription)"
+                        reason: "\(displayName): \(error.localizedDescription)"
                     ))
                 }
             }

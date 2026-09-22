@@ -46,6 +46,7 @@ struct InlineGeneralPane: View {
     @State var peerFallbackHost = PeerTransport.shared.fallbackHost ?? ""
     @State var mirrorOn = UserDefaults.standard.bool(forKey: "throttleiCloudMirrorEnabled")
     @State var mirrorNote = ""
+    @State var peerTerminalControl = PeerTransport.shared.terminalControlEnabled
     @State var showingMirrorDeletion = false
     @State var mirrorDeletionInFlight = false
 

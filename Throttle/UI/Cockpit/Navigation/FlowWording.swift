@@ -27,7 +27,7 @@ enum FlowWording {
                    defaultValue: "Failed or sent back by verification. Throttle relaunches within your budget.")
         case .checking:
             String(localized: "flow.checking.why",
-                   defaultValue: "Finished by an agent; tests and a model of another family check them.")
+                   defaultValue: "Submitted by an agent; verification and review are still required.")
         case .ready:
             String(localized: "flow.ready.why", defaultValue: "Verified. Review the diff, then integrate.")
         case .shipped:
@@ -61,6 +61,7 @@ enum FlowWording {
         }
     }
 
+    @MainActor
     static func focusSentence(_ stage: PlanFlow.Stage, _ item: ProjectOverview.TaskItem) -> String {
         let task = "\(item.id) — \(item.title)"
         switch stage {

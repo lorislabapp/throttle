@@ -1,0 +1,381 @@
+@testable import Throttle
+import XCTest
+
+/// The refusals that decide whether a stale green can ever reach the base branch,
+/// plus the one piece of parsing that decides whether git's own error text gets
+/// rendered to the user as a conflict.
+///
+/// Separate from `TaskIntegrationServiceTests` only because that file is at its
+/// length limit; these run against the same kind of throwaway repository, and each
+/// one isolates a single guard rather than letting an earlier one fire first.
+final class TaskIntegrationRefusalTests: XCTestCase {
+
+    private var repo = URL(fileURLWithPath: "/")
+
+    override func setUpWithError() throws {
+        repo = FileManager.default.temporaryDirectory
+            .appendingPathComponent("integration-refusals-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)
+        run(["init", "-q", "-b", "main"])
+        run(["config", "user.email", "test@example.com"])
+        run(["config", "user.name", "Test"])
+        try "line one\n".write(to: repo.appendingPathComponent("file.txt"),
+                               atomically: true, encoding: .utf8)
+        run(["add", "."])
+        run(["commit", "-q", "-m", "seed"])
+    }
+
+    override func tearDownWithError() throws {
+        try? FileManager.default.removeItem(at: repo)
+    }
+
+    @discardableResult
+    private func run(_ args: [String], in directory: URL? = nil) -> String {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = ["git"] + args
+        process.currentDirectoryURL = directory ?? repo
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+        // Not `try?`: a launch that throws (a working directory that no longer
+        // exists, say) leaves this process holding the pipe's write end, and the read
+        // below then blocks for ever with nothing to show for it.
+        do { try process.run() } catch { return String(describing: error) }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        return String(bytes: data, encoding: .utf8) ?? ""
+    }
+
+    private func sha(_ rev: String, in directory: URL? = nil) -> String {
+        run(["rev-parse", rev], in: directory)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// A finished task in its own worktree, holding one commit, with a plan that
+    /// knows about it.
+    @discardableResult
+    private func finishedTask(_ id: String, store: PlanStore) throws -> URL {
+        let path = try TaskWorktreeService.create(taskID: id, in: repo)
+        try "task work\n".write(to: path.appendingPathComponent("task.txt"),
+                                atomically: true, encoding: .utf8)
+        run(["add", "."], in: path)
+        run(["commit", "-q", "-m", "work on \(id)"], in: path)
+        try store.append(TaskEvent(seq: 0, timestamp: Date(), author: "claude:a",
+                                   type: .claimed), to: id)
+        try store.append(TaskEvent(seq: 0, timestamp: Date(), author: "claude:a",
+                                   type: .completed), to: id)
+        return path
+    }
+
+    private func makeStore() throws -> PlanStore {
+        let store = PlanStore(projectRoot: repo)
+        try store.bootstrap(Plan(projectId: "p", title: "P",
+                                 tasks: [PlanTask(id: "t1", title: "T1")]))
+        return store
+    }
+
+    private func integrate(_ store: PlanStore) throws -> String {
+        try TaskIntegrationService.integrate(taskID: "t1", in: repo, store: store,
+                                             task: PlanTask(id: "t1", title: "T1"),
+                                             author: "throttle:test")
+    }
+
+    func testVerificationRecordsCommandReceiptWithoutClaimingTestCoverage() throws {
+        let store = try makeStore()
+        try finishedTask("t1", store: store)
+        let verdict = try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                                        store: store, author: "throttle:test")
+        XCTAssertTrue(verdict.passed)
+        let receipt = try XCTUnwrap(store.state(for: "t1").lastCheck?.receipt)
+        XCTAssertEqual(receipt.scope, .command)
+        XCTAssertEqual(receipt.outcome, .passed)
+        XCTAssertFalse(receipt.provesCompleteTests())
+    }
+
+    func testVerificationThatChangesTrackedInputsCannotPass() throws {
+        let store = try makeStore()
+        try finishedTask("t1", store: store)
+        let verdict = try TaskIntegrationService.verify(taskID: "t1", in: repo,
+            command: "printf changed > task.txt", store: store, author: "throttle:test")
+        XCTAssertFalse(verdict.passed)
+        XCTAssertTrue(verdict.output.contains("incomplete"))
+        XCTAssertEqual(try store.state(for: "t1").lastCheck?.receipt?.outcome, .incomplete)
+    }
+
+    // MARK: - merge-tree parsing
+
+    /// git older than 2.38 does not know `--write-tree`: it exits non-zero after
+    /// printing an option error and its usage block. That used to be split on the
+    /// first blank line and rendered as "Conflicts with the base in:" over git's own
+    /// usage text, with the Integrate button disabled behind it.
+    func test_anOptionErrorIsUnknownRatherThanAListOfConflicts() {
+        let output = """
+        error: unknown option `write-tree'
+        usage: git merge-tree [--trivial-merge] <base-tree> <branch1> <branch2>
+
+            -z                    do not quote filenames
+            --name-only           list filenames without modes/oids/stages
+        """
+        XCTAssertEqual(TaskIntegrationService.conflictedPaths(inMergeTreeFailure: output),
+                       .unknown)
+    }
+
+    func test_aRealConflictKeepsItsPathsAndDropsTheMessages() {
+        let oid = String(repeating: "a1b2c3d4", count: 5)
+        let output = """
+        \(oid)
+        src/one.swift
+        src/two.swift
+
+        Auto-merging src/one.swift
+        CONFLICT (content): Merge conflict in src/one.swift
+        """
+        XCTAssertEqual(TaskIntegrationService.conflictedPaths(inMergeTreeFailure: output),
+                       .conflicted(["src/one.swift", "src/two.swift"]))
+    }
+
+    func test_emptyAndTruncatedOutputAreUnknown() {
+        XCTAssertEqual(TaskIntegrationService.conflictedPaths(inMergeTreeFailure: ""), .unknown)
+        XCTAssertEqual(
+            TaskIntegrationService.conflictedPaths(
+                inMergeTreeFailure: String(repeating: "f", count: 40)),
+            .unknown, "an object id with no paths under it says nothing")
+        XCTAssertEqual(
+            TaskIntegrationService.conflictedPaths(inMergeTreeFailure: "fatal: bad object\nHEAD"),
+            .unknown)
+    }
+}
+
+// MARK: - The guards on integrate
+
+/// Split from the class body to stay under SwiftLint's `type_body_length`; `private`
+/// reaches the helpers above because Swift extends it to same-file extensions.
+extension TaskIntegrationRefusalTests {
+
+    /// The lot's central invariant, isolated. Every other stale-green test also
+    /// moves the base, so `.behind` fires first and the stamp comparison is never
+    /// what refuses: deleting `check.stamp == assessment.stamp` left them all green.
+    /// Here the *task* moves instead — an agent that commits once more after the
+    /// verification — so the base is untouched, `behindBy` stays 0, the worktree
+    /// stays clean, and the stamp is the only thing left that can say no.
+    func test_integrate_refusesWhenTheTaskItselfMovedAfterTheCheck() throws {
+        let store = try makeStore()
+        let path = try finishedTask("t1", store: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                          store: store, author: "throttle:test")
+        let checkedStamp = try store.state(for: "t1").lastCheck?.stamp
+        let baseBefore = sha("HEAD")
+
+        try "more work\n".write(to: path.appendingPathComponent("later.txt"),
+                                atomically: true, encoding: .utf8)
+        run(["add", "."], in: path)
+        run(["commit", "-q", "-m", "one more commit after the check"], in: path)
+
+        let assessment = try TaskIntegrationService.assess(taskID: "t1", in: repo)
+        XCTAssertEqual(assessment.behindBy, 0, "the base did not move, so .behind cannot fire")
+        XCTAssertFalse(assessment.isDirty, "the work is committed, so .dirty cannot fire")
+        XCTAssertNotEqual(assessment.stamp, checkedStamp, "the task's side of the stamp moved")
+
+        XCTAssertThrowsError(try integrate(store)) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.unverified))
+        }
+        XCTAssertEqual(sha("HEAD"), baseBefore, "the base was not written to")
+        XCTAssertEqual(try store.state(for: "t1").status, .done, "nothing moved")
+    }
+
+    /// `PlanModel` stops on a red verdict before it ever calls `integrate`, so this
+    /// guard is only reachable by calling the service directly — which the MCP side
+    /// and any later caller can do.
+    func test_integrate_refusesARedCheck() throws {
+        let store = try makeStore()
+        try finishedTask("t1", store: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "exit 3",
+                                          store: store, author: "throttle:test")
+        XCTAssertEqual(try store.state(for: "t1").lastCheck?.passed, false)
+
+        XCTAssertThrowsError(try integrate(store)) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.unverified))
+        }
+    }
+
+    /// A verification is free to leave build output behind. The fast-forward happens
+    /// in the main repo and never reads this worktree, so untracked files are not
+    /// its business — otherwise a green ten-minute check would end in `.dirty` with
+    /// no way forward from the card.
+    func test_integrate_ignoresUntrackedFilesTheVerificationLeftBehind() throws {
+        let store = try makeStore()
+        let path = try finishedTask("t1", store: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo,
+                                          command: "mkdir -p .build && touch .build/artefact",
+                                          store: store, author: "throttle:test")
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: path.appendingPathComponent(".build/artefact").path))
+        let assessment = try TaskIntegrationService.assess(taskID: "t1", in: repo)
+        XCTAssertTrue(assessment.isDirty, "the untracked-inclusive view still calls this dirty")
+        XCTAssertFalse(assessment.hasLooseWork,
+                       "and the view every refusal reads does not — no tracked file moved")
+
+        let merged = try integrate(store)
+        XCTAssertEqual(sha("HEAD"), merged)
+        XCTAssertEqual(try store.state(for: "t1").status, .integrated)
+    }
+
+    /// A tracked file modified in the worktree is still a refusal: that is real work
+    /// the fast-forward would leave behind.
+    func test_integrate_stillRefusesModifiedTrackedFiles() throws {
+        let store = try makeStore()
+        let path = try finishedTask("t1", store: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                          store: store, author: "throttle:test")
+        try "edited\n".write(to: path.appendingPathComponent("task.txt"),
+                             atomically: true, encoding: .utf8)
+
+        XCTAssertThrowsError(try integrate(store)) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.dirty))
+        }
+    }
+
+    /// On a detached repo HEAD `merge --ff-only` succeeds and advances no branch:
+    /// `integrated` would be logged for a merge nothing points at.
+    func test_integrate_refusesADetachedRepositoryHEAD() throws {
+        let store = try makeStore()
+        try finishedTask("t1", store: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                          store: store, author: "throttle:test")
+        let mainBefore = sha("main")
+        run(["checkout", "-q", "--detach", "HEAD"])
+
+        XCTAssertThrowsError(try integrate(store)) { error in
+            guard case .gitFailed(let message)? = error as? TaskIntegrationError else {
+                return XCTFail("expected a gitFailed naming the detached HEAD, got \(error)")
+            }
+            XCTAssertTrue(message.contains("detached HEAD"), message)
+        }
+        XCTAssertEqual(sha("main"), mainBefore, "no branch moved")
+        XCTAssertEqual(try store.state(for: "t1").status, .done)
+    }
+
+    /// The ordinary case, and what the stamp has to describe: the branch ref, which
+    /// is what `integrate` merges and `diff` diffs against.
+    func test_assess_readsTheBranchOfAWorktreeSittingOnIt() throws {
+        let store = try makeStore()
+        try finishedTask("t1", store: store)
+        let tip = sha("task/t1")
+
+        let assessment = try TaskIntegrationService.assess(taskID: "t1", in: repo)
+        XCTAssertEqual(assessment.taskSHA, tip)
+        XCTAssertEqual(assessment.aheadBy, 1)
+        XCTAssertEqual(assessment.stamp, "\(tip)+\(sha("HEAD"))")
+        XCTAssertEqual(assessment.files, [FileChange(path: "task.txt", added: 1, removed: 0)])
+    }
+
+    /// Following the branch made `assess`, `diff` and `integrate` agree with each
+    /// other — and with nothing else. `verify` runs the project's command *in the
+    /// worktree*, whose content follows the worktree's own HEAD, so a detached
+    /// worktree produced evidence for one tree and had it stamped for another: the
+    /// same stale green, sides swapped. `rebase` was worse, rewriting the detached
+    /// commits and leaving the branch ref behind, so every later click refused
+    /// `.behind` after the worktree had already been written to. So it is refused,
+    /// once, at the assessment every other step goes through.
+    func test_assess_refusesAWorktreeThatLeftItsBranch() throws {
+        let store = try makeStore()
+        let path = try finishedTask("t1", store: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                          store: store, author: "throttle:test")
+        let tip = sha("task/t1")
+        run(["checkout", "-q", "--detach", "HEAD~1"], in: path)
+        XCTAssertNotEqual(sha("HEAD", in: path), tip, "the worktree is off the branch")
+
+        XCTAssertThrowsError(try TaskIntegrationService.assess(taskID: "t1", in: repo)) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.detached))
+        }
+        // Everything downstream inherits it, including the green check that would
+        // otherwise have been accepted for a tree nobody verified.
+        XCTAssertThrowsError(try TaskIntegrationService.rebase(taskID: "t1", in: repo)) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.detached))
+        }
+        XCTAssertThrowsError(try integrate(store)) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.detached))
+        }
+        XCTAssertEqual(try store.state(for: "t1").status, .done, "nothing moved")
+    }
+
+    /// A detached HEAD parked exactly on the branch tip is refused too: a SHA
+    /// comparison would call it fine, and a rebase would then move the commits
+    /// under it and leave `task/t1` pointing at the old tip.
+    func test_assess_refusesADetachedHEADEvenOnTheBranchTip() throws {
+        let store = try makeStore()
+        let path = try finishedTask("t1", store: store)
+        run(["checkout", "-q", "--detach", "HEAD"], in: path)
+        XCTAssertEqual(sha("HEAD", in: path), sha("task/t1"), "same commit, no branch")
+
+        XCTAssertThrowsError(try TaskIntegrationService.assess(taskID: "t1", in: repo)) {
+            XCTAssertEqual($0 as? TaskIntegrationError, .refused(.detached))
+        }
+    }
+}
+
+// MARK: - Cleaning up after a merge
+
+/// The worktree accumulation this lot's scope opens by complaining about. A third
+/// same-file extension, for the same `type_body_length` reason as the second.
+extension TaskIntegrationRefusalTests {
+
+    /// `integrate` deliberately does not clean up. A task's worktree is also its
+    /// agent's working directory, and the cockpit opens that tab with this exact path
+    /// as its cwd — deleting it is a decision that needs to see the tabs, which this
+    /// service cannot. It merges; somebody with more context decides what happens to
+    /// the directory.
+    func test_integrate_leavesTheWorktreeForItsCallerToDecideOn() throws {
+        let store = try makeStore()
+        let path = try finishedTask("t1", store: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                          store: store, author: "throttle:test")
+
+        let merged = try integrate(store)
+
+        XCTAssertEqual(sha("HEAD"), merged)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path.path),
+                      "the merge does not delete anything by itself")
+    }
+
+    /// `TaskWorktreeService.remove` had no production caller at all, so every
+    /// integrated task left a full checkout behind for ever.
+    func test_removeWorktree_dropsTheWorktreeOfAnIntegratedTask() throws {
+        let store = try makeStore()
+        let path = try finishedTask("t1", store: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo, command: "true",
+                                          store: store, author: "throttle:test")
+        _ = try integrate(store)
+
+        XCTAssertNil(TaskIntegrationService.removeWorktree(taskID: "t1", in: repo),
+                     "nothing stands in the way, so nothing is reported")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: path.path),
+                       "an integrated task's worktree is gone")
+        XCTAssertFalse(run(["worktree", "list"]).contains(path.path),
+                       "and git no longer lists it either")
+    }
+
+    /// The other direction, and the more important one: the refusal inside `remove`
+    /// stays authoritative. A worktree still holding something nobody integrated is
+    /// left standing, and the reason comes back as text rather than as a throw — so a
+    /// merge that already happened can never be demoted by what follows it.
+    func test_removeWorktree_keepsAWorktreeThatStillHoldsWorkAndSaysWhy() throws {
+        let store = try makeStore()
+        let path = try finishedTask("t1", store: store)
+        try TaskIntegrationService.verify(taskID: "t1", in: repo,
+                                          command: "mkdir -p .build && touch .build/artefact",
+                                          store: store, author: "throttle:test")
+        let merged = try integrate(store)
+        XCTAssertEqual(sha("HEAD"), merged, "the integration succeeded")
+        XCTAssertEqual(try store.state(for: "t1").status, .integrated)
+
+        let kept = try XCTUnwrap(TaskIntegrationService.removeWorktree(taskID: "t1", in: repo),
+                                 "a worktree that still holds work says why it stands")
+
+        XCTAssertTrue(kept.contains("uncommitted changes"), kept)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path.path),
+                      "and it is still there")
+    }
+}

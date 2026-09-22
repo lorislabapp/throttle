@@ -1,0 +1,14 @@
+{
+  "at": "2026-09-21T13:03:24.622812+02:00",
+  "status": "Accepted_stapled_gatekeeper_pass",
+  "id": "eb6ffb07-5ee3-4a66-9713-a63acd7df982",
+  "version": "3.8.0",
+  "build": "226",
+  "dmg": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/Throttle-3.8.0.dmg",
+  "submitted_sha256": "3fc63cc76f577a614ed22e8ff3dd6079e452d4e9fadddcc36f91ae1fbac2a261",
+  "final_sha256": "126c18b30dc187c71bdede756e6446ba9245dc002278bb601b64563efc6d1878",
+  "bytes": 34967080,
+  "published": false,
+  "installed": false,
+  "app_launched": false
+}

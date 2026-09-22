@@ -1,0 +1,48 @@
+{
+  "status": "interrupted-concurrency",
+  "exit_code": -15,
+  "duration_seconds": 38.79847812652588,
+  "command": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+    "archive",
+    "-project",
+    "Throttle.xcodeproj",
+    "-scheme",
+    "Throttle",
+    "-configuration",
+    "Release",
+    "-destination",
+    "generic/platform=macOS",
+    "-derivedDataPath",
+    "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData",
+    "-clonedSourcePackagesDirPath",
+    "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages",
+    "-disableAutomaticPackageResolution",
+    "-onlyUsePackageVersionsFromResolvedFile",
+    "-skipPackageUpdates",
+    "-jobs",
+    "2",
+    "CODE_SIGNING_ALLOWED=YES",
+    "ONLY_ACTIVE_ARCH=NO",
+    "ARCHS=arm64 x86_64",
+    "CODE_SIGNING_REQUIRED=YES",
+    "-archivePath",
+    "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/signed-archive-20260921-112754.xcarchive",
+    "-skipPackagePluginValidation",
+    "-skipMacroValidation"
+  ],
+  "cwd": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920",
+  "log": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/signed-archive-20260921-112754.log",
+  "sources_match": true,
+  "source_count": 1047,
+  "app_launched": false,
+  "signing_requested": true,
+  "signing_validation": "pending independent verification",
+  "notarization_uploaded": false,
+  "competing_processes": [
+    {
+      "pid": 29637,
+      "identity": "29637 29636 /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild"
+    }
+  ]
+}

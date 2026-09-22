@@ -1,0 +1,101 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Throttle_Throttle_macosx27.0-arm64.xctestrun -destination platform=macOS,arch=arm64 -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 60 -maximum-test-execution-time-allowance 120 -resultBundlePath /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/cockpit-tests-20260921-003247.xcresult "-only-testing:ThrottleTests/PlanIntegrationFlowTests" "-only-testing:ThrottleTests/CockpitSpendViewTests" "-only-testing:ThrottleTests/PromptRefinerServiceTests" "-only-testing:ThrottleTests/RemoteSessionsCredentialTests" "-only-testing:ThrottleTests/RemoteTransferJournalTests" "-only-testing:ThrottleTests/ProjectAssistantViewTests" "-only-testing:ThrottleTests/PlanIntegrationViewTests" "-only-testing:ThrottleTests/PeerTerminalBoundaryTests" "-only-testing:ThrottleTests/CloudKitPublisherTests"
+
+Writing result bundle at path:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/cockpit-tests-20260921-003247.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008132-001178882E03001C, name:My Mac }
+2026-09-21 00:32:49.644505+0200 Throttle[55050:792648] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:32:49.644961+0200 Throttle[55050:792649] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:32:49.645000+0200 Throttle[55050:792649] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:32:49.644970+0200 Throttle[55050:792648] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:32:49.645337+0200 Throttle[55050:792657] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:32:49.645617+0200 Throttle[55050:792657] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:32:49.645637+0200 Throttle[55050:792649] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:32:49.645658+0200 Throttle[55050:792649] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:32:49.646006+0200 Throttle[55050:792649] [Connection] Will NOT re-try to establish the connection
+2026-09-21 00:32:49.646057+0200 Throttle[55050:792647] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:32:49.646083+0200 Throttle[55050:792647] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+[AppDelegate.init] start
+2026-09-21 00:32:49.686429+0200 Throttle[55050:792607] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/3w/fbl9wc1d3q7091lq5pj5sy0c0000gn/T/com.lorislab.throttle.savedState
+[applicationDidFinishLaunching] start
+2026-09-21 00:32:49.732425+0200 Throttle[55050:792607] [App] Isolated host detected: skipping production background services
+Test Suite 'Selected tests' started at 2026-09-21 00:32:49.762.
+Test Suite 'ThrottleTests.xctest' started at 2026-09-21 00:32:49.762.
+Test Suite 'CloudKitPublisherTests' started at 2026-09-21 00:32:49.762.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck]' passed (0.008 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart]' passed (0.008 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount]' passed (0.008 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testCancelledDebounceCannotConsumeSnapshotAfterRestart]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testCancelledDebounceCannotConsumeSnapshotAfterRestart]' passed (0.011 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRefusesAnUnavailableAccount]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRefusesAnUnavailableAccount]' passed (0.003 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRequiresAnAvailableAccountAndStopsPublishing]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRequiresAnAvailableAccountAndStopsPublishing]' passed (0.005 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot]' passed (0.011 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots]' passed (0.007 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck]' started.
+2026-09-21 00:32:49.828042+0200 Throttle[55050:792607] [CloudKitPublisher] iCloud unavailable — mirror disabled
+Test Case '-[ThrottleTests.CloudKitPublisherTests testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck]' passed (0.003 seconds).
+Test Suite 'CloudKitPublisherTests' passed at 2026-09-21 00:32:49.829.
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.064 (0.066) seconds
+Test Suite 'CockpitSpendViewTests' started at 2026-09-21 00:32:49.829.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testCloudShowsUnmeasuredAndAlreadyOpenSessionIsExcluded]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testCloudShowsUnmeasuredAndAlreadyOpenSessionIsExcluded]' passed (0.074 seconds).
+Test Case '-[ThrottleTests.CockpitSpendViewTests testEmptyCardLoadsRefreshesAndCancelsWhenRemoved]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testEmptyCardLoadsRefreshesAndCancelsWhenRemoved]' passed (0.386 seconds).
+Test Case '-[ThrottleTests.CockpitSpendViewTests testPlanKeepsUnknownCountsAndSubscriptionDisclosureVisible]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testPlanKeepsUnknownCountsAndSubscriptionDisclosureVisible]' passed (0.071 seconds).
+Test Case '-[ThrottleTests.CockpitSpendViewTests testTaskCostDistinguishesUnknownFromObservedZero]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testTaskCostDistinguishesUnknownFromObservedZero]' passed (0.010 seconds).
+Test Suite 'CockpitSpendViewTests' passed at 2026-09-21 00:32:50.371.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.541 (0.542) seconds
+Test Suite 'PeerTerminalBoundaryTests' started at 2026-09-21 00:32:50.371.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testBridgeDeniesDirectCallsWhenPermissionIsOff]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testBridgeDeniesDirectCallsWhenPermissionIsOff]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testCurrentTicketCannotBypassControlSettingOffAtDelivery]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testCurrentTicketCannotBypassControlSettingOffAtDelivery]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testFailedFreshPersistenceNeverPublishesEphemeralPairing]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testFailedFreshPersistenceNeverPublishesEphemeralPairing]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testFailedLegacyPersistencePreservesCopyAndWithholdsPairing]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testFailedLegacyPersistencePreservesCopyAndWithholdsPairing]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testMalformedPersistedPairingIsNotReplacedAutomatically]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testMalformedPersistedPairingIsNotReplacedAutomatically]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testReattachmentStopsOldTapAndOnlyAddressesNewSession]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testReattachmentStopsOldTapAndOnlyAddressesNewSession]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testRevocationRemovesTapAndStaleCallbackCannotSendOrInput]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testRevocationRemovesTapAndStaleCallbackCannotSendOrInput]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testRevokedTicketQueuedBeforeMainActorDeliveryCannotAttachOrSend]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testRevokedTicketQueuedBeforeMainActorDeliveryCannotAttachOrSend]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testStoppedListenerCannotDeliverQueuedInputAfterRestart]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testStoppedListenerCannotDeliverQueuedInputAfterRestart]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testSuccessfulLegacyPersistencePrecedesRemoval]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testSuccessfulLegacyPersistencePrecedesRemoval]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testUnavailablePairingDoesNotReadLegacyWriteGenerateOrPublishIdentity]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testUnavailablePairingDoesNotReadLegacyWriteGenerateOrPublishIdentity]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testUnknownSessionAndInputWithoutAttachmentHaveNoEffects]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testUnknownSessionAndInputWithoutAttachmentHaveNoEffects]' passed (0.000 seconds).
+Test Suite 'PeerTerminalBoundaryTests' passed at 2026-09-21 00:32:50.380.
+	 Executed 12 tests, with 0 failures (0 unexpected) in 0.006 (0.008) seconds
+Test Suite 'PlanIntegrationFlowTests' started at 2026-09-21 00:32:50.380.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_aRunLandingAfterATabSwitchWritesNothingIntoTheNewProject]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_aRunLandingAfterATabSwitchWritesNothingIntoTheNewProject]' passed (4.654 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_aTabSwitchMidIntegrationDoesNotReArmTheButton]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_aTabSwitchMidIntegrationDoesNotReArmTheButton]' passed (5.148 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_diffFailureClearsStaleTextAndRetryCanRecover]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_diffFailureClearsStaleTextAndRetryCanRecover]' passed (1.649 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_emptyDiffIsLoadedAndRebindingClearsItsState]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_emptyDiffIsLoadedAndRebindingClearsItsState]' passed (2.545 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateAsksForConsentBeforeItRunsAnythingThenStopsAsking]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateAsksForConsentBeforeItRunsAnythingThenStopsAsking]' passed (2.182 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRebasesABehindTaskBeforeMerging]' started.
+** BUILD INTERRUPTED **

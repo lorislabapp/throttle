@@ -1,0 +1,27 @@
+{
+  "archive": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/archive-20260920-235130.xcarchive",
+  "app": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/archive-20260920-235130.xcarchive/Products/Applications/Throttle.app",
+  "receipt": "archive-20260920-235130-receipt.json",
+  "observed_at": "2026-09-20T23:58:48.750496+02:00",
+  "version": "3.8.0",
+  "build": "226",
+  "bundle_id": "com.lorislab.throttle",
+  "minimum_macos": "14.0",
+  "sdk": "macosx27.0",
+  "archive_properties": {
+    "ApplicationPath": "Applications/Throttle.app",
+    "Architectures": [
+      "arm64"
+    ],
+    "CFBundleIdentifier": "com.lorislab.throttle",
+    "CFBundleShortVersionString": "3.8.0",
+    "CFBundleVersion": "226",
+    "SigningIdentity": "",
+    "Team": ""
+  },
+  "regular_file_count": 92,
+  "symlink_count": 9,
+  "files_manifest_sha256": "0b8e8a8cb62012e2214b231ba8e2941b0ed50c771ddb80d91578591d00c0d528",
+  "distribution_signed": false,
+  "launched": false
+}

@@ -1,0 +1,47 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-100617/Build/Products/isolated-visual-tests-20260921-112442.xctestrun -destination platform=macOS,arch=arm64 -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 300 -maximum-test-execution-time-allowance 360 -resultBundlePath /Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-100617/isolated-visual-tests-20260921-112442.xcresult -testLanguage en -testRegion US "-only-testing:ThrottleTests/PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInEnglish"
+
+Writing result bundle at path:
+	/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-100617/isolated-visual-tests-20260921-112442.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008132-001178882E03001C, name:My Mac }
+[AppDelegate.init] start
+2026-09-21 11:24:44.507887+0200 Throttle[26851:2493945] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:24:44.508213+0200 Throttle[26851:2493945] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:24:44.508587+0200 Throttle[26851:2493977] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:24:44.508633+0200 Throttle[26851:2493977] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:24:44.509208+0200 Throttle[26851:2493945] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:24:44.509256+0200 Throttle[26851:2493945] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:24:44.509733+0200 Throttle[26851:2493945] [Connection] Will NOT re-try to establish the connection
+2026-09-21 11:24:44.509787+0200 Throttle[26851:2493921] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:24:44.509837+0200 Throttle[26851:2493921] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:24:44.543619+0200 Throttle[26851:2493870] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/3w/fbl9wc1d3q7091lq5pj5sy0c0000gn/T/com.lorislab.throttle.test-host.savedState
+[applicationDidFinishLaunching] start
+2026-09-21 11:24:44.588846+0200 Throttle[26851:2493870] [App] Isolated host detected: skipping production background services
+Test Suite 'Selected tests' started at 2026-09-21 11:24:44.609.
+Test Suite 'ThrottleTests.xctest' started at 2026-09-21 11:24:44.609.
+Test Suite 'PlanIntegrationViewTests' started at 2026-09-21 11:24:44.609.
+Test Case '-[ThrottleTests.PlanIntegrationViewTests testDiffFailureRetryAndEmptyStateInEnglish]' started.
+THROTTLE_REVIEW_READY: diff-failed-en
+2026-09-21 11:25:12.067981+0200 Throttle[26851:2494015] [Common] Unable to obtain a task name port right for pid 424: (os/kern) failure (0x5)
+Test Case '-[ThrottleTests.PlanIntegrationViewTests testDiffFailureRetryAndEmptyStateInEnglish]' passed (180.402 seconds).
+Test Suite 'PlanIntegrationViewTests' passed at 2026-09-21 11:27:45.013.
+	 Executed 1 test, with 0 failures (0 unexpected) in 180.402 (180.403) seconds
+Test Suite 'ThrottleTests.xctest' passed at 2026-09-21 11:27:45.013.
+	 Executed 1 test, with 0 failures (0 unexpected) in 180.402 (180.404) seconds
+Test Suite 'Selected tests' passed at 2026-09-21 11:27:45.013.
+	 Executed 1 test, with 0 failures (0 unexpected) in 180.402 (180.404) seconds
+2026-09-21 11:27:45.390 xcodebuild[26836:2493644] [MT] IDETestOperationsObserverDebug: 181.331 elapsed -- Testing started completed.
+2026-09-21 11:27:45.390 xcodebuild[26836:2493644] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-21 11:27:45.390 xcodebuild[26836:2493644] [MT] IDETestOperationsObserverDebug: 181.331 sec, +181.331 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-100617/isolated-visual-tests-20260921-112442.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

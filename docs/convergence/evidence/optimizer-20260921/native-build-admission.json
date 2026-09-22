@@ -1,0 +1,27 @@
+{
+  "at": "2026-09-21T14:40:40.844691+02:00",
+  "source_candidate": "3.8.0 (227)",
+  "status": "BLOCKED_BEFORE_XCODEBUILD",
+  "reason": "Insufficient system disk space",
+  "free_bytes_observed": 831488000,
+  "minimum_free_bytes": 2147483648,
+  "command_record": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/build-20260921-144003-command.json",
+  "files": {
+    "Throttle/Services/AIOptimizerService.swift": "57f11eb5ff2123b70afc5f2ea806e44d73f86617d0433482e7dfce7fb8100784",
+    "Throttle/Services/SettingsAuditService.swift": "1df7c01968a6647cb2fc88fb8a9a009c0bc4e34c8749f9798f0459bf760ddf55",
+    "Throttle/Services/AIProvider.swift": "c9e7b49acc5481ebf11c4013d2b56ffd00ae232859f3e34e4045aac3825d71cb",
+    "Throttle/Services/AIProviderRegistry.swift": "207acf12f22472b9bc7478df64d8ffdbcb730bb3a4e512c3074feffe3ef9ad58",
+    "Throttle/UI/ProjectWindow/ProjectOptimizerTab.swift": "3f544bccc51f85c82611082d585ca0d2284835023b156cc885a302e69e6d9a75",
+    "Throttle/UI/ProjectWindow/ProjectOptimizerTab+Actions.swift": "8bc591cd7344fbb2e767da0b8505ae4c4709f2a0700c6e3c923f2139b4896b7f",
+    "ThrottleTests/ServiceTests/AIOptimizerPrivacyTests.swift": "9abd070743ecc1439af8fb493ca1252b181b6e7eb4e62e5201b701411b05e25f",
+    "ThrottleTests/ServiceTests/SettingsAuditPreservationTests.swift": "caa8cb3969edd4169d3fe6d28c109501c454a396ba9e1be5f4f335e68fc0fa54",
+    "Throttle/Resources/Localizable.xcstrings": "e77c3a57f0ab26fcd236e7a4151fbec611b4067d75740966955e7b50c93335ea",
+    "project.yml": "1581e7d2ef52b1fcaef53194c45381539604ef0493a50d56ff4c19f99944a269",
+    "scripts/verify-core-evidence.py": "b20152ff05563950a029aff3d3b5b6c2fc3d3b4872d7b9a4045297c97671fd15"
+  },
+  "old_notarized_build_226_unchanged": true,
+  "installed_app_changed": false,
+  "uploaded": false,
+  "historical_hosts_preserved": 1,
+  "other_hosts_not_moved": "100617 in use by other Codex processes; stopped relocation before mutation"
+}

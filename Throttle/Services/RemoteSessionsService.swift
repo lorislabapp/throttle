@@ -20,7 +20,24 @@ final class RemoteSessionsService {
     var host: String { didSet { UserDefaults.standard.set(host, forKey: "throttleEdgeHost") } }
     var port: Int { didSet { UserDefaults.standard.set(port, forKey: "throttleEdgePort") } }
     // Bearer token controls a remote session → Keychain, not UserDefaults.
-    var token: String { didSet { KeychainStore.set(token, account: Self.tokenAccount) } }
+    private var storedToken: String
+    @ObservationIgnored private let persistToken: (String, String) -> Bool
+    @ObservationIgnored private let removeLegacyToken: () -> Void
+    private(set) var tokenPersistenceError: String?
+    var token: String {
+        get { storedToken }
+        set {
+            guard persistToken(newValue, Self.tokenAccount) else {
+                tokenPersistenceError = String(localized:
+                    "The token could not be saved in Keychain. The previous token is still active."
+                )
+                return
+            }
+            storedToken = newValue
+            removeLegacyToken()
+            tokenPersistenceError = nil
+        }
+    }
     private static let tokenAccount = "edgeAgentToken"
     /// Above this, moving a session to the box is a way to lose it. Set below the
     /// 275 MB that was actually killed there, not at it.
@@ -39,18 +56,62 @@ final class RemoteSessionsService {
     var baseURL: String { EdgeAgentService.remoteURL(host: host, port: port) }
     var isConfigured: Bool { !host.isEmpty && !token.isEmpty }
 
-    private init() {
-        host = UserDefaults.standard.string(forKey: "throttleEdgeHost") ?? ""
-        let p = UserDefaults.standard.integer(forKey: "throttleEdgePort")
-        port = p == 0 ? 8787 : p
-        if let k = KeychainStore.get(account: Self.tokenAccount) {
-            token = k
-        } else if let legacy = UserDefaults.standard.string(forKey: "throttleEdgeToken"), !legacy.isEmpty {
-            token = legacy
-            KeychainStore.set(legacy, account: Self.tokenAccount)
-            UserDefaults.standard.removeObject(forKey: "throttleEdgeToken")
+    private convenience init() {
+        let defaults = UserDefaults.standard
+        let port = defaults.integer(forKey: "throttleEdgePort")
+        let saved: String?
+        let legacy: String?
+        let unavailable: Bool
+        switch KeychainStore.read(account: Self.tokenAccount) {
+        case .found(let value):
+            saved = value
+            legacy = nil
+            unavailable = false
+        case .missing:
+            saved = nil
+            legacy = defaults.string(forKey: "throttleEdgeToken")
+            unavailable = false
+        case .unavailable:
+            saved = nil
+            legacy = nil
+            unavailable = true
+        }
+        self.init(
+            initialHost: defaults.string(forKey: "throttleEdgeHost") ?? "",
+            initialPort: port == 0 ? 8787 : port,
+            savedToken: saved, legacyToken: legacy, credentialUnavailable: unavailable,
+            persistToken: { KeychainStore.set($0, account: $1) },
+            removeLegacy: { defaults.removeObject(forKey: "throttleEdgeToken") }
+        )
+    }
+
+    /// The initializer's inputs keep credential migration testable without
+    /// consulting a real Keychain, defaults domain, remote host or session.
+    init(initialHost: String, initialPort: Int, savedToken: String?, legacyToken: String?,
+         credentialUnavailable: Bool = false,
+         persistToken: @escaping (String, String) -> Bool, removeLegacy: @escaping () -> Void) {
+        host = initialHost
+        port = initialPort
+        self.persistToken = persistToken
+        self.removeLegacyToken = removeLegacy
+        if credentialUnavailable {
+            storedToken = ""
+            tokenPersistenceError = String(localized:
+                "Keychain is unavailable. No server token was changed or migrated."
+            )
+        } else if let savedToken {
+            storedToken = savedToken
+        } else if let legacyToken, !legacyToken.isEmpty {
+            storedToken = legacyToken
+            if persistToken(legacyToken, Self.tokenAccount) {
+                removeLegacy()
+            } else {
+                tokenPersistenceError = String(localized:
+                    "Keychain migration failed. The existing token has been retained; try saving it again."
+                )
+            }
         } else {
-            token = ""
+            storedToken = ""
         }
     }
 

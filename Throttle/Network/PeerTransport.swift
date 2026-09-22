@@ -17,12 +17,35 @@ final class PeerTransport: MirrorTransport {
     private static let secretKey = "throttlePeerPairingSecretV1"
     private static let secretAccount = "peerPairingSecret"
     private static let fallbackHostKey = "throttlePeerFallbackHostV1"
-    private let secret: PeerPairingSecret
+    private let secret: PeerPairingSecret?
+    private var secretIsPersisted = false
+    var pairingPersistenceError: String? {
+        guard !secretIsPersisted else { return nil }
+        return String(localized: "Pairing could not be saved in Keychain. LAN mirroring has not started.")
+    }
     private var advertiser: PeerAdvertiser?
     private var started = false
+    private let controlAdmission = PeerControlAdmission()
+    private static let controlConsentKey = "throttlePeerTerminalControlEnabled"
+
+    /// Separate from mirror consent. Existing installations default to read-only.
+    var terminalControlEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: Self.controlConsentKey) }
+        set {
+            guard newValue != terminalControlEnabled else { return }
+            UserDefaults.standard.set(newValue, forKey: Self.controlConsentKey)
+            controlAdmission.setControlEnabled(newValue)
+            // Revoke existing terminal taps without racing listener cancellation.
+            PeerTerminalBridge.shared.reset()
+        }
+    }
+
+    var permitsTerminalControl: Bool {
+        controlAdmission.permitsCurrentConnection && terminalControlEnabled
+    }
 
     /// Base64 secret stamped into every mirror snapshot so the phone can pair.
-    var pairingSecretBase64: String { secret.base64 }
+    var pairingSecretBase64: String? { secretIsPersisted ? secret?.base64 : nil }
 
     /// User-entered tailnet host (IP or MagicDNS name) this Mac is reachable at on
     /// `PeerPairing.fallbackPort`, for the off-LAN path. Persisted + stamped into
@@ -35,49 +58,92 @@ final class PeerTransport: MirrorTransport {
         }
     }
 
-    private init() {
+    private convenience init() {
+        self.init(
+            credential: KeychainStore.read(account: Self.secretAccount),
+            legacy: { UserDefaults.standard.string(forKey: Self.secretKey) },
+            persist: { KeychainStore.set($0, account: Self.secretAccount) },
+            removeLegacy: { UserDefaults.standard.removeObject(forKey: Self.secretKey) },
+            generate: { PeerPairingSecret.generate() }
+        )
+    }
+
+    /// Explicit dependencies let native tests qualify degraded startup without
+    /// reading real credentials, generating randomness or opening a listener.
+    init(credential: KeychainStore.ReadResult, legacy: () -> String?,
+         persist: (String) -> Bool, removeLegacy: () -> Void,
+         generate: () -> PeerPairingSecret) {
         // Keychain, not UserDefaults. This secret authorises a device to receive
         // the mirror of every session, and it lived in a plist any process
         // running as this user could read — while the edge-agent bearer token,
         // twenty lines away in another file, was already in the Keychain with
         // the comment "Bearer token controls a remote session → Keychain, not
         // UserDefaults". The same sentence applies here and was not followed.
-        if let b64 = KeychainStore.get(account: Self.secretAccount),
-           let existing = PeerPairingSecret(base64: b64) {
-            secret = existing
-        } else if let legacy = UserDefaults.standard.string(forKey: Self.secretKey),
-                  let existing = PeerPairingSecret(base64: legacy) {
-            // Migrate in place, then remove the plaintext copy. Keeping the pair
-            // would leave the weaker of the two as the real security boundary.
-            _ = KeychainStore.set(legacy, account: Self.secretAccount)
-            UserDefaults.standard.removeObject(forKey: Self.secretKey)
-            secret = existing
-        } else {
-            let fresh = PeerPairingSecret.generate()
-            _ = KeychainStore.set(fresh.base64, account: Self.secretAccount)
-            UserDefaults.standard.removeObject(forKey: Self.secretKey)
-            secret = fresh
+        switch credential {
+        case .found(let base64):
+            secret = PeerPairingSecret(base64: base64)
+            secretIsPersisted = secret != nil
+        case .unavailable:
+            // Never replace an unreadable credential with a newly generated one.
+            secret = nil
+        case .missing:
+            if let legacy = legacy(),
+               let existing = PeerPairingSecret(base64: legacy) {
+                if persist(legacy) {
+                    secretIsPersisted = true
+                    removeLegacy()
+                }
+                secret = existing
+            } else {
+                let fresh = generate()
+                if persist(fresh.base64) {
+                    secretIsPersisted = true
+                    removeLegacy()
+                }
+                secret = fresh
+            }
         }
     }
 
-    /// Begin advertising on the LAN. Fail-open (PeerAdvertiser never throws).
+    /// Do not advertise an ephemeral pairing identity after a persistence failure.
     func start() {
-        guard !started else { return }
+        guard !started, secretIsPersisted, let secret else { return }
         // Pin the fixed port always (not just when a fallback host is set): Bonjour
         // resolves whatever port we bind on the LAN either way, and pinning it means
         // flipping on a tailnet host later never requires restarting the listener.
         let adv = PeerAdvertiser(secret: secret, serviceName: Host.current().localizedName ?? "Mac",
                                   fixedPort: PeerPairing.fallbackPort)
         // Route peer terminal control frames to the cockpit bridge (main actor).
-        adv.onTerminalControl = { control, client in
-            Task { @MainActor in PeerTerminalBridge.shared.handle(control, from: client) }
+        let generation = controlAdmission.start(controlEnabled: terminalControlEnabled)
+        let admission = controlAdmission
+        adv.onTerminalControl = { [weak self] control, client in
+            guard let ticket = admission.ticket(for: generation) else { return }
+            Task { @MainActor in
+                guard let self else { return }
+                Self.deliverControl((control, client), ticket: ticket, admission: admission,
+                                    controlEnabled: self.terminalControlEnabled) { control, client in
+                    PeerTerminalBridge.shared.handle(control, from: client)
+                }
+            }
         }
         adv.start()
         advertiser = adv
         started = true
     }
 
+    /// Called only after the network callback has hopped onto MainActor.
+    /// Keeping the final gate here lets tests exercise the delivered frame path.
+    static func deliverControl(
+        _ frame: (control: PeerTerminalControl, client: PeerClientID),
+        ticket: PeerControlAdmission.Ticket, admission: PeerControlAdmission,
+        controlEnabled: Bool, handle: (PeerTerminalControl, PeerClientID) -> Void
+    ) {
+        guard admission.permits(ticket), controlEnabled else { return }
+        handle(frame.control, frame.client)
+    }
+
     func stop() {
+        controlAdmission.stop()
         advertiser?.stop()
         advertiser = nil
         started = false

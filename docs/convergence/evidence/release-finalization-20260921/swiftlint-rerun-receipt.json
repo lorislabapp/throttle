@@ -1,0 +1,14 @@
+{
+  "at": "2026-09-21T11:45:10.340548+02:00",
+  "command": [
+    "/private/tmp/throttle-swiftlint-0.63.2/swiftlint",
+    "lint",
+    "--strict",
+    "--no-cache"
+  ],
+  "exit_code": 0,
+  "files": 854,
+  "violations": 0,
+  "baseline_changed": false,
+  "preceding_failure": "Documentary reproduction Package.swift renamed .swift.txt with unchanged bytes; initial failure receipt retained"
+}

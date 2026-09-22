@@ -1,18 +1,8 @@
 import Darwin
 import Foundation
 
-enum NotebookLMGatewayClientError: Error, Equatable {
-    case unavailable
-    case invalidConfiguration
-    case launchFailed
-    case timeout
-    case responseTooLarge
-    case invalidResponse
-    case gatewayRejected(String)
-}
-
 actor NotebookLMGatewayClient: NotebookLMGatewayServing {
-    static let maximumResponseBytes = 8 * 1_024 * 1_024
+    static let maximumResponseBytes = NotebookLMGatewayProcess.maximumResponseBytes
     static let callTimeout: TimeInterval = 180
 
     private enum Tool: String {
@@ -25,11 +15,6 @@ actor NotebookLMGatewayClient: NotebookLMGatewayServing {
         let executable: String
         let arguments: [String]
         let environment: [String: String]
-    }
-
-    private final class ProcessBox: @unchecked Sendable {
-        let process: Process
-        init(_ process: Process) { self.process = process }
     }
 
     private let command: Command
@@ -81,40 +66,16 @@ actor NotebookLMGatewayClient: NotebookLMGatewayServing {
     }
 
     private func call(_ tool: Tool, arguments: [String: Any]) async throws -> Data {
-        let process = Process()
-        let input = Pipe()
-        let output = Pipe()
-        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        process.arguments = [
-            "-lc",
-            "exec " + ([command.executable] + command.arguments).map(Self.shellQuote).joined(separator: " ")
-        ]
-        process.environment = ProcessInfo.processInfo.environment.merging(command.environment) { _, configured in
-            configured
-        }
-        process.standardInput = input
-        process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
-        do {
-            try process.run()
-        } catch {
-            throw NotebookLMGatewayClientError.launchFailed
-        }
-
         let request = try Self.request(tool: tool.rawValue, arguments: arguments)
-        do {
-            try input.fileHandleForWriting.write(contentsOf: request)
-            try input.fileHandleForWriting.close()
-            let response = try await Self.readResponse(
-                from: output.fileHandleForReading,
-                process: ProcessBox(process)
-            )
-            if process.isRunning { process.terminate() }
-            return try Self.unwrap(response)
-        } catch {
-            if process.isRunning { process.terminate() }
-            throw error
-        }
+        let response = try await NotebookLMGatewayProcess.execute(
+            executable: "/bin/zsh", arguments: ["-lc",
+                "exec " + ([command.executable] + command.arguments).map(Self.shellQuote).joined(separator: " ")],
+            environment: ProcessInfo.processInfo.environment.merging(command.environment) { _, configured in
+                configured
+            },
+            request: request, timeout: Self.callTimeout
+        )
+        return try Self.unwrap(response)
     }
 
     private static func request(tool: String, arguments: [String: Any]) throws -> Data {
@@ -142,61 +103,6 @@ actor NotebookLMGatewayClient: NotebookLMGatewayServing {
         return try [initialize, initialized, call]
             .map { try JSONSerialization.data(withJSONObject: $0) + Data([0x0A]) }
             .reduce(into: Data()) { $0.append($1) }
-    }
-
-    private static func readResponse(
-        from handle: FileHandle,
-        process: ProcessBox
-    ) async throws -> Data {
-        return try await withTaskGroup(of: Result<Data, NotebookLMGatewayClientError>.self) { group in
-            group.addTask {
-                do {
-                    return .success(try readLine(fileDescriptor: handle.fileDescriptor, responseID: 2))
-                } catch let error as NotebookLMGatewayClientError {
-                    return .failure(error)
-                } catch {
-                    return .failure(.invalidResponse)
-                }
-            }
-            group.addTask {
-                try? await Task.sleep(for: .seconds(callTimeout))
-                if process.process.isRunning { process.process.terminate() }
-                return .failure(.timeout)
-            }
-            let result = await group.next() ?? .failure(.invalidResponse)
-            group.cancelAll()
-            return result
-        }.get()
-    }
-
-    nonisolated private static func readLine(
-        fileDescriptor: Int32,
-        responseID: Int
-    ) throws -> Data {
-        var buffer = [UInt8]()
-        var chunk = [UInt8](repeating: 0, count: 64 * 1_024)
-        while true {
-            let count = chunk.withUnsafeMutableBytes {
-                read(fileDescriptor, $0.baseAddress, $0.count)
-            }
-            guard count > 0 else { throw NotebookLMGatewayClientError.invalidResponse }
-            buffer.append(contentsOf: chunk[0 ..< count])
-            guard buffer.count <= maximumResponseBytes else {
-                throw NotebookLMGatewayClientError.responseTooLarge
-            }
-            while let newline = buffer.firstIndex(of: 0x0A) {
-                let line = Data(buffer[..<newline])
-                buffer.removeSubrange(...newline)
-                if responseIdentifier(line) == responseID { return line }
-            }
-        }
-    }
-
-    private static func responseIdentifier(_ data: Data) -> Int? {
-        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return nil
-        }
-        return object["id"] as? Int
     }
 
 }

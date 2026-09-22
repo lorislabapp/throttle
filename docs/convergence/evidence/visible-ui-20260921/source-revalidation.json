@@ -1,0 +1,8 @@
+{
+  "observed": "2026-09-21T07:40:54.834655",
+  "core_source_count": 153,
+  "core_mismatches": [],
+  "convergence_count": 84,
+  "convergence_mismatches": [],
+  "note": "Fingerprint revalidation, not a rerun of 352 tests"
+}

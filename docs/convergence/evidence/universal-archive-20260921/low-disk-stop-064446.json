@@ -1,0 +1,8 @@
+{
+  "cause": "System disk reached no space left on device during archive; parent terminated only exact archive xcodebuild PID30510",
+  "runner_status": "failed",
+  "exit_code": -15,
+  "not_a_compiler_failure": true,
+  "sources_match": true,
+  "other_processes_stopped": false
+}

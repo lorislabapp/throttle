@@ -1,0 +1,10 @@
+{
+  "before": "build-20260921-002855",
+  "after": "build-20260921-003158",
+  "changed_files": [
+    "Contents/PlugIns/ThrottleTests.xctest/Contents/MacOS/ThrottleTests"
+  ],
+  "production_bundle_bytes_identical": true,
+  "files_before": 115,
+  "files_after": 115
+}

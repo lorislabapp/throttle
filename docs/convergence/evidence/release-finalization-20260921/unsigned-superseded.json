@@ -1,0 +1,8 @@
+{
+  "at": "2026-09-21T11:12:46.295239+02:00",
+  "pid": 15845,
+  "owned_archive": "universal-archive-20260921-111137",
+  "reason": "User precise local signing approval received; stop own redundant unsigned archive before signed archive",
+  "signal": "SIGTERM",
+  "not_a_compilation_failure": true
+}

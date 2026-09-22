@@ -1,0 +1,51 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/suite-CockpitSpendViewTests-20260921-091415.xctestrun -destination platform=macOS,arch=arm64 -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 300 -maximum-test-execution-time-allowance 360 -resultBundlePath /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/suite-CockpitSpendViewTests-20260921-091415.xcresult -testLanguage en -testRegion US "-only-testing:ThrottleTests/CockpitSpendViewTests"
+
+Writing result bundle at path:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/suite-CockpitSpendViewTests-20260921-091415.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008132-001178882E03001C, name:My Mac }
+2026-09-21 09:14:19.075199+0200 Throttle[22193:1974969] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:14:19.075562+0200 Throttle[22193:1974969] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:14:19.075718+0200 Throttle[22193:1974963] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:14:19.075744+0200 Throttle[22193:1974963] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+[AppDelegate.init] start
+2026-09-21 09:14:19.076317+0200 Throttle[22193:1974964] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:14:19.076350+0200 Throttle[22193:1974964] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:14:19.076631+0200 Throttle[22193:1974964] [Connection] Will NOT re-try to establish the connection
+2026-09-21 09:14:19.076657+0200 Throttle[22193:1974969] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:14:19.076667+0200 Throttle[22193:1974969] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:14:19.105283+0200 Throttle[22193:1974825] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/3w/fbl9wc1d3q7091lq5pj5sy0c0000gn/T/com.lorislab.throttle.savedState
+[applicationDidFinishLaunching] start
+2026-09-21 09:14:19.142373+0200 Throttle[22193:1974825] [App] Isolated host detected: skipping production background services
+Test Suite 'Selected tests' started at 2026-09-21 09:14:19.160.
+Test Suite 'ThrottleTests.xctest' started at 2026-09-21 09:14:19.161.
+Test Suite 'CockpitSpendViewTests' started at 2026-09-21 09:14:19.161.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testCloudShowsUnmeasuredAndAlreadyOpenSessionIsExcluded]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testCloudShowsUnmeasuredAndAlreadyOpenSessionIsExcluded]' passed (0.037 seconds).
+Test Case '-[ThrottleTests.CockpitSpendViewTests testEmptyCardLoadsRefreshesAndCancelsWhenRemoved]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testEmptyCardLoadsRefreshesAndCancelsWhenRemoved]' passed (0.323 seconds).
+Test Case '-[ThrottleTests.CockpitSpendViewTests testPlanKeepsUnknownCountsAndSubscriptionDisclosureVisible]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testPlanKeepsUnknownCountsAndSubscriptionDisclosureVisible]' passed (0.028 seconds).
+Test Case '-[ThrottleTests.CockpitSpendViewTests testTaskCostDistinguishesUnknownFromObservedZero]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testTaskCostDistinguishesUnknownFromObservedZero]' passed (0.010 seconds).
+Test Suite 'CockpitSpendViewTests' passed at 2026-09-21 09:14:19.561.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.398 (0.400) seconds
+Test Suite 'ThrottleTests.xctest' passed at 2026-09-21 09:14:19.561.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.398 (0.400) seconds
+Test Suite 'Selected tests' passed at 2026-09-21 09:14:19.561.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.398 (0.401) seconds
+2026-09-21 09:14:20.742 xcodebuild[22187:1974615] [MT] IDETestOperationsObserverDebug: 3.925 elapsed -- Testing started completed.
+2026-09-21 09:14:20.742 xcodebuild[22187:1974615] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-21 09:14:20.742 xcodebuild[22187:1974615] [MT] IDETestOperationsObserverDebug: 3.925 sec, +3.925 sec -- end
+
+Test session results, code coverage, and logs:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/suite-CockpitSpendViewTests-20260921-091415.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

@@ -1,0 +1,11 @@
+{
+  "at": "2026-09-21T11:39:40.468509+02:00",
+  "reference_build": "100452",
+  "inventory_entries": 1047,
+  "changed": [
+    "ThrottleTests/ServiceTests/HostedViewReview.swift"
+  ],
+  "production_source_drift": false,
+  "fixture_sha256": "942035e9912dbff01a4a7cbc5fde86904006e5372c1a8c73e940f0236b1c28f2",
+  "diff_check_exit": 0
+}

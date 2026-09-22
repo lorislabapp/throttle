@@ -1,0 +1,19 @@
+{
+  "captured_utc": "2026-09-20T22:47:52.507781+00:00",
+  "checks": {
+    "core-352": {
+      "count": 153,
+      "drift": []
+    },
+    "native-build-003158": {
+      "count": 1036,
+      "drift": []
+    },
+    "changes": {
+      "count": 83,
+      "drift": []
+    }
+  },
+  "test_rerun": false,
+  "meaning": "Source identity verification only; preserves existing terminal receipts, does not execute tests."
+}

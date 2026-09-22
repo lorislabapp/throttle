@@ -1,0 +1,53 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "00008132-001178882E03001C",
+      "deviceName" : "My Mac",
+      "modelName" : "MacBook Pro",
+      "osBuildNumber" : "26A428",
+      "osVersion" : "27.0",
+      "platform" : "macOS"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "duration" : "40s",
+                  "durationInSeconds" : 40.869627952575684,
+                  "name" : "testEmptyStateMatchesSelectedLanguage()",
+                  "nodeIdentifier" : "ProjectAssistantViewTests/testEmptyStateMatchesSelectedLanguage()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/ProjectAssistantViewTests/testEmptyStateMatchesSelectedLanguage",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "ProjectAssistantViewTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/ProjectAssistantViewTests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            }
+          ],
+          "name" : "ThrottleTests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests",
+          "nodeType" : "Unit test bundle",
+          "result" : "Passed"
+        }
+      ],
+      "name" : "Throttle",
+      "nodeType" : "Test Plan",
+      "result" : "Passed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

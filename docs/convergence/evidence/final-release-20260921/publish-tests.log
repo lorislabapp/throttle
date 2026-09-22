@@ -1,0 +1,18 @@
+✔ stage permits exactly the expected regular artifacts (3.060209ms)
+✔ stage refuses extra nested files and symlinked artifacts (1.438042ms)
+✔ zip receives path arguments without invoking a shell (0.920041ms)
+✔ credential validation never includes response content in errors (0.277916ms)
+✔ offsets are exact safe decimal values in the accepted range (0.260416ms)
+✔ successful PATCH requires explicit exact offset, never fabricated progress (1.232208ms)
+✔ lost PATCH reconciles committed chunk without empty resend (0.3125ms)
+✔ partial reconciliation resends only remaining bytes (0.177625ms)
+✔ retry count is bounded and a bad HEAD never authorizes progress (0.234875ms)
+✔ offline publication exercises bounded requests and never reads raw error bodies (9.325083ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 106.304541

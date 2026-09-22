@@ -168,6 +168,7 @@ final class PromptRefinerServiceTests: XCTestCase {
         XCTAssertTrue(excluded.contains(.appleIntelligence))
         XCTAssertTrue(excluded.contains(.claudeWebSession))
         XCTAssertTrue(excluded.contains(.claudeAPIKey))
+        XCTAssertTrue(excluded.contains(.selfHostedModel))
         XCTAssertFalse(excluded.contains(.embeddedModel))
     }
 

@@ -1,0 +1,112 @@
+{
+  "archive": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/universal-archive-20260921-070047.xcarchive",
+  "app": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/universal-archive-20260921-070047.xcarchive/Products/Applications/Throttle.app",
+  "receipt": "universal-archive-20260921-070047-receipt.json",
+  "observed_at": "2026-09-21T07:12:50.176013",
+  "version": "3.8.0",
+  "build": "226",
+  "bundle_id": "com.lorislab.throttle",
+  "minimum_macos": "14.0",
+  "sdk": "macosx27.0",
+  "archive_properties": {
+    "ApplicationPath": "Applications/Throttle.app",
+    "Architectures": [
+      "x86_64",
+      "arm64"
+    ],
+    "CFBundleIdentifier": "com.lorislab.throttle",
+    "CFBundleShortVersionString": "3.8.0",
+    "CFBundleVersion": "226",
+    "SigningIdentity": "",
+    "Team": ""
+  },
+  "regular_file_count": 92,
+  "symlink_count": 9,
+  "mach_o_files": {
+    "Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate": {
+      "exit_code": 0,
+      "architectures": [
+        "x86_64",
+        "arm64"
+      ],
+      "stderr": "xcrun: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead"
+    },
+    "Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle": {
+      "exit_code": 0,
+      "architectures": [
+        "x86_64",
+        "arm64"
+      ],
+      "stderr": "xcrun: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead"
+    },
+    "Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater": {
+      "exit_code": 0,
+      "architectures": [
+        "x86_64",
+        "arm64"
+      ],
+      "stderr": "xcrun: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead"
+    },
+    "Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader": {
+      "exit_code": 0,
+      "architectures": [
+        "x86_64",
+        "arm64"
+      ],
+      "stderr": "xcrun: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead"
+    },
+    "Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer": {
+      "exit_code": 0,
+      "architectures": [
+        "x86_64",
+        "arm64"
+      ],
+      "stderr": "xcrun: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead"
+    },
+    "Contents/Frameworks/libswiftCompatibilitySpan.dylib": {
+      "exit_code": 0,
+      "architectures": [
+        "x86_64",
+        "arm64",
+        "arm64e"
+      ],
+      "stderr": "xcrun: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead"
+    },
+    "Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/SQLCipher": {
+      "exit_code": 0,
+      "architectures": [
+        "x86_64",
+        "arm64"
+      ],
+      "stderr": "xcrun: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead"
+    },
+    "Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent": {
+      "exit_code": 0,
+      "architectures": [
+        "x86_64",
+        "arm64"
+      ],
+      "stderr": "xcrun: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead"
+    },
+    "Contents/MacOS/Throttle": {
+      "exit_code": 0,
+      "architectures": [
+        "x86_64",
+        "arm64"
+      ],
+      "stderr": "xcrun: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead"
+    },
+    "Contents/PlugIns/ThrottleWidget.appex/Contents/MacOS/ThrottleWidget": {
+      "exit_code": 0,
+      "architectures": [
+        "x86_64",
+        "arm64"
+      ],
+      "stderr": "xcrun: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead"
+    }
+  },
+  "all_mach_o_universal": true,
+  "files_manifest_sha256": "db8262d170b90045c5fc3911c1b1d5c37d7ed00018cc4695eeca648fd3499d22",
+  "distribution_signed": false,
+  "launched": false
+}

@@ -57,11 +57,7 @@ enum TaskLauncher {
 
         // Re-check ownership here rather than trusting the UI's last refresh: a
         // second agent may have claimed the task since the button was drawn.
-        let current = try store.state(for: taskID)
-        if let owner = current.owner {
-            throw LaunchError.alreadyHeld(taskID, owner: owner)
-        }
-        guard current.chainValid else { throw PlanStoreError.invalidLog(taskID) }
+        try requireUnclaimed(taskID: taskID, store: store)
 
         var preparedClaim = try WorkflowClaimContract.prepare(
             task: task,
@@ -88,6 +84,7 @@ enum TaskLauncher {
                 expiresAt: authorityExpiration(task: task, issuedAt: issuedAt)
             )
             descriptor = try writeAuthority(authority, missionID: missionID)
+            preparedClaim.event.authorityGrantID = authority.grantID
             try store.append(preparedClaim.event, to: taskID)
             return LaunchPlan(
                 taskID: taskID,
@@ -106,6 +103,14 @@ enum TaskLauncher {
             }
             throw error
         }
+    }
+
+    private static func requireUnclaimed(taskID: String, store: PlanStore) throws {
+        let current = try store.state(for: taskID)
+        if let owner = current.owner {
+            throw LaunchError.alreadyHeld(taskID, owner: owner)
+        }
+        guard current.chainValid else { throw PlanStoreError.invalidLog(taskID) }
     }
 
     private static func budgetAdmission(

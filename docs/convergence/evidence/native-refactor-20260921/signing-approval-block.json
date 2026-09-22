@@ -1,0 +1,10 @@
+{
+  "status": "blocked_before_execution",
+  "operation": "Developer ID signed universal archive",
+  "reason": "Automatic approval review rejected private-key signing; go for it was not accepted as separate signing authorization.",
+  "signing_executed": false,
+  "export_in_same_rejected_call_executed": false,
+  "unaffected_action": "FR result export executed separately; unsigned universal archive allowed separately",
+  "requires": "Explicit approval of local signing for Throttle3.8.0(226), Developer ID Application Christine Martin TDV6D5L785; no notarization/public upload included",
+  "recorded_utc": "2026-09-21T07:32:52.873208+00:00"
+}

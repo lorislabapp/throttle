@@ -1,0 +1,187 @@
+--- a/throttle/index.html
++++ b/throttle/index.html
+@@ -4,7 +4,7 @@
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>Throttle — the cost &amp; health cockpit for Claude Code</title>
+-<meta name="description" content="Know when Claude Code will hit its limit — before it stops your work. Throttle puts your 5-hour and weekly usage in the macOS menu bar, predicts your cap, runs every project from one cockpit, and trims token waste. 100% local, no account." />
++<meta name="description" content="Claude Code usage, project sessions and reviewable optimizations on macOS. Optional connected services follow your selected settings; project commands are for trusted projects." />
+ <meta name="author" content="LorisLabs" />
+ <meta name="robots" content="index, follow" />
+ <script type="module" src="https://lorislab.fr/.webmcp/bridge.js" data-packs="c2pa,mcp-server-client"></script><link rel="canonical" href="https://lorislab.fr/throttle/" />
+@@ -13,14 +13,14 @@
+ <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon/favicon-32x32.png" />
+ <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon/favicon-16x16.png" />
+ <meta property="og:title" content="Throttle — the cost &amp; health cockpit for Claude Code" />
+-<meta property="og:description" content="Live Claude Code usage in your menu bar, a multi-session cockpit, and an AI that trims your token waste — a precise instrument that never becomes the engine. 100% local, macOS 14+." />
++<meta property="og:description" content="Claude Code usage, project sessions and reviewable optimizations on macOS. Optional connected services follow your selected settings; project commands are for trusted projects." />
+ <meta property="og:type" content="website" />
+ <meta property="og:url" content="https://lorislab.fr/throttle/" />
+ <meta property="og:site_name" content="LorisLabs" />
+ <meta property="og:image" content="https://lorislab.fr/images/lorislab-logo.png" />
+ <meta name="twitter:card" content="summary_large_image" />
+ <meta name="twitter:title" content="Throttle — the cost &amp; health cockpit for Claude Code" />
+-<meta name="twitter:description" content="Live Claude Code usage, a multi-session cockpit, and an AI that trims token waste. 100% local, macOS 14+." />
++<meta name="twitter:description" content="Claude Code usage, project sessions and reviewable optimizations on macOS. Optional connected services follow your selected settings; project commands are for trusted projects." />
+ <meta name="twitter:image" content="https://lorislab.fr/images/lorislab-logo.png" />
+ <link rel="stylesheet" href="landing.css" />
+ </head>
+@@ -43,12 +43,12 @@
+   <span class="glow"></span>
+   <div class="hero-inner">
+     <span class="eyebrow">macOS 14+ · direct download</span>
+-    <h1>Know when Claude Code will hit its limit — before it stops your work.</h1>
+-    <p class="sub">Throttle puts your 5-hour and weekly usage in the macOS menu bar, predicts when you'll hit the cap, and keeps every reading local.</p>
++    <h1>Follow Claude Code usage and see when you may reach a limit.</h1>
++    <p class="sub">Throttle shows 5-hour and weekly usage in the macOS menu bar, with projections based on available readings.</p>
+     <div class="cta">
+       <div class="cta-col">
+         <a class="btn" data-dl href="#download"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v10m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 18h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Download the free meter</span></a>
+-        <span class="dl-meta">No account · No telemetry · macOS 14+ · Apple Silicon &amp; Intel</span>
++        <span class="dl-meta">Local cockpit · Optional connected services · macOS 14+ · Apple Silicon &amp; Intel</span>
+       </div>
+     </div>
+     <!-- the hero shot: full cockpit, glowing -->
+@@ -63,9 +63,9 @@
+ <section class="section tight" id="outcomes">
+   <div class="wrap">
+     <div class="wall reveal" style="grid-template-columns:repeat(3,1fr);">
+-      <div class="wtile"><div class="wt">No more limit surprises</div><div class="wd">A predictive "≈2h to your cap" nudge before the wall — never a lockout mid-task.</div></div>
+-      <div class="wtile"><div class="wt">Many sessions, one calm Mac</div><div class="wd">Run every project from one cockpit; idle sessions hibernate before RAM runs out.</div></div>
+-      <div class="wtile"><div class="wt">Cut invisible token waste</div><div class="wd">Bloated configs, verbose output, re-charged images — found, measured, trimmed.</div></div>
++      <div class="wtile"><div class="wt">See approaching limits</div><div class="wd">A projected time to your cap helps you plan; provider limits and availability can still interrupt a session.</div></div>
++      <div class="wtile"><div class="wt">Many sessions, one calm Mac</div><div class="wd">Manage project sessions from one cockpit, with memory-pressure controls for supported sessions.</div></div>
++      <div class="wtile"><div class="wt">Cut invisible token waste</div><div class="wd">Inspect configs, verbose output and repeated images, then review the available optimizations.</div></div>
+     </div>
+   </div>
+ </section>
+@@ -78,7 +78,7 @@
+       <div>
+         <span class="eyebrow">Live usage meter</span>
+         <h2 style="font-size:clamp(24px,3vw,32px);letter-spacing:-0.02em;font-weight:640;margin:12px 0 0;">Your 5-hour &amp; weekly limits, always one glance away.</h2>
+-        <p class="muted" style="font-size:16px;margin:14px 0 0;line-height:1.6;">Exact when you're signed in, a clearly-degraded estimate when you're not — never a confident number that might be wrong. A predictive nudge tells you <span class="mono" style="color:var(--ink)">≈2h to your cap</span> before the wall, not after.</p>
++        <p class="muted" style="font-size:16px;margin:14px 0 0;line-height:1.6;">Uses available provider readings or a labeled estimate. A projection such as <span class="mono" style="color:var(--ink)">≈2h to your cap</span> depends on recent usage and can change.</p>
+         <div style="margin-top:22px;"><div data-shot="term"></div></div>
+       </div>
+     </div>
+@@ -95,23 +95,23 @@
+     <div class="specs">
+       <div class="spec-row reveal">
+         <div class="sk"><span class="ico"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.5v5l3 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><span class="st">Live meter</span></div></div>
+-        <div class="sv">Your 5-hour and weekly Claude limits in the menu bar — exact or estimated — with a predictive "you'll hit your cap in ~2h at this burn" nudge so a lockout never surprises you mid-task.</div>
++        <div class="sv">Your 5-hour and weekly Claude usage in the menu bar, using available readings or estimates, with a projection based on recent activity.</div>
+       </div>
+       <div class="spec-row reveal">
+         <div class="sk"><span class="ico"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4l8 4-8 4-8-4 8-4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M4 12l8 4 8-4M4 16l8 4 8-4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span><div><span class="st">Multi-session Cockpit</span><span class="badge">New</span></div></div>
+-        <div class="sv">Run several <span class="mono">claude</span> projects at once — tabs, a project rail, or a mission-control overview — each showing real cost, model and RAM, under one shared binding limit and a memory-pressure gate that stops you oversaturating the Mac.</div>
++        <div class="sv">Run several <span class="mono">claude</span> projects at once — tabs, a project rail, or a mission-control overview — with available cost, model and RAM information, shared limits and memory-pressure admission controls.</div>
+       </div>
+       <div class="spec-row reveal">
+         <div class="sk"><span class="ico"><svg viewBox="0 0 24 24" fill="none"><path d="M13 3L5.5 13H11l-1 8 7.5-10H12l1-8Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span><div><span class="st">Autopilot</span><span class="badge">New</span></div></div>
+-        <div class="sv">Keeps Claude Code lean system-wide — a concise output-style and a usage statusline in every terminal — so every session spends fewer tokens by default. Fully reversible, any time.</div>
++        <div class="sv">Offers concise output styles and a usage statusline for supported Claude Code sessions. Review the changes and available backups; savings depend on the task and model.</div>
+       </div>
+       <div class="spec-row reveal">
+         <div class="sk"><span class="ico"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4v16M7 8h5M7 14h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="17" cy="7" r="2.4" stroke="currentColor" stroke-width="1.5"/></svg></span><div><span class="st">AI Optimizer</span><span class="badge">New</span></div></div>
+-        <div class="sv">Proposes a leaner, safer <span class="mono">CLAUDE.md</span> as a GitHub-style diff with a plain "why this is better" summary. You review every line before anything changes.</div>
++        <div class="sv">Proposes changes to <span class="mono">CLAUDE.md</span> as a diff with an explanation. Generation uses your selected provider; review the proposal before applying a local change.</div>
+       </div>
+       <div class="spec-row reveal">
+         <div class="sk"><span class="ico"><svg viewBox="0 0 24 24" fill="none"><circle cx="7" cy="7" r="2.4" stroke="currentColor" stroke-width="1.5"/><circle cx="7" cy="17" r="2.4" stroke="currentColor" stroke-width="1.5"/><path d="M9 8.6L19 17M9 15.4L19 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><div><span class="st">Context trimmer &amp; audit</span></div></div>
+-        <div class="sv">Surgical context trimming, memory-pressure awareness and a config audit that flags what's quietly costing you — all measured, never guessed.</div>
++        <div class="sv">Context trimming, memory-pressure information and config checks help identify possible waste. Estimates and proposed changes need review.</div>
+       </div>
+     </div>
+   </div>
+@@ -127,7 +127,7 @@
+     <div class="specs">
+       <div class="spec-row reveal">
+         <div class="sk"><span class="ico"><svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M5 12h10M5 17h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><div><span class="st">Output styles</span></div></div>
+-        <div class="sv">One-click reply styles — Concise, or aggressive "Caveman" compression — applied to every <span class="mono">claude</span> session, terminal and Cockpit. Less prose per answer, the code and reasoning untouched.</div>
++        <div class="sv">One-click reply styles — Concise, or aggressive "Caveman" compression — applied to every <span class="mono">claude</span> session, terminal and Cockpit. Requests shorter replies; response quality and savings depend on the model and task.</div>
+       </div>
+       <div class="spec-row reveal">
+         <div class="sk"><span class="ico"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.2-2.8 7.5-7 9-4.2-1.5-7-4.8-7-9V6l7-3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><span class="st">settings.json hardening</span></div></div>
+@@ -135,7 +135,7 @@
+       </div>
+       <div class="spec-row reveal">
+         <div class="sk"><span class="ico"><svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="5" width="9" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 10l2-2 2 2 1.5-1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 15h6M15 18h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><div><span class="st">Image → text on drop</span><span class="badge">New</span></div></div>
+-        <div class="sv">Drop a screenshot into a Cockpit session and Throttle OCRs it locally to text — a fraction of the tokens of a vision image. Hold <span class="mono">⌥</span> to keep it as an image.</div>
++        <div class="sv">Drop a screenshot into a Cockpit session and Throttle OCRs it locally to text — token savings depend on the image and model. OCR can omit visual information. Hold <span class="mono">⌥</span> to keep it as an image.</div>
+       </div>
+       <div class="spec-row reveal">
+         <div class="sk"><span class="ico"><svg viewBox="0 0 24 24" fill="none"><circle cx="7" cy="7" r="2.4" stroke="currentColor" stroke-width="1.5"/><circle cx="7" cy="17" r="2.4" stroke="currentColor" stroke-width="1.5"/><path d="M9 8.6L19 17M9 15.4L19 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><div><span class="st">Context trimmer</span></div></div>
+@@ -143,7 +143,7 @@
+       </div>
+       <div class="spec-row reveal">
+         <div class="sk"><span class="ico"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.6"/><path d="M20 20l-4.2-4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><div><span class="st">Searchable session memory</span><span class="badge">New</span></div></div>
+-        <div class="sv">Search your past <span class="mono">claude</span> sessions for context the window has lost — a dedicated Search window, plus an opt-in MCP server so Claude can search its own history too. Finds the right session even when you don't recall the exact word — searching "auth" also surfaces "login" and "token", entirely on-device.</div>
++        <div class="sv">Search your past <span class="mono">claude</span> sessions for context the window has lost — a dedicated Search window, plus an opt-in MCP server so Claude can search its own history too. On-device semantic search can find related terms; results depend on the indexed content.</div>
+       </div>
+       <div class="spec-row reveal">
+         <div class="sk"><span class="ico"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="4" y="14" width="16" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><circle cx="7.5" cy="7" r="1" fill="currentColor"/><circle cx="7.5" cy="17" r="1" fill="currentColor"/></svg></span><div><span class="st">MCP manager &amp; memory hygiene</span><span class="badge">New</span></div></div>
+@@ -151,15 +151,15 @@
+       </div>
+       <div class="spec-row reveal">
+         <div class="sk"><span class="ico"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M12 12l4-2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg></span><div><span class="st">Autopilot</span></div></div>
+-        <div class="sv">Keeps your Claude Code setup optimized system-wide, by default — concise replies and a live usage statusline on, dead memory from deleted projects archived. Every action reversible and logged; review or undo any of it in one place.</div>
++        <div class="sv">Keeps your Claude Code setup optimized system-wide, by default — concise replies and a live usage statusline on, dead memory from deleted projects archived. Review recorded changes and the restore options available for each action. External effects are not automatically undone.</div>
+       </div>
+       <div class="spec-row reveal">
+         <div class="sk"><span class="ico"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8h6M4 8l2.5-2.5M4 8l2.5 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 16h-6M20 16l-2.5-2.5M20 16l-2.5 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16h5M15 8h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><div><span class="st">Compress command output</span></div></div>
+-        <div class="sv">A <span class="mono">PostToolUse</span> hook strips ANSI, dedups and trims verbose CLI output before Claude sees it — a green test run collapses to a line, errors always passed through raw. Fewer tokens per build, reversible.</div>
++        <div class="sv">A <span class="mono">PostToolUse</span> hook strips ANSI, dedups and trims verbose CLI output before Claude sees it — a green test run collapses to a line, retains detected errors. Review compressed output when diagnosing a failure; savings depend on the command.</div>
+       </div>
+       <div class="spec-row reveal">
+         <div class="sk"><span class="ico"><svg viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="6" rx="7" ry="2.6" stroke="currentColor" stroke-width="1.5"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6" stroke="currentColor" stroke-width="1.5"/><path d="M9 13l-2 2 2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><span class="st">Cache-bust attribution</span><span class="badge">New</span></div></div>
+-        <div class="sv">Shows <em>why</em> your prompt cache is being re-written — model swaps vs prefix churn — so the silent 10× re-reads that quietly inflate a session stop being invisible. Computed on-device from your own transcripts.</div>
++        <div class="sv">Shows <em>why</em> your prompt cache is being re-written — model swaps vs prefix churn — to help investigate repeated context charges. Computed on-device from your own transcripts.</div>
+       </div>
+     </div>
+   </div>
+@@ -178,7 +178,7 @@
+       <div class="wall">
+         <div class="wtile"><div class="wt">Live 5-hour &amp; weekly</div><div class="wd">Your Claude limits in the menu bar.</div></div>
+         <div class="wtile"><div class="wt">Predictive cap ETA</div><div class="wd">"~2h to your cap" before the wall.</div></div>
+-        <div class="wtile"><div class="wt">Exact or honest estimate</div><div class="wd">Never a confident wrong number.</div></div>
++        <div class="wtile"><div class="wt">Exact or honest estimate</div><div class="wd">Provider readings or labeled estimates.</div></div>
+         <div class="wtile"><div class="wt">Reset countdown</div><div class="wd">Resets 9pm — in 2h 14m.</div></div>
+       </div>
+     </div>
+@@ -187,11 +187,11 @@
+       <h3>Cockpit — many sessions, one panel</h3>
+       <div class="wall">
+         <div class="wtile"><div class="wt">Multi-session tabs</div><div class="wd">Rail + mission-control overview.</div></div>
+-        <div class="wtile"><div class="wt">Memory-pressure gate</div><div class="wd">Stops you oversaturating the Mac.</div></div>
++        <div class="wtile"><div class="wt">Memory-pressure gate</div><div class="wd">Checks memory pressure before admission.</div></div>
+         <div class="wtile"><div class="wt">Auto-hibernate idle<span class="badge">New</span></div><div class="wd">Reclaims RAM under pressure or when crowded.</div></div>
+-        <div class="wtile"><div class="wt">Leak restart<span class="badge">New</span></div><div class="wd">Watches RSS, restarts in place, keeps context.</div></div>
++        <div class="wtile"><div class="wt">Leak restart<span class="badge">New</span></div><div class="wd">Watches RSS; session recovery depends on the tool.</div></div>
+         <div class="wtile"><div class="wt">Predictive pacing<span class="badge">New</span></div><div class="wd">Warns before several sessions hit the cap.</div></div>
+-        <div class="wtile"><div class="wt">State-aware pause</div><div class="wd">Freezes only at a quiet moment — reversible.</div></div>
++        <div class="wtile"><div class="wt">State-aware pause</div><div class="wd">Pauses supported sessions at detected quiet points.</div></div>
+         <div class="wtile"><div class="wt">Duplicate consolidate</div><div class="wd">One click to merge stray sessions.</div></div>
+         <div class="wtile"><div class="wt">Rate-limit aware</div><div class="wd">Flags which session, counts down the reset.</div></div>
+         <div class="wtile" style="grid-column: 1 / -1"><div class="wt">Session offload<span class="badge">New</span></div><div class="wd">Runs claude on your own box — frees the Mac's RAM.</div></div>
+@@ -238,8 +238,8 @@
+ <section class="trust" id="trust">
+   <div class="wrap">
+     <svg class="lock" viewBox="0 0 24 24" fill="none"><rect x="5" y="10.5" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10.5V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.6"/></svg>
+-    <h2>It audits and optimizes — it never becomes the engine.</h2>
+-    <p>Throttle reads <span class="mono">~/.claude</span> on your Mac and stays out of the way. 100% local — <strong>no telemetry, no analytics, no account</strong>: your prompts, code and usage never leave the machine. Signed &amp; notarized, auto-updates via Sparkle; uninstall cleanly any time and every change reverts.</p>
++    <h2>Local supervision, explicit connections and control.</h2>
++    <p>Throttle reads local session data and stores project history on your Mac. <strong>Processing follows the provider you select.</strong> Optional model providers, remote sessions and CloudKit can receive data; license activation and update checks contact their services. Project commands run with your macOS account permissions and are intended for trusted projects. Uninstalling the app does not automatically erase stored data or undo external effects. See the privacy policy for data flows and retention.</p>
+   </div>
+ </section>
+ 
+@@ -281,8 +281,8 @@
+ <!-- FINAL CTA -->
+ <section class="section tight" id="download">
+   <div class="wrap" style="text-align:center;">
+-    <h2 style="font-size:clamp(26px,3.4vw,38px);letter-spacing:-0.025em;font-weight:660;margin:0;">Never get cut off mid-task again.</h2>
+-    <p class="muted" style="font-size:17px;margin:14px auto 0;max-width:46ch;">Download the free meter and see exactly where your tokens go — in under a minute.</p>
++    <h2 style="font-size:clamp(26px,3.4vw,38px);letter-spacing:-0.025em;font-weight:660;margin:0;">Keep usage and session state in view.</h2>
++    <p class="muted" style="font-size:17px;margin:14px auto 0;max-width:46ch;">Download the meter to inspect available usage readings and projections.</p>
+     <div style="display:flex;justify-content:center;margin-top:26px;"><a class="btn" data-dl href="Throttle-3.7.2.dmg"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v10m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 18h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Download for macOS</span></a></div>
+     <div class="dl-meta">macOS 14+ · <span class="mono">v3.7.2</span> · 34.2 MB · auto-updates via Sparkle</div>
+   </div>

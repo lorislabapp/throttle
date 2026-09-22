@@ -1,0 +1,57 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Throttle_Throttle_macosx27.0-arm64.xctestrun -destination platform=macOS,arch=arm64 -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 60 -maximum-test-execution-time-allowance 120 -resultBundlePath /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/ui-cloud-tests-20260921-003639.xcresult "-only-testing:ThrottleTests/ProjectAssistantViewTests" "-only-testing:ThrottleTests/PlanIntegrationViewTests" "-only-testing:ThrottleTests/CloudKitPublisherTests"
+
+Writing result bundle at path:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/ui-cloud-tests-20260921-003639.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008132-001178882E03001C, name:My Mac }
+2026-09-21 00:36:41.143910+0200 Throttle[63224:823548] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:36:41.143557+0200 Throttle[63224:823541] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:36:41.144104+0200 Throttle[63224:823548] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:36:41.144213+0200 Throttle[63224:823550] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:36:41.144224+0200 Throttle[63224:823550] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:36:41.144126+0200 Throttle[63224:823541] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:36:41.144495+0200 Throttle[63224:823550] [Connection] Will NOT re-try to establish the connection
+2026-09-21 00:36:41.144592+0200 Throttle[63224:823542] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 00:36:41.144600+0200 Throttle[63224:823542] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+[AppDelegate.init] start
+2026-09-21 00:36:41.204718+0200 Throttle[63224:823493] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/3w/fbl9wc1d3q7091lq5pj5sy0c0000gn/T/com.lorislab.throttle.savedState
+[applicationDidFinishLaunching] start
+2026-09-21 00:36:41.263057+0200 Throttle[63224:823493] [App] Isolated host detected: skipping production background services
+Test Suite 'Selected tests' started at 2026-09-21 00:36:41.286.
+Test Suite 'ThrottleTests.xctest' started at 2026-09-21 00:36:41.286.
+Test Suite 'CloudKitPublisherTests' started at 2026-09-21 00:36:41.286.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck]' passed (0.007 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart]' passed (0.007 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount]' passed (0.008 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testCancelledDebounceCannotConsumeSnapshotAfterRestart]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testCancelledDebounceCannotConsumeSnapshotAfterRestart]' passed (0.011 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRefusesAnUnavailableAccount]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRefusesAnUnavailableAccount]' passed (0.003 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRequiresAnAvailableAccountAndStopsPublishing]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRequiresAnAvailableAccountAndStopsPublishing]' passed (0.004 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot]' passed (0.010 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots]' passed (0.007 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck]' started.
+2026-09-21 00:36:41.349103+0200 Throttle[63224:823493] [CloudKitPublisher] iCloud unavailable — mirror disabled
+Test Case '-[ThrottleTests.CloudKitPublisherTests testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck]' passed (0.003 seconds).
+Test Suite 'CloudKitPublisherTests' passed at 2026-09-21 00:36:41.350.
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.061 (0.064) seconds
+Test Suite 'PlanIntegrationViewTests' started at 2026-09-21 00:36:41.350.
+Test Case '-[ThrottleTests.PlanIntegrationViewTests testDiffFailureRetryAndEmptyStateInEnglish]' started.
+Test Case '-[ThrottleTests.PlanIntegrationViewTests testDiffFailureRetryAndEmptyStateInEnglish]' passed (0.158 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationViewTests testDiffFailureRetryAndEmptyStateInFrench]' started.
+Test Case '-[ThrottleTests.PlanIntegrationViewTests testDiffFailureRetryAndEmptyStateInFrench]' passed (0.123 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationViewTests testUnknownIsVisibleAndCannotBeRetriedInEnglish]' started.
+Test Case '-[ThrottleTests.PlanIntegrationViewTests testUnknownIsVisibleAndCannotBeRetriedInEnglish]' passed (0.150 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationViewTests testUnknownIsVisibleAndCannotBeRetriedInFrench]' started.
+** BUILD INTERRUPTED **

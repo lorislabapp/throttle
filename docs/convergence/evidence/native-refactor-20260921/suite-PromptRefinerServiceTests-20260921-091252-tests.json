@@ -1,0 +1,251 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "00008132-001178882E03001C",
+      "deviceName" : "My Mac",
+      "modelName" : "MacBook Pro",
+      "osBuildNumber" : "26A428",
+      "osVersion" : "27.0",
+      "platform" : "macOS"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "duration" : "0,00069s",
+                  "durationInSeconds" : 0.0006870031356811523,
+                  "name" : "test_insertionPayload_keepsInteriorNewlines()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_insertionPayload_keepsInteriorNewlines()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_insertionPayload_keepsInteriorNewlines",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00055s",
+                  "durationInSeconds" : 0.0005450248718261719,
+                  "name" : "test_insertionPayload_stripsTrailingNewlinesSoInsertNeverFires()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_insertionPayload_stripsTrailingNewlinesSoInsertNeverFires()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_insertionPayload_stripsTrailingNewlinesSoInsertNeverFires",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00073s",
+                  "durationInSeconds" : 0.0007320642471313477,
+                  "name" : "test_insertionPayload_thenValidate_isTheExactContractInsertRelieson()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_insertionPayload_thenValidate_isTheExactContractInsertRelieson()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_insertionPayload_thenValidate_isTheExactContractInsertRelieson",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00044s",
+                  "durationInSeconds" : 0.0004360675811767578,
+                  "name" : "test_localOnlyExcludesEveryNetworkProvider()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_localOnlyExcludesEveryNetworkProvider()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_localOnlyExcludesEveryNetworkProvider",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00041s",
+                  "durationInSeconds" : 0.00041294097900390625,
+                  "name" : "test_metrics_countsLinesBytesAndApproxTokens()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_metrics_countsLinesBytesAndApproxTokens()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_metrics_countsLinesBytesAndApproxTokens",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00037s",
+                  "durationInSeconds" : 0.0003720521926879883,
+                  "name" : "test_metrics_emptyTextIsZeroLinesAndOneToken()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_metrics_emptyTextIsZeroLinesAndOneToken()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_metrics_emptyTextIsZeroLinesAndOneToken",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00045s",
+                  "durationInSeconds" : 0.000453948974609375,
+                  "name" : "test_networkAllowedExcludesOnlyProvidersAlreadyTried()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_networkAllowedExcludesOnlyProvidersAlreadyTried()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_networkAllowedExcludesOnlyProvidersAlreadyTried",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00043s",
+                  "durationInSeconds" : 0.000431060791015625,
+                  "name" : "test_parse_extractsProposalAndWhyBullets()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_parse_extractsProposalAndWhyBullets()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_parse_extractsProposalAndWhyBullets",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00032s",
+                  "durationInSeconds" : 0.0003179311752319336,
+                  "name" : "test_parse_keepsInteriorFencesThatBelongToThePrompt()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_parse_keepsInteriorFencesThatBelongToThePrompt()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_parse_keepsInteriorFencesThatBelongToThePrompt",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00038s",
+                  "durationInSeconds" : 0.0003819465637207031,
+                  "name" : "test_parse_stripsAnOuterCodeFenceTheModelAddedAnyway()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_parse_stripsAnOuterCodeFenceTheModelAddedAnyway()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_parse_stripsAnOuterCodeFenceTheModelAddedAnyway",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0004s",
+                  "durationInSeconds" : 0.0003991127014160156,
+                  "name" : "test_parse_withoutDelimitersFallsBackToTheDraftAndReportsNoChange()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_parse_withoutDelimitersFallsBackToTheDraftAndReportsNoChange()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_parse_withoutDelimitersFallsBackToTheDraftAndReportsNoChange",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00089s",
+                  "durationInSeconds" : 0.0008890628814697266,
+                  "name" : "test_refine_fallsThroughToTheNextProviderWhenTheFirstFails()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_refine_fallsThroughToTheNextProviderWhenTheFirstFails()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_refine_fallsThroughToTheNextProviderWhenTheFirstFails",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00062s",
+                  "durationInSeconds" : 0.0006209611892700195,
+                  "name" : "test_refine_rejectsAControlSequenceBeforeSpendingAnything()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_refine_rejectsAControlSequenceBeforeSpendingAnything()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_refine_rejectsAControlSequenceBeforeSpendingAnything",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00057s",
+                  "durationInSeconds" : 0.0005680322647094727,
+                  "name" : "test_refine_rejectsAControlSequenceReturnedByTheProvider()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_refine_rejectsAControlSequenceReturnedByTheProvider()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_refine_rejectsAControlSequenceReturnedByTheProvider",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00057s",
+                  "durationInSeconds" : 0.0005670785903930664,
+                  "name" : "test_refine_withAnEmptyAnswerThrowsEmpty()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_refine_withAnEmptyAnswerThrowsEmpty()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_refine_withAnEmptyAnswerThrowsEmpty",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00046s",
+                  "durationInSeconds" : 0.00045502185821533203,
+                  "name" : "test_refine_withNoProviderThrowsNoProvider()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_refine_withNoProviderThrowsNoProvider()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_refine_withNoProviderThrowsNoProvider",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00043s",
+                  "durationInSeconds" : 0.0004349946975708008,
+                  "name" : "test_systemPrompt_alwaysAsksForTheDelimiters()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_systemPrompt_alwaysAsksForTheDelimiters()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_systemPrompt_alwaysAsksForTheDelimiters",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00032s",
+                  "durationInSeconds" : 0.0003170967102050781,
+                  "name" : "test_systemPrompt_carriesTheNudgeInstruction()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_systemPrompt_carriesTheNudgeInstruction()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_systemPrompt_carriesTheNudgeInstruction",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00035s",
+                  "durationInSeconds" : 0.00034999847412109375,
+                  "name" : "test_systemPrompt_loopModeDemandsATerminationCondition()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_systemPrompt_loopModeDemandsATerminationCondition()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_systemPrompt_loopModeDemandsATerminationCondition",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00065s",
+                  "durationInSeconds" : 0.0006549358367919922,
+                  "name" : "test_systemPrompt_namesTheRuntimeSoIdiomsDiffer()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_systemPrompt_namesTheRuntimeSoIdiomsDiffer()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_systemPrompt_namesTheRuntimeSoIdiomsDiffer",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00033s",
+                  "durationInSeconds" : 0.0003279447555541992,
+                  "name" : "test_validate_acceptsOrdinaryMultilinePrompt()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_validate_acceptsOrdinaryMultilinePrompt()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_validate_acceptsOrdinaryMultilinePrompt",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00047s",
+                  "durationInSeconds" : 0.0004730224609375,
+                  "name" : "test_validate_rejectsEscapeAndNul()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_validate_rejectsEscapeAndNul()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_validate_rejectsEscapeAndNul",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0093s",
+                  "durationInSeconds" : 0.00931406021118164,
+                  "name" : "test_validate_rejectsOverOneMebibyte()",
+                  "nodeIdentifier" : "PromptRefinerServiceTests/test_validate_rejectsOverOneMebibyte()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests/test_validate_rejectsOverOneMebibyte",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "PromptRefinerServiceTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PromptRefinerServiceTests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            }
+          ],
+          "name" : "ThrottleTests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests",
+          "nodeType" : "Unit test bundle",
+          "result" : "Passed"
+        }
+      ],
+      "name" : "Throttle",
+      "nodeType" : "Test Plan",
+      "result" : "Passed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

@@ -225,7 +225,8 @@ private struct AIRoutingView: View {
     private func providerLabel(_ provider: AIProviderKind) -> String {
         switch provider {
         case .appleIntelligence: return "Apple"
-        case .embeddedModel: return "Local"
+        case .embeddedModel: return "Mac"
+        case .selfHostedModel: return "Server"
         case .claudeWebSession: return "Claude"
         case .claudeAPIKey: return "API"
         }
@@ -234,7 +235,9 @@ private struct AIRoutingView: View {
     private func providerExplanation(_ provider: AIProviderKind) -> String {
         switch provider {
         case .appleIntelligence: return "On-device Apple Intelligence for Assistant chat."
-        case .embeddedModel: return "Embedded Qwen or your optional Ollama worker. No cloud fallback."
+        case .embeddedModel: return "Embedded Qwen on this Mac. No server or cloud fallback."
+        case .selfHostedModel:
+            return "Sends Assistant context to your configured Ollama server: \(LocalWorkerRouter.serverDisplayName)."
         case .claudeWebSession: return "Frontier answers through your Claude subscription."
         case .claudeAPIKey: return "Frontier answers billed through your configured Anthropic API key."
         }

@@ -1,0 +1,3 @@
+Sparkle | Controlled fixture provider | · | Fixture A | Lancer l’audit local | Aperçu des diagnostics | Changer de fournisseur IA | Effacer la conversation | Vous | First request | First request | Assistant | FIRST-VISIBLE-CHUNK | FIRST-VISIBLE-CHUNK
+
+Réponse arrêtée. Un fournisseur distant peut encore être en train de terminer sa requête. | Vous | Second request | Second request | Assistant | SECOND-REQUEST-CHUNK | SECOND-REQUEST-CHUNK | Message à l’Assistant du projet |  |  | Envoyer le message

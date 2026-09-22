@@ -7,7 +7,11 @@ extension InlineAssistantPane {
     var localWorkerServerRow: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Local worker server (optional)").font(.system(size: 12, weight: .medium))
-            Text("Ollama URL on your own network — e.g. http://100.x.y.z:11434. Delegated tasks prefer it when it responds; otherwise the embedded model serves.")
+            Text("""
+                Ollama URL on your own network — e.g. http://100.x.y.z:11434. Delegated tasks prefer it \
+                when it responds; otherwise the embedded model serves. Assistant chat uses it only \
+                when you select Server.
+                """)
                 .font(.system(size: 10.5)).foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 8) {
@@ -128,7 +132,6 @@ extension InlineAssistantPane {
     func defaultProviderKind() -> AIProviderKind {
         if aiAvailability[.appleIntelligence] == true { return .appleIntelligence }
         if aiAvailability[.embeddedModel] == true { return .embeddedModel }
-        if aiAvailability[.claudeAPIKey] == true { return .claudeAPIKey }
         return .appleIntelligence
     }
 

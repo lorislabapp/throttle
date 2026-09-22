@@ -87,6 +87,13 @@ struct SessionOffloadSheet: View {
                             field("Bearer token", $svc.token, "generate →")
                             Button("Generate") { svc.token = EdgeAgentService.generateToken() }.controlSize(.small)
                         }
+                        if let error = svc.tokenPersistenceError {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                                .accessibilityLabel(error)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
 
                     group("1 · Deploy (Throttle does it all over SSH)") {

@@ -1,0 +1,12 @@
+{
+  "at": "2026-09-22T13:22:29.125520+00:00",
+  "source_count": 159,
+  "source_delta_from_optimizer_final": [],
+  "core_status": "pass",
+  "cases": 369,
+  "duration_seconds": 123.332,
+  "ui": "incomplete: repeated concurrent UI-change guards; optimizer menu activated but project window not observed",
+  "product_sources_modified_this_turn": false,
+  "installed_app_restarted": false,
+  "published": false
+}

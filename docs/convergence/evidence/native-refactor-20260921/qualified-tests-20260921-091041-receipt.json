@@ -1,0 +1,58 @@
+{
+  "status": "interrupted-concurrency",
+  "exit_code": -15,
+  "duration_seconds": 42.67449498176575,
+  "command": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+    "test-without-building",
+    "-xctestrun",
+    "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/qualified-tests-20260921-091041.xctestrun",
+    "-destination",
+    "platform=macOS,arch=arm64",
+    "-parallel-testing-enabled",
+    "NO",
+    "-test-timeouts-enabled",
+    "YES",
+    "-default-test-execution-time-allowance",
+    "300",
+    "-maximum-test-execution-time-allowance",
+    "360",
+    "-resultBundlePath",
+    "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/qualified-tests-20260921-091041.xcresult",
+    "-testLanguage",
+    "en",
+    "-testRegion",
+    "US",
+    "-only-testing:ThrottleTests/PlanIntegrationFlowTests",
+    "-only-testing:ThrottleTests/CockpitSpendViewTests",
+    "-only-testing:ThrottleTests/PromptRefinerServiceTests",
+    "-only-testing:ThrottleTests/RemoteSessionsCredentialTests",
+    "-only-testing:ThrottleTests/RemoteTransferJournalTests",
+    "-only-testing:ThrottleTests/ProjectAssistantViewTests",
+    "-only-testing:ThrottleTests/PlanIntegrationViewTests",
+    "-only-testing:ThrottleTests/PeerTerminalBoundaryTests",
+    "-only-testing:ThrottleTests/CloudKitPublisherTests"
+  ],
+  "cwd": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920",
+  "log": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/qualified-tests-20260921-091041.log",
+  "sources_match": true,
+  "source_count": 1046,
+  "app_launched": true,
+  "launch_scope": "isolated XCTest host from DerivedData",
+  "installed_app_restarted": false,
+  "signed": false,
+  "competing_processes": [
+    {
+      "pid": 20864,
+      "identity": "20864 92730 /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild"
+    }
+  ],
+  "review_scene": "en",
+  "review_configuration": [
+    "unused",
+    "",
+    "en",
+    "US",
+    "light"
+  ]
+}

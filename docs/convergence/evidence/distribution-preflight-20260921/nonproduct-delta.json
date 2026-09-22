@@ -1,0 +1,9 @@
+{
+  "build": "build-20260921-072929",
+  "archive": "universal-archive-20260921-075037",
+  "changed_since_build": [
+    "scripts/tests/test_verify_release_build.py",
+    "scripts/verify-release-build.py"
+  ],
+  "reason": "Release-only Python gate and fixtures; neither is bundled or compiled into app. No Swift, resource or project change. Existing application byte manifest remains required by UI runner."
+}

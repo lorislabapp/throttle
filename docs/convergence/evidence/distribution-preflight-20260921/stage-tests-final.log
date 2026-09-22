@@ -1,0 +1,58 @@
+test_app_and_project_key_mismatch_is_refused (test_stage_release.StageReleaseTests.test_app_and_project_key_mismatch_is_refused) ... ok
+test_candidate_equal_to_feed_maximum_preserves_stage (test_stage_release.StageReleaseTests.test_candidate_equal_to_feed_maximum_preserves_stage) ... ok
+test_candidate_older_than_unsorted_feed_maximum_preserves_stage (test_stage_release.StageReleaseTests.test_candidate_older_than_unsorted_feed_maximum_preserves_stage) ... ok
+test_failed_verifier_even_with_receipt_is_refused (test_stage_release.StageReleaseTests.test_failed_verifier_even_with_receipt_is_refused) ... ok
+test_invalid_feed_preserves_existing_stage (test_stage_release.StageReleaseTests.test_invalid_feed_preserves_existing_stage) ... ok
+test_malformed_signature_is_refused (test_stage_release.StageReleaseTests.test_malformed_signature_is_refused) ... ok
+test_missing_exported_metadata_is_refused (test_stage_release.StageReleaseTests.test_missing_exported_metadata_is_refused) ... ok
+test_missing_verifier_is_refused (test_stage_release.StageReleaseTests.test_missing_verifier_is_refused) ... ok
+test_newer_candidate_accepts_legacy_dotted_history (test_stage_release.StageReleaseTests.test_newer_candidate_accepts_legacy_dotted_history) ... ok
+test_real_ed25519_signature_stages_exact_bytes (test_stage_release.StageReleaseTests.test_real_ed25519_signature_stages_exact_bytes) ... ok
+test_same_size_corrupt_dmg_is_refused (test_stage_release.StageReleaseTests.test_same_size_corrupt_dmg_is_refused) ... ok
+test_source_changed_after_verification_cannot_form_publishable_stage (test_stage_release.StageReleaseTests.test_source_changed_after_verification_cannot_form_publishable_stage) ... ok
+test_stage_file_is_preserved (test_stage_release.StageReleaseTests.test_stage_file_is_preserved) ... ok
+test_stage_symlink_cannot_delete_exported_app (test_stage_release.StageReleaseTests.test_stage_symlink_cannot_delete_exported_app) ... ok
+test_staging_rechecks_fresh_feed_instead_of_earlier_snapshot (test_stage_release.StageReleaseTests.test_staging_rechecks_fresh_feed_instead_of_earlier_snapshot) ... ok
+test_timed_out_verifier_is_refused (test_stage_release.StageReleaseTests.test_timed_out_verifier_is_refused) ... ok
+test_valid_signature_for_another_public_key_is_refused (test_stage_release.StageReleaseTests.test_valid_signature_for_another_public_key_is_refused) ... ok
+test_verified_candidate_never_replaces_existing_stage (test_stage_release.StageReleaseTests.test_verified_candidate_never_replaces_existing_stage) ... ok
+test_wrong_app_build_is_refused (test_stage_release.StageReleaseTests.test_wrong_app_build_is_refused) ... ok
+test_zero_exit_without_verification_receipt_is_refused (test_stage_release.StageReleaseTests.test_zero_exit_without_verification_receipt_is_refused) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 4.038s
+
+OK
+→ Ed25519 signature verified against the DMG and exported app's public key
+→ Ed25519 signature verified against the DMG and exported app's public key
+→ Ed25519 signature verified against the DMG and exported app's public key
+→ Ed25519 signature verified against the DMG and exported app's public key
+→ Ed25519 signature verified against the DMG and exported app's public key
+→ Ed25519 signature verified against the DMG and exported app's public key
+→ Ed25519 signature verified against the DMG and exported app's public key
+→ Build 999 > published maximum 223; appcast sha256=fd5b5ab16f1c113a6f03d1d901e7d8fe9eb9c0fc583f4529a3f5feb038a4c9e6
+→ Ed25519 signature verified against the DMG and exported app's public key
+staged 0.0.0 (999) in /tmp/throttle-stage-fixture-ti310dy8/legacy-history-stage
+  Throttle-0.0.0.dmg: 1 bytes  sha256 454349e422f05297191ead13e21d3db520e5abef52055e4964b82fb213f593a1
+  appcast.xml: 898 bytes  sha256 68baa10cc0e0cf0b68fc1174451ba986b6fa8525ee6c5a71bf5246e3f5283c3b
+  index.html: 83 bytes  sha256 9d19b61c10e5a7b1977ef79a2a7eb215fccda04954a7f4b0e9696dec4c3a1c51
+  page: 0.0.1 → 0.0.0, 0.0 MB | appcast items: 3
+next: node scripts/publish-release.mjs /tmp/throttle-stage-fixture-ti310dy8/legacy-history-stage
+→ Ed25519 signature verified against the DMG and exported app's public key
+→ Build 999 > published maximum 998; appcast sha256=d535fb8c787f8020fe629f136df00b38e2bccf7863d2d1fc0f5eae22a90bbdb3
+→ Ed25519 signature verified against the DMG and exported app's public key
+staged 0.0.0 (999) in /tmp/throttle-stage-fixture-rq8qgql6/fresh-stage
+  Throttle-0.0.0.dmg: 1 bytes  sha256 454349e422f05297191ead13e21d3db520e5abef52055e4964b82fb213f593a1
+  appcast.xml: 844 bytes  sha256 e77b31a6a7499a0de976bd3baf0ac1c90d61520d27ae329a7550a6298d8448f1
+  index.html: 83 bytes  sha256 9d19b61c10e5a7b1977ef79a2a7eb215fccda04954a7f4b0e9696dec4c3a1c51
+  page: 0.0.1 → 0.0.0, 0.0 MB | appcast items: 2
+next: node scripts/publish-release.mjs /tmp/throttle-stage-fixture-rq8qgql6/fresh-stage
+→ Ed25519 signature verified against the DMG and exported app's public key
+→ Build 999 > published maximum 998; appcast sha256=d535fb8c787f8020fe629f136df00b38e2bccf7863d2d1fc0f5eae22a90bbdb3
+→ Ed25519 signature verified against the DMG and exported app's public key
+→ Build 999 > published maximum 998; appcast sha256=d535fb8c787f8020fe629f136df00b38e2bccf7863d2d1fc0f5eae22a90bbdb3
+→ Ed25519 signature verified against the DMG and exported app's public key
+→ Build 999 > published maximum 998; appcast sha256=d535fb8c787f8020fe629f136df00b38e2bccf7863d2d1fc0f5eae22a90bbdb3
+→ Ed25519 signature verified against the DMG and exported app's public key
+→ Ed25519 signature verified against the DMG and exported app's public key
+→ Build 999 > published maximum 998; appcast sha256=d535fb8c787f8020fe629f136df00b38e2bccf7863d2d1fc0f5eae22a90bbdb3

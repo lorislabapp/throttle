@@ -1,0 +1,85 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "modelName" : "MacBook Pro",
+        "osBuildNumber" : "26A428",
+        "osVersion" : "27.0",
+        "platform" : "macOS"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 4,
+      "passedTests" : 70,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "Throttle · Built with macOS 27.0",
+  "expectedFailures" : 0,
+  "failedTests" : 4,
+  "finishTime" : 1789943448.475,
+  "passedTests" : 70,
+  "result" : "Failed",
+  "runtimeWarnings" : [
+
+  ],
+  "skippedTests" : 0,
+  "startTime" : 1789943378.045,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "ThrottleTests",
+      "testIdentifier" : 30,
+      "testIdentifierString" : "PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInEnglish()",
+      "testIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInEnglish",
+      "testName" : "testDiffFailureRetryAndEmptyStateInEnglish()"
+    },
+    {
+      "failureText" : "Crash: Throttle",
+      "targetName" : "ThrottleTests",
+      "testIdentifier" : 34,
+      "testIdentifierString" : "ProjectAssistantViewTests/testProjectChangeCancelsAndClearsOldTranscript()",
+      "testIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/ProjectAssistantViewTests/testProjectChangeCancelsAndClearsOldTranscript",
+      "testName" : "testProjectChangeCancelsAndClearsOldTranscript()"
+    },
+    {
+      "failureText" : "Crash: Throttle",
+      "targetName" : "ThrottleTests",
+      "testIdentifier" : 35,
+      "testIdentifierString" : "ProjectAssistantViewTests/testStopBeforeFirstDeltaRejectsLateResponse()",
+      "testIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/ProjectAssistantViewTests/testStopBeforeFirstDeltaRejectsLateResponse",
+      "testName" : "testStopBeforeFirstDeltaRejectsLateResponse()"
+    },
+    {
+      "failureText" : "Crash: Throttle",
+      "targetName" : "ThrottleTests",
+      "testIdentifier" : 36,
+      "testIdentifierString" : "ProjectAssistantViewTests/testStopDuringStreamKeepsNextTurnIndependent()",
+      "testIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/ProjectAssistantViewTests/testStopDuringStreamKeepsNextTurnIndependent",
+      "testName" : "testStopDuringStreamKeepsNextTurnIndependent()"
+    }
+  ],
+  "title" : "Test - Throttle",
+  "topInsights" : [
+    {
+      "category" : "Common Failures",
+      "impact" : "75% of failures",
+      "text" : "3 runs of 3 tests failed with Crash: Throttle"
+    },
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "33% of duration",
+      "text" : "2 longest test runs with outlier durations exceeding 3.42s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 74
+}

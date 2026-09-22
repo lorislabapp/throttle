@@ -1,0 +1,60 @@
+{
+  "devicesAndConfigurations": [
+    {
+      "device": {
+        "architecture": "arm64",
+        "deviceId": "00008132-001178882E03001C",
+        "deviceName": "My Mac",
+        "modelName": "MacBook Pro",
+        "osBuildNumber": "26A428",
+        "osVersion": "27.0",
+        "platform": "macOS"
+      },
+      "expectedFailures": 0,
+      "failedTests": 2,
+      "passedTests": 6,
+      "skippedTests": 0,
+      "testPlanConfiguration": {
+        "configurationId": "1",
+        "configurationName": "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription": "Throttle \u00b7 Built with macOS 27.0",
+  "expectedFailures": 0,
+  "failedTests": 2,
+  "finishTime": 1789985210.607,
+  "passedTests": 6,
+  "result": "Failed",
+  "runtimeWarnings": [],
+  "skippedTests": 0,
+  "startTime": 1789985192.739,
+  "statistics": [],
+  "testFailures": [
+    {
+      "failureText": "failed - Snapshot unavailable",
+      "targetName": "ThrottleTests",
+      "testIdentifier": 3,
+      "testIdentifierString": "PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInEnglish()",
+      "testIdentifierURL": "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInEnglish",
+      "testName": "testUnknownIsVisibleAndCannotBeRetriedInEnglish()"
+    },
+    {
+      "failureText": "failed - Snapshot unavailable",
+      "targetName": "ThrottleTests",
+      "testIdentifier": 4,
+      "testIdentifierString": "PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInFrench()",
+      "testIdentifierURL": "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInFrench",
+      "testName": "testUnknownIsVisibleAndCannotBeRetriedInFrench()"
+    }
+  ],
+  "title": "Test - Throttle",
+  "topInsights": [
+    {
+      "category": "Common Failures",
+      "impact": "100% of failures",
+      "text": "2 runs of 2 tests failed with failed - Snapshot unavailable"
+    }
+  ],
+  "totalTestCount": 8
+}

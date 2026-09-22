@@ -1,0 +1,14 @@
+{
+  "label": "isolated-visual-tests-20260921-095150",
+  "scope": "synthetic isolated host, prior candidate084810",
+  "observed_actions": [
+    "Clicked editor; typed synthetic text",
+    "Ctrl-Tab did not leave editor",
+    "Cmd-Return sent synthetic request; Stop appeared",
+    "Cmd-Return stopped consumption; stopped notice appeared; editor focus retained"
+  ],
+  "source_gate": "wrapper failed because sources changed concurrently (license logging and publisher changes); terminal XCTest exit0 is not a current-source PASS",
+  "production_app_restarted": false,
+  "voiceover_used": false,
+  "ui_close_attempt": "Cmd-W tool timed out; fixture automatic cleanup finished with xcodebuild exit0"
+}

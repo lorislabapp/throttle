@@ -1,4 +1,5 @@
 import Foundation
+import ThrottleShared
 
 /// Per-session store of the assistant's most recent batch of tool_use
 /// blocks. Keyed by the same `ClaudeWebSessionScope.sessionId` TaskLocal
@@ -25,7 +26,7 @@ actor APIKeyToolStateStore {
 ///
 /// Uses Anthropic's native `tool_use` / `tool_result` content blocks
 /// (defined in `ClaudeAPIKeyProtocol`) for the read_file / list_files
-/// tool flow — gives free retry-on-malformed and proper multi-turn
+/// tool flow — provides typed blocks and proper multi-turn
 /// linkage. Internally translates the native tool_use blocks back to
 /// fenced ```tool blocks in the streamed text so the recursion layer
 /// in `ProjectAssistantTab` continues to drive the loop with one
@@ -100,73 +101,79 @@ struct ClaudeAPIKeyProvider: AIProvider {
         )
 
         let request = try makeRequest(body: body, key: key)
+        try Task.checkCancellation()
         return AsyncThrowingStream { continuation in
-            Task { @Sendable in
+            let producer = Task { @Sendable in
                 do {
-                    let (bytes, response) = try await URLSession.shared.bytes(for: request)
-                    guard let http = response as? HTTPURLResponse else {
-                        throw AIProviderError.http(status: -1, body: "non-HTTP response")
-                    }
-                    guard http.statusCode == 200 else {
-                        var collected = ""
-                        for try await line in bytes.lines {
-                            collected += line + "\n"
-                            if collected.count > 2048 { break }
-                        }
-                        throw AIProviderError.http(status: http.statusCode, body: collected)
-                    }
-
-                    // Stream text deltas LIVE so the chat bubble feels
-                    // responsive. Buffer the full event stream too,
-                    // then parse it once at the end to extract any
-                    // tool_use blocks (which we render as fenced text
-                    // and yield AFTER the live text deltas — the
-                    // recursion layer parses the full accumulated
-                    // bubble, so timing within a single turn is fine).
-                    var collectedEvents: [String] = []
-                    for try await line in bytes.lines {
-                        guard line.hasPrefix("data:") else { continue }
-                        let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
-                        if payload == "[DONE]" || payload.isEmpty { continue }
-                        collectedEvents.append(payload)
-                        // Live text-delta yield for snappy streaming.
-                        if let data = payload.data(using: .utf8),
-                           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                           obj["type"] as? String == "content_block_delta",
-                           let delta = obj["delta"] as? [String: Any],
-                           delta["type"] as? String == "text_delta",
-                           let text = delta["text"] as? String {
-                            continuation.yield(text)
-                        }
-                    }
-
-                    // After the stream completes, extract tool_use
-                    // blocks and re-emit them as fenced ```tool blocks
-                    // so the existing ProjectAssistantTab recursion
-                    // picks them up. Persist for the next turn so we
-                    // can rebuild a proper tool_use ↔ tool_result chain.
-                    let parsed = ClaudeAPIKeyProtocol.parseSSEEvents(collectedEvents)
-                    if !parsed.toolUses.isEmpty {
-                        for use in parsed.toolUses {
-                            continuation.yield(ClaudeAPIKeyProtocol.renderAsFencedBlock(use))
-                        }
-                        if let id = sessionId {
-                            await APIKeyToolStateStore.shared.set(parsed.toolUses, for: id)
-                        }
-                    } else if let id = sessionId {
-                        // No tool_use this turn: clear the cache so a
-                        // future turn doesn't accidentally rebuild a
-                        // stale tool_use chain.
-                        await APIKeyToolStateStore.shared.clear(id)
-                    }
-
+                    let parsed = try await consumeResponse(request, continuation: continuation)
+                    try await publishCompleted(parsed, sessionId: sessionId, continuation: continuation)
+                    try Task.checkCancellation()
                     continuation.finish()
                 } catch {
+                    if let id = sessionId { await APIKeyToolStateStore.shared.clear(id) }
                     continuation.finish(throwing: error)
                 }
             }
+            continuation.onTermination = { @Sendable _ in producer.cancel() }
         }
     }
+
+    private func consumeResponse(
+        _ request: URLRequest, continuation: AsyncThrowingStream<String, Error>.Continuation
+    ) async throws -> ClaudeAPIKeyProtocol.ParseResult {
+        try Task.checkCancellation()
+        let (bytes, response) = try await URLSession.shared.bytes(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw AIProviderError.http(status: -1, body: "non-HTTP response")
+        }
+        guard http.statusCode == 200 else {
+            throw AIProviderError.http(status: http.statusCode, body: try await errorBody(bytes))
+        }
+        var buffer = ClaudeAPIKeyProtocol.EventBuffer()
+        for try await byte in bytes {
+            try Task.checkCancellation()
+            guard let payload = try buffer.append(byte) else { continue }
+            // Text is provisional. Tools wait for complete stream validation.
+            if let text = textDelta(payload) { continuation.yield(text) }
+        }
+        try Task.checkCancellation()
+        return try buffer.finish()
+    }
+
+    private func errorBody(_ bytes: URLSession.AsyncBytes) async throws -> String {
+        var collected: [UInt8] = []
+        for try await byte in bytes {
+            try Task.checkCancellation()
+            collected.append(byte)
+            if collected.count >= 2048 { break }
+        }
+        return String(bytes: collected, encoding: .utf8) ?? "Non-UTF-8 HTTP error response"
+    }
+
+    private func textDelta(_ payload: String) -> String? {
+        guard let data = payload.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              object["type"] as? String == "content_block_delta",
+              let delta = object["delta"] as? [String: Any],
+              delta["type"] as? String == "text_delta" else { return nil }
+        return delta["text"] as? String
+    }
+
+    private func publishCompleted(
+        _ parsed: ClaudeAPIKeyProtocol.ParseResult, sessionId: UUID?,
+        continuation: AsyncThrowingStream<String, Error>.Continuation
+    ) async throws {
+        if !parsed.toolUses.isEmpty {
+            for use in parsed.toolUses {
+                try Task.checkCancellation()
+                continuation.yield(ClaudeAPIKeyProtocol.renderAsFencedBlock(use))
+            }
+            if let id = sessionId { await APIKeyToolStateStore.shared.set(parsed.toolUses, for: id) }
+        } else if let id = sessionId {
+            await APIKeyToolStateStore.shared.clear(id)
+        }
+    }
+
 }
 
 /// Keychain helper for the Anthropic API key. Stored as a generic
@@ -191,17 +198,7 @@ enum ClaudeAPIKeyStore {
 
     @discardableResult
     static func write(_ value: String) -> Bool {
-        let data = Data(value.utf8)
-        let attrs: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecValueData as String: data,
-            // M17: keep the Anthropic API key on THIS device — never sync it to iCloud Keychain.
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-        ]
-        SecItemDelete(attrs as CFDictionary)
-        return SecItemAdd(attrs as CFDictionary, nil) == errSecSuccess
+        KeychainStore.set(value, account: account, service: service)
     }
 
     @discardableResult

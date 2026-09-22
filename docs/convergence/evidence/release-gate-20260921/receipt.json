@@ -1,0 +1,22 @@
+{
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "scripts.tests.test_verify_release_build",
+    "scripts.tests.test_release_ci_gates",
+    "-v"
+  ],
+  "exit_code": 0,
+  "duration_seconds": 0.5788082079998276,
+  "bash_syntax_exit_code": 0,
+  "sources_sha256": {
+    "scripts/build-dmg.sh": "e9a3e127bfc01306262684353e1aa53d7a4a17e4a478e5c7538beeedeadeb887",
+    "scripts/verify-release-build.py": "83fab4d6a14677c55a7b43e5caca0720b6191cc029e58f9e81422a73410f632b",
+    "scripts/tests/test_verify_release_build.py": "6bd0f5cfda65289251780a5f56b69cf352aa3264ddd2440af0609ce0ba48706c",
+    "scripts/tests/test_release_ci_gates.py": "9dac4760476e9668a5ca5f135de99aabf847a28dae47531282dfca33c5b8cf75",
+    ".github/workflows/ci.yml": "45174ccb16f5095342500fd792e70f971ed9ccaa7f519622535f6e81986ce1a2"
+  },
+  "network": "fixtures only",
+  "signing": false
+}

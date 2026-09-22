@@ -1,6 +1,235 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Choose an available on-device model in Assistant to optimize instructions. Your provider preference has not changed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an available on-device model in Assistant to optimize instructions. Your provider preference has not changed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez un modèle disponible sur ce Mac dans Assistant pour optimiser les instructions. Votre préférence de fournisseur est inchangée."
+          }
+        }
+      }
+    },
+    "No additional permission rules proposed. Model and reasoning preferences are unchanged.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No additional permission rules proposed. Model and reasoning preferences are unchanged."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune règle de permission supplémentaire proposée. Les préférences de modèle et de raisonnement sont inchangées."
+          }
+        }
+      }
+    },
+    "No changes proposed (via %@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No changes proposed (via %@)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune modification proposée (via %@)."
+          }
+        }
+      }
+    },
+    "No settings changes proposed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No settings changes proposed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune modification des réglages proposée."
+          }
+        }
+      }
+    },
+    "Optimize on this Mac": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimize on this Mac"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimiser sur ce Mac"
+          }
+        }
+      }
+    },
+    "Proposed additional tool permission rules. Review their effect on your workflow; they are not an operating-system sandbox or a guarantee of savings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proposed additional tool permission rules. Review their effect on your workflow; they are not an operating-system sandbox or a guarantee of savings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Des règles de permissions supplémentaires sont proposées. Vérifiez leur effet sur votre travail ; elles ne constituent ni un confinement système ni une garantie d’économies."
+          }
+        }
+      }
+    },
+    "Settings files use local checks only. Use Quick wins or edit the file manually.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings files use local checks only. Use Quick wins or edit the file manually."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les fichiers de réglages utilisent uniquement les vérifications locales. Utilisez les améliorations proposées ou modifiez le fichier manuellement."
+          }
+        }
+      }
+    },
+    "Settings use local checks. AI instruction editing stays on this Mac and requires an on-device model selected in Assistant.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings use local checks. AI instruction editing stays on this Mac and requires an on-device model selected in Assistant."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les réglages sont vérifiés localement. L’édition des instructions par IA reste sur ce Mac et nécessite un modèle local sélectionné dans Assistant."
+          }
+        }
+      }
+    },
+    "The model did not return a complete file proposal. Your file has not changed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The model did not return a complete file proposal. Your file has not changed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le modèle n’a pas renvoyé de proposition complète. Votre fichier est inchangé."
+          }
+        }
+      }
+    },
+    "Unrecognized deny rules. No settings were changed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unrecognized deny rules. No settings were changed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Règles de refus non reconnues. Aucun réglage modifié."
+          }
+        }
+      }
+    },
+    "Unrecognized permissions format. No settings were changed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unrecognized permissions format. No settings were changed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format des permissions non reconnu. Aucun réglage modifié."
+          }
+        }
+      }
+    },
+    "Audit my setup. Find the 5 highest-impact changes to cut cost and tighten security.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Audite ma configuration. Trouve les 5 changements les plus utiles pour réduire les coûts et renforcer la sécurité."}}}},
+    "Find unsafe permissions in my settings.json and suggest patches.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Trouve les permissions dangereuses dans mon settings.json et propose des correctifs."}}}},
+    "Is my CLAUDE.md well structured for this project? Suggest what is missing.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Mon CLAUDE.md est-il bien structuré pour ce projet ? Suggère ce qui manque."}}}},
+    "Why does Opus dominate my model usage? How can I make Sonnet the default?": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Pourquoi Opus domine mon utilisation des modèles ? Comment choisir Sonnet par défaut ?"}}}},
+
+    "Paste an Anthropic API key. Stored in macOS Keychain. Anthropic bills usage separately according to the selected model and tokens processed.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Saisissez une clé API Anthropic, conservée dans le trousseau macOS. Anthropic facture séparément l’usage selon le modèle choisi et les jetons traités."}}}},
+
+    "Keychain is unavailable. No server token was changed or migrated.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Le trousseau est indisponible. Aucun jeton de serveur n’a été modifié ni migré."}}}},
+    "Claude response was incomplete; no tools were admitted.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "La réponse de Claude est incomplète ; aucun outil n’a été autorisé."}}}},
+    "Claude response was malformed; no tools were admitted.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "La réponse de Claude est mal formée ; aucun outil n’a été autorisé."}}}},
+    "Claude reported a streaming error; no tools were admitted.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Claude a signalé une erreur de flux ; aucun outil n’a été autorisé."}}}},
+    "Claude response exceeded the local stream limit.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "La réponse de Claude dépasse la limite locale du flux."}}}},
+    "Affects the API-key provider only. Embedded Qwen, Apple Intelligence, the selected server, and Claude subscription manage their own model.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Concerne uniquement le fournisseur avec clé API. Qwen embarqué, Apple Intelligence, le serveur sélectionné et l’abonnement Claude gèrent leur propre modèle."}}}},
+    "Allow paired iPhone terminal control": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Autoriser le contrôle du terminal par l’iPhone jumelé"}}}},
+    "Allows paired devices to read terminal output and type commands in existing sessions. Off keeps the mirror read-only.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Autorise les appareils jumelés à lire le terminal et à saisir des commandes dans les sessions existantes. Désactivé, le miroir reste en lecture seule."}}}},
+    "Choose where the Assistant processes your context. You can change this later in the chat header.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Choisissez où l’Assistant traite votre contexte. Vous pourrez modifier ce choix dans l’en-tête de la conversation."}}}},
+    "Diff unavailable": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Diff indisponible"}}}},
+    "Keychain migration failed. The existing token has been retained; try saving it again.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "La migration vers le trousseau a échoué. Le jeton existant a été conservé ; essayez de l’enregistrer à nouveau."}}}},
+    "Loading diff…": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Chargement du diff…"}}}},
+    "Merging": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Intégration"}}}},
+    "Message to the project Assistant": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Message à l’Assistant du projet"}}}},
+    "Network · explicitly selected": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Réseau · choix explicite"}}}},
+    "No changes in this diff": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Aucune modification dans ce diff"}}}},
+    "No completed result has been recorded. Retry is blocked until the processes and project state are reconciled.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Aucun résultat final n’a été enregistré. La relance reste bloquée tant que les processus et l’état du projet n’ont pas été réconciliés."}}}},
+    "Pairing could not be saved in Keychain. LAN mirroring has not started.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "L’appairage n’a pas pu être enregistré dans le trousseau. Le miroir sur le réseau local n’a pas démarré."}}}},
+    "Project commands use your macOS account’s file and network access. Run only trusted projects and review changes before integrating.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Les commandes du projet utilisent les accès aux fichiers et au réseau de votre compte macOS. Exécutez uniquement des projets de confiance et examinez les modifications avant l’intégration."}}}},
+    "Publishes your live usage + cockpit state to your private iCloud so the Throttle iOS app can mirror it anywhere. Read-only unless terminal control is enabled separately. Your iCloud only — no LorisLabs server.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Publie votre consommation et l’état du cockpit dans votre iCloud privé pour les consulter dans Throttle sur iOS. Lecture seule, sauf autorisation séparée du contrôle du terminal. Votre iCloud uniquement, sans serveur LorisLabs."}}}},
+    "Rebasing": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Rebasage"}}}},
+    "Response stopped. A remote provider may still be finishing its request.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Réponse arrêtée. Un fournisseur distant peut encore être en train de terminer sa requête."}}}},
+    "Retry diff": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Réessayer le diff"}}}},
+    "Send message": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Envoyer le message"}}}},
+    "Sends your Assistant messages and project context to the server configured in Settings → Assistant. This is network processing, separate from Qwen on this Mac. No embedded model download is required.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Envoie vos messages et le contexte du projet au serveur configuré dans Réglages → Assistant. Ce traitement réseau est distinct de Qwen sur ce Mac. Aucun téléchargement de modèle intégré n’est nécessaire."}}}},
+    "Stop response": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Arrêter la réponse"}}}},
+    "The token could not be saved in Keychain. The previous token is still active.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Le jeton n’a pas pu être enregistré dans le trousseau. Le jeton précédent reste actif."}}}},
+    "Verification outcome pending": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Résultat de vérification en attente"}}}},
+    "Verifying": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Vérification"}}}},
+    "Your Ollama server": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Votre serveur Ollama"}}}},
+    "Not measured": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Non mesuré"}}}},
+    "Cloud thread usage is not available from this inventory.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "La consommation de ce fil cloud n’est pas disponible dans cet inventaire."}}}},
+    "%lld task(s) measured · %lld not measured": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "%lld tâche(s) mesurée(s) · %lld non mesurée(s)"}}}},
+    "SPENT ON THIS PLAN": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "COÛT DE CE PLAN"}}}},
+    "API price of the tokens these sessions used. Not your subscription, and never added to it.": {"extractionState": "manual", "localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Valeur API des tokens utilisés par ces sessions. Ce n’est pas votre abonnement et cela ne s’y ajoute jamais."}}}},
     "Preview diagnostics": {
       "extractionState": "manual",
       "localizations": {
@@ -572,8 +801,8 @@
     "Review profile": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Vérifier le profil" } } } },
     "Saving…": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Enregistrement…" } } } },
     "Scan again": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Analyser à nouveau" } } } },
-    "Scanning…": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Analyse…" } } } },
-    "Select a project": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Sélectionnez un projet" } } } },
+    "Scanning…": {"localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Analyse en cours…"}}}},
+    "Select a project": {"localizations": {"fr": {"stringUnit": {"state": "translated", "value": "Sélectionnez un projet"}}}},
     "Setup…": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Configurer…" } } } },
     "Spaces": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Espaces" } } } },
     "Suggest locally": { "extractionState": "manual", "localizations": { "fr": { "stringUnit": { "state": "translated", "value": "Suggérer localement" } } } },
@@ -9498,8 +9727,8 @@
     "flow.checking.why": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Finished by an agent; tests and a model of another family check them." } },
-        "fr": { "stringUnit": { "state": "translated", "value": "Terminées par un agent ; les tests et un modèle d’une autre famille les vérifient." } }
+        "en": { "stringUnit": { "state": "translated", "value": "Submitted by an agent; verification and review are still required." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Proposées par un agent ; la vérification et la revue restent nécessaires." } }
       }
     },
     "flow.ready.why": {

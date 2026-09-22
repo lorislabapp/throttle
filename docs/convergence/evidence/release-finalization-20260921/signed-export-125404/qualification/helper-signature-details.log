@@ -1,0 +1,23 @@
+Executable=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent
+Identifier=com.lorislab.throttle.research-vault-agent
+Format=app bundle with Mach-O universal (x86_64 arm64)
+CodeDirectory v=20500 size=3094 flags=0x10000(runtime) hashes=85+7 location=embedded
+Hash type=sha256 size=32
+CandidateCDHash sha256=ab346d9d83480920c221afd21acb0bfadf8dc5b3
+CandidateCDHashFull sha256=ab346d9d83480920c221afd21acb0bfadf8dc5b3548e82d2e52bdfc22a4c0f47
+Hash choices=sha256
+CMSDigest=ab346d9d83480920c221afd21acb0bfadf8dc5b3548e82d2e52bdfc22a4c0f47
+CMSDigestType=2
+CDHash=ab346d9d83480920c221afd21acb0bfadf8dc5b3
+Signature size=8981
+Authority=Developer ID Application: Christine Martin (TDV6D5L785)
+Authority=Developer ID Certification Authority
+Authority=Apple Root CA
+Timestamp=21 Sep 2026 at 12:54:49
+Info.plist entries=22
+TeamIdentifier=TDV6D5L785
+Runtime Version=27.0.0
+Sealed Resources version=2 rules=13 files=1
+Internal requirements count=1 size=236
+Total signatures=1
+Chosen signature=1

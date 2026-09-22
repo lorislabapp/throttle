@@ -1,0 +1,152 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "00008132-001178882E03001C",
+      "deviceName" : "My Mac",
+      "modelName" : "MacBook Pro",
+      "osBuildNumber" : "26A428",
+      "osVersion" : "27.0",
+      "platform" : "macOS"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "duration" : "0,0009s",
+                  "durationInSeconds" : 0.0008989572525024414,
+                  "name" : "testBridgeDeniesDirectCallsWhenPermissionIsOff()",
+                  "nodeIdentifier" : "PeerTerminalBoundaryTests/testBridgeDeniesDirectCallsWhenPermissionIsOff()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PeerTerminalBoundaryTests/testBridgeDeniesDirectCallsWhenPermissionIsOff",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00046s",
+                  "durationInSeconds" : 0.0004630088806152344,
+                  "name" : "testCurrentTicketCannotBypassControlSettingOffAtDelivery()",
+                  "nodeIdentifier" : "PeerTerminalBoundaryTests/testCurrentTicketCannotBypassControlSettingOffAtDelivery()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PeerTerminalBoundaryTests/testCurrentTicketCannotBypassControlSettingOffAtDelivery",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0025s",
+                  "durationInSeconds" : 0.0024739503860473633,
+                  "name" : "testFailedFreshPersistenceNeverPublishesEphemeralPairing()",
+                  "nodeIdentifier" : "PeerTerminalBoundaryTests/testFailedFreshPersistenceNeverPublishesEphemeralPairing()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PeerTerminalBoundaryTests/testFailedFreshPersistenceNeverPublishesEphemeralPairing",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00047s",
+                  "durationInSeconds" : 0.0004678964614868164,
+                  "name" : "testFailedLegacyPersistencePreservesCopyAndWithholdsPairing()",
+                  "nodeIdentifier" : "PeerTerminalBoundaryTests/testFailedLegacyPersistencePreservesCopyAndWithholdsPairing()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PeerTerminalBoundaryTests/testFailedLegacyPersistencePreservesCopyAndWithholdsPairing",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00037s",
+                  "durationInSeconds" : 0.00037491321563720703,
+                  "name" : "testMalformedPersistedPairingIsNotReplacedAutomatically()",
+                  "nodeIdentifier" : "PeerTerminalBoundaryTests/testMalformedPersistedPairingIsNotReplacedAutomatically()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PeerTerminalBoundaryTests/testMalformedPersistedPairingIsNotReplacedAutomatically",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00044s",
+                  "durationInSeconds" : 0.00043892860412597656,
+                  "name" : "testReattachmentStopsOldTapAndOnlyAddressesNewSession()",
+                  "nodeIdentifier" : "PeerTerminalBoundaryTests/testReattachmentStopsOldTapAndOnlyAddressesNewSession()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PeerTerminalBoundaryTests/testReattachmentStopsOldTapAndOnlyAddressesNewSession",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00032s",
+                  "durationInSeconds" : 0.0003199577331542969,
+                  "name" : "testRevocationRemovesTapAndStaleCallbackCannotSendOrInput()",
+                  "nodeIdentifier" : "PeerTerminalBoundaryTests/testRevocationRemovesTapAndStaleCallbackCannotSendOrInput()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PeerTerminalBoundaryTests/testRevocationRemovesTapAndStaleCallbackCannotSendOrInput",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00088s",
+                  "durationInSeconds" : 0.0008759498596191406,
+                  "name" : "testRevokedTicketQueuedBeforeMainActorDeliveryCannotAttachOrSend()",
+                  "nodeIdentifier" : "PeerTerminalBoundaryTests/testRevokedTicketQueuedBeforeMainActorDeliveryCannotAttachOrSend()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PeerTerminalBoundaryTests/testRevokedTicketQueuedBeforeMainActorDeliveryCannotAttachOrSend",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0034s",
+                  "durationInSeconds" : 0.003381967544555664,
+                  "name" : "testStoppedListenerCannotDeliverQueuedInputAfterRestart()",
+                  "nodeIdentifier" : "PeerTerminalBoundaryTests/testStoppedListenerCannotDeliverQueuedInputAfterRestart()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PeerTerminalBoundaryTests/testStoppedListenerCannotDeliverQueuedInputAfterRestart",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00043s",
+                  "durationInSeconds" : 0.0004329681396484375,
+                  "name" : "testSuccessfulLegacyPersistencePrecedesRemoval()",
+                  "nodeIdentifier" : "PeerTerminalBoundaryTests/testSuccessfulLegacyPersistencePrecedesRemoval()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PeerTerminalBoundaryTests/testSuccessfulLegacyPersistencePrecedesRemoval",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00032s",
+                  "durationInSeconds" : 0.0003180503845214844,
+                  "name" : "testUnavailablePairingDoesNotReadLegacyWriteGenerateOrPublishIdentity()",
+                  "nodeIdentifier" : "PeerTerminalBoundaryTests/testUnavailablePairingDoesNotReadLegacyWriteGenerateOrPublishIdentity()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PeerTerminalBoundaryTests/testUnavailablePairingDoesNotReadLegacyWriteGenerateOrPublishIdentity",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,00039s",
+                  "durationInSeconds" : 0.00038993358612060547,
+                  "name" : "testUnknownSessionAndInputWithoutAttachmentHaveNoEffects()",
+                  "nodeIdentifier" : "PeerTerminalBoundaryTests/testUnknownSessionAndInputWithoutAttachmentHaveNoEffects()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PeerTerminalBoundaryTests/testUnknownSessionAndInputWithoutAttachmentHaveNoEffects",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "PeerTerminalBoundaryTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PeerTerminalBoundaryTests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            }
+          ],
+          "name" : "ThrottleTests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests",
+          "nodeType" : "Unit test bundle",
+          "result" : "Passed"
+        }
+      ],
+      "name" : "Throttle",
+      "nodeType" : "Test Plan",
+      "result" : "Passed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

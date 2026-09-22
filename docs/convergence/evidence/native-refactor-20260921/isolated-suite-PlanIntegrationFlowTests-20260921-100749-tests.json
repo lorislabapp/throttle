@@ -1,0 +1,161 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "00008132-001178882E03001C",
+      "deviceName" : "My Mac",
+      "modelName" : "MacBook Pro",
+      "osBuildNumber" : "26A428",
+      "osVersion" : "27.0",
+      "platform" : "macOS"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "duration" : "4s",
+                  "durationInSeconds" : 4.812021970748901,
+                  "name" : "test_aRunLandingAfterATabSwitchWritesNothingIntoTheNewProject()",
+                  "nodeIdentifier" : "PlanIntegrationFlowTests/test_aRunLandingAfterATabSwitchWritesNothingIntoTheNewProject()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationFlowTests/test_aRunLandingAfterATabSwitchWritesNothingIntoTheNewProject",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "5s",
+                  "durationInSeconds" : 5.22698700428009,
+                  "name" : "test_aTabSwitchMidIntegrationDoesNotReArmTheButton()",
+                  "nodeIdentifier" : "PlanIntegrationFlowTests/test_aTabSwitchMidIntegrationDoesNotReArmTheButton()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationFlowTests/test_aTabSwitchMidIntegrationDoesNotReArmTheButton",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "1s",
+                  "durationInSeconds" : 1.755952000617981,
+                  "name" : "test_diffFailureClearsStaleTextAndRetryCanRecover()",
+                  "nodeIdentifier" : "PlanIntegrationFlowTests/test_diffFailureClearsStaleTextAndRetryCanRecover()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationFlowTests/test_diffFailureClearsStaleTextAndRetryCanRecover",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "2s",
+                  "durationInSeconds" : 2.6431820392608643,
+                  "name" : "test_emptyDiffIsLoadedAndRebindingClearsItsState()",
+                  "nodeIdentifier" : "PlanIntegrationFlowTests/test_emptyDiffIsLoadedAndRebindingClearsItsState()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationFlowTests/test_emptyDiffIsLoadedAndRebindingClearsItsState",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "2s",
+                  "durationInSeconds" : 2.030737042427063,
+                  "name" : "test_integrateAsksForConsentBeforeItRunsAnythingThenStopsAsking()",
+                  "nodeIdentifier" : "PlanIntegrationFlowTests/test_integrateAsksForConsentBeforeItRunsAnythingThenStopsAsking()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationFlowTests/test_integrateAsksForConsentBeforeItRunsAnythingThenStopsAsking",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "2s",
+                  "durationInSeconds" : 2.1827160120010376,
+                  "name" : "test_integrateRebasesABehindTaskBeforeMerging()",
+                  "nodeIdentifier" : "PlanIntegrationFlowTests/test_integrateRebasesABehindTaskBeforeMerging()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationFlowTests/test_integrateRebasesABehindTaskBeforeMerging",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "1s",
+                  "durationInSeconds" : 1.3638359308242798,
+                  "name" : "test_integrateRefusesATaskThatIsNotDone()",
+                  "nodeIdentifier" : "PlanIntegrationFlowTests/test_integrateRefusesATaskThatIsNotDone()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationFlowTests/test_integrateRefusesATaskThatIsNotDone",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "1s",
+                  "durationInSeconds" : 1.4597140550613403,
+                  "name" : "test_integrateRefusesWithoutAVerifyCommand()",
+                  "nodeIdentifier" : "PlanIntegrationFlowTests/test_integrateRefusesWithoutAVerifyCommand()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationFlowTests/test_integrateRefusesWithoutAVerifyCommand",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "1s",
+                  "durationInSeconds" : 1.9110890626907349,
+                  "name" : "test_integrateRunsTheWholeSequenceOnce()",
+                  "nodeIdentifier" : "PlanIntegrationFlowTests/test_integrateRunsTheWholeSequenceOnce()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationFlowTests/test_integrateRunsTheWholeSequenceOnce",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "1s",
+                  "durationInSeconds" : 1.787235975265503,
+                  "name" : "test_integrateStopsAtAFailingVerification()",
+                  "nodeIdentifier" : "PlanIntegrationFlowTests/test_integrateStopsAtAFailingVerification()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationFlowTests/test_integrateStopsAtAFailingVerification",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "1s",
+                  "durationInSeconds" : 1.379194974899292,
+                  "name" : "test_theAssessmentIsCachedRatherThanReadOnEveryDraw()",
+                  "nodeIdentifier" : "PlanIntegrationFlowTests/test_theAssessmentIsCachedRatherThanReadOnEveryDraw()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationFlowTests/test_theAssessmentIsCachedRatherThanReadOnEveryDraw",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "1s",
+                  "durationInSeconds" : 1.321287989616394,
+                  "name" : "test_theDiffIsFetchedOnlyWhenItIsOpened()",
+                  "nodeIdentifier" : "PlanIntegrationFlowTests/test_theDiffIsFetchedOnlyWhenItIsOpened()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationFlowTests/test_theDiffIsFetchedOnlyWhenItIsOpened",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,82s",
+                  "durationInSeconds" : 0.8162260055541992,
+                  "name" : "test_theTaskVerifyCommandOverridesTheProjectOne()",
+                  "nodeIdentifier" : "PlanIntegrationFlowTests/test_theTaskVerifyCommandOverridesTheProjectOne()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationFlowTests/test_theTaskVerifyCommandOverridesTheProjectOne",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "PlanIntegrationFlowTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationFlowTests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            }
+          ],
+          "name" : "ThrottleTests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests",
+          "nodeType" : "Unit test bundle",
+          "result" : "Passed"
+        }
+      ],
+      "name" : "Throttle",
+      "nodeType" : "Test Plan",
+      "result" : "Passed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

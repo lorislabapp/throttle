@@ -1,0 +1,15 @@
+{
+  "observed_local": "2026-09-21T09:39:47.340424",
+  "checks": {
+    "convergence": {
+      "count": 96,
+      "drift": []
+    },
+    "core": {
+      "count": 155,
+      "drift": []
+    }
+  },
+  "diff_check_exit": 0,
+  "diff_check_output": "git: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead\n"
+}

@@ -1,0 +1,20 @@
+{
+  "status": "prepared_not_launched",
+  "root": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-092038",
+  "app": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-092038/Build/Products/Debug/ThrottleTestHost.app",
+  "xctestrun": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-092038/Build/Products/ThrottleTestHost.xctestrun",
+  "manifest": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-092038/candidate-files.json",
+  "source_build": "build-20260921-084810",
+  "source_copy_hashes_match": true,
+  "changed_after_copy": [
+    "Contents/Info.plist",
+    "Contents/MacOS/Throttle",
+    "Contents/_CodeSignature/CodeResources"
+  ],
+  "test_host_identifier": "com.lorislab.throttle.test-host",
+  "signing": "ad hoc test identity only; not Developer ID distribution",
+  "permissions_changed": false,
+  "installed_app_changed": false,
+  "code_coverage_collected": false,
+  "reason": "Prevent production/test TCC identity conflict and keep host fixture I/O on internal storage"
+}

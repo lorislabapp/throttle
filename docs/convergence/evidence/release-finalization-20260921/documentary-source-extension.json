@@ -1,0 +1,10 @@
+{
+  "at": "2026-09-21T11:43:25.002737+02:00",
+  "from": "docs/convergence/evidence/release-continuation-20260921/two-reader-Package.swift",
+  "to": "docs/convergence/evidence/release-continuation-20260921/two-reader-Package.swift.txt",
+  "sha256_unchanged": "007e6858633837153f3566eb518f08c77ba2258efbc8c490f6b778789baf550d",
+  "reason": "Read-only documentary copy of two-reader reproduction package; mark .txt consistently with recorded main.swift.txt copies so repository Swift lint does not mistake evidence for app sources",
+  "reproduction_tar_unchanged": true,
+  "lint_baseline_rules_unchanged": true,
+  "initial_global_lint_exit": 2
+}

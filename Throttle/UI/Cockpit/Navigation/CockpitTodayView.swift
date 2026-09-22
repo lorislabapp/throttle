@@ -15,7 +15,9 @@ struct CockpitTodayView: View {
                 OnboardingChecklistCard(cockpit: cockpit, projects: projects)
                 waitingCard
                 TodayFlowTiles(cockpit: cockpit, projects: projects)
-                OutsideAgentsCard(cockpit: cockpit)
+                OutsideAgentsCard(knownSessionIDs: Set(cockpit.sessions.compactMap(\.sessionId))) { session in
+                    OutsideAgentsCard.open(session, in: cockpit)
+                }
                 projectsCard
                 quotaCard
             }

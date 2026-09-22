@@ -1,0 +1,66 @@
+{
+  "at": "2026-09-21T11:28:26.439997+02:00",
+  "host": "com.lorislab.throttle.test-host",
+  "scenes": [
+    "diff-en"
+  ],
+  "source_count": 1047,
+  "attempts": [
+    {
+      "label": "112157",
+      "navigation_enabled": "after host launch",
+      "keys": [
+        "Tab",
+        "Shift-Tab"
+      ],
+      "focused_AX_element": "window",
+      "retry_focus_observed": false,
+      "close_fixture_action": "Close button; tool timeout after action, runner later passed"
+    },
+    {
+      "label": "112442",
+      "navigation_enabled": "before host launch",
+      "keys": [
+        "Tab",
+        "AXRaise then Tab"
+      ],
+      "focused_AX_element": "window",
+      "retry_focus_observed": false
+    }
+  ],
+  "initial_keyboard_navigation": "off",
+  "temporary": "on",
+  "final_observed": "off",
+  "restoration_method": "CUA System Settings switch AX confirmation",
+  "voiceover_changed": false,
+  "installed_throttle_restarted": false,
+  "conclusion": "Keyboard Retry remains unqualified; do not infer a production defect or success solely from isolated host focus",
+  "primary_reference": "https://developer.apple.com/videos/play/wwdc2022/10075/",
+  "reference_scope": "Apple recommends checking keyboard navigation with system setting both on and off; does not explain this observation",
+  "xctest_summaries": [
+    {
+      "title": "Test - Throttle",
+      "result": "Passed",
+      "totalTestCount": 1,
+      "passedTests": 1,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "startTime": 1789982518.951,
+      "finishTime": 1789982651.273,
+      "label": "isolated-visual-tests-20260921-112157"
+    },
+    {
+      "title": "Test - Throttle",
+      "result": "Passed",
+      "totalTestCount": 1,
+      "passedTests": 1,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "startTime": 1789982683.932,
+      "finishTime": 1789982865.394,
+      "label": "isolated-visual-tests-20260921-112442"
+    }
+  ]
+}

@@ -1,9 +1,8 @@
 import Foundation
 
 /// Picks the active AI provider for the Project window's Assistant tab.
-/// Persists the user's choice in UserDefaults; falls back to a sensible
-/// default when nothing is set or the previously-chosen provider has
-/// become unavailable (e.g. user removed their API key).
+/// Persists the user's exact choice in UserDefaults. Availability never grants
+/// consent to switch to a cloud provider or a separately billed API account.
 @MainActor
 final class AIProviderRegistry {
     static let shared = AIProviderRegistry()
@@ -13,6 +12,7 @@ final class AIProviderRegistry {
 
     private let appleIntel = AppleIntelligenceProvider()
     private let embedded   = EmbeddedModelProvider()
+    private let selfHosted = EmbeddedModelProvider(destination: .selfHosted)
     private let claudeKey  = ClaudeAPIKeyProvider()
     private let claudeWeb  = ClaudeWebSessionProvider()
 
@@ -55,49 +55,46 @@ final class AIProviderRegistry {
         switch kind {
         case .appleIntelligence: return appleIntel
         case .embeddedModel:     return embedded
+        case .selfHostedModel:   return selfHosted
         case .claudeAPIKey:      return claudeKey
         case .claudeWebSession:  return claudeWeb
         }
     }
 
-    /// Resolve the provider to use right now. If the user has a preference
-    /// and that provider is available, use it. Otherwise walk the default
-    /// order: Apple Intelligence → ClaudeWebSession → ClaudeAPIKey, and
-    /// pick the first one that's available. Returns nil if nothing works
-    /// (no API key, no Apple Intel, no Safari session).
+    /// An unavailable explicit choice stays unavailable. With no preference,
+    /// only the existing local kinds are probed; configured cloud keys/sessions
+    /// never silently become the default.
     func resolveActive() async -> (any AIProvider)? {
-        if let preferred = preferredKind {
-            let p = provider(for: preferred)
-            if await p.isAvailable { return p }
-            // "Local" is a privacy boundary, not just a routing preference.
-            // If the embedded model is missing, surface that state instead of silently sending
-            // project context to Claude or another network provider.
-            if preferred == .embeddedModel { return nil }
-        }
-        for kind in [AIProviderKind.appleIntelligence,
-                     .embeddedModel,
-                     .claudeWebSession,
-                     .claudeAPIKey] {
-            let p = provider(for: kind)
-            if await p.isAvailable { return p }
+        let candidates = AIProviderRoutingPolicy.initialCandidates(preferred: preferredKind)
+        for kind in candidates {
+            let candidate = provider(for: kind)
+            if await candidate.isAvailable { return candidate }
         }
         return nil
     }
 
-    /// Walk the default order (Apple Intelligence → ClaudeWebSession →
-    /// ClaudeAPIKey) and return the first provider that is currently
-    /// available AND whose kind is not in `excluding`. Used by the
-    /// Assistant tab to transparently fall back when the active provider
-    /// returns a recoverable error (claude.ai dropped the response,
-    /// Safari tab zombie, etc.) so the user gets a working answer
-    /// instead of having to manually switch providers.
+    /// Filter before availability probes; configuration editing never contacts a server.
+    /// An explicit network preference stays unchanged and returns unavailable here.
+    func resolveOnDevice() async -> (any AIProvider)? {
+        let candidates = AIProviderRoutingPolicy.initialCandidates(preferred: preferredKind)
+        for kind in candidates where kind.runsOnDevice {
+            let candidate = provider(for: kind)
+            if await candidate.isAvailable { return candidate }
+        }
+        return nil
+    }
+
+    /// Shared by Assistant and PromptRefiner. Failed local requests
+    /// cannot escalate to cloud, and a failed subscription cannot spend an API
+    /// key merely because one is configured. Capture candidates before awaiting.
     func firstAvailable(excluding: Set<AIProviderKind>) async -> (any AIProvider)? {
-        for kind in [AIProviderKind.appleIntelligence,
-                     .embeddedModel,
-                     .claudeWebSession,
-                     .claudeAPIKey] where !excluding.contains(kind) {
-            let p = provider(for: kind)
-            if await p.isAvailable { return p }
+        let candidates = AIProviderRoutingPolicy.fallbackCandidates(
+            preferred: preferredKind,
+            excluding: excluding
+        )
+        for kind in candidates {
+            let candidate = provider(for: kind)
+            if await candidate.isAvailable { return candidate }
         }
         return nil
     }
@@ -106,6 +103,7 @@ final class AIProviderRegistry {
         var map: [AIProviderKind: Bool] = [:]
         map[.appleIntelligence] = await appleIntel.isAvailable
         map[.embeddedModel]     = await embedded.isAvailable
+        map[.selfHostedModel]   = await selfHosted.isAvailable
         map[.claudeWebSession]  = await claudeWeb.isAvailable
         map[.claudeAPIKey]      = await claudeKey.isAvailable
         return map

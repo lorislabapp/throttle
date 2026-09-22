@@ -1,0 +1,152 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "exportedFileName" : "6EA05BAF-2FE8-45FA-9525-000B187625E3.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "diff-empty-en_0_5810BD8C-CAFF-4A9B-95AD-30C822E08206.png",
+        "timestamp" : 1789943967.974
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "exportedFileName" : "6502CBCC-CD42-4C37-98B2-25FB6F764C93.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "diff-failed-en_0_EC0723D1-0222-4674-8341-28BA01D5856C.png",
+        "timestamp" : 1789943967.916
+      }
+    ],
+    "testIdentifier" : "PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInEnglish()",
+    "testIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInEnglish"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "exportedFileName" : "64368A86-A372-4239-A95E-6E696DA11421.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "diff-empty-fr_0_7F3600EE-BD10-4B7B-9CE7-0FB7FEC44241.png",
+        "timestamp" : 1789943968.106
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "exportedFileName" : "E78B6635-D62F-4735-BF73-7430790F1BD4.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "diff-failed-fr_0_A6260262-D0D8-4E8E-9EBE-8EA581DDBC76.png",
+        "timestamp" : 1789943968.046
+      }
+    ],
+    "testIdentifier" : "PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInFrench()",
+    "testIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInFrench"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "exportedFileName" : "3253790B-C5EB-4AD0-A0C3-8CEA889E641C.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "unknown-en_0_CE8991AC-A3BF-48E2-B5A5-68FCC0E66C96.png",
+        "timestamp" : 1789943968.31
+      }
+    ],
+    "testIdentifier" : "PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInEnglish()",
+    "testIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInEnglish"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "exportedFileName" : "58143390-20F2-4386-9CA6-7DBF3B23F87E.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "unknown-fr_0_203E7504-096D-4429-9ED2-1E76ECB4A3D1.png",
+        "timestamp" : 1789943968.463
+      }
+    ],
+    "testIdentifier" : "PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInFrench()",
+    "testIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInFrench"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "exportedFileName" : "B3B5C4DF-94F9-4FAD-BA57-C84D87084E71.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Project B after changing the selected project — hosted view_0_4468128D-AC2F-470A-B654-729C8373E491.png",
+        "timestamp" : 1789943968.812
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "exportedFileName" : "40F09181-1D14-47CE-8866-95A4979527AF.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Project B after changing the selected project_0_4E4CD04F-6523-4F8C-B0F3-ED30534B090C.txt",
+        "timestamp" : 1789943968.795
+      }
+    ],
+    "testIdentifier" : "ProjectAssistantViewTests/testProjectChangeCancelsAndClearsOldTranscript()",
+    "testIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/ProjectAssistantViewTests/testProjectChangeCancelsAndClearsOldTranscript"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "exportedFileName" : "52AF71D2-CC05-465D-B234-0B0138B3EAA1.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Stopped before first delta — hosted view_0_9F47BF49-2694-42A3-B845-0CDB95F71CDF.png",
+        "timestamp" : 1789943968.951
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "exportedFileName" : "B4C63C6F-1692-48A7-8508-52EA1D94D0C5.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Stopped before first delta_0_148F23BB-2D34-4871-BE61-BED16BB71898.txt",
+        "timestamp" : 1789943968.935
+      }
+    ],
+    "testIdentifier" : "ProjectAssistantViewTests/testStopBeforeFirstDeltaRejectsLateResponse()",
+    "testIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/ProjectAssistantViewTests/testStopBeforeFirstDeltaRejectsLateResponse"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "exportedFileName" : "E6DFAB6A-E68F-499D-B4FC-A2258F9F6A8A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Stopped response and completed next turn — hosted view_0_63BD1337-5D1A-43F3-9367-5D60EC9FD068.png",
+        "timestamp" : 1789943969.206
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "exportedFileName" : "3CC91BDC-7913-44ED-AA84-ACD0E46CB097.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Stopped response and completed next turn_0_3D1F5020-3E54-418C-9F26-B0C58D0A7FBD.txt",
+        "timestamp" : 1789943969.188
+      }
+    ],
+    "testIdentifier" : "ProjectAssistantViewTests/testStopDuringStreamKeepsNextTurnIndependent()",
+    "testIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/ProjectAssistantViewTests/testStopDuringStreamKeepsNextTurnIndependent"
+  }
+]

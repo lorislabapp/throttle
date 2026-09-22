@@ -1,0 +1,407 @@
+{
+  "url": "https://lorislab.fr/throttle/appcast.xml",
+  "http": 200,
+  "observed": "2026-09-21T08:13:00.049660",
+  "sha256": "72bbb708b43e651bf24eaa7d3f67a1e44b229ac63dd5df59c3345b789ca4b7b1",
+  "items": [
+    {
+      "version": "3.7.2",
+      "build": "223",
+      "date": "Thu, 17 Sep 2026 07:40:34 +0200"
+    },
+    {
+      "version": "3.7.1",
+      "build": "222",
+      "date": "Wed, 16 Sep 2026 21:04:42 +0200"
+    },
+    {
+      "version": "3.7.0",
+      "build": "221",
+      "date": "Wed, 16 Sep 2026 15:53:36 +0200"
+    },
+    {
+      "version": "3.6.0",
+      "build": "220",
+      "date": "Wed, 09 Sep 2026 13:33:41 +0200"
+    },
+    {
+      "version": "3.5.2",
+      "build": "218",
+      "date": "Mon, 07 Sep 2026 08:06:48 +0200"
+    },
+    {
+      "version": "3.5.1",
+      "build": "217",
+      "date": "Fri, 04 Sep 2026 10:59:36 +0200"
+    },
+    {
+      "version": "3.2.78",
+      "build": "178",
+      "date": "Thu, 13 Aug 2026 18:28:53 +0200"
+    },
+    {
+      "version": "3.2.77",
+      "build": "177",
+      "date": "Tue, 11 Aug 2026 23:14:26 +0200"
+    },
+    {
+      "version": "3.2.73",
+      "build": "173",
+      "date": "Thu, 30 Jul 2026 12:00:00 +0200"
+    },
+    {
+      "version": "3.2.71",
+      "build": "171",
+      "date": "Fri, 17 Jul 2026 11:05:00 +0200"
+    },
+    {
+      "version": "3.2.70",
+      "build": "170",
+      "date": "Fri, 17 Jul 2026 09:37:10 +0200"
+    },
+    {
+      "version": "3.2.69",
+      "build": "169",
+      "date": "Fri, 17 Jul 2026 09:12:22 +0200"
+    },
+    {
+      "version": "3.2.68",
+      "build": "168",
+      "date": "Thu, 16 Jul 2026 18:43:46 +0200"
+    },
+    {
+      "version": "3.2.66",
+      "build": "166",
+      "date": "Tue, 14 Jul 2026 21:20:00 +0200"
+    },
+    {
+      "version": "3.2.65",
+      "build": "165",
+      "date": "Tue, 14 Jul 2026 20:30:00 +0200"
+    },
+    {
+      "version": "3.2.64",
+      "build": "164",
+      "date": "Tue, 14 Jul 2026 19:20:00 +0200"
+    },
+    {
+      "version": "3.2.63",
+      "build": "163",
+      "date": "Tue, 14 Jul 2026 18:55:00 +0200"
+    },
+    {
+      "version": "3.2.62",
+      "build": "162",
+      "date": "Tue, 14 Jul 2026 18:20:00 +0200"
+    },
+    {
+      "version": "3.2.61",
+      "build": "161",
+      "date": "Tue, 14 Jul 2026 17:59:19 +0200"
+    },
+    {
+      "version": "3.2.60",
+      "build": "160",
+      "date": "Tue, 14 Jul 2026 17:10:51 +0200"
+    },
+    {
+      "version": "3.2.59",
+      "build": "159",
+      "date": "Sun, 12 Jul 2026 20:39:45 +0200"
+    },
+    {
+      "version": "3.2.51",
+      "build": "151",
+      "date": "Wed, 08 Jul 2026 21:33:47 +0200"
+    },
+    {
+      "version": "3.2.50",
+      "build": "150",
+      "date": "Wed, 08 Jul 2026 17:16:44 +0200"
+    },
+    {
+      "version": "3.2.49",
+      "build": "149",
+      "date": "Wed, 08 Jul 2026 16:12:22 +0200"
+    },
+    {
+      "version": "3.2.48",
+      "build": "148",
+      "date": "Wed, 08 Jul 2026 15:29:09 +0200"
+    },
+    {
+      "version": "3.2.47",
+      "build": "147",
+      "date": "Wed, 08 Jul 2026 13:30:39 +0200"
+    },
+    {
+      "version": "3.2.45",
+      "build": "145",
+      "date": "Tue, 07 Jul 2026 17:03:15 +0200"
+    },
+    {
+      "version": "3.2.44",
+      "build": "144",
+      "date": "Fri, 03 Jul 2026 18:19:46 +0200"
+    },
+    {
+      "version": "3.2.43",
+      "build": "143",
+      "date": "Fri, 03 Jul 2026 09:57:08 +0200"
+    },
+    {
+      "version": "3.2.42",
+      "build": "142",
+      "date": "Fri, 03 Jul 2026 09:28:25 +0200"
+    },
+    {
+      "version": "3.2.41",
+      "build": "141",
+      "date": "Fri, 03 Jul 2026 09:14:26 +0200"
+    },
+    {
+      "version": "3.2.40",
+      "build": "140",
+      "date": "Thu, 02 Jul 2026 20:00:00 +0200"
+    },
+    {
+      "version": "3.2.38",
+      "build": "138",
+      "date": "Thu, 02 Jul 2026 16:20:00 +0200"
+    },
+    {
+      "version": "3.2.37",
+      "build": "137",
+      "date": "Thu, 02 Jul 2026 15:55:00 +0200"
+    },
+    {
+      "version": "3.2.36",
+      "build": "136",
+      "date": "Thu, 02 Jul 2026 15:10:00 +0200"
+    },
+    {
+      "version": "3.2.35",
+      "build": "135",
+      "date": "Thu, 02 Jul 2026 14:45:00 +0200"
+    },
+    {
+      "version": "3.2.34",
+      "build": "134",
+      "date": "Thu, 02 Jul 2026 14:05:00 +0200"
+    },
+    {
+      "version": "3.2.33",
+      "build": "133",
+      "date": "Thu, 02 Jul 2026 13:40:00 +0200"
+    },
+    {
+      "version": "3.2.32",
+      "build": "132",
+      "date": "Thu, 02 Jul 2026 13:05:00 +0200"
+    },
+    {
+      "version": "3.2.31",
+      "build": "131",
+      "date": "Thu, 02 Jul 2026 12:37:33 +0200"
+    },
+    {
+      "version": "3.2.30",
+      "build": "130",
+      "date": "Thu, 02 Jul 2026 12:15:00 +0200"
+    },
+    {
+      "version": "3.2.29",
+      "build": "129",
+      "date": "Thu, 02 Jul 2026 11:55:00 +0200"
+    },
+    {
+      "version": "3.2.28",
+      "build": "128",
+      "date": "Thu, 02 Jul 2026 10:19:26 +0200"
+    },
+    {
+      "version": "3.2.27",
+      "build": "127",
+      "date": "Wed, 01 Jul 2026 20:40:27 +0200"
+    },
+    {
+      "version": "3.2.26",
+      "build": "126",
+      "date": "Wed, 01 Jul 2026 12:16:05 +0200"
+    },
+    {
+      "version": "3.2.25",
+      "build": "125",
+      "date": "Wed, 01 Jul 2026 11:41:29 +0200"
+    },
+    {
+      "version": "3.2.24",
+      "build": "124",
+      "date": "Wed, 01 Jul 2026 01:35:23 +0200"
+    },
+    {
+      "version": "3.2.23",
+      "build": "123",
+      "date": "Wed, 01 Jul 2026 00:45:14 +0200"
+    },
+    {
+      "version": "3.2.22",
+      "build": "122",
+      "date": "Wed, 01 Jul 2026 00:31:36 +0200"
+    },
+    {
+      "version": "3.2.21",
+      "build": "121",
+      "date": "Wed, 01 Jul 2026 00:12:11 +0200"
+    },
+    {
+      "version": "3.2.20",
+      "build": "120",
+      "date": "Sat, 27 Jun 2026 20:14:25 +0200"
+    },
+    {
+      "version": "3.2.19",
+      "build": "119",
+      "date": "Sat, 27 Jun 2026 19:43:50 +0200"
+    },
+    {
+      "version": "3.2.18",
+      "build": "118",
+      "date": "Sat, 27 Jun 2026 19:23:10 +0200"
+    },
+    {
+      "version": "3.2.16",
+      "build": "116",
+      "date": "Sat, 27 Jun 2026 12:38:35 +0200"
+    },
+    {
+      "version": "3.2.15",
+      "build": "115",
+      "date": "Sat, 27 Jun 2026 01:09:45 +0200"
+    },
+    {
+      "version": "3.2.14",
+      "build": "114",
+      "date": "Fri, 26 Jun 2026 20:16:23 +0200"
+    },
+    {
+      "version": "3.2.13",
+      "build": "113",
+      "date": "Fri, 26 Jun 2026 19:58:31 +0200"
+    },
+    {
+      "version": "3.2.12",
+      "build": "112",
+      "date": "Fri, 26 Jun 2026 18:47:16 +0200"
+    },
+    {
+      "version": "3.2.11",
+      "build": "111",
+      "date": "Fri, 26 Jun 2026 12:17:13 +0200"
+    },
+    {
+      "version": "3.2.10",
+      "build": "110",
+      "date": "Fri, 26 Jun 2026 09:25:15 +0200"
+    },
+    {
+      "version": "3.2.9",
+      "build": "109",
+      "date": "Thu, 25 Jun 2026 22:23:23 +0200"
+    },
+    {
+      "version": "3.2.8",
+      "build": "108",
+      "date": "Thu, 25 Jun 2026 16:50:29 +0200"
+    },
+    {
+      "version": "3.2.7",
+      "build": "107",
+      "date": "Thu, 25 Jun 2026 14:20:23 +0200"
+    },
+    {
+      "version": "3.2.6",
+      "build": "106",
+      "date": "Thu, 25 Jun 2026 11:10:31 +0200"
+    },
+    {
+      "version": "3.2.4",
+      "build": "104",
+      "date": "Sun, 21 Jun 2026 08:25:28 +0200"
+    },
+    {
+      "version": "3.2.0",
+      "build": "100",
+      "date": "Tue, 16 Jun 2026 17:08:15 +0200"
+    },
+    {
+      "version": "3.1.9",
+      "build": "99",
+      "date": "Tue, 16 Jun 2026 11:48:58 +0200"
+    },
+    {
+      "version": "3.1.8",
+      "build": "98",
+      "date": "Tue, 16 Jun 2026 10:55:19 +0200"
+    },
+    {
+      "version": "3.1.7",
+      "build": "97",
+      "date": "Mon, 15 Jun 2026 14:36:45 +0200"
+    },
+    {
+      "version": "3.1.6",
+      "build": "96",
+      "date": "Mon, 15 Jun 2026 14:11:46 +0200"
+    },
+    {
+      "version": "3.1.5",
+      "build": "95",
+      "date": "Mon, 15 Jun 2026 13:01:47 +0200"
+    },
+    {
+      "version": "3.1.4",
+      "build": "94",
+      "date": "Mon, 15 Jun 2026 11:48:49 +0200"
+    },
+    {
+      "version": "3.1.3",
+      "build": "93",
+      "date": "Mon, 15 Jun 2026 10:03:27 +0200"
+    },
+    {
+      "version": "3.1.2",
+      "build": "92",
+      "date": "Mon, 15 Jun 2026 09:17:20 +0200"
+    },
+    {
+      "version": "3.1.1",
+      "build": "91",
+      "date": "Sun, 14 Jun 2026 21:16:30 +0200"
+    },
+    {
+      "version": "3.1.0",
+      "build": "90",
+      "date": "Sun, 14 Jun 2026 19:37:10 +0200"
+    },
+    {
+      "version": "3.0.2",
+      "build": "89",
+      "date": "Thu, 28 May 2026 10:04:11 +0200"
+    },
+    {
+      "version": "3.0.1",
+      "build": "88",
+      "date": "Thu, 28 May 2026 08:54:11 +0200"
+    },
+    {
+      "version": "3.0.0",
+      "build": "3.0.0",
+      "date": "Tue, 27 May 2026 12:00:00 +0000"
+    }
+  ],
+  "candidate_226_gate": {
+    "status": "refused",
+    "reason": "missing or non-numeric CFBundleVersion; release refused"
+  }
+}

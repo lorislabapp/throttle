@@ -1,0 +1,29 @@
+import Foundation
+import CryptoKit
+let args = CommandLine.arguments
+let action = args[1]
+let root = URL(fileURLWithPath: args[2])
+let store = PlanStore(projectRoot: root)
+func event(_ type: TaskEventType, author: String = "worker:fixture", passed: Bool? = nil) -> TaskEvent {
+ TaskEvent(seq: 0, timestamp: Date(timeIntervalSince1970: 1800000000), author: author, type: type, ref: "fixture+base", passed: passed)
+}
+if action == "seed" {
+ try store.bootstrap(Plan(projectId: "fixture", title: "Fixture", tasks: [PlanTask(id: "T1", title: "Fixture")]))
+ try store.append(event(.claimed), to: "T1")
+ try store.append(event(.candidateComplete), to: "T1")
+ try store.append(event(.checked, author: "throttle:fixture", passed: true), to: "T1")
+}
+
+let log = root.appendingPathComponent(".throttle/log/T1.ndjson")
+let before = try Data(contentsOf: log)
+let read = try store.events(for: "T1")
+let state = try store.state(for: "T1")
+_ = try store.resolveAll()
+var refused = false
+if action == "refuse-append" {
+ do { try store.append(event(.progress), to: "T1") }
+ catch PlanStoreError.invalidLog { refused = true }
+}
+let after = try Data(contentsOf: log)
+var result: [String: Any] = ["chain_valid": read.chainValid, "event_count": read.events.count, "status": state.status.rawValue, "journal_unchanged_by_read": before == after, "append_refused": refused, "last_check_passed": state.lastCheck?.passed ?? false, "journal_sha256": SHA256.hash(data: after).map { String(format: "%02x", $0) }.joined()]
+print(String(data: try JSONSerialization.data(withJSONObject: result, options: [.sortedKeys]), encoding: .utf8)!)

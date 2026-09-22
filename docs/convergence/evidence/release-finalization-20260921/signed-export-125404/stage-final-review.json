@@ -1,0 +1,34 @@
+{
+  "at": "2026-09-21T13:09:43.722019+02:00",
+  "status": "LOCAL_STAGING_COMPLETE_NOT_APPROVED_TO_PUBLISH",
+  "stage": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/stage",
+  "files": {
+    "index.html": {
+      "bytes": 26911,
+      "sha256": "9c63f51388e48e2d25d2f76b2a8133f78f150420235fa149892f6b97bc54191e"
+    },
+    "appcast.xml": {
+      "bytes": 104085,
+      "sha256": "57ca685390c95d96093232f315b693fbfaa8f9621d3d7fe5ffe7bcc62d8c060a"
+    },
+    "Throttle-3.8.0.dmg": {
+      "bytes": 34967080,
+      "sha256": "126c18b30dc187c71bdede756e6446ba9245dc002278bb601b64563efc6d1878"
+    }
+  },
+  "stapled_dmg_matches": true,
+  "ed25519_verified_against_export_key_before_and_after_copy": true,
+  "fresh_feed_maximum_at_staging": 223,
+  "build": 226,
+  "copy_review": "32 text substitutions and3 metadata descriptions; complete visible text read",
+  "visual_render_this_pass": "NOT_EXECUTED",
+  "installed_update_flow": "NOT_EXECUTED",
+  "publication_blockers": [
+    "Anthropic approval or explicit route decision",
+    "legal operator and implemented retention/deletion facts",
+    "Throttle privacy and direct-sale terms finalized",
+    "final visual/update acceptance",
+    "specific public upload approval"
+  ],
+  "published": false
+}

@@ -1,0 +1,31 @@
+{
+  "at": "2026-09-21T12:44:46.878822+02:00",
+  "records": [
+    {
+      "source": "/Users/kevinnadjarian/GitHub/Throttle/build/cockpit-maintenance/audit-output/sota-20260907",
+      "destination": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/preserved-cockpit-maintenance-audit-20260907",
+      "state": "relocated_preserved_and_linked",
+      "entries": 1714,
+      "bytes": 1514828272
+    },
+    {
+      "source": "/Users/kevinnadjarian/GitHub/Throttle/Packages/ResearchVaultKit/.build",
+      "destination": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/preserved-main-vault-cache-20260921",
+      "state": "preserved_linked_duplicate_removed",
+      "entries": 25678,
+      "bytes": 2684621667
+    },
+    {
+      "source": "/Users/kevinnadjarian/GitHub/Throttle/ThrottleShared/.build",
+      "destination": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/preserved-main-shared-cache-20260921",
+      "state": "preserved_linked_duplicate_removed",
+      "entries": 4316,
+      "bytes": 267262503
+    }
+  ],
+  "all_original_paths_resolve": true,
+  "main_vault_added_provenance_xattrs": 226,
+  "source_xattrs_preserved": true,
+  "source_code_and_git_changed": false,
+  "free_bytes": 5201920000
+}

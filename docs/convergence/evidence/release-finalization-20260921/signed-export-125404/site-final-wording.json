@@ -1,0 +1,30 @@
+{
+  "at": "2026-09-21T13:08:11.954169+02:00",
+  "review": "All visible page text extracted and read; five remaining wording inconsistencies corrected",
+  "changes": [
+    {
+      "before": "Optimizers that cut what you spend.",
+      "after": "Tools to inspect and reduce token use."
+    },
+    {
+      "before": "\u2014 a green test run collapses to a line, retains detected errors.",
+      "after": "\u2014 summaries retain detected errors."
+    },
+    {
+      "before": "Collapses noisy CLI output; errors raw.",
+      "after": "Summarizes CLI output; review detected errors."
+    },
+    {
+      "before": "Keeps the setup lean system-wide, reversible.",
+      "after": "Setup changes with recorded restore options."
+    },
+    {
+      "before": "Shows why your prompt cache re-writes.",
+      "after": "Shows signals associated with cache re-writes."
+    }
+  ],
+  "before_sha256": "be55ff7e555673c29099e64436d73ee5b1c49190c270a218f36f55b994255632",
+  "after_sha256": "9c63f51388e48e2d25d2f76b2a8133f78f150420235fa149892f6b97bc54191e",
+  "visual_browser_render": "not executed in this pass",
+  "published": false
+}

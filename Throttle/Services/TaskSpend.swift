@@ -13,9 +13,9 @@ enum TaskSpend {
     struct Entry: Equatable, Sendable {
         let taskID: String
         let sessionIDs: [String]
-        let costEUR: Double
-        /// False when no session was found for the task: "not measured" is not zero.
-        var measured: Bool { !sessionIDs.isEmpty }
+        let costEUR: Double?
+        /// A transcript alone is not a measurement: ingestion may still be pending.
+        var measured: Bool { !sessionIDs.isEmpty && costEUR != nil }
     }
 
     /// The Claude Code transcript folder for a directory. Claude Code folds every
@@ -47,15 +47,24 @@ enum TaskSpend {
     /// Cost per task, read in one pass. Tasks with no session are still returned,
     /// unmeasured, so a view can say so instead of printing zero.
     static func spend(forTasks taskIDs: [String], projectRoot: URL,
-                      database: any DatabaseReader) -> [String: Entry] {
+                      database: any DatabaseReader,
+                      claudeHome: URL = FileManager.default.homeDirectoryForCurrentUser
+                          .appending(path: ".claude")) -> [String: Entry] {
         var entries: [String: Entry] = [:]
         for taskID in taskIDs {
-            let sessions = sessionIDs(forTask: taskID, projectRoot: projectRoot)
-            let cost = (try? database.read { database in
-                try sessions.reduce(0.0) { total, session in
-                    total + (try StatsDataService.cockpitSessionCostEUR(in: database, sessionId: session))
+            let sessions = sessionIDs(forTask: taskID, projectRoot: projectRoot, claudeHome: claudeHome)
+            let cost: Double? = try? database.read { database -> Double? in
+                guard !sessions.isEmpty else { return nil }
+                var total = 0.0
+                for session in sessions {
+                    let observed = try Bool.fetchOne(database, sql: """
+                        SELECT EXISTS(SELECT 1 FROM usage_events WHERE session_id = ?)
+                        """, arguments: [session]) ?? false
+                    guard observed else { return nil }
+                    total += try StatsDataService.cockpitSessionCostEUR(in: database, sessionId: session)
                 }
-            }) ?? 0
+                return total.isFinite && total >= 0 ? total : nil
+            }
             entries[taskID] = Entry(taskID: taskID, sessionIDs: sessions, costEUR: cost)
         }
         return entries
@@ -71,7 +80,7 @@ enum TaskSpend {
 
     static func total(_ entries: [String: Entry]) -> Total {
         let measured = entries.values.filter(\.measured)
-        return Total(costEUR: measured.reduce(0) { $0 + $1.costEUR },
+        return Total(costEUR: measured.reduce(0) { $0 + ($1.costEUR ?? 0) },
                      measured: measured.count, unmeasured: entries.count - measured.count)
     }
 

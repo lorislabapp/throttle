@@ -1,0 +1,80 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "00008132-001178882E03001C",
+      "deviceName" : "My Mac",
+      "modelName" : "MacBook Pro",
+      "osBuildNumber" : "26A428",
+      "osVersion" : "27.0",
+      "platform" : "macOS"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "duration" : "0,037s",
+                  "durationInSeconds" : 0.03656196594238281,
+                  "name" : "testCloudShowsUnmeasuredAndAlreadyOpenSessionIsExcluded()",
+                  "nodeIdentifier" : "CockpitSpendViewTests/testCloudShowsUnmeasuredAndAlreadyOpenSessionIsExcluded()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CockpitSpendViewTests/testCloudShowsUnmeasuredAndAlreadyOpenSessionIsExcluded",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,32s",
+                  "durationInSeconds" : 0.3231539726257324,
+                  "name" : "testEmptyCardLoadsRefreshesAndCancelsWhenRemoved()",
+                  "nodeIdentifier" : "CockpitSpendViewTests/testEmptyCardLoadsRefreshesAndCancelsWhenRemoved()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CockpitSpendViewTests/testEmptyCardLoadsRefreshesAndCancelsWhenRemoved",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,028s",
+                  "durationInSeconds" : 0.02806699275970459,
+                  "name" : "testPlanKeepsUnknownCountsAndSubscriptionDisclosureVisible()",
+                  "nodeIdentifier" : "CockpitSpendViewTests/testPlanKeepsUnknownCountsAndSubscriptionDisclosureVisible()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CockpitSpendViewTests/testPlanKeepsUnknownCountsAndSubscriptionDisclosureVisible",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,01s",
+                  "durationInSeconds" : 0.010372042655944824,
+                  "name" : "testTaskCostDistinguishesUnknownFromObservedZero()",
+                  "nodeIdentifier" : "CockpitSpendViewTests/testTaskCostDistinguishesUnknownFromObservedZero()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CockpitSpendViewTests/testTaskCostDistinguishesUnknownFromObservedZero",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "CockpitSpendViewTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CockpitSpendViewTests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            }
+          ],
+          "name" : "ThrottleTests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests",
+          "nodeType" : "Unit test bundle",
+          "result" : "Passed"
+        }
+      ],
+      "name" : "Throttle",
+      "nodeType" : "Test Plan",
+      "result" : "Passed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

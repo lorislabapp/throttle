@@ -14,6 +14,22 @@ extension PlanModel {
     /// stopped at rather than only that something failed.
     enum IntegrationStep: String, Sendable {
         case idle, rebasing, verifying, merging
+
+        var displayName: String {
+            switch self {
+            case .idle: String(localized: "Ready")
+            case .rebasing: String(localized: "Rebasing")
+            case .verifying: String(localized: "Verifying")
+            case .merging: String(localized: "Merging")
+            }
+        }
+    }
+
+    enum IntegrationDiffState: Equatable {
+        case idle
+        case loading(UUID)
+        case loaded(String)
+        case failed(String)
     }
 
     /// One value for the whole integration half, so the file split above costs the
@@ -32,7 +48,7 @@ extension PlanModel {
         /// at all — an empty space where the user was looking for the button.
         var errors: [String: String] = [:]
         /// Same as the assessment, fetched only when the user opens the disclosure.
-        var diffs: [String: String] = [:]
+        var diffs: [String: IntegrationDiffState] = [:]
         /// Where an integrated task's worktree still is, when it still is.
         ///
         /// Derived from the filesystem on every refresh, never remembered from the
@@ -83,7 +99,14 @@ extension PlanModel {
         integration.keptWorktreePaths[taskID]
     }
 
-    func integrationDiff(for taskID: String) -> String { integration.diffs[taskID] ?? "" }
+    func integrationDiffState(for taskID: String) -> IntegrationDiffState {
+        integration.diffs[taskID] ?? .idle
+    }
+
+    func integrationDiff(for taskID: String) -> String {
+        guard case .loaded(let text) = integrationDiffState(for: taskID) else { return "" }
+        return text
+    }
 
     /// Reads what the task would merge, off the main actor. A candidate and a
     /// `.done` task have work to assess; anything else drops the cached entry, which is what
@@ -123,11 +146,21 @@ extension PlanModel {
 
     func refreshDiff(for taskID: String) async {
         guard let root else { return }
-        let diff = (try? await Self.offMain {
-            try TaskIntegrationService.diff(taskID: taskID, in: root)
-        }) ?? ""
-        guard self.root?.path == root.path else { return }
-        integration.diffs[taskID] = diff
+        let request = UUID()
+        // A refresh invalidates the displayed result. Its request identity also
+        // fences results from an earlier refresh or a project bound again later.
+        integration.diffs[taskID] = .loading(request)
+        let result: IntegrationDiffState
+        do {
+            result = .loaded(try await Self.offMain {
+                try TaskIntegrationService.diff(taskID: taskID, in: root)
+            })
+        } catch {
+            result = .failed(Self.describe(error))
+        }
+        guard self.root?.path == root.path,
+              integration.diffs[taskID] == .loading(request) else { return }
+        integration.diffs[taskID] = result
     }
 
     func allowVerifyCommand() {
@@ -157,6 +190,11 @@ extension PlanModel {
         guard integration.steps[root.path, default: .idle] == .idle else {
             return "An integration is already running."
         }
+        do {
+            if let pending = try store.state(for: taskID).pendingVerification {
+                return TaskVerificationError.unresolvedExecution(pending.id).description
+            }
+        } catch { return Self.describe(error) }
         let status = state(taskID).status
         guard status == .candidate || status == .done else {
             return "\(taskID) is \(status.rawValue), not ready for verification or integration."

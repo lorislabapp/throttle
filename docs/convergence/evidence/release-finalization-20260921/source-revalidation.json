@@ -1,0 +1,10 @@
+{
+  "observed_at": "2026-09-21T11:21:10.998433+02:00",
+  "native_count": 1047,
+  "native_drift": [],
+  "convergence_count": 100,
+  "convergence_drift": [],
+  "diff_check_exit": 0,
+  "diff_check_output": "",
+  "app_code_changed_this_continuation": false
+}

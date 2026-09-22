@@ -1,0 +1,15 @@
+{
+  "status": "not_qualified",
+  "initial_voiceover": "off",
+  "temporarily_enabled": true,
+  "final_voiceover": "off",
+  "restoration_evidence": "System Settings accessibility switch observed off through native AX",
+  "volume_changed": false,
+  "announcement_panel": "not accessible through UI tool; app access timed out",
+  "auditory_validation": false,
+  "fixture_test": "visual-tests-20260921-082358",
+  "fixture_pass_scope": "French empty-state assertions only; no VoiceOver proof",
+  "caption_toggle_attempts": 2,
+  "caption_panel_final_state": "not observed",
+  "installed_app_restarted": false
+}

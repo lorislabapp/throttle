@@ -1,0 +1,7 @@
+{
+  "start_local": "2026-09-21 09:22:45 Europe/Paris",
+  "end_utc": "2026-09-21T07:29:10.835037+00:00",
+  "throttle_prompt_or_identity_mismatch_events": 0,
+  "event_times": [],
+  "scope": "Throttle subjects only, all TCC prompt/mismatch services; observational window, no permission changes"
+}

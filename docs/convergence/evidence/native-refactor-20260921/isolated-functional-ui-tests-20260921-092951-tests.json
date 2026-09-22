@@ -1,0 +1,124 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "00008132-001178882E03001C",
+      "deviceName" : "My Mac",
+      "modelName" : "MacBook Pro",
+      "osBuildNumber" : "26A428",
+      "osVersion" : "27.0",
+      "platform" : "macOS"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "duration" : "0,13s",
+                  "durationInSeconds" : 0.13251495361328125,
+                  "name" : "testDiffFailureRetryAndEmptyStateInEnglish()",
+                  "nodeIdentifier" : "PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInEnglish()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInEnglish",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,12s",
+                  "durationInSeconds" : 0.12425291538238525,
+                  "name" : "testDiffFailureRetryAndEmptyStateInFrench()",
+                  "nodeIdentifier" : "PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInFrench()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInFrench",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,14s",
+                  "durationInSeconds" : 0.13760602474212646,
+                  "name" : "testUnknownIsVisibleAndCannotBeRetriedInEnglish()",
+                  "nodeIdentifier" : "PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInEnglish()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInEnglish",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,22s",
+                  "durationInSeconds" : 0.21856999397277832,
+                  "name" : "testUnknownIsVisibleAndCannotBeRetriedInFrench()",
+                  "nodeIdentifier" : "PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInFrench()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInFrench",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "PlanIntegrationViewTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            },
+            {
+              "children" : [
+                {
+                  "duration" : "0,084s",
+                  "durationInSeconds" : 0.08414006233215332,
+                  "name" : "testEmptyStateMatchesSelectedLanguage()",
+                  "nodeIdentifier" : "ProjectAssistantViewTests/testEmptyStateMatchesSelectedLanguage()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/ProjectAssistantViewTests/testEmptyStateMatchesSelectedLanguage",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,2s",
+                  "durationInSeconds" : 0.20479607582092285,
+                  "name" : "testProjectChangeCancelsAndClearsOldTranscript()",
+                  "nodeIdentifier" : "ProjectAssistantViewTests/testProjectChangeCancelsAndClearsOldTranscript()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/ProjectAssistantViewTests/testProjectChangeCancelsAndClearsOldTranscript",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,078s",
+                  "durationInSeconds" : 0.0776909589767456,
+                  "name" : "testStopBeforeFirstDeltaRejectsLateResponse()",
+                  "nodeIdentifier" : "ProjectAssistantViewTests/testStopBeforeFirstDeltaRejectsLateResponse()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/ProjectAssistantViewTests/testStopBeforeFirstDeltaRejectsLateResponse",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,19s",
+                  "durationInSeconds" : 0.1923830509185791,
+                  "name" : "testStopDuringStreamKeepsNextTurnIndependent()",
+                  "nodeIdentifier" : "ProjectAssistantViewTests/testStopDuringStreamKeepsNextTurnIndependent()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/ProjectAssistantViewTests/testStopDuringStreamKeepsNextTurnIndependent",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "ProjectAssistantViewTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/ProjectAssistantViewTests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            }
+          ],
+          "name" : "ThrottleTests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests",
+          "nodeType" : "Unit test bundle",
+          "result" : "Passed"
+        }
+      ],
+      "name" : "Throttle",
+      "nodeType" : "Test Plan",
+      "result" : "Passed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

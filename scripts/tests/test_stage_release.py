@@ -48,7 +48,7 @@ class StageReleaseTests(unittest.TestCase):
         self.signature = SIGNATURE
         self.entry = self.root / "appcast-entry-0.0.0.xml"
         self.live = self.root / "live.xml"
-        self.live.write_text('<channel>\n        <language>en</language>\n</channel>\n')
+        self.write_feed("998")
         self.page = self.root / "page.html"
         self.page.write_text('<a href="Throttle-0.0.1.dmg">Download</a>'
                              '<span class="mono">v0.0.1</span> · 0.1 MB')
@@ -63,7 +63,13 @@ class StageReleaseTests(unittest.TestCase):
     def write_metadata(self):
         self.info.write_bytes(plistlib.dumps(self.metadata))
 
-    def run_stage(self, verifier=None):
+    def write_feed(self, *builds):
+        items = "".join(f"<item><sparkle:version>{build}</sparkle:version></item>\n" for build in builds)
+        self.live.write_text(
+            '<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">\n'
+            '<channel>\n        <language>en</language>\n' + items + '</channel></rss>\n')
+
+    def run_stage(self, verifier=None, use_live_feed=False):
         self.entry.write_text('<item><sparkle:version>999</sparkle:version>'
                               '<pubDate>Tue, 08 Sep 2026 12:00:00 +0000</pubDate>'
                               f'<enclosure sparkle:edSignature="{self.signature}" length="1" /></item>')
@@ -77,6 +83,9 @@ class StageReleaseTests(unittest.TestCase):
         argv = ["stage-release.py", "--version", "0.0.0", "--build-dir", str(self.root),
                 "--stage", str(self.stage), "--live-appcast", str(self.live),
                 "--live-page", str(self.page)]
+        if use_live_feed:
+            index = argv.index("--live-appcast")
+            del argv[index:index + 2]
         with patch.object(sys, "argv", argv), patch.object(stage_release.subprocess, "run", side_effect=run):
             stage_release.main()
 
@@ -91,6 +100,44 @@ class StageReleaseTests(unittest.TestCase):
         self.run_stage()
         self.assertEqual((self.stage / "throttle/Throttle-0.0.0.dmg").read_bytes(), b"\x72")
         self.assertIn(SIGNATURE, (self.stage / "throttle/appcast.xml").read_text())
+
+    def test_candidate_older_than_unsorted_feed_maximum_preserves_stage(self):
+        self.write_feed("998", "1000", "997")
+        self.assert_refused("must exceed published maximum 1000")
+
+    def test_candidate_equal_to_feed_maximum_preserves_stage(self):
+        self.write_feed("997", "999", "998")
+        self.assert_refused("must exceed published maximum 999")
+
+    def test_newer_candidate_accepts_legacy_dotted_history(self):
+        self.write_feed("3.0.0", "223")
+        self.stage = self.root / "legacy-history-stage"
+        self.run_stage()
+        appcast = (self.stage / "throttle/appcast.xml").read_text()
+        self.assertIn("<sparkle:version>999</sparkle:version>", appcast)
+        self.assertIn("<sparkle:version>3.0.0</sparkle:version>", appcast)
+        self.assertIn("<sparkle:version>223</sparkle:version>", appcast)
+        self.assertEqual((self.stage / "throttle/Throttle-0.0.0.dmg").read_bytes(), b"\x72")
+
+    def test_invalid_feed_preserves_existing_stage(self):
+        for live in ["", "<rss>",
+                     "<channel><language>en</language></channel>",
+                     "<rss><channel><item/></channel></rss>"]:
+            with self.subTest(live=live):
+                self.live.write_text(live)
+                self.assert_refused("appcast gate refused staging")
+
+    def test_staging_rechecks_fresh_feed_instead_of_earlier_snapshot(self):
+        # The local snapshot would pass, but the newly fetched feed has advanced.
+        self.write_feed("1001")
+        fresh = self.live.read_bytes()
+        self.write_feed("998")
+        with patch.object(stage_release.release_build_gate, "fetch_feed", return_value=fresh) as fetch:
+            with self.assertRaisesRegex(SystemExit, "must exceed published maximum 1001"):
+                self.run_stage(use_live_feed=True)
+            fetch.assert_called_once_with()
+        self.assertEqual(self.sentinel.read_text(), "preserve until verification succeeds")
+        self.assertFalse((self.stage / "throttle").exists())
 
     def test_verified_candidate_never_replaces_existing_stage(self):
         self.assert_refused("stage already exists")

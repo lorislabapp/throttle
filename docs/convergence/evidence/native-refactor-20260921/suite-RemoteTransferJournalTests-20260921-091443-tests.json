@@ -1,0 +1,134 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "00008132-001178882E03001C",
+      "deviceName" : "My Mac",
+      "modelName" : "MacBook Pro",
+      "osBuildNumber" : "26A428",
+      "osVersion" : "27.0",
+      "platform" : "macOS"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "duration" : "0,0032s",
+                  "durationInSeconds" : 0.0032368898391723633,
+                  "name" : "testMissingWindowStateRestoresAnUnspawnedTransferEvenWhenLocalDirectoryIsMissing()",
+                  "nodeIdentifier" : "RemoteTransferJournalTests/testMissingWindowStateRestoresAnUnspawnedTransferEvenWhenLocalDirectoryIsMissing()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/RemoteTransferJournalTests/testMissingWindowStateRestoresAnUnspawnedTransferEvenWhenLocalDirectoryIsMissing",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0026s",
+                  "durationInSeconds" : 0.002581000328063965,
+                  "name" : "testOrphanRecoveryReportsUnreadableJournalWithoutHidingExistingTabs()",
+                  "nodeIdentifier" : "RemoteTransferJournalTests/testOrphanRecoveryReportsUnreadableJournalWithoutHidingExistingTabs()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/RemoteTransferJournalTests/testOrphanRecoveryReportsUnreadableJournalWithoutHidingExistingTabs",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0031s",
+                  "durationInSeconds" : 0.003096938133239746,
+                  "name" : "testPickerFailsClosedForUnreadableJournalButKnownOtherIdentityCanResume()",
+                  "nodeIdentifier" : "RemoteTransferJournalTests/testPickerFailsClosedForUnreadableJournalButKnownOtherIdentityCanResume()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/RemoteTransferJournalTests/testPickerFailsClosedForUnreadableJournalButKnownOtherIdentityCanResume",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,003s",
+                  "durationInSeconds" : 0.0029649734497070312,
+                  "name" : "testPreparationReservationBlocksAliasesAndPickerAcrossSuspension()",
+                  "nodeIdentifier" : "RemoteTransferJournalTests/testPreparationReservationBlocksAliasesAndPickerAcrossSuspension()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/RemoteTransferJournalTests/testPreparationReservationBlocksAliasesAndPickerAcrossSuspension",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0012s",
+                  "durationInSeconds" : 0.0012409687042236328,
+                  "name" : "testPreparedTransferSurvivesRelaunchAndPreventsDuplicateWriter()",
+                  "nodeIdentifier" : "RemoteTransferJournalTests/testPreparedTransferSurvivesRelaunchAndPreventsDuplicateWriter()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/RemoteTransferJournalTests/testPreparedTransferSurvivesRelaunchAndPreventsDuplicateWriter",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0022s",
+                  "durationInSeconds" : 0.002183079719543457,
+                  "name" : "testReturnRequiresStopAndVerifiedHashBeforeReleasingLocalWriter()",
+                  "nodeIdentifier" : "RemoteTransferJournalTests/testReturnRequiresStopAndVerifiedHashBeforeReleasingLocalWriter()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/RemoteTransferJournalTests/testReturnRequiresStopAndVerifiedHashBeforeReleasingLocalWriter",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,002s",
+                  "durationInSeconds" : 0.0020210742950439453,
+                  "name" : "testReturnReservationStillBlocksAliasesAfterDurableJournalRelease()",
+                  "nodeIdentifier" : "RemoteTransferJournalTests/testReturnReservationStillBlocksAliasesAfterDurableJournalRelease()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/RemoteTransferJournalTests/testReturnReservationStillBlocksAliasesAfterDurableJournalRelease",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0029s",
+                  "durationInSeconds" : 0.002897977828979492,
+                  "name" : "testStreamingHashCoversBytesPastFirstChunk()",
+                  "nodeIdentifier" : "RemoteTransferJournalTests/testStreamingHashCoversBytesPastFirstChunk()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/RemoteTransferJournalTests/testStreamingHashCoversBytesPastFirstChunk",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0014s",
+                  "durationInSeconds" : 0.0014399290084838867,
+                  "name" : "testTruncatedOrMismatchedJournalCannotPermitLocalResume()",
+                  "nodeIdentifier" : "RemoteTransferJournalTests/testTruncatedOrMismatchedJournalCannotPermitLocalResume()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/RemoteTransferJournalTests/testTruncatedOrMismatchedJournalCannotPermitLocalResume",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0015s",
+                  "durationInSeconds" : 0.001453995704650879,
+                  "name" : "testUpdateCannotRebindIdentityOrEndpoint()",
+                  "nodeIdentifier" : "RemoteTransferJournalTests/testUpdateCannotRebindIdentityOrEndpoint()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/RemoteTransferJournalTests/testUpdateCannotRebindIdentityOrEndpoint",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "RemoteTransferJournalTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/RemoteTransferJournalTests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            }
+          ],
+          "name" : "ThrottleTests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests",
+          "nodeType" : "Unit test bundle",
+          "result" : "Passed"
+        }
+      ],
+      "name" : "Throttle",
+      "nodeType" : "Test Plan",
+      "result" : "Passed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

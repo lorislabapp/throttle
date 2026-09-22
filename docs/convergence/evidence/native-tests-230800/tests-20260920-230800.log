@@ -1,0 +1,142 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Throttle_Throttle_macosx27.0-arm64.xctestrun -destination platform=macOS,arch=arm64 -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 60 -maximum-test-execution-time-allowance 120 -resultBundlePath /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/tests-20260920-230800.xcresult "-only-testing:ThrottleTests/PlanIntegrationFlowTests" "-only-testing:ThrottleTests/CockpitSpendViewTests" "-only-testing:ThrottleTests/PromptRefinerServiceTests" "-only-testing:ThrottleTests/RemoteSessionsCredentialTests"
+
+Writing result bundle at path:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/tests-20260920-230800.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008132-001178882E03001C, name:My Mac }
+[AppDelegate.init] start
+2026-09-20 23:08:06.453823+0200 Throttle[133:553896] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:08:06.453181+0200 Throttle[133:553894] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:08:06.454132+0200 Throttle[133:553896] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:08:06.454444+0200 Throttle[133:553898] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:08:06.454476+0200 Throttle[133:553898] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:08:06.454138+0200 Throttle[133:553894] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:08:06.455195+0200 Throttle[133:553894] [Connection] Will NOT re-try to establish the connection
+2026-09-20 23:08:06.455252+0200 Throttle[133:553893] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:08:06.455277+0200 Throttle[133:553893] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:08:06.483615+0200 Throttle[133:553659] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/3w/fbl9wc1d3q7091lq5pj5sy0c0000gn/T/com.lorislab.throttle.savedState
+[applicationDidFinishLaunching] start
+2026-09-20 23:08:06.535345+0200 Throttle[133:553659] [App] Isolated host detected: skipping production background services
+Test Suite 'Selected tests' started at 2026-09-20 23:08:06.554.
+Test Suite 'ThrottleTests.xctest' started at 2026-09-20 23:08:06.554.
+Test Suite 'CockpitSpendViewTests' started at 2026-09-20 23:08:06.554.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testCloudShowsUnmeasuredAndAlreadyOpenSessionIsExcluded]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testCloudShowsUnmeasuredAndAlreadyOpenSessionIsExcluded]' passed (0.072 seconds).
+Test Case '-[ThrottleTests.CockpitSpendViewTests testEmptyCardLoadsRefreshesAndCancelsWhenRemoved]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testEmptyCardLoadsRefreshesAndCancelsWhenRemoved]' passed (0.365 seconds).
+Test Case '-[ThrottleTests.CockpitSpendViewTests testPlanKeepsUnknownCountsAndSubscriptionDisclosureVisible]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testPlanKeepsUnknownCountsAndSubscriptionDisclosureVisible]' passed (0.076 seconds).
+Test Case '-[ThrottleTests.CockpitSpendViewTests testTaskCostDistinguishesUnknownFromObservedZero]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testTaskCostDistinguishesUnknownFromObservedZero]' passed (0.020 seconds).
+Test Suite 'CockpitSpendViewTests' passed at 2026-09-20 23:08:07.088.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.532 (0.534) seconds
+Test Suite 'PlanIntegrationFlowTests' started at 2026-09-20 23:08:07.088.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_aRunLandingAfterATabSwitchWritesNothingIntoTheNewProject]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_aRunLandingAfterATabSwitchWritesNothingIntoTheNewProject]' passed (5.857 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_aTabSwitchMidIntegrationDoesNotReArmTheButton]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_aTabSwitchMidIntegrationDoesNotReArmTheButton]' passed (5.219 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_diffFailureClearsStaleTextAndRetryCanRecover]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_diffFailureClearsStaleTextAndRetryCanRecover]' passed (1.736 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_emptyDiffIsLoadedAndRebindingClearsItsState]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_emptyDiffIsLoadedAndRebindingClearsItsState]' passed (2.654 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateAsksForConsentBeforeItRunsAnythingThenStopsAsking]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateAsksForConsentBeforeItRunsAnythingThenStopsAsking]' passed (1.897 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRebasesABehindTaskBeforeMerging]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRebasesABehindTaskBeforeMerging]' passed (2.432 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRefusesATaskThatIsNotDone]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRefusesATaskThatIsNotDone]' passed (1.421 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRefusesWithoutAVerifyCommand]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRefusesWithoutAVerifyCommand]' passed (1.452 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRunsTheWholeSequenceOnce]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRunsTheWholeSequenceOnce]' passed (2.021 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateStopsAtAFailingVerification]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateStopsAtAFailingVerification]' passed (1.895 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_theAssessmentIsCachedRatherThanReadOnEveryDraw]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_theAssessmentIsCachedRatherThanReadOnEveryDraw]' passed (1.373 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_theDiffIsFetchedOnlyWhenItIsOpened]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_theDiffIsFetchedOnlyWhenItIsOpened]' passed (1.279 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_theTaskVerifyCommandOverridesTheProjectOne]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_theTaskVerifyCommandOverridesTheProjectOne]' passed (0.627 seconds).
+Test Suite 'PlanIntegrationFlowTests' passed at 2026-09-20 23:08:36.957.
+	 Executed 13 tests, with 0 failures (0 unexpected) in 29.862 (29.869) seconds
+Test Suite 'PromptRefinerServiceTests' started at 2026-09-20 23:08:36.957.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_insertionPayload_keepsInteriorNewlines]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_insertionPayload_keepsInteriorNewlines]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_insertionPayload_stripsTrailingNewlinesSoInsertNeverFires]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_insertionPayload_stripsTrailingNewlinesSoInsertNeverFires]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_insertionPayload_thenValidate_isTheExactContractInsertRelieson]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_insertionPayload_thenValidate_isTheExactContractInsertRelieson]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_localOnlyExcludesEveryNetworkProvider]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_localOnlyExcludesEveryNetworkProvider]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_metrics_countsLinesBytesAndApproxTokens]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_metrics_countsLinesBytesAndApproxTokens]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_metrics_emptyTextIsZeroLinesAndOneToken]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_metrics_emptyTextIsZeroLinesAndOneToken]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_networkAllowedExcludesOnlyProvidersAlreadyTried]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_networkAllowedExcludesOnlyProvidersAlreadyTried]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_extractsProposalAndWhyBullets]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_extractsProposalAndWhyBullets]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_keepsInteriorFencesThatBelongToThePrompt]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_keepsInteriorFencesThatBelongToThePrompt]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_stripsAnOuterCodeFenceTheModelAddedAnyway]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_stripsAnOuterCodeFenceTheModelAddedAnyway]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_withoutDelimitersFallsBackToTheDraftAndReportsNoChange]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_withoutDelimitersFallsBackToTheDraftAndReportsNoChange]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_fallsThroughToTheNextProviderWhenTheFirstFails]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_fallsThroughToTheNextProviderWhenTheFirstFails]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_rejectsAControlSequenceBeforeSpendingAnything]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_rejectsAControlSequenceBeforeSpendingAnything]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_rejectsAControlSequenceReturnedByTheProvider]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_rejectsAControlSequenceReturnedByTheProvider]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_withAnEmptyAnswerThrowsEmpty]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_withAnEmptyAnswerThrowsEmpty]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_withNoProviderThrowsNoProvider]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_withNoProviderThrowsNoProvider]' passed (0.102 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_alwaysAsksForTheDelimiters]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_alwaysAsksForTheDelimiters]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_carriesTheNudgeInstruction]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_carriesTheNudgeInstruction]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_loopModeDemandsATerminationCondition]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_loopModeDemandsATerminationCondition]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_namesTheRuntimeSoIdiomsDiffer]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_namesTheRuntimeSoIdiomsDiffer]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_validate_acceptsOrdinaryMultilinePrompt]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_validate_acceptsOrdinaryMultilinePrompt]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_validate_rejectsEscapeAndNul]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_validate_rejectsEscapeAndNul]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_validate_rejectsOverOneMebibyte]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_validate_rejectsOverOneMebibyte]' passed (0.020 seconds).
+Test Suite 'PromptRefinerServiceTests' passed at 2026-09-20 23:08:37.106.
+	 Executed 23 tests, with 0 failures (0 unexpected) in 0.140 (0.149) seconds
+Test Suite 'RemoteSessionsCredentialTests' started at 2026-09-20 23:08:37.106.
+Test Case '-[ThrottleTests.RemoteSessionsCredentialTests testFailedMigrationRetainsLegacyThenSuccessfulSaveClearsErrorAndLegacy]' started.
+Test Case '-[ThrottleTests.RemoteSessionsCredentialTests testFailedMigrationRetainsLegacyThenSuccessfulSaveClearsErrorAndLegacy]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.RemoteSessionsCredentialTests testFailedReplacementKeepsPreviousTokenAndShowsError]' started.
+Test Case '-[ThrottleTests.RemoteSessionsCredentialTests testFailedReplacementKeepsPreviousTokenAndShowsError]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.RemoteSessionsCredentialTests testStoredTokenWinsOverLegacyWithoutWritingDuringConstruction]' started.
+Test Case '-[ThrottleTests.RemoteSessionsCredentialTests testStoredTokenWinsOverLegacyWithoutWritingDuringConstruction]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.RemoteSessionsCredentialTests testSuccessfulLegacyMigrationDeletesOnlyAfterPersistence]' started.
+Test Case '-[ThrottleTests.RemoteSessionsCredentialTests testSuccessfulLegacyMigrationDeletesOnlyAfterPersistence]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.RemoteSessionsCredentialTests testUnreadableKeychainNeverAutomaticallyMigratesOrRemovesLegacy]' started.
+Test Case '-[ThrottleTests.RemoteSessionsCredentialTests testUnreadableKeychainNeverAutomaticallyMigratesOrRemovesLegacy]' passed (0.000 seconds).
+Test Suite 'RemoteSessionsCredentialTests' passed at 2026-09-20 23:08:37.109.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.002 (0.003) seconds
+Test Suite 'ThrottleTests.xctest' passed at 2026-09-20 23:08:37.110.
+	 Executed 45 tests, with 0 failures (0 unexpected) in 30.536 (30.555) seconds
+Test Suite 'Selected tests' passed at 2026-09-20 23:08:37.110.
+	 Executed 45 tests, with 0 failures (0 unexpected) in 30.536 (30.556) seconds
+2026-09-20 23:08:37.484 xcodebuild[106:553083] [MT] IDETestOperationsObserverDebug: 35.155 elapsed -- Testing started completed.
+2026-09-20 23:08:37.484 xcodebuild[106:553083] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-20 23:08:37.484 xcodebuild[106:553083] [MT] IDETestOperationsObserverDebug: 35.155 sec, +35.155 sec -- end
+
+Test session results, code coverage, and logs:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/tests-20260920-230800.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

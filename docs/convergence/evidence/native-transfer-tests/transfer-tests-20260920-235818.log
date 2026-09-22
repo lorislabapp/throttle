@@ -1,0 +1,65 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Throttle_Throttle_macosx27.0-arm64.xctestrun -destination platform=macOS,arch=arm64 -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 60 -maximum-test-execution-time-allowance 120 -resultBundlePath /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/transfer-tests-20260920-235818.xcresult "-only-testing:ThrottleTests/RemoteTransferJournalTests"
+
+Writing result bundle at path:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/transfer-tests-20260920-235818.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008132-001178882E03001C, name:My Mac }
+2026-09-20 23:58:20.081303+0200 Throttle[30719:692858] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:58:20.081718+0200 Throttle[30719:692857] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:58:20.081759+0200 Throttle[30719:692857] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:58:20.081709+0200 Throttle[30719:692858] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:58:20.082062+0200 Throttle[30719:692868] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:58:20.082325+0200 Throttle[30719:692866] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:58:20.082581+0200 Throttle[30719:692868] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:58:20.082594+0200 Throttle[30719:692866] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:58:20.082624+0200 Throttle[30719:692868] [Connection] Will NOT re-try to establish the connection
+2026-09-20 23:58:20.082703+0200 Throttle[30719:692858] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-20 23:58:20.082712+0200 Throttle[30719:692858] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+[AppDelegate.init] start
+2026-09-20 23:58:20.124127+0200 Throttle[30719:692733] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/3w/fbl9wc1d3q7091lq5pj5sy0c0000gn/T/com.lorislab.throttle.savedState
+[applicationDidFinishLaunching] start
+2026-09-20 23:58:20.165794+0200 Throttle[30719:692733] [App] Isolated host detected: skipping production background services
+Test Suite 'Selected tests' started at 2026-09-20 23:58:20.193.
+Test Suite 'ThrottleTests.xctest' started at 2026-09-20 23:58:20.193.
+Test Suite 'RemoteTransferJournalTests' started at 2026-09-20 23:58:20.193.
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testMissingWindowStateRestoresAnUnspawnedTransferEvenWhenLocalDirectoryIsMissing]' started.
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testMissingWindowStateRestoresAnUnspawnedTransferEvenWhenLocalDirectoryIsMissing]' passed (0.003 seconds).
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testOrphanRecoveryReportsUnreadableJournalWithoutHidingExistingTabs]' started.
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testOrphanRecoveryReportsUnreadableJournalWithoutHidingExistingTabs]' passed (0.002 seconds).
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testPickerFailsClosedForUnreadableJournalButKnownOtherIdentityCanResume]' started.
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testPickerFailsClosedForUnreadableJournalButKnownOtherIdentityCanResume]' passed (0.003 seconds).
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testPreparationReservationBlocksAliasesAndPickerAcrossSuspension]' started.
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testPreparationReservationBlocksAliasesAndPickerAcrossSuspension]' passed (0.003 seconds).
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testPreparedTransferSurvivesRelaunchAndPreventsDuplicateWriter]' started.
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testPreparedTransferSurvivesRelaunchAndPreventsDuplicateWriter]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testReturnRequiresStopAndVerifiedHashBeforeReleasingLocalWriter]' started.
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testReturnRequiresStopAndVerifiedHashBeforeReleasingLocalWriter]' passed (0.002 seconds).
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testReturnReservationStillBlocksAliasesAfterDurableJournalRelease]' started.
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testReturnReservationStillBlocksAliasesAfterDurableJournalRelease]' passed (0.003 seconds).
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testStreamingHashCoversBytesPastFirstChunk]' started.
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testStreamingHashCoversBytesPastFirstChunk]' passed (0.003 seconds).
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testTruncatedOrMismatchedJournalCannotPermitLocalResume]' started.
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testTruncatedOrMismatchedJournalCannotPermitLocalResume]' passed (0.002 seconds).
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testUpdateCannotRebindIdentityOrEndpoint]' started.
+Test Case '-[ThrottleTests.RemoteTransferJournalTests testUpdateCannotRebindIdentityOrEndpoint]' passed (0.001 seconds).
+Test Suite 'RemoteTransferJournalTests' passed at 2026-09-20 23:58:20.219.
+	 Executed 10 tests, with 0 failures (0 unexpected) in 0.023 (0.025) seconds
+Test Suite 'ThrottleTests.xctest' passed at 2026-09-20 23:58:20.219.
+	 Executed 10 tests, with 0 failures (0 unexpected) in 0.023 (0.026) seconds
+Test Suite 'Selected tests' passed at 2026-09-20 23:58:20.219.
+	 Executed 10 tests, with 0 failures (0 unexpected) in 0.023 (0.026) seconds
+2026-09-20 23:58:20.486 xcodebuild[30714:692543] [MT] IDETestOperationsObserverDebug: 0.960 elapsed -- Testing started completed.
+2026-09-20 23:58:20.486 xcodebuild[30714:692543] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-20 23:58:20.486 xcodebuild[30714:692543] [MT] IDETestOperationsObserverDebug: 0.960 sec, +0.960 sec -- end
+
+Test session results, code coverage, and logs:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/transfer-tests-20260920-235818.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

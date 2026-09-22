@@ -1,0 +1,23 @@
+{
+  "cause": "Debug XCTest host and installed app share com.lorislab.throttle but have incompatible code requirements. TCC logs show alternating failed requirement matches and authorization prompts.",
+  "diagnostic_window": "2026-09-21 09:14:55\u201309:15:07 Europe/Paris",
+  "test_host_before": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app",
+  "installed_app_untouched": true,
+  "fix": "Separate com.lorislab.throttle.test-host identity, copied host and temporary/results paths on internal disk",
+  "permission_database_changed_by_agent": false,
+  "verification_window": "2026-09-21 09:22:45\u201309:23:00 Europe/Paris",
+  "test_cases_completed": 4,
+  "throttle_prompt_or_requirement_mismatch_events": 0,
+  "controller_receipt_caveat": "Initial wrapper sampled a competing process after own xcodebuild had already exited zero. Terminal XCTest summary and xcresult independently pass all4. Poll-after-sleep race corrected for subsequent runners.",
+  "retired_runners": [
+    "run-native-ui-cloud-tests.py",
+    "run-native-visual-tests.py",
+    "run-native-suite.py",
+    "run-native-suite-batch.py",
+    "run-native-tests.py",
+    "run-native-qualified-tests.py",
+    "run-native-cockpit-tests.py",
+    "run-native-functional-ui-tests.py",
+    "run-native-transfer-tests.py"
+  ]
+}

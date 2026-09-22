@@ -1,0 +1,20 @@
+--prepared:/Applications/Throttle.app/Contents/PlugIns/ThrottleWidget.appex
+--validated:/Applications/Throttle.app/Contents/PlugIns/ThrottleWidget.appex
+--prepared:/Applications/Throttle.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib
+--validated:/Applications/Throttle.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib
+--prepared:/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.
+--prepared:/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app
+--prepared:/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc
+--validated:/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc
+--prepared:/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app
+--prepared:/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc
+--validated:/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc
+--validated:/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app
+--prepared:/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate
+--validated:/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate
+--validated:/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.
+--prepared:/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/Current/.
+--validated:/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/Current/.
+--validated:/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app
+/Applications/Throttle.app: valid on disk
+/Applications/Throttle.app: satisfies its Designated Requirement

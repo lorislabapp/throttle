@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="TestResults" errors="0" tests="39" failures="0" skipped="0" time="0.057459917">
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="addingAbstentionsDoesNotImproveRecall()" time="0.003159209" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="metrics()" time="0.002407541" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="invalid()" time="0.0032865" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="abstention()" time="0.003098834" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalBenchmarkTests" name="unmeasuredAbstention()" time="0.00309825" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="claimsAndCitations()" time="0.00302075" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="rejectsInvalidEvidence()" time="0.002984709" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="promotesMeasuredGain()" time="0.003019375" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="conservativePromotion()" time="0.002953167" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="noClaims()" time="0.003026375" />
+    <testcase classname="ResearchVaultIngestionTests.RetrievalQualityGateTests" name="largeSample()" time="0.003035709" />
+    <testcase classname="ThrottleTests.WorkflowDependencyEvaluatorTests" name="eligibleDecisionIsAdvisory()" time="0.002975959" />
+    <testcase classname="ThrottleTests.WorkflowDependencyEvaluatorTests" name="discoveryCannotBeShortcut()" time="0.0029945" />
+    <testcase classname="ThrottleTests.WorkflowDependencyEvaluatorTests" name="hardGateOverridesScore()" time="0.003069792" />
+    <testcase classname="ThrottleTests.WorkflowDependencyEvaluatorTests" name="unknownIsNotAverage()" time="0.003014083" />
+    <testcase classname="ThrottleTests.WorkflowReleaseGateTests" name="staleManifestEvidenceIsRejected()" time="0.003024625" />
+    <testcase classname="ThrottleTests.WorkflowReleaseGateTests" name="contradictionsBlock()" time="0.003092417" />
+    <testcase classname="ThrottleTests.WorkflowReleaseGateTests" name="contentAddressedAuthorization()" time="0.003231584" />
+    <testcase classname="ThrottleTests.WorkflowReleaseGateTests" name="directReleaseNeedsEveryLayer()" time="0.003056667" />
+    <testcase classname="ThrottleTests.WorkflowReleaseGateTests" name="manifestRevisionChain()" time="0.002965917" />
+    <testcase classname="ThrottleTests.WorkflowIPEvaluatorTests" name="unknownRightsBlock()" time="0.003079583" />
+    <testcase classname="ThrottleTests.WorkflowIPEvaluatorTests" name="sourceAvailableIsNotOpenSource()" time="0.003042875" />
+    <testcase classname="ThrottleTests.WorkflowIPEvaluatorTests" name="noAutomaticRelicensing()" time="0.003015875" />
+    <testcase classname="ThrottleTests.WorkflowIPEvaluatorTests" name="staleDecisionIsRejected()" time="0.003041" />
+    <testcase classname="ThrottleTests.WorkflowReleaseLedgerStoreTests" name="tornWriteFailsClosed()" time="0.047503125" />
+    <testcase classname="ThrottleTests.WorkflowReleaseLedgerStoreTests" name="startRequiresExactAuthorization()" time="0.047487542" />
+    <testcase classname="ThrottleTests.WorkflowReleaseLedgerStoreTests" name="unknownTargetIsRejected()" time="0.035878083" />
+    <testcase classname="ThrottleTests.WorkflowReleaseLedgerStoreTests" name="fractionalTimestampIsStable()" time="0.047760458" />
+    <testcase classname="ThrottleTests.WorkflowReleaseLedgerStoreTests" name="eventIdentityIsIdempotent()" time="0.047692541" />
+    <testcase classname="ThrottleTests.WorkflowReleaseLedgerStoreTests" name="startedEffectNeedsProviderObservation()" time="0.056996" />
+    <testcase classname="ThrottleTests.PlanMCPAuthorityLifecycleTests" name="absentAndExpiredAreInactive()" time="0.024369333" />
+    <testcase classname="ThrottleTests.PlanMCPAuthorityLifecycleTests" name="closeRevokesGrant()" time="0.0475215" />
+    <testcase classname="ThrottleTests.WorkflowParityAuditorTests" name="optionalTracksStaySeparate()" time="0.002947459" />
+    <testcase classname="ThrottleTests.WorkflowParityAuditorTests" name="governedDifferenceIsAcceptedUntilReview()" time="0.003024167" />
+    <testcase classname="ThrottleTests.WorkflowParityAuditorTests" name="missingRequiredTrackBlocks()" time="0.002965208" />
+    <testcase classname="ThrottleTests.WorkflowTechnologyReuseTests" name="eligibleReuseDecision()" time="0.000958667" />
+    <testcase classname="ThrottleTests.WorkflowTechnologyReuseTests" name="mcpMustExist()" time="0.00098575" />
+    <testcase classname="ThrottleTests.WorkflowTechnologyReuseTests" name="discoverableDoesNotMeanReusable()" time="0.000966292" />
+    <testcase classname="ThrottleTests.WorkflowTechnologyReuseTests" name="sourceRevisionIsPinned()" time="0.000728" />
+  </testsuite>
+</testsuites>

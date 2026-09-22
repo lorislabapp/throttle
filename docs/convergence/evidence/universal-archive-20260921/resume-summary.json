@@ -1,0 +1,46 @@
+{
+  "status": "blocked-by-concurrent-builds",
+  "attempts": [
+    {
+      "log": "universal-archive-20260921-062536.log",
+      "status": "interrupted-concurrency",
+      "duration_seconds": 275.05243492126465,
+      "sources_match": true,
+      "competing_processes": [
+        {
+          "pid": 15957,
+          "identity": "15957 15943 /Applications/Xcode.app/Contents/Developer//usr/bin/xcodebuild"
+        }
+      ]
+    },
+    {
+      "log": "universal-archive-20260921-063138.log",
+      "status": "interrupted-concurrency",
+      "duration_seconds": 246.80218601226807,
+      "sources_match": true,
+      "competing_processes": [
+        {
+          "pid": 20771,
+          "identity": "20771 19313 /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild"
+        }
+      ]
+    },
+    {
+      "log": "universal-archive-20260921-063710.log",
+      "status": "interrupted-concurrency",
+      "duration_seconds": 2.0828609466552734,
+      "sources_match": true,
+      "competing_processes": [
+        {
+          "pid": 22939,
+          "identity": "22939 19313 /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild"
+        }
+      ]
+    }
+  ],
+  "tests_executed_this_resume": false,
+  "application_source_changes_this_resume": false,
+  "installed_app_restarted": false,
+  "signed": false,
+  "published": false
+}

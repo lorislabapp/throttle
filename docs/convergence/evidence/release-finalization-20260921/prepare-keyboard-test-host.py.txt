@@ -1,0 +1,28 @@
+from pathlib import Path
+import datetime,hashlib,json,plistlib,shutil,subprocess
+repo=Path('/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920');validation=repo.parent/'convergence-validation-20260920';external=Path('/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920');source=external/'DerivedData/Build/Products/Debug/Throttle.app';label='isolated-host-'+datetime.datetime.now().strftime('%Y%m%d-%H%M%S');root=validation/label
+expected=json.loads((repo/'docs/convergence/evidence/release-finalization-20260921/build-20260921-114759-candidate-files.json').read_text())
+def inventory(app):return {str(p.relative_to(app)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(app.rglob('*')) if p.is_file() and not p.is_symlink()}
+assert inventory(source)==expected,'Original test candidate changed'
+assert shutil.disk_usage(validation).free>2.5*1024**3,'Insufficient internal disk space'
+root.mkdir();products=root/'Build/Products';debug=products/'Debug';debug.mkdir(parents=True);app=debug/'ThrottleTestHost.app'
+subprocess.run(['/usr/bin/ditto',str(source),str(app)],check=True);assert inventory(app)==expected,'Copy changed candidate bytes'
+info_path=app/'Contents/Info.plist';info=plistlib.loads(info_path.read_bytes());info['CFBundleIdentifier']='com.lorislab.throttle.test-host';info['CFBundleDisplayName']='Throttle Test Host';info['CFBundleName']='Throttle Test Host';info_path.write_bytes(plistlib.dumps(info))
+# Only the copied outer app is reidentified. Never reuse the production TCC identity.
+subprocess.run(['/usr/bin/codesign','--force','--sign','-','--identifier','com.lorislab.throttle.test-host','--timestamp=none',str(app)],check=True,capture_output=True,text=True)
+subprocess.run(['/usr/bin/codesign','--verify',str(app)],check=True,capture_output=True,text=True)
+after=inventory(app);changed=sorted(k for k in expected.keys()|after.keys() if expected.get(k)!=after.get(k));allowed={'Contents/Info.plist','Contents/MacOS/Throttle','Contents/_CodeSignature/CodeResources'};assert set(changed)<=allowed,changed
+xct=plistlib.loads((external/'DerivedData/Build/Products/Throttle_Throttle_macosx27.0-arm64.xctestrun').read_bytes());tmp=root/'tmp';tmp.mkdir();(root/'Build/ProfileData').mkdir();(root/'results').mkdir()
+for configuration in xct['TestConfigurations']:
+ for target in configuration['TestTargets']:
+  target['TestHostBundleIdentifier']='com.lorislab.throttle.test-host';target['TestHostPath']='__TESTROOT__/Debug/ThrottleTestHost.app'
+  target['DependentProductPaths']=['__TESTROOT__/Debug/ThrottleTestHost.app','__TESTROOT__/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest','__TESTROOT__/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app','__TESTROOT__/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleWidget.appex']
+  target['BundleIdentifiersForCrashReportEmphasis']=['com.lorislab.throttle.test-host','com.lorislab.throttle.tests']
+  target['ClangProfileDataDirectoryPath']=str(root/'Build/ProfileData')
+  target.setdefault('EnvironmentVariables',{})['TMPDIR']=str(tmp)+'/'
+  target.setdefault('TestingEnvironmentVariables',{})['TMPDIR']=str(tmp)+'/'
+xct.pop('CodeCoverageBuildableInfos',None)  # No code-coverage collection in this UI campaign.
+original=products/'ThrottleTestHost.xctestrun';original.write_bytes(plistlib.dumps(xct));assert b'/Volumes/' not in original.read_bytes()
+manifest=root/'candidate-files.json';manifest.write_text(json.dumps(after,indent=2))
+receipt={'status':'prepared_not_launched','root':str(root),'app':str(app),'xctestrun':str(original),'manifest':str(manifest),'source_build':'build-20260921-114759','source_copy_hashes_match':True,'changed_after_copy':changed,'test_host_identifier':info['CFBundleIdentifier'],'signing':'ad hoc test identity only; not Developer ID or a distribution artifact','permissions_changed':False,'installed_app_changed':False,'app_bytes':sum(p.stat().st_size for p in app.rglob('*') if p.is_file() and not p.is_symlink())}
+(root/'preparation.json').write_text(json.dumps(receipt,indent=2));(validation/'isolated-test-host-current.json').write_text(json.dumps(receipt,indent=2));print(json.dumps(receipt))

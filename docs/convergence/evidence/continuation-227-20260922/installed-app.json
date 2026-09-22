@@ -1,0 +1,30 @@
+{
+  "at": "2026-09-22T13:18:48.294982+00:00",
+  "app": "/Applications/Throttle.app",
+  "checks": {
+    "signature": {
+      "exit_code": 0,
+      "log": "signature.log"
+    },
+    "gatekeeper": {
+      "exit_code": 0,
+      "log": "gatekeeper.log"
+    },
+    "stapler-app": {
+      "exit_code": 65,
+      "log": "stapler-app.log"
+    },
+    "smoke": {
+      "exit_code": 0,
+      "log": "smoke.log"
+    }
+  },
+  "version": "3.8.0",
+  "build": "227",
+  "sha256": {
+    "Contents/MacOS/Throttle": "f3fa36e9a2300069e61cbe235bd3ee08f1868be607ad1a8bf6ea2c3953e86563",
+    "Contents/Info.plist": "78d6a192b8dfab72133002cdfeba65c5bdc49ba36f86ee448110bfe5fe96c505",
+    "Contents/_CodeSignature/CodeResources": "8fa0a05e83d0d4e59f22bed7e54663e0203b2995326859cfb231a1cd1c0b8844"
+  },
+  "developer_storage_mounted": false
+}

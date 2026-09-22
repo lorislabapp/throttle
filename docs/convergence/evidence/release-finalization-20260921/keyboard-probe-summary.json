@@ -1,0 +1,25 @@
+{
+  "at": "2026-09-21T11:39:40.277661+02:00",
+  "probe_runtime_exit": 0,
+  "probe_scope": "Independent synthetic AppKit and SwiftUI buttons, no Throttle models/services",
+  "observed": [
+    "Tab focused AppKit control",
+    "Space activated AppKit control; log confirms",
+    "Next Tab focused SwiftUI button",
+    "Space changed visible SwiftUI counter from 0 to 1"
+  ],
+  "log_counts": {
+    "AppKit": 1,
+    "SwiftUI": 1
+  },
+  "app_active_key_and_keyboard_navigation_observed": true,
+  "keyboard_navigation_restored": "off via CUA AX observation",
+  "voiceover_changed": false,
+  "installed_throttle_restarted": false,
+  "fixture_candidate_correction": "Regular activation policy and explicit activation matching production cockpit, plus focus diagnostics in HostedViewReview only",
+  "fixture_sha256": "942035e9912dbff01a4a7cbc5fde86904006e5372c1a8c73e940f0236b1c28f2",
+  "fixture_swift6_typecheck": "PASS",
+  "fixture_swiftlint_0632_strict": "PASS, zero violations",
+  "fixture_native_build_and_runtime": "NOT_EXECUTED after correction: internal disk below build admission threshold",
+  "hypothesis": "Missing activation in test host may explain missing focus; not yet established by corrected fixture runtime"
+}

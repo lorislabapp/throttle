@@ -1,0 +1,8 @@
+PASS  App bundle present at /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app
+PASS  LSUIElement = false (Dock reopen enabled)
+PASS  Bundle ID = com.lorislab.throttle
+PASS  Developer ID signature integrity (app + widget)
+PASS  Team ID = TDV6D5L785
+PASS  Research Vault helper boundary and signature
+
+=== Result: 6 passed, 0 failed ===

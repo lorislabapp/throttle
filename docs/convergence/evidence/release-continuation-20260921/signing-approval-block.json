@@ -1,0 +1,9 @@
+{
+  "status": "blocked_before_execution",
+  "action": "local Developer ID archive Throttle 3.8.0 (226)",
+  "identity": "Developer ID Application Christine Martin (TDV6D5L785)",
+  "reason": "Automatic review requires exact user approval for signing; request to do the remainder was not accepted.",
+  "signed": false,
+  "notarized": false,
+  "published": false
+}

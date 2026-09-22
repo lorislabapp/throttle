@@ -1,0 +1,16 @@
+{
+  "recorded_at": "2026-09-21T11:11:57.847187+02:00",
+  "user_response": "J’autorise ces opérations précises",
+  "scope": [
+    "Local Developer ID signing Throttle 3.8.0 (226), Team TDV6D5L785",
+    "Apple secure timestamp",
+    "Local DMG creation",
+    "Temporarily enable Keyboard Navigation and restore its initial state"
+  ],
+  "excluded": [
+    "Apple notarization upload",
+    "Public upload/publication",
+    "Restart installed Throttle",
+    "VoiceOver activation"
+  ]
+}

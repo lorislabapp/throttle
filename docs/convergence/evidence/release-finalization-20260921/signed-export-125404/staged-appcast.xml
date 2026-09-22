@@ -1,0 +1,1176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel>
+        <title>Throttle</title>
+        <link>https://lorislab.fr/throttle/</link>
+        <description>Usage meter for Claude Code</description>
+        <language>en</language>
+            <item>
+                <title>Version 3.8.0</title>
+                <description><![CDATA[<!-- DRAFT: local review only. Not staged or approved for publication. -->
+<section lang="fr">
+<p>Le cockpit rend plus clairs les résultats disponibles, les erreurs de lecture du diff et les vérifications encore sans résultat. L’assistant peut arrêter la consommation d’une réponse ; les réponses tardives ne doivent pas se mélanger avec une nouvelle demande ou un autre projet.</p>
+<p>Le choix du traitement est explicite : sur le Mac quand un modèle local est sélectionné, ou auprès du serveur/fournisseur que vous choisissez. L’API Anthropic est facturée séparément selon le modèle et les jetons traités. Le miroir compagnon ne donne pas automatiquement le contrôle du terminal : cette permission reste séparée et révocable.</p>
+<p>Cette version est destinée à la supervision de projets de confiance. Leurs commandes utilisent les droits du compte macOS ; Throttle ne les confine pas comme du code hostile. Une vérification dont le résultat est inconnu reste bloquée pour inspection. Arrêter une réponse ne garantit pas l’arrêt du traitement ou de la facturation côté fournisseur.</p>
+</section>
+<section lang="en">
+<p>The cockpit makes available evidence, diff errors and unresolved checks easier to distinguish. The Assistant can stop consuming a response; late output must not mix with a new request or another project.</p>
+<p>Processing is selected explicitly: on your Mac with a local model, or through the server or provider you choose. Anthropic API usage is billed separately according to the model and tokens processed. Companion mirroring does not automatically grant terminal control; that permission is separate and revocable.</p>
+<p>This version supervises trusted projects. Project commands run with your macOS account’s permissions; Throttle does not contain hostile code. Checks with an unknown outcome remain blocked for inspection. Stopping a response does not guarantee that a remote provider has stopped processing or billing.</p>
+</section>]]></description>
+                <pubDate>Mon, 21 Sep 2026 13:04:35 +0200</pubDate>
+                <sparkle:version>226</sparkle:version>
+                <sparkle:shortVersionString>3.8.0</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.8.0.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="JExyR13hm7DU6PIJOaKcbr8vtLW/44iEJBIhkaJYMRhTocExOKCkPWTtznUkggaSpkyFQ9o0BPziVK9qZFX7CA==" length="34967080" />
+            </item>
+            <item>
+                <title>Version 3.7.2</title>
+                <description><![CDATA[<ul>
+  <li>Corrige un arrêt brutal de Throttle sur macOS 27 lors de l’envoi du miroir iCloud vers l’iPhone.</li>
+</ul>]]></description>
+                <pubDate>Thu, 17 Sep 2026 07:40:34 +0200</pubDate>
+                <sparkle:version>223</sparkle:version>
+                <sparkle:shortVersionString>3.7.2</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.7.2.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="Z1VFUsipXgeN+Q9PAKc8bkzU0dHYZ4IZa1rUzBUqfkDUSwXYbU4NsaQThO+9ccb+twdh/UmFp+92saJhM7ksDA==" length="34159144" />
+            </item>
+            <item>
+                <title>Version 3.7.1</title>
+                <description><![CDATA[<ul>
+  <li>Nouvel onglet « Vue d’ensemble » dans la fenêtre Projet : objectif, progrès vérifié, décisions attendues, changements, preuves et coûts.</li>
+  <li>Le progrès ne compte que les tâches intégrées ou vérifiées ; le pourcentage déclaré par les agents reste affiché à part, étiqueté comme tel.</li>
+  <li>Les coûts séparent quota d’abonnement, facture API, estimation Throttle et réserve budgétaire, sans jamais les additionner ; ce qui n’est pas mesuré le dit.</li>
+  <li>Trancher une décision depuis la vue : votre choix et votre raison sont inscrits dans le journal de la tâche. Une décision SOTA est relue par un agent d’une autre famille avant de compter.</li>
+  <li>« Afficher dans le Cockpit » ouvre la vue Plan directement sur la tâche.</li>
+</ul>]]></description>
+                <pubDate>Wed, 16 Sep 2026 21:04:42 +0200</pubDate>
+                <sparkle:version>222</sparkle:version>
+                <sparkle:shortVersionString>3.7.1</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.7.1.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="SXe/HAADDLA+XGWT30ICJR4DbZe2mDpA4uyKP4NHLU+Mg/H1J5Ufcykp3NvnTMVGnr+M2MG8kAW9kxj+H55uCg==" length="34161191" />
+            </item>
+            <item>
+                <title>Version 3.7.0</title>
+                <description><![CDATA[<ul>
+  <li>Au retour, une seule ligne dans le cockpit : combien de temps vous étiez parti, une pastille par session qui vous attend, et le détail à un clic.</li>
+  <li>Le conseil de routage tient compte du cache : il indique ce que quitter une session en cours ferait perdre, au lieu de le laisser découvrir sur la facture.</li>
+  <li>Le coffre de recherche se lit en affirmations, les plus risquées d’abord. Une contradiction montre ses deux côtés ensemble, et chaque affirmation mène à la source exacte.</li>
+  <li>Chaque source affiche combien d’affirmations en dépendent — un clic les ouvre — et dit en toutes lettres si son contenu a changé.</li>
+  <li>Les vues enregistrées retiennent les filtres, pas seulement les mots. Les carnets NotebookLM se cochent un par un ; le bouton dit ce qu’il va synchroniser, montre la progression et peut s’arrêter sans rien perdre.</li>
+  <li>Les nouveaux écrans sont traduits en français.</li>
+  <li>Aucune chaîne ressemblant à une clé ne quitte le Mac, ni dans un export ni dans le miroir iPhone.</li>
+  <li>Le journal des tâches d’un projet survit à un arrêt brutal : une écriture interrompue est signalée, jamais réparée en silence.</li>
+</ul>]]></description>
+                <pubDate>Wed, 16 Sep 2026 15:53:36 +0200</pubDate>
+                <sparkle:version>221</sparkle:version>
+                <sparkle:shortVersionString>3.7.0</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.7.0.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="rwk/8C7izMBESxv9LvEjnNtRMQVm56cWWCtgESpfjkcLUUCmUL5LOVMAhrjv/+1HnS43N+JNpSzOBUhmgbhBBg==" length="33062439" />
+            </item>
+            <item>
+                <title>Version 3.6.0</title>
+                <description><![CDATA[<ul>
+  <li>Reprise des conversations Claude Code et Codex à partir de leur identité exacte, y compris lorsque Codex utilise des sous-agents.</li>
+  <li>Transferts vers le serveur avec suivi persistant, arrêt confirmé et récupération des conversations et fichiers du projet.</li>
+  <li>Coffre de recherche : ajout de projets autorisés, résultats issus des documents et des recherches approuvées, citations vérifiables et parcours de démarrage en français.</li>
+  <li>Les demandes d’autorisation des agents restent manuelles. Les sorties volumineuses des vérifications sont drainées avec une mémoire bornée.</li>
+  <li>Corrections de rafraîchissement du Cockpit, d’accessibilité du coffre et de vérification des mises à jour.</li>
+  <li>L’arrêt et l’hibernation d’une session sont confirmés même lorsque le Mac est très chargé, sans laisser de processus fantôme.</li>
+  <li>L’export CSV de l’usage fonctionne à nouveau et attribue chaque événement à son projet ; aucune chaîne ressemblant à une clé ou un jeton ne sort d’un export.</li>
+  <li>Le journal des tâches d’un projet est écrit de façon durable ; une écriture interrompue est signalée, jamais réparée en silence.</li>
+  <li>Un agent lancé sur une tâche n’agit que sur son projet, sous son nom et pour les opérations qui lui ont été accordées.</li>
+  <li>Le banc de recherche se lie à un corpus gelé et relu ; sa dérive est nommée au lieu d’être masquée.</li>
+</ul>]]></description>
+                <pubDate>Wed, 09 Sep 2026 13:33:41 +0200</pubDate>
+                <sparkle:version>220</sparkle:version>
+                <sparkle:shortVersionString>3.6.0</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.6.0.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="LRybbpRr4HJeaxB9bJlQMKBYN2G9rFOOStNlCmxmDtTyE0719T3GVek3o+ilH23G/uGhKg8o3LU3fpX3A3AVAg==" length="32479271" />
+            </item>
+            <item>
+                <title>Version 3.5.2</title>
+                <description><![CDATA[<ul><li><b>Session filter.</b> The rail and the tab bar can now show all sessions, only live ones, or only active ones — with a count per tier.</li><li><b>Research Vault.</b> Local evidence vault: folder and URL intake, scanned-PDF reading, NotebookLM import, and a window that teaches its own setup.</li><li><b>Plan and AI Routing.</b> Plan orientation, a dedicated AI Routing window, honest embedded-Qwen/Ollama status, and local/frontier recovery rules.</li></ul>]]></description>
+                <pubDate>Mon, 07 Sep 2026 08:06:48 +0200</pubDate>
+                <sparkle:version>218</sparkle:version>
+                <sparkle:shortVersionString>3.5.2</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.5.2.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="QH7yvSLWwaRnmj63zMOn+SujvgmEq1Wg/RUA+FXRb2RvDIHD8Q/TeiqxehhMd5lYw8DCQrTJAI5qhCM7IyRcAw==" length="31832615" />
+            </item>
+            <item>
+                <title>Version 3.5.1</title>
+                <pubDate>Fri, 04 Sep 2026 10:59:36 +0200</pubDate>
+                <sparkle:version>217</sparkle:version>
+                <sparkle:shortVersionString>3.5.1</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.5.1.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="3hNz4tv8yl7vw5yxFDJwVrIC9qFNqFV0lIO992uWfbQVJ5dRXEoBQF5rf06HWd/D/KSPEfWeYg3CbLkpbgKwBw==" length="31540263" />
+            </item>
+            <item>
+                <title>Version 3.2.78</title>
+                <description><![CDATA[<ul><li><b>Crash fix on macOS 26/27 betas.</b> Opening a new session from the folder picker (or through the memory-pressure warning) could crash the app. Both paths are fixed.</li></ul>]]></description>
+                <pubDate>Thu, 13 Aug 2026 18:28:53 +0200</pubDate>
+                <sparkle:version>178</sparkle:version>
+                <sparkle:shortVersionString>3.2.78</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.78.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="IyUjDvNmHnmVFjApa9/uO6+F798P0IvKmbAC/nJHTlxLXbmqI/wXOZvt9PYrDmLMcDyMwdv0n5gQfVDYUAUuCQ==" length="14303600" />
+            </item>
+            <item>
+                <title>Version 3.2.77</title>
+                <description><![CDATA[<ul><li><b>Portfolio — an Obsidian-style map of your Claude Code work.</b> See duplicated code and re-researched topics across your projects, so you stop paying twice for the same tokens.</li><li><b>Honest CONFIG WEIGHT.</b> The cockpit now reports measured skill tokens instead of a raw count.</li><li><b>Trim rows show payback.</b> Each suggested trim now says when it pays for itself.</li><li>Leaner cockpit internals.</li></ul>]]></description>
+                <pubDate>Tue, 11 Aug 2026 23:14:26 +0200</pubDate>
+                <sparkle:version>177</sparkle:version>
+                <sparkle:shortVersionString>3.2.77</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.77.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="YOaWg+EVCSUXStDYyj+9PtsJ3qrZVg2MnztXDfNLMtVNlJZ1l6kNCMF8bA8DSnCmT5We1H4Y+zu2Y+QvyEGgBQ==" length="14301446" />
+            </item>
+            <item>
+                <title>Version 3.2.73</title>
+                <description><![CDATA[<ul><li><b>Model Mix — where your Claude budget actually goes.</b> A new Dashboard panel prices your usage honestly: Opus is often the overwhelming majority of the cost because it bills the same context at 5× Sonnet. It shows the split and an honest estimate of what starting routine work in a Sonnet session would save — the real lever, far bigger than trimming output.</li><li><b>Fewer keychain prompts.</b> The Exact-mode token is now cached, so macOS stops asking to access "Claude Code-credentials" on every poll.</li></ul>]]></description>
+                <pubDate>Thu, 30 Jul 2026 12:00:00 +0200</pubDate>
+                <sparkle:version>173</sparkle:version>
+                <sparkle:shortVersionString>3.2.73</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.73.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="DU4LiUMoJMAGcXO6bteGZZqsjDkGHznnu4DzQttcYqedtcyKn0N61QxgR0gAhsQI83bUGlfmWegBF0/ixaaZCg==" length="14094190" />
+            </item>
+            <item>
+                <title>Version 3.2.71</title>
+                <description><![CDATA[<ul><li><b>A session that is compiling is no longer mistaken for an abandoned one.</b> Memory reclaim decided a session was idle from terminal output alone — but a build, a test run or a long tool call prints nothing for minutes. On a Mac under memory pressure those sessions could be frozen, or killed outright, in the middle of your work. Throttle now measures whether the session's processes are actually burning CPU, and reads claude's own transcript to see when a tool call is still in flight.</li></ul>]]></description>
+                <pubDate>Fri, 17 Jul 2026 11:05:00 +0200</pubDate>
+                <sparkle:version>171</sparkle:version>
+                <sparkle:shortVersionString>3.2.71</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.71.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="pEX2Q1WSyWIEWx7oFKYr5VrkeNPwQrSAfgqL49GJPZTZ5JIfXWY9Mn4chGMOiyov1P3vPq76zYDQtnpaQNz2Ag==" length="14077869" />
+            </item>
+            <item>
+                <title>Version 3.2.70</title>
+                <description><![CDATA[<ul><li><b>Your Mac is recognised as your Mac.</b> Throttle identified a machine by a value that quietly changes underneath you — so a single Mac could eat all three of your license slots over time and then lock you out with "Already activated on 3 Macs". It now uses the hardware ID, and your existing activation is migrated across automatically, without spending a slot.</li><li><b>Dead slots come back.</b> A machine that hasn't checked in for 90 days releases its slot when you need it for a new one.</li><li><b>Deactivate is safe.</b> If the license server can't be reached, your key stays on the Mac instead of being erased along with the slot it failed to free.</li></ul>]]></description>
+                <pubDate>Fri, 17 Jul 2026 09:37:10 +0200</pubDate>
+                <sparkle:version>170</sparkle:version>
+                <sparkle:shortVersionString>3.2.70</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.70.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="HotiQ/R1dQIpe4TZdotnivb2t0aDmptJ2feR8NUY4iq8RZMFUBnW+UMNh2Np+g1GUNF8lmq6TvJQB8DWRbWXBw==" length="14053622" />
+            </item>
+            <item>
+                <title>Version 3.2.69</title>
+                <description><![CDATA[<ul><li><b>Your Pro license stays Pro.</b> Throttle now renews its license token in the background (at launch, daily, and on wake). Previously the token was only ever issued once at activation — after it lapsed, a paid Mac could quietly fall back to Free with the key still installed.</li><li><b>Honest license state.</b> A lapsed license now says so, with a Reactivate button that restores Pro from the key already on your Mac — instead of showing a "Pro" badge and a Buy button at the same time.</li></ul>]]></description>
+                <pubDate>Fri, 17 Jul 2026 09:12:22 +0200</pubDate>
+                <sparkle:version>169</sparkle:version>
+                <sparkle:shortVersionString>3.2.69</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.69.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="UwYxW6ZEnBP1HtOaASW459Ly44BIKMD8VhrSdD5zKTkTyCjW6ijCM/s4hYE0E09drlj4ITIx9A0MBOg5h5AtAw==" length="14049876" />
+            </item>
+            <item>
+    <title>Version 3.2.68</title>
+    <pubDate>Thu, 16 Jul 2026 18:43:46 +0200</pubDate>
+    <sparkle:version>168</sparkle:version>
+    <sparkle:shortVersionString>3.2.68</sparkle:shortVersionString>
+    <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+    <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.68.dmg"
+               type="application/octet-stream"
+               sparkle:edSignature="A4lEosrOGrCdz1nO21/m8l5Pvq6vfYGO/clUwYcwgBSP5X5p7jvnBYqx9hTUj4sDX4cchWvm6/YOlWwnuq88DA==" length="14057201" />
+</item>
+<item>
+                <title>Version 3.2.66</title>
+                <description><![CDATA[<ul><li><b>Model-swap cache alert.</b> Switching models mid-session with a big context rebuilds the prompt cache from scratch — often pricier than staying. Throttle now warns the moment it sees a swap on a session past 30k tokens.</li><li><b>Cache-drop watchdog.</b> When today's cache hit rate falls well under your weekly baseline, Throttle notifies you: something started busting the cache and your plan is burning faster.</li></ul>]]></description>
+                <pubDate>Tue, 14 Jul 2026 21:20:00 +0200</pubDate>
+                <sparkle:version>166</sparkle:version>
+                <sparkle:shortVersionString>3.2.66</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.66.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="viIXv8EL91fL0OdUybcLy/PMRBVrj5dnnFs3VT/dIC+quV7BaIGzhHjf+lnH4CzfxbN9j7hztXffcqJ1TK9vDQ==" length="14011655" />
+            </item>
+            <item>
+                <title>Version 3.2.65</title>
+                <description><![CDATA[<ul><li><b>Server-truth usage.</b> The meter now reads Anthropic's own usage endpoint with the token Claude Code already holds — the same numbers Claude shows, across all your machines, no browser involved. (macOS will ask once to allow keychain access.)</li><li><b>Cache efficiency.</b> A new plan-yield score on the Dashboard: how much of your input is served from the prompt cache — the single biggest lever on how far your plan stretches.</li><li><b>Token-cap rule.</b> Optionally auto-pause any Opus/Fable session that crosses a token cap you set — ballooning premium sessions are the #1 silent spend.</li><li><b>Offload takes your code along.</b> Offloading a session now ships the git repo too (full history), so claude on your server wakes up next to the files, not in an empty folder.</li></ul>]]></description>
+                <pubDate>Tue, 14 Jul 2026 20:30:00 +0200</pubDate>
+                <sparkle:version>165</sparkle:version>
+                <sparkle:shortVersionString>3.2.65</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.65.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="WBJDQAz++Arsl3PDbb+yvIm5HA7wQr6TeBhFxbmN4/pBsPPNialLwayjX26DVCGwpsd/+z5ih709fp7NJFBgCQ==" length="14000988" />
+            </item>
+            <item>
+                <title>Version 3.2.64</title>
+                <description><![CDATA[<ul><li><b>One session, one row.</b> An offloaded session no longer shows up twice: its rail row wears the REMOTE badge, opens the remote terminal directly, and the local copy hibernates to free RAM — true move semantics.</li><li><b>Bring it back to the Mac.</b> Right-click an offloaded session → "Bring back to Mac": the latest transcript comes home, the box session stops, and claude resumes locally right where it left off.</li><li><b>Accents fixed on the box.</b> Remote terminals now run in UTF-8 — no more underscores where é and box-drawing characters should be (new sessions).</li></ul>]]></description>
+                <pubDate>Tue, 14 Jul 2026 19:20:00 +0200</pubDate>
+                <sparkle:version>164</sparkle:version>
+                <sparkle:shortVersionString>3.2.64</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.64.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="Z9ZjWY+cDk7hykLB9gjshD42wACMOZYFg124ygnae+QV0agsFu+/z5yxqyXgD5T5x/8FZhp9EREITSGLI+opBQ==" length="13959690" />
+            </item>
+            <item>
+                <title>Version 3.2.63</title>
+                <description><![CDATA[<ul><li><b>Remote sessions in the rail.</b> Sessions running on your server now appear in the cockpit rail with a REMOTE badge — click one and its terminal attaches right in the cockpit, same theme as your local sessions.</li><li><b>One-click offload.</b> Right-click a session → "Offload to server (with context)": Throttle ships the transcript, resumes it on the box, and jumps to the remote session. The menu tells you when a session is already offloaded.</li></ul>]]></description>
+                <pubDate>Tue, 14 Jul 2026 18:55:00 +0200</pubDate>
+                <sparkle:version>163</sparkle:version>
+                <sparkle:shortVersionString>3.2.63</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.63.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="T9u83uFUMn6xOcHmNb/KjwgSzmGAgR4134Md+lW/3iWT/tIcJukmW55JNcObNCTyKSTJo7OMSGbeXrA+dr88Dw==" length="13937274" />
+            </item>
+            <item>
+                <title>Version 3.2.62</title>
+                <description><![CDATA[<ul><li><b>Server offload actually reachable.</b> Fixed a security-policy conflict that blocked the app from talking to your edge agent over Tailscale (Verify failed with "requires a secure connection").</li><li><b>Mouse garbage, gone for good.</b> Mouse-tracking reports could still leak into claude's input when a tool left mouse mode armed — they are now stripped at the terminal's single input chokepoint, whatever their source.</li><li><b>SSH keys work inside the cockpit.</b> Terminal sessions now inherit your SSH agent, so tools that hop through SSH no longer ask for your key passphrase at session start.</li></ul>]]></description>
+                <pubDate>Tue, 14 Jul 2026 18:20:00 +0200</pubDate>
+                <sparkle:version>162</sparkle:version>
+                <sparkle:shortVersionString>3.2.62</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.62.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="5Mhwau3VH6Yp21Q0M47JIk62RakYqXfTqShVKogKOzWC0Oxt4U9Gd8kr8TAw6TINiGe3qowNr8dKF427LpoPAA==" length="13836695" />
+            </item>
+            <item>
+                <title>Version 3.2.61</title>
+                <description><![CDATA[<ul><li><b>One-click server offload.</b> "Run sessions on your server" now deploys the whole edge agent itself over SSH — Node, tmux, ttyd, the claude CLI, the systemd unit — with per-step progress and a Proxmox LXC option. No more copy-pasting a setup script.</li><li><b>Log in to Claude without a terminal.</b> The box's <code>claude setup-token</code> flow now runs inside the sheet: open the authorization page, paste the code, done.</li><li><b>Cleaner remote typing.</b> Stray mouse-tracking sequences from a mirrored phone session can no longer leak into your prompt as garbage characters.</li></ul>]]></description>
+                <pubDate>Tue, 14 Jul 2026 17:59:19 +0200</pubDate>
+                <sparkle:version>161</sparkle:version>
+                <sparkle:shortVersionString>3.2.61</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.61.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="bK6bkhifucADcua0DJ3PwD0gT0ryD1o1+gipENfhxJ3b2K40+W3TAOzJa1UeBHrToKHeVgJHV1mJBbNbAOeOCw==" length="13834884" />
+            </item>
+            <item>
+                <title>Version 3.2.60</title>
+                <description><![CDATA[<ul><li><b>Session rail.</b> The mode switcher now leads with the session rail — sessions open straight into it, with search and a per-session decision menu to jump, pause or offload any one of them.</li><li><b>This week vs last.</b> The Dashboard and Stats gain a week-over-week strip with honest highlights, so you can see where your usage is actually trending.</li><li>Cockpit reliability fixes.</li></ul>]]></description>
+                <pubDate>Tue, 14 Jul 2026 17:10:51 +0200</pubDate>
+                <sparkle:version>160</sparkle:version>
+                <sparkle:shortVersionString>3.2.60</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.60.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="HHiULJsHgiTLUNQ4hzARs0YGwBMzBvCZbOvJaLT6A2MRbaGiL0YwbGKow4lyoHCH0YCd1a23bR4UAjz1R8HADQ==" length="13748638" />
+            </item>
+            <item>
+                <title>Version 3.2.59</title>
+                <description><![CDATA[<ul><li><b>Run sessions on your server.</b> New "Session Offload" — hand a Claude Code session to your own box (a Proxmox LXC or any Linux host) and it resumes there with your full conversation carried over, not a blank slate. Throttle generates the one-shot deploy script, verifies the agent, and lets you start, pause, resume and stop remote sessions. Everything stays on your own machines — no cloud, no accounts.</li><li>The companion iPhone app gains the same remote-session controls plus an on-screen terminal key bar and lock-screen widgets.</li><li>Reliability fixes across the cockpit and the local network mirror.</li></ul>]]></description>
+                <pubDate>Sun, 12 Jul 2026 20:39:45 +0200</pubDate>
+                <sparkle:version>159</sparkle:version>
+                <sparkle:shortVersionString>3.2.59</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.59.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="GX06KfU9rnXIRvXrNnlEgBNpXewu0jH1WDv1AZPHpWG9WOaiq3/44qTpO+TmjeuZxsXPFtAqtL6STqi/CjHSBQ==" length="13654953" />
+            </item>
+            <item>
+                <title>Version 3.2.51</title>
+                <description><![CDATA[<ul><li>Terminal no longer types stray characters or beeps on its own — this happened when a full-screen tool left mouse-tracking on; the embedded terminals now ignore that.</li><li>The live usage meter stops flapping — a brief hiccup talking to claude.ai now retries quickly instead of blanking the number.</li><li>Opening the side shell focuses it so you type in the right place; "Clear" truly wipes scrollback; "Copy for Claude (trimmed)" strips ANSI/blank noise so pasted output costs fewer tokens.</li></ul>]]></description>
+                <pubDate>Wed, 08 Jul 2026 21:33:47 +0200</pubDate>
+                <sparkle:version>151</sparkle:version>
+                <sparkle:shortVersionString>3.2.51</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.51.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="ARjGwwb62ngSZ8FV2AIWAxBPIBiKz3ZER8sLExnWlIvkj15TKA9p44cW2jsosf29OqML3CeiyT8tQemXxUnGCQ==" length="13259917" />
+            </item>
+            <item>
+                <title>Version 3.2.50</title>
+                <description><![CDATA[<ul><li>The live meter no longer blips out and back randomly — a transient hiccup talking to claude.ai now keeps showing the last good number instead of blanking.</li><li>Savings and cost estimates are more accurate — they account for the denser Opus 4.7+ tokenizer on code, which the old rule undercounted by ~30%.</li><li>Terminal: opening the side shell now focuses it; "Clear" truly wipes the scrollback; and a new "Copy for Claude (trimmed)" strips waste so pasted output costs fewer tokens.</li></ul>]]></description>
+                <pubDate>Wed, 08 Jul 2026 17:16:44 +0200</pubDate>
+                <sparkle:version>150</sparkle:version>
+                <sparkle:shortVersionString>3.2.50</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.50.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="5/InuLVWAhHgL+PZFNlfgoNB5a4HcYDm2XyPrVNfiPzpPj7Byowp3LBCresa7I8q5ry4q9l4P/gUWlmqbNnqDg==" length="13258270" />
+            </item>
+            <item>
+                <title>Version 3.2.49</title>
+                <description><![CDATA[<ul><li>Web research is smarter and faster: a page you've already rendered is reused instantly instead of re-rendering, and earlier research resurfaces by meaning in later questions — so Claude Code can lean on what you already read without fetching it again. All on-device.</li></ul>]]></description>
+                <pubDate>Wed, 08 Jul 2026 16:12:22 +0200</pubDate>
+                <sparkle:version>149</sparkle:version>
+                <sparkle:shortVersionString>3.2.49</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.49.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="vJZfTzVWUXGI2HljLHq0pwDmcsj3xqBU0ysHn96vIR+tLUjyO7a+wtrf9wIonCc9C/Te0+ckP8YU9Cj43aZLDw==" length="13257879" />
+            </item>
+            <item>
+                <title>Version 3.2.48</title>
+                <description><![CDATA[<ul><li>New, opt-in: <b>web research</b>. A new tool renders a page's JavaScript in a private on-device WebKit engine and hands Claude Code the fully-rendered text — the single-page-app and client-rendered content a plain fetch never sees. A second tool grounds a question in your own locally-indexed code alongside the web sources, so Claude can reason over public pages and your private codebase together, with the private context never leaving your Mac. Turn it on in Settings → “Web research”.</li></ul>]]></description>
+                <pubDate>Wed, 08 Jul 2026 15:29:09 +0200</pubDate>
+                <sparkle:version>148</sparkle:version>
+                <sparkle:shortVersionString>3.2.48</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.48.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="QynEBkcOsIbfEOk7ig1twEt2HOdrYryoBlwLgiOqm0JisqCZGVrc6MFx+ZQ6FP71Wc80HbbSbg7/yO5WP7FKAQ==" length="13232267" />
+            </item>
+            <item>
+                <title>Version 3.2.47</title>
+                <description><![CDATA[<ul><li>Juggling lots of sessions? Idle tabs now freeze instantly instead of closing — click one and it's back at once, with no tokens spent and no "resume" prompt. Full hibernation only kicks in when your Mac is genuinely low on memory.</li><li>Switching output style now shows how to apply it to a session you already have open.</li><li>New, opt-in: Traycer measures your true cost per skill and per command, entirely on your machine.</li></ul>]]></description>
+                <pubDate>Wed, 08 Jul 2026 13:30:39 +0200</pubDate>
+                <sparkle:version>147</sparkle:version>
+                <sparkle:shortVersionString>3.2.47</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.47.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="Gv3hRFbbPecUuErRBkfsIAswYLg3ogBPBIUALtP0Tr0lAj1CaxbRcSw0UWZVV3gkDRNZVBk+j/acTb/ArxlSAg==" length="13151342" />
+            </item>
+            <item>
+                <title>Version 3.2.45</title>
+                <description><![CDATA[<ul><li>The usage optimizer now fails safe if you ever move or delete Throttle — no more stray errors in your terminal.</li></ul>]]></description>
+                <pubDate>Tue, 07 Jul 2026 17:03:15 +0200</pubDate>
+                <sparkle:version>145</sparkle:version>
+                <sparkle:shortVersionString>3.2.45</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.45.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="JtSjXGkw/CaXxz2z35f/pQqdJLuyLc2jO/emeDiO2kphfjHilk27bKfb+3ekATa9uRMUsZEGKNG1dU8sb7eACA==" length="13080849" />
+            </item>
+            <item>
+                <title>Version 3.2.44</title>
+                <description><![CDATA[<ul><li>Fixes the side shell: turning the terminal off no longer leaves a black pane — your claude session stays put.</li></ul>]]></description>
+                <pubDate>Fri, 03 Jul 2026 18:19:46 +0200</pubDate>
+                <sparkle:version>144</sparkle:version>
+                <sparkle:shortVersionString>3.2.44</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.44.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="SlGBdLHVO1Qfs9RbW+80qbX6+O8dDX7OylC4mrhKMg9rkvFm6QuxoYqvC71GNULNsUOB4DgYT+p64pGwW1LACg==" length="13076919" />
+            </item>
+            <item>
+                <title>Version 3.2.43</title>
+                <pubDate>Fri, 03 Jul 2026 09:57:08 +0200</pubDate>
+                <sparkle:version>143</sparkle:version>
+                <sparkle:shortVersionString>3.2.43</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.43.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="AzdwU1vDcs5pAMKPcIAFfYG0mmW1wYEbnQ+iG1oJbVfEWctlxIaV1ocJBnjsRIFtTAwfrYf9NiT7W7yUbCy0CA==" length="13078610" />
+            </item>
+            <item>
+                <title>Version 3.2.42</title>
+                <pubDate>Fri, 03 Jul 2026 09:28:25 +0200</pubDate>
+                <sparkle:version>142</sparkle:version>
+                <sparkle:shortVersionString>3.2.42</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.42.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="LuPto85IoqlvWziSVmJoQm6mE2Z387AbcRWJkGlmnGN0pAZ2j1+d3SuhNMttgGJcRq9A1Umi9QBbc7ZLgOFfAw==" length="13037867" />
+            </item>
+            <item>
+                <title>Version 3.2.41</title>
+                <pubDate>Fri, 03 Jul 2026 09:14:26 +0200</pubDate>
+                <sparkle:version>141</sparkle:version>
+                <sparkle:shortVersionString>3.2.41</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.41.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="lph0WgoHDlu50/nGjDkApJicv44H94zDKLxOL4f4m59nEO8AAEBJA1+sGEEJtvhkENHAq9vQVOBwLUCXhUfSBw==" length="13024562" />
+            </item>
+            <item>
+                <title>Version 3.2.40</title>
+                <description><![CDATA[<ul><li>Fixes a crash on macOS 27 when opening the menu (gradient-filled icon). Adds a Commands tile to the menu dock and a polished pass on the local Command Runner.</li></ul>]]></description>
+                <pubDate>Thu, 02 Jul 2026 20:00:00 +0200</pubDate>
+                <sparkle:version>140</sparkle:version>
+                <sparkle:shortVersionString>3.2.40</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.40.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="IUoZQpbaXM29Rh5V6XGVyMSKoSpQ3+mFJ1Sj1Ba0bguPYns2hghuJ/+XWsshx/2nMNdn8p/BnBDLFggHA3SBDA==" length="13209283" />
+            </item>
+            <item>
+                <title>Version 3.2.38</title>
+                <description><![CDATA[<ul><li>Test Outcomes now estimates a ~cost per green run per project — your working results, priced. Measure-only, 100% local.</li></ul>]]></description>
+                <pubDate>Thu, 02 Jul 2026 16:20:00 +0200</pubDate>
+                <sparkle:version>138</sparkle:version>
+                <sparkle:shortVersionString>3.2.38</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.38.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="p3WI7sia+yUZ8D8Y6ABnQdeBMrHB/hdo6PmwzFBA6N05Ay1X2MiU0WqRMpm5M25EQIwz0noo/sp1j+V5knDXBA==" length="13177352" />
+            </item>
+            <item>
+                <title>Version 3.2.37</title>
+                <description><![CDATA[<ul><li>New: Test Outcomes — Throttle now notices when your test runner finishes (pytest, cargo, go, jest, swift test) and shows a per-project pass rate and green/red run count in the Optimizer tab, moving the panel from "how many tokens" toward "tokens per working result". Measure-only, 100% local.</li></ul>]]></description>
+                <pubDate>Thu, 02 Jul 2026 15:55:00 +0200</pubDate>
+                <sparkle:version>137</sparkle:version>
+                <sparkle:shortVersionString>3.2.37</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.37.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="ZLnw9BeTj0VyTnty5HOk+k2xoIf/54ZcPYeMpQFO+//UyoybipPVclBWNOVR818ubz+bHHA/TA62gK1uRgmOAg==" length="13167411" />
+            </item>
+            <item>
+                <title>Version 3.2.36</title>
+                <description><![CDATA[<ul><li>New: when a project shows heavy Read Pressure, one tap turns on Throttle's built-in 100%-local semantic index for that repo — so Claude searches it by meaning (throttle_semantic_search) instead of re-reading whole files. No config rewrite, nothing leaves your Mac.</li></ul>]]></description>
+                <pubDate>Thu, 02 Jul 2026 15:10:00 +0200</pubDate>
+                <sparkle:version>136</sparkle:version>
+                <sparkle:shortVersionString>3.2.36</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.36.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="LUIwNjR5sMwUKlRC2AXpxAZz0ZVLYanDSs506RpkNIRZu5CbvQkkZMjPt+2J7VJfQMSL4Yl3SLPNKx2M5yJlAg==" length="13139815" />
+            </item>
+            <item>
+                <title>Version 3.2.35</title>
+                <description><![CDATA[<ul><li>New: opt-in Auto-trim — Throttle can shrink your heaviest idle past sessions on launch (already-seen images become a rehydratable pointer), so <code>claude --resume</code> reloads a lighter file and re-charges fewer tokens. Fully lossless and reversible: whole-file backups are kept and the model can pull any image back on demand. Off by default; enable in Settings.</li></ul>]]></description>
+                <pubDate>Thu, 02 Jul 2026 14:45:00 +0200</pubDate>
+                <sparkle:version>135</sparkle:version>
+                <sparkle:shortVersionString>3.2.35</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.35.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="UpHJdHTQo0zRVIiLcdhOiQade122e0Kw2Xa8YWGKbAuNKIipJaGk7Cuh4t6fkgmgQmnmcNI2O6990jlliR6sAg==" length="13155863" />
+            </item>
+            <item>
+                <title>Version 3.2.34</title>
+                <description><![CDATA[<ul><li>New: Read Pressure — the Optimizer tab now flags projects where Claude loads whole files in bulk (a top token drain), so you can scope reads or add local semantic search. Measure-only; Throttle never rewires your config.</li></ul>]]></description>
+                <pubDate>Thu, 02 Jul 2026 14:05:00 +0200</pubDate>
+                <sparkle:version>134</sparkle:version>
+                <sparkle:shortVersionString>3.2.34</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.34.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="zNMyY4Sl5cYSYAYO5ZjV7cftYKlYDAXgHKagkVczGJpdsqqRANeMHdWUeqMjkVY++lW0CnUTZeg72qKlUoALCQ==" length="13140153" />
+            </item>
+            <item>
+                <title>Version 3.2.33</title>
+                <description><![CDATA[<ul><li>New: predictive pacing — when several Cockpit sessions are burning toward your shared usage cap, Throttle warns early (with an ETA) and offers a one-tap "Pause idle", before the hard auto-pause ever needs to arm.</li></ul>]]></description>
+                <pubDate>Thu, 02 Jul 2026 13:40:00 +0200</pubDate>
+                <sparkle:version>133</sparkle:version>
+                <sparkle:shortVersionString>3.2.33</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.33.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="JYjYwnlISUWVfUKO5ClhWgjH0WNuvei1OCE/SC2PkPBnp8iy7gSmG6M+sVL65llrNezhXh6JmngoBiFT60NhCA==" length="13106894" />
+            </item>
+            <item>
+                <title>Version 3.2.32</title>
+                <description><![CDATA[<ul><li>New: one-tap MCP Optimize — Throttle disables MCP servers you haven't actually called in 30 days (they load into every session for nothing), and shows your estimated local MCP RAM. Reversible.</li><li>Auto-hibernate now also kicks in when too many Cockpit sessions are open at once, not just under critical memory pressure.</li></ul>]]></description>
+                <pubDate>Thu, 02 Jul 2026 13:05:00 +0200</pubDate>
+                <sparkle:version>132</sparkle:version>
+                <sparkle:shortVersionString>3.2.32</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.32.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="199/S7Bck13SOW/DtddJKlUTg2ANKj7e+wA7O0mbvYWyFj+4+ToQgJ6Rabvqqg0XT2TQyiYpKL90LidO3qlcCg==" length="13096201" />
+            </item>
+            <item>
+                <title>Version 3.2.31</title>
+                <description><![CDATA[<ul><li>Fix: app crashed at launch on macOS 27 (Tahoe successor beta) — a database-setup closure inherited MainActor isolation and tripped the new runtime isolation check. If Throttle wouldn't start after updating macOS, this release fixes it.</li></ul>]]></description>
+                <pubDate>Thu, 02 Jul 2026 12:37:33 +0200</pubDate>
+                <sparkle:version>131</sparkle:version>
+                <sparkle:shortVersionString>3.2.31</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.31.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="wt4attA9iXs8fW7XWG0CajHcVobN0RU5r9qIN8nGTXg0/r4K/jBioeDpEQs0QOPAWKKFkU6VTyz5zFWdVk60Dw==" length="13070676" />
+            </item>
+            <item>
+                <title>Version 3.2.30</title>
+                <description><![CDATA[<ul><li>New: Run MCP on your server — for any local (stdio) MCP server, Throttle generates the exact deploy script (Node + Supergateway over Streamable HTTP) and rewire, then verifies the endpoint end-to-end before you switch. Move heavy MCP servers to a homelab box so they stop spawning processes on your Mac. You own the box; Throttle never SSHes or edits your config for you.</li></ul>]]></description>
+                <pubDate>Thu, 02 Jul 2026 12:15:00 +0200</pubDate>
+                <sparkle:version>130</sparkle:version>
+                <sparkle:shortVersionString>3.2.30</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.30.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="hM09mxg1VsEZZaU0OwsyJi9OhRfuN0rL9SJq7xniuXDlSSVta6fww17RSC+zJ5RShdeVyH4OzKFiGX2Nbwc/CA==" length="13070288" />
+            </item>
+            <item>
+                <title>Version 3.2.29</title>
+                <description><![CDATA[<ul><li>New: Command Runner — run saved shell commands straight from Throttle, no Claude session and no <code>!</code> prefix. Zero tokens (output never enters an LLM context), output stays local, one-tap re-runnable. Runs via your login shell so PATH and secrets apply.</li></ul>]]></description>
+                <pubDate>Thu, 02 Jul 2026 11:55:00 +0200</pubDate>
+                <sparkle:version>129</sparkle:version>
+                <sparkle:shortVersionString>3.2.29</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.29.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="kXDJEmBEybd4G5dLt2T6LH++JekV0/Rtp7Pj62E+IXk4XQDe4tFdqpmkz8YLjlYHHLHYfkadpRAwtH4Qgk5oAA==" length="13010615" />
+            </item>
+            <item>
+                <title>Version 3.2.28</title>
+                <description><![CDATA[<ul><li>New: on-device MCP advisor — for each MCP server, Throttle recommends keep / disable / offload / review from 30-day tool-call usage, estimated RAM, and transport. Cuts unused local MCP processes on RAM-tight Macs.</li><li>Auto-hibernate idle Cockpit sessions under memory pressure (default on) — frees ~300 MB–1 GB each, resumes with full context.</li><li>Memory-leak restart: one-tap reclaim when a session's RAM balloons, keeping your conversation via --resume.</li><li>Opt-in per-session Node heap cap (NODE_OPTIONS) and sub-agent limit for 16 GB machines.</li></ul>]]></description>
+                <pubDate>Thu, 02 Jul 2026 10:19:26 +0200</pubDate>
+                <sparkle:version>128</sparkle:version>
+                <sparkle:shortVersionString>3.2.28</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.28.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="5rYJKldP3lIGx4mJc0t4gW+qn2nu7YegeI7JelSEsbEF1YSd1N36iVZoeXgA959/nMO2V5K33pIq0bJW1muiCg==" length="12907616" />
+            </item>
+            <item>
+                <title>Version 3.2.27</title>
+                <description><![CDATA[<ul><li>New: MCP server manager — list every MCP server across scopes, move Global ↔ Project-local ↔ shareable .mcp.json, enable/disable, add or remove (each file backed up first).</li><li>Fix: managed output styles (Caveman, Caveman Ultra, Concise) now auto-heal on launch after an app update changes their body — no more stale style files silently losing to CLAUDE.md verbosity.</li><li>Output-style manager notes that changes apply to new Claude Code sessions (use /output-style to switch live).</li></ul>]]></description>
+                <pubDate>Wed, 01 Jul 2026 20:40:27 +0200</pubDate>
+                <sparkle:version>127</sparkle:version>
+                <sparkle:shortVersionString>3.2.27</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.27.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="s8NVo9ctEs9mQa0sHZl0cJ22181ZtcDRa2625GM+DWbpmKARtBCKzI4WlkyBetcskijVFMoOoLxvt1+kf32rBw==" length="12848261" />
+            </item>
+            <item>
+                <title>Version 3.2.26</title>
+                <pubDate>Wed, 01 Jul 2026 12:16:05 +0200</pubDate>
+                <sparkle:version>126</sparkle:version>
+                <sparkle:shortVersionString>3.2.26</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.26</h2>
+                                        <ul>
+                                            <li><strong>Cockpit opens on reopen:</strong> re-launching Throttle (while it's already running in the menu bar) now opens the Cockpit — but it stays quiet at login/boot.</li>
+                                            <li><strong>Keep Cockpit on top:</strong> new optional toggle (Settings &rarr; General) to float the Cockpit window above other apps while you work.</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.26.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="qsuR83YEPMGcnU4nsLYEWwCoG2pTF5NTuTX+Vf+gWNlV/rZAnQyjoMzY1KkmBJyA20pVHaIq4VvgXxlaoQK6CQ==" length="12704042" />
+            </item>
+            <item>
+                <title>Version 3.2.25</title>
+                <pubDate>Wed, 01 Jul 2026 11:41:29 +0200</pubDate>
+                <sparkle:version>125</sparkle:version>
+                <sparkle:shortVersionString>3.2.25</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.25</h2>
+                                        <ul>
+                                            <li><strong>Prompt-cache: now tells you WHY:</strong> when Throttle sees money wasted re-writing a cache that should've been warm, the cockpit audit now attributes it — model swaps vs prefix churn (a dynamic statusline / changing CLAUDE.md / shifting tool list) — with a specific fix for each.</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.25.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="oCgISDHVGB7FtrfpstqBoOxjgPopuyD9J7WOyFcnOl+F5qkASWtTqMcwUTTss/h+lOiLscpg78gCeIVYoWSGAw==" length="12702503" />
+            </item>
+            <item>
+                <title>Version 3.2.24</title>
+                <pubDate>Wed, 01 Jul 2026 01:35:23 +0200</pubDate>
+                <sparkle:version>124</sparkle:version>
+                <sparkle:shortVersionString>3.2.24</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.24</h2>
+                                        <ul>
+                                            <li><strong>Fixed — memory/search tools now follow app updates:</strong> Throttle's MCP server (past-session search, semantic code search, recall) is auto-repointed to the current app on every launch, so newly added tools show up after an update without re-toggling anything in Settings.</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.24.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="txXQIDTyqE3xx8YriFDP+xfKn5yQSwqnGT9b2vLaMuiwqVNnNre26EUZ7DvBErCkpzwrLY4Ed8CZ6AsNPTkJAQ==" length="12686783" />
+            </item>
+            <item>
+                <title>Version 3.2.23</title>
+                <pubDate>Wed, 01 Jul 2026 00:45:14 +0200</pubDate>
+                <sparkle:version>123</sparkle:version>
+                <sparkle:shortVersionString>3.2.23</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.23</h2>
+                                        <ul>
+                                            <li><strong>Smarter polling:</strong> when a usage window is fully capped, Throttle now backs off until it resets instead of re-checking claude.ai every minute into the wall — lighter on your Mac and on the API.</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.23.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="+FJHrKm6pm1ilNdZDfjDK9RhEb/j2x1675iq8mLw2VsgzlERxy73Qzv450VSwWt61c/jD97u8SMNr9KI/e+/Bg==" length="12684049" />
+            </item>
+            <item>
+                <title>Version 3.2.22</title>
+                <pubDate>Wed, 01 Jul 2026 00:31:36 +0200</pubDate>
+                <sparkle:version>122</sparkle:version>
+                <sparkle:shortVersionString>3.2.22</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.22</h2>
+                                        <ul>
+                                            <li><strong>Smarter local code search:</strong> semantic search now blends meaning with exact keyword matches (function names, error strings) and points results at file:line.</li>
+                                            <li><strong>Auto-indexing (opt-in):</strong> turn on "Semantic project index" in Settings and Throttle keeps your projects searchable without running anything by hand — on-device, paused under memory pressure, 100% local.</li>
+                                            <li><strong>Faster search:</strong> cosine matching now runs on Accelerate/vDSP (Apple-Silicon SIMD).</li>
+                                            <li><strong>Menu-bar dropdown</strong> now shows a reset countdown ("resets 9pm (in 2h 14m)").</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.22.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="nWdHg62nM5rqBEUNlctmif2/wYnNKNiLbUP0G0Tg52bzvRW6WUbTwQhCsBouOaSfoACj2auA7ySYc603I1ONCA==" length="12682928" />
+            </item>
+            <item>
+                <title>Version 3.2.21</title>
+                <pubDate>Wed, 01 Jul 2026 00:12:11 +0200</pubDate>
+                <sparkle:version>121</sparkle:version>
+                <sparkle:shortVersionString>3.2.21</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.21</h2>
+                                        <ul>
+                                            <li><strong>Quieter tool output:</strong> successful test runs (cargo/go/swift/pytest/jest…) collapse to their summary while failures stay verbatim — fewer wasted tokens, nothing hidden.</li>
+                                            <li><strong>Local semantic code search:</strong> index your projects on-device and search them by meaning from Claude Code (results point at file:line). Opt-in auto-indexing in Settings; 100% local.</li>
+                                            <li><strong>Reversible context trimming:</strong> trimmed images/large tool output now carry a hash Claude can rehydrate on demand instead of losing it.</li>
+                                            <li><strong>Longer memory:</strong> a recallable facts graph + portable knowledge bundles, surfaced to Claude Code.</li>
+                                            <li><strong>Menu-bar dropdown</strong> now shows a reset countdown ("resets 9pm (in 2h 14m)").</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.21.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="cDE29RtjA4EW/5xy+QSRhMEHg9pStgq4i7p6XKxLcin5lePuzsIFyBf8tBYksquZo4hqvqnyMOVBswc4bAeFAg==" length="12673320" />
+            </item>
+            <item>
+                <title>Version 3.2.20</title>
+                <pubDate>Sat, 27 Jun 2026 20:14:25 +0200</pubDate>
+                <sparkle:version>120</sparkle:version>
+                <sparkle:shortVersionString>3.2.20</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.20</h2>
+                                        <ul>
+                                            <li><strong>Fixed — response style updates now stick:</strong> activating an output style (Caveman Ultra, Concise, …) refreshes its file on every activation, so app updates that improve a built-in style actually take effect. Styles you’ve edited yourself are never overwritten.</li>
+                                            <li><strong>Caveman Ultra:</strong> now reliably overrides a “be concise” section in your CLAUDE.md instead of being diluted by it.</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.20.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="k6BUbqEbJY682vxPvrTP0XRiKKFv5fKtvf9Wr7T8KhXZ2vBGKWYzYWV4y07bIAiVB8MaqpAAhZciAafN4nh9Cg==" length="11626063" />
+            </item>
+            <item>
+                <title>Version 3.2.19</title>
+                <pubDate>Sat, 27 Jun 2026 19:43:50 +0200</pubDate>
+                <sparkle:version>119</sparkle:version>
+                <sparkle:shortVersionString>3.2.19</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.19</h2>
+                                        <ul>
+                                            <li><strong>Fixed — launch reliability:</strong> the menubar app could silently fail to start while a Claude Code session had Throttle's MCP server connected (the single-instance guard miscounted CLI helper processes). It now starts reliably.</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.19.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="VkPp588Xm+xvDm9sv0F+IYwz8Zq2cOVBHTD1e9uOufkBAg9gtE3PS0Wmo9H0a7ZDuu/3lBpvchHqrkU5fBEuDg==" length="11624903" />
+            </item>
+            <item>
+                <title>Version 3.2.18</title>
+                <pubDate>Sat, 27 Jun 2026 19:23:10 +0200</pubDate>
+                <sparkle:version>118</sparkle:version>
+                <sparkle:shortVersionString>3.2.18</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.18</h2>
+                                        <ul>
+                                            <li><strong>Fixed — output styles:</strong> selecting Caveman / Caveman Ultra now fully takes effect. The "Concise replies" toggle and the output style were both injecting verbosity directives; the weaker one diluted the chosen style. They're now mutually exclusive.</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.18.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="6q48bw4QsvjrUTRbIT6Py92BnDly23N7XCkomP66juIyGS7DGMN0J7T8DgM7m20pGKvtr2yq5pzd5hiTSCQCDA==" length="11624534" />
+            </item>
+            <item>
+                <title>Version 3.2.16</title>
+                <pubDate>Sat, 27 Jun 2026 12:38:35 +0200</pubDate>
+                <sparkle:version>116</sparkle:version>
+                <sparkle:shortVersionString>3.2.16</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.16</h2>
+                                        <ul>
+                                            <li><strong>New — Savings Ledger:</strong> a per-technique tally of tokens saved, with a "real money cost" hero number and one-click archive of dead skills.</li>
+                                            <li><strong>New — auto-pause:</strong> when a session is about to blow the cap, Throttle can pause the runaway only (95% trigger) and drain it safely.</li>
+                                            <li><strong>Improved — output styles:</strong> the Caveman / Caveman Ultra terse styles now bite harder out of the box.</li>
+                                            <li><strong>Improved — context trimmer:</strong> extended to stub bulky tool-call inputs.</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.16.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="sqLEHedVgeSRgdM7c6MWrIx/cGtguFqtEnYVoci9KicnNxjUOX4lJZnuLoo5vr3kYX82gAyxsXrxDD8Q236dBg==" length="11624086" />
+            </item>
+            <item>
+                <title>Version 3.2.15</title>
+                <pubDate>Sat, 27 Jun 2026 01:09:45 +0200</pubDate>
+                <sparkle:version>115</sparkle:version>
+                <sparkle:shortVersionString>3.2.15</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.15</h2>
+                                        <ul>
+                                            <li><strong>New (advanced) — MCP proxy:</strong> <code>Throttle --mcp-proxy &lt;port&gt; &lt;server-cmd&gt;</code> runs a local HTTP MCP broker that owns a fragile MCP server, so Throttle can restart it without busting Claude Code's prompt cache. Register with <code>claude mcp add --transport http</code>.</li>
+                                            <li><strong>New — Focus Filter:</strong> a "Deep Work" Focus can auto-enable Throttle's quiet mode.</li>
+                                            <li><strong>New — widget:</strong> a Pause control on the medium widget freezes all Claude sessions.</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.15.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="//qt/rcPSRU+fOpLEo6Pli5ZbmQWkD4vrJifir4DJc/EZL+rEG9YVflWtgqwmA3jAgmPBu8GZLOwUMNjUzUcAQ==" length="11503723" />
+            </item>
+            <item>
+                <title>Version 3.2.14</title>
+                <pubDate>Fri, 26 Jun 2026 20:16:23 +0200</pubDate>
+                <sparkle:version>114</sparkle:version>
+                <sparkle:shortVersionString>3.2.14</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.14</h2>
+                                        <ul>
+                                            <li><strong>New MCP tool — get_mcp_health_status:</strong> Claude can ask Throttle whether your other MCP servers are ok / slow / down, so it knows when a tool is a zombie. Reports how long ago it was probed.</li>
+                                            <li><strong>Honest scoping:</strong> when a local model runtime (Ollama / LM Studio) is present, the Dashboard notes that Throttle's figures cover Anthropic usage only.</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.14.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="87ATMgv+6SlFIc6fQy4pGjQrdb0ymKmAVdwgRnEc72qDzjKBKNSnOYGZEo5uMPz4wi3GfTXVuzPHkwgTjenJBQ==" length="11474959" />
+            </item>
+            <item>
+                <title>Version 3.2.13</title>
+                <pubDate>Fri, 26 Jun 2026 19:58:31 +0200</pubDate>
+                <sparkle:version>113</sparkle:version>
+                <sparkle:shortVersionString>3.2.13</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.13 — Claude can see its own dead weight</h2>
+                                        <p>The Throttle MCP source gains a tool so Claude can ask which of its loaded MCP
+                                        servers and skills went unused — schema tokens it pays for every session. Read-only
+                                        and purely informative; you decide what to prune.</p>
+                                        <ul>
+                                            <li><strong>New MCP tool — get_dead_skills:</strong> lists loaded-but-unused (30 days) MCP servers / skills.</li>
+                                            <li>The settings toggle is now "Throttle as an MCP source" — Claude can query budget headroom, session cost, dead tools, and search past sessions.</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.13.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="RDIAxIfls+I7H9BhwkRVwyydPaW7A0BOKtDjgw/keM2hTNti+5mgaQOD+zFKNhS13e/b3F+gKqMXysd8SMAwCg==" length="11463299" />
+            </item>
+            <item>
+                <title>Version 3.2.12</title>
+                <pubDate>Fri, 26 Jun 2026 18:47:16 +0200</pubDate>
+                <sparkle:version>112</sparkle:version>
+                <sparkle:shortVersionString>3.2.12</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.12 — a cockpit dashboard, at a glance</h2>
+                                        <p>The cockpit now opens on a Dashboard: your Claude budget, spend, time and projects
+                                        up front, with a live machine panel (CPU, memory, disk, network) for context.</p>
+                                        <ul>
+                                            <li><strong>New — Dashboard cover page:</strong> 5-hour &amp; 7-day cap gauges, 7-day spend, recoverable cache cost, active hours, a daily sparkline, and top projects by time — plus a graphite machine panel (per-core CPU, memory/swap, disk free, network).</li>
+                                            <li><strong>New — time tracking:</strong> the Work Activity view gains a 7-day / 30-day / single-day picker with per-project breakdown. "Active time" excludes idle gaps over 5 minutes, so it's honest time-at-keyboard.</li>
+                                            <li><strong>New:</strong> on a bleeding-edge macOS, an honest note that terminal lag under memory pressure is a system/swap issue (not a Throttle bug) — dismissible.</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.12.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="hO9mnoyF4wrwUkQbQz2+VZTgDJM+e2xbftmkYzyeswrDQ8YTt21QxTy7zQtxwx6FXWH+8X9fklr8poiYt3ILDg==" length="11452981" />
+            </item>
+            <item>
+                <title>Version 3.2.11</title>
+                <pubDate>Fri, 26 Jun 2026 12:17:13 +0200</pubDate>
+                <sparkle:version>111</sparkle:version>
+                <sparkle:shortVersionString>3.2.11</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.11 — Claude can ask Throttle, and Shortcuts can drive it</h2>
+                                        <p>Two big additions that make Throttle part of your workflow instead of just a meter.</p>
+                                        <ul>
+                                            <li><strong>New — Throttle answers Claude:</strong> with the Throttle MCP enabled, Claude Code can ask Throttle for your live budget and cost mid-session ("how much headroom before my 5-hour cap?"). Read-only; it reports your real numbers, or says so when it can't.</li>
+                                            <li><strong>New — Shortcuts &amp; Siri actions:</strong> Pause / Resume all Claude sessions and toggle quiet mode from Shortcuts, Siri, or a Focus. Safe, reversible actions only — file-changing optimizations still need a click in the cockpit.</li>
+                                            <li><strong>New:</strong> the cache-buster audit now reveals the offending file to fix, with the € it's wasting.</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.11.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="zUhozXHbAwR8NiVzm9m9QHfVEG+R2Sj828aYMkipRF6VCpaKvgcnnxtziR/onQ+1V5Krj1zHViSHBwNIMT1WCQ==" length="11324212" />
+            </item>
+            <item>
+                <title>Version 3.2.10</title>
+                <pubDate>Fri, 26 Jun 2026 09:25:15 +0200</pubDate>
+                <sparkle:version>110</sparkle:version>
+                <sparkle:shortVersionString>3.2.10</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.10 — fixes the self-answering question prompt</h2>
+                                        <p>Fixes a bug where returning to a session that had a Claude Code question prompt
+                                        open could select the first option on its own — when you clicked the session tab or
+                                        pressed the first arrow key. Throttle was re-focusing the terminal on every refresh,
+                                        which made it emit rapid focus events that the prompt read as a confirmation. It now
+                                        only re-focuses on a real change, so the prompt waits for your actual choice.</p>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.10.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="GqD+3zhVrkMefc7k3z8YJ8m/Ef9ZAonRrvyrw5y7JQFrXnhgsfHbFEBLKUQBt2thKW0L/WR/ykMdD+dIwwuZCw==" length="11296186" />
+            </item>
+            <item>
+                <title>Version 3.2.9</title>
+                <pubDate>Thu, 25 Jun 2026 22:23:23 +0200</pubDate>
+                <sparkle:version>109</sparkle:version>
+                <sparkle:shortVersionString>3.2.9</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.9 — put a number on cache waste</h2>
+                                        <p>The config audit now shows the <strong>Recoverable Miss Cost</strong>: the euros
+                                        you spent re-writing a prompt cache that should still have been warm. When a large
+                                        cache write lands less than 5 minutes after the previous turn, the cached prefix got
+                                        busted and billed at the 1.25× write rate instead of the 0.10× read rate — Throttle
+                                        totals that recoverable waste from your real usage history (conservative by design).</p>
+                                        <ul>
+                                            <li><strong>New:</strong> "Cache busters · ≈€X wasted/7d" in the audit panel, with an explanation of what busted the cache</li>
+                                            <li>What's-new tour refreshed with the latest optimizations (cache cost, spatial skill scoping, the reworked terminal menu)</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.9.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="f/dtaAwUCKwtP9SS+MgmFYVgpR+T3K28bQlKLEBglISaS5P7FgFBMHd3EIhoHMbQMucpygr9JO/T9z6s5SaBAw==" length="11295907" />
+            </item>
+            <item>
+                <title>Version 3.2.8</title>
+                <pubDate>Thu, 25 Jun 2026 16:50:29 +0200</pubDate>
+                <sparkle:version>108</sparkle:version>
+                <sparkle:shortVersionString>3.2.8</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.8 — sharper terminal + skill scoping</h2>
+                                        <p>Reworks the terminal right-click menu around what actually saves you tokens,
+                                        and adds a one-click way to stop rarely-used skills from taxing every session.</p>
+                                        <ul>
+                                            <li><strong>New:</strong> Throttle-shaped terminal menu — Compact context (/compact), paste an image as OCR'd text (skip vision tokens), ask claude to explain/fix/summarize a selection, and pause/resume the session (freeze token burn, no lost state)</li>
+                                            <li><strong>New:</strong> Spatial skill scoping — Throttle spots a skill used in only one project but loaded into every session, and offers to move it into that project (reversible) so it stops costing you elsewhere</li>
+                                            <li>Stability + diagnostics refinements</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.8.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="zbUrSzKkIMrBEjTFqUEnLN7nEVcYQJ8HB/B889VoS/RzdKBYxdrp2Zxl1ZBn0YaKBsDKjAWrK9fgrdL+s/FgAA==" length="11289640" />
+            </item>
+            <item>
+                <title>Version 3.2.7</title>
+                <pubDate>Thu, 25 Jun 2026 14:20:23 +0200</pubDate>
+                <sparkle:version>107</sparkle:version>
+                <sparkle:shortVersionString>3.2.7</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.7</h2>
+                                        <p>Internal diagnostics build. Adds an opt-in input logger to track down a
+                                        rare issue where a Claude Code question prompt could register a selection on
+                                        its own when you switch back to a session. No change to normal behavior — the
+                                        logger is off unless explicitly enabled.</p>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.7.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="oZIZzgU6/orZ7IzAFP/AuVHqm+cUjkyJc1k7tN0wgP4VpbC3LvcYHzZ2SdKY3RshlxBSiD86rx/4cw4DwrPMCQ==" length="11241961" />
+            </item>
+            <item>
+                <title>Version 3.2.6</title>
+                <pubDate>Thu, 25 Jun 2026 11:10:31 +0200</pubDate>
+                <sparkle:version>106</sparkle:version>
+                <sparkle:shortVersionString>3.2.6</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.6 — accurate again + new optimizations</h2>
+                                        <p>Fixes exact mode: claude.ai changed its usage API (a per-model window is now
+                                        null) which made Throttle fall back to a drifted local estimate — your real
+                                        numbers are back. Adds a quiet mode that backs off Throttle's background scans
+                                        when your Mac is under memory pressure, so it stops adding to terminal lag.</p>
+                                        <ul>
+                                            <li><strong>New:</strong> runaway-loop circuit breaker — catches an agent cycling with no progress and lets you pause it before it drains your 5-hour cap</li>
+                                            <li><strong>New:</strong> dead-skill &amp; MCP audit — flags loaded servers/skills unused in 30 days</li>
+                                            <li><strong>New:</strong> cost per commit / per verify-run in project Stats</li>
+                                            <li><strong>New:</strong> opt-in MCP server probe (real tool count + schema cost) and a What's-new tour</li>
+                                            <li><strong>Fixed:</strong> exact-mode "Bad response from claude.ai"</li>
+                                            <li><strong>Fixed:</strong> session restore no longer wipes your working set</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.6.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="426Sq8rkjI/Y9gvFJaFvKIFAYx9im7sqimo2feH5TJN+9BuQmnUV3l7+AYUk0wmqfxbZLyudmGLKaPDA5vEPDw==" length="11239616" />
+            </item>
+            <item>
+                <title>Version 3.2.4</title>
+                <pubDate>Sun, 21 Jun 2026 08:25:28 +0200</pubDate>
+                <sparkle:version>104</sparkle:version>
+                <sparkle:shortVersionString>3.2.4</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                                        <h2>Throttle v3.2.4 — cockpit panels + terminal polish</h2>
+                                        <p>Selecting text in the embedded terminal now holds while Claude is still
+                                        streaming — your selection no longer vanishes the moment you release the mouse.
+                                        Scrolling up to read earlier output no longer yanks you back to the bottom.</p>
+                                        <p>New cockpit panels: <strong>Health</strong> (self-checks with 1-click fixes —
+                                        orphaned processes, DB integrity, disk, memory, cache-busting hooks),
+                                        <strong>Work activity</strong> (active hours per day and week, projects and
+                                        sessions touched this week), and <strong>Claude Code setup</strong> (your MCP
+                                        servers, skills and plugins at a glance).</p>
+                                        <ul>
+                                            <li><strong>New:</strong> per-session rate-limit detection — see which session is blocked and when it frees up</li>
+                                            <li><strong>New:</strong> manual Pause/Resume a session (freezes token burn, keeps state)</li>
+                                            <li><strong>New:</strong> per-project stats button + "paste latest Xcode build errors" into a session</li>
+                                            <li><strong>Fixed:</strong> terminal text selection survives live output</li>
+                                            <li><strong>Fixed:</strong> scrolling up no longer fights the stream</li>
+                                            <li><strong>Fixed:</strong> honest per-session uptime + stable session sort</li>
+                                        </ul>
+                                ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.4.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="6lmujuRjeIwrvBsScuXnsry9dNC92ieeWSj8sJtVnnk906tr7hVJ09oHosfuDIIALVX99TjQ8VrvhQMJOfA6CQ==" length="11031772" />
+            </item>
+            <item>
+                <title>Version 3.2.0</title>
+                <pubDate>Tue, 16 Jun 2026 17:08:15 +0200</pubDate>
+                <sparkle:version>100</sparkle:version>
+                <sparkle:shortVersionString>3.2.0</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                    <description><![CDATA[
+                            <h2>Throttle v3.2.0 — accurate metrics + predictive cap nudge</h2>
+                            <p>Fixes a usage double-count: re-scanned sessions could insert duplicate
+                            events, inflating token and cost figures by ~12% — usage now de-duplicates and
+                            ingestion is idempotent, so your numbers are accurate. Adds a predictive cap
+                            nudge that warns you "cap in ~N min" from your live burn rate, before the 80/95%
+                            alerts.</p>
+                    ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.2.0.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="G8Z3LNDYTc8K8JD6p2krABtRFoFH+bmFv9pZPMhhsEVlGzLCvG+cox0WNlYrpzdfv3ziJJFfylPVdIw2Z0OjBA==" length="10644686" />
+            </item>
+            <item>
+                <title>Version 3.1.9</title>
+                <pubDate>Tue, 16 Jun 2026 11:48:58 +0200</pubDate>
+                <sparkle:version>99</sparkle:version>
+                <sparkle:shortVersionString>3.1.9</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                    <description><![CDATA[
+                            <h2>Throttle v3.1.9 — predictive cap nudge</h2>
+                            <p>Throttle now warns you <em>before</em> a wall: from your live burn rate it
+                            projects when you'll hit the 5-hour or weekly cap and nudges you ("cap in ~20 min")
+                            ahead of the usual 80%/95% alerts — so you can wrap up or batch instead of getting
+                            locked out mid-task.</p>
+                    ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.1.9.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="SVaDZO76R8Ff56C5uRbbrjq7Te5t+myhktzTLGASpYDULqXtVQaicRUG6qxgq6mBlPShwXfj/HsuoOQxxKcwDg==" length="10644503" />
+            </item>
+            <item>
+                <title>Version 3.1.8</title>
+                <pubDate>Tue, 16 Jun 2026 10:55:19 +0200</pubDate>
+                <sparkle:version>98</sparkle:version>
+                <sparkle:shortVersionString>3.1.8</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                    <description><![CDATA[
+                            <h2>Throttle v3.1.8 — cockpit themes, timeline &amp; hibernation</h2>
+                            <p>Curated terminal themes (Graphite, Midnight, Light, High Contrast),
+                            timeline navigation to jump between turns, and session hibernation that
+                            frees RAM while keeping full resume context. Plus image-drop OCR with a
+                            token-saving menu, "needs you" alerts when a hidden session is waiting,
+                            and reliability fixes for session resume and usage accuracy.</p>
+                    ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.1.8.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="1DMO21kSa/2UfbH2MLbTN1OT4L0SUp57dpjWUyh7x94DTabHR8qbmyFZG0sYE0fJ1EjtmyjqQ+gzazO53nNmCg==" length="10638725" />
+            </item>
+            <item>
+                <title>Version 3.1.7</title>
+                <pubDate>Mon, 15 Jun 2026 14:36:45 +0200</pubDate>
+                <sparkle:version>97</sparkle:version>
+                <sparkle:shortVersionString>3.1.7</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                    <description><![CDATA[
+                            <h2>Throttle v3.1.7 — semantic session search + team policy</h2>
+                            <p>Session search now finds the right past conversation even when you don't remember
+                            the exact word — searching "auth" also surfaces "login" and "token", fully on-device.
+                            Adds a one-click Team Policy export (managed-settings.json) for distributing Throttle's
+                            recommended Claude Code hardening across a team via MDM.</p>
+                        ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.1.7.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="FaYgrd7qjNFlnVHGduj6fvuV+BH2JKjDvzI94U9HGfrtjz1XxYu1xgEtD24dWQeqrTrVeviuctZkAFeboGtKAg==" length="10551211" />
+            </item>
+            <item>
+                <title>Version 3.1.6</title>
+                <pubDate>Mon, 15 Jun 2026 14:11:46 +0200</pubDate>
+                <sparkle:version>96</sparkle:version>
+                <sparkle:shortVersionString>3.1.6</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                    <description><![CDATA[
+                            <h2>Throttle v3.1.6 — searchable session memory</h2>
+                            <p>Search your own past Claude Code sessions for context the window has lost — a dedicated
+                            Search window, plus an opt-in MCP server so Claude can search its history too. Adds
+                            per-command output-compression recipes (git, build tools) and a French-localized Settings pane.</p>
+                        ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.1.6.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="tY4zH9OnX2QQ6CNTGZl/mUGnLaOISnsvFeafPNr/BY6iN6woad0VM8kqAv4l7ih0Wl/CFkfrF6/2quZxcQ4GDw==" length="10544821" />
+            </item>
+            <item>
+                <title>Version 3.1.5</title>
+                <pubDate>Mon, 15 Jun 2026 13:01:47 +0200</pubDate>
+                <sparkle:version>95</sparkle:version>
+                <sparkle:shortVersionString>3.1.5</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                    <description><![CDATA[
+                            <h2>Throttle v3.1.5</h2>
+                            <p>Full French localization, plus drag-to-reorder and close for Cockpit sessions in the Rail.</p>
+                        ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.1.5.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="MATW5m3NGMDjVCMYz5iN6V2LCOgc+SD/ckSLy20Fxb3fMYoace09f4MHLfOhHV5EZkPlgDY+7yC7crX4vjN1Cg==" length="10455461" />
+            </item>
+            <item>
+                <title>Version 3.1.4</title>
+                <pubDate>Mon, 15 Jun 2026 11:48:49 +0200</pubDate>
+                <sparkle:version>94</sparkle:version>
+                <sparkle:shortVersionString>3.1.4</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                    <description><![CDATA[
+                            <h2>Throttle v3.1.4 — the optimizers</h2>
+                            <p>An embedded command-output compressor (a PostToolUse hook that strips ANSI, dedups and
+                            trims verbose CLI output before Claude sees it — errors always passed through raw),
+                            one-click read-firewall install, cache-hygiene + tool-loadout audits, and a Rail close button.</p>
+                        ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.1.4.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="jZ8psgh9nHHmbayicak9dgAFj20+9ifxao2DGUljxN8ogkVB/jDhYitQpcyhtLcoIbj1NgHszdoU6Lz7zAaSCQ==" length="10414641" />
+            </item>
+            <item>
+                <title>Version 3.1.3</title>
+                <pubDate>Mon, 15 Jun 2026 10:03:27 +0200</pubDate>
+                <sparkle:version>93</sparkle:version>
+                <sparkle:shortVersionString>3.1.3</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                    <description><![CDATA[
+                            <h2>Throttle v3.1.3</h2>
+                            <p>Drop images into a Cockpit session as locally-OCR'd text (far fewer tokens than a vision image),
+                            a one-click Scratch session, and a MEMORY.md auto-load-cap check in the audit inspector.</p>
+                        ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.1.3.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="cnw7j2rT78xCBMoT7Zv5CH5q8QU87FhNgDvRz7D7Q31Ega029UaFv+WolTxT4pWErUlR+4PWA/CIu7rsC1UPDA==" length="10348211" />
+            </item>
+            <item>
+                <title>Version 3.1.2</title>
+                <pubDate>Mon, 15 Jun 2026 09:17:20 +0200</pubDate>
+                <sparkle:version>92</sparkle:version>
+                <sparkle:shortVersionString>3.1.2</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                    <description><![CDATA[
+                            <h2>Throttle v3.1.2</h2>
+                            <p>Output-style manager with one-click Caveman / Caveman Ultra, a Cockpit style indicator,
+                            image drag-drop that attaches as <code>[Image #N]</code>, a fixed New-session button, and
+                            deterministic settings.json Quick wins.</p>
+                        ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.1.2.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="SylznsPw5vsGD1Dfnsoya/rZDi16EnSY6fTdciMJytJaMugYIlik7pquZC3zxfhUmJF1k2W4AN0J5MuWjyNCDg==" length="10328366" />
+            </item>
+            <item>
+                <title>Version 3.1.1</title>
+                <pubDate>Sun, 14 Jun 2026 21:16:30 +0200</pubDate>
+                <sparkle:version>91</sparkle:version>
+                <sparkle:shortVersionString>3.1.1</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                    <description><![CDATA[
+                            <h2>Throttle v3.1.1</h2>
+                            <p>Pricing update and polish. Pro is now a one-time €29 unlock.</p>
+                        ]]></description>
+                <enclosure url="https://lorislab.fr/throttle/Throttle-3.1.1.dmg"
+                           type="application/octet-stream"
+                           sparkle:edSignature="u4cwCuG1Vs7pLdTUqdQi8ngFjSuAmUqvZspvMJ0HlcElwrfwUNK8YT7+CX2oSLF2PvuBSnEC37KVRUCftYQjBg==" length="10193743" />
+            </item>
+            <item>
+            <title>Version 3.1.0</title>
+            <sparkle:version>90</sparkle:version>
+            <sparkle:shortVersionString>3.1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h2>Throttle v3.1.0 — Multi-session Cockpit & Autopilot</h2>
+                <ul>
+                    <li><strong>New — Multi-session Cockpit:</strong> run several <code>claude</code> projects at once (Tabs / Rail / Overview), with real per-session cost, model and RAM, a memory-pressure gate, and an audit inspector. Tabs persist across restarts.</li>
+                    <li><strong>New — Autopilot:</strong> keeps Claude Code lean system-wide — a concise output-style and a usage statusline in every terminal, all reversible.</li>
+                    <li><strong>New — AI Optimizer:</strong> proposes leaner, safer CLAUDE.md / settings with a GitHub-style diff and a "why this is better" summary, grounded in researched best practices.</li>
+                    <li><strong>New — Memory-pressure awareness</strong> and the <strong>Surgical Context Trimmer</strong> (lossless transcript trim).</li>
+                    <li><strong>Fixed:</strong> terminal statusline now always agrees with the menu bar; cleaner project list; lighter Apple Intelligence fallback.</li>
+                </ul>
+            ]]></description>
+            <pubDate>Sun, 14 Jun 2026 19:37:10 +0200</pubDate>
+            <enclosure url="https://lorislab.fr/throttle/Throttle-3.1.0.dmg"
+                       type="application/octet-stream"
+                       sparkle:edSignature="nl0JU/tngy23XCw6HLonfGdfkpM978ii+3F9KqRMMGVEOcHpDxoLR9DsU+UyahqeV4LTg2NbmVF9y9lXt5c3DQ==" length="10193612" />
+        </item>
+        <item>
+            <title>Version 3.0.2</title>
+            <link>https://lorislab.fr/throttle/</link>
+            <sparkle:version>89</sparkle:version>
+            <sparkle:shortVersionString>3.0.2</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>Throttle v3.0.2 — Complete Pricing Fix</h2>
+                <ul>
+                    <li><strong>Fixed:</strong> Plan advisor now uses realistic blended rates for all models</li>
+                    <li><strong>Fixed:</strong> "API equivalent" cost calculation was inflated by 2-3× (used input-only rates)</li>
+                    <li>Token savings banner now shows accurate value (€6/M blended rate)</li>
+                    <li>All cost displays now reflect typical 70/30 input/output usage patterns</li>
+                </ul>
+            ]]></description>
+            <pubDate>Thu, 28 May 2026 10:04:11 +0200</pubDate>
+            <enclosure url="https://lorislab.fr/throttle/Throttle-3.0.2.dmg"
+                       type="application/octet-stream"
+                       sparkle:edSignature="AGNftD5homAoYGpeDTNVtFMerV/64TWOkak5wbALkFxkwYqYSlgdZBxdpEN/ctxl68UuaM8aBPDcVmedvTEYDQ==" length="8227069" />
+        </item>
+        <item>
+            <title>Version 3.0.1</title>
+            <link>https://lorislab.fr/throttle/</link>
+            <sparkle:version>88</sparkle:version>
+            <sparkle:shortVersionString>3.0.1</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>Throttle v3.0.1 — Accurate Savings Calculation</h2>
+                <ul>
+                    <li><strong>Fixed:</strong> Token savings now use realistic blended rate (€6/M instead of €2.76/M input-only)</li>
+                    <li>Savings calculation was undervaluing by 50%+ because output tokens cost 5× more than input</li>
+                    <li>New rate reflects typical Claude Code usage: 70% input / 30% output</li>
+                    <li>Your lifetime savings will now show the accurate API cost value</li>
+                </ul>
+            ]]></description>
+            <pubDate>Thu, 28 May 2026 08:54:11 +0200</pubDate>
+            <enclosure url="https://lorislab.fr/throttle/Throttle-3.0.1.dmg"
+                       type="application/octet-stream"
+                       sparkle:edSignature="Z/EtqzCLXNeHjtn3DQT9SejmLtIyBFekIhFBRZlZQU/7WPoR81hh4LCJGMfd7appqkg97kuYdVw4ZJupm9ozAw==" length="8227072" />
+        </item>
+        <item>
+            <title>Version 3.0.0</title>
+            <link>https://lorislab.fr/throttle/</link>
+            <sparkle:version>3.0.0</sparkle:version>
+            <sparkle:shortVersionString>3.0.0</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>Throttle v3.0.0 — Deep Dive Quality Pass</h2>
+                <ul>
+                    <li><strong>New:</strong> Assistant settings tab with Caveman Mode and ccusage import</li>
+                    <li><strong>Fixed:</strong> 21 critical/high bugs (Swift 6 concurrency, MainActor crashes)</li>
+                    <li><strong>Improved:</strong> VoiceOver accessibility for all icon-only buttons</li>
+                    <li><strong>Improved:</strong> UI/UX with wider dropdown (340pt → 440pt)</li>
+                    <li><strong>Improved:</strong> Keyboard shortcuts (Escape on Back button and Pro banner)</li>
+                    <li><strong>Improved:</strong> Calibration empty state guidance</li>
+                </ul>
+            ]]></description>
+            <pubDate>Tue, 27 May 2026 12:00:00 +0000</pubDate>
+            <enclosure url="https://lorislab.fr/throttle/Throttle-3.0.0.zip"
+                       sparkle:version="3.0.0"
+                       sparkle:shortVersionString="3.0.0"
+                       length="8279328"
+                       type="application/octet-stream" />
+        </item>
+    </channel>
+</rss>

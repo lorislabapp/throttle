@@ -11,15 +11,17 @@ import SwiftUI
 struct ProjectOptimizerTab: View {
     let project: ProjectInfo
 
-    @State private var selectedFile: EditableFile = .claudeMd
-    @State private var originalContents: String = ""
-    @State private var proposedContents: String = ""
-    @State private var status: String = ""
-    @State private var lastBackupURL: URL?
-    @State private var loading = true
-    @State private var rationale: [String] = []
-    @State private var optimizing = false
-    @State private var diffMode = false
+    @State var selectedFile: EditableFile = .claudeMd
+    @State var originalContents: String = ""
+    @State var proposedContents: String = ""
+    @State var status: String = ""
+    @State var lastBackupURL: URL?
+    @State var loading = true
+    @State var rationale: [String] = []
+    @State var optimizing = false
+    @State var diffMode = false
+    @State var optimizationTask: Task<Void, Never>?
+    @State var revision = UUID()
 
     private let hair = Color.primary.opacity(0.09)
 
@@ -42,6 +44,12 @@ struct ProjectOptimizerTab: View {
         VStack(spacing: 0) {
             toolbar
             Rectangle().fill(hair).frame(height: 1)
+            Text("""
+                Settings use local checks. AI instruction editing stays on this Mac and requires an \
+                on-device model selected in Assistant.
+                """)
+                .font(.caption).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading).padding(12)
             TOONPotentialReadout()
             ReadFirewallReadout(project: project)
             EvalReadout(project: project)
@@ -64,6 +72,7 @@ struct ProjectOptimizerTab: View {
         .onAppear { reload() }
         .onChange(of: project.id) { _, _ in reload() }
         .onChange(of: selectedFile) { _, _ in reload() }
+        .onDisappear { cancelOptimization() }
     }
 
     private var toolbar: some View {
@@ -87,11 +96,11 @@ struct ProjectOptimizerTab: View {
             }
             if optimizing {
                 HStack(spacing: 6) { ProgressView().controlSize(.small); Text("Optimising…").font(.system(size: 11)).foregroundStyle(.secondary) }
-            } else {
-                Button { Task { await optimizeWithAI() } } label: {
+            } else if selectedFile == .claudeMd {
+                Button { startOptimization() } label: {
                     HStack(spacing: 5) {
                         Image(systemName: "sparkles").font(.system(size: 11))
-                        Text("Optimize with AI").font(.system(size: 12, weight: .medium))
+                        Text("Optimize on this Mac").font(.system(size: 12, weight: .medium))
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 11).padding(.vertical, 5)
@@ -148,7 +157,7 @@ struct ProjectOptimizerTab: View {
                 .scrollContentBackground(.hidden)
                 .padding(10)
                 .background(Color.primary.opacity(0.03))
-                .disabled(!isEditable)
+                .disabled(!isEditable || optimizing)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -160,10 +169,10 @@ struct ProjectOptimizerTab: View {
                     .lineLimit(1).truncationMode(.middle)
             }
             Spacer(minLength: 0)
-            if let backup = lastBackupURL {
+            if let backup = lastBackupURL, !optimizing {
                 borderedButton("Rollback") { rollback(to: backup) }
             }
-            borderedButton("Discard", disabled: !hasChanges) {
+            borderedButton("Discard", disabled: !hasChanges || optimizing) {
                 proposedContents = originalContents; status = ""
             }
             Button { Task { await apply() } } label: {
@@ -171,7 +180,7 @@ struct ProjectOptimizerTab: View {
                     .padding(.horizontal, 13).padding(.vertical, 6)
                     .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 7))
             }
-            .buttonStyle(.plain).disabled(!hasChanges).opacity(hasChanges ? 1 : 0.45)
+            .buttonStyle(.plain).disabled(!hasChanges || optimizing).opacity(hasChanges ? 1 : 0.45)
         }
         .padding(.horizontal, 16).padding(.vertical, 9)
     }
@@ -193,7 +202,7 @@ struct ProjectOptimizerTab: View {
             Text("This project doesn't have \(selectedFile.rawValue) yet. Create a sensible starter — review the diff, fill in the placeholders, then Apply to create it.")
                 .font(.system(size: 12)).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center).frame(maxWidth: 360)
-            Button { Task { await optimizeWithAI() } } label: {
+            Button { startOptimization() } label: {
                 HStack(spacing: 6) { Image(systemName: "doc.badge.plus"); Text("Create a starter") }
                     .font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
                     .padding(.horizontal, 16).padding(.vertical, 9)
@@ -207,154 +216,6 @@ struct ProjectOptimizerTab: View {
     }
 
     private var hasChanges: Bool { proposedContents != originalContents }
-
-    // MARK: - Actions
-
-    /// Existence-gated URL (nil when the file is absent).
-    private func url(for file: EditableFile) -> URL? {
-        switch file {
-        case .claudeMd:          return project.claudeMdURL
-        case .settingsJSON:      return project.settingsJSONURL
-        case .settingsLocalJSON: return project.settingsLocalJSONURL
-        }
-    }
-
-    /// The target path REGARDLESS of existence — so we can create the file.
-    private func targetURL(for file: EditableFile) -> URL? {
-        guard let root = project.url else { return nil }
-        switch file {
-        case .claudeMd:          return root.appendingPathComponent("CLAUDE.md")
-        case .settingsJSON:      return root.appendingPathComponent(".claude/settings.json")
-        case .settingsLocalJSON: return root.appendingPathComponent(".claude/settings.local.json")
-        }
-    }
-
-    private func fileExists(for file: EditableFile) -> Bool {
-        guard let u = targetURL(for: file) else { return false }
-        return FileManager.default.fileExists(atPath: u.path)
-    }
-
-    private func reload() {
-        loading = true
-        status = ""
-        rationale = []
-        diffMode = false
-        let text: String
-        if let u = targetURL(for: selectedFile), FileManager.default.fileExists(atPath: u.path) {
-            text = (try? String(contentsOf: u, encoding: .utf8)) ?? ""
-        } else {
-            text = ""   // file absent — AI can generate a starter
-        }
-        originalContents = text
-        proposedContents = text
-        loading = false
-    }
-
-    /// Empty file → an honest static starter (the AI can't know this project's
-    /// specifics, so asking it invents fake paths/models). Existing file → AI.
-    private func optimizeWithAI() async {
-        if originalContents.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            proposedContents = starterTemplate(for: selectedFile)
-            rationale = ["New starter — a generic scaffold; fill in the placeholders for this project.",
-                         "Grounds Claude Code in your conventions from the first session, kept short."]
-            diffMode = true
-            status = ""
-            return
-        }
-        optimizing = true; status = ""; rationale = []
-        do {
-            let p = try await AIOptimizerService.optimize(
-                fileLabel: selectedFile.rawValue, content: originalContents,
-                projectName: project.displayName, projectPath: project.projectPath)
-            await MainActor.run {
-                proposedContents = p.proposed
-                rationale = p.why
-                diffMode = p.changed   // show the diff when there's something to see
-                let local = p.provider.contains("Apple Intelligence")
-                if !p.changed {
-                    status = String(localized: "Already optimal — no changes (via \(p.provider)).")
-                } else if local {
-                    status = String(localized: "via \(p.provider) — a small local model. Sign in to claude.ai or add an API key for a stronger result.")
-                } else {
-                    status = String(localized: "Proposed via \(p.provider).")
-                }
-                optimizing = false
-            }
-        } catch {
-            await MainActor.run {
-                status = String(localized: "Optimize failed: \(error.localizedDescription)")
-                optimizing = false
-            }
-        }
-    }
-
-    /// Deterministic settings hardening — no AI provider needed. Merges the
-    /// research-backed deny rules / model / thinking wins and shows the diff,
-    /// reusing the existing Apply (backup + atomic) pipeline. Works on an absent
-    /// file too (creates a hardened settings.json from nothing).
-    private func quickWins() {
-        guard selectedFile != .claudeMd else { return }
-        let r = SettingsAuditService.audit(currentJSON: originalContents)
-        proposedContents = r.proposed
-        rationale = r.why
-        diffMode = r.changed
-        status = r.changed ? "" : String(localized: "No quick wins to add — already hardened.")
-    }
-
-    /// Honest, generic starter — no invented project specifics (placeholders the
-    /// user fills in). Far better than a weak model hallucinating /tmp paths.
-    private func starterTemplate(for file: EditableFile) -> String {
-        switch file {
-        case .claudeMd:
-            let d = project.url.flatMap { detectStack(at: $0) }
-            let stack = d?.stack ?? "<!-- e.g. Swift 6 / SwiftUI · Node + TypeScript · Python -->"
-            let build = d?.build ?? "<!-- e.g. xcodebuild -scheme … / npm run build -->"
-            let test  = d?.test ?? "<!-- e.g. swift test / npm test -->"
-            return """
-            # \(project.displayName)
-
-            Project context for Claude Code. Keep this tight — it's re-sent every session.
-
-            ## Stack
-            \(stack)
-
-            ## Conventions
-            - <!-- coding style, naming, file layout -->
-
-            ## Commands
-            - Build: \(build)
-            - Test:  \(test)
-
-            ## Don't
-            - <!-- things to avoid in this repo -->
-            """
-        case .settingsJSON, .settingsLocalJSON:
-            return "{\n}\n"
-        }
-    }
-
-    /// Detect the project's real stack from disk (honest — never invented).
-    /// Fills Stack + Commands with actual build/test commands.
-    private func detectStack(at root: URL) -> (stack: String, build: String, test: String)? {
-        let fm = FileManager.default
-        func has(_ p: String) -> Bool { fm.fileExists(atPath: root.appendingPathComponent(p).path) }
-        let contents = (try? fm.contentsOfDirectory(atPath: root.path)) ?? []
-
-        if has("Package.swift") { return ("Swift · SwiftPM", "swift build", "swift test") }
-        if let xp = contents.first(where: { $0.hasSuffix(".xcodeproj") }) {
-            let scheme = (xp as NSString).deletingPathExtension
-            return ("Swift · Xcode", "xcodebuild -scheme \(scheme) build", "xcodebuild -scheme \(scheme) test")
-        }
-        if has("package.json") {
-            return (has("tsconfig.json") ? "Node · TypeScript" : "Node · JavaScript", "npm run build", "npm test")
-        }
-        if has("Cargo.toml") { return ("Rust · Cargo", "cargo build", "cargo test") }
-        if has("go.mod") { return ("Go", "go build ./...", "go test ./...") }
-        if has("pyproject.toml") || has("requirements.txt") || has("setup.py") {
-            return ("Python", "<!-- install deps -->", "pytest")
-        }
-        return nil
-    }
 
     private var whyPanel: some View {
         VStack(alignment: .leading, spacing: 5) {
@@ -374,44 +235,4 @@ struct ProjectOptimizerTab: View {
         .background(Color.accentColor.opacity(0.05))
     }
 
-    private func apply() async {
-        guard let url = targetURL(for: selectedFile) else { return }
-        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        do {
-            let result = try await FileEditor.shared.write(url, contents: proposedContents)
-            await MainActor.run {
-                status = String(localized: "Saved at \(formatTime(result.timestamp)) · backup beside the file")
-                lastBackupURL = result.backupURL
-                originalContents = proposedContents
-            }
-        } catch {
-            await MainActor.run {
-                status = String(localized: "Save failed: \(error.localizedDescription)")
-            }
-        }
-    }
-
-    private func rollback(to backup: URL) {
-        guard let url = url(for: selectedFile) else { return }
-        Task {
-            do {
-                try await FileEditor.shared.rollback(backup, to: url)
-                await MainActor.run {
-                    status = String(localized: "Rolled back from \(backup.lastPathComponent)")
-                    lastBackupURL = nil
-                    reload()
-                }
-            } catch {
-                await MainActor.run {
-                    status = String(localized: "Rollback failed: \(error.localizedDescription)")
-                }
-            }
-        }
-    }
-
-    private func formatTime(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .medium
-        return formatter.string(from: date)
-    }
 }

@@ -111,12 +111,7 @@ private struct FlowColumnView: View {
                         Text(verbatim: runtime).font(.system(size: 10)).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
-                    if let entry = spend[item.id], entry.measured {
-                        Text(verbatim: TaskSpend.format(entry.costEUR))
-                            .font(.system(size: 10, weight: .medium).monospacedDigit())
-                            .foregroundStyle(.secondary)
-                            .help(Text("Measured on this Mac, from this task's own sessions"))
-                    }
+                    TaskSpendLabel(entry: spend[item.id])
                     if let since = item.lastActivity {
                         Text(since, format: .relative(presentation: .numeric, unitsStyle: .abbreviated))
                             .font(.system(size: 10)).foregroundStyle(.tertiary)
@@ -188,22 +183,8 @@ private struct FlowSidePanel: View {
 
     /// What the plan has cost so far. Tasks nobody measured are counted apart:
     /// an average over unknowns would read as a smaller bill, not a missing one.
-    @ViewBuilder
     private var spendSection: some View {
-        let total = TaskSpend.total(spend)
-        if total.measured > 0 {
-            VStack(alignment: .leading, spacing: 4) {
-                header("SPENT ON THIS PLAN")
-                Text(verbatim: TaskSpend.format(total.costEUR))
-                    .font(.system(size: 20, weight: .semibold).monospacedDigit())
-                Text("\(total.measured) task(s) measured · \(total.unmeasured) without a session")
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("API price of the tokens these sessions used. Not your subscription, and never added to it.")
-                    .font(.system(size: 10.5)).foregroundStyle(.tertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
+        PlanSpendReadout(total: TaskSpend.total(spend))
     }
 
     private func header(_ title: LocalizedStringKey) -> some View {

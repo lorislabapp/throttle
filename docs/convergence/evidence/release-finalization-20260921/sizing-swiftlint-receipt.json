@@ -1,0 +1,5 @@
+{
+  "exit_code": 0,
+  "command": "swiftlint lint --strict --quiet --no-cache ThrottleTests/ServiceTests/PlanIntegrationViewTests.swift ThrottleTests/ServiceTests/HostedViewReview.swift",
+  "baseline_changed": false
+}

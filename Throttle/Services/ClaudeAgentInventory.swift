@@ -1,12 +1,8 @@
 import Foundation
 
-/// Every Claude Code session this machine knows about, as Claude Code itself
-/// lists them — background agents, interactive sessions, and the cloud threads a
-/// redesigned Project spawns, which carry their own `kind`.
-///
-/// Throttle used to see only the sessions it opened, so an agent that blocked or
-/// failed in a background session waited unseen. Reading the CLI's own inventory
-/// keeps that honest without guessing at private state.
+/// Sessions exposed by `claude agents --json`. The documented inventory is
+/// local (interactive/background); cloud is tolerated for forward compatibility,
+/// not evidence that Projects cloud threads are discoverable or attachable.
 enum ClaudeAgentInventory {
 
     struct Session: Equatable, Sendable, Identifiable {

@@ -1,0 +1,28 @@
+from pathlib import Path
+import subprocess,time,json,datetime
+r=Path(__file__).parent;repo=r.parent/'convergence-recovery-20260920';dest=repo/'docs/convergence/evidence/native-refactor-20260921';label='isolated-suite-batch-'+datetime.datetime.now().strftime('%Y%m%d-%H%M%S');start=time.monotonic();results=[]
+suites=['PromptRefinerServiceTests','CockpitSpendViewTests','RemoteSessionsCredentialTests','CloudKitPublisherTests','PeerTerminalBoundaryTests','RemoteTransferJournalTests','ProjectAssistantViewTests','PlanIntegrationViewTests','PlanIntegrationFlowTests']
+def save():
+ (dest/(label+'.json')).write_text(json.dumps({'elapsed_seconds':round(time.monotonic()-start,1),'results':results,'scope':'all nine suites, 84 expected cases, distinct internal test host'},indent=2))
+for suite in suites:
+ attempts=0
+ while True:
+  if time.monotonic()-start>900:save();raise SystemExit('Bounded suite batch timed out')
+  p=subprocess.run(['/usr/bin/pgrep','-x','xcodebuild'],capture_output=True,text=True)
+  if p.returncode==0:time.sleep(10);continue
+  if p.returncode!=1:raise SystemExit('Process inventory unavailable')
+  q=subprocess.run(['python3','-B',str(r/'run-isolated-suite.py'),'en',suite],capture_output=True,text=True)
+  try:receipt=json.loads(q.stdout.strip().splitlines()[-1])
+  except (ValueError,IndexError):
+   if 'Build admission refused' in q.stdout+q.stderr:time.sleep(10);continue
+   results.append({'suite':suite,'status':'runner_failure','stdout':q.stdout,'stderr':q.stderr});save();raise SystemExit(1)
+  results.append(receipt);save();print(suite,receipt['status'],flush=True)
+  if receipt['status']=='pass':
+   test_label=Path(receipt['log']).stem
+   subprocess.run(['python3','-B',str(r/'export-qualified-evidence.py'),test_label],check=True)
+   break
+  if receipt['status']=='interrupted-concurrency':
+   attempts+=1
+   if attempts<3:time.sleep(10);continue
+  raise SystemExit('Test batch stopped after failure or retry limit')
+save();print('ALL REMAINING SUITES TERMINAL PASS',flush=True)

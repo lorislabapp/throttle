@@ -1,0 +1,16 @@
+{
+  "status": "pass",
+  "exit_code": 0,
+  "command": [
+    "sh",
+    "scripts/verify-research-vault-bundle.sh",
+    "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/archive-20260920-235130.xcarchive/Products/Applications/Throttle.app"
+  ],
+  "script_sha256": "831c490ad58b8406b7e9309db83b542bd4f2c97f9afa9ce8dd21a7924d6443de",
+  "stdout": {
+    "status": "pass",
+    "scenario": "research-vault-bundle",
+    "signed": 0
+  },
+  "scope": "bundle artifacts, LaunchAgent metadata and linkage; no signing qualification or launch"
+}

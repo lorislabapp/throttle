@@ -1,0 +1,361 @@
+{
+  "logFormatVersion": 1,
+  "jobId": "eb6ffb07-5ee3-4a66-9713-a63acd7df982",
+  "status": "Accepted",
+  "statusSummary": "Ready for distribution",
+  "statusCode": 0,
+  "archiveFilename": "Throttle-3.8.0.dmg",
+  "uploadDate": "2026-09-21T11:01:52.495Z",
+  "sha256": "3fc63cc76f577a614ed22e8ff3dd6079e452d4e9fadddcc36f91ae1fbac2a261",
+  "ticketContents": [
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Resources/swift-transformers_Hub.bundle",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "8037a7839dd3b4c5ede2005c11e230799fab87cf",
+      "arch": null
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Resources/swift-transformers_Hub.bundle/Contents/Info.plist",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "bf538056a0506b9e3f6f08ba84796423e02c4fcc"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Resources/swift-crypto_Crypto.bundle",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "e280baa529d306586061eead122bb897f8d403e3",
+      "arch": null
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Resources/swift-crypto_Crypto.bundle/Contents/Info.plist",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "b9830088f04731cf08706876ac4047bc36f4def4"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Resources/GRDB_GRDB.bundle",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "b2f56ac95c24e85eefbb25efd3fc46198958ccef",
+      "arch": null
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Resources/GRDB_GRDB.bundle/Contents/Info.plist",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "7f372ff8e2fe30fe41be113bd9d402a176608b29"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Resources/SwiftTerm_SwiftTerm.bundle",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "c20abd3cf932aaddc22ea61c895ad06f9bbd7700",
+      "arch": null
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Resources/SwiftTerm_SwiftTerm.bundle/Contents/Info.plist",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "f55762e7da734684231e0dc3ede17047ace92768"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Resources/mlx-swift_Cmlx.bundle",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "fbe751447f1a2c7fb4e20dbf49f735de74f9bf30",
+      "arch": null
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Info.plist",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "a0c1d4da4f805148055200dc449d07c4196d9ed4"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/Current",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "8aacf89c7877fe00c7ee714465d2e88e142c8514",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/Current",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "1e6a6fb8081351147e222ae24f4b87bacd710521",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "4b799fc554953f8451e0bdb978cd6c029e4a8bb5",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "ab346d9d83480920c221afd21acb0bfadf8dc5b3",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "4b799fc554953f8451e0bdb978cd6c029e4a8bb5",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "ab346d9d83480920c221afd21acb0bfadf8dc5b3",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/SQLCipher",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "8aacf89c7877fe00c7ee714465d2e88e142c8514",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/SQLCipher",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "1e6a6fb8081351147e222ae24f4b87bacd710521",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "1f0923936d3261c979e1660001434156efeda6bf",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "e08e086ffc566822ed2151531aed9c85e96185a2",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "1f0923936d3261c979e1660001434156efeda6bf",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "e08e086ffc566822ed2151531aed9c85e96185a2",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "cbd2f5f2488daef763801e6a964423eb8274909e",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "fe8f6237ce7fdea92a7fa270e994d5154abfbb84",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "7c9fbea30a6270e68dd12213fbd5045896c277fc",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "154c95dbcc43c6f2ce5f90d682e7e6226fe4d43a",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "7305adfb469558691b0641c98624a8311ad8e894",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "e59cc78399a75cd70ffb6760eac44437615fe3f8",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "32c58bcaaa4e5b6578f2a9d369bb665e1b8c5968",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "14477987acea66456b3e539f1c8f41c0226c4cd1",
+      "arch": "arm64e"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "d9bd7c046134607fb4837c538b4bf3b46e6cbe8c",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "60a2998576f3ee8d52af45346d2243266bc5fd42",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "3e7b11a8351be24e9c7ff6dbe077ad99c2b70e2d",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/Current",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "8aacf89c7877fe00c7ee714465d2e88e142c8514",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/Current",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "1e6a6fb8081351147e222ae24f4b87bacd710521",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "78ebd69e809b147475ef0b80ad015d767863a422",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "18b9c102d950c3cc2704770fffd59deda585c38a",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "1f0923936d3261c979e1660001434156efeda6bf",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "e08e086ffc566822ed2151531aed9c85e96185a2",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/PlugIns/ThrottleWidget.appex",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "191e35de2cee590e693dc90c40aec12efb55406d",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/PlugIns/ThrottleWidget.appex",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "131a151d25889ff471e770da92c03a852e42a416",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "4b799fc554953f8451e0bdb978cd6c029e4a8bb5",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "ab346d9d83480920c221afd21acb0bfadf8dc5b3",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/MacOS/Throttle",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "7305adfb469558691b0641c98624a8311ad8e894",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/MacOS/Throttle",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "e59cc78399a75cd70ffb6760eac44437615fe3f8",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/PlugIns/ThrottleWidget.appex/Contents/MacOS/ThrottleWidget",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "191e35de2cee590e693dc90c40aec12efb55406d",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/PlugIns/ThrottleWidget.appex/Contents/MacOS/ThrottleWidget",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "131a151d25889ff471e770da92c03a852e42a416",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "32c58bcaaa4e5b6578f2a9d369bb665e1b8c5968",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "14477987acea66456b3e539f1c8f41c0226c4cd1",
+      "arch": "arm64e"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "d9bd7c046134607fb4837c538b4bf3b46e6cbe8c",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "cbd2f5f2488daef763801e6a964423eb8274909e",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "fe8f6237ce7fdea92a7fa270e994d5154abfbb84",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "60a2998576f3ee8d52af45346d2243266bc5fd42",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "3e7b11a8351be24e9c7ff6dbe077ad99c2b70e2d",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "78ebd69e809b147475ef0b80ad015d767863a422",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "18b9c102d950c3cc2704770fffd59deda585c38a",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "7c9fbea30a6270e68dd12213fbd5045896c277fc",
+      "arch": "x86_64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "154c95dbcc43c6f2ce5f90d682e7e6226fe4d43a",
+      "arch": "arm64"
+    },
+    {
+      "path": "Throttle-3.8.0.dmg",
+      "digestAlgorithm": "SHA-256",
+      "cdhash": "cf4ca29e5d820dce121867eb945ad60516c441d4"
+    }
+  ],
+  "issues": null
+}

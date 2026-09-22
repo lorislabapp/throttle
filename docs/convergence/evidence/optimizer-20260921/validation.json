@@ -1,0 +1,21 @@
+{
+  "at": "2026-09-21T14:41:24.460947+02:00",
+  "core": {
+    "reported_cases": 369,
+    "xctest": 330,
+    "swift_testing": 39,
+    "new_optimizer_cases": 11,
+    "duration_seconds": 98.058,
+    "receipt": "docs/convergence/evidence/optimizer-20260921/core-final/receipt.json"
+  },
+  "lint": {
+    "version": "0.63.2",
+    "global_strict_no_cache": "pass"
+  },
+  "xcodegen": "generated after each Swift file addition and build 227 bump",
+  "swift_parse": "pass; syntax only, not native typecheck",
+  "native_build": "blocked before xcodebuild: less than 2 GiB system space",
+  "ui_runtime": "not executed for optimizer changes",
+  "candidate": "3.8.0 (227) source only",
+  "notarization": "226 remains accepted; does not qualify modified sources"
+}

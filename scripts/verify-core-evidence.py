@@ -26,6 +26,17 @@ FILES = {
         "Throttle/Services/ContextFirewall.swift",
         "Throttle/Services/ContentStore.swift",
         "Throttle/Models/PlanModels.swift",
+        "Throttle/Models/PeerControlAdmission.swift",
+        "Throttle/Models/TaskVerificationLease.swift",
+        "Throttle/Models/TaskVerificationProcess.swift",
+        "Throttle/Services/NativeProcessIdentity.swift",
+        "Throttle/Services/NotebookLMGatewayProcess.swift",
+        "Throttle/Services/OwnedProcessTermination.swift",
+        "Throttle/Services/TaskIntegrationVerifyProcess.swift",
+        "Throttle/Services/TaskVerificationLaunchGate.swift",
+        "Throttle/Services/TaskVerificationLifecycle.swift",
+        "Throttle/Services/RemoteTransferGit.swift",
+        "Throttle/Services/RemoteTransferJournal.swift",
         "Throttle/Models/ResearchDossier.swift",
         "Throttle/Models/WorkflowRecipeModels.swift",
         "Throttle/Models/WorkflowWorkContract.swift",
@@ -58,6 +69,16 @@ FILES = {
         "Throttle/Services/TaskBudgetAdmission.swift",
         "Throttle/Services/RedTeamCampaignStore.swift",
         "Throttle/Services/RedTeamCampaignStorage.swift",
+        "Throttle/Services/AIProvider.swift",
+        "Throttle/Services/AIOptimizerService.swift",
+        "Throttle/Services/SettingsAuditService.swift",
+        "Throttle/Services/AppleIntelligenceTools.swift",
+        "Throttle/Services/AppleIntelligenceProvider.swift",
+        "Throttle/Services/ClaudeAPIKeyProtocol.swift",
+        "Throttle/Services/AssistantTools.swift",
+        "Throttle/Services/AssistantProjectTools.swift",
+        "Throttle/Services/BashSandbox.swift",
+        "Throttle/Services/ProjectKnowledgeExplorerIO.swift",
         "Throttle/Services/ProjectKnowledgeExplorer.swift",
         "Throttle/Services/ProjectKnowledgeExplorerReceipt.swift",
         "Throttle/Services/ProjectKnowledgeExplorerSearch.swift",
@@ -78,11 +99,14 @@ FILES = {
         "Throttle/Services/DiagnosticArchive.swift",
         "Throttle/Services/TaskWorktreeService.swift",
         "Throttle/Services/TaskIntegrationService.swift",
+        "Throttle/Models/TaskIntegrationModels.swift",
         "Throttle/Services/TaskIntegrationServiceReview.swift",
         "Throttle/Services/TaskIntegrationServiceVerify.swift",
         "Throttle/Services/TaskIntegrationVerifyChild.swift",
     ],
+    "Sources/VerificationCrashWorker": ["scripts/fixtures/verification-crash-worker.swift"],
     "Sources/ThrottleShared": [
+        "ThrottleShared/Sources/ThrottleShared/KeychainStore.swift",
         "ThrottleShared/Sources/ThrottleShared/OutboundPolicy.swift",
     ],
     "Sources/ThrottleMCPContracts": [
@@ -110,7 +134,24 @@ FILES = {
         "Packages/ResearchVaultKit/Sources/ResearchVaultIngestion/RetrievalBenchmark.swift",
         "Packages/ResearchVaultKit/Sources/ResearchVaultIngestion/RetrievalQualityGate.swift",
     ],
-    "Tests/ThrottleTests": ["ThrottleTests/ServiceTests/TestOutcomeDetectorTests.swift",
+    "Tests/ThrottleTests": ["ThrottleTests/ServiceTests/PlanMCPMissionFenceTests.swift",
+                            "ThrottleTests/ServiceTests/TaskVerificationLifecycleTests.swift",
+                            "ThrottleTests/ServiceTests/TaskVerificationProcessTests.swift",
+                            "ThrottleTests/ServiceTests/TaskVerificationCrashTests.swift",
+                            "ThrottleTests/ServiceTests/PeerControlAdmissionTests.swift",
+                            "ThrottleTests/ServiceTests/NotebookLMGatewayProcessTests.swift",
+                            "ThrottleTests/ServiceTests/RemoteTransferGitTests.swift",
+                            "ThrottleTests/ServiceTests/AIProviderRoutingPolicyTests.swift",
+                            "ThrottleTests/ServiceTests/AIOptimizerPrivacyTests.swift",
+                            "ThrottleTests/ServiceTests/SettingsAuditPreservationTests.swift",
+                            "ThrottleTests/ServiceTests/OwnedProcessTerminationTests.swift",
+                            "ThrottleTests/ServiceTests/PlanMCPIntakeAuthorityTests.swift",
+                            "ThrottleTests/ServiceTests/ClaudeAPIKeyProtocolTests.swift",
+                            "ThrottleTests/ServiceTests/ProjectKnowledgeRaceTests.swift",
+                            "ThrottleTests/ServiceTests/AssistantProjectToolsTests.swift",
+                            "ThrottleTests/ServiceTests/ProjectKnowledgeBoundaryTests.swift",
+                            "ThrottleTests/ServiceTests/BashSandboxTests.swift",
+                            "ThrottleTests/ServiceTests/TestOutcomeDetectorTests.swift",
                             "ThrottleTests/ServiceTests/TestOutcomeStoreTests.swift",
                             "ThrottleTests/ServiceTests/ContextPacketEvidenceTests.swift",
                             "ThrottleTests/ServiceTests/PlanStoreTests.swift",
@@ -144,10 +185,14 @@ FILES = {
                             "ThrottleTests/ServiceTests/WorkflowContractIntegrationTests.swift",
                             "ThrottleTests/ServiceTests/WorkflowResultImporterTests.swift",
                             "ThrottleTests/ServiceTests/TaskIntegrationServiceTests.swift",
+                            "ThrottleTests/ServiceTests/TaskIntegrationServiceTests+Integration.swift",
                             "ThrottleTests/ServiceTests/TaskIntegrationRefusalTests.swift",
                             "ThrottleTests/ServiceTests/TaskIntegrationWorkContractTests.swift",
                             "ThrottleTests/ServiceTests/TaskIntegrationOutputTests.swift",
                             "ThrottleTests/ServiceTests/TaskIntegrationHardeningTests.swift"],
+    "Tests/ThrottleSharedTests": [
+        "ThrottleShared/Tests/ThrottleSharedTests/KeychainStoreTests.swift",
+    ],
     "Tests/ResearchVaultIngestionTests": [
         "Packages/ResearchVaultKit/Tests/ResearchVaultIngestionTests/RetrievalBenchmarkTests.swift",
         "Packages/ResearchVaultKit/Tests/ResearchVaultIngestionTests/RetrievalQualityGateTests.swift",
@@ -157,13 +202,15 @@ MANIFEST = '''// swift-tools-version: 6.0
 import PackageDescription
 let package = Package(name: "ThrottleCoreEvidence", platforms: [.macOS(.v14)], targets: [
     .target(name: "Throttle", dependencies: ["ThrottleShared", "ThrottleMCPContracts"]),
+    .executableTarget(name: "VerificationCrashWorker", dependencies: ["Throttle"]),
     .target(name: "ThrottleShared"),
     .target(name: "ThrottleMCPContracts"),
     .target(name: "ThrottleVaultContract"),
     .target(name: "ResearchVaultModel", dependencies: ["ThrottleVaultContract"]),
     .target(name: "ResearchVaultIPCModel", dependencies: ["ResearchVaultModel", "ThrottleVaultContract"]),
     .target(name: "ResearchVaultIngestion", dependencies: ["ResearchVaultIPCModel"]),
-    .testTarget(name: "ThrottleTests", dependencies: ["Throttle", "ThrottleMCPContracts"]),
+    .testTarget(name: "ThrottleTests", dependencies: ["Throttle", "ThrottleMCPContracts", "VerificationCrashWorker"]),
+    .testTarget(name: "ThrottleSharedTests", dependencies: ["ThrottleShared"]),
     .testTarget(name: "ResearchVaultIngestionTests", dependencies: ["ResearchVaultIngestion"]),
 ])
 '''
@@ -227,7 +274,10 @@ def main():
                 methods = re.findall(r"(?:@Test\b[\s\S]*?\bfunc\s+|\bfunc\s+(?=test[_A-Z]))(\w+)\s*\(", data.decode())
                 if not methods:
                     raise ValueError("No test cases discovered in " + relative)
-                expected[pathlib.Path(relative).stem] = methods
+                # A +Extension file contributes cases to the original XCTest
+                # class; it is not a separate suite in the result bundle.
+                suite = pathlib.Path(relative).stem.split("+", 1)[0]
+                expected.setdefault(suite, []).extend(methods)
     (package / "Package.swift").write_text(MANIFEST)
     base = ["swift", "test", "--package-path", str(package), "--build-system", "native", "--jobs", "2"]
     if args.scratch_path:
@@ -235,12 +285,19 @@ def main():
     commands = [base + ["--parallel", "--num-workers", "2", "--disable-swift-testing",
                         "--xunit-output", str(output / "xctest.xml")],
                 base + ["--skip-build", "--disable-xctest", "--xunit-output", str(output / "swift-testing.xml")]]
+    # Keep compiler writes in the task-owned workspace, including manifest
+    # compilation (which otherwise uses ~/.cache/clang despite --scratch-path).
+    module_cache = (args.scratch_path.resolve() if args.scratch_path else output) / "module-cache"
+    module_cache.mkdir(parents=True, exist_ok=True)
+    environment = os.environ.copy()
+    environment["CLANG_MODULE_CACHE_PATH"] = str(module_cache)
+    environment["SWIFTPM_MODULECACHE_OVERRIDE"] = str(module_cache)
     started = time.time()
     codes = []
     errors = []
     with (output / "output.log").open("wb") as log:
         for command in commands:
-            process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+            process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True, env=environment)
             try:
                 codes.append(process.wait(timeout=args.timeout_seconds))
             except subprocess.TimeoutExpired:
@@ -248,6 +305,10 @@ def main():
                 process.wait()
                 codes.append(124)
                 errors.append("command_timeout")
+                break
+            if codes[-1] != 0:
+                # Never run --skip-build against an older binary after a
+                # compilation or first-pass failure.
                 break
     reports = sorted(output.glob("*.xml"))
     report_errors, case_count = validate_reports(reports, expected)
@@ -259,6 +320,7 @@ def main():
     receipt = {"schema": 1, "scope": "core-validator-subset", "status": "pass" if not errors else "fail",
                "started_at_unix": started, "duration_seconds": round(time.time() - started, 3),
                "timeout_seconds": args.timeout_seconds,
+               "module_cache": str(module_cache),
                "commands": commands, "exit_codes": codes, "reported_cases": case_count,
                "expected_cases": expected,
                "sources_sha256": hashes, "errors": errors,

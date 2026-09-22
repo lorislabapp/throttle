@@ -1,0 +1,8 @@
+{
+  "observed_at": "2026-09-21T08:36:59.140259+00:00",
+  "operation": "wrangler deployments list (read only)",
+  "exit_code": 1,
+  "result": "No parseable deployment metadata",
+  "authentication_required": false,
+  "diagnostic": "Wrangler 4.127.1 exit 1; log confirms read-only Cloudflare API request was initiated, but records no response or usable error. Raw output was not preserved; cause UNKNOWN. No blind retry."
+}
