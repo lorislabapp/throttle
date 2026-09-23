@@ -58,7 +58,8 @@ final class ResearchVaultFolderSourceStoreTests: XCTestCase {
         )
         XCTAssertEqual(
             library.projectKey(forRelativePath: "market-and-competitors/e-clair/report.md"),
-            "e-clair"
+            "eclair",
+            "folder names are canonicalised: e-clair, Éclair and eclair are one space"
         )
         // Too shallow to name a project: the folder's own key stands rather than
         // a guess.
