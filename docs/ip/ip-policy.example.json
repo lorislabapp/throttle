@@ -1,0 +1,9 @@
+{
+  "schema": "throttle-ip-policy/v1",
+  "legalReview": {
+    "status": "pending",
+    "reviewer": null,
+    "decisionRef": null
+  },
+  "rules": []
+}

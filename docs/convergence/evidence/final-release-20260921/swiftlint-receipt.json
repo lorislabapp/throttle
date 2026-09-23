@@ -1,0 +1,10 @@
+{
+  "command": [
+    "/private/tmp/throttle-swiftlint-0.63.2/swiftlint",
+    "lint",
+    "--strict",
+    "--no-cache"
+  ],
+  "exit_code": 0,
+  "observed_local": "2026-09-21T10:01:14.194592"
+}

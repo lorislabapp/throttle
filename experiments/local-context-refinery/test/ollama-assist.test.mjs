@@ -40,3 +40,37 @@ test("uses bounded non-thinking structured inference", () => {
   assert.ok(payload.format.required.includes("selected_evidence_sha256"));
   assert.doesNotMatch(payload.messages[1].content, /super-secret/);
 });
+
+test("falls back to prompt-only contract when the runtime refuses structured output", async () => {
+  const http = await import("node:http");
+  const hash = "a".repeat(64);
+  const bodies = [];
+  const server = http.createServer((req, res) => {
+    let raw = "";
+    req.on("data", (chunk) => { raw += chunk; });
+    req.on("end", () => {
+      const payload = JSON.parse(raw);
+      bodies.push(payload);
+      if (payload.format) {
+        res.writeHead(501, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "structured output is unavailable" }));
+        return;
+      }
+      const content = "```json\n" + JSON.stringify({ summary: "One error.", selected_evidence_sha256: [hash], omissions: [], confidence: 0.8 }) + "\n```";
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ message: { role: "assistant", content } }));
+    });
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const withEvidence = { ...report, evidence: [{ line: 1, severity: "error", text: "error: x", sha256: hash }] };
+    const result = await assistWithOllama(withEvidence, { model: "qwen-mlx", endpoint: `http://127.0.0.1:${server.address().port}` });
+    assert.equal(result.status, "ok");
+    assert.equal(result.structured_output, "prompt-only");
+    assert.deepEqual(result.selected_evidence_sha256, [hash]);
+    assert.equal(bodies.length, 2);
+    assert.equal(bodies[1].format, undefined);
+  } finally {
+    server.close();
+  }
+});

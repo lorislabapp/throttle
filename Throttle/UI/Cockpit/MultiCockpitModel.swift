@@ -68,6 +68,25 @@ final class MultiCockpitModel {
         active?.clearAttention()
     } }
     var viewMode: ViewMode = .dashboard   // the cover page is the landing view
+    /// A task another window asked the Plan view to show. Consumed once by
+    /// `CockpitPlanView` after it binds to the active session's project.
+    var pendingPlanSelection: String?
+    /// Where the navigation sidebar points. Sessions keeps `viewMode` for its
+    /// own display (rail, tabs, cards); the other destinations replace it.
+    /// Set by the first-steps checklist: the next project page opens on its plan.
+    var pendingProjectPlanPage = false
+    var destination: CockpitDestination = .today {
+        didSet {
+            if case .project = destination { CockpitOnboarding.markDone(.openProject) }
+            if destination == .sessions, UserDefaults.standard.bool(forKey: "cockpitOnboarding.done.launchTask") {
+                CockpitOnboarding.markDone(.followSession)
+            }
+            // The old top-level pages now live in the sidebar; Sessions only shows sessions.
+            if destination == .sessions, [.dashboard, .portfolio, .plan].contains(viewMode) { viewMode = .rail }
+        }
+    }
+    /// The ⌘K palette.
+    var isCommandPaletteOpen = false
     /// Split-pane side shell visible? Per-tab shell (each session's own zsh in its
     /// cwd), toggled with ⌘⇧T or the toolbar button. Off by default.
     var showShell = false

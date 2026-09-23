@@ -1,0 +1,33 @@
+{
+  "status": "pass",
+  "exit_code": 0,
+  "duration_seconds": 4.091609954833984,
+  "command": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+    "test-without-building",
+    "-xctestrun",
+    "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Throttle_Throttle_macosx27.0-arm64.xctestrun",
+    "-destination",
+    "platform=macOS,arch=arm64",
+    "-parallel-testing-enabled",
+    "NO",
+    "-test-timeouts-enabled",
+    "YES",
+    "-default-test-execution-time-allowance",
+    "60",
+    "-maximum-test-execution-time-allowance",
+    "120",
+    "-resultBundlePath",
+    "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/transfer-tests-20260920-235818.xcresult",
+    "-only-testing:ThrottleTests/RemoteTransferJournalTests"
+  ],
+  "cwd": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920",
+  "log": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/transfer-tests-20260920-235818.log",
+  "sources_match": true,
+  "source_count": 1031,
+  "app_launched": true,
+  "launch_scope": "isolated XCTest host from DerivedData",
+  "installed_app_restarted": false,
+  "signed": false,
+  "competing_processes": []
+}

@@ -33,6 +33,38 @@ enum PlanOrientation {
         return ordered.first?.id
     }
 
+    /// What the person should do next across the whole plan — not about the
+    /// selected row, which can be a blocked task and then says "finish the
+    /// other one first" while nothing tells you which one is actually ready.
+    enum NextMove: Equatable {
+        case working(taskID: String, runtime: String?)
+        case failed(taskID: String)
+        case awaitingReview(taskID: String)
+        case ready(taskID: String)
+        case waiting(taskID: String)
+        case finished
+    }
+
+    static func nextMove(plan: Plan, states: [String: TaskState]) -> NextMove {
+        let leaves = depthFirstTasks(plan).filter { plan.isLeafByID[$0.id] == true }
+        func status(_ task: PlanTask) -> TaskStatus { states[task.id]?.status ?? .pending }
+        if let task = leaves.first(where: { [.claimed, .running].contains(status($0)) }) {
+            return .working(taskID: task.id, runtime: states[task.id]?.runtime)
+        }
+        if let task = leaves.first(where: { status($0) == .failed }) { return .failed(taskID: task.id) }
+        if let task = leaves.first(where: { [.candidate, .review].contains(status($0)) }) {
+            return .awaitingReview(taskID: task.id)
+        }
+        if let task = leaves.first(where: {
+            status($0) == .pending && states[$0.id]?.owner == nil
+                && unmetDependencies(for: $0, states: states).isEmpty
+        }) {
+            return .ready(taskID: task.id)
+        }
+        if let task = leaves.first(where: { !isFinished(status($0)) }) { return .waiting(taskID: task.id) }
+        return .finished
+    }
+
     static func unmetDependencies(for task: PlanTask,
                                    states: [String: TaskState]) -> [String] {
         task.dependsOn.filter { !isFinished(states[$0]?.status ?? .pending) }

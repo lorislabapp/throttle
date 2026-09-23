@@ -46,6 +46,11 @@ final class PlanStore: @unchecked Sendable {
         self.root = projectRoot.standardizedFileURL.resolvingSymlinksInPath()
     }
 
+    /// The canonical root this store actually protects. Services that maintain
+    /// a second project-local ledger must use this value rather than re-resolving
+    /// the caller's path differently.
+    var projectRoot: URL { root }
+
     /// Never call a different store instance from this closure. Do not perform
     /// network work or launch a runtime while holding the transaction.
     func mutate<T>(_ body: (PlanStore) throws -> T) throws -> T {
@@ -79,7 +84,7 @@ final class PlanStore: @unchecked Sendable {
     // MARK: - Layout
 
     private var throttleDir: URL { root.appendingPathComponent(".throttle", isDirectory: true) }
-    private var planURL: URL { throttleDir.appendingPathComponent("plan.json") }
+    var planURL: URL { throttleDir.appendingPathComponent("plan.json") }
     private var logDir: URL { throttleDir.appendingPathComponent("log", isDirectory: true) }
     private var stateDir: URL { throttleDir.appendingPathComponent("state", isDirectory: true) }
 

@@ -1,0 +1,407 @@
+[
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/UI/MenuBar/InlineAssistantPane+LocalWorker.swift",
+    "line" : 10,
+    "reason" : "Line should be 200 characters or less; currently it has 214 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/UI/Cockpit/AIRoutingWindowController.swift",
+    "line" : 239,
+    "reason" : "Line should be 120 characters or less; currently it has 137 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 13,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/UI/ProjectWindow/ProjectAssistantTab.swift",
+    "line" : 837,
+    "reason" : "Function should have complexity 10 or less; currently complexity is 13",
+    "rule_id" : "cyclomatic_complexity",
+    "severity" : "Error",
+    "type" : "Cyclomatic Complexity"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/UI/ProjectWindow/ProjectAssistantTab.swift",
+    "line" : 1110,
+    "reason" : "File should contain 1000 lines or less: currently contains 1110",
+    "rule_id" : "file_length",
+    "severity" : "Error",
+    "type" : "File Length"
+  },
+  {
+    "character" : 13,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/UI/ProjectWindow/ProjectAssistantTab.swift",
+    "line" : 837,
+    "reason" : "Function body should span 50 lines or less excluding comments and whitespace: currently spans 67 lines",
+    "rule_id" : "function_body_length",
+    "severity" : "Error",
+    "type" : "Function Body Length"
+  },
+  {
+    "character" : 13,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/UI/ProjectWindow/ProjectAssistantTab.swift",
+    "line" : 975,
+    "reason" : "Function body should span 50 lines or less excluding comments and whitespace: currently spans 59 lines",
+    "rule_id" : "function_body_length",
+    "severity" : "Error",
+    "type" : "Function Body Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/UI/ProjectWindow/ProjectAssistantTab.swift",
+    "line" : 199,
+    "reason" : "Line should be 120 characters or less; currently it has 195 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/UI/ProjectWindow/ProjectAssistantTab.swift",
+    "line" : 10,
+    "reason" : "Struct body should span 350 lines or less excluding comments and whitespace: currently spans 884 lines",
+    "rule_id" : "type_body_length",
+    "severity" : "Error",
+    "type" : "Type Body Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/UI/Cockpit/PlanIntegrationView.swift",
+    "line" : 417,
+    "reason" : "File should contain 400 lines or less: currently contains 417",
+    "rule_id" : "file_length",
+    "severity" : "Error",
+    "type" : "File Length"
+  },
+  {
+    "character" : 5,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/UI/Cockpit/PlanIntegrationView.swift",
+    "line" : 182,
+    "reason" : "Function body should span 50 lines or less excluding comments and whitespace: currently spans 53 lines",
+    "rule_id" : "function_body_length",
+    "severity" : "Error",
+    "type" : "Function Body Length"
+  },
+  {
+    "character" : 5,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/Services/ClaudeWebSessionProvider.swift",
+    "line" : 75,
+    "reason" : "Function should have complexity 10 or less; currently complexity is 20",
+    "rule_id" : "cyclomatic_complexity",
+    "severity" : "Error",
+    "type" : "Cyclomatic Complexity"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/Services/ClaudeWebSessionProvider.swift",
+    "line" : 687,
+    "reason" : "File should contain 400 lines or less: currently contains 687",
+    "rule_id" : "file_length",
+    "severity" : "Error",
+    "type" : "File Length"
+  },
+  {
+    "character" : 5,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/Services/ClaudeWebSessionProvider.swift",
+    "line" : 75,
+    "reason" : "Function body should span 100 lines or less excluding comments and whitespace: currently spans 107 lines",
+    "rule_id" : "function_body_length",
+    "severity" : "Error",
+    "type" : "Function Body Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/Services/ClaudeWebSessionProvider.swift",
+    "line" : 49,
+    "reason" : "Struct body should span 350 lines or less excluding comments and whitespace: currently spans 534 lines",
+    "rule_id" : "type_body_length",
+    "severity" : "Error",
+    "type" : "Type Body Length"
+  },
+  {
+    "character" : 13,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/Services/PlanMCPTools.swift",
+    "line" : 122,
+    "reason" : "Function should have complexity 10 or less; currently complexity is 13",
+    "rule_id" : "cyclomatic_complexity",
+    "severity" : "Error",
+    "type" : "Cyclomatic Complexity"
+  },
+  {
+    "character" : 20,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/Services/PlanMCPTools.swift",
+    "line" : 122,
+    "reason" : "Function body should span 50 lines or less excluding comments and whitespace: currently spans 56 lines",
+    "rule_id" : "function_body_length",
+    "severity" : "Error",
+    "type" : "Function Body Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/Services/TaskIntegrationService.swift",
+    "line" : 427,
+    "reason" : "File should contain 400 lines or less: currently contains 427",
+    "rule_id" : "file_length",
+    "severity" : "Error",
+    "type" : "File Length"
+  },
+  {
+    "character" : 13,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/Services/PlanProjection.swift",
+    "line" : 63,
+    "reason" : "Function should have complexity 10 or less; currently complexity is 14",
+    "rule_id" : "cyclomatic_complexity",
+    "severity" : "Error",
+    "type" : "Cyclomatic Complexity"
+  },
+  {
+    "character" : 13,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/Services/PlanProjection.swift",
+    "line" : 116,
+    "reason" : "Function should have complexity 10 or less; currently complexity is 11",
+    "rule_id" : "cyclomatic_complexity",
+    "severity" : "Error",
+    "type" : "Cyclomatic Complexity"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/Services/RemoteTransferGit.swift",
+    "line" : 81,
+    "reason" : "Line should be 120 characters or less; currently it has 121 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 20,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/Services/TaskLauncher.swift",
+    "line" : 51,
+    "reason" : "Function body should span 50 lines or less excluding comments and whitespace: currently spans 51 lines",
+    "rule_id" : "function_body_length",
+    "severity" : "Error",
+    "type" : "Function Body Length"
+  },
+  {
+    "character" : 5,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/Services/AIProvider.swift",
+    "line" : 95,
+    "reason" : "Function body should span 100 lines or less excluding comments and whitespace: currently spans 125 lines",
+    "rule_id" : "function_body_length",
+    "severity" : "Error",
+    "type" : "Function Body Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/ProjectKnowledgeBoundaryTests.swift",
+    "line" : 18,
+    "reason" : "Line should be 120 characters or less; currently it has 124 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/ProjectKnowledgeBoundaryTests.swift",
+    "line" : 31,
+    "reason" : "Line should be 120 characters or less; currently it has 136 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 18,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/ProjectKnowledgeBoundaryTests.swift",
+    "line" : 3,
+    "reason" : "Imports should be sorted",
+    "rule_id" : "sorted_imports",
+    "severity" : "Error",
+    "type" : "Sorted Imports"
+  },
+  {
+    "character" : 70,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/PlanMCPTaskRouterTests.swift",
+    "line" : 24,
+    "reason" : "Force casts should be avoided",
+    "rule_id" : "force_cast",
+    "severity" : "Error",
+    "type" : "Force Cast"
+  },
+  {
+    "character" : 39,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/PlanMCPTaskRouterTests.swift",
+    "line" : 22,
+    "reason" : "Force unwrapping should be avoided",
+    "rule_id" : "force_unwrapping",
+    "severity" : "Error",
+    "type" : "Force Unwrapping"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/AssistantProjectToolsTests.swift",
+    "line" : 21,
+    "reason" : "Line should be 120 characters or less; currently it has 147 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/AssistantProjectToolsTests.swift",
+    "line" : 38,
+    "reason" : "Line should be 120 characters or less; currently it has 132 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/AssistantProjectToolsTests.swift",
+    "line" : 53,
+    "reason" : "Line should be 120 characters or less; currently it has 134 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/AssistantProjectToolsTests.swift",
+    "line" : 67,
+    "reason" : "Line should be 120 characters or less; currently it has 121 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 18,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/AssistantProjectToolsTests.swift",
+    "line" : 2,
+    "reason" : "Imports should be sorted",
+    "rule_id" : "sorted_imports",
+    "severity" : "Error",
+    "type" : "Sorted Imports"
+  },
+  {
+    "character" : 17,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/ProjectKnowledgeRaceTests.swift",
+    "line" : 24,
+    "reason" : "`where` clauses are preferred over a single `if` inside a `for`",
+    "rule_id" : "for_where",
+    "severity" : "Error",
+    "type" : "Prefer For-Where"
+  },
+  {
+    "character" : 18,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/ProjectKnowledgeRaceTests.swift",
+    "line" : 3,
+    "reason" : "Imports should be sorted",
+    "rule_id" : "sorted_imports",
+    "severity" : "Error",
+    "type" : "Sorted Imports"
+  },
+  {
+    "character" : 18,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/BashSandboxTests.swift",
+    "line" : 2,
+    "reason" : "Imports should be sorted",
+    "rule_id" : "sorted_imports",
+    "severity" : "Error",
+    "type" : "Sorted Imports"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/ClaudeAPIKeyProtocolTests.swift",
+    "line" : 14,
+    "reason" : "Line should be 120 characters or less; currently it has 127 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/ClaudeAPIKeyProtocolTests.swift",
+    "line" : 17,
+    "reason" : "Line should be 120 characters or less; currently it has 128 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/ClaudeAPIKeyProtocolTests.swift",
+    "line" : 98,
+    "reason" : "Line should be 120 characters or less; currently it has 123 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/ClaudeAPIKeyProtocolTests.swift",
+    "line" : 242,
+    "reason" : "Line should be 120 characters or less; currently it has 124 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/ClaudeAPIKeyProtocolTests.swift",
+    "line" : 243,
+    "reason" : "Line should be 120 characters or less; currently it has 130 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/PlanMCPAuthorityTests.swift",
+    "line" : 65,
+    "reason" : "Line should be 120 characters or less; currently it has 129 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/PlanMCPAuthorityTests.swift",
+    "line" : 69,
+    "reason" : "Line should be 120 characters or less; currently it has 123 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/PlanMCPAuthorityTests.swift",
+    "line" : 81,
+    "reason" : "Line should be 120 characters or less; currently it has 127 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/TaskIntegrationServiceTests.swift",
+    "line" : 422,
+    "reason" : "File should contain 400 lines or less: currently contains 422",
+    "rule_id" : "file_length",
+    "severity" : "Error",
+    "type" : "File Length"
+  },
+  {
+    "character" : 1,
+    "file" : "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/TaskIntegrationServiceTests.swift",
+    "line" : 147,
+    "reason" : "Line should be 120 characters or less; currently it has 121 characters",
+    "rule_id" : "line_length",
+    "severity" : "Error",
+    "type" : "Line Length"
+  }
+]

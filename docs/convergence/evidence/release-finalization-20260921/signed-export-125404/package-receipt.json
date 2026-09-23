@@ -1,0 +1,17 @@
+{
+  "at": "2026-09-21T12:57:36.714636+02:00",
+  "status": "pass_local_package",
+  "version": "3.8.0",
+  "build": "226",
+  "dmg": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/Throttle-3.8.0.dmg",
+  "sha256": "3fc63cc76f577a614ed22e8ff3dd6079e452d4e9fadddcc36f91ae1fbac2a261",
+  "bytes": 34964760,
+  "app_copy_and_mounted_bytes_match": true,
+  "source_app_unchanged": true,
+  "mount_detached": true,
+  "team": "TDV6D5L785",
+  "apple_timestamp": true,
+  "notarization_uploaded": false,
+  "gatekeeper": "not yet qualified",
+  "published": false
+}

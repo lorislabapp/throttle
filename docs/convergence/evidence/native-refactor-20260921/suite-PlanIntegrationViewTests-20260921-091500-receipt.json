@@ -1,0 +1,50 @@
+{
+  "status": "interrupted-concurrency",
+  "exit_code": -15,
+  "duration_seconds": 4.141369819641113,
+  "command": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+    "test-without-building",
+    "-xctestrun",
+    "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/suite-PlanIntegrationViewTests-20260921-091500.xctestrun",
+    "-destination",
+    "platform=macOS,arch=arm64",
+    "-parallel-testing-enabled",
+    "NO",
+    "-test-timeouts-enabled",
+    "YES",
+    "-default-test-execution-time-allowance",
+    "300",
+    "-maximum-test-execution-time-allowance",
+    "360",
+    "-resultBundlePath",
+    "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/suite-PlanIntegrationViewTests-20260921-091500.xcresult",
+    "-testLanguage",
+    "en",
+    "-testRegion",
+    "US",
+    "-only-testing:ThrottleTests/PlanIntegrationViewTests"
+  ],
+  "cwd": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920",
+  "log": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/suite-PlanIntegrationViewTests-20260921-091500.log",
+  "sources_match": true,
+  "source_count": 1046,
+  "app_launched": true,
+  "launch_scope": "isolated XCTest host from DerivedData",
+  "installed_app_restarted": false,
+  "signed": false,
+  "competing_processes": [
+    {
+      "pid": 22663,
+      "identity": "22663 21138 /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild"
+    }
+  ],
+  "review_scene": "en",
+  "review_configuration": [
+    "unused",
+    "",
+    "en",
+    "US",
+    "light"
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "00008132-001178882E03001C",
+      "deviceName" : "My Mac",
+      "modelName" : "MacBook Pro",
+      "osBuildNumber" : "26A428",
+      "osVersion" : "27.0",
+      "platform" : "macOS"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "duration" : "0,14s",
+                  "durationInSeconds" : 0.13525009155273438,
+                  "name" : "testDiffFailureRetryAndEmptyStateInEnglish()",
+                  "nodeIdentifier" : "PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInEnglish()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInEnglish",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,12s",
+                  "durationInSeconds" : 0.12456309795379639,
+                  "name" : "testDiffFailureRetryAndEmptyStateInFrench()",
+                  "nodeIdentifier" : "PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInFrench()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInFrench",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,13s",
+                  "durationInSeconds" : 0.13383007049560547,
+                  "name" : "testUnknownIsVisibleAndCannotBeRetriedInEnglish()",
+                  "nodeIdentifier" : "PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInEnglish()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInEnglish",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,22s",
+                  "durationInSeconds" : 0.22027099132537842,
+                  "name" : "testUnknownIsVisibleAndCannotBeRetriedInFrench()",
+                  "nodeIdentifier" : "PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInFrench()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests/testUnknownIsVisibleAndCannotBeRetriedInFrench",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "PlanIntegrationViewTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/PlanIntegrationViewTests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            }
+          ],
+          "name" : "ThrottleTests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests",
+          "nodeType" : "Unit test bundle",
+          "result" : "Passed"
+        }
+      ],
+      "name" : "Throttle",
+      "nodeType" : "Test Plan",
+      "result" : "Passed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

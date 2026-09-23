@@ -250,7 +250,7 @@ enum PromptRefinerService {
         forceLocal: Bool
     ) -> Set<AIProviderKind> {
         guard forceLocal else { return tried }
-        return tried.union([.claudeWebSession, .claudeAPIKey])
+        return tried.union([.selfHostedModel, .claudeWebSession, .claudeAPIKey])
     }
 
     static let registryResolver: ProviderResolver = { tried in

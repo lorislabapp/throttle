@@ -1,0 +1,139 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/qualified-tests-20260921-091041.xctestrun -destination platform=macOS,arch=arm64 -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 300 -maximum-test-execution-time-allowance 360 -resultBundlePath /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/qualified-tests-20260921-091041.xcresult -testLanguage en -testRegion US "-only-testing:ThrottleTests/PlanIntegrationFlowTests" "-only-testing:ThrottleTests/CockpitSpendViewTests" "-only-testing:ThrottleTests/PromptRefinerServiceTests" "-only-testing:ThrottleTests/RemoteSessionsCredentialTests" "-only-testing:ThrottleTests/RemoteTransferJournalTests" "-only-testing:ThrottleTests/ProjectAssistantViewTests" "-only-testing:ThrottleTests/PlanIntegrationViewTests" "-only-testing:ThrottleTests/PeerTerminalBoundaryTests" "-only-testing:ThrottleTests/CloudKitPublisherTests"
+
+Writing result bundle at path:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/qualified-tests-20260921-091041.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008132-001178882E03001C, name:My Mac }
+2026-09-21 09:10:56.932123+0200 Throttle[20010:1964666] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.932471+0200 Throttle[20010:1964665] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.932487+0200 Throttle[20010:1964665] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.932299+0200 Throttle[20010:1964666] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.932761+0200 Throttle[20010:1964671] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.933016+0200 Throttle[20010:1964665] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.933330+0200 Throttle[20010:1964669] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.933601+0200 Throttle[20010:1964672] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.934080+0200 Throttle[20010:1964674] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+[AppDelegate.init] start
+2026-09-21 09:10:56.934888+0200 Throttle[20010:1964677] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.934646+0200 Throttle[20010:1964676] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.935122+0200 Throttle[20010:1964678] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936148+0200 Throttle[20010:1964671] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.934403+0200 Throttle[20010:1964675] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.935369+0200 Throttle[20010:1964679] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.935596+0200 Throttle[20010:1964680] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.935837+0200 Throttle[20010:1964681] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936061+0200 Throttle[20010:1964682] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.933846+0200 Throttle[20010:1964673] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936474+0200 Throttle[20010:1964678] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936365+0200 Throttle[20010:1964674] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={2026-09-21 09:10:56.936151+0200 Throttle[20010:1964665] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936475+0200 Throttle[20010:1964676] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936152+0200 Throttle[20010:1964669] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936365+0200 Throttle[20010:1964672] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936384+0200 Throttle[20010:1964677] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936495+0200 Throttle[20010:1964675] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936603+0200 Throttle[20010:1964679] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936563+0200 Throttle[20010:1964671] [Connection] Will NOT re-try to establish the connection
+2026-09-21 09:10:56.936604+0200 Throttle[20010:1964681] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936604+0200 Throttle[20010:1964680] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936762+0200 Throttle[20010:1964682] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936762+0200 Throttle[20010:1964673] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.936325+0200 Throttle[20010:1964683] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.937101+0200 Throttle[20010:1964684] [Connection] Unable to get synchronousRemote2026-09-21 09:10:56.937214+0200 Throttle[20010:1964683] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+ObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.937325+0200 Throttle[20010:1964684] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:10:56.968297+0200 Throttle[20010:1964024] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/3w/fbl9wc1d3q7091lq5pj5sy0c0000gn/T/com.lorislab.throttle.savedState
+[applicationDidFinishLaunching] start
+2026-09-21 09:10:57.020665+0200 Throttle[20010:1964024] [App] Isolated host detected: skipping production background services
+Test Suite 'Selected tests' started at 2026-09-21 09:10:57.067.
+Test Suite 'ThrottleTests.xctest' started at 2026-09-21 09:10:57.067.
+Test Suite 'CloudKitPublisherTests' started at 2026-09-21 09:10:57.068.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck]' passed (0.013 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart]' passed (0.008 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount]' passed (0.009 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testCancelledDebounceCannotConsumeSnapshotAfterRestart]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testCancelledDebounceCannotConsumeSnapshotAfterRestart]' passed (0.011 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRefusesAnUnavailableAccount]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRefusesAnUnavailableAccount]' passed (0.003 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRequiresAnAvailableAccountAndStopsPublishing]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRequiresAnAvailableAccountAndStopsPublishing]' passed (0.004 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot]' passed (0.011 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots]' passed (0.006 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck]' started.
+2026-09-21 09:10:57.137735+0200 Throttle[20010:1964024] [CloudKitPublisher] iCloud unavailable — mirror disabled
+Test Case '-[ThrottleTests.CloudKitPublisherTests testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck]' passed (0.003 seconds).
+Test Suite 'CloudKitPublisherTests' passed at 2026-09-21 09:10:57.139.
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.068 (0.071) seconds
+Test Suite 'CockpitSpendViewTests' started at 2026-09-21 09:10:57.139.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testCloudShowsUnmeasuredAndAlreadyOpenSessionIsExcluded]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testCloudShowsUnmeasuredAndAlreadyOpenSessionIsExcluded]' passed (0.066 seconds).
+Test Case '-[ThrottleTests.CockpitSpendViewTests testEmptyCardLoadsRefreshesAndCancelsWhenRemoved]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testEmptyCardLoadsRefreshesAndCancelsWhenRemoved]' passed (0.363 seconds).
+Test Case '-[ThrottleTests.CockpitSpendViewTests testPlanKeepsUnknownCountsAndSubscriptionDisclosureVisible]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testPlanKeepsUnknownCountsAndSubscriptionDisclosureVisible]' passed (0.039 seconds).
+Test Case '-[ThrottleTests.CockpitSpendViewTests testTaskCostDistinguishesUnknownFromObservedZero]' started.
+Test Case '-[ThrottleTests.CockpitSpendViewTests testTaskCostDistinguishesUnknownFromObservedZero]' passed (0.016 seconds).
+Test Suite 'CockpitSpendViewTests' passed at 2026-09-21 09:10:57.625.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.484 (0.486) seconds
+Test Suite 'PeerTerminalBoundaryTests' started at 2026-09-21 09:10:57.625.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testBridgeDeniesDirectCallsWhenPermissionIsOff]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testBridgeDeniesDirectCallsWhenPermissionIsOff]' passed (0.002 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testCurrentTicketCannotBypassControlSettingOffAtDelivery]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testCurrentTicketCannotBypassControlSettingOffAtDelivery]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testFailedFreshPersistenceNeverPublishesEphemeralPairing]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testFailedFreshPersistenceNeverPublishesEphemeralPairing]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testFailedLegacyPersistencePreservesCopyAndWithholdsPairing]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testFailedLegacyPersistencePreservesCopyAndWithholdsPairing]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testMalformedPersistedPairingIsNotReplacedAutomatically]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testMalformedPersistedPairingIsNotReplacedAutomatically]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testReattachmentStopsOldTapAndOnlyAddressesNewSession]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testReattachmentStopsOldTapAndOnlyAddressesNewSession]' passed (0.002 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testRevocationRemovesTapAndStaleCallbackCannotSendOrInput]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testRevocationRemovesTapAndStaleCallbackCannotSendOrInput]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testRevokedTicketQueuedBeforeMainActorDeliveryCannotAttachOrSend]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testRevokedTicketQueuedBeforeMainActorDeliveryCannotAttachOrSend]' passed (0.007 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testStoppedListenerCannotDeliverQueuedInputAfterRestart]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testStoppedListenerCannotDeliverQueuedInputAfterRestart]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testSuccessfulLegacyPersistencePrecedesRemoval]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testSuccessfulLegacyPersistencePrecedesRemoval]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testUnavailablePairingDoesNotReadLegacyWriteGenerateOrPublishIdentity]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testUnavailablePairingDoesNotReadLegacyWriteGenerateOrPublishIdentity]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testUnknownSessionAndInputWithoutAttachmentHaveNoEffects]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testUnknownSessionAndInputWithoutAttachmentHaveNoEffects]' passed (0.000 seconds).
+Test Suite 'PeerTerminalBoundaryTests' passed at 2026-09-21 09:10:57.646.
+	 Executed 12 tests, with 0 failures (0 unexpected) in 0.017 (0.021) seconds
+Test Suite 'PlanIntegrationFlowTests' started at 2026-09-21 09:10:57.646.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_aRunLandingAfterATabSwitchWritesNothingIntoTheNewProject]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_aRunLandingAfterATabSwitchWritesNothingIntoTheNewProject]' passed (4.704 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_aTabSwitchMidIntegrationDoesNotReArmTheButton]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_aTabSwitchMidIntegrationDoesNotReArmTheButton]' passed (5.135 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_diffFailureClearsStaleTextAndRetryCanRecover]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_diffFailureClearsStaleTextAndRetryCanRecover]' passed (1.712 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_emptyDiffIsLoadedAndRebindingClearsItsState]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_emptyDiffIsLoadedAndRebindingClearsItsState]' passed (2.622 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateAsksForConsentBeforeItRunsAnythingThenStopsAsking]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateAsksForConsentBeforeItRunsAnythingThenStopsAsking]' passed (1.872 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRebasesABehindTaskBeforeMerging]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRebasesABehindTaskBeforeMerging]' passed (2.058 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRefusesATaskThatIsNotDone]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRefusesATaskThatIsNotDone]' passed (1.385 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRefusesWithoutAVerifyCommand]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRefusesWithoutAVerifyCommand]' passed (1.426 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRunsTheWholeSequenceOnce]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateRunsTheWholeSequenceOnce]' passed (1.857 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateStopsAtAFailingVerification]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_integrateStopsAtAFailingVerification]' passed (1.748 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_theAssessmentIsCachedRatherThanReadOnEveryDraw]' started.
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_theAssessmentIsCachedRatherThanReadOnEveryDraw]' passed (1.313 seconds).
+Test Case '-[ThrottleTests.PlanIntegrationFlowTests test_theDiffIsFetchedOnlyWhenItIsOpened]' started.
+** BUILD INTERRUPTED **

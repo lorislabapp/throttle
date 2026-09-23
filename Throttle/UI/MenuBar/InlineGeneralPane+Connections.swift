@@ -11,8 +11,8 @@ extension InlineGeneralPane {
                     sub: mirrorNote.isEmpty
                         ? """
                         Publishes your live usage + cockpit state to your private iCloud so the Throttle iOS \
-                        app can mirror it anywhere. Read-only, your iCloud only — no LorisLabs server, no \
-                        data leaves your account.
+                        app can mirror it anywhere. Read-only unless terminal control is enabled separately. \
+                        Your iCloud only — no LorisLabs server.
                         """
                         : mirrorNote) {
             HStack(spacing: 6) {
@@ -24,7 +24,7 @@ extension InlineGeneralPane {
                 }
                 Toggle("", isOn: appState.isPro ? $mirrorOn : .constant(false))
                     .labelsHidden().toggleStyle(.switch).tint(.accentColor)
-                    .disabled(!appState.isPro)
+                    .disabled(!appState.isPro || mirrorDeletionInFlight)
                     .onChange(of: mirrorOn) { _, on in
                         guard appState.isPro else { return }
                         UserDefaults.standard.set(on, forKey: "throttleiCloudMirrorEnabled")
@@ -39,9 +39,46 @@ extension InlineGeneralPane {
                             mirrorNote = "Off — the iPhone keeps its last synced snapshot."
                         }
                     }
+                if appState.isPro && !mirrorOn {
+                    Button("Delete iCloud copy…", role: .destructive) {
+                        showingMirrorDeletion = true
+                    }
+                    .controlSize(.small)
+                    .disabled(mirrorDeletionInFlight)
+                    .confirmationDialog(
+                        "Delete the mirrored copy from iCloud?",
+                        isPresented: $showingMirrorDeletion,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Delete iCloud copy", role: .destructive) { deleteMirrorCopy() }
+                    } message: {
+                        Text("""
+                        Throttle will keep the mirror off. Connected iPhones clear their \
+                        cached copy after refresh.
+                        """)
+                    }
+                }
             }
         }
         if mirrorOn && appState.isPro {
+            if let error = PeerTransport.shared.pairingPersistenceError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            SettingsHair()
+            SettingsRow(title: "Allow paired iPhone terminal control",
+                        sub: """
+                        Allows paired devices to read terminal output and type commands in existing sessions. \
+                        Off keeps the mirror read-only.
+                        """) {
+                Toggle("Allow paired iPhone terminal control", isOn: $peerTerminalControl)
+                    .labelsHidden().toggleStyle(.switch).tint(.accentColor)
+                    .onChange(of: peerTerminalControl) { _, enabled in
+                        PeerTransport.shared.terminalControlEnabled = enabled
+                    }
+            }
             SettingsHair()
             SettingsRow(title: "Off-Wi-Fi control (Tailscale)",
                 sub:
@@ -119,5 +156,21 @@ extension InlineGeneralPane {
             SettingsButton(title: "Check now") { UpdaterService.shared.checkForUpdates() }
         }
         SettingsNote(text: "Throttle \(currentVersionLabel) · updates are signed and verified before install.")
+    }
+
+    private func deleteMirrorCopy() {
+        mirrorDeletionInFlight = true
+        Task { @MainActor in
+            defer { mirrorDeletionInFlight = false }
+            do {
+                try await CloudKitPublisher.shared.deleteMirror()
+                mirrorNote = String(localized: "Deleted from private iCloud storage.")
+            } catch {
+                mirrorNote = String.localizedStringWithFormat(
+                    String(localized: "Could not delete the iCloud copy: %@"),
+                    error.localizedDescription
+                )
+            }
+        }
     }
 }

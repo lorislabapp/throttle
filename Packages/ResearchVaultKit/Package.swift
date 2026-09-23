@@ -41,20 +41,36 @@ let package = Package(
         .executable(name: "research-vault-xpc-service", targets: ["research-vault-xpc-service"]),
     ],
     dependencies: [
+        // Receipt format, client request/response contract and service identity
+        // constants are canonical in the standalone contract package. The model
+        // and IPC modules below re-export it; storage, keys, gateway and the
+        // service runtime never enter that package.
+        .package(path: "../ThrottleVaultContract"),
+        // The NSXPC interfaces, code-requirement check, connection factory,
+        // thin client and Inbox reader are canonical in the standalone client
+        // package; the XPC client module below re-exports it and keeps only
+        // the endpoint policies that carry the service grant.
+        .package(path: "../ThrottleVaultClient"),
         .package(
             url: "https://github.com/sqlcipher/SQLCipher.swift.git",
             exact: "4.18.0"
         ),
     ],
     targets: [
-        .target(name: "ResearchVaultModel"),
+        .target(
+            name: "ResearchVaultModel",
+            dependencies: [.product(name: "ThrottleVaultContract", package: "ThrottleVaultContract")]
+        ),
         .target(
             name: "ResearchVaultReasoning",
             dependencies: ["ResearchVaultModel"]
         ),
         .target(
             name: "ResearchVaultIPCModel",
-            dependencies: ["ResearchVaultModel"]
+            dependencies: [
+                "ResearchVaultModel",
+                .product(name: "ThrottleVaultContract", package: "ThrottleVaultContract")
+            ]
         ),
         .target(
             name: "ResearchVaultSynthesis",
@@ -62,7 +78,11 @@ let package = Package(
         ),
         .target(
             name: "ResearchVaultXPCClient",
-            dependencies: ["ResearchVaultIPCModel", "ResearchVaultModel"],
+            dependencies: [
+                "ResearchVaultIPCModel", "ResearchVaultModel",
+                .product(name: "ThrottleVaultContract", package: "ThrottleVaultContract"),
+                .product(name: "ThrottleVaultClient", package: "ThrottleVaultClient")
+            ],
             linkerSettings: [
                 .linkedFramework("Security"),
             ]

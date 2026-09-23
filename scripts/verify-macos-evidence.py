@@ -31,6 +31,10 @@ ALLOWED_SKIPS = {
     "GlobalRAGServiceTests/testLiveLocalProposalWhenExplicitlyEnabled()": "configured local model",
     "LocalWorkerLiveRouteTests/testConfiguredOllamaServesProjectAssistantWithoutBusinessContext()": "private Ollama acceptance server",
     "NotebookLMImportJobTests/testRecordedLiveExportsReconcileWhenExplicitFixtureIsProvided()": "explicit recorded export fixture",
+    # The crash worker is built only by the isolated core harness
+    # (verify-core-evidence.py), which runs both cases for real.
+    "TaskVerificationCrashTests/testControllerDiesAfterAttachmentWithoutRunningProjectCode()": "core-harness crash worker",
+    "TaskVerificationCrashTests/testControllerDiesBeforeAttachmentWithoutRunningProjectCode()": "core-harness crash worker",
 }
 REQUIRED_CASES = {
     "AppTestHostIsolationTests/testActivationKeepsPreviewStateAndCannotConnectInstalledServices()",
@@ -44,7 +48,9 @@ REQUIRED_CASES = {
 SOURCE_PREFIXES = (
     "Throttle/", "ThrottleTests/", "ThrottleShared/", "ThrottleWidget/",
     "ResearchVaultAgent/", "Packages/ResearchVaultKit/", "Throttle.xcodeproj/",
-    "edge-agent/",
+    "edge-agent/", "Packages/ThrottlePeerProtocol/", "Packages/ThrottleMCPContracts/",
+    "Packages/ThrottleMirrorContract/", "Packages/ThrottleVaultContract/",
+    "Packages/ThrottleVaultClient/",
 )
 SOURCE_FILES = {"project.yml", ".github/workflows/ci.yml", "scripts/verify-macos-evidence.py"}
 IOS_REQUIRED_CASES = {
@@ -53,7 +59,10 @@ IOS_REQUIRED_CASES = {
     "CompanionHostIsolationTests/testDefaultStoreUsesOnlyTestDefaultsAndNotificationsStayDisabled()",
     "RemoteTerminalPrivacyTests/testInvalidationRetiresBothBuffersScrollbackAndOldParserState()",
 }
-IOS_SOURCE_PREFIXES = ("ThrottleiOS/", "ThrottleiOSTests/", "ThrottleiOSWidget/", "ThrottleShared/", "Throttle.xcodeproj/")
+IOS_SOURCE_PREFIXES = (
+    "ThrottleiOS/", "ThrottleiOSTests/", "ThrottleiOSWidget/", "ThrottleShared/",
+    "Throttle.xcodeproj/", "Packages/ThrottlePeerProtocol/", "Packages/ThrottleMirrorContract/",
+)
 
 
 class EvidenceError(ValueError):

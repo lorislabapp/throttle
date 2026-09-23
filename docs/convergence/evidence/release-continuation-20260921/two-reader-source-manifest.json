@@ -1,0 +1,47 @@
+{
+  "legacy_revision": "d734b864ab83db050f4c55de2f94556e66308369",
+  "sources": {
+    "Legacy": {
+      "Throttle/Models/BudgetAdmissionModels.swift": "953613c7cd69074f9ec942e8106af0916636de88ba8d604b87f84018a68196da",
+      "Throttle/Models/PlanModels.swift": "0ac6d633827d3ed7b6d923c20b184aa97eec01de00210425fa8629cd8f2afa3c",
+      "Throttle/Models/WorkflowDependencyModels.swift": "16c3326a301fb4ff914a11739edc28f36e91a9334e350166287062308e60803f",
+      "Throttle/Models/WorkflowDesignContract.swift": "b3487178f81c047ae613affc00b278e22e65deeae42ab4a0d5ddc6b3350fa47a",
+      "Throttle/Models/WorkflowEvidenceReceipt.swift": "b8114743cd6118b0145e7072ece2b05720fa9facc32878f66e528348f477ff83",
+      "Throttle/Models/WorkflowIPModels.swift": "7893433972dc5e633b432103205765dbb056b63bd524c4fb01b086e12e7b7088",
+      "Throttle/Models/WorkflowPlatformModels.swift": "d753932c2c9cea3be23de1666d0b6a1783a5d567768ccd385f64b85403a231b6",
+      "Throttle/Models/WorkflowProductCycleContract.swift": "33971cc05a15b4662118c146d08740cefeca7a10dd17ac7e1ebeaa744a8de785",
+      "Throttle/Models/WorkflowRecipeModels.swift": "bce14e3c738cbd61bd316e8f5473a6faf509701b2d6322b9b67fefb1c037d283",
+      "Throttle/Models/WorkflowReleaseModels.swift": "206fe7025868fe65b9c9e0eb51c0d4c38ad38aec08d24c828b6b0fa7d4af80e2",
+      "Throttle/Models/WorkflowReviewModels.swift": "deabb3d19d797c71f419990b06bd2b8655e1cae75fb297ce2993c60912116f2a",
+      "Throttle/Models/WorkflowTechnologyReuseModels.swift": "125c0a41978b8cc42c7c262b6afc69ede62cb2c877e1839c784bdd8d0639ba62",
+      "Throttle/Models/WorkflowWorkContract.swift": "d806656be97a2149a4b2a53f342e7252a2fe130eae2939a271cbbe1f23d61864",
+      "Throttle/Services/NativeProcessIdentity.swift": "b2754ba4f3560d73a87740c54c69f904fa51aafb6ba5abbfc70ecb139aa4ddaa",
+      "Throttle/Services/OwnedProcessTermination.swift": "24501db7b8c3e832d52833b7273b7c7807825ed73f1d98adaa021e3790d359a5",
+      "Throttle/Services/PlanProjection.swift": "e5ac24d8601863d05703ba097f3a0a7633695fde90b7024f0ca9150cccf91244",
+      "Throttle/Services/PlanStore.swift": "44ac120f3ec72c4b03c121af786b7241eb6b0f8d49715d9e894f0d10faa95335",
+      "Throttle/Services/TestOutcomeDetector.swift": "f51439146f30ba7bad2104513112654a90f3abf585b778c07d77d73515c844bb"
+    },
+    "Current": {
+      "Throttle/Models/BudgetAdmissionModels.swift": "953613c7cd69074f9ec942e8106af0916636de88ba8d604b87f84018a68196da",
+      "Throttle/Models/PlanModels.swift": "d87b9bcf4149130dc3c66c1b8794e23884b0411a15c1e046f51c47e8fdc73469",
+      "Throttle/Models/TaskVerificationLease.swift": "7a2f2ab97b0b13bf6778879165684ae9f25c48020eff75173ab1d424f06391b8",
+      "Throttle/Models/TaskVerificationProcess.swift": "be3b467035a298b26a3fff25068bb5727a2aa9b63e5d7bd033e93a4a34ebfc35",
+      "Throttle/Models/WorkflowDependencyModels.swift": "16c3326a301fb4ff914a11739edc28f36e91a9334e350166287062308e60803f",
+      "Throttle/Models/WorkflowDesignContract.swift": "b3487178f81c047ae613affc00b278e22e65deeae42ab4a0d5ddc6b3350fa47a",
+      "Throttle/Models/WorkflowEvidenceReceipt.swift": "b8114743cd6118b0145e7072ece2b05720fa9facc32878f66e528348f477ff83",
+      "Throttle/Models/WorkflowIPModels.swift": "7893433972dc5e633b432103205765dbb056b63bd524c4fb01b086e12e7b7088",
+      "Throttle/Models/WorkflowPlatformModels.swift": "d753932c2c9cea3be23de1666d0b6a1783a5d567768ccd385f64b85403a231b6",
+      "Throttle/Models/WorkflowProductCycleContract.swift": "33971cc05a15b4662118c146d08740cefeca7a10dd17ac7e1ebeaa744a8de785",
+      "Throttle/Models/WorkflowRecipeModels.swift": "bce14e3c738cbd61bd316e8f5473a6faf509701b2d6322b9b67fefb1c037d283",
+      "Throttle/Models/WorkflowReleaseModels.swift": "206fe7025868fe65b9c9e0eb51c0d4c38ad38aec08d24c828b6b0fa7d4af80e2",
+      "Throttle/Models/WorkflowReviewModels.swift": "deabb3d19d797c71f419990b06bd2b8655e1cae75fb297ce2993c60912116f2a",
+      "Throttle/Models/WorkflowTechnologyReuseModels.swift": "125c0a41978b8cc42c7c262b6afc69ede62cb2c877e1839c784bdd8d0639ba62",
+      "Throttle/Models/WorkflowWorkContract.swift": "d806656be97a2149a4b2a53f342e7252a2fe130eae2939a271cbbe1f23d61864",
+      "Throttle/Services/NativeProcessIdentity.swift": "0536138fb59ad03b4ba5e52d2e560e2e07f5f94c71190979eccfbe987533ac38",
+      "Throttle/Services/OwnedProcessTermination.swift": "24501db7b8c3e832d52833b7273b7c7807825ed73f1d98adaa021e3790d359a5",
+      "Throttle/Services/PlanProjection.swift": "62ae10092972a8eaa791b1f178a13f57419b68625640758669b30ba8a84ad811",
+      "Throttle/Services/PlanStore.swift": "44ac120f3ec72c4b03c121af786b7241eb6b0f8d49715d9e894f0d10faa95335",
+      "Throttle/Services/TestOutcomeDetector.swift": "f51439146f30ba7bad2104513112654a90f3abf585b778c07d77d73515c844bb"
+    }
+  }
+}

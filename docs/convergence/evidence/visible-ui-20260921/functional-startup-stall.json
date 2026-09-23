@@ -1,0 +1,8 @@
+{
+  "run": "functional-ui-tests-20260921-080145",
+  "host": 73970,
+  "observation": "dyld open stalled during sampling; independent plist reader also blocked in open",
+  "outcome": "Host eventually bootstrapped, 8 tests PASS, zero failures; terminal receipt exit 0, 126.049 seconds",
+  "cleanup": "Guarded cleanup attempted after sampling; terminal success already achieved when polled. Do not attribute recovery to the cleanup attempt.",
+  "causal_diagnosis": "UNCONFIRMED; no product assertion failed"
+}

@@ -1,0 +1,766 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild build-for-testing -project Throttle.xcodeproj -scheme Throttle -configuration Debug -destination generic/platform=macOS -derivedDataPath /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData -clonedSourcePackagesDirPath /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile -skipPackageUpdates -jobs 2 CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES ARCHS=arm64 -skipPackagePluginValidation -skipMacroValidation
+
+Build settings from command line:
+    ARCHS = arm64
+    CODE_SIGNING_ALLOWED = NO
+    ONLY_ACTIVE_ARCH = YES
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  ThrottleVaultContract: /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Packages/ThrottleVaultContract @ local
+  ThrottleMCPContracts: /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Packages/ThrottleMCPContracts
+  swift-transformers: https://github.com/huggingface/swift-transformers @ 1.3.0
+  swift-numerics: https://github.com/apple/swift-numerics @ 1.1.1
+  SQLCipher: https://github.com/sqlcipher/SQLCipher.swift.git @ 4.18.0
+  swift-huggingface: https://github.com/huggingface/swift-huggingface @ 0.9.0
+  yyjson: https://github.com/ibireme/yyjson.git @ 0.12.0
+  ThrottleVaultClient: /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Packages/ThrottleVaultClient @ local
+  swift-crypto: https://github.com/apple/swift-crypto.git @ 4.5.1
+  swift-argument-parser: https://github.com/apple/swift-argument-parser @ 1.8.2
+  GRDB: https://github.com/groue/GRDB.swift @ 6.29.3
+  SwiftTerm: https://github.com/migueldeicaza/SwiftTerm @ 1.14.0
+  mlx-swift: https://github.com/ml-explore/mlx-swift @ 0.31.6
+  swift-syntax: https://github.com/swiftlang/swift-syntax.git @ 600.0.1
+  swift-asn1: https://github.com/apple/swift-asn1.git @ 1.7.1
+  Jinja: https://github.com/huggingface/swift-jinja.git @ 2.4.2
+  swift-collections: https://github.com/apple/swift-collections.git @ 1.6.0
+  swift-atomics: https://github.com/apple/swift-atomics.git @ 1.3.1
+  ThrottleShared: /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleShared
+  mlx-swift-lm: https://github.com/ml-explore/mlx-swift-lm @ 3.31.3
+  ResearchVaultKit: /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Packages/ResearchVaultKit
+  EventSource: https://github.com/mattt/EventSource.git @ 1.4.2
+  swift-nio: https://github.com/apple/swift-nio.git @ 2.101.3
+  ThrottlePeerProtocol: /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Packages/ThrottlePeerProtocol @ local
+  ThrottleMirrorContract: /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Packages/ThrottleMirrorContract @ local
+  Sparkle: https://github.com/sparkle-project/Sparkle @ 2.9.6
+  swift-system: https://github.com/apple/swift-system.git @ 1.8.1
+
+Build Preparation
+Build task concurrency set to 2 via user default IDEBuildOperationMaxNumberOfConcurrentCompileTasks
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+Compile plug-in “CudaBuild” in package “mlx-swift”
+[debug]: Compiling plugin to executable at /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/PluginExecutables/CudaBuild
+[debug]: Using compiler /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc
+[debug]: Plugin compilation output directory '/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/PluginExecutables'
+[debug]: Computed hash of plugin compilation inputs: 02067c51225864deaee5d872781553401422fdd2d1d4ee88010f525f6f671c94
+
+
+Apply build tool plug-in “CudaBuild” to target “Cmlx” in package “mlx-swift”
+CUDA Build Plugin
+CUDA is disabled
+
+Process build tool plug-in results
+package: <IDESwiftPackageCore.IDESwiftPackageDependency:0x790fc74600 path:'/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/mlx-swift'>
+    target: Cmlx
+        prebuildCommandOutputPaths: []
+        buildCommands: []
+        allDerivedOutputPaths: []
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (123 targets)
+    Target 'ThrottleTests' in project 'Throttle'
+        ➜ Explicit dependency on target 'Throttle' in project 'Throttle'
+        ➜ Explicit dependency on target 'ThrottleMCPContracts-product' in project 'ThrottleMCPContracts'
+        ➜ Explicit dependency on target 'GRDB-product' in project 'GRDB'
+    Target 'Throttle' in project 'Throttle'
+        ➜ Explicit dependency on target 'ThrottleWidget' in project 'Throttle'
+        ➜ Explicit dependency on target 'ResearchVaultAgent' in project 'Throttle'
+        ➜ Explicit dependency on target 'GRDB-product' in project 'GRDB'
+        ➜ Explicit dependency on target 'ThrottleMCPContracts-product' in project 'ThrottleMCPContracts'
+        ➜ Explicit dependency on target 'Sparkle-product' in project 'Sparkle'
+        ➜ Explicit dependency on target 'SwiftTerm-product' in project 'SwiftTerm'
+        ➜ Explicit dependency on target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'ThrottleShared-product' in project 'ThrottleShared'
+        ➜ Explicit dependency on target 'ThrottlePeer-product' in project 'ThrottleShared'
+        ➜ Explicit dependency on target 'ResearchVaultIPCModel-product' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultXPCClient-product' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultSynthesis-product' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIngestion-product' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultReasoning-product' in project 'ResearchVaultKit'
+    Target 'ResearchVaultReasoning-product' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultReasoning' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+    Target 'ResearchVaultIngestion-product' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIngestion' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIPCModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+    Target 'ResearchVaultSynthesis-product' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultSynthesis' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIPCModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+    Target 'ResearchVaultSynthesis' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIPCModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+    Target 'ResearchVaultXPCClient-product' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultXPCClient' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIPCModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+        ➜ Explicit dependency on target 'ThrottleVaultClient-product' in project 'ThrottleVaultClient'
+    Target 'ResearchVaultIPCModel-product' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIPCModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+    Target 'ThrottlePeer-product' in project 'ThrottleShared'
+        ➜ Explicit dependency on target 'ThrottlePeer' in project 'ThrottleShared'
+        ➜ Explicit dependency on target 'ThrottleShared' in project 'ThrottleShared'
+        ➜ Explicit dependency on target 'ThrottleMirrorContract-product' in project 'ThrottleMirrorContract'
+        ➜ Explicit dependency on target 'ThrottlePeerProtocol-product' in project 'ThrottlePeerProtocol'
+    Target 'ThrottlePeer' in project 'ThrottleShared'
+        ➜ Explicit dependency on target 'ThrottleShared' in project 'ThrottleShared'
+        ➜ Explicit dependency on target 'ThrottleMirrorContract-product' in project 'ThrottleMirrorContract'
+        ➜ Explicit dependency on target 'ThrottlePeerProtocol-product' in project 'ThrottlePeerProtocol'
+    Target 'ThrottlePeerProtocol-product' in project 'ThrottlePeerProtocol'
+        ➜ Explicit dependency on target 'ThrottlePeerProtocol' in project 'ThrottlePeerProtocol'
+    Target 'ThrottlePeerProtocol' in project 'ThrottlePeerProtocol' (no dependencies)
+    Target 'ThrottleShared-product' in project 'ThrottleShared'
+        ➜ Explicit dependency on target 'ThrottleShared' in project 'ThrottleShared'
+        ➜ Explicit dependency on target 'ThrottleMirrorContract-product' in project 'ThrottleMirrorContract'
+    Target 'ThrottleShared' in project 'ThrottleShared'
+        ➜ Explicit dependency on target 'ThrottleMirrorContract-product' in project 'ThrottleMirrorContract'
+    Target 'ThrottleMirrorContract-product' in project 'ThrottleMirrorContract'
+        ➜ Explicit dependency on target 'ThrottleMirrorContract' in project 'ThrottleMirrorContract'
+    Target 'ThrottleMirrorContract' in project 'ThrottleMirrorContract' (no dependencies)
+    Target 'Tokenizers-product' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Tokenizers' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'swift-transformers_Hub' in project 'swift-transformers'
+        ➜ Explicit dependency on target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'yyjson-product' in project 'yyjson'
+    Target 'yyjson-product' in project 'yyjson'
+        ➜ Explicit dependency on target 'yyjson' in project 'yyjson'
+    Target 'yyjson' in project 'yyjson' (no dependencies)
+    Target 'Jinja-product' in project 'Jinja'
+        ➜ Explicit dependency on target 'Jinja' in project 'Jinja'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+    Target 'Jinja' in project 'Jinja'
+        ➜ Explicit dependency on target 'OrderedCollections-product' in project 'swift-collections'
+    Target 'OrderedCollections-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'OrderedCollections' in project 'swift-collections'
+        ➜ Explicit dependency on target 'InternalCollectionsUtilities' in project 'swift-collections'
+    Target 'OrderedCollections' in project 'swift-collections'
+        ➜ Explicit dependency on target 'InternalCollectionsUtilities' in project 'swift-collections'
+    Target 'swift-transformers_Hub' in project 'swift-transformers' (no dependencies)
+    Target 'HuggingFace-product' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'HuggingFace' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+    Target 'HuggingFace' in project 'swift-huggingface'
+        ➜ Explicit dependency on target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'Crypto-product' in project 'swift-crypto'
+    Target 'Crypto-product' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_Crypto' in project 'swift-crypto'
+    Target 'Crypto' in project 'swift-crypto'
+        ➜ Explicit dependency on target 'swift-crypto_Crypto' in project 'swift-crypto'
+    Target 'swift-crypto_Crypto' in project 'swift-crypto' (no dependencies)
+    Target 'EventSource-product' in project 'EventSource'
+        ➜ Explicit dependency on target 'EventSource' in project 'EventSource'
+        ➜ Explicit dependency on target 'NIOCore-product' in project 'swift-nio'
+    Target 'EventSource' in project 'EventSource'
+        ➜ Explicit dependency on target 'NIOCore-product' in project 'swift-nio'
+    Target 'NIOCore-product' in project 'swift-nio'
+        ➜ Explicit dependency on target 'NIOCore' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIOAtomics' in project 'swift-nio'
+        ➜ Explicit dependency on target 'NIOConcurrencyHelpers' in project 'swift-nio'
+        ➜ Explicit dependency on target '_NIOBase64' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIOOpenBSD' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIOFreeBSD' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIODarwin' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIOLinux' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIOWindows' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIOWASI' in project 'swift-nio'
+        ➜ Explicit dependency on target '_NIODataStructures' in project 'swift-nio'
+        ➜ Explicit dependency on target 'DequeModule-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Atomics-product' in project 'swift-atomics'
+    Target 'NIOCore' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIOAtomics' in project 'swift-nio'
+        ➜ Explicit dependency on target 'NIOConcurrencyHelpers' in project 'swift-nio'
+        ➜ Explicit dependency on target '_NIOBase64' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIOOpenBSD' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIOFreeBSD' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIODarwin' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIOLinux' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIOWindows' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIOWASI' in project 'swift-nio'
+        ➜ Explicit dependency on target '_NIODataStructures' in project 'swift-nio'
+        ➜ Explicit dependency on target 'DequeModule-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'Atomics-product' in project 'swift-atomics'
+    Target 'Atomics-product' in project 'swift-atomics'
+        ➜ Explicit dependency on target 'Atomics' in project 'swift-atomics'
+        ➜ Explicit dependency on target '_AtomicsShims' in project 'swift-atomics'
+    Target 'Atomics' in project 'swift-atomics'
+        ➜ Explicit dependency on target '_AtomicsShims' in project 'swift-atomics'
+    Target '_AtomicsShims' in project 'swift-atomics' (no dependencies)
+    Target 'DequeModule-product' in project 'swift-collections'
+        ➜ Explicit dependency on target 'DequeModule' in project 'swift-collections'
+        ➜ Explicit dependency on target 'InternalCollectionsUtilities' in project 'swift-collections'
+        ➜ Explicit dependency on target 'ContainersPreview' in project 'swift-collections'
+    Target 'DequeModule' in project 'swift-collections'
+        ➜ Explicit dependency on target 'InternalCollectionsUtilities' in project 'swift-collections'
+        ➜ Explicit dependency on target 'ContainersPreview' in project 'swift-collections'
+    Target 'ContainersPreview' in project 'swift-collections'
+        ➜ Explicit dependency on target 'InternalCollectionsUtilities' in project 'swift-collections'
+    Target 'InternalCollectionsUtilities' in project 'swift-collections' (no dependencies)
+    Target '_NIODataStructures' in project 'swift-nio' (no dependencies)
+    Target 'CNIOWASI' in project 'swift-nio' (no dependencies)
+    Target 'CNIOWindows' in project 'swift-nio' (no dependencies)
+    Target 'CNIOLinux' in project 'swift-nio' (no dependencies)
+    Target 'CNIODarwin' in project 'swift-nio' (no dependencies)
+    Target 'CNIOFreeBSD' in project 'swift-nio' (no dependencies)
+    Target 'CNIOOpenBSD' in project 'swift-nio' (no dependencies)
+    Target '_NIOBase64' in project 'swift-nio' (no dependencies)
+    Target 'NIOConcurrencyHelpers' in project 'swift-nio'
+        ➜ Explicit dependency on target 'CNIOAtomics' in project 'swift-nio'
+    Target 'CNIOAtomics' in project 'swift-nio' (no dependencies)
+    Target 'MLXHuggingFace-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFace' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXHuggingFace' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXHuggingFaceMacros' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'SwiftSyntaxMacros-product' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftCompilerPlugin-product' in project 'swift-syntax'
+    Target 'SwiftCompilerPlugin-product' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftCompilerPlugin' in project 'swift-syntax'
+        ➜ Explicit dependency on target '_SwiftSyntaxCShims' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax509' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax510' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax600' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParser' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftOperators' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftBasicFormat' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParserDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntaxBuilder' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntaxMacros' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntaxMacroExpansion' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftCompilerPluginMessageHandling' in project 'swift-syntax'
+    Target 'SwiftCompilerPlugin' in project 'swift-syntax'
+        ➜ Explicit dependency on target '_SwiftSyntaxCShims' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax509' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax510' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax600' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParser' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftOperators' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftBasicFormat' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParserDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntaxBuilder' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntaxMacros' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntaxMacroExpansion' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftCompilerPluginMessageHandling' in project 'swift-syntax'
+    Target 'SwiftCompilerPluginMessageHandling' in project 'swift-syntax'
+        ➜ Explicit dependency on target '_SwiftSyntaxCShims' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax509' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax510' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax600' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParser' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftOperators' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftBasicFormat' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParserDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntaxBuilder' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntaxMacros' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntaxMacroExpansion' in project 'swift-syntax'
+    Target 'SwiftSyntaxMacroExpansion' in project 'swift-syntax'
+        ➜ Explicit dependency on target '_SwiftSyntaxCShims' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax509' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax510' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax600' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftBasicFormat' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParser' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParserDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntaxBuilder' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntaxMacros' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftOperators' in project 'swift-syntax'
+    Target 'SwiftOperators' in project 'swift-syntax'
+        ➜ Explicit dependency on target '_SwiftSyntaxCShims' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax509' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax510' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax600' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParser' in project 'swift-syntax'
+    Target 'SwiftSyntaxMacros-product' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntaxMacros' in project 'swift-syntax'
+        ➜ Explicit dependency on target '_SwiftSyntaxCShims' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax509' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax510' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax600' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParser' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftBasicFormat' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParserDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntaxBuilder' in project 'swift-syntax'
+    Target 'SwiftSyntaxMacros' in project 'swift-syntax'
+        ➜ Explicit dependency on target '_SwiftSyntaxCShims' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax509' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax510' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax600' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParser' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftBasicFormat' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParserDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntaxBuilder' in project 'swift-syntax'
+    Target 'SwiftSyntaxBuilder' in project 'swift-syntax'
+        ➜ Explicit dependency on target '_SwiftSyntaxCShims' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax509' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax510' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax600' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftBasicFormat' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParser' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParserDiagnostics' in project 'swift-syntax'
+    Target 'SwiftParserDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target '_SwiftSyntaxCShims' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax509' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax510' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax600' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftBasicFormat' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftParser' in project 'swift-syntax'
+    Target 'SwiftBasicFormat' in project 'swift-syntax'
+        ➜ Explicit dependency on target '_SwiftSyntaxCShims' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax509' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax510' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax600' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax' in project 'swift-syntax'
+    Target 'SwiftParser' in project 'swift-syntax'
+        ➜ Explicit dependency on target '_SwiftSyntaxCShims' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax509' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax510' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax600' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax' in project 'swift-syntax'
+    Target 'SwiftDiagnostics' in project 'swift-syntax'
+        ➜ Explicit dependency on target '_SwiftSyntaxCShims' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax509' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax510' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax600' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax' in project 'swift-syntax'
+    Target 'SwiftSyntax' in project 'swift-syntax'
+        ➜ Explicit dependency on target '_SwiftSyntaxCShims' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax509' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax510' in project 'swift-syntax'
+        ➜ Explicit dependency on target 'SwiftSyntax600' in project 'swift-syntax'
+    Target 'SwiftSyntax600' in project 'swift-syntax' (no dependencies)
+    Target 'SwiftSyntax510' in project 'swift-syntax' (no dependencies)
+    Target 'SwiftSyntax509' in project 'swift-syntax' (no dependencies)
+    Target '_SwiftSyntaxCShims' in project 'swift-syntax' (no dependencies)
+    Target 'MLXLMCommon-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLLM-product' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLLM' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXLMCommon' in project 'mlx-swift-lm'
+        ➜ Explicit dependency on target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers-product' in project 'mlx-swift'
+    Target 'MLXOptimizers-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXOptimizers' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'CudaBuild' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXOptimizers' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'CudaBuild' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXNN-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'CudaBuild' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLXNN' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'CudaBuild' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLX-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'CudaBuild' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'MLX' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'CudaBuild' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'Numerics-product' in project 'swift-numerics'
+    Target 'Numerics-product' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'Numerics' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'ComplexModule' in project 'swift-numerics'
+    Target 'Numerics' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'ComplexModule' in project 'swift-numerics'
+    Target 'ComplexModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+        ➜ Explicit dependency on target 'RealModule' in project 'swift-numerics'
+    Target 'RealModule' in project 'swift-numerics'
+        ➜ Explicit dependency on target '_NumericsShims' in project 'swift-numerics'
+    Target '_NumericsShims' in project 'swift-numerics' (no dependencies)
+    Target 'Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'mlx-swift_Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'CudaBuild' in project 'mlx-swift'
+    Target 'mlx-swift_Cmlx' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'CudaBuild' in project 'mlx-swift'
+    Target 'CudaBuild' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'encuda-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'ArgumentParser-product' in project 'swift-argument-parser'
+    Target 'encuda-product' in project 'mlx-swift'
+        ➜ Explicit dependency on target 'ArgumentParser-product' in project 'swift-argument-parser'
+    Target 'ArgumentParser-product' in project 'swift-argument-parser'
+        ➜ Explicit dependency on target 'ArgumentParser' in project 'swift-argument-parser'
+        ➜ Explicit dependency on target 'ArgumentParserToolInfo' in project 'swift-argument-parser'
+    Target 'ArgumentParser' in project 'swift-argument-parser'
+        ➜ Explicit dependency on target 'ArgumentParserToolInfo' in project 'swift-argument-parser'
+    Target 'ArgumentParserToolInfo' in project 'swift-argument-parser' (no dependencies)
+    Target 'SwiftTerm-product' in project 'SwiftTerm'
+        ➜ Explicit dependency on target 'SwiftTerm' in project 'SwiftTerm'
+        ➜ Explicit dependency on target 'SwiftTerm_SwiftTerm' in project 'SwiftTerm'
+    Target 'SwiftTerm' in project 'SwiftTerm'
+        ➜ Explicit dependency on target 'SwiftTerm_SwiftTerm' in project 'SwiftTerm'
+    Target 'SwiftTerm_SwiftTerm' in project 'SwiftTerm' (no dependencies)
+    Target 'Sparkle-product' in project 'Sparkle' (no dependencies)
+    Target 'ThrottleMCPContracts-product' in project 'ThrottleMCPContracts'
+        ➜ Explicit dependency on target 'ThrottleMCPContracts' in project 'ThrottleMCPContracts'
+    Target 'ThrottleMCPContracts' in project 'ThrottleMCPContracts' (no dependencies)
+    Target 'GRDB-product' in project 'GRDB'
+        ➜ Explicit dependency on target 'GRDB' in project 'GRDB'
+        ➜ Explicit dependency on target 'GRDB_GRDB' in project 'GRDB'
+    Target 'GRDB' in project 'GRDB'
+        ➜ Explicit dependency on target 'GRDB_GRDB' in project 'GRDB'
+        ➜ Explicit dependency on target 'CSQLite' in project 'GRDB'
+    Target 'CSQLite' in project 'GRDB' (no dependencies)
+    Target 'GRDB_GRDB' in project 'GRDB' (no dependencies)
+    Target 'ResearchVaultAgent' in project 'Throttle'
+        ➜ Explicit dependency on target 'ResearchVaultServiceRuntime-product' in project 'ResearchVaultKit'
+    Target 'ResearchVaultServiceRuntime-product' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultServiceRuntime' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIPCModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultXPCClient' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIngestion' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultReasoning' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultStore' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultSQLCipher' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultGateway' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultXPC' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultKeychain' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+        ➜ Explicit dependency on target 'ThrottleVaultClient-product' in project 'ThrottleVaultClient'
+        ➜ Explicit dependency on target 'SQLCipher-product' in project 'SQLCipher'
+    Target 'ResearchVaultServiceRuntime' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIPCModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultXPCClient' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIngestion' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultReasoning' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultStore' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultSQLCipher' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultGateway' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultXPC' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultKeychain' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+        ➜ Explicit dependency on target 'ThrottleVaultClient-product' in project 'ThrottleVaultClient'
+        ➜ Explicit dependency on target 'SQLCipher-product' in project 'SQLCipher'
+    Target 'ResearchVaultKeychain' in project 'ResearchVaultKit' (no dependencies)
+    Target 'ResearchVaultXPC' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIPCModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultXPCClient' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIngestion' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultReasoning' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultStore' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultSQLCipher' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultGateway' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+        ➜ Explicit dependency on target 'ThrottleVaultClient-product' in project 'ThrottleVaultClient'
+        ➜ Explicit dependency on target 'SQLCipher-product' in project 'SQLCipher'
+    Target 'ResearchVaultGateway' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIPCModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIngestion' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultReasoning' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultStore' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultSQLCipher' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+        ➜ Explicit dependency on target 'SQLCipher-product' in project 'SQLCipher'
+    Target 'ResearchVaultSQLCipher' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultReasoning' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultStore' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIPCModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIngestion' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+        ➜ Explicit dependency on target 'SQLCipher-product' in project 'SQLCipher'
+    Target 'SQLCipher-product' in project 'SQLCipher' (no dependencies)
+    Target 'ResearchVaultStore' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+    Target 'ResearchVaultReasoning' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+    Target 'ResearchVaultIngestion' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIPCModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+    Target 'ResearchVaultXPCClient' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultIPCModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+        ➜ Explicit dependency on target 'ThrottleVaultClient-product' in project 'ThrottleVaultClient'
+    Target 'ThrottleVaultClient-product' in project 'ThrottleVaultClient'
+        ➜ Explicit dependency on target 'ThrottleVaultClient' in project 'ThrottleVaultClient'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+    Target 'ThrottleVaultClient' in project 'ThrottleVaultClient'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+    Target 'ResearchVaultIPCModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+    Target 'ResearchVaultModel' in project 'ResearchVaultKit'
+        ➜ Explicit dependency on target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+    Target 'ThrottleVaultContract-product' in project 'ThrottleVaultContract'
+        ➜ Explicit dependency on target 'ThrottleVaultContract' in project 'ThrottleVaultContract'
+    Target 'ThrottleVaultContract' in project 'ThrottleVaultContract' (no dependencies)
+    Target 'ThrottleWidget' in project 'Throttle' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -o /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache
+
+Ld /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleWidget.appex/Contents/MacOS/ThrottleWidget.debug.dylib normal (in target 'ThrottleWidget' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos14.0 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -O0 -Xlinker -no_warn_duplicate_libraries -L/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -L/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -filelist /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/Objects-normal/arm64/ThrottleWidget.LinkFileList -install_name @rpath/ThrottleWidget.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @executable_path/../Frameworks -Xlinker -rpath -Xlinker @executable_path/../../../../Frameworks -Xlinker -object_path_lto -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/Objects-normal/arm64/ThrottleWidget_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/Objects-normal/arm64/ThrottleWidget_dependency_info.dat -fapplication-extension -fobjc-link-runtime -fprofile-instr-generate -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/Objects-normal/arm64/ThrottleWidget.swiftmodule -Xlinker -alias -Xlinker _NSExtensionMain -Xlinker ___debug_main_executable_dylib_entry_point -o /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleWidget.appex/Contents/MacOS/ThrottleWidget.debug.dylib
+
+ConstructStubExecutorLinkFileList /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/ThrottleWidget-ExecutorLinkFileList-normal-arm64.txt (in target 'ThrottleWidget' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    construct-stub-executor-link-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleWidget.appex/Contents/MacOS/ThrottleWidget.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/ThrottleWidget-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'ThrottleWidget' from project 'Throttle')
+
+Ld /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleWidget.appex/Contents/MacOS/ThrottleWidget normal (in target 'ThrottleWidget' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos14.0 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -O0 -Xlinker -no_warn_duplicate_libraries -L/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/../Frameworks -Xlinker -rpath -Xlinker @executable_path/../../../../Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/ThrottleWidget-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_entry -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/ThrottleWidget-DebugEntryPoint-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/ThrottleWidget-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/ThrottleWidget-ExecutorLinkFileList-normal-arm64.txt /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleWidget.appex/Contents/MacOS/ThrottleWidget.debug.dylib -o /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleWidget.appex/Contents/MacOS/ThrottleWidget
+
+ExtractAppIntentsMetadata (in target 'ThrottleWidget' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.s263Mc/Metal.xctoolchain --module-name ThrottleWidget --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk --xcode-version 27A266a --platform-family macOS --deployment-target 14.0 --bundle-identifier com.lorislab.throttle.widget --output /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleWidget.appex/Contents/Resources --target-triple arm64-apple-macos14.0 --binary-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleWidget.appex/Contents/MacOS/ThrottleWidget --dependency-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/Objects-normal/arm64/ThrottleWidget_dependency_info.dat --stringsdata-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/Objects-normal/arm64/ThrottleWidget.SwiftFileList --metadata-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/ThrottleWidget.DependencyMetadataFileList --static-metadata-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/ThrottleWidget.DependencyStaticMetadataFileList --swift-const-vals-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleWidget.build/Objects-normal/arm64/ThrottleWidget.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --no-app-shortcuts-localization
+2026-09-21 11:53:38.773 appintentsmetadataprocessor[48324:2594342] Starting appintentsmetadataprocessor export
+2026-09-21 11:53:38.822 appintentsmetadataprocessor[48324:2594342] Extracted no relevant App Intents symbols, skipping writing output
+
+Ld /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent.debug.dylib normal (in target 'ResearchVaultAgent' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos14.0 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -O0 -Xlinker -no_warn_duplicate_libraries -L/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -L/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/PackageFrameworks -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -filelist /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/Objects-normal/arm64/ResearchVaultAgent.LinkFileList -install_name @rpath/ResearchVaultAgent.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -Xlinker -object_path_lto -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/Objects-normal/arm64/ResearchVaultAgent_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/Objects-normal/arm64/ResearchVaultAgent_dependency_info.dat -fobjc-link-runtime -fprofile-instr-generate -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/Objects-normal/arm64/ResearchVaultAgent.swiftmodule -framework Security -framework Security -framework Security -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -framework SQLCipher -framework SQLCipher -o /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent.debug.dylib
+
+ConstructStubExecutorLinkFileList /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/ResearchVaultAgent-ExecutorLinkFileList-normal-arm64.txt (in target 'ResearchVaultAgent' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    construct-stub-executor-link-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/ResearchVaultAgent-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'ResearchVaultAgent' from project 'Throttle')
+
+Ld /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent normal (in target 'ResearchVaultAgent' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos14.0 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -O0 -Xlinker -no_warn_duplicate_libraries -L/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/PackageFrameworks -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/ResearchVaultAgent-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/ResearchVaultAgent-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/ResearchVaultAgent-ExecutorLinkFileList-normal-arm64.txt /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent.debug.dylib -o /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent
+
+CopySwiftLibs /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app (in target 'ResearchVaultAgent' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent.debug.dylib --scan-folder /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app/Contents/Frameworks --scan-folder /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app/Contents/PlugIns --scan-folder /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app/Contents/Library/SystemExtensions --scan-folder /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app/Contents/Extensions --platform macosx --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.s263Mc/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app/Contents/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os --back-deploy-swift-span
+Ignoring --strip-bitcode because --sign was not passed
+
+ExtractAppIntentsMetadata (in target 'ResearchVaultAgent' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.s263Mc/Metal.xctoolchain --module-name ResearchVaultAgent --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk --xcode-version 27A266a --platform-family macOS --deployment-target 14.0 --bundle-identifier com.lorislab.throttle.research-vault-agent --output /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app/Contents/Resources --target-triple arm64-apple-macos14.0 --binary-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent --dependency-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/Objects-normal/arm64/ResearchVaultAgent_dependency_info.dat --stringsdata-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/Objects-normal/arm64/ResearchVaultAgent.SwiftFileList --metadata-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/ResearchVaultAgent.DependencyMetadataFileList --static-metadata-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/ResearchVaultAgent.DependencyStaticMetadataFileList --swift-const-vals-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ResearchVaultAgent.build/Objects-normal/arm64/ResearchVaultAgent.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --no-app-shortcuts-localization
+2026-09-21 11:53:39.094 appintentsmetadataprocessor[48329:2594373] Starting appintentsmetadataprocessor export
+2026-09-21 11:53:39.095 appintentsmetadataprocessor[48329:2594373] warning: Metadata extraction skipped, no AppIntents.framework dependency found
+
+Ld /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/MacOS/Throttle.debug.dylib normal (in target 'Throttle' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos14.0 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -O0 -Xlinker -no_warn_duplicate_libraries -L/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -L/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/PackageFrameworks -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -filelist /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Objects-normal/arm64/Throttle.LinkFileList -install_name @rpath/Throttle.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -Xlinker -object_path_lto -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Objects-normal/arm64/Throttle_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Objects-normal/arm64/Throttle_dependency_info.dat -fobjc-link-runtime -fprofile-instr-generate -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Objects-normal/arm64/Throttle.swiftmodule -lc++ -framework Security -framework Security -framework Foundation -framework Metal -framework Accelerate -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -framework Sparkle -o /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/MacOS/Throttle.debug.dylib
+
+ConstructStubExecutorLinkFileList /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Throttle-ExecutorLinkFileList-normal-arm64.txt (in target 'Throttle' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    construct-stub-executor-link-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/MacOS/Throttle.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Throttle-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'Throttle' from project 'Throttle')
+
+Ld /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/MacOS/Throttle normal (in target 'Throttle' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos14.0 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -O0 -Xlinker -no_warn_duplicate_libraries -L/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/PackageFrameworks -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Throttle-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Throttle-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Throttle-ExecutorLinkFileList-normal-arm64.txt /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/MacOS/Throttle.debug.dylib -o /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/MacOS/Throttle
+
+Copy /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleWidget.appex /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleWidget.appex (in target 'Throttle' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks -remove-static-executable /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleWidget.appex /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns
+
+Copy /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app (in target 'Throttle' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks -remove-static-executable /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ResearchVaultAgent.app /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Library/LoginItems
+
+ExtractAppIntentsMetadata (in target 'Throttle' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.s263Mc/Metal.xctoolchain --module-name Throttle --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk --xcode-version 27A266a --platform-family macOS --deployment-target 14.0 --bundle-identifier com.lorislab.throttle --output /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Resources --target-triple arm64-apple-macos14.0 --binary-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/MacOS/Throttle --dependency-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Objects-normal/arm64/Throttle_dependency_info.dat --stringsdata-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Objects-normal/arm64/Throttle.SwiftFileList --metadata-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Throttle.DependencyMetadataFileList --static-metadata-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Throttle.DependencyStaticMetadataFileList --swift-const-vals-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/Objects-normal/arm64/Throttle.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --no-app-shortcuts-localization
+2026-09-21 11:53:40.828 appintentsmetadataprocessor[48399:2594575] Starting appintentsmetadataprocessor export
+2026-09-21 11:53:40.951 appintentsmetadataprocessor[48399:2594575] Writing Metadata.appintents
+2026-09-21 11:53:40.951 appintentsmetadataprocessor[48399:2594575] Metadata root: /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Resources/Metadata.appintents
+
+CopySwiftLibs /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app (in target 'Throttle' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/MacOS/Throttle.debug.dylib --scan-folder /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Frameworks --scan-folder /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns --scan-folder /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Library/SystemExtensions --scan-folder /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Extensions --platform macosx --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.s263Mc/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os --back-deploy-swift-span
+Ignoring --strip-bitcode because --sign was not passed
+libswiftCompatibilitySpan.dylib is up to date at /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib
+
+SwiftDriver ThrottleTests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'ThrottleTests' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name ThrottleTests -Onone @/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/GRDB.swift/Sources/CSQLite/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-atomics/Sources/_AtomicsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOWASI.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOLinux.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIODarwin.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOFreeBSD.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOOpenBSD.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOAtomics.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target arm64-apple-macos14.0 -g -module-cache-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -warnings-as-errors -index-store-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib -F /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/PackageFrameworks -F /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -F /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks -Xfrontend -load-plugin-executable -Xfrontend /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests_const_extract_protocols.json -Xcc -iquote -Xcc /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/ThrottleTests-generated-files.hmap -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/ThrottleTests-own-target-headers.hmap -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/ThrottleTests-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle-c41c58a016fc9f4310c5f27451fa5182-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/ThrottleTests-project-headers.hmap -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-atomics/Sources/_AtomicsShims/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOWASI/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOWindows/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOLinux/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIODarwin/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOFreeBSD/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOOpenBSD/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOAtomics/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/yyjson/src -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/DerivedSources-normal/arm64 -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/DerivedSources/arm64 -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests-Swift.h -working-directory /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920 -experimental-emit-module-separately -disable-cmo
+
+ProcessInfoPlistFile /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Info.plist /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/Info.plist (in target 'Throttle' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-infoPlistUtility /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Throttle/Info.plist -producttype com.apple.product-type.application -genpkginfo /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PkgInfo -expandbuildsettings -platform macosx -additionalcontentfile /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle.build/assetcatalog_generated_info.plist -scanforprivacyfile /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Frameworks/Sparkle.framework -scanforprivacyfile /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app -scanforprivacyfile /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleWidget.appex -scanforprivacyfile /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Resources/GRDB_GRDB.bundle -scanforprivacyfile /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Resources/SwiftTerm_SwiftTerm.bundle -scanforprivacyfile /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Resources/mlx-swift_Cmlx.bundle -scanforprivacyfile /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Resources/swift-crypto_Crypto.bundle -scanforprivacyfile /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Resources/swift-transformers_Hub.bundle -o /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Info.plist
+
+ValidateEmbeddedBinary /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleWidget.appex (in target 'Throttle' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    /Applications/Xcode.app/Contents/Developer/usr/bin/embeddedBinaryValidationUtility /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleWidget.appex -info-plist-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Info.plist
+
+ValidateEmbeddedBinary /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app (in target 'Throttle' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    /Applications/Xcode.app/Contents/Developer/usr/bin/embeddedBinaryValidationUtility /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app -info-plist-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/Info.plist
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ ThrottleTests (in target 'ThrottleTests' from project 'Throttle')
+
+SwiftCompile normal arm64 (in target 'ThrottleTests' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    
+
+SwiftCompile normal arm64 Compiling\ PlanIntegrationViewTests.swift /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/PlanIntegrationViewTests.swift (in target 'ThrottleTests' from project 'Throttle')
+
+SwiftCompile normal arm64 /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleTests/ServiceTests/PlanIntegrationViewTests.swift (in target 'ThrottleTests' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-SwiftPerFileCompile PlanIntegrationViewTests.swift
+
+SwiftDriverJobDiscovery normal arm64 Compiling PlanIntegrationViewTests.swift (in target 'ThrottleTests' from project 'Throttle')
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for ThrottleTests (in target 'ThrottleTests' from project 'Throttle')
+
+SwiftDriver\ Compilation\ Requirements ThrottleTests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'ThrottleTests' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name ThrottleTests -Onone @/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/GRDB.swift/Sources/CSQLite/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-atomics/Sources/_AtomicsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOWASI.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOLinux.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIODarwin.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOFreeBSD.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOOpenBSD.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOAtomics.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target arm64-apple-macos14.0 -g -module-cache-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -warnings-as-errors -index-store-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib -F /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/PackageFrameworks -F /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -F /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks -Xfrontend -load-plugin-executable -Xfrontend /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests_const_extract_protocols.json -Xcc -iquote -Xcc /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/ThrottleTests-generated-files.hmap -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/ThrottleTests-own-target-headers.hmap -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/ThrottleTests-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle-c41c58a016fc9f4310c5f27451fa5182-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/ThrottleTests-project-headers.hmap -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-atomics/Sources/_AtomicsShims/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOWASI/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOWindows/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOLinux/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIODarwin/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOFreeBSD/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOOpenBSD/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOAtomics/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/yyjson/src -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/DerivedSources-normal/arm64 -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/DerivedSources/arm64 -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests-Swift.h -working-directory /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920 -experimental-emit-module-separately -disable-cmo
+
+SwiftDriver\ Compilation ThrottleTests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'ThrottleTests' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name ThrottleTests -Onone @/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/GRDB.swift/Sources/CSQLite/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-atomics/Sources/_AtomicsShims/include/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOWASI.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOLinux.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIODarwin.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOFreeBSD.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOOpenBSD.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/CNIOAtomics.modulemap -Xcc -fmodule-map-file\=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/GeneratedModuleMaps/yyjson.modulemap -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -target arm64-apple-macos14.0 -g -module-cache-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -warnings-as-errors -index-store-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib -F /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/PackageFrameworks -F /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -F /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks -Xfrontend -load-plugin-executable -Xfrontend /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/MLXHuggingFaceMacros\#MLXHuggingFaceMacros -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/SDKStatCaches.noindex/macosx27.0-26A425-e829b21a6f8c9b70876ba0858053c0447231f6df4def33e022ae2eb8f782df1a.sdkstatcache -output-file-map /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests_const_extract_protocols.json -Xcc -iquote -Xcc /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/ThrottleTests-generated-files.hmap -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/ThrottleTests-own-target-headers.hmap -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/ThrottleTests-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/Throttle-c41c58a016fc9f4310c5f27451fa5182-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/ThrottleTests-project-headers.hmap -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-numerics/Sources/_NumericsShims/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/mlx-swift/Source/Cmlx/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-atomics/Sources/_AtomicsShims/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOWASI/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOWindows/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOLinux/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIODarwin/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOFreeBSD/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOOpenBSD/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/swift-nio/Sources/CNIOAtomics/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages/checkouts/yyjson/src -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/include -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/DerivedSources-normal/arm64 -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/DerivedSources/arm64 -Xcc -I/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests-Swift.h -working-directory /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920 -experimental-emit-module-separately -disable-cmo
+
+Copy /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleTests.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.swiftsourceinfo (in target 'ThrottleTests' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.swiftsourceinfo /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleTests.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo
+
+Copy /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleTests.swiftmodule/arm64-apple-macos.swiftmodule /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.swiftmodule (in target 'ThrottleTests' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.swiftmodule /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleTests.swiftmodule/arm64-apple-macos.swiftmodule
+
+Copy /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleTests.swiftmodule/arm64-apple-macos.abi.json /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.abi.json (in target 'ThrottleTests' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.abi.json /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/ThrottleTests.swiftmodule/arm64-apple-macos.abi.json
+
+Ld /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleTests.xctest/Contents/MacOS/ThrottleTests normal (in target 'ThrottleTests' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos14.0 -bundle -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -O0 -Xlinker -no_warn_duplicate_libraries -L/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -L/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -L/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/PackageFrameworks -F/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug -iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks -filelist /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.LinkFileList -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @loader_path/../Frameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -bundle_loader /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/MacOS/Throttle -Xlinker -object_path_lto -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests_dependency_info.dat -fobjc-link-runtime -fprofile-instr-generate -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.swiftmodule -lc++ -framework Security -framework Security -framework Foundation -framework Metal -framework Accelerate -Xlinker -needed_framework -Xlinker XCTest -framework XCTest -Xlinker -needed-lXCTestSwiftSupport -lXCTestSwiftSupport /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/MacOS/Throttle.debug.dylib -o /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleTests.xctest/Contents/MacOS/ThrottleTests
+
+ExtractAppIntentsMetadata (in target 'ThrottleTests' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.s263Mc/Metal.xctoolchain --module-name ThrottleTests --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk --xcode-version 27A266a --platform-family macOS --deployment-target 14.0 --bundle-identifier com.lorislab.throttle.tests --output /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources --target-triple arm64-apple-macos14.0 --binary-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleTests.xctest/Contents/MacOS/ThrottleTests --dependency-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests_dependency_info.dat --stringsdata-file /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.SwiftFileList --metadata-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/ThrottleTests.DependencyMetadataFileList --static-metadata-file-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/ThrottleTests.DependencyStaticMetadataFileList --swift-const-vals-list /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/Objects-normal/arm64/ThrottleTests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --no-app-shortcuts-localization
+2026-09-21 11:53:43.910 appintentsmetadataprocessor[48429:2594792] Starting appintentsmetadataprocessor export
+2026-09-21 11:53:43.981 appintentsmetadataprocessor[48429:2594792] Extracted no relevant App Intents symbols, skipping writing output
+
+CopySwiftLibs /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleTests.xctest (in target 'ThrottleTests' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleTests.xctest/Contents/MacOS/ThrottleTests --scan-folder /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Frameworks --scan-folder /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleTests.xctest/Contents/PlugIns --scan-folder /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Library/SystemExtensions --scan-folder /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Extensions --platform macosx --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.s263Mc/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Frameworks --strip-bitcode --scan-executable /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/Throttle.build/Debug/ThrottleTests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os --back-deploy-swift-span
+Ignoring --strip-bitcode because --sign was not passed
+
+Validate /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app (in target 'Throttle' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-validationUtility /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app -no-validate-extension -infoplist-subpath Contents/Info.plist
+
+RegisterWithLaunchServices /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app (in target 'Throttle' from project 'Throttle')
+    cd /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920
+    builtin-lsregisterurl --record-path /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/XCBuildData/registered-launchservices.txt -- /System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -f -R -trusted /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app
+
+PruneExplicitPrecompiledModules /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/SDKExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+** TEST BUILD SUCCEEDED **
+

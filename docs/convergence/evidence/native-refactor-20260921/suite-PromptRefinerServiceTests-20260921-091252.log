@@ -1,0 +1,89 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/suite-PromptRefinerServiceTests-20260921-091252.xctestrun -destination platform=macOS,arch=arm64 -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 300 -maximum-test-execution-time-allowance 360 -resultBundlePath /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/suite-PromptRefinerServiceTests-20260921-091252.xcresult -testLanguage en -testRegion US "-only-testing:ThrottleTests/PromptRefinerServiceTests"
+
+Writing result bundle at path:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/suite-PromptRefinerServiceTests-20260921-091252.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008132-001178882E03001C, name:My Mac }
+2026-09-21 09:12:55.595660+0200 Throttle[21626:1971408] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:12:55.595878+0200 Throttle[21626:1971408] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:12:55.596078+0200 Throttle[21626:1971415] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:12:55.596105+0200 Throttle[21626:1971415] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+[AppDelegate.init] start
+2026-09-21 09:12:55.596436+0200 Throttle[21626:1971413] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:12:55.596474+0200 Throttle[21626:1971413] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:12:55.596821+0200 Throttle[21626:1971413] [Connection] Will NOT re-try to establish the connection
+2026-09-21 09:12:55.596841+0200 Throttle[21626:1971408] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:12:55.596853+0200 Throttle[21626:1971408] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:12:55.631842+0200 Throttle[21626:1971100] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/3w/fbl9wc1d3q7091lq5pj5sy0c0000gn/T/com.lorislab.throttle.savedState
+[applicationDidFinishLaunching] start
+2026-09-21 09:12:55.676265+0200 Throttle[21626:1971100] [App] Isolated host detected: skipping production background services
+Test Suite 'Selected tests' started at 2026-09-21 09:12:55.695.
+Test Suite 'ThrottleTests.xctest' started at 2026-09-21 09:12:55.696.
+Test Suite 'PromptRefinerServiceTests' started at 2026-09-21 09:12:55.696.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_insertionPayload_keepsInteriorNewlines]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_insertionPayload_keepsInteriorNewlines]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_insertionPayload_stripsTrailingNewlinesSoInsertNeverFires]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_insertionPayload_stripsTrailingNewlinesSoInsertNeverFires]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_insertionPayload_thenValidate_isTheExactContractInsertRelieson]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_insertionPayload_thenValidate_isTheExactContractInsertRelieson]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_localOnlyExcludesEveryNetworkProvider]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_localOnlyExcludesEveryNetworkProvider]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_metrics_countsLinesBytesAndApproxTokens]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_metrics_countsLinesBytesAndApproxTokens]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_metrics_emptyTextIsZeroLinesAndOneToken]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_metrics_emptyTextIsZeroLinesAndOneToken]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_networkAllowedExcludesOnlyProvidersAlreadyTried]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_networkAllowedExcludesOnlyProvidersAlreadyTried]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_extractsProposalAndWhyBullets]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_extractsProposalAndWhyBullets]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_keepsInteriorFencesThatBelongToThePrompt]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_keepsInteriorFencesThatBelongToThePrompt]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_stripsAnOuterCodeFenceTheModelAddedAnyway]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_stripsAnOuterCodeFenceTheModelAddedAnyway]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_withoutDelimitersFallsBackToTheDraftAndReportsNoChange]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_parse_withoutDelimitersFallsBackToTheDraftAndReportsNoChange]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_fallsThroughToTheNextProviderWhenTheFirstFails]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_fallsThroughToTheNextProviderWhenTheFirstFails]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_rejectsAControlSequenceBeforeSpendingAnything]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_rejectsAControlSequenceBeforeSpendingAnything]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_rejectsAControlSequenceReturnedByTheProvider]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_rejectsAControlSequenceReturnedByTheProvider]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_withAnEmptyAnswerThrowsEmpty]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_withAnEmptyAnswerThrowsEmpty]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_withNoProviderThrowsNoProvider]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_refine_withNoProviderThrowsNoProvider]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_alwaysAsksForTheDelimiters]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_alwaysAsksForTheDelimiters]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_carriesTheNudgeInstruction]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_carriesTheNudgeInstruction]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_loopModeDemandsATerminationCondition]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_loopModeDemandsATerminationCondition]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_namesTheRuntimeSoIdiomsDiffer]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_systemPrompt_namesTheRuntimeSoIdiomsDiffer]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_validate_acceptsOrdinaryMultilinePrompt]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_validate_acceptsOrdinaryMultilinePrompt]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_validate_rejectsEscapeAndNul]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_validate_rejectsEscapeAndNul]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_validate_rejectsOverOneMebibyte]' started.
+Test Case '-[ThrottleTests.PromptRefinerServiceTests test_validate_rejectsOverOneMebibyte]' passed (0.009 seconds).
+Test Suite 'PromptRefinerServiceTests' passed at 2026-09-21 09:12:55.722.
+	 Executed 23 tests, with 0 failures (0 unexpected) in 0.020 (0.026) seconds
+Test Suite 'ThrottleTests.xctest' passed at 2026-09-21 09:12:55.722.
+	 Executed 23 tests, with 0 failures (0 unexpected) in 0.020 (0.026) seconds
+Test Suite 'Selected tests' passed at 2026-09-21 09:12:55.722.
+	 Executed 23 tests, with 0 failures (0 unexpected) in 0.020 (0.027) seconds
+2026-09-21 09:12:58.921 xcodebuild[21618:1970889] [MT] IDETestOperationsObserverDebug: 5.661 elapsed -- Testing started completed.
+2026-09-21 09:12:58.921 xcodebuild[21618:1970889] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-21 09:12:58.921 xcodebuild[21618:1970889] [MT] IDETestOperationsObserverDebug: 5.661 sec, +5.661 sec -- end
+
+Test session results, code coverage, and logs:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/suite-PromptRefinerServiceTests-20260921-091252.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

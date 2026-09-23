@@ -1,0 +1,644 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testsuites>
+<testsuite name="TestResults" errors="0" tests="319" failures="0" time="161.1450027079999">
+<testcase classname="ThrottleTests.AIProviderRoutingPolicyTests" name="testAvailableExplicitChoiceIsUsedEvenWhenEveryOtherProviderIsAvailable" time="0.059214417">
+</testcase>
+<testcase classname="ThrottleTests.AIProviderRoutingPolicyTests" name="testAvailabilityMatrixCannotReviveAnExcludedOrUnselectedCloudProvider" time="0.059213125">
+</testcase>
+<testcase classname="ThrottleTests.AIProviderRoutingPolicyTests" name="testForceLocalRefinerExclusionsRemainEffectiveWithCloudPreference" time="0.05275575">
+</testcase>
+<testcase classname="ThrottleTests.AIProviderRoutingPolicyTests" name="testCloudFailureCannotChangeProviderOrSpendAnotherAccount" time="0.052777042">
+</testcase>
+<testcase classname="ThrottleTests.AIProviderRoutingPolicyTests" name="testLocalFailureCannotEscalateEvenIfPreferenceChangesToCloudDuringTurn" time="0.053067708">
+</testcase>
+<testcase classname="ThrottleTests.AIProviderRoutingPolicyTests" name="testForceLocalRefinerNeverSelectsServerEvenWhenPreferred" time="0.053089417">
+</testcase>
+<testcase classname="ThrottleTests.AIProviderRoutingPolicyTests" name="testNoAttemptsAllowsOnlyExplicitCloudAlongsideLocalCandidates" time="0.053064417">
+</testcase>
+<testcase classname="ThrottleTests.AIProviderRoutingPolicyTests" name="testServerChoiceIsExactAndUnavailableServerDoesNotSelectEmbeddedProvider" time="0.053054875">
+</testcase>
+<testcase classname="ThrottleTests.AIProviderRoutingPolicyTests" name="testUnavailableExplicitChoiceDoesNotSwitchProviders" time="0.052179083">
+</testcase>
+<testcase classname="ThrottleTests.AIProviderRoutingPolicyTests" name="testServerIsNeverAnImplicitDefaultOrFallback" time="0.052184542">
+</testcase>
+<testcase classname="ThrottleTests.AssistantProjectToolsTests" name="testControllerRootBoundsAllOperationsAndProducesReceipts" time="0.057931833">
+</testcase>
+<testcase classname="ThrottleTests.AIProviderRoutingPolicyTests" name="testUntouchedPreferenceNeverUsesConfiguredCloudCredentials" time="0.057937">
+</testcase>
+<testcase classname="ThrottleTests.AssistantProjectToolsTests" name="testMissingOrBroadRootNeverFallsBackToHome" time="0.054462042">
+</testcase>
+<testcase classname="ThrottleTests.AssistantProjectToolsTests" name="testCopiedScopeSharesRequestBudget" time="0.054462208">
+</testcase>
+<testcase classname="ThrottleTests.AssistantProjectToolsTests" name="testNativeAdaptersShareProjectScopeWithoutInvokingAModel" time="0.056299833">
+</testcase>
+<testcase classname="ThrottleTests.AssistantProjectToolsTests" name="testSearchParserAndAmbiguousFields" time="0.056295625">
+</testcase>
+<testcase classname="ThrottleTests.BashSandboxTests" name="testAllLegacyShellCommandsAreRefused" time="0.080405542">
+</testcase>
+<testcase classname="ThrottleTests.BudgetAdmissionStoreTests" name="testActualOverrunIsRecordedAndBlocksNewAdmissions" time="0.08041075">
+</testcase>
+<testcase classname="ThrottleTests.BudgetAdmissionStoreTests" name="testConcurrentStoresCannotBothSpendTheSameCapacity" time="0.076228709">
+</testcase>
+<testcase classname="ThrottleTests.BudgetAdmissionStoreTests" name="testCapabilityProfileRequiresEvidenceForEveryClaimedControl" time="0.076255875">
+</testcase>
+<testcase classname="ThrottleTests.BudgetAdmissionStoreTests" name="testExpiredReservationBlocksUntilExplicitlyReconciled" time="0.108082542">
+</testcase>
+<testcase classname="ThrottleTests.BudgetAdmissionStoreTests" name="testIdempotencyReturnsTheOriginalReservationAndRejectsChangedIntent" time="0.108064834">
+</testcase>
+<testcase classname="ThrottleTests.BudgetAdmissionStoreTests" name="testLedgerIsPrivateAndExternalEnforcementRemainsUnavailable" time="0.100078583">
+</testcase>
+<testcase classname="ThrottleTests.BudgetAdmissionStoreTests" name="testOrdinaryWorkCannotConsumeProtectedVerificationOrReleaseReserves" time="0.100077083">
+</testcase>
+<testcase classname="ThrottleTests.BudgetAdmissionStoreTests" name="testSymlinkedThrottleDirectoryIsRefusedWithoutWritingThroughIt" time="0.078714125">
+</testcase>
+<testcase classname="ThrottleTests.BudgetAdmissionStoreTests" name="testUpperBoundSettlementCannotMasqueradeAsMeasuredUsage" time="0.078712916">
+</testcase>
+<testcase classname="ThrottleTests.BudgetAdmissionStoreTests" name="testWorldReadableLedgerIsRefused" time="0.062416458">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="test_buildRequestBody_includesAllProjectReadToolDefinitions" time="0.062416458">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="test_parseSSEEvents_extractsSingleToolUseAndItsAccumulatedJSON" time="0.05407275">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="test_parseSSEEvents_extractsMultipleToolUsesInOrder" time="0.054074833">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="test_parseSSEEvents_handlesEmptyInputObject" time="0.053339084">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="test_rebuildMessages_lastAssistantToolUseAndUserToolResultGoNative" time="0.053352666">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="test_renderAsFencedBlock_emitsExactFormatExistingParserExpects" time="0.053494917">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="test_rebuildMessages_noPriorToolUses_isPlainTextThroughout" time="0.053508">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="testEOFWithoutMessageStopNeverAdmitsCompletedTool" time="0.052728584">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="testIncompleteSSEFrameAndErrorAfterHTTP200Refuse" time="0.052730292">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="testMalformedToolInputRefusesWholeResponse" time="0.052749833">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="testMalformedPayloadOrUnclosedBlockCannotBeSuccessful" time="0.052757333">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="testProjectCatalogueAndSearchRoundTripRejectFieldInjection" time="0.053695625">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="testRemoteErrorAfterCompletedToolRefusesResponse" time="0.053691333">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="testSSEByteLineAndEventBudgetsAreBounded" time="0.146147917">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="testSSEToleratesPingAndUnknownEventsButRejectsTruncatedStopReason" time="0.146139334">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="testValidSSEBytesAdmitToolOnlyAtCompletedFrameAndMessage" time="0.05364825">
+</testcase>
+<testcase classname="ThrottleTests.ClaudeAPIKeyProtocolTests" name="testValidTextOnlyResponseAndEventNameMismatch" time="0.053650084">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_corruptionCannotRehydrateOrProduceAValidPointer" time="0.094693292">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_numberingAndMetadataStayInsideTheContextBudget" time="0.094712167">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_pointerRequiresAnExactHash" time="0.057587542">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_selectedEvidenceKeepsExactOriginalAndUntrustedBoundary" time="0.057583834">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_sourceMetadataCannotExhaustTheBudget" time="0.055549542">
+</testcase>
+<testcase classname="ThrottleTests.ContextPacketEvidenceTests" name="test_writeFailureIsExplicitAndDoesNotAdvertiseRehydration" time="0.055565667">
+</testcase>
+<testcase classname="ThrottleTests.DiagnosticArchiveTests" name="test_exportUsesTheFrozenValueAndSanitizesCanariesInsideTheZip" time="0.263786625">
+</testcase>
+<testcase classname="ThrottleTests.DiagnosticArchiveTests" name="test_archiveContainsExactlyTheReviewedSummaryAndNoAdjacentFiles" time="0.263854">
+</testcase>
+<testcase classname="ThrottleTests.DiagnosticArchiveTests" name="test_repeatedExportsArePrivateDistinctAndPreserveTheFirstArchive" time="0.203093167">
+</testcase>
+<testcase classname="ThrottleTests.DiagnosticArchiveTests" name="test_invalidDestinationDoesNotReplaceAFileOrLeaveStagingData" time="0.203169042">
+</testcase>
+<testcase classname="ThrottleTests.DiagnosticReportTests" name="test_privateCanariesCannotEnterVersionFields" time="0.062097708">
+</testcase>
+<testcase classname="ThrottleTests.DiagnosticReportTests" name="test_exportAllowsOnlySummary" time="0.062097584">
+</testcase>
+<testcase classname="ThrottleTests.DiagnosticReportTests" name="test_unavailableCountsAreNotZero" time="0.056300167">
+</testcase>
+<testcase classname="ThrottleSharedTests.KeychainStoreTests" name="testConcurrentAddRetriesUpdateOnceWithoutDeleting" time="0.056299958">
+</testcase>
+<testcase classname="ThrottleSharedTests.KeychainStoreTests" name="testCustomServicePreservesCredentialNamespaceOnUpdateAndAdd" time="0.054091459">
+</testcase>
+<testcase classname="ThrottleSharedTests.KeychainStoreTests" name="testEmptyStringIsAValueAndDoesNotDelete" time="0.054096958">
+</testcase>
+<testcase classname="ThrottleSharedTests.KeychainStoreTests" name="testExistingCredentialIsUpdatedWithoutDeleteOrAdd" time="0.053374042">
+</testcase>
+<testcase classname="ThrottleSharedTests.KeychainStoreTests" name="testExplicitDeletionReportsActualFailureAndMissingIsSuccess" time="0.0534045">
+</testcase>
+<testcase classname="ThrottleSharedTests.KeychainStoreTests" name="testFailedAddReturnsFailureWithoutDelete" time="0.053738125">
+</testcase>
+<testcase classname="ThrottleSharedTests.KeychainStoreTests" name="testLicenseJSONBytesRemainCompatibleAndFailedRenewalKeepsThem" time="0.05371625">
+</testcase>
+<testcase classname="ThrottleSharedTests.KeychainStoreTests" name="testOnlyMissingItemPermitsAdd" time="0.052358041">
+</testcase>
+<testcase classname="ThrottleSharedTests.KeychainStoreTests" name="testLockedKeychainFailurePreservesPreviousCredential" time="0.052408667">
+</testcase>
+<testcase classname="ThrottleSharedTests.KeychainStoreTests" name="testReadDistinguishesMissingFromLockedAndMalformedValues" time="0.053300917">
+</testcase>
+<testcase classname="ThrottleSharedTests.KeychainStoreTests" name="testReadPreservesEmptyAndNonemptyFoundValues" time="0.053264792">
+</testcase>
+<testcase classname="ThrottleTests.NotebookLMGatewayProcessTests" name="testCancellationStopsOwnedChildWithoutWaitingForStdoutEOF" time="0.383977667">
+</testcase>
+<testcase classname="ThrottleTests.NotebookLMGatewayProcessTests" name="testExitedRootWithDescendantHoldingStdoutDoesNotHang" time="0.383973625">
+</testcase>
+<testcase classname="ThrottleTests.NotebookLMGatewayProcessTests" name="testResponseIsFramedAndRequestEOFStillDelivered" time="0.4037235">
+</testcase>
+<testcase classname="ThrottleTests.NotebookLMGatewayProcessTests" name="testSilentChildTimesOutAndIsReaped" time="0.40373775">
+</testcase>
+<testcase classname="ThrottleTests.NotebookLMGatewayProcessTests" name="testTermIgnoringProcessEscalatesWithinBound" time="0.392374083">
+</testcase>
+<testcase classname="ThrottleTests.OwnedProcessTerminationTests" name="testNeverCapturesThrottleItselfForTermination" time="0.392365708">
+</testcase>
+<testcase classname="ThrottleTests.OwnedProcessTerminationTests" name="testReparentingDoesNotChangeTheOwnedIdentity" time="0.103937792">
+</testcase>
+<testcase classname="ThrottleTests.OwnedProcessTerminationTests" name="testObservedGroupDriftPreventsAnAutomaticStopReceipt" time="0.103939916">
+</testcase>
+<testcase classname="ThrottleTests.OwnedProcessTerminationTests" name="testSuspendedGroupCanExitAndNoReplacementPIDIsAccepted" time="0.254533333">
+</testcase>
+<testcase classname="ThrottleTests.OwnedProcessTerminationTests" name="testTermIgnoringOrphanIsKilledWithoutTouchingAnotherSession" time="0.254540083">
+</testcase>
+<testcase classname="ThrottleTests.PeerControlAdmissionTests" name="testListenerReplacementRefusesFramesFromOldConnection" time="0.087288542">
+</testcase>
+<testcase classname="ThrottleTests.OwnedProcessTerminationTests" name="testUnreapedZombieIsAnExitReceiptUntilItsParentReaps" time="0.087288583">
+</testcase>
+<testcase classname="ThrottleTests.PeerControlAdmissionTests" name="testMirrorConsentDoesNotPermitTerminalControl" time="0.056159375">
+</testcase>
+<testcase classname="ThrottleTests.PeerControlAdmissionTests" name="testRevocationRefusesQueuedFramesEvenAfterNewConsent" time="0.05615325">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPAuthorityTests" name="test_noDescriptorIsALegacyCaller" time="0.055515458">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPAuthorityTests" name="test_aPrivateDescriptorLoadsAndNarrowsCalls" time="0.055519709">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPAuthorityTests" name="test_symlinkedProjectResolvesToTheGrantedRoot" time="0.054579667">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPAuthorityTests" name="test_routerRefusesOutsideTheGrantAndUnderABrokenDescriptor" time="0.054591584">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPAuthorityTests" name="testAbsentGrantRefusesEveryTaskToolWithoutCreatingAPlan" time="0.056035542">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPAuthorityTests" name="test_unsafeMalformedOrExpiredDescriptorsRefuseEverything" time="0.05604125">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPAuthorityTests" name="testGrantIsBoundToOneTaskAndRechecksItsDeadline" time="0.056188875">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPAuthorityTests" name="testMutationBoundaryRefusesEventAndVerdictBeforePersistence" time="0.056190583">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPAuthorityTests" name="testRevocationAfterPreflightPreventsClaimAtMutationBoundary" time="0.075793542">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPAuthorityTests" name="testRevocationPersistsAPrivateReceiptAndStopsFutureCalls" time="0.075779833">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPIntakeAuthorityTests" name="testConcurrentResearchWritersPreserveEveryFinding" time="0.142645208">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPIntakeAuthorityTests" name="testAbsentOrTaskOnlyGrantCannotBootstrapOrWriteResearch" time="0.142646875">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPIntakeAuthorityTests" name="testGrantReplacementCannotWidenAnAdmittedRequest" time="0.056099458">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPIntakeAuthorityTests" name="testCorruptResearchIsNotOverwrittenAndRevokedMutationDoesNotCreateIt" time="0.056101917">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPIntakeAuthorityTests" name="testIntakeRequiresExactProjectAndExplicitOperations" time="0.065601083">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPIntakeAuthorityTests" name="testResearchReaderRefusesLinksSpecialFilesAndOversizedInput" time="0.06559325">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPMissionFenceTests" name="testOldGrantCannotReportAfterSameAuthorClaimsANewMission" time="0.079406875">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPMissionFenceTests" name="testClaimCannotSubstituteAnotherMissionAndLegacyClaimIsNotSilentlyBound" time="0.079407041">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPRetryTests" name="test_concurrentIdenticalClaimRetriesWriteOneEvent" time="0.104791542">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPRetryTests" name="test_changedPayloadAuthorAndExpectedSequenceAreNotValidRetries" time="0.104804292">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPRetryTests" name="test_lostReleaseResponseCanBeRetriedAfterReassignmentWithoutReclaiming" time="0.072684541">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPRetryTests" name="test_jsonRetryMetadataRejectsPartialMalformedAndBooleanValues" time="0.072699875">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPRetryTests" name="test_staleNewEventIsRefusedEvenWhenTheSameAuthorOwnsANewClaim" time="0.085165625">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPRetryTests" name="test_verdictRetryDoesNotIncrementRejectionCountTwice" time="0.085150208">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPSchemaContractTests" name="testEveryCatalogEntryHasAProductRoute" time="0.055184875">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPSchemaContractTests" name="testEventAndExplorerEnumsMatchTheProductModels" time="0.055206625">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPSchemaContractTests" name="testResearchPillarsMatchTheProductModel" time="0.054248792">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPSchemaContractTests" name="testProductFacadesUseTheCanonicalSchemas" time="0.054935334">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPTaskRouterTests" name="test_grantedRouterPreservesLegacyRetryFormatAndReportsAStaleNewIntent" time="0.0652875">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPTaskRouterTests" name="test_routerCarriesIdentityAndSequenceThroughClaimEventAndVerdict" time="0.078299416">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPTaskRouterTests" name="test_routerRejectsInvalidMetadataBeforeAnyMutation" time="0.054313791">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPToolsTests" name="testAgentCannotWriteLegacyCompletedEvent" time="0.062126042">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPToolsTests" name="testClaimAnnouncesTheSotaGate" time="0.0622975">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPToolsTests" name="testClaimCannotBeForgedThroughTheEventTool" time="0.060436125">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPToolsTests" name="testClaimRefusesAnUnknownTask" time="0.05945725">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPToolsTests" name="testClaimRefusesAnUnmetDependency" time="0.0576795">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPToolsTests" name="testClaimSucceedsThenBlocksASecondAgent" time="0.067353791">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPToolsTests" name="testEventRefusedFromANonOwner" time="0.063527709">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPToolsTests" name="testEventRefusedOnAnUnclaimedTask" time="0.054819">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPToolsTests" name="testGatedCandidateParksOnlyAfterThrottleCheck" time="0.067553958">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPToolsTests" name="testPlanReadListsOnlyActionableLeaves" time="0.055414209">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPToolsTests" name="testPlanReadReportsAnAbsentPlanPlainly" time="0.053899166">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPToolsTests" name="testProgressAndCandidateRequireThrottleCheckBeforeUnblockingDependency" time="0.075291375">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPToolsTests" name="testReleaseHandsTheTaskBack" time="0.064744375">
+</testcase>
+<testcase classname="ThrottleTests.PlanMCPToolsTests" name="testRouterRecognizesEveryPlanToolAndRejectsUnknownOnes" time="0.053961042">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testAppendAssignsIncreasingSeqAndChainsHashes" time="0.063966167">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testDependencyStillBlocksWhenUpstreamIsUnfinished" time="0.061462625">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testEditedLogBreaksTheChain" time="0.06655225">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testEditingTheFinalLineIsNotDetected" time="0.064619834">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testFirstEventIsVisibleToAFreshStoreAndSurvivesADroppedCache" time="0.060385667">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testFullyRewrittenChainIsIndistinguishable" time="0.074196625">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testLegacyJournalRetainsBytesWhenNewVerificationReopensAsUnknown" time="0.060786042">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testMissingPlanThrows" time="0.0525215">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testReplayIsCachedUntilTheLogChanges" time="0.062368875">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testResolveAppliesDependenciesAndRollup" time="0.07076475">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testStateCacheIsFullyRebuildable" time="0.076788084">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testTaskWithNoLogReadsAsEmpty" time="0.054388625">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testTornTrailingWriteIsRefusedNotRepaired" time="0.061584">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testUnknownTaskThrows" time="0.0535515">
+</testcase>
+<testcase classname="ThrottleTests.PlanStoreTests" name="testUnsafeTaskIDIsRefused" time="0.053729125">
+</testcase>
+<testcase classname="ThrottleTests.ProjectInstructionServiceTests" name="testAnyApplicableInstructionChangeMakesProposalStale" time="0.05735575">
+</testcase>
+<testcase classname="ThrottleTests.ProjectInstructionServiceTests" name="testApplyRequiresExactHumanReview" time="0.056962166">
+</testcase>
+<testcase classname="ThrottleTests.ProjectInstructionServiceTests" name="testDiscoveryUsesCodexOverrideAndKeepsNestedProviderPrecedence" time="0.056775625">
+</testcase>
+<testcase classname="ThrottleTests.ProjectInstructionServiceTests" name="testReviewedApplyPreservesHumanTextAndSecondReconciliationIsIdempotent" time="0.059961208">
+</testcase>
+<testcase classname="ThrottleTests.ProjectInstructionServiceTests" name="testRollbackRefusesAForgedBackupPath" time="0.05791725">
+</testcase>
+<testcase classname="ThrottleTests.ProjectInstructionServiceTests" name="testRollbackRefusesToOverwriteAConcurrentHumanEdit" time="0.059510334">
+</testcase>
+<testcase classname="ThrottleTests.ProjectInstructionServiceTests" name="testSymlinkedInstructionFileIsRefusedWithoutReadingTarget" time="0.054199417">
+</testcase>
+<testcase classname="ThrottleTests.ProjectInstructionServiceTests" name="testSymlinkedRuleDirectoryCannotHideExternalInstructions" time="0.054163958">
+</testcase>
+<testcase classname="ThrottleTests.ProjectInstructionServiceTests" name="testUnconfirmedSecretAndTaskStateStatementsAreRefused" time="0.054470625">
+</testcase>
+<testcase classname="ThrottleTests.ProjectKnowledgeBoundaryTests" name="testLinksSpecialFilesAndReplacedRootAreRefused" time="0.054128125">
+</testcase>
+<testcase classname="ThrottleTests.ProjectKnowledgeExplorerTests" name="testEscapeAndSymlinkedFileAreRefused" time="0.054191208">
+</testcase>
+<testcase classname="ThrottleTests.ProjectKnowledgeBoundaryTests" name="testFileAndTraversalBudgetsAreExplicit" time="0.148960916">
+</testcase>
+<testcase classname="ThrottleTests.ProjectKnowledgeExplorerTests" name="testExactSearchNamesEveryFileItRead" time="0.055270625">
+</testcase>
+<testcase classname="ThrottleTests.ProjectKnowledgeExplorerTests" name="testMCPReadGrantCannotExploreASiblingProject" time="0.053122834">
+</testcase>
+<testcase classname="ThrottleTests.ProjectKnowledgeExplorerTests" name="testMCPRequiresAnExplicitGrantAndIsAdvertisedThroughTheSharedRouter" time="0.052908458">
+</testcase>
+<testcase classname="ThrottleTests.ProjectKnowledgeExplorerTests" name="testReadReturnsBoundedTextAndAnExactDigestReceipt" time="0.054461625">
+</testcase>
+<testcase classname="ThrottleTests.ProjectKnowledgeExplorerTests" name="testSearchMarksIncompleteWhenATextCandidateCannotBeInspected" time="0.055558875">
+</testcase>
+<testcase classname="ThrottleTests.ProjectKnowledgeExplorerTests" name="testSensitivePathsAreRefusedAndCredentialShapesAreRedacted" time="0.05621525">
+</testcase>
+<testcase classname="ThrottleTests.ProjectKnowledgeRaceTests" name="testGrowingFileCannotExceedReadBudget" time="0.068992666">
+</testcase>
+<testcase classname="ThrottleTests.RedTeamCampaignStoreTests" name="testCampaignRefusesTargetsOutsideTheSyntheticBoundary" time="0.055154375">
+</testcase>
+<testcase classname="ThrottleTests.RedTeamCampaignStoreTests" name="testDuplicateObservationKeepsOneFindingAndPrivateStorage" time="0.077273541">
+</testcase>
+<testcase classname="ThrottleTests.ProjectKnowledgeRaceTests" name="testAncestorSymlinkSwapsNeverReadOutsideCanary" time="0.27673175">
+</testcase>
+<testcase classname="ThrottleTests.RedTeamCampaignStoreTests" name="testFindingNeedsTriageAndAnIndependentRetestBeforeDelivery" time="0.110065666">
+</testcase>
+<testcase classname="ThrottleTests.RemoteTransferGitTests" name="testBundleCarriesStagedUnstagedUntrackedAndDeletedFilesWithoutChangingIndex" time="0.474164916">
+</testcase>
+<testcase classname="ThrottleTests.RemoteTransferGitTests" name="testIgnoredFilesRequireTheExplicitIncludeListAndMissingEntriesFail" time="0.423188417">
+</testcase>
+<testcase classname="ThrottleTests.TaskBudgetAdmissionTests" name="testCompletionKeepsAnExplicitUpperBoundUntilMeasuredUsageArrives" time="0.077291541">
+</testcase>
+<testcase classname="ThrottleTests.TaskBudgetAdmissionTests" name="testConfiguredResourceRequiresAnExactWorkContractAmount" time="0.059831667">
+</testcase>
+<testcase classname="ThrottleTests.TaskBudgetAdmissionTests" name="testExactContractCreatesPurposeBoundReservationWithLocalOnlyEnforcement" time="0.070182875">
+</testcase>
+<testcase classname="ThrottleTests.RemoteTransferGitTests" name="testSubdirectoryRefusesTransferBeforeCreatingArtifacts" time="0.240930125">
+</testcase>
+<testcase classname="ThrottleTests.TaskBudgetAdmissionTests" name="testMissingLedgerIsExplicitlyUnconfiguredAndDoesNotInventCapacity" time="0.052448584">
+</testcase>
+<testcase classname="ThrottleTests.TaskBudgetAdmissionTests" name="testUnitMismatchRefusesBeforeReservation" time="0.062157292">
+</testcase>
+<testcase classname="ThrottleTests.TaskBudgetLifecycleTests" name="testBrokenBudgetLedgerRefusesTheTerminalEvent" time="0.073108834">
+</testcase>
+<testcase classname="ThrottleTests.TaskBudgetLifecycleTests" name="testCandidateSettlesTheLocalHoldAsAnExplicitUpperBound" time="0.088649625">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationHardeningTests" name="test_rebase_refusesModifiedTrackedFiles" time="1.5786765">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationHardeningTests" name="test_rebase_ignoresBuildOutputAVerificationLeftBehind" time="3.194867625">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationHardeningTests" name="test_verify_killsADescendantThatIgnoresSIGTERM" time="7.503336125">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationHardeningTests" name="test_verify_leavesNoDescendantRunningAfterATimeout" time="7.4077495">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationOutputTests" name="testDisplayLimitReportsTruncationBelowTheCollectorByteLimit" time="0.0566955">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationOutputTests" name="testSmallOutputIsUnchanged" time="0.052838084">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationOutputTests" name="testSplitUTF8AtTailBoundaryDoesNotEraseTheDiagnostic" time="0.05516175">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationOutputTests" name="testVerboseCommandKeepsABoundedTailWhileDraining" time="0.055357459">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="test_anOptionErrorIsUnknownRatherThanAListOfConflicts" time="0.447233209">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="test_aRealConflictKeepsItsPathsAndDropsTheMessages" time="0.447570875">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationHardeningTests" name="test_verify_passesWhenASuccessfulCommandLeavesSomethingRunning" time="4.289804333">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="test_assess_readsTheBranchOfAWorktreeSittingOnIt" time="1.704594125">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="test_assess_refusesADetachedHEADEvenOnTheBranchTip" time="1.374803458">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="test_emptyAndTruncatedOutputAreUnknown" time="0.467750208">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="test_assess_refusesAWorktreeThatLeftItsBranch" time="3.260693791">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="test_integrate_ignoresUntrackedFilesTheVerificationLeftBehind" time="4.248896">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="test_integrate_leavesTheWorktreeForItsCallerToDecideOn" time="3.37791925">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="test_integrate_refusesADetachedRepositoryHEAD" time="2.540420791">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="test_integrate_refusesARedCheck" time="2.938128042">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="test_integrate_refusesWhenTheTaskItselfMovedAfterTheCheck" time="3.903625083">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="test_integrate_stillRefusesModifiedTrackedFiles" time="3.035209833">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="test_removeWorktree_dropsTheWorktreeOfAnIntegratedTask" time="3.728374459">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="test_removeWorktree_keepsAWorktreeThatStillHoldsWorkAndSaysWhy" time="3.805299125">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="testVerificationRecordsCommandReceiptWithoutClaimingTestCoverage" time="2.250907625">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationRefusalTests" name="testVerificationThatChangesTrackedInputsCannotPass" time="2.331434834">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_assess_refusesWhenThereIsNoWorktree" time="0.456825291">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_assess_namesTheConflictingFileWithoutTouchingTheWorktree" time="1.866876542">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_assess_reportsFilesAndAheadCount" time="1.481716958">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_diff_returnsTheTextAgainstTheMergeBase" time="0.957758875">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_assess_seesUncommittedWork" time="1.570812083">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_diff_throwsWhenTheTaskReferenceIsMissing" time="1.021653792">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_integrate_fastForwardsTheBaseAndLogsTheSHA" time="3.484940792">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_integrate_refusesADirtyWorktree" time="2.997133792">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_integrate_refusesAGatedTaskWithoutAVerdict" time="1.59211">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_integrate_refusesAnUnverifiedTask" time="1.59556675">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_integrateRefusesCorruptTailAfterGreenCheckWithoutMerging" time="2.733032833">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_integrate_refusesWhenTheBaseMovedAfterTheCheck" time="3.273288875">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_mergeDoesNotExecuteRepositoryHooks" time="2.052362042">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_integrateRefusesUnknownEventAfterGreenCheckWithoutMerging" time="2.691151625">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_mergeRefusesWhenAssessedBaseHasChanged" time="1.898755625">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_mergeUsesVerifiedObjectWhenTaskBranchAdvances" time="2.34010425">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_rebase_abortsAndRestoresTheOriginalSHAOnConflict" time="2.161438625">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_rebaseAbortFailed_carriesBothOutputsAndComparesByValue" time="0.462819417">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_rebase_replaysTheTaskOnTheAdvancedBase" time="2.404209667">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_rebaseRefusesAnUnresolvedVerification" time="1.054921417">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_rebaseRefusesCorruptTailWithoutMovingWorktree" time="2.893479541">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_rebaseRefusesUnknownEventWithoutMovingWorktree" time="2.880915583">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_verify_recordsAFailureWithItsOutput" time="2.283614">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_verify_killsAHungCommandAtTheTimeoutAndReportsIt" time="3.809372875">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_verify_recordsAGreenCheckStampedWithBothSHAs" time="2.217636875">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_verify_runsInsideTheWorktreeNotTheRepo" time="2.210710125">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationServiceTests" name="test_verifyPersistsIntentBeforeLaunchingCommand" time="2.232316583">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationWorkContractTests" name="testIntegrateRefusesChangesOutsideThePersistedWorkContract" time="3.18072525">
+</testcase>
+<testcase classname="ThrottleTests.TaskVerificationCrashTests" name="testControllerDiesAfterAttachmentWithoutRunningProjectCode" time="0.0601735">
+</testcase>
+<testcase classname="ThrottleTests.TaskVerificationCrashTests" name="testControllerDiesBeforeAttachmentWithoutRunningProjectCode" time="0.059184625">
+</testcase>
+<testcase classname="ThrottleTests.TaskVerificationLifecycleTests" name="testConcurrentControllersAdmitExactlyOneVerification" time="0.09589925">
+</testcase>
+<testcase classname="ThrottleTests.TaskVerificationLifecycleTests" name="testLateSuccessIsIncompleteAndWrongCommandCannotAcknowledge" time="0.069443833">
+</testcase>
+<testcase classname="ThrottleTests.TaskVerificationLifecycleTests" name="testLegacyUncheckedAcknowledgementCannotErasePendingExecution" time="0.070098916">
+</testcase>
+<testcase classname="ThrottleTests.TaskVerificationLifecycleTests" name="testReopenedUnacknowledgedExecutionBlocksRetryEvenAfterExpiry" time="0.068379">
+</testcase>
+<testcase classname="ThrottleTests.TaskVerificationLifecycleTests" name="testStoppedObservationDoesNotPassTaskAndFencesLateCompletion" time="0.080816667">
+</testcase>
+<testcase classname="ThrottleTests.TaskVerificationLifecycleTests" name="testVerificationWithoutDurableStoreIsRefusedBeforeCommand" time="0.0514765">
+</testcase>
+<testcase classname="ThrottleTests.TaskVerificationProcessTests" name="testDuplicateOrExpiredProcessAttachmentCannotReplaceIdentity" time="0.072736458">
+</testcase>
+<testcase classname="ThrottleTests.TaskVerificationProcessTests" name="testFailedAdmissionNeverRunsCommandAndDisablesLateSignals" time="0.064207834">
+</testcase>
+<testcase classname="ThrottleTests.TaskIntegrationWorkContractTests" name="testIntegrateRefusesVerificationFromAnEarlierWorkContract" time="3.128768708">
+</testcase>
+<testcase classname="ThrottleTests.TaskVerificationProcessTests" name="testFastTimeoutAlwaysPublishesInterruptionBeforeObservingExit" time="0.501585958">
+</testcase>
+<testcase classname="ThrottleTests.TaskVerificationProcessTests" name="testGatedIdentityIsDurableBeforeCommandAndDoesNotCertifyRecovery" time="0.086579416">
+</testcase>
+<testcase classname="ThrottleTests.TaskVerificationProcessTests" name="testObservationDistinguishesReusedPIDAndAnotherBootWithoutSignalling" time="0.054825667">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_ansiColourAndCachedGoOutput" time="0.054060958">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_cargo" time="0.05279125">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_failureFirstAndErrorOnlyPytestSummaries" time="0.053281958">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_failureFromAnotherRunnerCannotBecomeGreen" time="0.052400958">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_go_fail" time="0.053039208">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_go_ok" time="0.052884125">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_invalidAndEmptyCountsCannotBecomeGreen" time="0.05356675">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_jest_failedFirstOrder" time="0.050939417">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_jest_passOnly" time="0.053355167">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_laterSuccessDoesNotEraseFailureInTheSameObservedTail" time="0.04894975">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_noFalsePositiveOnProse" time="0.054638541">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_pytest_passOnly" time="0.054642417">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_pytest_withFailures" time="0.054368375">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_summaryMentionedInProseIsNotObservedResult" time="0.054372875">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_swift" time="0.054337917">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeDetectorTests" name="test_swiftTestingOrNodeFailureAfterXCTestSuccessIsNotGreen" time="0.054337917">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_malformedOrEmptyResultsCannotBecomeGreen" time="0.052390125">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_failedAttemptsContributeToCostPerGreen" time="0.052407625">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_missingCostsAndResetsCannotMakeMetricCheaper" time="0.053341375">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_stableOrderAndIndependentSessions" time="0.053352541">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_unrelatedProjectsAndAllFailuresDoNotCreateCostPerGreen" time="0.052238">
+</testcase>
+<testcase classname="ThrottleTests.TestOutcomeStoreTests" name="test_windowUsesHistoricalCostAnchor" time="0.052257792">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowContractIntegrationTests" name="testContractRefusesExitZeroWithoutTestEvidenceAndPersistsRefusal" time="2.943307084">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowContractIntegrationTests" name="testChangedOrRemovedContractInvalidatesPersistedPassingEvidence" time="3.010156041">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowContractIntegrationTests" name="testVerificationPromotesCandidateBeforeIntegration" time="3.248158917">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowDesignContractTests" name="testChangingCopyChangesTheDesignAndWorkContractDigests" time="0.064007416">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowContractIntegrationTests" name="testIntegrationReadsStoredContractDespiteStaleCallerAndGreenCommand" time="3.397026584">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowDesignContractTests" name="testCompleteJourneyHasAStableDigestAndExplicitUnavailableTool" time="0.061246875">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowDesignContractTests" name="testDesignRequiresReviewDimensionsAndCompatibleEvidence" time="0.058591792">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowDesignContractTests" name="testEveryRuntimeStateMustBeCoveredOrExplicitlyNotApplicable" time="0.056654375">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowEvidenceReceiptTests" name="test_changedInputsAreIncompleteEvenWithExitZero" time="0.055084291">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowEvidenceReceiptTests" name="test_commandSuccessDoesNotProveTests" time="0.052479542">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowEvidenceReceiptTests" name="test_inputDigestsAreOrderInsensitiveAllowlistedAndOptional" time="0.052566542">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowEvidenceReceiptTests" name="test_testInventoryRequiresExactCoverageAndExplicitSkips" time="0.053479709">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowEvidenceReceiptTests" name="test_unknownSchemaAndMissingEvidenceAreNotPromoted" time="0.052737958">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowEvidenceReceiptTests" name="testContractRejectsInvalidRequirementsAndUnapprovedSkips" time="0.053445042">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowEvidenceReceiptTests" name="testContractRequiresIndependentTestObligationsAndCurrentInputs" time="0.052719208">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowFoundationTests" name="test_concurrentClaimsAcrossInstancesHaveOneWinner" time="0.106724542">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowFoundationTests" name="test_eventEndpointCannotBypassCounterReview" time="0.066278834">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowFoundationTests" name="test_concurrentAppendsPreserveAllEventsAndSequence" time="0.231737291">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowFoundationTests" name="test_eventRetryIsIdempotentAndConflictingReuseIsRefused" time="0.058139917">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowFoundationTests" name="test_partialLogIsPreservedAndRejectsAppend" time="0.058763542">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowFoundationTests" name="test_staleOwnerCannotWriteAfterReassignment" time="0.067269708">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowFoundationTests" name="test_symlinkedLogDoesNotWriteOutsideProject" time="0.053799666">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowFoundationTests" name="test_projectLockIsVisibleToAnotherProcessAndReleased" time="0.185511875">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowRecipeTests" name="testCatalogHasThreeVersionedRecipesWithoutAuthorityFields" time="0.054135375">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowRecipeTests" name="testCandidateWaitsForEveryCurrentRunEvidenceRequirement" time="0.076398625">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowRecipeTests" name="testClaimPinsRecipeAndInstructionSnapshot" time="0.067897208">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowRecipeTests" name="testEvidenceFromAReleasedRunCannotCompleteANewClaim" time="0.081272166">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowRecipeTests" name="testEvidenceWithoutAReferenceDoesNotSatisfyRecipe" time="0.071110083">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowRecipeTests" name="testInstructionChangeInvalidatesTheClaim" time="0.067400083">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowRecipeTests" name="testUnavailableRecipeRevisionCannotBeClaimed" time="0.053060833">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowResultImporterTests" name="test_aMalformedOrEmptyTreeIsRefused" time="0.052411958">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowResultImporterTests" name="test_aMissingBundleIsNamedRatherThanGuessedAt" time="0.052965708">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowResultImporterTests" name="test_anIncompleteRunIsRecordedAsIncompleteNotPassed" time="0.051543625">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowResultImporterTests" name="test_anInventoryUpgradesAPassingCommandAndOnlyThat" time="0.052526333">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowResultImporterTests" name="test_aStateTheImporterDoesNotUnderstandIsUnresolvedNotPassed" time="0.051879083">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowResultImporterTests" name="test_theInventoryIsReadFromWhateverDepthTheCasesSitAt" time="0.051916542">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowReviewGateTests" name="testBlockingNotVerifiedCannotBeCompensatedByAnotherPass" time="0.051469125">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowReviewGateTests" name="testHumanCriterionCannotBeSatisfiedByAModelLabel" time="0.052386958">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowReviewGateTests" name="testIndependentEvidenceBoundReportAcceptsAllBlockingCriteria" time="0.051809291">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowReviewGateTests" name="testNonblockingFindingRemainsVisibleWithoutOverridingBlockingPasses" time="0.052127292">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowReviewGateTests" name="testNotApplicableNeedsAReasonAndNoSyntheticEvidence" time="0.051414167">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowReviewGateTests" name="testProducingRuntimeCannotReviewItself" time="0.052916625">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowReviewGateTests" name="testReviewCannotCiteEvidenceAbsentFromTheTaskLedger" time="0.051938291">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowReviewGateTests" name="testReviewOfEarlierCandidateIsStale" time="0.0520475">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowReviewMCPTests" name="testClaimedVerdictMustMatchDeterministicCriterionDecision" time="0.068897959">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowReviewMCPTests" name="testRouterDecodesTheStructuredReportObject" time="0.073338583">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowReviewMCPTests" name="testRubricTaskRefusesLegacyVerdictWithoutReport" time="0.069324083">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowReviewMCPTests" name="testStructuredAcceptedReviewPersistsAndFinishesTask" time="0.073650583">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowWorkContractTests" name="testClaimPinsWorkContractAndChangedPlanCannotCompleteCandidate" time="0.059457875">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowWorkContractTests" name="testEveryBoundaryChangeInvalidatesTheEarlierDigest" time="0.053918125">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowWorkContractTests" name="testPathScopeIsExactOrAnExplicitDirectoryPrefix" time="0.0507435">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowWorkContractTests" name="testProductCycleIntentIsPinnedIntoTheTaskBoundary" time="0.053713042">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowWorkContractTests" name="testUnchangedContractMayReachCandidateWithoutInventingRecipeEvidence" time="0.058679708">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowWorkContractTests" name="testUnsafeAndContradictoryContractsFailClosed" time="0.052697708">
+</testcase>
+<testcase classname="ThrottleTests.WorkflowWorkContractTests" name="testValidContractHasStableDigestAndExplicitUnknownBudgets" time="0.051525">
+</testcase>
+</testsuite>
+</testsuites>

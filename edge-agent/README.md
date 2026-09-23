@@ -9,8 +9,8 @@ on loopback only; Throttle reaches it through tailnet-only HTTPS.
 **not** on the data path and never sees request/response bodies. Lifecycle
 (start/stop/pause/resume) is always coarse. Keystroke streaming exists **only** while
 a client is attached (`/sessions/:id/attach`) — Kevin's 2026-07-11 full-control pivot
-deliberately overrides the earlier measure-only-forever stance for this one path, in
-exchange for the client-side write-unlock gate documented below. Node built-ins only
+deliberately overrides the earlier measure-only-forever stance for this one path,
+with the client boundaries documented below. Node built-ins only
 for the base agent (keep the LXC light); `ttyd` is the one external binary dependency.
 
 **Installing `ttyd`:** Debian and Ubuntu do **not** package it (`apt-cache policy ttyd`
@@ -51,11 +51,13 @@ non-interactively with a USD budget and deadline, safe mode, no Bash or web tool
   (constant-time compared). ttyd binds only to `127.0.0.1`; the agent authenticates
   and proxies its WebSocket, injecting an internal header. No secret is placed in
   ttyd's argv or handshake.
-- **Client-side write-unlock**: the iOS/Mac terminal client opens read-only and
-  requires a local Face ID/Touch ID unlock before forwarding keystrokes, auto-relocking
-  after 5 min idle. This is a UX safety net enforced by the client, not by ttyd or the
-  agent — a compromised/jailbroken device could bypass it, same trust level as the
-  token stored in the platform Keychain.
+- **Client input boundary**: the Mac Edge terminal forwards keystrokes after
+  attachment; it has no biometric write-unlock or inactivity lock
+  ([RemoteSessionPane.swift](../Throttle/UI/Cockpit/RemoteSessionPane.swift)).
+  The shipped iOS companion's authenticated LAN terminal has a device-owner
+  input lock. Its retained Edge views are excluded from the iOS target in
+  [project.yml](../project.yml), so they do not provide an iOS Edge control path.
+  The agent enforces bearer authentication, not a biometric unlock.
 - The explicit Deploy button makes Throttle SSH to the selected host (and, when
   configured, pipes each step through `pct exec <id> -- bash -s`). It verifies the
   bearer-gated MCP endpoint before backing up and changing local Claude routing.

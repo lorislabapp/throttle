@@ -1,92 +1,5 @@
 import SwiftUI
 
-/// Repository-wide screens that do not require a live terminal session.
-struct CockpitSpecialView: View {
-    let cockpit: MultiCockpitModel
-
-    static func icon(for mode: MultiCockpitModel.ViewMode) -> String {
-        mode == .plan ? "list.bullet.indent" : "point.3.filled.connected.trianglepath.dotted"
-    }
-
-    @ViewBuilder var body: some View {
-        if cockpit.viewMode == .plan {
-            CockpitPlanView(cockpit: cockpit)
-        } else {
-            PortfolioGraphView()
-        }
-    }
-}
-
-/// A plan belongs to a repository, not to a live session. Keeping this binding
-/// outside `MultiCockpitRoot` also prevents one feature from growing that legacy
-/// view's already-large body.
-struct CockpitPlanView: View {
-    let cockpit: MultiCockpitModel
-    @State private var planModel = PlanModel()
-
-    var body: some View {
-        PlanTreeView(model: planModel, context: context, onLaunch: launch,
-                     onShowSession: showActiveSession)
-            .onAppear {
-                planModel.onAutoRelaunch = launch
-                planModel.isDirectoryHeldBySession = {
-                    SessionWorkingDirectory.isSessionWorking(inside: $0, of: cockpit.sessions)
-                }
-                planModel.bind(to: activeProjectRoot)
-                planModel.orient(to: cockpit.active?.missionID)
-            }
-            .onChange(of: cockpit.activeID) { _, _ in
-                planModel.bind(to: activeProjectRoot)
-                planModel.orient(to: cockpit.active?.missionID)
-            }
-    }
-
-    private func launch(_ task: TaskLauncher.LaunchPlan) {
-        cockpit.newSession(
-            projectName: task.taskID,
-            cwd: task.workingDirectory.path,
-            runtime: task.runtime,
-            missionID: task.missionID,
-            initialPrompt: task.kickoff,
-            launchEnvironment: [PlanMCPAuthority.environmentKey + "=" + task.authorityDescriptor.path]
-        )
-    }
-
-    private var activeProjectRoot: URL? {
-        guard let cwd = cockpit.active?.cwd, !cwd.isEmpty else { return nil }
-        return URL(fileURLWithPath: cwd, isDirectory: true)
-    }
-
-    private var context: PlanViewContext {
-        guard let active = cockpit.active else { return PlanViewContext() }
-        return PlanViewContext(
-            projectName: active.projectName,
-            projectPath: active.cwd,
-            sessionLabel: "Session \((active.sessionId ?? active.id.uuidString).prefix(8))",
-            runtime: active.runtime.label,
-            state: sessionState(active)
-        )
-    }
-
-    private func showActiveSession() {
-        guard let active = cockpit.active else { return }
-        cockpit.wake(active.id)
-        cockpit.viewMode = .rail
-    }
-
-    private func sessionState(_ session: CockpitTab) -> String {
-        switch session.state {
-        case .dormant: return "not started"
-        case .hibernated: return "hibernated"
-        case .rateLimited: return "rate limited"
-        case .paused: return "paused"
-        case .working: return "working"
-        case .waiting: return "waiting for you"
-        case .idle: return "idle"
-        }
-    }
-}
-
 // The block that writes to the base branch, kept out of the tree view for the same
 // reason as the recommendation: the part that changes the repository reads on its
 // own.
@@ -97,26 +10,24 @@ struct CockpitPlanView: View {
 extension PlanTreeView {
 
     @ViewBuilder
+    private func contractStatus(_ task: PlanTask, _ state: TaskState, _ assessment: Assessment) -> some View {
+        if let contract = task.effectiveVerificationContract {
+            Text(contract.accepts(state.lastCheck?.receipt, stamp: assessment.stamp)
+                 && state.lastCheck?.passed == true
+                 ? String(localized: "Required tests verified for this revision")
+                 : String(localized: "Required tests awaiting valid evidence"))
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder
     func integration(_ task: PlanTask, _ state: TaskState) -> some View {
+        pendingVerificationStatus(state)
         if state.status == .integrated {
-            VStack(alignment: .leading, spacing: 4) {
-                section("INTEGRATED")
-                Text(state.integratedSHA.map { String($0.prefix(10)) } ?? "—")
-                    .font(.system(size: 11, design: .monospaced))
-                    .textSelection(.enabled)
-                // A worktree that did not go away is a directory still on disk after
-                // the merge, and the user is the one who has to deal with it. Read
-                // back off disk rather than remembered from the run, so it still says
-                // this after a tab switch and after a relaunch.
-                if let kept = model.keptWorktreePath(for: task.id) {
-                    Text("Worktree kept").font(.system(size: 11)).foregroundStyle(.secondary)
-                    Text(kept).font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(.tertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .textSelection(.enabled)
-                }
-            }
-        } else if state.status == .done, let assessment = model.assessment(for: task.id) {
+            integratedStatus(task, state)
+        } else if state.status == .candidate || state.status == .done,
+                  let assessment = model.assessment(for: task.id) {
             VStack(alignment: .leading, spacing: 6) {
                 section("INTEGRATION")
                 shape(assessment)
@@ -128,6 +39,7 @@ extension PlanTreeView {
                         .textSelection(.enabled)
                 }
                 controls(task.id, assessment)
+                contractStatus(task, state, assessment)
                 if let check = state.lastCheck {
                     Text(check.receipt == nil
                          ? String(localized: "Historical check — evidence coverage not recorded")
@@ -143,13 +55,47 @@ extension PlanTreeView {
                 }
                 diffDisclosure(task.id)
             }
-        } else if state.status == .done, let reason = model.assessmentError(for: task.id) {
+        } else if state.status == .candidate || state.status == .done,
+                  let reason = model.assessmentError(for: task.id) {
             // A `done` task the user is looking for the button on, and there is a
             // reason there isn't one. Saying it is the whole point: the card used to
             // render as an empty space, which reads as Throttle having forgotten.
             VStack(alignment: .leading, spacing: 4) {
                 section("INTEGRATION")
                 Text(reason).font(.system(size: 11)).foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func pendingVerificationStatus(_ state: TaskState) -> some View {
+        if let pending = state.pendingVerification {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Verification outcome pending").font(.system(size: 11, weight: .medium))
+                Text("""
+                    No completed result has been recorded. Retry is blocked until the processes \
+                    and project state are reconciled.
+                    """)
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(verbatim: pending.id.uuidString)
+                    .font(.system(size: 10, design: .monospaced)).textSelection(.enabled)
+            }
+        }
+    }
+
+    private func integratedStatus(_ task: PlanTask, _ state: TaskState) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            section("INTEGRATED")
+            Text(state.integratedSHA.map { String($0.prefix(10)) } ?? "—")
+                .font(.system(size: 11, design: .monospaced))
+                .textSelection(.enabled)
+            if let kept = model.keptWorktreePath(for: task.id) {
+                Text("Worktree kept").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(kept).font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
             }
@@ -197,6 +143,12 @@ extension PlanTreeView {
     /// avoids everywhere else.
     private func controls(_ taskID: String, _ assessment: Assessment) -> some View {
         VStack(alignment: .leading, spacing: 4) {
+            Text("""
+                Project commands use your macOS account’s file and network access. Run only trusted projects \
+                and review changes before integrating.
+                """)
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             buttons(taskID, assessment)
             if let reason = Self.blockReason(assessment) {
                 Text(reason).font(.system(size: 11)).foregroundStyle(.secondary)
@@ -208,7 +160,10 @@ extension PlanTreeView {
     private func buttons(_ taskID: String, _ assessment: Assessment) -> some View {
         HStack(spacing: 8) {
             Button(model.integrationStep == .idle
-                   ? "Integrate" : model.integrationStep.rawValue.capitalized) {
+                   ? (model.state(taskID).status == .candidate
+                        ? String(localized: "Verify candidate")
+                        : String(localized: "Integrate"))
+                   : model.integrationStep.displayName) {
                 // The previous refusal goes before the new attempt, not after it:
                 // old red text under a button reading "Rebasing" describes nothing.
                 integrationError = nil
@@ -223,7 +178,8 @@ extension PlanTreeView {
                 }
             }
             .controlSize(.small)
-            .disabled(model.integrationStep != .idle || Self.blocked(assessment))
+            .disabled(model.integrationStep != .idle || Self.blocked(assessment)
+                      || model.state(taskID).pendingVerification != nil)
 
             // Only on the tasks that would actually face this prompt — the pending
             // command is one value, but it is not every task's command.
@@ -248,14 +204,38 @@ extension PlanTreeView {
                 if open { Task { await model.refreshDiff(for: taskID) } }
             })
         return DisclosureGroup("Diff", isExpanded: isOpen) {
-            ScrollView(.horizontal) {
-                Text(model.integrationDiff(for: taskID))
-                    .font(.system(size: 10, design: .monospaced))
-                    .textSelection(.enabled)
-            }
-            .frame(maxHeight: 260)
+            diffContent(taskID)
         }
         .font(.system(size: 11))
+    }
+
+    @ViewBuilder
+    // Internal so the isolated view tests exercise these actual states and actions.
+    func diffContent(_ taskID: String) -> some View {
+        switch model.integrationDiffState(for: taskID) {
+        case .idle, .loading:
+            ProgressView("Loading diff…").controlSize(.small)
+        case .failed(let reason):
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Diff unavailable").foregroundStyle(.orange)
+                Text(verbatim: reason).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+                Button("Retry diff") { Task { await model.refreshDiff(for: taskID) } }
+                    .controlSize(.small)
+            }
+        case .loaded(let text):
+            if text.isEmpty {
+                Text("No changes in this diff").foregroundStyle(.secondary)
+            } else {
+                ScrollView(.horizontal) {
+                    Text(verbatim: text)
+                        .font(.system(size: 10, design: .monospaced))
+                        .textSelection(.enabled)
+                }
+                .frame(maxHeight: 260)
+            }
+        }
     }
 
     /// Conflicts and loose changes are the two things no click can push through.
@@ -269,12 +249,16 @@ extension PlanTreeView {
     /// service refuses on tracked modifications only, so this reads the same thing.
     static func blockReason(_ assessment: Assessment) -> String? {
         if case .conflicted = assessment.mergeability {
-            return "Blocked: the files above conflict with the base. Resolve them in the "
-                + "worktree and commit, then this can merge."
+            return String(localized: """
+            Blocked: the files above conflict with the base. Resolve them in the \
+            worktree and commit, then this can merge.
+            """)
         }
         if assessment.hasLooseWork {
-            return "Blocked: the worktree has uncommitted changes to tracked files. "
-                + "Commit or discard them in it first."
+            return String(localized: """
+            Blocked: the worktree has uncommitted changes to tracked files. Commit or \
+            discard them in it first.
+            """)
         }
         return nil
     }

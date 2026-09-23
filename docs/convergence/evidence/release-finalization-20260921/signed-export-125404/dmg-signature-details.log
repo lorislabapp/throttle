@@ -1,0 +1,22 @@
+Executable=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/Throttle-3.8.0.dmg
+Identifier=Throttle-3
+Format=disk image
+CodeDirectory v=20200 size=298 flags=0x10000(runtime) hashes=1+6 location=embedded
+Hash type=sha256 size=32
+CandidateCDHash sha256=cf4ca29e5d820dce121867eb945ad60516c441d4
+CandidateCDHashFull sha256=cf4ca29e5d820dce121867eb945ad60516c441d485aaa89a1f4b713a37da4560
+Hash choices=sha256
+CMSDigest=cf4ca29e5d820dce121867eb945ad60516c441d485aaa89a1f4b713a37da4560
+CMSDigestType=2
+CDHash=cf4ca29e5d820dce121867eb945ad60516c441d4
+Signature size=8982
+Authority=Developer ID Application: Christine Martin (TDV6D5L785)
+Authority=Developer ID Certification Authority
+Authority=Apple Root CA
+Timestamp=21 Sep 2026 at 12:57:36
+Info.plist=not bound
+TeamIdentifier=TDV6D5L785
+Sealed Resources=none
+Internal requirements count=1 size=172
+Total signatures=1
+Chosen signature=1

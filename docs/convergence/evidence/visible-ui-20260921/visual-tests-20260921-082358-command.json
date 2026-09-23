@@ -1,0 +1,23 @@
+[
+  "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+  "test-without-building",
+  "-xctestrun",
+  "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/visual-tests-20260921-082358.xctestrun",
+  "-destination",
+  "platform=macOS,arch=arm64",
+  "-parallel-testing-enabled",
+  "NO",
+  "-test-timeouts-enabled",
+  "YES",
+  "-default-test-execution-time-allowance",
+  "300",
+  "-maximum-test-execution-time-allowance",
+  "360",
+  "-resultBundlePath",
+  "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/visual-tests-20260921-082358.xcresult",
+  "-testLanguage",
+  "fr",
+  "-testRegion",
+  "FR",
+  "-only-testing:ThrottleTests/ProjectAssistantViewTests/testEmptyStateMatchesSelectedLanguage"
+]

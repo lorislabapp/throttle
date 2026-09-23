@@ -56,11 +56,27 @@ final class MirrorStorePrivacyTests: XCTestCase {
         XCTAssertNotNil(MirrorWidgetPublication.read(from: defaults))
         let store = MirrorPrivacyFixture.store(defaults)
         XCTAssertNil(MirrorWidgetPublication.read(from: defaults))
-        let subscriber = CloudKitSubscriber(backend: MirrorCloudFake(), defaults: defaults, mirror: store,
+        // CloudKit still holds the record: an empty cloud now scrubs the cache
+        // (deletion on the Mac must reach the phone), covered below.
+        let backend = MirrorCloudFake()
+        backend.snapshot = MirrorPrivacyFixture.snapshot()
+        let subscriber = CloudKitSubscriber(backend: backend, defaults: defaults, mirror: store,
                                             pair: { _ in }, notifications: nil)
         _ = await subscriber.fetchLatest()
         XCTAssertEqual(MirrorWidgetPublication.read(from: defaults), MirrorPrivacyFixture.snapshot())
         subscriber.accountDidChange()
+        XCTAssertNil(MirrorWidgetPublication.read(from: defaults))
+        XCTAssertNil(defaults.data(forKey: MirrorStorage.latestSnapshotKey))
+    }
+
+    func testEmptyCloudRecordScrubsTheVerifiedCache() async throws {
+        let defaults = try MirrorPrivacyFixture.defaults()
+        try MirrorPrivacyFixture.seedCache(defaults)
+        let store = MirrorPrivacyFixture.store(defaults)
+        let subscriber = CloudKitSubscriber(backend: MirrorCloudFake(), defaults: defaults, mirror: store,
+                                            pair: { _ in }, notifications: nil)
+        let ingested = await subscriber.fetchLatest()
+        XCTAssertFalse(ingested)
         XCTAssertNil(MirrorWidgetPublication.read(from: defaults))
         XCTAssertNil(defaults.data(forKey: MirrorStorage.latestSnapshotKey))
     }

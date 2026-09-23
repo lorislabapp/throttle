@@ -1,0 +1,47 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/visual-tests-20260921-081642.xctestrun -destination platform=macOS,arch=arm64 -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 300 -maximum-test-execution-time-allowance 360 -resultBundlePath /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/visual-tests-20260921-081642.xcresult -testLanguage en -testRegion US "-only-testing:ThrottleTests/PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInEnglish"
+
+Writing result bundle at path:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/visual-tests-20260921-081642.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008132-001178882E03001C, name:My Mac }
+2026-09-21 08:16:47.065074+0200 Throttle[84614:1785162] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 08:16:47.065412+0200 Throttle[84614:1785168] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 08:16:47.065425+0200 Throttle[84614:1785168] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 08:16:47.065414+0200 Throttle[84614:1785162] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 08:16:47.065766+0200 Throttle[84614:1785169] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 08:16:47.065773+0200 Throttle[84614:1785169] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 08:16:47.066017+0200 Throttle[84614:1785169] [Connection] Will NOT re-try to establish the connection
+2026-09-21 08:16:47.066033+0200 Throttle[84614:1785162] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 08:16:47.066044+0200 Throttle[84614:1785162] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+[AppDelegate.init] start
+2026-09-21 08:16:47.123963+0200 Throttle[84614:1784935] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/3w/fbl9wc1d3q7091lq5pj5sy0c0000gn/T/com.lorislab.throttle.savedState
+[applicationDidFinishLaunching] start
+2026-09-21 08:16:47.177137+0200 Throttle[84614:1784935] [App] Isolated host detected: skipping production background services
+Test Suite 'Selected tests' started at 2026-09-21 08:16:47.203.
+Test Suite 'ThrottleTests.xctest' started at 2026-09-21 08:16:47.203.
+Test Suite 'PlanIntegrationViewTests' started at 2026-09-21 08:16:47.204.
+Test Case '-[ThrottleTests.PlanIntegrationViewTests testDiffFailureRetryAndEmptyStateInEnglish]' started.
+THROTTLE_REVIEW_READY: diff-failed-en
+2026-09-21 08:17:03.473435+0200 Throttle[84614:1785189] [Common] Unable to obtain a task name port right for pid 424: (os/kern) failure (0x5)
+Test Case '-[ThrottleTests.PlanIntegrationViewTests testDiffFailureRetryAndEmptyStateInEnglish]' passed (113.689 seconds).
+Test Suite 'PlanIntegrationViewTests' passed at 2026-09-21 08:18:40.893.
+	 Executed 1 test, with 0 failures (0 unexpected) in 113.689 (113.689) seconds
+Test Suite 'ThrottleTests.xctest' passed at 2026-09-21 08:18:40.893.
+	 Executed 1 test, with 0 failures (0 unexpected) in 113.689 (113.689) seconds
+Test Suite 'Selected tests' passed at 2026-09-21 08:18:40.893.
+	 Executed 1 test, with 0 failures (0 unexpected) in 113.689 (113.690) seconds
+2026-09-21 08:18:41.160 xcodebuild[84610:1784763] [MT] IDETestOperationsObserverDebug: 117.572 elapsed -- Testing started completed.
+2026-09-21 08:18:41.160 xcodebuild[84610:1784763] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-21 08:18:41.160 xcodebuild[84610:1784763] [MT] IDETestOperationsObserverDebug: 117.572 sec, +117.572 sec -- end
+
+Test session results, code coverage, and logs:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/visual-tests-20260921-081642.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

@@ -2,6 +2,21 @@ import Foundation
 import ThrottlePeer
 import ThrottleShared
 
+/// The existing terminal boundary, injectable without creating a PTY or cockpit.
+@MainActor
+protocol PeerBridgeTerminal: AnyObject {
+    var onOutputBytes: (@MainActor ([UInt8]) -> Void)? { get set }
+    var peerGeometry: (cols: Int, rows: Int) { get }
+    func injectRemoteInput(_ bytes: [UInt8])
+}
+
+extension DroppableTerminalView: PeerBridgeTerminal {
+    var peerGeometry: (cols: Int, rows: Int) {
+        let terminal = getTerminal()
+        return (terminal.cols, terminal.rows)
+    }
+}
+
 /// App-layer glue for the remote terminal: routes peer control frames
 /// (`termAttach`/`termIn`/`termResize`/`termDetach`) between the Mac's
 /// `PeerAdvertiser` (via `PeerTransport`) and the live cockpit sessions
@@ -15,9 +30,32 @@ import ThrottleShared
 @MainActor
 final class PeerTerminalBridge {
     static let shared = PeerTerminalBridge()
-    private init() {}
+    private let permitsControl: () -> Bool
+    private let resolveTerminal: (UUID) -> (any PeerBridgeTerminal)?
+    private let sendOutput: ([UInt8], PeerClientID) -> Void
+    private let sendResize: (Int, Int, PeerClientID) -> Void
 
-    private var model: MultiCockpitModel { .shared }
+    private convenience init() {
+        self.init(
+            permitsControl: { PeerTransport.shared.permitsTerminalControl },
+            resolveTerminal: { id in
+                MultiCockpitModel.shared.sessions.first { $0.id == id }?.terminal as? DroppableTerminalView
+            },
+            sendOutput: { PeerTransport.shared.sendTerminalOutput($0, to: $1) },
+            sendResize: { PeerTransport.shared.sendTerminalResize(cols: $0, rows: $1, to: $2) }
+        )
+    }
+
+    /// Test construction supplies all effects explicitly; it never reads shared.
+    init(permitsControl: @escaping () -> Bool,
+         resolveTerminal: @escaping (UUID) -> (any PeerBridgeTerminal)?,
+         sendOutput: @escaping ([UInt8], PeerClientID) -> Void,
+         sendResize: @escaping (Int, Int, PeerClientID) -> Void) {
+        self.permitsControl = permitsControl
+        self.resolveTerminal = resolveTerminal
+        self.sendOutput = sendOutput
+        self.sendResize = sendResize
+    }
 
     /// client → the cockpit tab it's attached to.
     private var clientTab: [PeerClientID: UUID] = [:]
@@ -32,6 +70,7 @@ final class PeerTerminalBridge {
 
     /// Entry point wired from `PeerTransport` (hops here on the main actor).
     func handle(_ control: PeerTerminalControl, from client: PeerClientID) {
+        guard permitsControl() else { reset(); return }
         switch control {
         case .attach(let sessionId): attach(client, to: sessionId)
         case .input(let bytes):      inject(bytes, from: client)
@@ -53,20 +92,23 @@ final class PeerTerminalBridge {
     private func attach(_ client: PeerClientID, to sessionId: String) {
         guard let uuid = UUID(uuidString: sessionId),
               let term = terminal(for: uuid) else { return }   // only attach to a spawned tab
+        // Moving to another session must stop the old output subscription.
+        detach(client)
         clientTab[client] = uuid
         tabClients[uuid, default: []].insert(client)
 
         // One broadcast closure per terminal, fanning to every attached client.
         term.onOutputBytes = { [weak self] bytes in
             guard let self, let clients = self.tabClients[uuid] else { return }
-            for c in clients { PeerTransport.shared.sendTerminalOutput(bytes, to: c) }
+            for client in clients { self.sendOutput(bytes, client) }
         }
         // Tell the phone the Mac's authoritative geometry so it sizes its emulator.
-        let t = term.getTerminal()
-        PeerTransport.shared.sendTerminalResize(cols: t.cols, rows: t.rows, to: client)
+        let geometry = term.peerGeometry
+        sendResize(geometry.cols, geometry.rows, client)
     }
 
     private func inject(_ bytes: [UInt8], from client: PeerClientID) {
+        guard permitsControl() else { reset(); return }
         guard let uuid = clientTab[client], let term = terminal(for: uuid) else { return }
         var filter = inputFilters[client] ?? MouseReportFilter()
         let clean = filter.filter(bytes)
@@ -84,7 +126,7 @@ final class PeerTerminalBridge {
         }
     }
 
-    private func terminal(for tabID: UUID) -> DroppableTerminalView? {
-        model.sessions.first { $0.id == tabID }?.terminal as? DroppableTerminalView
+    private func terminal(for tabID: UUID) -> (any PeerBridgeTerminal)? {
+        resolveTerminal(tabID)
     }
 }

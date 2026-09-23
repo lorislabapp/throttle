@@ -1,0 +1,25 @@
+from pathlib import Path
+import subprocess,json,shutil,sys
+repo=Path('/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920');root=Path('/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920');dest=repo/'docs/convergence/evidence/native-refactor-20260921';label=sys.argv[1]
+if label.startswith('isolated-'):
+ matches=list(Path(__file__).parent.glob('isolated-host-*/'+label+'-receipt.json'))
+ assert len(matches)==1, 'Ambiguous isolated result root'
+ root=matches[0].parent
+normalized_label=label.removeprefix('isolated-')
+for suffix in ['-receipt.json','-command.json','-sources-before.json','-sources-after.json','.log']:shutil.copy2(root/(label+suffix),dest/(label+suffix))
+for kind in ['summary','tests']:
+ p=subprocess.run(['/Applications/Xcode.app/Contents/Developer/usr/bin/xcresulttool','get','test-results',kind,'--path',str(root/(label+'.xcresult'))],capture_output=True,text=True,check=True);(dest/(label+'-'+kind+'.json')).write_text(p.stdout)
+summary=json.loads((dest/(label+'-summary.json')).read_text());tree=json.loads((dest/(label+'-tests.json')).read_text());cases={}
+def visit(n):
+ if n.get('nodeType')=='Test Case':
+  ident=n['nodeIdentifier'].removesuffix('()');assert ident not in cases,'Duplicate test case';cases[ident]=n.get('result')
+ for child in n.get('children',[]):visit(child)
+for node in tree['testNodes']:visit(node)
+expected_map=json.loads((dest/'expected-cases.json').read_text())
+if normalized_label.startswith('functional-ui-tests-'):expected_map={k:v for k,v in expected_map.items() if k in ['ProjectAssistantViewTests','PlanIntegrationViewTests']}
+if normalized_label.startswith('suite-'):
+ suite=normalized_label.split('-')[1]
+ assert suite in expected_map
+ expected_map={suite:expected_map[suite]}
+expected={s+'/'+m for s,methods in expected_map.items() for m in methods};missing=sorted(expected-cases.keys());failed={k:v for k,v in cases.items() if v!='Passed'}
+result={'status':'pass' if not missing and not failed and summary['failedTests']==0 and summary['skippedTests']==0 and summary['passedTests']==len(expected) else 'fail','expected':len(expected),'passed':summary['passedTests'],'failed':failed,'missing':missing,'skipped':summary['skippedTests']};(dest/(label+'-coverage.json')).write_text(json.dumps(result,indent=2));print(json.dumps(result));assert result['status']=='pass'

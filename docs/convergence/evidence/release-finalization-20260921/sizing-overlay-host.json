@@ -1,0 +1,20 @@
+{
+  "status": "prepared_not_launched",
+  "root": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-sizing-20260921-122950",
+  "app": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-sizing-20260921-122950/Build/Products/Debug/ThrottleTestHost.app",
+  "application_build": "build-20260921-114759",
+  "test_module_build": "build-20260921-121114",
+  "production_sources_identical": true,
+  "source_delta": [
+    "ThrottleTests/ServiceTests/PlanIntegrationViewTests.swift"
+  ],
+  "changed_bundle_files": [
+    "Contents/MacOS/Throttle",
+    "Contents/PlugIns/ThrottleTests.xctest/Contents/MacOS/ThrottleTests",
+    "Contents/_CodeSignature/CodeResources"
+  ],
+  "old_host_unchanged": true,
+  "all_test_module_bytes_match_build": true,
+  "mode": "APFS clone with updated XCTest only; not distribution artifact",
+  "free_after": 2915225600
+}

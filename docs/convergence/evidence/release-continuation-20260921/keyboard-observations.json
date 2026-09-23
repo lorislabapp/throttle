@@ -1,0 +1,33 @@
+{
+  "candidate": "build-20260921-100452",
+  "host": "com.lorislab.throttle.test-host",
+  "production_app_restarted": false,
+  "voiceover_changed": false,
+  "system_keyboard_settings_changed": false,
+  "observations": [
+    {
+      "scene": "empty-fr",
+      "send": "Cmd-Return changed Send to Stop using controlled provider",
+      "stop": "Cmd-Return restored Send and French stopped notice",
+      "focus": "editor remained focused",
+      "Tab": "no focus transition",
+      "Shift-Tab": "focus remained editor",
+      "Ctrl-Tab": "focus remained editor",
+      "typing_limit": "CUA typeText dropped accented characters; no product encoding defect inferred"
+    },
+    {
+      "scene": "diff-en",
+      "visible": "Diff unavailable; Retry diff",
+      "Tab": "window focus unchanged",
+      "Option-Tab": "window focus unchanged",
+      "retry_keyboard": "NOT VERIFIED",
+      "retry_AX": "fixture passed, not equivalent to keyboard"
+    }
+  ],
+  "status": "PARTIAL",
+  "limits": [
+    "Full keyboard path remains open",
+    "No voice output qualification",
+    "Window close attempt after first fixture ended produced procNotFound; host was not relaunched"
+  ]
+}

@@ -1,0 +1,62 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-100617/Build/Products/isolated-suite-CloudKitPublisherTests-20260921-100700.xctestrun -destination platform=macOS,arch=arm64 -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 300 -maximum-test-execution-time-allowance 360 -resultBundlePath /Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-100617/isolated-suite-CloudKitPublisherTests-20260921-100700.xcresult -testLanguage en -testRegion US "-only-testing:ThrottleTests/CloudKitPublisherTests"
+
+Writing result bundle at path:
+	/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-100617/isolated-suite-CloudKitPublisherTests-20260921-100700.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008132-001178882E03001C, name:My Mac }
+2026-09-21 10:07:01.622225+0200 Throttle[63099:2181638] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 10:07:01.622497+0200 Throttle[63099:2181638] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 10:07:01.622533+0200 Throttle[63099:2181639] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 10:07:01.622544+0200 Throttle[63099:2181639] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+[AppDelegate.init] start
+2026-09-21 10:07:01.622925+0200 Throttle[63099:2181644] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 10:07:01.622936+0200 Throttle[63099:2181644] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 10:07:01.623300+0200 Throttle[63099:2181644] [Connection] Will NOT re-try to establish the connection
+2026-09-21 10:07:01.623381+0200 Throttle[63099:2181639] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 10:07:01.623393+0200 Throttle[63099:2181639] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 10:07:01.651019+0200 Throttle[63099:2181635] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/3w/fbl9wc1d3q7091lq5pj5sy0c0000gn/T/com.lorislab.throttle.test-host.savedState
+[applicationDidFinishLaunching] start
+2026-09-21 10:07:01.694880+0200 Throttle[63099:2181635] [App] Isolated host detected: skipping production background services
+Test Suite 'Selected tests' started at 2026-09-21 10:07:01.712.
+Test Suite 'ThrottleTests.xctest' started at 2026-09-21 10:07:01.713.
+Test Suite 'CloudKitPublisherTests' started at 2026-09-21 10:07:01.713.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck]' passed (0.007 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart]' passed (0.007 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount]' passed (0.008 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testCancelledDebounceCannotConsumeSnapshotAfterRestart]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testCancelledDebounceCannotConsumeSnapshotAfterRestart]' passed (0.011 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRefusesAnUnavailableAccount]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRefusesAnUnavailableAccount]' passed (0.003 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRequiresAnAvailableAccountAndStopsPublishing]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testExplicitDeletionRequiresAnAvailableAccountAndStopsPublishing]' passed (0.005 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot]' passed (0.012 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots]' started.
+Test Case '-[ThrottleTests.CloudKitPublisherTests testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots]' passed (0.007 seconds).
+Test Case '-[ThrottleTests.CloudKitPublisherTests testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck]' started.
+2026-09-21 10:07:01.778019+0200 Throttle[63099:2181635] [CloudKitPublisher] iCloud unavailable — mirror disabled
+Test Case '-[ThrottleTests.CloudKitPublisherTests testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck]' passed (0.003 seconds).
+Test Suite 'CloudKitPublisherTests' passed at 2026-09-21 10:07:01.779.
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.063 (0.066) seconds
+Test Suite 'ThrottleTests.xctest' passed at 2026-09-21 10:07:01.779.
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.063 (0.066) seconds
+Test Suite 'Selected tests' passed at 2026-09-21 10:07:01.779.
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.063 (0.067) seconds
+2026-09-21 10:07:02.051 xcodebuild[63094:2181571] [MT] IDETestOperationsObserverDebug: 0.798 elapsed -- Testing started completed.
+2026-09-21 10:07:02.051 xcodebuild[63094:2181571] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-21 10:07:02.051 xcodebuild[63094:2181571] [MT] IDETestOperationsObserverDebug: 0.798 sec, +0.798 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-100617/isolated-suite-CloudKitPublisherTests-20260921-100700.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

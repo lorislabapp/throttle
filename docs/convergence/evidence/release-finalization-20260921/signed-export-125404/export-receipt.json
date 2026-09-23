@@ -1,0 +1,11 @@
+{
+  "status": "pass",
+  "exit_code": 0,
+  "duration_seconds": 49.036739110946655,
+  "root": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404",
+  "archive": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/signed-archive-20260921-124258.xcarchive",
+  "notarization_uploaded": false,
+  "published": false,
+  "app_launched": false,
+  "verification": "pending"
+}

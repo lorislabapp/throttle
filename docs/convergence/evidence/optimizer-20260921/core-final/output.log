@@ -1,0 +1,613 @@
+[0/1] Planning build
+Building for debugging...
+[0/15] Write sources
+[11/15] Write swift-version--58304C5D6DBC2206.txt
+[13/22] Compiling ThrottleShared KeychainStore.swift
+[14/22] Emitting module ThrottleShared
+[15/23] Emitting module ThrottleVaultContract
+[16/27] Compiling ThrottleShared OutboundPolicy.swift
+[17/29] Emitting module ThrottleMCPContracts
+[18/29] Compiling ThrottleMCPContracts ProjectExploreSchema.swift
+[19/30] Compiling ThrottleVaultContract ResearchReceipt.swift
+[20/30] Compiling ThrottleVaultContract ResearchVaultContextEncoding.swift
+[21/30] Compiling ThrottleVaultContract ResearchVaultIPCModel.swift
+[22/30] Compiling ThrottleVaultContract ResearchVaultProjectAdmission.swift
+[23/30] Compiling ThrottleMCPContracts ThrottleMCPSchemas.swift
+[24/32] Compiling ThrottleVaultContract ResearchVaultReasoningDTO.swift
+[25/32] Compiling ThrottleVaultContract ResearchVaultReceiptDTO.swift
+[26/32] Compiling ThrottleVaultContract ResearchVaultReceiptProvenance.swift
+[27/32] Compiling ThrottleVaultContract ResearchVaultServiceIdentity.swift
+[28/54] Compiling ThrottleSharedTests KeychainStoreTests.swift
+[29/54] Emitting module ThrottleSharedTests
+[30/56] Compiling ResearchVaultModel ResearchVaultModel.swift
+[31/56] Emitting module ResearchVaultModel
+[32/57] Compiling ResearchVaultModel VaultAuthorization.swift
+[33/59] Emitting module ResearchVaultIPCModel
+[34/59] Compiling ResearchVaultIPCModel ResearchVaultIPCModel.swift
+[35/62] Emitting module Throttle
+[36/83] Compiling ResearchVaultIngestion RetrievalBenchmark.swift
+[37/83] Emitting module ResearchVaultIngestion
+[38/84] Compiling ResearchVaultIngestion RetrievalQualityGate.swift
+[39/86] Emitting module ResearchVaultIngestionTests
+[40/86] Compiling ResearchVaultIngestionTests RetrievalBenchmarkTests.swift
+[41/87] Compiling ResearchVaultIngestionTests RetrievalQualityGateTests.swift
+[42/87] Compiling Throttle AIOptimizerService.swift
+[43/87] Compiling Throttle AIProvider.swift
+[44/87] Compiling Throttle AppleIntelligenceProvider.swift
+[45/87] Compiling Throttle AppleIntelligenceTools.swift
+[46/87] Compiling Throttle AssistantProjectTools.swift
+[47/87] Compiling Throttle AssistantTools.swift
+[48/87] Compiling Throttle BashSandbox.swift
+[49/87] Compiling Throttle BudgetAdmissionModels.swift
+[50/87] Compiling Throttle BudgetAdmissionStorage.swift
+[51/87] Compiling Throttle BudgetAdmissionStore.swift
+[52/87] Compiling Throttle ClaudeAPIKeyProtocol.swift
+[53/87] Compiling Throttle ContentStore.swift
+[54/87] Compiling Throttle ContextFirewall.swift
+[55/87] Compiling Throttle DiagnosticArchive.swift
+[56/87] Compiling Throttle DiagnosticReport.swift
+[57/87] Compiling Throttle NativeProcessIdentity.swift
+[58/87] Compiling Throttle NotebookLMGatewayProcess.swift
+[59/87] Compiling Throttle OwnedProcessTermination.swift
+[60/87] Compiling Throttle PeerControlAdmission.swift
+[61/87] Compiling Throttle PlanMCPAuthority.swift
+[62/87] Compiling Throttle PlanMCPAuthorityLifecycle.swift
+[63/107] Compiling Throttle PlanMCPAuthorityRevocation.swift
+[64/107] Compiling Throttle PlanMCPIntakeTools.swift
+[65/107] Compiling Throttle PlanMCPRecipeTools.swift
+[66/107] Compiling Throttle PlanMCPRetry.swift
+[67/107] Compiling Throttle PlanMCPReviewTools.swift
+[68/107] Compiling Throttle PlanMCPSchemas.swift
+[69/107] Compiling Throttle PlanMCPTaskRouter.swift
+[70/107] Compiling Throttle PlanMCPTools.swift
+[71/107] Compiling Throttle PlanModels.swift
+[72/107] Compiling Throttle PlanProjection.swift
+[73/107] Compiling Throttle PlanStore.swift
+[74/107] Compiling Throttle PlanTemplate.swift
+[75/107] Compiling Throttle ProjectInstructionDiscovery.swift
+[76/107] Compiling Throttle ProjectInstructionModels.swift
+[77/107] Compiling Throttle ProjectInstructionReconciler.swift
+[78/107] Compiling Throttle ProjectInstructionService.swift
+[79/107] Compiling Throttle ProjectIntakeService.swift
+[80/107] Compiling Throttle ProjectKnowledgeExplorer.swift
+[81/107] Compiling Throttle ProjectKnowledgeExplorerIO.swift
+[82/107] Compiling Throttle ProjectKnowledgeExplorerReceipt.swift
+[83/107] Compiling Throttle ProjectKnowledgeExplorerSearch.swift
+[84/127] Compiling Throttle ProjectKnowledgeMCP.swift
+[85/127] Compiling Throttle ProjectKnowledgeModels.swift
+[86/127] Compiling Throttle RedTeamCampaignStorage.swift
+[87/127] Compiling Throttle RedTeamCampaignStore.swift
+[88/127] Compiling Throttle RemoteTransferGit.swift
+[89/127] Compiling Throttle RemoteTransferJournal.swift
+[90/127] Compiling Throttle ResearchDossier.swift
+[91/127] Compiling Throttle ResearchDossierStore.swift
+[92/127] Compiling Throttle SettingsAuditService.swift
+[93/127] Compiling Throttle TaskBudgetAdmission.swift
+[94/127] Compiling Throttle TaskIntegrationModels.swift
+[95/127] Compiling Throttle TaskIntegrationService.swift
+[96/127] Compiling Throttle TaskIntegrationServiceReview.swift
+[97/127] Compiling Throttle TaskIntegrationServiceVerify.swift
+[98/127] Compiling Throttle TaskIntegrationVerifyChild.swift
+[99/127] Compiling Throttle TaskIntegrationVerifyProcess.swift
+[100/127] Compiling Throttle TaskVerificationLaunchGate.swift
+[101/127] Compiling Throttle TaskVerificationLease.swift
+[102/127] Compiling Throttle TaskVerificationLifecycle.swift
+[103/127] Compiling Throttle TaskVerificationProcess.swift
+[104/127] Compiling Throttle TaskWorktreeService.swift
+[105/127] Compiling Throttle TestOutcomeDetector.swift
+[106/127] Compiling Throttle TestOutcomeStore.swift
+[107/127] Compiling Throttle WorkflowClaimContract.swift
+[108/127] Compiling Throttle WorkflowDependencyModels.swift
+[109/127] Compiling Throttle WorkflowDesignContract.swift
+[110/127] Compiling Throttle WorkflowEvidenceReceipt.swift
+[111/127] Compiling Throttle WorkflowIPModels.swift
+[112/127] Compiling Throttle WorkflowPlatformModels.swift
+[113/127] Compiling Throttle WorkflowProductCycleContract.swift
+[114/127] Compiling Throttle WorkflowRecipeModels.swift
+[115/127] Compiling Throttle WorkflowReleaseLedgerStorage.swift
+[116/127] Compiling Throttle WorkflowReleaseLedgerStore.swift
+[117/127] Compiling Throttle WorkflowReleaseModels.swift
+[118/127] Compiling Throttle WorkflowResultImporter.swift
+[119/127] Compiling Throttle WorkflowReviewGate.swift
+[120/127] Compiling Throttle WorkflowReviewModels.swift
+[121/127] Compiling Throttle WorkflowSecurityFinding.swift
+[122/127] Compiling Throttle WorkflowTechnologyReuseModels.swift
+[123/127] Compiling Throttle WorkflowWorkContract.swift
+[124/130] Emitting module VerificationCrashWorker
+[125/130] Compiling VerificationCrashWorker verification-crash-worker.swift
+[125/130] Write Objects.LinkFileList
+[126/130] Linking VerificationCrashWorker
+[127/130] Applying VerificationCrashWorker
+[129/150] Emitting module ThrottleTests
+[130/150] Compiling ThrottleTests AIOptimizerPrivacyTests.swift
+[131/150] Compiling ThrottleTests AIProviderRoutingPolicyTests.swift
+[132/150] Compiling ThrottleTests AssistantProjectToolsTests.swift
+[133/150] Compiling ThrottleTests BashSandboxTests.swift
+[134/150] Compiling ThrottleTests BudgetAdmissionStoreTests.swift
+[135/150] Compiling ThrottleTests ClaudeAPIKeyProtocolTests.swift
+[136/150] Compiling ThrottleTests ContextPacketEvidenceTests.swift
+[137/150] Compiling ThrottleTests DiagnosticArchiveTests.swift
+[138/150] Compiling ThrottleTests DiagnosticReportTests.swift
+[139/150] Compiling ThrottleTests NotebookLMGatewayProcessTests.swift
+[140/150] Compiling ThrottleTests OwnedProcessTerminationTests.swift
+[141/150] Compiling ThrottleTests PeerControlAdmissionTests.swift
+[142/150] Compiling ThrottleTests PlanMCPAuthorityLifecycleTests.swift
+[143/150] Compiling ThrottleTests PlanMCPAuthorityTests.swift
+[144/150] Compiling ThrottleTests PlanMCPIntakeAuthorityTests.swift
+[145/150] Compiling ThrottleTests PlanMCPMissionFenceTests.swift
+[146/150] Compiling ThrottleTests PlanMCPRetryTests.swift
+[147/150] Compiling ThrottleTests PlanMCPSchemaContractTests.swift
+[148/150] Compiling ThrottleTests PlanMCPTaskRouterTests.swift
+[149/187] Compiling ThrottleTests PlanMCPToolsTests.swift
+[150/187] Compiling ThrottleTests PlanStoreTests.swift
+[151/187] Compiling ThrottleTests ProjectInstructionServiceTests.swift
+[152/187] Compiling ThrottleTests ProjectKnowledgeBoundaryTests.swift
+[153/187] Compiling ThrottleTests ProjectKnowledgeExplorerTests.swift
+[154/187] Compiling ThrottleTests ProjectKnowledgeRaceTests.swift
+[155/187] Compiling ThrottleTests RedTeamCampaignStoreTests.swift
+[156/187] Compiling ThrottleTests RemoteTransferGitTests.swift
+[157/187] Compiling ThrottleTests SettingsAuditPreservationTests.swift
+[158/187] Compiling ThrottleTests TaskBudgetAdmissionTests.swift
+[159/187] Compiling ThrottleTests TaskBudgetLifecycleTests.swift
+[160/187] Compiling ThrottleTests TaskIntegrationHardeningTests.swift
+[161/187] Compiling ThrottleTests TaskIntegrationOutputTests.swift
+[162/187] Compiling ThrottleTests TaskIntegrationRefusalTests.swift
+[163/187] Compiling ThrottleTests TaskIntegrationServiceTests+Integration.swift
+[164/187] Compiling ThrottleTests TaskIntegrationServiceTests.swift
+[165/187] Compiling ThrottleTests TaskIntegrationWorkContractTests.swift
+[166/187] Compiling ThrottleTests TaskVerificationCrashTests.swift
+[167/187] Compiling ThrottleTests TaskVerificationLifecycleTests.swift
+[168/187] Compiling ThrottleTests TaskVerificationProcessTests.swift
+[169/187] Compiling ThrottleTests TestOutcomeDetectorTests.swift
+[170/187] Compiling ThrottleTests TestOutcomeStoreTests.swift
+[171/187] Compiling ThrottleTests WorkflowContractIntegrationTests.swift
+[172/187] Compiling ThrottleTests WorkflowDependencyEvaluatorTests.swift
+[173/187] Compiling ThrottleTests WorkflowDesignContractTests.swift
+[174/187] Compiling ThrottleTests WorkflowEvidenceReceiptTests.swift
+[175/187] Compiling ThrottleTests WorkflowFoundationTests.swift
+[176/187] Compiling ThrottleTests WorkflowIPEvaluatorTests.swift
+[177/187] Compiling ThrottleTests WorkflowParityAuditorTests.swift
+[178/187] Compiling ThrottleTests WorkflowRecipeTests.swift
+[179/187] Compiling ThrottleTests WorkflowReleaseGateTests.swift
+[180/187] Compiling ThrottleTests WorkflowReleaseLedgerStoreTests.swift
+[181/187] Compiling ThrottleTests WorkflowResultImporterTests.swift
+[182/187] Compiling ThrottleTests WorkflowReviewGateTests.swift
+[183/187] Compiling ThrottleTests WorkflowReviewMCPTests.swift
+[184/187] Compiling ThrottleTests WorkflowTechnologyReuseTests.swift
+[185/187] Compiling ThrottleTests WorkflowWorkContractTests.swift
+[185/187] Write Objects.LinkFileList
+[186/187] Linking ThrottleCoreEvidencePackageTests
+Build complete! (12.64s)
+[1/330] Testing ThrottleTests.AIOptimizerPrivacyTests/testBothOnDeviceProvidersCanProposeInstructions
+[2/330] Testing ThrottleTests.AIOptimizerPrivacyTests/testCancelledRequestDoesNotCallProvider
+[3/330] Testing ThrottleTests.AIOptimizerPrivacyTests/testFailedStreamCannotPublishPartialProposalOrRetry
+[4/330] Testing ThrottleTests.AIOptimizerPrivacyTests/testIncompleteAmbiguousEmptyAndOversizedProposalsAreRefused
+[5/330] Testing ThrottleTests.AIOptimizerPrivacyTests/testNetworkProvidersReceiveNoInstructionBytes
+[6/330] Testing ThrottleTests.AIOptimizerPrivacyTests/testSettingsNeverReachAnyModelIncludingOnDevice
+[7/330] Testing ThrottleTests.AIProviderRoutingPolicyTests/testAvailabilityMatrixCannotReviveAnExcludedOrUnselectedCloudProvider
+[8/330] Testing ThrottleTests.AIOptimizerPrivacyTests/testUnchangedProposalPreservesOriginalWhitespace
+[9/330] Testing ThrottleTests.AIProviderRoutingPolicyTests/testCloudFailureCannotChangeProviderOrSpendAnotherAccount
+[10/330] Testing ThrottleTests.AIProviderRoutingPolicyTests/testAvailableExplicitChoiceIsUsedEvenWhenEveryOtherProviderIsAvailable
+[11/330] Testing ThrottleTests.AIProviderRoutingPolicyTests/testForceLocalRefinerExclusionsRemainEffectiveWithCloudPreference
+[12/330] Testing ThrottleTests.AIProviderRoutingPolicyTests/testForceLocalRefinerNeverSelectsServerEvenWhenPreferred
+[13/330] Testing ThrottleTests.AIProviderRoutingPolicyTests/testLocalFailureCannotEscalateEvenIfPreferenceChangesToCloudDuringTurn
+[14/330] Testing ThrottleTests.AIProviderRoutingPolicyTests/testNoAttemptsAllowsOnlyExplicitCloudAlongsideLocalCandidates
+[15/330] Testing ThrottleTests.AIProviderRoutingPolicyTests/testServerChoiceIsExactAndUnavailableServerDoesNotSelectEmbeddedProvider
+[16/330] Testing ThrottleTests.AIProviderRoutingPolicyTests/testServerIsNeverAnImplicitDefaultOrFallback
+[17/330] Testing ThrottleTests.AIProviderRoutingPolicyTests/testUntouchedPreferenceNeverUsesConfiguredCloudCredentials
+[18/330] Testing ThrottleTests.AIProviderRoutingPolicyTests/testUnavailableExplicitChoiceDoesNotSwitchProviders
+[19/330] Testing ThrottleTests.AssistantProjectToolsTests/testControllerRootBoundsAllOperationsAndProducesReceipts
+[20/330] Testing ThrottleTests.AssistantProjectToolsTests/testCopiedScopeSharesRequestBudget
+[21/330] Testing ThrottleTests.AssistantProjectToolsTests/testNativeAdaptersShareProjectScopeWithoutInvokingAModel
+[22/330] Testing ThrottleTests.AssistantProjectToolsTests/testMissingOrBroadRootNeverFallsBackToHome
+[23/330] Testing ThrottleTests.BashSandboxTests/testAllLegacyShellCommandsAreRefused
+[24/330] Testing ThrottleTests.AssistantProjectToolsTests/testSearchParserAndAmbiguousFields
+[25/330] Testing ThrottleTests.BudgetAdmissionStoreTests/testActualOverrunIsRecordedAndBlocksNewAdmissions
+[26/330] Testing ThrottleTests.BudgetAdmissionStoreTests/testCapabilityProfileRequiresEvidenceForEveryClaimedControl
+[27/330] Testing ThrottleTests.BudgetAdmissionStoreTests/testConcurrentStoresCannotBothSpendTheSameCapacity
+[28/330] Testing ThrottleTests.BudgetAdmissionStoreTests/testExpiredReservationBlocksUntilExplicitlyReconciled
+[29/330] Testing ThrottleTests.BudgetAdmissionStoreTests/testLedgerIsPrivateAndExternalEnforcementRemainsUnavailable
+[30/330] Testing ThrottleTests.BudgetAdmissionStoreTests/testIdempotencyReturnsTheOriginalReservationAndRejectsChangedIntent
+[31/330] Testing ThrottleTests.BudgetAdmissionStoreTests/testOrdinaryWorkCannotConsumeProtectedVerificationOrReleaseReserves
+[32/330] Testing ThrottleTests.BudgetAdmissionStoreTests/testSymlinkedThrottleDirectoryIsRefusedWithoutWritingThroughIt
+[33/330] Testing ThrottleTests.BudgetAdmissionStoreTests/testUpperBoundSettlementCannotMasqueradeAsMeasuredUsage
+[34/330] Testing ThrottleTests.BudgetAdmissionStoreTests/testWorldReadableLedgerIsRefused
+[35/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/test_parseSSEEvents_extractsMultipleToolUsesInOrder
+[36/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/test_buildRequestBody_includesAllProjectReadToolDefinitions
+[37/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/test_parseSSEEvents_extractsSingleToolUseAndItsAccumulatedJSON
+[38/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/test_parseSSEEvents_handlesEmptyInputObject
+[39/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/test_rebuildMessages_noPriorToolUses_isPlainTextThroughout
+[40/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/test_rebuildMessages_lastAssistantToolUseAndUserToolResultGoNative
+[41/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/testEOFWithoutMessageStopNeverAdmitsCompletedTool
+[42/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/test_renderAsFencedBlock_emitsExactFormatExistingParserExpects
+[43/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/testMalformedPayloadOrUnclosedBlockCannotBeSuccessful
+[44/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/testIncompleteSSEFrameAndErrorAfterHTTP200Refuse
+[45/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/testProjectCatalogueAndSearchRoundTripRejectFieldInjection
+[46/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/testMalformedToolInputRefusesWholeResponse
+[47/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/testSSEByteLineAndEventBudgetsAreBounded
+[48/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/testRemoteErrorAfterCompletedToolRefusesResponse
+[49/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/testValidSSEBytesAdmitToolOnlyAtCompletedFrameAndMessage
+[50/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/testSSEToleratesPingAndUnknownEventsButRejectsTruncatedStopReason
+[51/330] Testing ThrottleTests.ClaudeAPIKeyProtocolTests/testValidTextOnlyResponseAndEventNameMismatch
+[52/330] Testing ThrottleTests.ContextPacketEvidenceTests/test_corruptionCannotRehydrateOrProduceAValidPointer
+[53/330] Testing ThrottleTests.ContextPacketEvidenceTests/test_pointerRequiresAnExactHash
+[54/330] Testing ThrottleTests.ContextPacketEvidenceTests/test_numberingAndMetadataStayInsideTheContextBudget
+[55/330] Testing ThrottleTests.ContextPacketEvidenceTests/test_sourceMetadataCannotExhaustTheBudget
+[56/330] Testing ThrottleTests.ContextPacketEvidenceTests/test_selectedEvidenceKeepsExactOriginalAndUntrustedBoundary
+[57/330] Testing ThrottleTests.ContextPacketEvidenceTests/test_writeFailureIsExplicitAndDoesNotAdvertiseRehydration
+[58/330] Testing ThrottleTests.DiagnosticArchiveTests/test_archiveContainsExactlyTheReviewedSummaryAndNoAdjacentFiles
+[59/330] Testing ThrottleTests.DiagnosticArchiveTests/test_invalidDestinationDoesNotReplaceAFileOrLeaveStagingData
+[60/330] Testing ThrottleTests.DiagnosticArchiveTests/test_exportUsesTheFrozenValueAndSanitizesCanariesInsideTheZip
+[61/330] Testing ThrottleTests.DiagnosticReportTests/test_exportAllowsOnlySummary
+[62/330] Testing ThrottleTests.DiagnosticArchiveTests/test_repeatedExportsArePrivateDistinctAndPreserveTheFirstArchive
+[63/330] Testing ThrottleTests.DiagnosticReportTests/test_privateCanariesCannotEnterVersionFields
+[64/330] Testing ThrottleTests.DiagnosticReportTests/test_unavailableCountsAreNotZero
+[65/330] Testing ThrottleSharedTests.KeychainStoreTests/testCustomServicePreservesCredentialNamespaceOnUpdateAndAdd
+[66/330] Testing ThrottleSharedTests.KeychainStoreTests/testConcurrentAddRetriesUpdateOnceWithoutDeleting
+[67/330] Testing ThrottleSharedTests.KeychainStoreTests/testEmptyStringIsAValueAndDoesNotDelete
+[68/330] Testing ThrottleSharedTests.KeychainStoreTests/testExistingCredentialIsUpdatedWithoutDeleteOrAdd
+[69/330] Testing ThrottleSharedTests.KeychainStoreTests/testFailedAddReturnsFailureWithoutDelete
+[70/330] Testing ThrottleSharedTests.KeychainStoreTests/testExplicitDeletionReportsActualFailureAndMissingIsSuccess
+[71/330] Testing ThrottleSharedTests.KeychainStoreTests/testLicenseJSONBytesRemainCompatibleAndFailedRenewalKeepsThem
+[72/330] Testing ThrottleSharedTests.KeychainStoreTests/testLockedKeychainFailurePreservesPreviousCredential
+[73/330] Testing ThrottleSharedTests.KeychainStoreTests/testOnlyMissingItemPermitsAdd
+[74/330] Testing ThrottleSharedTests.KeychainStoreTests/testReadDistinguishesMissingFromLockedAndMalformedValues
+[75/330] Testing ThrottleSharedTests.KeychainStoreTests/testReadPreservesEmptyAndNonemptyFoundValues
+[76/330] Testing ThrottleTests.NotebookLMGatewayProcessTests/testCancellationStopsOwnedChildWithoutWaitingForStdoutEOF
+[77/330] Testing ThrottleTests.NotebookLMGatewayProcessTests/testResponseIsFramedAndRequestEOFStillDelivered
+[78/330] Testing ThrottleTests.NotebookLMGatewayProcessTests/testExitedRootWithDescendantHoldingStdoutDoesNotHang
+[79/330] Testing ThrottleTests.NotebookLMGatewayProcessTests/testSilentChildTimesOutAndIsReaped
+[80/330] Testing ThrottleTests.NotebookLMGatewayProcessTests/testTermIgnoringProcessEscalatesWithinBound
+[81/330] Testing ThrottleTests.OwnedProcessTerminationTests/testNeverCapturesThrottleItselfForTermination
+[82/330] Testing ThrottleTests.OwnedProcessTerminationTests/testObservedGroupDriftPreventsAnAutomaticStopReceipt
+[83/330] Testing ThrottleTests.OwnedProcessTerminationTests/testSuspendedGroupCanExitAndNoReplacementPIDIsAccepted
+[84/330] Testing ThrottleTests.OwnedProcessTerminationTests/testReparentingDoesNotChangeTheOwnedIdentity
+[85/330] Testing ThrottleTests.OwnedProcessTerminationTests/testUnreapedZombieIsAnExitReceiptUntilItsParentReaps
+[86/330] Testing ThrottleTests.OwnedProcessTerminationTests/testTermIgnoringOrphanIsKilledWithoutTouchingAnotherSession
+[87/330] Testing ThrottleTests.PeerControlAdmissionTests/testListenerReplacementRefusesFramesFromOldConnection
+[88/330] Testing ThrottleTests.PeerControlAdmissionTests/testMirrorConsentDoesNotPermitTerminalControl
+[89/330] Testing ThrottleTests.PeerControlAdmissionTests/testRevocationRefusesQueuedFramesEvenAfterNewConsent
+[90/330] Testing ThrottleTests.PlanMCPAuthorityTests/test_aPrivateDescriptorLoadsAndNarrowsCalls
+[91/330] Testing ThrottleTests.PlanMCPAuthorityTests/test_noDescriptorIsALegacyCaller
+[92/330] Testing ThrottleTests.PlanMCPAuthorityTests/test_routerRefusesOutsideTheGrantAndUnderABrokenDescriptor
+[93/330] Testing ThrottleTests.PlanMCPAuthorityTests/test_symlinkedProjectResolvesToTheGrantedRoot
+[94/330] Testing ThrottleTests.PlanMCPAuthorityTests/test_unsafeMalformedOrExpiredDescriptorsRefuseEverything
+[95/330] Testing ThrottleTests.PlanMCPAuthorityTests/testGrantIsBoundToOneTaskAndRechecksItsDeadline
+[96/330] Testing ThrottleTests.PlanMCPAuthorityTests/testAbsentGrantRefusesEveryTaskToolWithoutCreatingAPlan
+[97/330] Testing ThrottleTests.PlanMCPAuthorityTests/testRevocationAfterPreflightPreventsClaimAtMutationBoundary
+[98/330] Testing ThrottleTests.PlanMCPAuthorityTests/testMutationBoundaryRefusesEventAndVerdictBeforePersistence
+[99/330] Testing ThrottleTests.PlanMCPIntakeAuthorityTests/testAbsentOrTaskOnlyGrantCannotBootstrapOrWriteResearch
+[100/330] Testing ThrottleTests.PlanMCPAuthorityTests/testRevocationPersistsAPrivateReceiptAndStopsFutureCalls
+[101/330] Testing ThrottleTests.PlanMCPIntakeAuthorityTests/testCorruptResearchIsNotOverwrittenAndRevokedMutationDoesNotCreateIt
+[102/330] Testing ThrottleTests.PlanMCPIntakeAuthorityTests/testConcurrentResearchWritersPreserveEveryFinding
+[103/330] Testing ThrottleTests.PlanMCPIntakeAuthorityTests/testGrantReplacementCannotWidenAnAdmittedRequest
+[104/330] Testing ThrottleTests.PlanMCPIntakeAuthorityTests/testIntakeRequiresExactProjectAndExplicitOperations
+[105/330] Testing ThrottleTests.PlanMCPMissionFenceTests/testClaimCannotSubstituteAnotherMissionAndLegacyClaimIsNotSilentlyBound
+[106/330] Testing ThrottleTests.PlanMCPIntakeAuthorityTests/testResearchReaderRefusesLinksSpecialFilesAndOversizedInput
+[107/330] Testing ThrottleTests.PlanMCPRetryTests/test_changedPayloadAuthorAndExpectedSequenceAreNotValidRetries
+[108/330] Testing ThrottleTests.PlanMCPMissionFenceTests/testOldGrantCannotReportAfterSameAuthorClaimsANewMission
+[109/330] Testing ThrottleTests.PlanMCPRetryTests/test_concurrentIdenticalClaimRetriesWriteOneEvent
+[110/330] Testing ThrottleTests.PlanMCPRetryTests/test_jsonRetryMetadataRejectsPartialMalformedAndBooleanValues
+[111/330] Testing ThrottleTests.PlanMCPRetryTests/test_staleNewEventIsRefusedEvenWhenTheSameAuthorOwnsANewClaim
+[112/330] Testing ThrottleTests.PlanMCPRetryTests/test_lostReleaseResponseCanBeRetriedAfterReassignmentWithoutReclaiming
+[113/330] Testing ThrottleTests.PlanMCPRetryTests/test_verdictRetryDoesNotIncrementRejectionCountTwice
+[114/330] Testing ThrottleTests.PlanMCPSchemaContractTests/testEventAndExplorerEnumsMatchTheProductModels
+[115/330] Testing ThrottleTests.PlanMCPSchemaContractTests/testEveryCatalogEntryHasAProductRoute
+[116/330] Testing ThrottleTests.PlanMCPSchemaContractTests/testProductFacadesUseTheCanonicalSchemas
+[117/330] Testing ThrottleTests.PlanMCPTaskRouterTests/test_grantedRouterPreservesLegacyRetryFormatAndReportsAStaleNewIntent
+[118/330] Testing ThrottleTests.PlanMCPSchemaContractTests/testResearchPillarsMatchTheProductModel
+[119/330] Testing ThrottleTests.PlanMCPTaskRouterTests/test_routerRejectsInvalidMetadataBeforeAnyMutation
+[120/330] Testing ThrottleTests.PlanMCPTaskRouterTests/test_routerCarriesIdentityAndSequenceThroughClaimEventAndVerdict
+[121/330] Testing ThrottleTests.PlanMCPToolsTests/testAgentCannotWriteLegacyCompletedEvent
+[122/330] Testing ThrottleTests.PlanMCPToolsTests/testClaimAnnouncesTheSotaGate
+[123/330] Testing ThrottleTests.PlanMCPToolsTests/testClaimCannotBeForgedThroughTheEventTool
+[124/330] Testing ThrottleTests.PlanMCPToolsTests/testClaimRefusesAnUnknownTask
+[125/330] Testing ThrottleTests.PlanMCPToolsTests/testClaimRefusesAnUnmetDependency
+[126/330] Testing ThrottleTests.PlanMCPToolsTests/testClaimSucceedsThenBlocksASecondAgent
+[127/330] Testing ThrottleTests.PlanMCPToolsTests/testEventRefusedFromANonOwner
+[128/330] Testing ThrottleTests.PlanMCPToolsTests/testEventRefusedOnAnUnclaimedTask
+[129/330] Testing ThrottleTests.PlanMCPToolsTests/testGatedCandidateParksOnlyAfterThrottleCheck
+[130/330] Testing ThrottleTests.PlanMCPToolsTests/testPlanReadListsOnlyActionableLeaves
+[131/330] Testing ThrottleTests.PlanMCPToolsTests/testPlanReadReportsAnAbsentPlanPlainly
+[132/330] Testing ThrottleTests.PlanMCPToolsTests/testProgressAndCandidateRequireThrottleCheckBeforeUnblockingDependency
+[133/330] Testing ThrottleTests.PlanMCPToolsTests/testReleaseHandsTheTaskBack
+[134/330] Testing ThrottleTests.PlanMCPToolsTests/testRouterRecognizesEveryPlanToolAndRejectsUnknownOnes
+[135/330] Testing ThrottleTests.PlanStoreTests/testAppendAssignsIncreasingSeqAndChainsHashes
+[136/330] Testing ThrottleTests.PlanStoreTests/testDependencyStillBlocksWhenUpstreamIsUnfinished
+[137/330] Testing ThrottleTests.PlanStoreTests/testEditedLogBreaksTheChain
+[138/330] Testing ThrottleTests.PlanStoreTests/testEditingTheFinalLineIsNotDetected
+[139/330] Testing ThrottleTests.PlanStoreTests/testFirstEventIsVisibleToAFreshStoreAndSurvivesADroppedCache
+[140/330] Testing ThrottleTests.PlanStoreTests/testFullyRewrittenChainIsIndistinguishable
+[141/330] Testing ThrottleTests.PlanStoreTests/testLegacyJournalRetainsBytesWhenNewVerificationReopensAsUnknown
+[142/330] Testing ThrottleTests.PlanStoreTests/testMissingPlanThrows
+[143/330] Testing ThrottleTests.PlanStoreTests/testReplayIsCachedUntilTheLogChanges
+[144/330] Testing ThrottleTests.PlanStoreTests/testResolveAppliesDependenciesAndRollup
+[145/330] Testing ThrottleTests.PlanStoreTests/testTaskWithNoLogReadsAsEmpty
+[146/330] Testing ThrottleTests.PlanStoreTests/testStateCacheIsFullyRebuildable
+[147/330] Testing ThrottleTests.PlanStoreTests/testUnknownTaskThrows
+[148/330] Testing ThrottleTests.PlanStoreTests/testTornTrailingWriteIsRefusedNotRepaired
+[149/330] Testing ThrottleTests.PlanStoreTests/testUnsafeTaskIDIsRefused
+[150/330] Testing ThrottleTests.ProjectInstructionServiceTests/testAnyApplicableInstructionChangeMakesProposalStale
+[151/330] Testing ThrottleTests.ProjectInstructionServiceTests/testApplyRequiresExactHumanReview
+[152/330] Testing ThrottleTests.ProjectInstructionServiceTests/testDiscoveryUsesCodexOverrideAndKeepsNestedProviderPrecedence
+[153/330] Testing ThrottleTests.ProjectInstructionServiceTests/testReviewedApplyPreservesHumanTextAndSecondReconciliationIsIdempotent
+[154/330] Testing ThrottleTests.ProjectInstructionServiceTests/testRollbackRefusesAForgedBackupPath
+[155/330] Testing ThrottleTests.ProjectInstructionServiceTests/testRollbackRefusesToOverwriteAConcurrentHumanEdit
+[156/330] Testing ThrottleTests.ProjectInstructionServiceTests/testSymlinkedInstructionFileIsRefusedWithoutReadingTarget
+[157/330] Testing ThrottleTests.ProjectInstructionServiceTests/testSymlinkedRuleDirectoryCannotHideExternalInstructions
+[158/330] Testing ThrottleTests.ProjectInstructionServiceTests/testUnconfirmedSecretAndTaskStateStatementsAreRefused
+[159/330] Testing ThrottleTests.ProjectKnowledgeBoundaryTests/testLinksSpecialFilesAndReplacedRootAreRefused
+[160/330] Testing ThrottleTests.ProjectKnowledgeExplorerTests/testEscapeAndSymlinkedFileAreRefused
+[161/330] Testing ThrottleTests.ProjectKnowledgeBoundaryTests/testFileAndTraversalBudgetsAreExplicit
+[162/330] Testing ThrottleTests.ProjectKnowledgeExplorerTests/testExactSearchNamesEveryFileItRead
+[163/330] Testing ThrottleTests.ProjectKnowledgeExplorerTests/testMCPReadGrantCannotExploreASiblingProject
+[164/330] Testing ThrottleTests.ProjectKnowledgeExplorerTests/testMCPRequiresAnExplicitGrantAndIsAdvertisedThroughTheSharedRouter
+[165/330] Testing ThrottleTests.ProjectKnowledgeExplorerTests/testReadReturnsBoundedTextAndAnExactDigestReceipt
+[166/330] Testing ThrottleTests.ProjectKnowledgeExplorerTests/testSearchMarksIncompleteWhenATextCandidateCannotBeInspected
+[167/330] Testing ThrottleTests.ProjectKnowledgeExplorerTests/testSensitivePathsAreRefusedAndCredentialShapesAreRedacted
+[168/330] Testing ThrottleTests.ProjectKnowledgeRaceTests/testGrowingFileCannotExceedReadBudget
+[169/330] Testing ThrottleTests.RedTeamCampaignStoreTests/testCampaignRefusesTargetsOutsideTheSyntheticBoundary
+[170/330] Testing ThrottleTests.RedTeamCampaignStoreTests/testDuplicateObservationKeepsOneFindingAndPrivateStorage
+[171/330] Testing ThrottleTests.ProjectKnowledgeRaceTests/testAncestorSymlinkSwapsNeverReadOutsideCanary
+[172/330] Testing ThrottleTests.RedTeamCampaignStoreTests/testFindingNeedsTriageAndAnIndependentRetestBeforeDelivery
+[173/330] Testing ThrottleTests.RemoteTransferGitTests/testBundleCarriesStagedUnstagedUntrackedAndDeletedFilesWithoutChangingIndex
+[174/330] Testing ThrottleTests.RemoteTransferGitTests/testIgnoredFilesRequireTheExplicitIncludeListAndMissingEntriesFail
+[175/330] Testing ThrottleTests.SettingsAuditPreservationTests/testExplicitModelReasoningCredentialsAndHooksArePreserved
+[176/330] Testing ThrottleTests.SettingsAuditPreservationTests/testSecondAuditIsIdempotentWithoutReformatting
+[177/330] Testing ThrottleTests.SettingsAuditPreservationTests/testUnknownPermissionsShapesAndMalformedJSONRemainByteIdentical
+[178/330] Testing ThrottleTests.SettingsAuditPreservationTests/testUnsetModelAndReasoningStayUnset
+[179/330] Testing ThrottleTests.RemoteTransferGitTests/testSubdirectoryRefusesTransferBeforeCreatingArtifacts
+[180/330] Testing ThrottleTests.TaskBudgetAdmissionTests/testCompletionKeepsAnExplicitUpperBoundUntilMeasuredUsageArrives
+[181/330] Testing ThrottleTests.TaskBudgetAdmissionTests/testConfiguredResourceRequiresAnExactWorkContractAmount
+[182/330] Testing ThrottleTests.TaskBudgetAdmissionTests/testExactContractCreatesPurposeBoundReservationWithLocalOnlyEnforcement
+[183/330] Testing ThrottleTests.TaskBudgetAdmissionTests/testMissingLedgerIsExplicitlyUnconfiguredAndDoesNotInventCapacity
+[184/330] Testing ThrottleTests.TaskBudgetAdmissionTests/testUnitMismatchRefusesBeforeReservation
+[185/330] Testing ThrottleTests.TaskBudgetLifecycleTests/testBrokenBudgetLedgerRefusesTheTerminalEvent
+[186/330] Testing ThrottleTests.TaskBudgetLifecycleTests/testCandidateSettlesTheLocalHoldAsAnExplicitUpperBound
+[187/330] Testing ThrottleTests.TaskIntegrationHardeningTests/test_rebase_refusesModifiedTrackedFiles
+[188/330] Testing ThrottleTests.TaskIntegrationHardeningTests/test_rebase_ignoresBuildOutputAVerificationLeftBehind
+[189/330] Testing ThrottleTests.TaskIntegrationHardeningTests/test_verify_killsADescendantThatIgnoresSIGTERM
+[190/330] Testing ThrottleTests.TaskIntegrationHardeningTests/test_verify_leavesNoDescendantRunningAfterATimeout
+[191/330] Testing ThrottleTests.TaskIntegrationOutputTests/testDisplayLimitReportsTruncationBelowTheCollectorByteLimit
+[192/330] Testing ThrottleTests.TaskIntegrationOutputTests/testSmallOutputIsUnchanged
+[193/330] Testing ThrottleTests.TaskIntegrationOutputTests/testSplitUTF8AtTailBoundaryDoesNotEraseTheDiagnostic
+[194/330] Testing ThrottleTests.TaskIntegrationOutputTests/testVerboseCommandKeepsABoundedTailWhileDraining
+[195/330] Testing ThrottleTests.TaskIntegrationRefusalTests/test_anOptionErrorIsUnknownRatherThanAListOfConflicts
+[196/330] Testing ThrottleTests.TaskIntegrationRefusalTests/test_aRealConflictKeepsItsPathsAndDropsTheMessages
+[197/330] Testing ThrottleTests.TaskIntegrationHardeningTests/test_verify_passesWhenASuccessfulCommandLeavesSomethingRunning
+[198/330] Testing ThrottleTests.TaskIntegrationRefusalTests/test_assess_readsTheBranchOfAWorktreeSittingOnIt
+[199/330] Testing ThrottleTests.TaskIntegrationRefusalTests/test_assess_refusesADetachedHEADEvenOnTheBranchTip
+[200/330] Testing ThrottleTests.TaskIntegrationRefusalTests/test_emptyAndTruncatedOutputAreUnknown
+[201/330] Testing ThrottleTests.TaskIntegrationRefusalTests/test_assess_refusesAWorktreeThatLeftItsBranch
+[202/330] Testing ThrottleTests.TaskIntegrationRefusalTests/test_integrate_ignoresUntrackedFilesTheVerificationLeftBehind
+[203/330] Testing ThrottleTests.TaskIntegrationRefusalTests/test_integrate_leavesTheWorktreeForItsCallerToDecideOn
+[204/330] Testing ThrottleTests.TaskIntegrationRefusalTests/test_integrate_refusesADetachedRepositoryHEAD
+[205/330] Testing ThrottleTests.TaskIntegrationRefusalTests/test_integrate_refusesARedCheck
+[206/330] Testing ThrottleTests.TaskIntegrationRefusalTests/test_integrate_refusesWhenTheTaskItselfMovedAfterTheCheck
+[207/330] Testing ThrottleTests.TaskIntegrationRefusalTests/test_integrate_stillRefusesModifiedTrackedFiles
+[208/330] Testing ThrottleTests.TaskIntegrationRefusalTests/test_removeWorktree_dropsTheWorktreeOfAnIntegratedTask
+[209/330] Testing ThrottleTests.TaskIntegrationRefusalTests/test_removeWorktree_keepsAWorktreeThatStillHoldsWorkAndSaysWhy
+[210/330] Testing ThrottleTests.TaskIntegrationRefusalTests/testVerificationRecordsCommandReceiptWithoutClaimingTestCoverage
+[211/330] Testing ThrottleTests.TaskIntegrationRefusalTests/testVerificationThatChangesTrackedInputsCannotPass
+[212/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_assess_refusesWhenThereIsNoWorktree
+[213/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_assess_namesTheConflictingFileWithoutTouchingTheWorktree
+[214/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_assess_reportsFilesAndAheadCount
+[215/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_diff_returnsTheTextAgainstTheMergeBase
+[216/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_assess_seesUncommittedWork
+[217/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_diff_throwsWhenTheTaskReferenceIsMissing
+[218/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_integrate_fastForwardsTheBaseAndLogsTheSHA
+[219/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_integrate_refusesADirtyWorktree
+[220/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_integrate_refusesAGatedTaskWithoutAVerdict
+[221/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_integrate_refusesAnUnverifiedTask
+[222/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_integrateRefusesCorruptTailAfterGreenCheckWithoutMerging
+[223/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_integrate_refusesWhenTheBaseMovedAfterTheCheck
+[224/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_mergeDoesNotExecuteRepositoryHooks
+[225/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_integrateRefusesUnknownEventAfterGreenCheckWithoutMerging
+[226/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_mergeRefusesWhenAssessedBaseHasChanged
+[227/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_mergeUsesVerifiedObjectWhenTaskBranchAdvances
+[228/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_rebase_abortsAndRestoresTheOriginalSHAOnConflict
+[229/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_rebaseAbortFailed_carriesBothOutputsAndComparesByValue
+[230/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_rebase_replaysTheTaskOnTheAdvancedBase
+[231/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_rebaseRefusesAnUnresolvedVerification
+[232/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_rebaseRefusesCorruptTailWithoutMovingWorktree
+[233/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_rebaseRefusesUnknownEventWithoutMovingWorktree
+[234/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_verify_recordsAFailureWithItsOutput
+[235/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_verify_killsAHungCommandAtTheTimeoutAndReportsIt
+[236/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_verify_recordsAGreenCheckStampedWithBothSHAs
+[237/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_verify_runsInsideTheWorktreeNotTheRepo
+[238/330] Testing ThrottleTests.TaskIntegrationServiceTests/test_verifyPersistsIntentBeforeLaunchingCommand
+[239/330] Testing ThrottleTests.TaskIntegrationWorkContractTests/testIntegrateRefusesChangesOutsideThePersistedWorkContract
+[240/330] Testing ThrottleTests.TaskVerificationCrashTests/testControllerDiesAfterAttachmentWithoutRunningProjectCode
+[241/330] Testing ThrottleTests.TaskVerificationCrashTests/testControllerDiesBeforeAttachmentWithoutRunningProjectCode
+[242/330] Testing ThrottleTests.TaskVerificationLifecycleTests/testConcurrentControllersAdmitExactlyOneVerification
+[243/330] Testing ThrottleTests.TaskVerificationLifecycleTests/testLateSuccessIsIncompleteAndWrongCommandCannotAcknowledge
+[244/330] Testing ThrottleTests.TaskVerificationLifecycleTests/testLegacyUncheckedAcknowledgementCannotErasePendingExecution
+[245/330] Testing ThrottleTests.TaskVerificationLifecycleTests/testReopenedUnacknowledgedExecutionBlocksRetryEvenAfterExpiry
+[246/330] Testing ThrottleTests.TaskVerificationLifecycleTests/testStoppedObservationDoesNotPassTaskAndFencesLateCompletion
+[247/330] Testing ThrottleTests.TaskVerificationLifecycleTests/testVerificationWithoutDurableStoreIsRefusedBeforeCommand
+[248/330] Testing ThrottleTests.TaskVerificationProcessTests/testDuplicateOrExpiredProcessAttachmentCannotReplaceIdentity
+[249/330] Testing ThrottleTests.TaskVerificationProcessTests/testFailedAdmissionNeverRunsCommandAndDisablesLateSignals
+[250/330] Testing ThrottleTests.TaskIntegrationWorkContractTests/testIntegrateRefusesVerificationFromAnEarlierWorkContract
+[251/330] Testing ThrottleTests.TaskVerificationProcessTests/testFastTimeoutAlwaysPublishesInterruptionBeforeObservingExit
+[252/330] Testing ThrottleTests.TaskVerificationProcessTests/testGatedIdentityIsDurableBeforeCommandAndDoesNotCertifyRecovery
+[253/330] Testing ThrottleTests.TaskVerificationProcessTests/testObservationDistinguishesReusedPIDAndAnotherBootWithoutSignalling
+[254/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_ansiColourAndCachedGoOutput
+[255/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_cargo
+[256/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_failureFromAnotherRunnerCannotBecomeGreen
+[257/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_failureFirstAndErrorOnlyPytestSummaries
+[258/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_go_ok
+[259/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_go_fail
+[260/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_jest_failedFirstOrder
+[261/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_invalidAndEmptyCountsCannotBecomeGreen
+[262/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_laterSuccessDoesNotEraseFailureInTheSameObservedTail
+[263/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_jest_passOnly
+[264/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_pytest_passOnly
+[265/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_noFalsePositiveOnProse
+[266/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_pytest_withFailures
+[267/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_summaryMentionedInProseIsNotObservedResult
+[268/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_swift
+[269/330] Testing ThrottleTests.TestOutcomeDetectorTests/test_swiftTestingOrNodeFailureAfterXCTestSuccessIsNotGreen
+[270/330] Testing ThrottleTests.TestOutcomeStoreTests/test_failedAttemptsContributeToCostPerGreen
+[271/330] Testing ThrottleTests.TestOutcomeStoreTests/test_malformedOrEmptyResultsCannotBecomeGreen
+[272/330] Testing ThrottleTests.TestOutcomeStoreTests/test_stableOrderAndIndependentSessions
+[273/330] Testing ThrottleTests.TestOutcomeStoreTests/test_unrelatedProjectsAndAllFailuresDoNotCreateCostPerGreen
+[274/330] Testing ThrottleTests.TestOutcomeStoreTests/test_missingCostsAndResetsCannotMakeMetricCheaper
+[275/330] Testing ThrottleTests.TestOutcomeStoreTests/test_windowUsesHistoricalCostAnchor
+[276/330] Testing ThrottleTests.WorkflowContractIntegrationTests/testContractRefusesExitZeroWithoutTestEvidenceAndPersistsRefusal
+[277/330] Testing ThrottleTests.WorkflowContractIntegrationTests/testChangedOrRemovedContractInvalidatesPersistedPassingEvidence
+[278/330] Testing ThrottleTests.WorkflowContractIntegrationTests/testVerificationPromotesCandidateBeforeIntegration
+[279/330] Testing ThrottleTests.WorkflowDesignContractTests/testChangingCopyChangesTheDesignAndWorkContractDigests
+[280/330] Testing ThrottleTests.WorkflowContractIntegrationTests/testIntegrationReadsStoredContractDespiteStaleCallerAndGreenCommand
+[281/330] Testing ThrottleTests.WorkflowDesignContractTests/testCompleteJourneyHasAStableDigestAndExplicitUnavailableTool
+[282/330] Testing ThrottleTests.WorkflowDesignContractTests/testDesignRequiresReviewDimensionsAndCompatibleEvidence
+[283/330] Testing ThrottleTests.WorkflowDesignContractTests/testEveryRuntimeStateMustBeCoveredOrExplicitlyNotApplicable
+[284/330] Testing ThrottleTests.WorkflowEvidenceReceiptTests/test_changedInputsAreIncompleteEvenWithExitZero
+[285/330] Testing ThrottleTests.WorkflowEvidenceReceiptTests/test_commandSuccessDoesNotProveTests
+[286/330] Testing ThrottleTests.WorkflowEvidenceReceiptTests/test_inputDigestsAreOrderInsensitiveAllowlistedAndOptional
+[287/330] Testing ThrottleTests.WorkflowEvidenceReceiptTests/test_testInventoryRequiresExactCoverageAndExplicitSkips
+[288/330] Testing ThrottleTests.WorkflowEvidenceReceiptTests/test_unknownSchemaAndMissingEvidenceAreNotPromoted
+[289/330] Testing ThrottleTests.WorkflowEvidenceReceiptTests/testContractRejectsInvalidRequirementsAndUnapprovedSkips
+[290/330] Testing ThrottleTests.WorkflowEvidenceReceiptTests/testContractRequiresIndependentTestObligationsAndCurrentInputs
+[291/330] Testing ThrottleTests.WorkflowFoundationTests/test_concurrentClaimsAcrossInstancesHaveOneWinner
+[292/330] Testing ThrottleTests.WorkflowFoundationTests/test_eventEndpointCannotBypassCounterReview
+[293/330] Testing ThrottleTests.WorkflowFoundationTests/test_eventRetryIsIdempotentAndConflictingReuseIsRefused
+[294/330] Testing ThrottleTests.WorkflowFoundationTests/test_concurrentAppendsPreserveAllEventsAndSequence
+[295/330] Testing ThrottleTests.WorkflowFoundationTests/test_projectLockIsVisibleToAnotherProcessAndReleased
+[296/330] Testing ThrottleTests.WorkflowFoundationTests/test_partialLogIsPreservedAndRejectsAppend
+[297/330] Testing ThrottleTests.WorkflowFoundationTests/test_symlinkedLogDoesNotWriteOutsideProject
+[298/330] Testing ThrottleTests.WorkflowFoundationTests/test_staleOwnerCannotWriteAfterReassignment
+[299/330] Testing ThrottleTests.WorkflowRecipeTests/testCatalogHasThreeVersionedRecipesWithoutAuthorityFields
+[300/330] Testing ThrottleTests.WorkflowRecipeTests/testCandidateWaitsForEveryCurrentRunEvidenceRequirement
+[301/330] Testing ThrottleTests.WorkflowRecipeTests/testEvidenceFromAReleasedRunCannotCompleteANewClaim
+[302/330] Testing ThrottleTests.WorkflowRecipeTests/testClaimPinsRecipeAndInstructionSnapshot
+[303/330] Testing ThrottleTests.WorkflowRecipeTests/testEvidenceWithoutAReferenceDoesNotSatisfyRecipe
+[304/330] Testing ThrottleTests.WorkflowRecipeTests/testInstructionChangeInvalidatesTheClaim
+[305/330] Testing ThrottleTests.WorkflowRecipeTests/testUnavailableRecipeRevisionCannotBeClaimed
+[306/330] Testing ThrottleTests.WorkflowResultImporterTests/test_aMalformedOrEmptyTreeIsRefused
+[307/330] Testing ThrottleTests.WorkflowResultImporterTests/test_anIncompleteRunIsRecordedAsIncompleteNotPassed
+[308/330] Testing ThrottleTests.WorkflowResultImporterTests/test_aMissingBundleIsNamedRatherThanGuessedAt
+[309/330] Testing ThrottleTests.WorkflowResultImporterTests/test_anInventoryUpgradesAPassingCommandAndOnlyThat
+[310/330] Testing ThrottleTests.WorkflowResultImporterTests/test_aStateTheImporterDoesNotUnderstandIsUnresolvedNotPassed
+[311/330] Testing ThrottleTests.WorkflowResultImporterTests/test_theInventoryIsReadFromWhateverDepthTheCasesSitAt
+[312/330] Testing ThrottleTests.WorkflowReviewGateTests/testBlockingNotVerifiedCannotBeCompensatedByAnotherPass
+[313/330] Testing ThrottleTests.WorkflowReviewGateTests/testHumanCriterionCannotBeSatisfiedByAModelLabel
+[314/330] Testing ThrottleTests.WorkflowReviewGateTests/testIndependentEvidenceBoundReportAcceptsAllBlockingCriteria
+[315/330] Testing ThrottleTests.WorkflowReviewGateTests/testNonblockingFindingRemainsVisibleWithoutOverridingBlockingPasses
+[316/330] Testing ThrottleTests.WorkflowReviewGateTests/testNotApplicableNeedsAReasonAndNoSyntheticEvidence
+[317/330] Testing ThrottleTests.WorkflowReviewGateTests/testProducingRuntimeCannotReviewItself
+[318/330] Testing ThrottleTests.WorkflowReviewGateTests/testReviewCannotCiteEvidenceAbsentFromTheTaskLedger
+[319/330] Testing ThrottleTests.WorkflowReviewMCPTests/testClaimedVerdictMustMatchDeterministicCriterionDecision
+[320/330] Testing ThrottleTests.WorkflowReviewGateTests/testReviewOfEarlierCandidateIsStale
+[321/330] Testing ThrottleTests.WorkflowReviewMCPTests/testRouterDecodesTheStructuredReportObject
+[322/330] Testing ThrottleTests.WorkflowReviewMCPTests/testRubricTaskRefusesLegacyVerdictWithoutReport
+[323/330] Testing ThrottleTests.WorkflowReviewMCPTests/testStructuredAcceptedReviewPersistsAndFinishesTask
+[324/330] Testing ThrottleTests.WorkflowWorkContractTests/testClaimPinsWorkContractAndChangedPlanCannotCompleteCandidate
+[325/330] Testing ThrottleTests.WorkflowWorkContractTests/testEveryBoundaryChangeInvalidatesTheEarlierDigest
+[326/330] Testing ThrottleTests.WorkflowWorkContractTests/testPathScopeIsExactOrAnExplicitDirectoryPrefix
+[327/330] Testing ThrottleTests.WorkflowWorkContractTests/testProductCycleIntentIsPinnedIntoTheTaskBoundary
+[328/330] Testing ThrottleTests.WorkflowWorkContractTests/testUnchangedContractMayReachCandidateWithoutInventingRecipeEvidence
+[329/330] Testing ThrottleTests.WorkflowWorkContractTests/testUnsafeAndContradictoryContractsFailClosed
+[330/330] Testing ThrottleTests.WorkflowWorkContractTests/testValidContractHasStableDigestAndExplicitUnknownBudgets
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+[0/1] Planning build
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite "Workflow product platform parity" started.
+◇ Suite "Plan MCP authority lifecycle" started.
+◇ Suite "Workflow release ledger" started.
+◇ Suite "Retrieval benchmark metrics" started.
+◇ Suite "Workflow release gates" started.
+◇ Test "optional and experimental tracks do not inflate required coverage" started.
+◇ Test "an intentional difference needs two owners, evidence, and a future review" started.
+◇ Suite "Workflow technology reuse" started.
+◇ Suite "Workflow dependency intelligence" started.
+◇ Suite "Workflow IP and open source policy" started.
+◇ Test "hibernation callers can omit the close hook and an expired grant is already inactive" started.
+◇ Suite "Retrieval quality gate" started.
+◇ Test "a fractional timestamp survives an exact retry" started.
+◇ Test "no abstention observations cannot count as perfect abstention" started.
+◇ Test "an interrupted external effect remains explicitly unresolved" started.
+◇ Test "scores explicit abstention separately" started.
+◇ Test "retrying the same event is idempotent and conflicting reuse is refused" started.
+◇ Test "unanswerable queries cannot inflate positive retrieval metrics" started.
+◇ Test "required platform gaps block the product release" started.
+◇ Test "an external effect target must exist in the frozen manifest" started.
+◇ Test "a torn final line is corruption and is never silently repaired" started.
+◇ Test "closing the owning session durably invalidates its grant" started.
+◇ Test "starting an effect requires both prepared intent and exact authorization" started.
+◇ Test "rejects invalid benchmark definitions" started.
+◇ Test "computes Recall, reciprocal rank and nDCG with duplicate suppression" started.
+◇ Test "an eligible result is an advisory integration mode, not a mutation" started.
+◇ Test "catalog visibility and reuse rights are separate gates" started.
+◇ Test "a changed source revision invalidates the earlier reuse evaluation" started.
+◇ Test "a manifest revision must preserve an explicit digest chain" started.
+◇ Test "authorization binds the exact manifest, action, target, audience, and payload" started.
+◇ Test "a contradictory gate is disqualified even when a passing receipt exists" started.
+◇ Test "a direct release cannot collapse build, notarization, staple, and publication proof" started.
+◇ Test "a fully evidenced candidate can be recommended without installing it" started.
+◇ Test "a high score cannot compensate for a failed hard gate" started.
+◇ Test "unknown evidence stays unknown and contributes no coverage" started.
+◇ Test "evidence from a previous manifest cannot satisfy a new release" started.
+◇ Test "an unknown rights gate blocks a high-confidence opening recommendation" started.
+◇ Test "adoption requires discovery across every applicable family" started.
+◇ Test "a decision for an older assessment cannot authorize a changed boundary" started.
+◇ Test "no claims is unmeasured, not perfect quality" started.
+◇ Test "passing gates produce a recommendation that still awaits a human" started.
+◇ Test "large almost-balanced samples do not manufacture significance through underflow" started.
+◇ Test "MCP is valid only when the catalog records an actual MCP interface" started.
+◇ Test "measures claim coverage and rejects a tampered excerpt citation" started.
+◇ Test "promotes only a significant gain inside every product budget" started.
+◇ Test "invalid measurements cannot authorize promotion" started.
+◇ Test "source available is labelled accurately" started.
+◇ Test "does not promote a small or insignificant challenger" started.
+✔ Test "no abstention observations cannot count as perfect abstention" passed after 0.001 seconds.
+✔ Test "scores explicit abstention separately" passed after 0.001 seconds.
+✔ Test "required platform gaps block the product release" passed after 0.001 seconds.
+✔ Test "an intentional difference needs two owners, evidence, and a future review" passed after 0.001 seconds.
+✔ Test "optional and experimental tracks do not inflate required coverage" passed after 0.002 seconds.
+✔ Test "unanswerable queries cannot inflate positive retrieval metrics" passed after 0.003 seconds.
+✔ Test "computes Recall, reciprocal rank and nDCG with duplicate suppression" passed after 0.003 seconds.
+✔ Test "an eligible result is an advisory integration mode, not a mutation" passed after 0.003 seconds.
+✔ Test "catalog visibility and reuse rights are separate gates" passed after 0.003 seconds.
+✔ Test "a changed source revision invalidates the earlier reuse evaluation" passed after 0.003 seconds.
+✔ Test "a manifest revision must preserve an explicit digest chain" passed after 0.003 seconds.
+✔ Test "rejects invalid benchmark definitions" passed after 0.003 seconds.
+✔ Test "a contradictory gate is disqualified even when a passing receipt exists" passed after 0.003 seconds.
+✔ Test "a direct release cannot collapse build, notarization, staple, and publication proof" passed after 0.003 seconds.
+✔ Test "authorization binds the exact manifest, action, target, audience, and payload" passed after 0.003 seconds.
+✔ Test "a fully evidenced candidate can be recommended without installing it" passed after 0.003 seconds.
+✔ Test "a high score cannot compensate for a failed hard gate" passed after 0.003 seconds.
+✔ Test "unknown evidence stays unknown and contributes no coverage" passed after 0.003 seconds.
+✔ Test "evidence from a previous manifest cannot satisfy a new release" passed after 0.003 seconds.
+✔ Test "an unknown rights gate blocks a high-confidence opening recommendation" passed after 0.003 seconds.
+✔ Test "adoption requires discovery across every applicable family" passed after 0.003 seconds.
+✔ Test "no claims is unmeasured, not perfect quality" passed after 0.003 seconds.
+✔ Test "a decision for an older assessment cannot authorize a changed boundary" passed after 0.003 seconds.
+✔ Test "MCP is valid only when the catalog records an actual MCP interface" passed after 0.003 seconds.
+✔ Test "passing gates produce a recommendation that still awaits a human" passed after 0.003 seconds.
+✔ Test "measures claim coverage and rejects a tampered excerpt citation" passed after 0.003 seconds.
+✔ Test "large almost-balanced samples do not manufacture significance through underflow" passed after 0.003 seconds.
+✔ Test "invalid measurements cannot authorize promotion" passed after 0.003 seconds.
+✔ Test "promotes only a significant gain inside every product budget" passed after 0.003 seconds.
+✔ Test "source available is labelled accurately" passed after 0.003 seconds.
+✔ Test "does not promote a small or insignificant challenger" passed after 0.003 seconds.
+✔ Suite "Workflow product platform parity" passed after 0.004 seconds.
+✔ Suite "Workflow technology reuse" passed after 0.004 seconds.
+✔ Suite "Workflow release gates" passed after 0.004 seconds.
+✔ Suite "Retrieval benchmark metrics" passed after 0.004 seconds.
+✔ Suite "Workflow dependency intelligence" passed after 0.004 seconds.
+✔ Suite "Workflow IP and open source policy" passed after 0.004 seconds.
+✔ Suite "Retrieval quality gate" passed after 0.004 seconds.
+✔ Test "hibernation callers can omit the close hook and an expired grant is already inactive" passed after 0.015 seconds.
+✔ Test "an external effect target must exist in the frozen manifest" passed after 0.041 seconds.
+✔ Test "a fractional timestamp survives an exact retry" passed after 0.041 seconds.
+✔ Test "closing the owning session durably invalidates its grant" passed after 0.045 seconds.
+✔ Suite "Plan MCP authority lifecycle" passed after 0.045 seconds.
+✔ Test "retrying the same event is idempotent and conflicting reuse is refused" passed after 0.045 seconds.
+✔ Test "a torn final line is corruption and is never silently repaired" passed after 0.045 seconds.
+✔ Test "starting an effect requires both prepared intent and exact authorization" passed after 0.048 seconds.
+✔ Test "an interrupted external effect remwarning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+ains explicitly unresolved" passed after 0.048 seconds.
+✔ Suite "Workflow release ledger" passed after 0.048 seconds.
+✔ Test run with 39 tests in 9 suites passed after 0.049 seconds.

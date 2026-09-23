@@ -1,0 +1,8 @@
+{
+  "operation": "temporarily enable Keyboard Navigation in System Settings",
+  "result": "rejected before execution by automatic review",
+  "reason": "General instruction to proceed not accepted as explicit consent for changing the system setting",
+  "setting_initial": "off",
+  "setting_changed": false,
+  "workaround_attempted": false
+}

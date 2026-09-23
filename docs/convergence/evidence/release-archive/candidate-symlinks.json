@@ -1,0 +1,11 @@
+{
+  "Contents/Frameworks/Sparkle.framework/Autoupdate": "Versions/Current/Autoupdate",
+  "Contents/Frameworks/Sparkle.framework/Resources": "Versions/Current/Resources",
+  "Contents/Frameworks/Sparkle.framework/Sparkle": "Versions/Current/Sparkle",
+  "Contents/Frameworks/Sparkle.framework/Updater.app": "Versions/Current/Updater.app",
+  "Contents/Frameworks/Sparkle.framework/Versions/Current": "B",
+  "Contents/Frameworks/Sparkle.framework/XPCServices": "Versions/Current/XPCServices",
+  "Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Resources": "Versions/Current/Resources",
+  "Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/SQLCipher": "Versions/Current/SQLCipher",
+  "Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/Current": "A"
+}

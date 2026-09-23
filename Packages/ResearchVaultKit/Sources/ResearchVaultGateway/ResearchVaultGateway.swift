@@ -47,8 +47,8 @@ public struct ResearchVaultSourceResource: Codable, Equatable, Sendable {
 /// Ordinary gateways have a fixed grant. The owner gateway can admit projects
 /// through its separate authenticated operation; receipts never widen grants.
 public actor ResearchVaultGateway {
-    private let store: SQLCipherReceiptStore
-    private var authorization: VaultAuthorization
+    let store: SQLCipherReceiptStore  // same module: the documents extension writes through it
+    var authorization: VaultAuthorization
     private let permitsProjectAdmission: Bool
     private var lastReasoningChangeSet: ReasoningChangeSet?
 

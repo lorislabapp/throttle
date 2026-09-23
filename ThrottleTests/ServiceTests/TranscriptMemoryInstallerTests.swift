@@ -91,10 +91,13 @@ final class TranscriptMemoryInstallerTests: XCTestCase {
         process.executableURL = URL(fileURLWithPath: "/bin/bash")
         process.arguments = [hook.path]
         process.standardOutput = output
+        process.standardInput = FileHandle.nullDevice
         try process.run()
+        // Drain before waiting: waiting first deadlocks once the hook's output
+        // meets a full pipe (seen 2026-09-23, the hook blocked in write()).
+        let hookData = output.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
         XCTAssertEqual(process.terminationStatus, 0)
-        let hookData = output.fileHandleForReading.readDataToEndOfFile()
         XCTAssertNoThrow(try JSONSerialization.jsonObject(with: hookData))
         XCTAssertTrue(String(decoding: hookData, as: UTF8.self).contains("throttle_global_context"))
 

@@ -1,0 +1,70 @@
+import AppKit
+import SwiftUI
+
+@MainActor final class ProbeState: ObservableObject {
+    @Published var count = 0
+}
+
+struct ProbeView: View {
+    @ObservedObject var state: ProbeState
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Synthetic keyboard diagnostic — no Throttle services")
+            Text("SwiftUI activations: \(state.count)")
+            Button("Retry diff (SwiftUI)") {
+                state.count += 1
+                print("SWIFTUI_ACTIVATED \(state.count)")
+                fflush(stdout)
+            }
+        }.padding(16).frame(width: 450, height: 150)
+    }
+}
+
+@MainActor final class ProbeDelegate: NSObject, NSApplicationDelegate {
+    var window: NSWindow?
+    let state = ProbeState()
+    var nativeCount = 0
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        let stack = NSStackView()
+        stack.orientation = .vertical
+        let host = NSHostingView(rootView: ProbeView(state: state))
+        stack.addArrangedSubview(host)
+        let control = NSButton(title: "Native AppKit control", target: self, action: #selector(nativePressed))
+        stack.addArrangedSubview(control)
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 230),
+                              styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+        window.title = "Throttle keyboard diagnostic — synthetic"
+        window.isReleasedWhenClosed = false
+        window.contentView = stack
+        self.window = window
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        print("PROBE_READY"); fflush(stdout)
+        Task { @MainActor in
+            for _ in 0..<90 {
+                let responder = window.firstResponder.map { String(describing: type(of: $0)) } ?? "nil"
+                print("FOCUS active=\(NSApp.isActive) key=\(window.isKeyWindow) fullKeyboard=\(NSApp.isFullKeyboardAccessEnabled) responder=\(responder)")
+                fflush(stdout)
+                try? await Task.sleep(for: .seconds(2))
+            }
+            NSApp.terminate(nil)
+        }
+    }
+
+    @objc func nativePressed() {
+        nativeCount += 1
+        print("APPKIT_ACTIVATED \(nativeCount)"); fflush(stdout)
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+}
+
+MainActor.assumeIsolated {
+    let app = NSApplication.shared
+    let delegate = ProbeDelegate()
+    app.delegate = delegate
+    app.setActivationPolicy(.regular)
+    app.run()
+}

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct MenuBarLabel: View {
@@ -53,16 +54,31 @@ struct MenuBarLabel: View {
                 // itself up. This restores the rule stated above: every value
                 // comes from state refreshed on a timer, never from a scheduler
                 // living inside the render pass.
-                Label(text(pressure: Self.countdown(to: reset, now: Date())),
-                      systemImage: waiting ? "bell.badge.fill" : "hourglass")
-                    .labelStyle(.titleAndIcon)
+                gauge(text(pressure: Self.countdown(to: reset, now: Date())),
+                      symbol: waiting ? "bell.badge.fill" : "hourglass", pct: pct)
             } else {
-                Label(text(pressure: "\(Int(pct * 100))%"),
-                      systemImage: waiting ? "bell.badge.fill" : meterIcon(for: pct))
-                    .labelStyle(.titleAndIcon)
+                gauge(text(pressure: "\(Int(pct * 100))%"),
+                      symbol: waiting ? "bell.badge.fill" : meterIcon(for: pct), pct: pct)
             }
         } else {
             Image(systemName: "gauge.with.dots.needle.bottom.50percent")
+        }
+    }
+
+    /// The gauge label, with background work drawn as a 1 pt hairline under the
+    /// icon (design 1a: no new glyph, the % stays the only number). Reads two
+    /// STORED values on `BackgroundWork`, both quantised, so a whole pass changes
+    /// the status item's image at most `BackgroundWork.menuBarSteps` times.
+    @ViewBuilder
+    private func gauge(_ title: String, symbol: String, pct: Double) -> some View {
+        let work = BackgroundWork.shared
+        if let mark = work.menuBarMark, let glyph = MenuBarWorkGlyph.image(symbol: symbol, mark: mark) {
+            Label { Text(title) } icon: { Image(nsImage: glyph) }
+                .labelStyle(.titleAndIcon)
+                .accessibilityLabel(String(localized: "Throttle, \(Int(pct * 100)) percent used.")
+                                    + (work.accessibilitySentence.map { " " + $0 } ?? ""))
+        } else {
+            Label(title, systemImage: symbol).labelStyle(.titleAndIcon)
         }
     }
 
@@ -157,5 +173,52 @@ struct MenuBarLabel: View {
         case ..<0.95: return "gauge.with.dots.needle.67percent"
         default:      return "gauge.with.dots.needle.100percent"
         }
+    }
+}
+
+/// Draws the gauge symbol with the background-work mark under it into one
+/// template image (a status item renders its label as an image; an overlay view
+/// would be dropped). Cached per symbol + mark: at most a handful ever exist.
+@MainActor
+enum MenuBarWorkGlyph {
+    private static var cache: [String: NSImage] = [:]
+
+    static func image(symbol: String, mark: BackgroundWork.MenuBarMark) -> NSImage? {
+        let key = "\(symbol)|\(mark)"
+        if let hit = cache[key] { return hit }
+        guard let base = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?
+            .withSymbolConfiguration(.init(pointSize: 13, weight: .regular)) else { return nil }
+        let warn: NSImage? = mark == .failed
+            ? NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: nil)?
+                .withSymbolConfiguration(.init(pointSize: 8, weight: .semibold))
+            : nil
+        let gap: CGFloat = 1.5
+        let width = base.size.width + (warn.map { $0.size.width + 2 } ?? 0)
+        let height = base.size.height + gap + 1
+        let image = NSImage(size: NSSize(width: width, height: height), flipped: false) { _ in
+            base.draw(in: NSRect(x: 0, y: gap + 1, width: base.size.width, height: base.size.height))
+            let lineW = base.size.width
+            switch mark {
+            case .progress(let step):
+                NSColor.black.withAlphaComponent(0.18).setFill()
+                NSRect(x: 0, y: 0, width: lineW, height: 1).fill()
+                NSColor.black.withAlphaComponent(0.85).setFill()
+                let filled = CGFloat(step) / CGFloat(BackgroundWork.menuBarSteps)
+                NSRect(x: 0, y: 0, width: (lineW * filled).rounded(), height: 1).fill()
+            case .quiet:
+                NSColor.black.withAlphaComponent(0.5).setFill()
+                var dot: CGFloat = 0
+                while dot < lineW { NSRect(x: dot, y: 0, width: 1, height: 1).fill(); dot += 2 }
+            case .failed:
+                if let warn {
+                    warn.draw(in: NSRect(x: base.size.width + 2, y: gap + 1,
+                                         width: warn.size.width, height: warn.size.height))
+                }
+            }
+            return true
+        }
+        image.isTemplate = true   // the menu bar tints it for light / dark
+        cache[key] = image
+        return image
     }
 }

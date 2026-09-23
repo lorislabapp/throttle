@@ -78,4 +78,53 @@ final class SemanticAutoIndexerTests: XCTestCase {
         XCTAssertNil(s.skipped)
         XCTAssertEqual(s.reposTouched, 0)
     }
+
+    // MARK: - Background work: events, skip, pause
+
+    /// Collects events from the @Sendable callback.
+    private final class Recorder: @unchecked Sendable {
+        private let lock = NSLock()
+        private var items: [SemanticAutoIndexer.Event] = []
+        func add(_ event: SemanticAutoIndexer.Event) { lock.withLock { items.append(event) } }
+        var events: [SemanticAutoIndexer.Event] { lock.withLock { items } }
+    }
+
+    func test_events_reportTotalAndEachRepo() throws {
+        let repoA = try makeRepo("a", file: "x.swift", body: "func alpha() {}")
+        let repoB = try makeRepo("b", file: "y.md", body: "beta docs")
+        let rec = Recorder()
+        _ = SemanticAutoIndexer.run(roots: [repoA, "/nope/missing", repoB], enabled: true, memoryQuiet: false,
+                                    embedder: StubEmbedder(), onEvent: { rec.add($0) })
+        // The missing root is dropped before the total is announced.
+        XCTAssertEqual(rec.events, [
+            .started(total: 2),
+            .repoStarted(index: 0, name: "a"), .repoFinished(index: 0, name: "a", outcome: .done),
+            .repoStarted(index: 1, name: "b"), .repoFinished(index: 1, name: "b", outcome: .done)
+        ])
+    }
+
+    func test_skip_skipsOnlyCurrentRepo() throws {
+        let repoA = try makeRepo("a", file: "x.swift", body: "func alpha() {}")
+        let repoB = try makeRepo("b", file: "y.md", body: "beta docs")
+        let control = BackgroundWorkControl()
+        control.requestSkip()   // consumed by the first repo it interrupts
+        let rec = Recorder()
+        let summary = SemanticAutoIndexer.run(roots: [repoA, repoB], enabled: true, memoryQuiet: false,
+                                        embedder: StubEmbedder(), control: control, onEvent: { rec.add($0) })
+        XCTAssertTrue(rec.events.contains(.repoFinished(index: 0, name: "a", outcome: .skipped)))
+        XCTAssertTrue(rec.events.contains(.repoFinished(index: 1, name: "b", outcome: .done)))
+        XCTAssertEqual(summary.filesIndexed, 1)
+        XCTAssertTrue(summary.pausedRemaining.isEmpty)
+    }
+
+    func test_pause_stopsAndReportsRemainingRoots() throws {
+        let repoA = try makeRepo("a", file: "x.swift", body: "func alpha() {}")
+        let repoB = try makeRepo("b", file: "y.md", body: "beta docs")
+        let control = BackgroundWorkControl()
+        control.requestPause()
+        let summary = SemanticAutoIndexer.run(roots: [repoA, repoB], enabled: true, memoryQuiet: false,
+                                        embedder: StubEmbedder(), control: control)
+        XCTAssertEqual(summary.pausedRemaining, [repoA, repoB])
+        XCTAssertEqual(summary.filesIndexed, 0)
+    }
 }

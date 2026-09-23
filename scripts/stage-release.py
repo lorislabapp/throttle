@@ -18,11 +18,18 @@ Usage:
 --live-appcast / --live-page take local snapshots instead of fetching (offline runs, tests).
 Nothing is uploaded; see publish-release.mjs.
 """
-import argparse, base64, binascii, hashlib, json, os, plistlib, re, shutil, subprocess, sys, urllib.request
+import argparse, base64, binascii, hashlib, importlib.util, json, os, plistlib, re, shutil, subprocess, sys, urllib.request
 from pathlib import Path
 
 SITE = "https://lorislab.fr/throttle"
 PROJECT_YML = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "project.yml")
+
+# Share the same monotonicity and malformed-feed policy as the pre-build gate.
+# Loading this local module performs no network work.
+_GATE_SPEC = importlib.util.spec_from_file_location(
+    "release_build_gate", Path(__file__).with_name("verify-release-build.py"))
+release_build_gate = importlib.util.module_from_spec(_GATE_SPEC)
+_GATE_SPEC.loader.exec_module(release_build_gate)
 
 # Sparkle's sign_update --verify reads a private key from Keychain and does not
 # bind that key to SUPublicEDKey in the shipped app. CryptoKit verifies the same
@@ -134,9 +141,20 @@ def main():
     # never fall through to a publishable stage, nor verify with an unrelated key.
     verify_update_signature(dmg, sig, f"{build_dir}/export/Throttle.app/Contents/Info.plist", version, build)
 
-    live = Path(a.live_appcast).read_text(encoding="utf-8") if a.live_appcast else fetch(f"{SITE}/appcast.xml")
-    if f"<sparkle:version>{build}</sparkle:version>" in live:
-        sys.exit(f"build {build} is already in the live appcast — Sparkle compares CFBundleVersion; bump it")
+    # Re-read the feed at staging time: a successful pre-build check can be stale.
+    # Validate before claiming the output directory, preserving every prior stage.
+    try:
+        if a.live_appcast:
+            with open(a.live_appcast, "rb") as source:
+                live_bytes = source.read(release_build_gate.MAXIMUM_FEED_BYTES + 1)
+        else:
+            live_bytes = release_build_gate.fetch_feed()
+        maximum = release_build_gate.validate_feed(live_bytes, build)
+    except (OSError, release_build_gate.GateFailure) as error:
+        sys.exit(f"appcast gate refused staging: {error}")
+    live = live_bytes.decode("utf-8-sig")
+    print(f"→ Build {build} > published maximum {maximum}; "
+          f"appcast sha256={hashlib.sha256(live_bytes).hexdigest()}")
     anchor = "        <language>en</language>\n"
     if live.count(anchor) != 1:
         sys.exit("live appcast does not have the expected <language> anchor")

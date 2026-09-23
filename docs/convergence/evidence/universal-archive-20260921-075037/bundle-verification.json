@@ -1,0 +1,11 @@
+{
+  "command": [
+    "/bin/sh",
+    "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/scripts/verify-research-vault-bundle.sh",
+    "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/universal-archive-20260921-075037.xcarchive/Products/Applications/Throttle.app"
+  ],
+  "exit_code": 0,
+  "stdout": "{\"status\":\"pass\",\"scenario\":\"research-vault-bundle\",\"signed\":0}\n",
+  "stderr": "otool: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead\notool: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead\n",
+  "signed_required": false
+}

@@ -1,0 +1,46 @@
+{
+  "status": "interrupted-concurrency",
+  "exit_code": -15,
+  "duration_seconds": 20.377466917037964,
+  "command": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+    "test-without-building",
+    "-xctestrun",
+    "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Throttle_Throttle_macosx27.0-arm64.xctestrun",
+    "-destination",
+    "platform=macOS,arch=arm64",
+    "-parallel-testing-enabled",
+    "NO",
+    "-test-timeouts-enabled",
+    "YES",
+    "-default-test-execution-time-allowance",
+    "60",
+    "-maximum-test-execution-time-allowance",
+    "120",
+    "-resultBundlePath",
+    "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/cockpit-tests-20260921-003247.xcresult",
+    "-only-testing:ThrottleTests/PlanIntegrationFlowTests",
+    "-only-testing:ThrottleTests/CockpitSpendViewTests",
+    "-only-testing:ThrottleTests/PromptRefinerServiceTests",
+    "-only-testing:ThrottleTests/RemoteSessionsCredentialTests",
+    "-only-testing:ThrottleTests/RemoteTransferJournalTests",
+    "-only-testing:ThrottleTests/ProjectAssistantViewTests",
+    "-only-testing:ThrottleTests/PlanIntegrationViewTests",
+    "-only-testing:ThrottleTests/PeerTerminalBoundaryTests",
+    "-only-testing:ThrottleTests/CloudKitPublisherTests"
+  ],
+  "cwd": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920",
+  "log": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/cockpit-tests-20260921-003247.log",
+  "sources_match": true,
+  "source_count": 1036,
+  "app_launched": true,
+  "launch_scope": "isolated XCTest host from DerivedData",
+  "installed_app_restarted": false,
+  "signed": false,
+  "competing_processes": [
+    {
+      "pid": 55624,
+      "identity": "55624 94048 /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild"
+    }
+  ]
+}

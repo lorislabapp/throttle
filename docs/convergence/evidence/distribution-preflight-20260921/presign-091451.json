@@ -1,0 +1,8 @@
+{
+  "status": "pass",
+  "candidate": "226",
+  "published_maximum": 223,
+  "feed_sha256": "72bbb708b43e651bf24eaa7d3f67a1e44b229ac63dd5df59c3345b789ca4b7b1",
+  "url": "https://lorislab.fr/throttle/appcast.xml",
+  "observed_at": "2026-09-21T07:14:51.970637+00:00"
+}

@@ -1,0 +1,15 @@
+{
+  "at": "2026-09-21T13:11:58.485553+02:00",
+  "operation": "visual review of staged public page in Safari",
+  "status": "BLOCKED_BY_UI_TOOL",
+  "observed": "Safari presented a locked private browsing window; new-window action refused access to com.apple.LocalAuthenticationRemoteService",
+  "private_window_unlocked": false,
+  "publication": false,
+  "preview_server": "127.0.0.1 only, exact staged page, automatic shutdown180s",
+  "visual_result": "NOT_VERIFIED",
+  "credentials_supplied": false,
+  "input_before_lock_observed": "localhost preview URL only",
+  "preview_server_stopped": true,
+  "preview_server_exit_code": 0,
+  "shutdown_verified_at": "2026-09-21T13:14:21.782290+02:00"
+}

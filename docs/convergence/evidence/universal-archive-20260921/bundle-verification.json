@@ -1,0 +1,13 @@
+{
+  "status": "pass",
+  "exit_code": 0,
+  "command": [
+    "sh",
+    "scripts/verify-research-vault-bundle.sh",
+    "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/universal-archive-20260921-070047.xcarchive/Products/Applications/Throttle.app"
+  ],
+  "script_sha256": "831c490ad58b8406b7e9309db83b542bd4f2c97f9afa9ce8dd21a7924d6443de",
+  "stdout": "{\"status\":\"pass\",\"scenario\":\"research-vault-bundle\",\"signed\":0}\n",
+  "stderr": "otool: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead\notool: warning: confstr() failed with code 5: couldn't get path of DARWIN_USER_TEMP_DIR; using /tmp instead\n",
+  "scope": "Structural bundle and linkage only; no signature qualification or launch"
+}

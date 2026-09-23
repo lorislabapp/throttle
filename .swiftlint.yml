@@ -17,6 +17,9 @@ excluded:
   - edge-agent/node_modules
   - build
   - audit-output
+  # Evidence snapshots copy other repositories' sources verbatim; they are
+  # records of what was checked, not code this project builds.
+  - docs/convergence/evidence
   - Throttle.xcodeproj
 
 disabled_rules:

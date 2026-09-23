@@ -1,0 +1,104 @@
+{
+  "PlanIntegrationFlowTests": [
+    "test_theTaskVerifyCommandOverridesTheProjectOne",
+    "test_integrateRefusesWithoutAVerifyCommand",
+    "test_integrateAsksForConsentBeforeItRunsAnythingThenStopsAsking",
+    "test_integrateRunsTheWholeSequenceOnce",
+    "test_integrateStopsAtAFailingVerification",
+    "test_integrateRebasesABehindTaskBeforeMerging",
+    "test_integrateRefusesATaskThatIsNotDone",
+    "test_theAssessmentIsCachedRatherThanReadOnEveryDraw",
+    "test_theDiffIsFetchedOnlyWhenItIsOpened",
+    "test_aTabSwitchMidIntegrationDoesNotReArmTheButton",
+    "test_aRunLandingAfterATabSwitchWritesNothingIntoTheNewProject",
+    "test_diffFailureClearsStaleTextAndRetryCanRecover",
+    "test_emptyDiffIsLoadedAndRebindingClearsItsState"
+  ],
+  "CockpitSpendViewTests": [
+    "testEmptyCardLoadsRefreshesAndCancelsWhenRemoved",
+    "testCloudShowsUnmeasuredAndAlreadyOpenSessionIsExcluded",
+    "testTaskCostDistinguishesUnknownFromObservedZero",
+    "testPlanKeepsUnknownCountsAndSubscriptionDisclosureVisible"
+  ],
+  "PromptRefinerServiceTests": [
+    "test_insertionPayload_stripsTrailingNewlinesSoInsertNeverFires",
+    "test_insertionPayload_keepsInteriorNewlines",
+    "test_validate_rejectsEscapeAndNul",
+    "test_validate_acceptsOrdinaryMultilinePrompt",
+    "test_validate_rejectsOverOneMebibyte",
+    "test_metrics_countsLinesBytesAndApproxTokens",
+    "test_metrics_emptyTextIsZeroLinesAndOneToken",
+    "test_parse_extractsProposalAndWhyBullets",
+    "test_parse_stripsAnOuterCodeFenceTheModelAddedAnyway",
+    "test_parse_keepsInteriorFencesThatBelongToThePrompt",
+    "test_parse_withoutDelimitersFallsBackToTheDraftAndReportsNoChange",
+    "test_systemPrompt_namesTheRuntimeSoIdiomsDiffer",
+    "test_systemPrompt_loopModeDemandsATerminationCondition",
+    "test_systemPrompt_carriesTheNudgeInstruction",
+    "test_systemPrompt_alwaysAsksForTheDelimiters",
+    "test_localOnlyExcludesEveryNetworkProvider",
+    "test_networkAllowedExcludesOnlyProvidersAlreadyTried",
+    "test_refine_fallsThroughToTheNextProviderWhenTheFirstFails",
+    "test_refine_withNoProviderThrowsNoProvider",
+    "test_refine_withAnEmptyAnswerThrowsEmpty",
+    "test_refine_rejectsAControlSequenceBeforeSpendingAnything",
+    "test_refine_rejectsAControlSequenceReturnedByTheProvider",
+    "test_insertionPayload_thenValidate_isTheExactContractInsertRelieson"
+  ],
+  "RemoteSessionsCredentialTests": [
+    "testFailedReplacementKeepsPreviousTokenAndShowsError",
+    "testFailedMigrationRetainsLegacyThenSuccessfulSaveClearsErrorAndLegacy",
+    "testSuccessfulLegacyMigrationDeletesOnlyAfterPersistence",
+    "testStoredTokenWinsOverLegacyWithoutWritingDuringConstruction",
+    "testUnreadableKeychainNeverAutomaticallyMigratesOrRemovesLegacy"
+  ],
+  "RemoteTransferJournalTests": [
+    "testPreparedTransferSurvivesRelaunchAndPreventsDuplicateWriter",
+    "testReturnRequiresStopAndVerifiedHashBeforeReleasingLocalWriter",
+    "testTruncatedOrMismatchedJournalCannotPermitLocalResume",
+    "testUpdateCannotRebindIdentityOrEndpoint",
+    "testStreamingHashCoversBytesPastFirstChunk",
+    "testPreparationReservationBlocksAliasesAndPickerAcrossSuspension",
+    "testPickerFailsClosedForUnreadableJournalButKnownOtherIdentityCanResume",
+    "testReturnReservationStillBlocksAliasesAfterDurableJournalRelease",
+    "testMissingWindowStateRestoresAnUnspawnedTransferEvenWhenLocalDirectoryIsMissing",
+    "testOrphanRecoveryReportsUnreadableJournalWithoutHidingExistingTabs"
+  ],
+  "ProjectAssistantViewTests": [
+    "testEmptyStateMatchesSelectedLanguage",
+    "testStopBeforeFirstDeltaRejectsLateResponse",
+    "testStopDuringStreamKeepsNextTurnIndependent",
+    "testProjectChangeCancelsAndClearsOldTranscript"
+  ],
+  "PlanIntegrationViewTests": [
+    "testUnknownIsVisibleAndCannotBeRetriedInEnglish",
+    "testUnknownIsVisibleAndCannotBeRetriedInFrench",
+    "testDiffFailureRetryAndEmptyStateInEnglish",
+    "testDiffFailureRetryAndEmptyStateInFrench"
+  ],
+  "PeerTerminalBoundaryTests": [
+    "testRevokedTicketQueuedBeforeMainActorDeliveryCannotAttachOrSend",
+    "testCurrentTicketCannotBypassControlSettingOffAtDelivery",
+    "testStoppedListenerCannotDeliverQueuedInputAfterRestart",
+    "testBridgeDeniesDirectCallsWhenPermissionIsOff",
+    "testRevocationRemovesTapAndStaleCallbackCannotSendOrInput",
+    "testReattachmentStopsOldTapAndOnlyAddressesNewSession",
+    "testUnknownSessionAndInputWithoutAttachmentHaveNoEffects",
+    "testUnavailablePairingDoesNotReadLegacyWriteGenerateOrPublishIdentity",
+    "testMalformedPersistedPairingIsNotReplacedAutomatically",
+    "testFailedLegacyPersistencePreservesCopyAndWithholdsPairing",
+    "testSuccessfulLegacyPersistencePrecedesRemoval",
+    "testFailedFreshPersistenceNeverPublishesEphemeralPairing"
+  ],
+  "CloudKitPublisherTests": [
+    "testExplicitDeletionRequiresAnAvailableAccountAndStopsPublishing",
+    "testExplicitDeletionRefusesAnUnavailableAccount",
+    "testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots",
+    "testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot",
+    "testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck",
+    "testCancelledDebounceCannotConsumeSnapshotAfterRestart",
+    "testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart",
+    "testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck",
+    "testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount"
+  ]
+}

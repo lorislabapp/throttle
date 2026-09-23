@@ -1,0 +1,20 @@
+{
+  "at": "2026-09-21T11:45:10.378451+02:00",
+  "diff_check_exit": 0,
+  "fixture_swift6_typecheck_exit": 0,
+  "global_lint_exit": 0,
+  "global_lint_files": 854,
+  "keyboard_navigation_final": "off",
+  "settings_pane_final": "General",
+  "owned_xcodebuild_or_test_runner_active": false,
+  "developer_id_archive": "interrupted by other project builds, no completed signed artifact",
+  "dmg_created": false,
+  "app_code_modified_this_turn": false,
+  "changed_test_source": "ThrottleTests/ServiceTests/HostedViewReview.swift",
+  "local_signing_and_keyboard_permission": "explicitly authorized; do not ask again",
+  "cache_relocation_permission": "requested, no answer yet; rejection respected",
+  "anthropic_approval": "pending human support per user; no integration change",
+  "notarization_uploaded": false,
+  "published": false,
+  "installed_throttle_restarted": false
+}

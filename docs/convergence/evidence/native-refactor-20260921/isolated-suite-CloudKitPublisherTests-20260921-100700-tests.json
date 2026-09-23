@@ -1,0 +1,125 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "00008132-001178882E03001C",
+      "deviceName" : "My Mac",
+      "modelName" : "MacBook Pro",
+      "osBuildNumber" : "26A428",
+      "osVersion" : "27.0",
+      "platform" : "macOS"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "duration" : "0,0073s",
+                  "durationInSeconds" : 0.007292985916137695,
+                  "name" : "testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck()",
+                  "nodeIdentifier" : "CloudKitPublisherTests/testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CloudKitPublisherTests/testAccountChangeDropsQueuedSnapshotAndRequiresFreshAccountCheck",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0067s",
+                  "durationInSeconds" : 0.006688952445983887,
+                  "name" : "testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart()",
+                  "nodeIdentifier" : "CloudKitPublisherTests/testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CloudKitPublisherTests/testAccountNotificationRevokesBeforeAnAlreadyQueuedFlushCanStart",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,008s",
+                  "durationInSeconds" : 0.008033990859985352,
+                  "name" : "testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount()",
+                  "nodeIdentifier" : "CloudKitPublisherTests/testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CloudKitPublisherTests/testAuthenticationFailureCancelsAndDropsPendingBeforeRecheckingAccount",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,011s",
+                  "durationInSeconds" : 0.011274933815002441,
+                  "name" : "testCancelledDebounceCannotConsumeSnapshotAfterRestart()",
+                  "nodeIdentifier" : "CloudKitPublisherTests/testCancelledDebounceCannotConsumeSnapshotAfterRestart()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CloudKitPublisherTests/testCancelledDebounceCannotConsumeSnapshotAfterRestart",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0028s",
+                  "durationInSeconds" : 0.0028150081634521484,
+                  "name" : "testExplicitDeletionRefusesAnUnavailableAccount()",
+                  "nodeIdentifier" : "CloudKitPublisherTests/testExplicitDeletionRefusesAnUnavailableAccount()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CloudKitPublisherTests/testExplicitDeletionRefusesAnUnavailableAccount",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0051s",
+                  "durationInSeconds" : 0.00506591796875,
+                  "name" : "testExplicitDeletionRequiresAnAvailableAccountAndStopsPublishing()",
+                  "nodeIdentifier" : "CloudKitPublisherTests/testExplicitDeletionRequiresAnAvailableAccountAndStopsPublishing()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CloudKitPublisherTests/testExplicitDeletionRequiresAnAvailableAccountAndStopsPublishing",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,012s",
+                  "durationInSeconds" : 0.011500954627990723,
+                  "name" : "testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot()",
+                  "nodeIdentifier" : "CloudKitPublisherTests/testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CloudKitPublisherTests/testLateSaveFromOldGenerationCannotReleaseNewSaveOrConsumeItsPendingSnapshot",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0073s",
+                  "durationInSeconds" : 0.007314920425415039,
+                  "name" : "testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots()",
+                  "nodeIdentifier" : "CloudKitPublisherTests/testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CloudKitPublisherTests/testOptOutDuringAccountCheckCannotReenableOrReplayDisabledSnapshots",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "duration" : "0,0034s",
+                  "durationInSeconds" : 0.0033980607986450195,
+                  "name" : "testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck()",
+                  "nodeIdentifier" : "CloudKitPublisherTests/testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck()",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CloudKitPublisherTests/testUnavailableAccountDiscardsPendingAndRepeatedStartDoesNotDuplicateAccountCheck",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "CloudKitPublisherTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/CloudKitPublisherTests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            }
+          ],
+          "name" : "ThrottleTests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests",
+          "nodeType" : "Unit test bundle",
+          "result" : "Passed"
+        }
+      ],
+      "name" : "Throttle",
+      "nodeType" : "Test Plan",
+      "result" : "Passed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

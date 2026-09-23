@@ -1,0 +1,12 @@
+{
+  "build": "build-20260921-084810",
+  "changed": {
+    "PRIVACY.md": {
+      "built_snapshot": "db3e73a68ce584304eb8e498a08ca8517c6dd4be05ce928f3937f049f8c33773",
+      "current": "bf316547342845c388f541541d887bee35b7ecbfa895f06f10282fb7013a8a4b"
+    }
+  },
+  "reason": "Source privacy documentation corrected for automatic Sparkle checks; not referenced by generated Xcode project. All 115 app/test bundle file hashes unchanged.",
+  "app_files_match": true,
+  "recorded_utc": "2026-09-21T07:06:25.168545+00:00"
+}

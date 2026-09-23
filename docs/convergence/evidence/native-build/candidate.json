@@ -1,0 +1,10 @@
+{
+  "app": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app",
+  "files_manifest_sha256": "4e2499750447a0255ece88ca981d4ee3c86e056e3bf809455560d22d60cb647c",
+  "build_receipt": "build-20260920-230917-receipt.json",
+  "version": "3.8.0",
+  "build": "226",
+  "configuration": "Debug unsigned",
+  "native_build": "pass",
+  "installed_app_restarted": false
+}

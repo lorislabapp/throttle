@@ -3,21 +3,11 @@ import Foundation
 import IOKit
 import OSLog
 import Security
+import ThrottleShared
 
-/// Throttle Pro license activation + JWT verification.
-///
-/// Flow:
-///   1. User buys via Stripe Checkout → Worker mints license key → emails it.
-///   2. User pastes key into Throttle → `activate(key:)` calls
-///      `https://license.lorislab.fr/api/activate` with machineId.
-///   3. Worker returns RS256-signed JWT bound to the machineId.
-///   4. We verify the JWT against the bundled public key, then store it
-///      in Keychain. The JWT is what unlocks Pro — no further network calls
-///      needed unless it's about to expire.
-///
-/// Offline grace: when the JWT expires we keep granting Pro for 14 days
-/// while we silently retry refresh in the background. Avoids ruining
-/// Kevin's day if Cloudflare Workers has an outage.
+/// Activates the purchased key with machineId, verifies the returned RS256 JWT
+/// against the bundled public key and stores it in Keychain to unlock Pro.
+/// Refresh runs near expiry; offline grace preserves Pro for 14 additional days.
 @MainActor
 final class LicenseService {
     static let shared = LicenseService()
@@ -61,13 +51,8 @@ final class LicenseService {
         }
     }
 
-    /// Re-mint the JWT while we still hold the key. `activate` is the only endpoint
-    /// that issues one, so without this a license silently decays to Free once the
-    /// JWT's `exp` passes and the grace window runs out.
-    ///
-    /// Runs at launch and daily. Returns true when a fresh JWT landed in Keychain.
-    /// A failure is not surfaced: we keep whatever `state` we already had, so an
-    /// offline Mac rides the grace window instead of losing Pro mid-flight.
+    /// At launch and daily, re-mint via `activate`; true means persisted successfully.
+    /// Failures preserve the prior state so an offline Mac retains its grace window.
     @discardableResult
     func refreshIfNeeded() async -> Bool {
         guard let stored = LicenseKeychain.load() else { return false }
@@ -122,7 +107,7 @@ final class LicenseService {
                 guard verify(jwt) != nil else { return .failure(.verificationFailed) }
                 let stored = StoredLicense(licenseKey: key, jwt: jwt, activatedAt: Date())
                 try LicenseKeychain.save(stored)
-                logger.info("License activated for machine \(machineId, privacy: .public)")
+                logger.info("License activated")
                 return .success(())
             case 403:
                 if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -141,13 +126,8 @@ final class LicenseService {
         }
     }
 
-    /// Deactivate this Mac: free the server-side slot, then drop the local Keychain
-    /// entry. Returns false when the server never confirmed — in that case the key
-    /// stays put.
-    ///
-    /// The key is only shown masked in Settings, so clearing it on a failed call
-    /// would leave a user with no slot freed AND no key to retry with; their only
-    /// copy is a months-old purchase email.
+    /// Free the server slot before removing the local key; false preserves it for retry.
+    /// Settings masks the key, so failed requests must not erase the user's stored copy.
     @discardableResult
     func deactivate() async -> Bool {
         guard let stored = LicenseKeychain.load() else { return true }
@@ -267,18 +247,13 @@ private enum LicenseKeychain {
 
     static func save(_ stored: StoredLicense) throws {
         let data = try JSONEncoder().encode(stored)
-        let base: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account
-        ]
-        SecItemDelete(base as CFDictionary)
-        var add = base
-        add[kSecValueData as String] = data
-        add[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly   // M17: don't replicate to iCloud Keychain
-        let status = SecItemAdd(add as CFDictionary, nil)
-        if status != errSecSuccess {
-            throw NSError(domain: NSOSStatusErrorDomain, code: Int(status))
+        guard let value = String(data: data, encoding: .utf8) else {
+            throw NSError(domain: "Throttle.LicenseKeychain", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "License encoding failed"])
+        }
+        guard KeychainStore.set(value, account: account, service: service) else {
+            throw NSError(domain: "Throttle.LicenseKeychain", code: 2,
+                          userInfo: [NSLocalizedDescriptionKey: "License could not be saved to Keychain"])
         }
     }
 
@@ -375,14 +350,9 @@ private enum LicensePublicKey {
 // MARK: - Machine fingerprint
 
 enum MachineFingerprint {
-    /// Stable per-Mac identifier: IOPlatformExpertDevice's IOPlatformUUID. Survives
-    /// reinstalls, OS upgrades and network changes; resets only if the logic board
-    /// is replaced.
-    ///
-    /// Until 3.2.69 this read `kern.uuid`, which derives from the primary MAC and is
-    /// NOT stable: one Mac burned all three license slots with four distinct values
-    /// (E0B4A1A8…, 4FEB3A7D…, 9E45D69F…, then FE82AB17…). `legacyId` exists so the
-    /// server can migrate those records in place — see `LicenseService.activate`.
+    /// IOPlatformUUID survives reinstalls, OS/network changes, but not logic-board replacement.
+    /// Before 3.2.70, unstable `kern.uuid` could consume several slots for the same Mac.
+    /// Activation supplies legacyId to migrate those records without consuming another slot.
     static let id: String = {
         if let viaIOKit = ioPlatformUUID(), !viaIOKit.isEmpty {
             return viaIOKit

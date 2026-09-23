@@ -1,0 +1,29 @@
+{
+  "status": "pass",
+  "app": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app",
+  "version": "3.8.0",
+  "build": "226",
+  "team": "TDV6D5L785",
+  "checks": [
+    {
+      "bundle": "app",
+      "profile_name": "Throttle DevID iCloud",
+      "profile_expiration": "2044-08-06T14:41:55",
+      "application_identifier": "TDV6D5L785.com.lorislab.throttle",
+      "app_groups": [
+        "group.com.lorislab.throttle"
+      ]
+    },
+    {
+      "bundle": "widget",
+      "profile_name": "Throttle Widget DevID",
+      "profile_expiration": "2044-08-06T14:41:56",
+      "application_identifier": "TDV6D5L785.com.lorislab.throttle.widget",
+      "app_groups": [
+        "group.com.lorislab.throttle"
+      ]
+    }
+  ],
+  "notarization": "not executed",
+  "runtime_test": "not executed"
+}

@@ -1,0 +1,10 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "scripts/tests/test_publish_release.mjs"
+  ],
+  "exit_code": 0,
+  "observed_local": "2026-09-21T09:57:00.105522",
+  "network": "mocked, no real credentials"
+}

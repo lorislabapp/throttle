@@ -1,0 +1,1998 @@
+{
+  "started_local": "2026-09-21T09:50:47.849726",
+  "before_free": 1809911808,
+  "entries": [
+    {
+      "original": "/Users/kevinnadjarian/GitHub/Throttle/build/Throttle.xcarchive",
+      "preserved": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/preserved-inactive-20260921-095047/Throttle.xcarchive",
+      "entry_count": 331,
+      "manifest": {
+        "Info.plist": {
+          "sha256": "61b71364e44c2e00d3fa0d6675150214733ce21724c094e7cf4fed64d30c03c7",
+          "size": 959
+        },
+        "Products": {
+          "directory": true
+        },
+        "Products/Applications": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Autoupdate": {
+          "symlink": "Versions/Current/Autoupdate"
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Resources": {
+          "symlink": "Versions/Current/Resources"
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Sparkle": {
+          "symlink": "Versions/Current/Sparkle"
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Updater.app": {
+          "symlink": "Versions/Current/Updater.app"
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate": {
+          "sha256": "a8146503744b189717a16dd331e507109179b6dfeb01237c8ba6ee0ca7db6b26",
+          "size": 709584
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/Base.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/Base.lproj/Sparkle.strings": {
+          "sha256": "bf93bdde8ad020f2ba210ecfa0e84b5365d0342355a3ca39d88fec0acb1e4a40",
+          "size": 6249
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/Info.plist": {
+          "sha256": "0379f9165e800b09a465df94459fcdc8dcf997ddbbce70f6692716763ec522c4",
+          "size": 1341
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ReleaseNotesColorStyle.css": {
+          "sha256": "76bd6999758fd8e51d17e6b482db434f9b4768c02b037af6bd2e3a000ce8cbc1",
+          "size": 231
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/SUStatus.nib": {
+          "sha256": "bba15dd37a26af87476214b68b06d6455118ce507fd77863f4947d654a6045af",
+          "size": 13016
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/SUUpdateAlert.nib": {
+          "sha256": "3987a333da7c2728ef2cb9656e5eeaf0832884873cabf78353fcb9099c5d8fbe",
+          "size": 18490
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/SUUpdatePermissionPrompt.nib": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/SUUpdatePermissionPrompt.nib/keyedobjects-101300.nib": {
+          "sha256": "e08d0688455021c52837ae7fdfaf80b0df0a0ced318aa0cb3f9ff370769924db",
+          "size": 25424
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/SUUpdatePermissionPrompt.nib/keyedobjects-110000.nib": {
+          "sha256": "64b752f1632c719d2994746c71672d0b603076c0268256effb5edce6b6fcbe23",
+          "size": 25401
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ar.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ar.lproj/Sparkle.strings": {
+          "sha256": "441182787471a3998908044515fe13e92230edaa7e2730638e72a49610f56cba",
+          "size": 3554
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ca.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ca.lproj/Sparkle.strings": {
+          "sha256": "7ed0d5ca300649a7f13304015008f2dede98ad743a625c17d5a5fedacc1a3b1a",
+          "size": 3501
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/cs.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/cs.lproj/Sparkle.strings": {
+          "sha256": "99e66decf9bc46cf5622eead4e65b3b502e3775a4e8e0f03ef1b41683ea8d518",
+          "size": 10774
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/da.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/da.lproj/Sparkle.strings": {
+          "sha256": "8d0ff69b79460185f941372655433bad3934f49e63bef0b4171bd66da71e55f0",
+          "size": 4882
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/de.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/de.lproj/Sparkle.strings": {
+          "sha256": "311035a15227fb12e85eba2a46f3f6198d98ac5590d1d38c43c4ff7430d06599",
+          "size": 11559
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/el.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/el.lproj/Sparkle.strings": {
+          "sha256": "638981a4f095d8b1dabb6230d452e470359711b81803bc5df8c21e1211fd3757",
+          "size": 5934
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/es.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/es.lproj/Sparkle.strings": {
+          "sha256": "30cf2b18d30796961d88da28929d08c62ce45904553d004702877dc7449bf0df",
+          "size": 7040
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/fa.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/fa.lproj/Sparkle.strings": {
+          "sha256": "ed9dda9e271f7a97b8a7f327e71a1b6d06e5e061b367e7da3d153e47dc319263",
+          "size": 5716
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/fi.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/fi.lproj/Sparkle.strings": {
+          "sha256": "c14af9bac3fce436222a4ea277a7a6c0f9b42b2d84aceea75e758ce7538acae2",
+          "size": 3252
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/fr.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/fr.lproj/Sparkle.strings": {
+          "sha256": "3d554dcd167b085e25a75248533f21f389593aeace912ab9952c825ffe141ce1",
+          "size": 7855
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/he.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/he.lproj/Sparkle.strings": {
+          "sha256": "1d795bd7329d04b7ce84b6bdc845f917369e858b2b292f117b89a6666a185723",
+          "size": 9657
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/hr.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/hr.lproj/Sparkle.strings": {
+          "sha256": "920041380a08b3ba50d44e8a83f59de551139845a72748d58f2387c65920b33a",
+          "size": 6367
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/hu.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/hu.lproj/Sparkle.strings": {
+          "sha256": "cc2a16e4d487c6fab357b4f7d0fbbf7ec882371b2130413ffcb1b69cd540d2cf",
+          "size": 4449
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/is.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/is.lproj/Sparkle.strings": {
+          "sha256": "403feba503410e9455cd0eaafe592a2576eedb24130ccf2cdb13dda4b101f87e",
+          "size": 3954
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/it.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/it.lproj/Sparkle.strings": {
+          "sha256": "56a7445c1b68d76849ac59b98aa5c20c9002d5e07e9f0a2720486160f85b7366",
+          "size": 10956
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ja.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ja.lproj/Sparkle.strings": {
+          "sha256": "e404910028af70579cfa208bb4fadd9e3592505fc89af208f4071f2309553fb2",
+          "size": 8697
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ko.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ko.lproj/Sparkle.strings": {
+          "sha256": "a6269eb3f5a07d0c4f5d7467d5065372085aef7484c518a9d784ffd6c8f5aae4",
+          "size": 7797
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/nb.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/nb.lproj/Sparkle.strings": {
+          "sha256": "ef6f0dcae90c440b47ece09909e9cdf35f3383f34e72a614c8c5c0752ecbffe0",
+          "size": 5539
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/nl.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/nl.lproj/Sparkle.strings": {
+          "sha256": "ca9adf34fb93fe3f394ccc92114bf6a6b1f8a128bb5f362cb9f3247d7c26c77d",
+          "size": 9574
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/nn.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/nn.lproj/Sparkle.strings": {
+          "sha256": "1db8c6853a550aa25382da2d55431a1c1d308d6a37676c4f8593cc1633f8a5ae",
+          "size": 5671
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/pl.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/pl.lproj/Sparkle.strings": {
+          "sha256": "5c54b3f8e1eb3026e142e710e2167f2f839b73ab5ad7f18719230f33ae682aa9",
+          "size": 5453
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/pt-BR.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/pt-BR.lproj/Sparkle.strings": {
+          "sha256": "0292cadc2acfc34875c1e0b54e2d50de3833cd5e20c8660c8effe2b859aac84c",
+          "size": 9976
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/pt-PT.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/pt-PT.lproj/Sparkle.strings": {
+          "sha256": "fc958532d26a8e1e74622d3f558fc26a12800e8c49fb614afd0e1883acce4700",
+          "size": 5984
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ro.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ro.lproj/Sparkle.strings": {
+          "sha256": "b2bf064222c38a3672b01fe09406f799718cb0fc4e715121662639d6fdfea6ed",
+          "size": 6115
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ru.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ru.lproj/Sparkle.strings": {
+          "sha256": "7193af28eb2a09b9fe7119cf6065a2150c6590971b22f98c56f356cd90851923",
+          "size": 5784
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/sk.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/sk.lproj/Sparkle.strings": {
+          "sha256": "e158daaa4f3f91b57cee05ab896f2c1bc467317932cc53bb7c01e7daee9e5238",
+          "size": 5675
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/sl.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/sl.lproj/Sparkle.strings": {
+          "sha256": "c62770c604a6c8c89e283357c8b322d8ce6a85f4d85c09002048331f65f8d980",
+          "size": 5646
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/sv.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/sv.lproj/Sparkle.strings": {
+          "sha256": "4a21ad5bcf8d836d265710c2e4a0a64f07c9551f1c49694d6734a931d23efd39",
+          "size": 5160
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/th.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/th.lproj/Sparkle.strings": {
+          "sha256": "4b6c8dc2ab69a0425de3aa9dc386c6539348e3983e47aa10f94c17e345a157a5",
+          "size": 5339
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/tr.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/tr.lproj/Sparkle.strings": {
+          "sha256": "b040d3f02d341eba047c15dfcafb60406d0847096a94466ecab512dcfb16abb5",
+          "size": 6183
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/uk.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/uk.lproj/Sparkle.strings": {
+          "sha256": "ff44d58635b3e8409d54b42b72c876a43e17fa98f6ea96b32583b9e88c747ab6",
+          "size": 5842
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/vi.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/vi.lproj/Sparkle.strings": {
+          "sha256": "2b3b4acbadf534cd0e812b97e589f80a4e1655b07c8907e98cc31df458ffd8b7",
+          "size": 12418
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/zh_CN.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/zh_CN.lproj/Sparkle.strings": {
+          "sha256": "e7f543b92977e9abc907241c411d8db0f59c4fee480859b3e88e4b495e0976c8",
+          "size": 7475
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/zh_HK.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/zh_HK.lproj/Sparkle.strings": {
+          "sha256": "3fc210132f33d89af3d25d27c7ea19426cf6d304be50254538456e0ec4fb7858",
+          "size": 6469
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/zh_TW.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/zh_TW.lproj/Sparkle.strings": {
+          "sha256": "76321e1dd844c9b6568cb4af7c63bb57d9d1b700109aeedd7e5721d78727b12d",
+          "size": 7625
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle": {
+          "sha256": "f216f99ee890bb8c352dd4137374e723108def2f301f7ae880df4640a7b51afc",
+          "size": 977840
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/Info.plist": {
+          "sha256": "db7465df8fe32fb5f67b7e08f9e0b744896357e9206f56b206f5582fda2a4f17",
+          "size": 2400
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater": {
+          "sha256": "310933f1f233d61fcbd8234d799250bea1cadc7824b60bfd4d36ef5d0bceb736",
+          "size": 290560
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/PkgInfo": {
+          "sha256": "82502191c9484b04d685374f9879a0066069c49b8acae7a04b01d38d07e8eca0",
+          "size": 8
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/Resources": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/Resources/SUStatus.nib": {
+          "sha256": "bba15dd37a26af87476214b68b06d6455118ce507fd77863f4947d654a6045af",
+          "size": 13016
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/_CodeSignature": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/_CodeSignature/CodeResources": {
+          "sha256": "25328c7eccf8a37f15b84aaa7ee766c3ac7dc091baaac7318d4de6221407e60e",
+          "size": 2446
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/Info.plist": {
+          "sha256": "476e0aef9d5572df1c3cc084a5ab28342d3cb04311ae6246cc92e45bfde8ba53",
+          "size": 1717
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader": {
+          "sha256": "8caaba0d77fc58b903d59640e5fde9841925f095283cb456b2c26b5714d09433",
+          "size": 172240
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/_CodeSignature": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/_CodeSignature/CodeResources": {
+          "sha256": "6686de10a28a2fe11b36cbb86dcbacc827cfc4ea116b4dabf1845e5aee629e9b",
+          "size": 2200
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/Info.plist": {
+          "sha256": "6a27c3d0628cd832e3f04d210e68ce1d7d9e98f8cd234e92499c2d9f211e8a89",
+          "size": 1605
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer": {
+          "sha256": "f5bd39c2e771bcd099613b7df9cea648b7b6be3247756122cf33e96cc575aacd",
+          "size": 223472
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/_CodeSignature": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/_CodeSignature/CodeResources": {
+          "sha256": "6686de10a28a2fe11b36cbb86dcbacc827cfc4ea116b4dabf1845e5aee629e9b",
+          "size": 2200
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/_CodeSignature": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/B/_CodeSignature/CodeResources": {
+          "sha256": "0deaba74dec491d03f557340a4bcd2517fc53b2e120fe2cbeab446475916b1fe",
+          "size": 17887
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current": {
+          "symlink": "B"
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/Sparkle.framework/XPCServices": {
+          "symlink": "Versions/Current/XPCServices"
+        },
+        "Products/Applications/Throttle.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib": {
+          "sha256": "ab3ad1636863dc593b5bceea768bbeba54a1c3252e4433a7d2d92c056df5fa9b",
+          "size": 188208
+        },
+        "Products/Applications/Throttle.app/Contents/Info.plist": {
+          "sha256": "d0a65e6e6eca14ae14213d1fa6ace2d1fa6b73e7ee296b0c7d1ecc3bcdaa69e3",
+          "size": 2820
+        },
+        "Products/Applications/Throttle.app/Contents/Library": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LaunchAgents": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LaunchAgents/com.lorislab.throttle.research-vault-agent.plist": {
+          "sha256": "861fe12344294be1b87632603321b10c809274d7d1b6a3925db0cde76f9206f1",
+          "size": 971
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Resources": {
+          "symlink": "Versions/Current/Resources"
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/SQLCipher": {
+          "symlink": "Versions/Current/SQLCipher"
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/Resources": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/Resources/Info.plist": {
+          "sha256": "40f02027a17eabd6e0ae6cd4e56fcde208fd4a29a140a78853dc308a299bb15b",
+          "size": 1284
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/Resources/PrivacyInfo.xcprivacy": {
+          "sha256": "9362796ba800a7b4169834eff8bde990866f40114ff7baac002b8bae543e8dd1",
+          "size": 840
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/SQLCipher": {
+          "sha256": "05b3c588f4a74233159b515e2a6c999f90fe166c7f78d98cbfb760ed063b197d",
+          "size": 3028176
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/_CodeSignature": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/_CodeSignature/CodeResources": {
+          "sha256": "d5df31add99e453500e7bc8d276758efb64f9f058080382e770f4eec8484b875",
+          "size": 2690
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/Current": {
+          "symlink": "A"
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Info.plist": {
+          "sha256": "2af0ba6705fbd101af0143d5be0040dc0363a4afa89af8f66e342ae63d509da6",
+          "size": 1510
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/MacOS": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent": {
+          "sha256": "f6dc848fdfe51828f64c3c99c2f5e2679e72a6a29261670d7e80a7765c42ac22",
+          "size": 2535408
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/PkgInfo": {
+          "sha256": "82502191c9484b04d685374f9879a0066069c49b8acae7a04b01d38d07e8eca0",
+          "size": 8
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/_CodeSignature": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/_CodeSignature/CodeResources": {
+          "sha256": "d6792b1e6ebd8c09add9db054187eed7fbfc009e4782f8159a2e09b52537ba6e",
+          "size": 2694
+        },
+        "Products/Applications/Throttle.app/Contents/MacOS": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/MacOS/Throttle": {
+          "sha256": "78be8bba65032731c9e145012bacd53c441cddb1c2cfe2b5be6f09caff309cc4",
+          "size": 65705296
+        },
+        "Products/Applications/Throttle.app/Contents/PkgInfo": {
+          "sha256": "82502191c9484b04d685374f9879a0066069c49b8acae7a04b01d38d07e8eca0",
+          "size": 8
+        },
+        "Products/Applications/Throttle.app/Contents/PlugIns": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/PlugIns/ThrottleWidget.appex": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/PlugIns/ThrottleWidget.appex/Contents": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/PlugIns/ThrottleWidget.appex/Contents/Info.plist": {
+          "sha256": "d1af0ac9ae116b3a2a7df35b38e1c991e5d9e37e43d8bde9e2588e671e5c2b8e",
+          "size": 1501
+        },
+        "Products/Applications/Throttle.app/Contents/PlugIns/ThrottleWidget.appex/Contents/MacOS": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/PlugIns/ThrottleWidget.appex/Contents/MacOS/ThrottleWidget": {
+          "sha256": "d228c53f8c9b48d51098efbda75e3a3bbb4ea2ea100760237973d49b69ef95bd",
+          "size": 232976
+        },
+        "Products/Applications/Throttle.app/Contents/PlugIns/ThrottleWidget.appex/Contents/_CodeSignature": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/PlugIns/ThrottleWidget.appex/Contents/_CodeSignature/CodeResources": {
+          "sha256": "e79090f0151715166574481287b941fdb759d1b193f292dd1d7e272518790003",
+          "size": 2355
+        },
+        "Products/Applications/Throttle.app/Contents/PlugIns/ThrottleWidget.appex/Contents/embedded.provisionprofile": {
+          "sha256": "f0839054f3adf1b38f25458d31ff1def264a76988395aa1b76d3a3441f791ad1",
+          "size": 14362
+        },
+        "Products/Applications/Throttle.app/Contents/Resources": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/AppIcon.icns": {
+          "sha256": "23ecfa24a6bbb7d4c546ee9d7fd49424c415f65fc665df5f7b3da057ee21364f",
+          "size": 132466
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/Assets.car": {
+          "sha256": "90f93db3c26ffc5c8f2f9574e78c57caa57e3a8b214ce3b126ceded471ec7d61",
+          "size": 3276600
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/GRDB_GRDB.bundle": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/GRDB_GRDB.bundle/Contents": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/GRDB_GRDB.bundle/Contents/Info.plist": {
+          "sha256": "d1e7011f3094b7b45ae68f6100284c9e21fb1ac1551165ef79429a3e7601b434",
+          "size": 1127
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/GRDB_GRDB.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/GRDB_GRDB.bundle/Contents/Resources/PrivacyInfo.xcprivacy": {
+          "sha256": "17784da62e51f74c5859df32fe402e01e25cdf6f797a4add06e2a3ce15c911f4",
+          "size": 397
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/Metadata.appintents": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/Metadata.appintents/extract.actionsdata": {
+          "sha256": "a89a69a7fe3e8d3105ca7f003861430f84b94adc4509c8e351f55a8aa58308f8",
+          "size": 13167
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/Metadata.appintents/version.json": {
+          "sha256": "66adc66c695bec50b65abb091490dd242024082605826ebeb87a6313f6690509",
+          "size": 54
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/PrivacyInfo.xcprivacy": {
+          "sha256": "4e727097b207d4b3265c2565e6126be5a8233648ac7ea96f8fd8b502d7c66fbc",
+          "size": 1978
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/SwiftTerm_SwiftTerm.bundle": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/SwiftTerm_SwiftTerm.bundle/Contents": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/SwiftTerm_SwiftTerm.bundle/Contents/Info.plist": {
+          "sha256": "56f9cdcb1b630797d83832b41c50dd24cbead772caae0898bf3659b363c44c57",
+          "size": 1141
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/SwiftTerm_SwiftTerm.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/SwiftTerm_SwiftTerm.bundle/Contents/Resources/default.metallib": {
+          "sha256": "60b75c70c3dd5fc7624d0a32580a6eb96b44f619f9a4fe97ff8f8ce741ce4f18",
+          "size": 27236
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/en.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/en.lproj/Localizable.strings": {
+          "sha256": "7e21a52e1381c88b5fdea5f71ab5184ff7300836d99275b107e60a62301d3f05",
+          "size": 105298
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/fr.lproj": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/fr.lproj/Localizable.strings": {
+          "sha256": "0cd6cc3dbc0757be100637ab82611fe7894a765360d5e225c6cf77cb470819c9",
+          "size": 164308
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/mlx-swift_Cmlx.bundle": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/mlx-swift_Cmlx.bundle/Contents": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Info.plist": {
+          "sha256": "97a83678a74a7b497acad96c2de749cfaf2a315d0fdf796a3a9009fa3cfc3526",
+          "size": 1131
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Resources/default.metallib": {
+          "sha256": "e3e01e189b2e0f88ada806010ce7ba6a22b241aa442fcef5b2f49fca3941925b",
+          "size": 3836652
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/swift-crypto_Crypto.bundle": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/swift-crypto_Crypto.bundle/Contents": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/swift-crypto_Crypto.bundle/Contents/Info.plist": {
+          "sha256": "9fd7355894390bf691d9b4981b6d1bc9fe07a18dae865b7ecfd04f01891e57db",
+          "size": 1141
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/swift-crypto_Crypto.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/swift-crypto_Crypto.bundle/Contents/Resources/PrivacyInfo.xcprivacy": {
+          "sha256": "42fb8a30dd8d7ba0900e1bf17fe64ed8c12cfdb8a9c791ab6b4e1eceb0f299c0",
+          "size": 398
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/swift-transformers_Hub.bundle": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/swift-transformers_Hub.bundle/Contents": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/swift-transformers_Hub.bundle/Contents/Info.plist": {
+          "sha256": "6db5e263939eff426e2f163fa3f61dc4f4f97f6eb31fd0dd54a75b80d0ed7786",
+          "size": 1147
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/swift-transformers_Hub.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/swift-transformers_Hub.bundle/Contents/Resources/gpt2_tokenizer_config.json": {
+          "sha256": "551e26ec611d8d0c8edc3ef72e518a38418cb71f40de1347dd486a595e1557d7",
+          "size": 234
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/swift-transformers_Hub.bundle/Contents/Resources/t5_tokenizer_config.json": {
+          "sha256": "e0aff0b1de9071e30d9a60a199303b6abe916a64a19932bd1c46992279b41a1f",
+          "size": 20746
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/throttle-agent.mjs": {
+          "sha256": "831c4797c9fdb3279b23f9e183a4751c0d7a94905c1a7ddeaa438bc9df95fad0",
+          "size": 60084
+        },
+        "Products/Applications/Throttle.app/Contents/Resources/throttle-license-public.pem": {
+          "sha256": "9f30cf2c81311909137579c97e0e7287e9e854548e405f3bc3d0ca0a0987c7ba",
+          "size": 451
+        },
+        "Products/Applications/Throttle.app/Contents/_CodeSignature": {
+          "directory": true
+        },
+        "Products/Applications/Throttle.app/Contents/_CodeSignature/CodeResources": {
+          "sha256": "71808147130a4db2ca5ee43cb23286e211f3c1047dcf1504f70e2727d69ca010",
+          "size": 10492
+        },
+        "Products/Applications/Throttle.app/Contents/embedded.provisionprofile": {
+          "sha256": "1c165dfdc0c4a0de37c822cff89f1aae249f6006ce2924f268445f64978c6943",
+          "size": 15356
+        },
+        "Signatures": {
+          "directory": true
+        },
+        "Signatures/SQLCipher.xcframework-macos.signature": {
+          "sha256": "3ee8656b554882beb3188223f104223ec0902331ca591ad7b913215cf0277892",
+          "size": 6046
+        },
+        "Signatures/Sparkle.xcframework-macos.signature": {
+          "sha256": "d7a4d1bf0e55a309db495502d131b93a62b07bd2044441fed2408dc11d11ab0d",
+          "size": 400
+        },
+        "SwiftSupport": {
+          "directory": true
+        },
+        "SwiftSupport/macosx": {
+          "directory": true
+        },
+        "SwiftSupport/macosx/libswiftCompatibilitySpan.dylib": {
+          "sha256": "aa5350df0d2bc7813939f1abc304544ac85b35e4e62f862233f8b1f4a1bbbc72",
+          "size": 188320
+        },
+        "dSYMs": {
+          "directory": true
+        },
+        "dSYMs/Autoupdate.dSYM": {
+          "directory": true
+        },
+        "dSYMs/Autoupdate.dSYM/Contents": {
+          "directory": true
+        },
+        "dSYMs/Autoupdate.dSYM/Contents/Info.plist": {
+          "sha256": "21ca1d1b51998b271b063b0e247c464fab7bc1cd051728b4633dbd53eb3bad2e",
+          "size": 639
+        },
+        "dSYMs/Autoupdate.dSYM/Contents/Resources": {
+          "directory": true
+        },
+        "dSYMs/Autoupdate.dSYM/Contents/Resources/DWARF": {
+          "directory": true
+        },
+        "dSYMs/Autoupdate.dSYM/Contents/Resources/DWARF/Autoupdate": {
+          "sha256": "9206db9e4e8c6b39f23ff22800c7a5b236e84835b04d0c9b832a41225d7a79a5",
+          "size": 1199896
+        },
+        "dSYMs/Autoupdate.dSYM/Contents/Resources/Relocations": {
+          "directory": true
+        },
+        "dSYMs/Autoupdate.dSYM/Contents/Resources/Relocations/aarch64": {
+          "directory": true
+        },
+        "dSYMs/Autoupdate.dSYM/Contents/Resources/Relocations/aarch64/Autoupdate.yml": {
+          "sha256": "b2b6788eeebcd7099fc332e25bd96c1a6f8bc8e551bed4064ea549d71a1f00a8",
+          "size": 105667
+        },
+        "dSYMs/Autoupdate.dSYM/Contents/Resources/Relocations/x86_64": {
+          "directory": true
+        },
+        "dSYMs/Autoupdate.dSYM/Contents/Resources/Relocations/x86_64/Autoupdate.yml": {
+          "sha256": "633943678e9c8cdc7c77c054920f013472e41eb3271ae0ba157378bae0a9e80a",
+          "size": 92881
+        },
+        "dSYMs/Downloader.xpc.dSYM": {
+          "directory": true
+        },
+        "dSYMs/Downloader.xpc.dSYM/Contents": {
+          "directory": true
+        },
+        "dSYMs/Downloader.xpc.dSYM/Contents/Info.plist": {
+          "sha256": "6206be0bb72b771041ca60b30a625e021c6c8c79987d933e48e192ee5dd10258",
+          "size": 671
+        },
+        "dSYMs/Downloader.xpc.dSYM/Contents/Resources": {
+          "directory": true
+        },
+        "dSYMs/Downloader.xpc.dSYM/Contents/Resources/DWARF": {
+          "directory": true
+        },
+        "dSYMs/Downloader.xpc.dSYM/Contents/Resources/DWARF/Downloader": {
+          "sha256": "e104dfc72a71e17d39d26f32f456cb8469af175d11aeef96fd7c01a233843174",
+          "size": 4168264
+        },
+        "dSYMs/Downloader.xpc.dSYM/Contents/Resources/Relocations": {
+          "directory": true
+        },
+        "dSYMs/Downloader.xpc.dSYM/Contents/Resources/Relocations/aarch64": {
+          "directory": true
+        },
+        "dSYMs/Downloader.xpc.dSYM/Contents/Resources/Relocations/aarch64/Downloader.yml": {
+          "sha256": "00456471078bd1c0acc4a96c69b7220a6cd1f93e3606a1b6966f1cba4037c511",
+          "size": 12597
+        },
+        "dSYMs/Downloader.xpc.dSYM/Contents/Resources/Relocations/x86_64": {
+          "directory": true
+        },
+        "dSYMs/Downloader.xpc.dSYM/Contents/Resources/Relocations/x86_64/Downloader.yml": {
+          "sha256": "06bdad00086c1e1615f20320e834305aaaacb18c50900428a7779a7ecfb25b88",
+          "size": 12194
+        },
+        "dSYMs/Installer.xpc.dSYM": {
+          "directory": true
+        },
+        "dSYMs/Installer.xpc.dSYM/Contents": {
+          "directory": true
+        },
+        "dSYMs/Installer.xpc.dSYM/Contents/Info.plist": {
+          "sha256": "875efc99127b3de44e4a8a1de25c66d33f97da0339dc4e1713eec6b73081c3a9",
+          "size": 671
+        },
+        "dSYMs/Installer.xpc.dSYM/Contents/Resources": {
+          "directory": true
+        },
+        "dSYMs/Installer.xpc.dSYM/Contents/Resources/DWARF": {
+          "directory": true
+        },
+        "dSYMs/Installer.xpc.dSYM/Contents/Resources/DWARF/Installer": {
+          "sha256": "9eda6f212f5699296f3663786aa25bc9a4329c9868a43c354578b0f77b550653",
+          "size": 5775020
+        },
+        "dSYMs/Installer.xpc.dSYM/Contents/Resources/Relocations": {
+          "directory": true
+        },
+        "dSYMs/Installer.xpc.dSYM/Contents/Resources/Relocations/aarch64": {
+          "directory": true
+        },
+        "dSYMs/Installer.xpc.dSYM/Contents/Resources/Relocations/aarch64/Installer.yml": {
+          "sha256": "d6a17cb538251973b017034966477d3c15cbc48fa7342f7f2b4bf0afabbef48f",
+          "size": 21021
+        },
+        "dSYMs/Installer.xpc.dSYM/Contents/Resources/Relocations/x86_64": {
+          "directory": true
+        },
+        "dSYMs/Installer.xpc.dSYM/Contents/Resources/Relocations/x86_64/Installer.yml": {
+          "sha256": "d5772fdc05b59f7b809ce5be02b31230983ab4566cf55b12b5ecb45455ba4caf",
+          "size": 14998
+        },
+        "dSYMs/MLXHuggingFaceMacros.dSYM": {
+          "directory": true
+        },
+        "dSYMs/MLXHuggingFaceMacros.dSYM/Contents": {
+          "directory": true
+        },
+        "dSYMs/MLXHuggingFaceMacros.dSYM/Contents/Info.plist": {
+          "sha256": "5a87328919a85e3692964e0e060f23ec41346a3d4864af4853650bc497da1440",
+          "size": 649
+        },
+        "dSYMs/MLXHuggingFaceMacros.dSYM/Contents/Resources": {
+          "directory": true
+        },
+        "dSYMs/MLXHuggingFaceMacros.dSYM/Contents/Resources/DWARF": {
+          "directory": true
+        },
+        "dSYMs/MLXHuggingFaceMacros.dSYM/Contents/Resources/DWARF/MLXHuggingFaceMacros": {
+          "sha256": "7e73a54ffae422bec6e81da8890a82a08b4be9d519c82f7e3a04edff5314a3b6",
+          "size": 37173760
+        },
+        "dSYMs/MLXHuggingFaceMacros.dSYM/Contents/Resources/Relocations": {
+          "directory": true
+        },
+        "dSYMs/MLXHuggingFaceMacros.dSYM/Contents/Resources/Relocations/aarch64": {
+          "directory": true
+        },
+        "dSYMs/MLXHuggingFaceMacros.dSYM/Contents/Resources/Relocations/aarch64/MLXHuggingFaceMacros.yml": {
+          "sha256": "0775847ab6cee9afb14c138de50e8cc7ff16395a801e5ce4a9a9332b03008a30",
+          "size": 5798176
+        },
+        "dSYMs/ResearchVaultAgent.app.dSYM": {
+          "directory": true
+        },
+        "dSYMs/ResearchVaultAgent.app.dSYM/Contents": {
+          "directory": true
+        },
+        "dSYMs/ResearchVaultAgent.app.dSYM/Contents/Info.plist": {
+          "sha256": "97f78cbda449bb4e7316cd2e6acfe16da92ed042ec543b6bddb5cd1d98d1953e",
+          "size": 675
+        },
+        "dSYMs/ResearchVaultAgent.app.dSYM/Contents/Resources": {
+          "directory": true
+        },
+        "dSYMs/ResearchVaultAgent.app.dSYM/Contents/Resources/DWARF": {
+          "directory": true
+        },
+        "dSYMs/ResearchVaultAgent.app.dSYM/Contents/Resources/DWARF/ResearchVaultAgent": {
+          "sha256": "0d2d206a8f0dc792749e5242e2eb6bc0b2d53eb05c4baae2aaa8580776b628f1",
+          "size": 13735472
+        },
+        "dSYMs/ResearchVaultAgent.app.dSYM/Contents/Resources/Relocations": {
+          "directory": true
+        },
+        "dSYMs/ResearchVaultAgent.app.dSYM/Contents/Resources/Relocations/aarch64": {
+          "directory": true
+        },
+        "dSYMs/ResearchVaultAgent.app.dSYM/Contents/Resources/Relocations/aarch64/ResearchVaultAgent.yml": {
+          "sha256": "ff4bb071c64af389355f5fc47f2ab05dc61b28867671eebef04d933f2c6ff50d",
+          "size": 790022
+        },
+        "dSYMs/ResearchVaultAgent.app.dSYM/Contents/Resources/Relocations/x86_64": {
+          "directory": true
+        },
+        "dSYMs/ResearchVaultAgent.app.dSYM/Contents/Resources/Relocations/x86_64/ResearchVaultAgent.yml": {
+          "sha256": "c88cea9c6a08b8d95e868be717ddf6fd16cb20a270c61c83dfe91d3b591ccece",
+          "size": 788126
+        },
+        "dSYMs/SQLCipher.framework.dSYM": {
+          "directory": true
+        },
+        "dSYMs/SQLCipher.framework.dSYM/Contents": {
+          "directory": true
+        },
+        "dSYMs/SQLCipher.framework.dSYM/Contents/Info.plist": {
+          "sha256": "37f30c69625de7edb4092cd1f33880f3e871b427e081d22acd24e05565a39ee1",
+          "size": 650
+        },
+        "dSYMs/SQLCipher.framework.dSYM/Contents/Resources": {
+          "directory": true
+        },
+        "dSYMs/SQLCipher.framework.dSYM/Contents/Resources/DWARF": {
+          "directory": true
+        },
+        "dSYMs/SQLCipher.framework.dSYM/Contents/Resources/DWARF/SQLCipher": {
+          "sha256": "3d7e17c6a9f036bd718f1fbeaf8818e8ab1556b9f3a9e922c8ca411b12397ad1",
+          "size": 11158355
+        },
+        "dSYMs/SQLCipher.framework.dSYM/Contents/Resources/Relocations": {
+          "directory": true
+        },
+        "dSYMs/SQLCipher.framework.dSYM/Contents/Resources/Relocations/aarch64": {
+          "directory": true
+        },
+        "dSYMs/SQLCipher.framework.dSYM/Contents/Resources/Relocations/aarch64/SQLCipher.yml": {
+          "sha256": "b3cd59b64d2224fa85f851d5fcdc9038630e9b8395a4f4aa21ab6101ed8df5fd",
+          "size": 403075
+        },
+        "dSYMs/SQLCipher.framework.dSYM/Contents/Resources/Relocations/x86_64": {
+          "directory": true
+        },
+        "dSYMs/SQLCipher.framework.dSYM/Contents/Resources/Relocations/x86_64/SQLCipher.yml": {
+          "sha256": "a9b2e103d21b98c440fc902779c99ba83cf88f3eb2a87e0891b092ddd360b82b",
+          "size": 397334
+        },
+        "dSYMs/Sparkle.framework.dSYM": {
+          "directory": true
+        },
+        "dSYMs/Sparkle.framework.dSYM/Contents": {
+          "directory": true
+        },
+        "dSYMs/Sparkle.framework.dSYM/Contents/Info.plist": {
+          "sha256": "f9e491546c2fb0cd071570fb7453cf5609f985fc18664b104c82a1c70bac09b7",
+          "size": 661
+        },
+        "dSYMs/Sparkle.framework.dSYM/Contents/Resources": {
+          "directory": true
+        },
+        "dSYMs/Sparkle.framework.dSYM/Contents/Resources/DWARF": {
+          "directory": true
+        },
+        "dSYMs/Sparkle.framework.dSYM/Contents/Resources/DWARF/Sparkle": {
+          "sha256": "81f0623a1667ef5187c589c3d8ad93a028b727761428130a5453abbeb4b9a522",
+          "size": 8229478
+        },
+        "dSYMs/Sparkle.framework.dSYM/Contents/Resources/Relocations": {
+          "directory": true
+        },
+        "dSYMs/Sparkle.framework.dSYM/Contents/Resources/Relocations/aarch64": {
+          "directory": true
+        },
+        "dSYMs/Sparkle.framework.dSYM/Contents/Resources/Relocations/aarch64/Sparkle.yml": {
+          "sha256": "ca123f17cd0ee333616102c6622560ca702a74e197e2fe3b7df38484b78e7fb4",
+          "size": 235407
+        },
+        "dSYMs/Sparkle.framework.dSYM/Contents/Resources/Relocations/x86_64": {
+          "directory": true
+        },
+        "dSYMs/Sparkle.framework.dSYM/Contents/Resources/Relocations/x86_64/Sparkle.yml": {
+          "sha256": "529997c0e545335afd6337ca37cc4624072e991ca73d24bf352b9af7fc6c1877",
+          "size": 217176
+        },
+        "dSYMs/Throttle.app.dSYM": {
+          "directory": true
+        },
+        "dSYMs/Throttle.app.dSYM/Contents": {
+          "directory": true
+        },
+        "dSYMs/Throttle.app.dSYM/Contents/Info.plist": {
+          "sha256": "1bc7f5fca5acd60107335d9c9db5437678e6f72c5b6307796473e7db9c47c3b5",
+          "size": 654
+        },
+        "dSYMs/Throttle.app.dSYM/Contents/Resources": {
+          "directory": true
+        },
+        "dSYMs/Throttle.app.dSYM/Contents/Resources/DWARF": {
+          "directory": true
+        },
+        "dSYMs/Throttle.app.dSYM/Contents/Resources/DWARF/Throttle": {
+          "sha256": "1021bd9875c8f88ef0a3bdc2cd3ccdb1540976629a37911a4aca0905305897ea",
+          "size": 422763432
+        },
+        "dSYMs/Throttle.app.dSYM/Contents/Resources/Relocations": {
+          "directory": true
+        },
+        "dSYMs/Throttle.app.dSYM/Contents/Resources/Relocations/aarch64": {
+          "directory": true
+        },
+        "dSYMs/Throttle.app.dSYM/Contents/Resources/Relocations/aarch64/Throttle.yml": {
+          "sha256": "c7eae084d697aaba094f801460b848483d0ed54d33bbc52240cac7c638dceaae",
+          "size": 20604174
+        },
+        "dSYMs/Throttle.app.dSYM/Contents/Resources/Relocations/x86_64": {
+          "directory": true
+        },
+        "dSYMs/Throttle.app.dSYM/Contents/Resources/Relocations/x86_64/Throttle.yml": {
+          "sha256": "9dc71632a32a1e51bbd26e2faeeb40cfabbed242501375105ee14b8d87fe73ac",
+          "size": 19588953
+        },
+        "dSYMs/ThrottleWidget.appex.dSYM": {
+          "directory": true
+        },
+        "dSYMs/ThrottleWidget.appex.dSYM/Contents": {
+          "directory": true
+        },
+        "dSYMs/ThrottleWidget.appex.dSYM/Contents/Info.plist": {
+          "sha256": "539af3ccad005e3f2012b3410df090a8f346a6584e6b1fed072cc3c2496ad6e8",
+          "size": 661
+        },
+        "dSYMs/ThrottleWidget.appex.dSYM/Contents/Resources": {
+          "directory": true
+        },
+        "dSYMs/ThrottleWidget.appex.dSYM/Contents/Resources/DWARF": {
+          "directory": true
+        },
+        "dSYMs/ThrottleWidget.appex.dSYM/Contents/Resources/DWARF/ThrottleWidget": {
+          "sha256": "e84903a6a4ed8002e502e654b8e16e98be722d13ee5a174b8a99b2f25c7837e1",
+          "size": 4975700
+        },
+        "dSYMs/ThrottleWidget.appex.dSYM/Contents/Resources/Relocations": {
+          "directory": true
+        },
+        "dSYMs/ThrottleWidget.appex.dSYM/Contents/Resources/Relocations/aarch64": {
+          "directory": true
+        },
+        "dSYMs/ThrottleWidget.appex.dSYM/Contents/Resources/Relocations/aarch64/ThrottleWidget.yml": {
+          "sha256": "0b4d9a7ce9ea63b76184dbfa08bfb41c69ffd39a82239e1bdb630ea710d99439",
+          "size": 30070
+        },
+        "dSYMs/ThrottleWidget.appex.dSYM/Contents/Resources/Relocations/x86_64": {
+          "directory": true
+        },
+        "dSYMs/ThrottleWidget.appex.dSYM/Contents/Resources/Relocations/x86_64/ThrottleWidget.yml": {
+          "sha256": "421203cb735d5e30eb9f72d9631fafd469992d2878ab67867cefad0ae47c3822",
+          "size": 29864
+        },
+        "dSYMs/Updater.app.dSYM": {
+          "directory": true
+        },
+        "dSYMs/Updater.app.dSYM/Contents": {
+          "directory": true
+        },
+        "dSYMs/Updater.app.dSYM/Contents/Info.plist": {
+          "sha256": "5e120aabb93f080a4ddd7e43fac60171722c767803ab6975bad207d74fc9c73b",
+          "size": 669
+        },
+        "dSYMs/Updater.app.dSYM/Contents/Resources": {
+          "directory": true
+        },
+        "dSYMs/Updater.app.dSYM/Contents/Resources/DWARF": {
+          "directory": true
+        },
+        "dSYMs/Updater.app.dSYM/Contents/Resources/DWARF/Updater": {
+          "sha256": "3797d9e5c1a4f5cbb11fd8627d5b9dae0376d527b6e949e0d825a8b901dd8e6e",
+          "size": 660243
+        },
+        "dSYMs/Updater.app.dSYM/Contents/Resources/Relocations": {
+          "directory": true
+        },
+        "dSYMs/Updater.app.dSYM/Contents/Resources/Relocations/aarch64": {
+          "directory": true
+        },
+        "dSYMs/Updater.app.dSYM/Contents/Resources/Relocations/aarch64/Updater.yml": {
+          "sha256": "dd95a0c5f0da543626e8682d452c92d6b073957af408118f62033d2fa5b4110a",
+          "size": 48139
+        },
+        "dSYMs/Updater.app.dSYM/Contents/Resources/Relocations/x86_64": {
+          "directory": true
+        },
+        "dSYMs/Updater.app.dSYM/Contents/Resources/Relocations/x86_64/Updater.yml": {
+          "sha256": "9ad22f0a2ad07742e8f3a37d4daca905b509c253cd5b59837814923db1fd90b5",
+          "size": 42513
+        },
+        "dSYMs/encuda.dSYM": {
+          "directory": true
+        },
+        "dSYMs/encuda.dSYM/Contents": {
+          "directory": true
+        },
+        "dSYMs/encuda.dSYM/Contents/Info.plist": {
+          "sha256": "7c5505861776e4d9cc2385fcbd15061647d4929797b9cbf5b18612d73a5eea1e",
+          "size": 635
+        },
+        "dSYMs/encuda.dSYM/Contents/Resources": {
+          "directory": true
+        },
+        "dSYMs/encuda.dSYM/Contents/Resources/DWARF": {
+          "directory": true
+        },
+        "dSYMs/encuda.dSYM/Contents/Resources/DWARF/encuda": {
+          "sha256": "0a06fead25cf39a9025642d5babc51367357a74e6eb922d9808ceb4c11575c1b",
+          "size": 9065248
+        },
+        "dSYMs/encuda.dSYM/Contents/Resources/Relocations": {
+          "directory": true
+        },
+        "dSYMs/encuda.dSYM/Contents/Resources/Relocations/aarch64": {
+          "directory": true
+        },
+        "dSYMs/encuda.dSYM/Contents/Resources/Relocations/aarch64/encuda.yml": {
+          "sha256": "4acd6025bb1ce856f956082dd619c93a8e178a49f3c9d33b7b78e98ec0776e12",
+          "size": 601353
+        },
+        "dSYMs/encuda.dSYM/Contents/Resources/Relocations/x86_64": {
+          "directory": true
+        },
+        "dSYMs/encuda.dSYM/Contents/Resources/Relocations/x86_64/encuda.yml": {
+          "sha256": "3a4133eeb94b48da5275a2e38114061703e7aebcd12df5f31dff6a8343c6fae3",
+          "size": 597042
+        }
+      },
+      "replacement": "symlink",
+      "copy_verified": true
+    },
+    {
+      "original": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-092005",
+      "preserved": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/preserved-inactive-20260921-095047/isolated-host-20260921-092005",
+      "entry_count": 241,
+      "manifest": {
+        "Build": {
+          "directory": true
+        },
+        "Build/Products": {
+          "directory": true
+        },
+        "Build/Products/Debug": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Autoupdate": {
+          "symlink": "Versions/Current/Autoupdate"
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Resources": {
+          "symlink": "Versions/Current/Resources"
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Sparkle": {
+          "symlink": "Versions/Current/Sparkle"
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Updater.app": {
+          "symlink": "Versions/Current/Updater.app"
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate": {
+          "sha256": "49cc066c3629500b4401390c94c68095d124559cb11feb6ca4a670f6e9bf93dc",
+          "size": 726224
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/Base.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/Base.lproj/Sparkle.strings": {
+          "sha256": "bf93bdde8ad020f2ba210ecfa0e84b5365d0342355a3ca39d88fec0acb1e4a40",
+          "size": 6249
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/Info.plist": {
+          "sha256": "266d38e5b075d8641d2ccc4613de81c53904ef8ca3c16c5abb661072b1b914bd",
+          "size": 1340
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ReleaseNotesColorStyle.css": {
+          "sha256": "76bd6999758fd8e51d17e6b482db434f9b4768c02b037af6bd2e3a000ce8cbc1",
+          "size": 231
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/SUStatus.nib": {
+          "sha256": "bba15dd37a26af87476214b68b06d6455118ce507fd77863f4947d654a6045af",
+          "size": 13016
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/SUUpdateAlert.nib": {
+          "sha256": "3987a333da7c2728ef2cb9656e5eeaf0832884873cabf78353fcb9099c5d8fbe",
+          "size": 18490
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/SUUpdatePermissionPrompt.nib": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/SUUpdatePermissionPrompt.nib/keyedobjects-101300.nib": {
+          "sha256": "35149511ba9d78cd63198940a4d5e8c7f6e12e18c243c00215d45eeab8448b79",
+          "size": 25430
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/SUUpdatePermissionPrompt.nib/keyedobjects-110000.nib": {
+          "sha256": "b35425caab26a59cd6ee148dcb5a5f1a18d75933407ef1ab8eae9331af41e0a4",
+          "size": 25407
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ar.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ar.lproj/Sparkle.strings": {
+          "sha256": "441182787471a3998908044515fe13e92230edaa7e2730638e72a49610f56cba",
+          "size": 3554
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ca.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ca.lproj/Sparkle.strings": {
+          "sha256": "7ed0d5ca300649a7f13304015008f2dede98ad743a625c17d5a5fedacc1a3b1a",
+          "size": 3501
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/cs.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/cs.lproj/Sparkle.strings": {
+          "sha256": "99e66decf9bc46cf5622eead4e65b3b502e3775a4e8e0f03ef1b41683ea8d518",
+          "size": 10774
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/da.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/da.lproj/Sparkle.strings": {
+          "sha256": "8d0ff69b79460185f941372655433bad3934f49e63bef0b4171bd66da71e55f0",
+          "size": 4882
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/de.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/de.lproj/Sparkle.strings": {
+          "sha256": "311035a15227fb12e85eba2a46f3f6198d98ac5590d1d38c43c4ff7430d06599",
+          "size": 11559
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/el.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/el.lproj/Sparkle.strings": {
+          "sha256": "638981a4f095d8b1dabb6230d452e470359711b81803bc5df8c21e1211fd3757",
+          "size": 5934
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/es.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/es.lproj/Sparkle.strings": {
+          "sha256": "047b9affd0e995039072c24b8d7aa830624d03c89c524e4f58d7d6f13eca8352",
+          "size": 7026
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/fa.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/fa.lproj/Sparkle.strings": {
+          "sha256": "ed9dda9e271f7a97b8a7f327e71a1b6d06e5e061b367e7da3d153e47dc319263",
+          "size": 5716
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/fi.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/fi.lproj/Sparkle.strings": {
+          "sha256": "c14af9bac3fce436222a4ea277a7a6c0f9b42b2d84aceea75e758ce7538acae2",
+          "size": 3252
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/fr.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/fr.lproj/Sparkle.strings": {
+          "sha256": "3d554dcd167b085e25a75248533f21f389593aeace912ab9952c825ffe141ce1",
+          "size": 7855
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/he.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/he.lproj/Sparkle.strings": {
+          "sha256": "1d795bd7329d04b7ce84b6bdc845f917369e858b2b292f117b89a6666a185723",
+          "size": 9657
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/hr.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/hr.lproj/Sparkle.strings": {
+          "sha256": "920041380a08b3ba50d44e8a83f59de551139845a72748d58f2387c65920b33a",
+          "size": 6367
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/hu.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/hu.lproj/Sparkle.strings": {
+          "sha256": "cc2a16e4d487c6fab357b4f7d0fbbf7ec882371b2130413ffcb1b69cd540d2cf",
+          "size": 4449
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/is.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/is.lproj/Sparkle.strings": {
+          "sha256": "403feba503410e9455cd0eaafe592a2576eedb24130ccf2cdb13dda4b101f87e",
+          "size": 3954
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/it.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/it.lproj/Sparkle.strings": {
+          "sha256": "56a7445c1b68d76849ac59b98aa5c20c9002d5e07e9f0a2720486160f85b7366",
+          "size": 10956
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ja.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ja.lproj/Sparkle.strings": {
+          "sha256": "e404910028af70579cfa208bb4fadd9e3592505fc89af208f4071f2309553fb2",
+          "size": 8697
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ko.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ko.lproj/Sparkle.strings": {
+          "sha256": "a6269eb3f5a07d0c4f5d7467d5065372085aef7484c518a9d784ffd6c8f5aae4",
+          "size": 7797
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/nb.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/nb.lproj/Sparkle.strings": {
+          "sha256": "ef6f0dcae90c440b47ece09909e9cdf35f3383f34e72a614c8c5c0752ecbffe0",
+          "size": 5539
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/nl.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/nl.lproj/Sparkle.strings": {
+          "sha256": "ca9adf34fb93fe3f394ccc92114bf6a6b1f8a128bb5f362cb9f3247d7c26c77d",
+          "size": 9574
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/nn.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/nn.lproj/Sparkle.strings": {
+          "sha256": "1db8c6853a550aa25382da2d55431a1c1d308d6a37676c4f8593cc1633f8a5ae",
+          "size": 5671
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/pl.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/pl.lproj/Sparkle.strings": {
+          "sha256": "5c54b3f8e1eb3026e142e710e2167f2f839b73ab5ad7f18719230f33ae682aa9",
+          "size": 5453
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/pt-BR.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/pt-BR.lproj/Sparkle.strings": {
+          "sha256": "0292cadc2acfc34875c1e0b54e2d50de3833cd5e20c8660c8effe2b859aac84c",
+          "size": 9976
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/pt-PT.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/pt-PT.lproj/Sparkle.strings": {
+          "sha256": "fc958532d26a8e1e74622d3f558fc26a12800e8c49fb614afd0e1883acce4700",
+          "size": 5984
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ro.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ro.lproj/Sparkle.strings": {
+          "sha256": "b2bf064222c38a3672b01fe09406f799718cb0fc4e715121662639d6fdfea6ed",
+          "size": 6115
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ru.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/ru.lproj/Sparkle.strings": {
+          "sha256": "7193af28eb2a09b9fe7119cf6065a2150c6590971b22f98c56f356cd90851923",
+          "size": 5784
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/sk.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/sk.lproj/Sparkle.strings": {
+          "sha256": "e158daaa4f3f91b57cee05ab896f2c1bc467317932cc53bb7c01e7daee9e5238",
+          "size": 5675
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/sl.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/sl.lproj/Sparkle.strings": {
+          "sha256": "c62770c604a6c8c89e283357c8b322d8ce6a85f4d85c09002048331f65f8d980",
+          "size": 5646
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/sv.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/sv.lproj/Sparkle.strings": {
+          "sha256": "4a21ad5bcf8d836d265710c2e4a0a64f07c9551f1c49694d6734a931d23efd39",
+          "size": 5160
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/th.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/th.lproj/Sparkle.strings": {
+          "sha256": "4b6c8dc2ab69a0425de3aa9dc386c6539348e3983e47aa10f94c17e345a157a5",
+          "size": 5339
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/tr.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/tr.lproj/Sparkle.strings": {
+          "sha256": "b040d3f02d341eba047c15dfcafb60406d0847096a94466ecab512dcfb16abb5",
+          "size": 6183
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/uk.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/uk.lproj/Sparkle.strings": {
+          "sha256": "ff44d58635b3e8409d54b42b72c876a43e17fa98f6ea96b32583b9e88c747ab6",
+          "size": 5842
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/vi.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/vi.lproj/Sparkle.strings": {
+          "sha256": "2b3b4acbadf534cd0e812b97e589f80a4e1655b07c8907e98cc31df458ffd8b7",
+          "size": 12418
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/zh_CN.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/zh_CN.lproj/Sparkle.strings": {
+          "sha256": "e7f543b92977e9abc907241c411d8db0f59c4fee480859b3e88e4b495e0976c8",
+          "size": 7475
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/zh_HK.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/zh_HK.lproj/Sparkle.strings": {
+          "sha256": "3fc210132f33d89af3d25d27c7ea19426cf6d304be50254538456e0ec4fb7858",
+          "size": 6469
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/zh_TW.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/zh_TW.lproj/Sparkle.strings": {
+          "sha256": "76321e1dd844c9b6568cb4af7c63bb57d9d1b700109aeedd7e5721d78727b12d",
+          "size": 7625
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle": {
+          "sha256": "5924ebc6297fd2f1b6ac9aed0b16a9fbf8444cc462fc7d205c98b5957aed9bc0",
+          "size": 977616
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/Info.plist": {
+          "sha256": "b4149c93ca37cfd4bb31eeb1cdcd88ef9d129058434187c86841f89eadc19b0b",
+          "size": 2399
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater": {
+          "sha256": "ca3f73a704519ea97a30712ebf46b32dc32f37a4046d388c6e63bd84b84fba06",
+          "size": 290560
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/PkgInfo": {
+          "sha256": "82502191c9484b04d685374f9879a0066069c49b8acae7a04b01d38d07e8eca0",
+          "size": 8
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/Resources/SUStatus.nib": {
+          "sha256": "bba15dd37a26af87476214b68b06d6455118ce507fd77863f4947d654a6045af",
+          "size": 13016
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/_CodeSignature": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/_CodeSignature/CodeResources": {
+          "sha256": "25328c7eccf8a37f15b84aaa7ee766c3ac7dc091baaac7318d4de6221407e60e",
+          "size": 2446
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/Info.plist": {
+          "sha256": "ce59d16b9b572dfc70fc6b5ea9724ec49e63b1a030563a08098793139335790a",
+          "size": 1716
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader": {
+          "sha256": "7de4be1dd4f8f5dbf656bd8c5dfeb2468bffde848e86c6fd3870743eee21db08",
+          "size": 188672
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/_CodeSignature": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/_CodeSignature/CodeResources": {
+          "sha256": "6686de10a28a2fe11b36cbb86dcbacc827cfc4ea116b4dabf1845e5aee629e9b",
+          "size": 2200
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/Info.plist": {
+          "sha256": "4960a8760c14af71ebac852b7398adeb8ddc7255aa35b4dcc5e34e6508d9734d",
+          "size": 1604
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer": {
+          "sha256": "e0cbec94159d8919502ef6bd3e4eb4970af8ea7728cc2b9cf866ebb368ce853b",
+          "size": 223456
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/_CodeSignature": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/_CodeSignature/CodeResources": {
+          "sha256": "6686de10a28a2fe11b36cbb86dcbacc827cfc4ea116b4dabf1845e5aee629e9b",
+          "size": 2200
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/_CodeSignature": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/B/_CodeSignature/CodeResources": {
+          "sha256": "a8442644bf49e638118b2cabba7aa15ecf84d4f47f4abb02208a04927e074e50",
+          "size": 22785
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/Versions/Current": {
+          "symlink": "B"
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/Sparkle.framework/XPCServices": {
+          "symlink": "Versions/Current/XPCServices"
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "size": 0
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Info.plist": {
+          "sha256": "0bd71c8ae5af741f23f4358f80801ba133e4702fbdf0a4e1027b33a00fbb5724",
+          "size": 2813
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LaunchAgents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LaunchAgents/com.lorislab.throttle.research-vault-agent.plist": {
+          "sha256": "861fe12344294be1b87632603321b10c809274d7d1b6a3925db0cde76f9206f1",
+          "size": 971
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Resources": {
+          "symlink": "Versions/Current/Resources"
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/SQLCipher": {
+          "symlink": "Versions/Current/SQLCipher"
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/Resources/Info.plist": {
+          "sha256": "40f02027a17eabd6e0ae6cd4e56fcde208fd4a29a140a78853dc308a299bb15b",
+          "size": 1284
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/Resources/PrivacyInfo.xcprivacy": {
+          "sha256": "9362796ba800a7b4169834eff8bde990866f40114ff7baac002b8bae543e8dd1",
+          "size": 840
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/SQLCipher": {
+          "sha256": "08907511604083d1fd3f178867199fb998882a6e0227553526d3fc2221415bbc",
+          "size": 3036752
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/_CodeSignature": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/A/_CodeSignature/CodeResources": {
+          "sha256": "d4557a33b026ee931214746532cbdd3c44d130a2140be3a8b4696ef760e6d04b",
+          "size": 3116
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/Current": {
+          "symlink": "A"
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Info.plist": {
+          "sha256": "02cd02092f9ecda4346e267c981866a1e0f70037a10b1643b4e62017b803e5ee",
+          "size": 1503
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/MacOS": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent": {
+          "sha256": "fa5aa86585e0c84cfb855a721ec21011a35b479974916eb434e8619aa3073959",
+          "size": 40224
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/MacOS/ResearchVaultAgent.debug.dylib": {
+          "sha256": "330d37a420085787681158aae91060ef70b860ed8ebf01863ed8ba00bfbd3611",
+          "size": 5422864
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/MacOS/__preview.dylib": {
+          "sha256": "33226ff41c7476a4b1fcc1eae4d48c40d38dc75e5b36db31066b949689fb1bf7",
+          "size": 16768
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/PkgInfo": {
+          "sha256": "82502191c9484b04d685374f9879a0066069c49b8acae7a04b01d38d07e8eca0",
+          "size": 8
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/MacOS": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/MacOS/Throttle": {
+          "sha256": "ee358b3740e961a71244d965d85d75f767a2aed41c9566c695444194b706e69e",
+          "size": 40216
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/MacOS/Throttle.debug.dylib": {
+          "sha256": "65bda7afa890a842bea34fff2f88b7f5659297d877dc315de7ebc184168c9467",
+          "size": 184873064
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/MacOS/__preview.dylib": {
+          "sha256": "fd2b4fd773e314afd7bc9f80f937b11249c02b773b865410e6a56a7ba63e91d7",
+          "size": 16760
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PkgInfo": {
+          "sha256": "82502191c9484b04d685374f9879a0066069c49b8acae7a04b01d38d07e8eca0",
+          "size": 8
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Info.plist": {
+          "sha256": "0a5884264a9c6fc5e127354f8e9041df1f980aee3e52a400049461a54179967f",
+          "size": 1302
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/MacOS": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/MacOS/ThrottleTests": {
+          "sha256": "ea7ce67ff95b475a37327c51c037464d832d05a38de58c5d7d47c95824814321",
+          "size": 15337488
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/GRDB_GRDB.bundle": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/GRDB_GRDB.bundle/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/GRDB_GRDB.bundle/Contents/Info.plist": {
+          "sha256": "7f372ff8e2fe30fe41be113bd9d402a176608b29a752a0195a38221e764480de",
+          "size": 1120
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/GRDB_GRDB.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/GRDB_GRDB.bundle/Contents/Resources/PrivacyInfo.xcprivacy": {
+          "sha256": "17784da62e51f74c5859df32fe402e01e25cdf6f797a4add06e2a3ce15c911f4",
+          "size": 397
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/SwiftTerm_SwiftTerm.bundle": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/SwiftTerm_SwiftTerm.bundle/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/SwiftTerm_SwiftTerm.bundle/Contents/Info.plist": {
+          "sha256": "f55762e7da734684231e0dc3ede17047ace927683fa3d2cd2c1d7cdf31f9a015",
+          "size": 1134
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/SwiftTerm_SwiftTerm.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/SwiftTerm_SwiftTerm.bundle/Contents/Resources/default.metallib": {
+          "sha256": "ad7d4b2baf04a519da73d72bb8bed776a0d048c81ee6eceee47f9a4b20924972",
+          "size": 27236
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/empty-session.jsonl": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "size": 0
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/mlx-swift_Cmlx.bundle": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/mlx-swift_Cmlx.bundle/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Info.plist": {
+          "sha256": "a0c1d4da4f805148055200dc449d07c4196d9ed438faeeff6c0d5d7d20a6efb4",
+          "size": 1124
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Resources/default.metallib": {
+          "sha256": "0214ad23cc2fa1df961eb7e2118881bd4b2bdb0183546ef537fff1a2a61e2ada",
+          "size": 3836652
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/sample-session.jsonl": {
+          "sha256": "a62dbb9f37dbe47087d642ce49b4774d46aae8d1f5e0a9e3f71c636f89969d23",
+          "size": 744
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/sample-with-warning.jsonl": {
+          "sha256": "fe2b49cf9414c9bea0f06a880852e04efbef399adf4482c206f6b7f3e7724c16",
+          "size": 548
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/swift-crypto_Crypto.bundle": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/swift-crypto_Crypto.bundle/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/swift-crypto_Crypto.bundle/Contents/Info.plist": {
+          "sha256": "b9830088f04731cf08706876ac4047bc36f4def424bfef1474b4e809d8099106",
+          "size": 1134
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/swift-crypto_Crypto.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/swift-crypto_Crypto.bundle/Contents/Resources/PrivacyInfo.xcprivacy": {
+          "sha256": "42fb8a30dd8d7ba0900e1bf17fe64ed8c12cfdb8a9c791ab6b4e1eceb0f299c0",
+          "size": 398
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/swift-transformers_Hub.bundle": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/swift-transformers_Hub.bundle/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/swift-transformers_Hub.bundle/Contents/Info.plist": {
+          "sha256": "bf538056a0506b9e3f6f08ba84796423e02c4fcccc9c21b0ea2e291883c8d362",
+          "size": 1140
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/swift-transformers_Hub.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/swift-transformers_Hub.bundle/Contents/Resources/gpt2_tokenizer_config.json": {
+          "sha256": "551e26ec611d8d0c8edc3ef72e518a38418cb71f40de1347dd486a595e1557d7",
+          "size": 234
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/swift-transformers_Hub.bundle/Contents/Resources/t5_tokenizer_config.json": {
+          "sha256": "e0aff0b1de9071e30d9a60a199303b6abe916a64a19932bd1c46992279b41a1f",
+          "size": 20746
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleTests.xctest/Contents/Resources/traycer-otlp-logs.json": {
+          "sha256": "b6a220f63633eb16195524d3c64b59d26c20812f0703be0d6f3f7a4512d02021",
+          "size": 54140
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleWidget.appex": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleWidget.appex/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleWidget.appex/Contents/Info.plist": {
+          "sha256": "6377e7901bee68f279668c430d2009987468e5c5fa68f8c090ff3ca4762f2b63",
+          "size": 1494
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleWidget.appex/Contents/MacOS": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleWidget.appex/Contents/MacOS/ThrottleWidget": {
+          "sha256": "2526467acafceeb59ef65f0996316528e26af98cc2ace89746f3d5c6e8e8f762",
+          "size": 40224
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleWidget.appex/Contents/MacOS/ThrottleWidget.debug.dylib": {
+          "sha256": "8fc07338113df7c99ace842208e041ae073aabed50fab1fc8d30f5d371bb9f94",
+          "size": 430392
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/PlugIns/ThrottleWidget.appex/Contents/MacOS/__preview.dylib": {
+          "sha256": "080ed53c7cae04e1ff98caf8092e03f288a45e4b2e188e14f307f5b73ab9cc53",
+          "size": 16760
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/AppIcon.icns": {
+          "sha256": "23ecfa24a6bbb7d4c546ee9d7fd49424c415f65fc665df5f7b3da057ee21364f",
+          "size": 132466
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/Assets.car": {
+          "sha256": "17f60d7920402bc6c2d994b12fa41327e3069c7839cc9fd7a28fedb247177e9d",
+          "size": 3276600
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/GRDB_GRDB.bundle": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/GRDB_GRDB.bundle/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/GRDB_GRDB.bundle/Contents/Info.plist": {
+          "sha256": "7f372ff8e2fe30fe41be113bd9d402a176608b29a752a0195a38221e764480de",
+          "size": 1120
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/GRDB_GRDB.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/GRDB_GRDB.bundle/Contents/Resources/PrivacyInfo.xcprivacy": {
+          "sha256": "17784da62e51f74c5859df32fe402e01e25cdf6f797a4add06e2a3ce15c911f4",
+          "size": 397
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/Metadata.appintents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/Metadata.appintents/extract.actionsdata": {
+          "sha256": "a0407693a91160e111f4b077cea80bd1f92091cc6269bd8a5e395da81e6fc380",
+          "size": 14669
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/Metadata.appintents/version.json": {
+          "sha256": "dd4247d69cd8c750931505420148b52da7955333be2932b866fef83e3c713ac4",
+          "size": 53
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/PrivacyInfo.xcprivacy": {
+          "sha256": "673e7847176a94f485f7a79cb7fe47fab160d625b6032e34557557f7e8197fd3",
+          "size": 1907
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/SwiftTerm_SwiftTerm.bundle": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/SwiftTerm_SwiftTerm.bundle/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/SwiftTerm_SwiftTerm.bundle/Contents/Info.plist": {
+          "sha256": "f55762e7da734684231e0dc3ede17047ace927683fa3d2cd2c1d7cdf31f9a015",
+          "size": 1134
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/SwiftTerm_SwiftTerm.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/SwiftTerm_SwiftTerm.bundle/Contents/Resources/default.metallib": {
+          "sha256": "ad7d4b2baf04a519da73d72bb8bed776a0d048c81ee6eceee47f9a4b20924972",
+          "size": 27236
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/en.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/en.lproj/Localizable.strings": {
+          "sha256": "1ba74f76df252e32a79bc87504745a77ffb953f3a5d7d9679b06c6058dc4ac13",
+          "size": 233166
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/fr.lproj": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/fr.lproj/Localizable.strings": {
+          "sha256": "234c088d089f171fbc74269dcca6adc2ed13eb5110cf8cb779c179ddf78a982a",
+          "size": 299614
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/fresh-runtime.mjs": {
+          "sha256": "70f0c24c16809479befe636e5b0604f4ef787d60e3cd8c099fe4e8d8ec7de314",
+          "size": 11760
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/mlx-swift_Cmlx.bundle": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/mlx-swift_Cmlx.bundle/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Info.plist": {
+          "sha256": "a0c1d4da4f805148055200dc449d07c4196d9ed438faeeff6c0d5d7d20a6efb4",
+          "size": 1124
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Resources/default.metallib": {
+          "sha256": "0214ad23cc2fa1df961eb7e2118881bd4b2bdb0183546ef537fff1a2a61e2ada",
+          "size": 3836652
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/swift-crypto_Crypto.bundle": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/swift-crypto_Crypto.bundle/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/swift-crypto_Crypto.bundle/Contents/Info.plist": {
+          "sha256": "b9830088f04731cf08706876ac4047bc36f4def424bfef1474b4e809d8099106",
+          "size": 1134
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/swift-crypto_Crypto.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/swift-crypto_Crypto.bundle/Contents/Resources/PrivacyInfo.xcprivacy": {
+          "sha256": "42fb8a30dd8d7ba0900e1bf17fe64ed8c12cfdb8a9c791ab6b4e1eceb0f299c0",
+          "size": 398
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/swift-transformers_Hub.bundle": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/swift-transformers_Hub.bundle/Contents": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/swift-transformers_Hub.bundle/Contents/Info.plist": {
+          "sha256": "bf538056a0506b9e3f6f08ba84796423e02c4fcccc9c21b0ea2e291883c8d362",
+          "size": 1140
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/swift-transformers_Hub.bundle/Contents/Resources": {
+          "directory": true
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/swift-transformers_Hub.bundle/Contents/Resources/gpt2_tokenizer_config.json": {
+          "sha256": "551e26ec611d8d0c8edc3ef72e518a38418cb71f40de1347dd486a595e1557d7",
+          "size": 234
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/swift-transformers_Hub.bundle/Contents/Resources/t5_tokenizer_config.json": {
+          "sha256": "e0aff0b1de9071e30d9a60a199303b6abe916a64a19932bd1c46992279b41a1f",
+          "size": 20746
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/throttle-agent.mjs": {
+          "sha256": "4c378edb27f0d9bc167fb50255020be9e4ce800692699390f9badcae244b108a",
+          "size": 60533
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/throttle-license-public.pem": {
+          "sha256": "9f30cf2c81311909137579c97e0e7287e9e854548e405f3bc3d0ca0a0987c7ba",
+          "size": 451
+        },
+        "Build/Products/Debug/ThrottleTestHost.app/Contents/Resources/transfer-runtime.mjs": {
+          "sha256": "ee97d9bddb1141586a40a5d9333c3fdc3357dd263f26d741b902a65314759ff8",
+          "size": 36583
+        }
+      },
+      "replacement": "symlink",
+      "copy_verified": true
+    }
+  ],
+  "after_free": 2679369728
+}

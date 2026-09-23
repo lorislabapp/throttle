@@ -1,0 +1,23 @@
+[
+  "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+  "test-without-building",
+  "-xctestrun",
+  "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-114859/Build/Products/isolated-visual-tests-20260921-114959.xctestrun",
+  "-destination",
+  "platform=macOS,arch=arm64",
+  "-parallel-testing-enabled",
+  "NO",
+  "-test-timeouts-enabled",
+  "YES",
+  "-default-test-execution-time-allowance",
+  "300",
+  "-maximum-test-execution-time-allowance",
+  "360",
+  "-resultBundlePath",
+  "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-114859/isolated-visual-tests-20260921-114959.xcresult",
+  "-testLanguage",
+  "en",
+  "-testRegion",
+  "US",
+  "-only-testing:ThrottleTests/PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInEnglish"
+]

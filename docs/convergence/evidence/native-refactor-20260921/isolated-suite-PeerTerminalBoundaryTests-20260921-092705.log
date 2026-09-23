@@ -1,0 +1,67 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-092038/Build/Products/isolated-suite-PeerTerminalBoundaryTests-20260921-092705.xctestrun -destination platform=macOS,arch=arm64 -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 300 -maximum-test-execution-time-allowance 360 -resultBundlePath /Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-092038/isolated-suite-PeerTerminalBoundaryTests-20260921-092705.xcresult -testLanguage en -testRegion US "-only-testing:ThrottleTests/PeerTerminalBoundaryTests"
+
+Writing result bundle at path:
+	/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-092038/isolated-suite-PeerTerminalBoundaryTests-20260921-092705.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008132-001178882E03001C, name:My Mac }
+2026-09-21 09:27:06.775904+0200 Throttle[32867:2027651] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:27:06.776068+0200 Throttle[32867:2027651] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:27:06.776298+0200 Throttle[32867:2027650] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:27:06.776309+0200 Throttle[32867:2027650] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+[AppDelegate.init] start
+2026-09-21 09:27:06.776714+0200 Throttle[32867:2027649] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:27:06.776728+0200 Throttle[32867:2027649] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:27:06.777090+0200 Throttle[32867:2027649] [Connection] Will NOT re-try to establish the connection
+2026-09-21 09:27:06.777229+0200 Throttle[32867:2027651] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:27:06.777252+0200 Throttle[32867:2027651] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 09:27:06.806508+0200 Throttle[32867:2027644] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/3w/fbl9wc1d3q7091lq5pj5sy0c0000gn/T/com.lorislab.throttle.test-host.savedState
+[applicationDidFinishLaunching] start
+2026-09-21 09:27:06.850677+0200 Throttle[32867:2027644] [App] Isolated host detected: skipping production background services
+Test Suite 'Selected tests' started at 2026-09-21 09:27:06.872.
+Test Suite 'ThrottleTests.xctest' started at 2026-09-21 09:27:06.872.
+Test Suite 'PeerTerminalBoundaryTests' started at 2026-09-21 09:27:06.872.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testBridgeDeniesDirectCallsWhenPermissionIsOff]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testBridgeDeniesDirectCallsWhenPermissionIsOff]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testCurrentTicketCannotBypassControlSettingOffAtDelivery]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testCurrentTicketCannotBypassControlSettingOffAtDelivery]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testFailedFreshPersistenceNeverPublishesEphemeralPairing]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testFailedFreshPersistenceNeverPublishesEphemeralPairing]' passed (0.002 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testFailedLegacyPersistencePreservesCopyAndWithholdsPairing]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testFailedLegacyPersistencePreservesCopyAndWithholdsPairing]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testMalformedPersistedPairingIsNotReplacedAutomatically]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testMalformedPersistedPairingIsNotReplacedAutomatically]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testReattachmentStopsOldTapAndOnlyAddressesNewSession]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testReattachmentStopsOldTapAndOnlyAddressesNewSession]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testRevocationRemovesTapAndStaleCallbackCannotSendOrInput]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testRevocationRemovesTapAndStaleCallbackCannotSendOrInput]' passed (0.000 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testRevokedTicketQueuedBeforeMainActorDeliveryCannotAttachOrSend]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testRevokedTicketQueuedBeforeMainActorDeliveryCannotAttachOrSend]' passed (0.005 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testStoppedListenerCannotDeliverQueuedInputAfterRestart]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testStoppedListenerCannotDeliverQueuedInputAfterRestart]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testSuccessfulLegacyPersistencePrecedesRemoval]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testSuccessfulLegacyPersistencePrecedesRemoval]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testUnavailablePairingDoesNotReadLegacyWriteGenerateOrPublishIdentity]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testUnavailablePairingDoesNotReadLegacyWriteGenerateOrPublishIdentity]' passed (0.001 seconds).
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testUnknownSessionAndInputWithoutAttachmentHaveNoEffects]' started.
+Test Case '-[ThrottleTests.PeerTerminalBoundaryTests testUnknownSessionAndInputWithoutAttachmentHaveNoEffects]' passed (0.001 seconds).
+Test Suite 'PeerTerminalBoundaryTests' passed at 2026-09-21 09:27:06.890.
+	 Executed 12 tests, with 0 failures (0 unexpected) in 0.014 (0.018) seconds
+Test Suite 'ThrottleTests.xctest' passed at 2026-09-21 09:27:06.890.
+	 Executed 12 tests, with 0 failures (0 unexpected) in 0.014 (0.018) seconds
+Test Suite 'Selected tests' passed at 2026-09-21 09:27:06.891.
+	 Executed 12 tests, with 0 failures (0 unexpected) in 0.014 (0.018) seconds
+2026-09-21 09:27:07.162 xcodebuild[32861:2027521] [MT] IDETestOperationsObserverDebug: 0.744 elapsed -- Testing started completed.
+2026-09-21 09:27:07.162 xcodebuild[32861:2027521] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-21 09:27:07.162 xcodebuild[32861:2027521] [MT] IDETestOperationsObserverDebug: 0.744 sec, +0.744 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-092038/isolated-suite-PeerTerminalBoundaryTests-20260921-092705.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

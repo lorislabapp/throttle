@@ -1,0 +1,390 @@
+[
+  {
+    "description" : "Read this project's plan: the task tree with status and progress, plus exactly which tasks are actionable right now — dependencies met and nobody holding them. Call this before picking up work.",
+    "inputSchema" : {
+      "properties" : {
+        "project" : {
+          "description" : "Absolute path to the project. Defaults to the working directory.",
+          "type" : "string"
+        }
+      },
+      "required" : [
+
+      ],
+      "type" : "object"
+    },
+    "name" : "throttle_plan_read"
+  },
+  {
+    "description" : "Take ownership of one task before working on it. Refused if another agent already holds it. Only the holder may report progress afterwards.",
+    "inputSchema" : {
+      "properties" : {
+        "by" : {
+          "description" : "runtime:session, e.g. codex:sess_ab",
+          "type" : "string"
+        },
+        "event_id" : {
+          "description" : "Retry UUID. Send with expected_seq; reuse both and the identical payload.",
+          "format" : "uuid",
+          "type" : "string"
+        },
+        "expected_seq" : {
+          "description" : "Task seq from throttle_plan_read. Required with event_id.",
+          "maximum" : 9007199254740991,
+          "minimum" : 0,
+          "type" : "integer"
+        },
+        "mission_id" : {
+          "type" : "string"
+        },
+        "project" : {
+          "description" : "Absolute path to the project. Defaults to the working directory.",
+          "type" : "string"
+        },
+        "task_id" : {
+          "type" : "string"
+        }
+      },
+      "required" : [
+        "task_id",
+        "by"
+      ],
+      "type" : "object"
+    },
+    "name" : "throttle_task_claim"
+  },
+  {
+    "description" : "Report on a task you hold: progress, evidence, blocked, unblocked, candidate_complete, failed or released. A candidate is only a worker's claim; Throttle verifies it before done. Evidence should be checkable — a commit sha, a test count, a file path.",
+    "inputSchema" : {
+      "properties" : {
+        "by" : {
+          "type" : "string"
+        },
+        "event_id" : {
+          "description" : "Retry UUID. Send with expected_seq; reuse both and the identical payload.",
+          "format" : "uuid",
+          "type" : "string"
+        },
+        "expected_seq" : {
+          "description" : "Task seq from throttle_plan_read. Required with event_id.",
+          "maximum" : 9007199254740991,
+          "minimum" : 0,
+          "type" : "integer"
+        },
+        "kind" : {
+          "description" : "evidence kind: commit, test, file",
+          "type" : "string"
+        },
+        "note" : {
+          "type" : "string"
+        },
+        "pct" : {
+          "type" : "integer"
+        },
+        "project" : {
+          "description" : "Absolute path to the project. Defaults to the working directory.",
+          "type" : "string"
+        },
+        "reason" : {
+          "type" : "string"
+        },
+        "ref" : {
+          "type" : "string"
+        },
+        "summary" : {
+          "type" : "string"
+        },
+        "task_id" : {
+          "type" : "string"
+        },
+        "type" : {
+          "enum" : [
+            "progress",
+            "evidence",
+            "blocked",
+            "unblocked",
+            "candidate_complete",
+            "failed",
+            "released"
+          ],
+          "type" : "string"
+        }
+      },
+      "required" : [
+        "task_id",
+        "by",
+        "type"
+      ],
+      "type" : "object"
+    },
+    "name" : "throttle_task_event"
+  },
+  {
+    "description" : "Rule on a task awaiting counter-analysis. Only a runtime from a different model family than the one that did the work may call this. Judge the evidence in the log — commits, tests, diff — not the agent's own claim that it is done. A task with a review rubric requires `review_report`: every criterion, exact contract and candidate stamp, and only evidence already in the task ledger. `rejected` must say what is missing.",
+    "inputSchema" : {
+      "properties" : {
+        "by" : {
+          "type" : "string"
+        },
+        "event_id" : {
+          "description" : "Retry UUID. Send with expected_seq; reuse both and the identical payload.",
+          "format" : "uuid",
+          "type" : "string"
+        },
+        "expected_seq" : {
+          "description" : "Task seq from throttle_plan_read. Required with event_id.",
+          "maximum" : 9007199254740991,
+          "minimum" : 0,
+          "type" : "integer"
+        },
+        "project" : {
+          "description" : "Absolute path to the project. Defaults to the working directory.",
+          "type" : "string"
+        },
+        "reason" : {
+          "description" : "what is missing, required when rejecting",
+          "type" : "string"
+        },
+        "review_report" : {
+          "properties" : {
+            "assessments" : {
+              "items" : {
+                "properties" : {
+                  "criterionID" : {
+                    "type" : "string"
+                  },
+                  "evidence" : {
+                    "items" : {
+                      "properties" : {
+                        "kind" : {
+                          "type" : "string"
+                        },
+                        "ref" : {
+                          "type" : "string"
+                        }
+                      },
+                      "required" : [
+                        "kind",
+                        "ref"
+                      ],
+                      "type" : "object"
+                    },
+                    "type" : "array"
+                  },
+                  "notApplicableReason" : {
+                    "type" : "string"
+                  },
+                  "note" : {
+                    "type" : "string"
+                  },
+                  "outcome" : {
+                    "enum" : [
+                      "pass",
+                      "fail",
+                      "notVerified",
+                      "notApplicable"
+                    ],
+                    "type" : "string"
+                  }
+                },
+                "required" : [
+                  "criterionID",
+                  "outcome",
+                  "evidence"
+                ],
+                "type" : "object"
+              },
+              "type" : "array"
+            },
+            "candidateStamp" : {
+              "type" : "string"
+            },
+            "createdAt" : {
+              "format" : "date-time",
+              "type" : "string"
+            },
+            "id" : {
+              "format" : "uuid",
+              "type" : "string"
+            },
+            "producerRuntime" : {
+              "type" : "string"
+            },
+            "reviewerID" : {
+              "type" : "string"
+            },
+            "reviewerKind" : {
+              "enum" : [
+                "model"
+              ],
+              "type" : "string"
+            },
+            "reviewerRuntime" : {
+              "type" : "string"
+            },
+            "rubricDigest" : {
+              "type" : "string"
+            },
+            "schemaVersion" : {
+              "const" : 1,
+              "type" : "integer"
+            },
+            "taskID" : {
+              "type" : "string"
+            },
+            "workContractDigest" : {
+              "type" : "string"
+            }
+          },
+          "required" : [
+            "schemaVersion",
+            "id",
+            "taskID",
+            "workContractDigest",
+            "rubricDigest",
+            "candidateStamp",
+            "producerRuntime",
+            "reviewerID",
+            "reviewerRuntime",
+            "reviewerKind",
+            "createdAt",
+            "assessments"
+          ],
+          "type" : "object"
+        },
+        "summary" : {
+          "type" : "string"
+        },
+        "task_id" : {
+          "type" : "string"
+        },
+        "verdict" : {
+          "enum" : [
+            "verified",
+            "rejected"
+          ],
+          "type" : "string"
+        }
+      },
+      "required" : [
+        "task_id",
+        "by",
+        "verdict"
+      ],
+      "type" : "object"
+    },
+    "name" : "throttle_task_verdict"
+  },
+  {
+    "description" : "File one sourced finding into the project's viability dossier. Every finding needs a checkable source — a URL, a file path, a local corpus id — and a rating from 0 (hostile to the project) to 3 (favourable). Throttle refuses to score viability while any pillar has no finding.",
+    "inputSchema" : {
+      "properties" : {
+        "by" : {
+          "type" : "string"
+        },
+        "claim" : {
+          "type" : "string"
+        },
+        "pillar" : {
+          "enum" : [
+            "feasibility",
+            "competition",
+            "demand",
+            "differentiation"
+          ],
+          "type" : "string"
+        },
+        "project" : {
+          "description" : "Absolute path to the project. Defaults to the working directory.",
+          "type" : "string"
+        },
+        "rating" : {
+          "maximum" : 3,
+          "minimum" : 0,
+          "type" : "integer"
+        },
+        "source" : {
+          "type" : "string"
+        }
+      },
+      "required" : [
+        "pillar",
+        "claim",
+        "source",
+        "rating",
+        "by"
+      ],
+      "type" : "object"
+    },
+    "name" : "throttle_research_record"
+  },
+  {
+    "description" : "Read the viability dossier and its verdict. Returns \"insufficient evidence\" and names the empty pillars rather than a score, whenever research is incomplete.",
+    "inputSchema" : {
+      "properties" : {
+        "project" : {
+          "description" : "Absolute path to the project. Defaults to the working directory.",
+          "type" : "string"
+        }
+      },
+      "required" : [
+
+      ],
+      "type" : "object"
+    },
+    "name" : "throttle_viability_read"
+  },
+  {
+    "description" : "Create a starting plan for a project that has none. Throttle surveys the directory first and proposes a different tree for an empty project than for one that already has code. Refuses if a plan already exists.",
+    "inputSchema" : {
+      "properties" : {
+        "project" : {
+          "description" : "Absolute path to the project. Defaults to the working directory.",
+          "type" : "string"
+        }
+      },
+      "required" : [
+
+      ],
+      "type" : "object"
+    },
+    "name" : "throttle_plan_bootstrap"
+  },
+  {
+    "description" : "Explore the current project through bounded, read-only list, exact\nsearch and read operations. Every response includes a receipt naming\nthe files whose bytes were read, their hashes and the enforced limits.\nUse SQL or a typed service for aggregation and all mutations.",
+    "inputSchema" : {
+      "properties" : {
+        "max_chars" : {
+          "maximum" : 64000,
+          "minimum" : 1000,
+          "type" : "integer"
+        },
+        "operation" : {
+          "enum" : [
+            "list",
+            "search",
+            "read"
+          ],
+          "type" : "string"
+        },
+        "path" : {
+          "description" : "Relative file or directory path.",
+          "type" : "string"
+        },
+        "project" : {
+          "description" : "Absolute project root.",
+          "type" : "string"
+        },
+        "query" : {
+          "description" : "Exact text for search.",
+          "type" : "string"
+        }
+      },
+      "required" : [
+        "operation"
+      ],
+      "type" : "object"
+    },
+    "name" : "throttle_project_explore"
+  }
+]

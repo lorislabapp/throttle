@@ -1,0 +1,16 @@
+{
+  "scene": "diff-en",
+  "run": "isolated-visual-tests-20260921-120437",
+  "source_build": "build-20260921-115329",
+  "method": "CUA accessibility and keyboard; observed before context compaction",
+  "observed": [
+    "Tab focuses Retry diff",
+    "Space activates Retry: error and button AX nodes recreated",
+    "Tab focuses recreated Retry button"
+  ],
+  "scope": "synthetic fixture without worktree, not successful Git repair",
+  "keyboard_navigation_restored": "OFF",
+  "installed_app_restarted": false,
+  "snapshot_regression": "120630: UNKNOWN en/fr capture failed; functional assertions passed, 6/8 cases passed",
+  "sizing_fix": "121114 builds successfully; runtime pending disk reserve"
+}

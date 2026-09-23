@@ -19,8 +19,10 @@ opt-in consumers. This package contains no user corpus, vault key or model.
   deterministic proofs, provenance, validity intervals and retraction.
 - `ResearchVaultMCP`: dual legacy/2026-07-28 stateless JSON-RPC handler with
   approved-only search/resources and quarantined receipt submission.
-- `research-vault-mcp`: isolated stdio server using Keychain-derived keys in
-  production, so Throttle/GRDB and SQLCipher never share one process.
+- `research-vault-mcp`: Debug-only stdio integration harness. Direct Release
+  execution prints `direct Release mode disabled` and exits with status 1.
+  Production access uses the separately signed `ResearchVaultAgent` over
+  authenticated XPC, keeping Throttle/GRDB and SQLCipher in separate processes.
 - `research-vault-agent-hook`: bounded Stop/SubagentStop/SessionEnd adapter;
   it writes sealed candidates atomically and never promotes evidence.
 - `research-vault-reasoning-benchmark` and
@@ -69,7 +71,9 @@ Run:
 Scripts/verify.sh
 ```
 
-Build an unsigned, non-overwriting helper bundle for later signing/embedding:
+The legacy packaging command below creates an unsigned, non-overwriting bundle
+of the Release stdio executable. That executable deliberately refuses to serve;
+this is not the production XPC helper or an installation route:
 
 ```sh
 Scripts/package-mcp-helper.sh /absolute/new/destination/research-vault-mcp
@@ -103,15 +107,20 @@ or invoked at runtime. The MCP adds read-only `research_vault_why` and
 `research_vault_what_changed`; relation promotion/retraction remain owner-only
 and unavailable to MCP callers.
 
-When the local DeepSearsh checkout is readable, verification also imports the
-current Throttle snapshot into an ephemeral encrypted database and enforces:
+Full verification requires the pinned Lemmalog checkout specified by
+`Scripts/verify-reasoning-oracle.sh` (`LEMMALOG_ORACLE_ROOT`) and a readable
+DeepSearsh catalog (`RESEARCH_VAULT_DEEPSEARSH_ROOT`). Missing corpus input fails
+the script unless `RESEARCH_VAULT_ALLOW_BENCHMARK_SKIP=1` explicitly opts out;
+that emits a skip, not a retrieval pass. Verification imports the current
+Throttle corpus snapshot into an ephemeral encrypted database and enforces:
 On the pinned 200+ case golden set, verification requires Recall@10 >= 0.95,
 MRR >= 0.80, nDCG@10 >= 0.80, abstention accuracy >= 0.99 and query p95
 <= 100 ms. A separately reported semantic challenger is never promoted by this
 baseline gate.
 It then exercises the real stdio MCP process against an ephemeral Debug-only
 key and database. The testing-key flag is compiled out of Release and its
-rejection is a required gate; production always uses the device-bound Keychain.
+rejection is a required gate. The production XPC owner uses the device-bound
+Keychain; the direct stdio Release executable remains disabled.
 
 Do not replace this dependency with system SQLite: an empty `cipher_version`, a
 wrong key, a plaintext file header or a failed integrity check is a hard error.

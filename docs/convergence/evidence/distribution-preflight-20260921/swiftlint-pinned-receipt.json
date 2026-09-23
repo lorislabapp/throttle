@@ -1,0 +1,43 @@
+{
+  "command": [
+    "/bin/bash",
+    "scripts/verify-swiftlint.sh"
+  ],
+  "tool_version": "0.63.2",
+  "tool_archive_sha256": "c59a405c85f95b92ced677a500804e081596a4cae4a6a485af76065557d6ed29",
+  "exit_code": 2,
+  "duration_seconds": 1.8143768310546875,
+  "violations": 45,
+  "rules": [
+    "cyclomatic_complexity",
+    "file_length",
+    "for_where",
+    "force_cast",
+    "force_unwrapping",
+    "function_body_length",
+    "line_length",
+    "sorted_imports",
+    "type_body_length"
+  ],
+  "files": [
+    "Throttle/Services/AIProvider.swift",
+    "Throttle/Services/ClaudeWebSessionProvider.swift",
+    "Throttle/Services/PlanMCPTools.swift",
+    "Throttle/Services/PlanProjection.swift",
+    "Throttle/Services/RemoteTransferGit.swift",
+    "Throttle/Services/TaskIntegrationService.swift",
+    "Throttle/Services/TaskLauncher.swift",
+    "Throttle/UI/Cockpit/AIRoutingWindowController.swift",
+    "Throttle/UI/Cockpit/PlanIntegrationView.swift",
+    "Throttle/UI/MenuBar/InlineAssistantPane+LocalWorker.swift",
+    "Throttle/UI/ProjectWindow/ProjectAssistantTab.swift",
+    "ThrottleTests/ServiceTests/AssistantProjectToolsTests.swift",
+    "ThrottleTests/ServiceTests/BashSandboxTests.swift",
+    "ThrottleTests/ServiceTests/ClaudeAPIKeyProtocolTests.swift",
+    "ThrottleTests/ServiceTests/PlanMCPAuthorityTests.swift",
+    "ThrottleTests/ServiceTests/PlanMCPTaskRouterTests.swift",
+    "ThrottleTests/ServiceTests/ProjectKnowledgeBoundaryTests.swift",
+    "ThrottleTests/ServiceTests/ProjectKnowledgeRaceTests.swift",
+    "ThrottleTests/ServiceTests/TaskIntegrationServiceTests.swift"
+  ]
+}

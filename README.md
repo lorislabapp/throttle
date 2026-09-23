@@ -6,6 +6,8 @@ Current status: active pre-release development. The repository contains macOS, i
 
 The single current work ledger is [docs/TODO.md](docs/TODO.md). Dated roadmaps,
 backlogs and audit checklists are historical evidence, not active task lists.
+The [T1.2 gap inventory](audit-output/T1.2-gaps.md) records source-backed
+contradictions and outstanding validation at the audited snapshot.
 
 ## What it does
 

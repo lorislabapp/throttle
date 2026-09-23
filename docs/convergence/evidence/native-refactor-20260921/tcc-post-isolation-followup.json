@@ -1,0 +1,23 @@
+{
+  "start_local": "2026-09-21 09:29:10 Europe/Paris",
+  "end_local": "2026-09-21T09:38:50.713044",
+  "log_exit_code": 0,
+  "event_times": [
+    "2026-09-21 09:31:55.496217+0200",
+    "2026-09-21 09:31:55.500300+0200",
+    "2026-09-21 09:36:49.830411+0200",
+    "2026-09-21 09:36:49.839558+0200",
+    "2026-09-21 09:36:49.841509+0200",
+    "2026-09-21 09:36:49.846911+0200",
+    "2026-09-21 09:37:18.846001+0200",
+    "2026-09-21 09:37:23.255012+0200",
+    "2026-09-21 09:37:23.710649+0200",
+    "2026-09-21 09:37:35.239991+0200",
+    "2026-09-21 09:38:15.687407+0200"
+  ],
+  "scope": "TCC eventMessage mentions throttle and prompt or failed to match; read-only observation",
+  "broad_filter_matches": 11,
+  "interpretation": "The broad prompt filter also matches promptType and prompting policy diagnostic text; these 11 matches are not 11 displayed dialogs. Manual review: 2 RemovableVolumes requests already Allowed (User Consent), DB Action:None; 0 failed code requirement matches. Other matches concern AllFiles, DeveloperTool, AddressBook, Calendar and AppleEvents, not a repeated removable-volume dialog.",
+  "removable_volume_requests_already_allowed": 2,
+  "failed_requirement_matches": 0
+}

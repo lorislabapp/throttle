@@ -1,0 +1,9 @@
+→ Ed25519 signature verified against the DMG and exported app's public key
+→ Build 226 > published maximum 223; appcast sha256=72bbb708b43e651bf24eaa7d3f67a1e44b229ac63dd5df59c3345b789ca4b7b1
+→ Ed25519 signature verified against the DMG and exported app's public key
+staged 3.8.0 (226) in /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/stage
+  Throttle-3.8.0.dmg: 34967080 bytes  sha256 126c18b30dc187c71bdede756e6446ba9245dc002278bb601b64563efc6d1878
+  appcast.xml: 104085 bytes  sha256 57ca685390c95d96093232f315b693fbfaa8f9621d3d7fe5ffe7bcc62d8c060a
+  index.html: 26794 bytes  sha256 614251ef2e4237ed313c92888e500cb84409cb4ea9a9b5608d1d30fc7b077d85
+  page: 3.7.2 → 3.8.0, 35.0 MB | appcast items: 80
+next: node scripts/publish-release.mjs /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/stage

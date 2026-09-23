@@ -1,0 +1,23 @@
+Executable=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/MacOS/Throttle
+Identifier=com.lorislab.throttle
+Format=app bundle with Mach-O universal (x86_64 arm64)
+CodeDirectory v=20500 size=69441 flags=0x10000(runtime) hashes=2159+7 location=embedded
+Hash type=sha256 size=32
+CandidateCDHash sha256=e59cc78399a75cd70ffb6760eac44437615fe3f8
+CandidateCDHashFull sha256=e59cc78399a75cd70ffb6760eac44437615fe3f843e44cc9ed8828cc4a960900
+Hash choices=sha256
+CMSDigest=e59cc78399a75cd70ffb6760eac44437615fe3f843e44cc9ed8828cc4a960900
+CMSDigestType=2
+CDHash=e59cc78399a75cd70ffb6760eac44437615fe3f8
+Signature size=8981
+Authority=Developer ID Application: Christine Martin (TDV6D5L785)
+Authority=Developer ID Certification Authority
+Authority=Apple Root CA
+Timestamp=21 Sep 2026 at 12:54:51
+Info.plist entries=33
+TeamIdentifier=TDV6D5L785
+Runtime Version=27.0.0
+Sealed Resources version=2 rules=13 files=28
+Internal requirements count=1 size=216
+Total signatures=1
+Chosen signature=1

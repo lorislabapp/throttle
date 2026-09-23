@@ -1,0 +1,12 @@
+[
+  "/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+  "-exportArchive",
+  "-archivePath",
+  "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/signed-archive-20260921-124258.xcarchive",
+  "-exportPath",
+  "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export",
+  "-exportOptionsPlist",
+  "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/ExportOptions.plist",
+  "-jobs",
+  "2"
+]

@@ -1,0 +1,122 @@
+[
+  {
+    "id": "R1",
+    "path": "/Users/kevinnadjarian/Downloads/deep-research-report.md",
+    "sha256": "66337dcda4c835d98784360fb357ac048006aee3c860130b4fe316f67ad9b5d2",
+    "bytes": 46861,
+    "lines": 755,
+    "title": "# Throttle : revue d’architecture hostile d’un « Autonomous Software Product Lab »",
+    "read_state": "COMPLETE",
+    "read_ranges": [
+      "1-755 (segmented; truncated gaps reread)"
+    ],
+    "urls": [],
+    "opaque_citation_count": 54,
+    "date_status": "No explicit document date established; dated source references do not date the report."
+  },
+  {
+    "id": "R2",
+    "path": "/Users/kevinnadjarian/Downloads/Architecture de vérification adversariale pour le développement logiciel autonome.md",
+    "sha256": "83b28ad57404b19f169775bfb56619624d2fdbf09a9491ed995ee8be6a719fc1",
+    "bytes": 45696,
+    "lines": 445,
+    "title": "# Architecture de vérification adversariale pour le développement logiciel autonome",
+    "read_state": "COMPLETE",
+    "read_ranges": [
+      "1-445 (segmented; truncated gaps reread)"
+    ],
+    "urls": [],
+    "opaque_citation_count": 50,
+    "date_status": "No explicit document date established; dated source references do not date the report."
+  },
+  {
+    "id": "R3",
+    "path": "/Users/kevinnadjarian/Downloads/Routage dynamique de modèles pour une plateforme autonome d’ingénierie logicielle.md",
+    "sha256": "b14f3be2d6c138b6664578cd663acbba1792bb0b8c8bd5b7755cb4beffb0c4a6",
+    "bytes": 50751,
+    "lines": 1285,
+    "title": "# Routage dynamique de modèles pour une plateforme autonome d’ingénierie logicielle",
+    "read_state": "COMPLETE",
+    "read_ranges": [
+      "1-1285 (segmented; truncated gaps reread)"
+    ],
+    "urls": [],
+    "opaque_citation_count": 47,
+    "date_status": "No explicit document date established; dated source references do not date the report."
+  },
+  {
+    "id": "R4",
+    "path": "/Users/kevinnadjarian/Downloads/Graphe de preuves et de provenance pour Throttle.md",
+    "sha256": "435152f8001024ab546b07fdcfb79c0bb1aefdb624c0cfe8065a677bd04732c8",
+    "bytes": 49169,
+    "lines": 1230,
+    "title": "# Graphe de preuves et de provenance pour Throttle",
+    "read_state": "COMPLETE",
+    "read_ranges": [
+      "1-1230 (segmented; truncated gaps reread)"
+    ],
+    "urls": [],
+    "opaque_citation_count": 45,
+    "date_status": "No explicit document date established; dated source references do not date the report."
+  },
+  {
+    "id": "R5",
+    "path": "/Users/kevinnadjarian/Downloads/Déterminer de façon fiable qu’une tâche logicielle est réellement terminée.md",
+    "sha256": "2f39c131385d7c482c8bec2fca0511ad9d069ab8b91e544a06c1963052da1a21",
+    "bytes": 51954,
+    "lines": 1167,
+    "title": "# Déterminer de façon fiable qu’une tâche logicielle est réellement terminée",
+    "read_state": "COMPLETE",
+    "read_ranges": [
+      "1-1167 (segmented; truncated gaps reread)"
+    ],
+    "urls": [],
+    "opaque_citation_count": 44,
+    "date_status": "No explicit document date established; dated source references do not date the report."
+  },
+  {
+    "id": "R6",
+    "path": "/Users/kevinnadjarian/Downloads/Contrôleur d’autonomie pour agents de génie logiciel hautement autonomes.md",
+    "sha256": "dfc0bcf19ef3e774a721f7a30e826ac1fb4b4871ca5e7d1a40180a78a8347ef8",
+    "bytes": 53930,
+    "lines": 1311,
+    "title": "# Contrôleur d’autonomie pour agents de génie logiciel hautement autonomes",
+    "read_state": "COMPLETE",
+    "read_ranges": [
+      "1-1311 (segmented; truncated gaps reread)"
+    ],
+    "urls": [],
+    "opaque_citation_count": 49,
+    "date_status": "No explicit document date established; dated source references do not date the report."
+  },
+  {
+    "id": "R7",
+    "path": "/Users/kevinnadjarian/Downloads/Modèles de décision dédiés pour un système autonome d’ingénierie logicielle.md",
+    "sha256": "d9aa04a630d4f7e0b53078b1860501d491383d2c19e4c8dcb99f1a8da7fde507",
+    "bytes": 48199,
+    "lines": 593,
+    "title": "# Modèles de décision dédiés pour un système autonome d’ingénierie logicielle",
+    "read_state": "COMPLETE",
+    "read_ranges": [
+      "1-593 (segmented; truncated gaps reread)"
+    ],
+    "urls": [],
+    "opaque_citation_count": 40,
+    "date_status": "No explicit document date established; dated source references do not date the report."
+  },
+  {
+    "id": "R8",
+    "path": "/Users/kevinnadjarian/Downloads/Throttle architecture d’un « Autonomous Software Product Lab » fiable en 2026.md",
+    "sha256": "91a14ee7a01fb3da0f81ec0a4b027720271dbc830583537b93c7ac2e9d126f33",
+    "bytes": 60368,
+    "lines": 650,
+    "title": "# Throttle : architecture d’un « Autonomous Software Product Lab » fiable en 2026",
+    "read_state": "COMPLETE",
+    "read_ranges": [
+      "1-650 (segmented; truncated gaps reread)"
+    ],
+    "urls": [],
+    "opaque_citation_count": 101,
+    "date_status": "No explicit document date established; dated source references do not date the report."
+  }
+]

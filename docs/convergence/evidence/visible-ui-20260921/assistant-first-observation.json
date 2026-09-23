@@ -1,0 +1,26 @@
+{
+  "observed_at": "2026-09-21T07:22:42.851828",
+  "run": "visual-tests-20260921-071949",
+  "host_pid": 51599,
+  "window": "Throttle QA — Stopped response and completed next turn — fr_FR",
+  "requested_language": "en",
+  "observed_locale": "fr_FR",
+  "appearance": "light",
+  "visual_observations": [
+    "User and assistant bubbles legible, including stopped-response note",
+    "No white missing-text regions in the real window",
+    "Blank input is labelled Message à l’Assistant du projet; Send is disabled"
+  ],
+  "interactive_observations": [
+    "Entered Keyboard fixture check in the identified NSTextView",
+    "Cmd-Return appended user turn and exposed project-assistant-stop",
+    "AX click Stop exposed localized stopped note, restored disabled Send and retained editor focus"
+  ],
+  "provider": "ControlledAssistantProvider (no external request)",
+  "limits": [
+    "CUA screenshots are in the conversation tool trace; no filesystem copy of them claimed",
+    "This is not a VoiceOver speech test",
+    "English launch configuration did not produce English UI",
+    "Partial-response stopped note visible but absent from the condensed CUA text listing; investigate separately"
+  ]
+}

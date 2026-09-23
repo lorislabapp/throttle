@@ -337,3 +337,44 @@ extension PlanIntegrationFlowTests {
         XCTAssertEqual(model.state("t1").status, .done, "which is the other project's own t1")
     }
 }
+
+// MARK: - Diff availability
+
+extension PlanIntegrationFlowTests {
+    func test_diffFailureClearsStaleTextAndRetryCanRecover() async throws {
+        let model = try makeModel(verify: "true")
+        let reference = "refs/heads/task/t1"
+        let taskSHA = run(["rev-parse", reference]).trimmingCharacters(in: .whitespacesAndNewlines)
+        await model.refreshDiff(for: "t1")
+        XCTAssertTrue(model.integrationDiff(for: "t1").contains("task.txt"))
+
+        run(["update-ref", "-d", reference])
+        await model.refreshDiff(for: "t1")
+        guard case .failed(let reason) = model.integrationDiffState(for: "t1") else {
+            return XCTFail("An unavailable diff must not be presented as no changes")
+        }
+        XCTAssertFalse(reason.isEmpty)
+        XCTAssertEqual(model.integrationDiff(for: "t1"), "", "stale text was invalidated")
+
+        run(["update-ref", reference, taskSHA])
+        await model.refreshDiff(for: "t1")
+        guard case .loaded(let text) = model.integrationDiffState(for: "t1") else {
+            return XCTFail("A successful retry replaces the error")
+        }
+        XCTAssertTrue(text.contains("task.txt"))
+    }
+
+    func test_emptyDiffIsLoadedAndRebindingClearsItsState() async throws {
+        let model = try makeModel(verify: "true")
+        XCTAssertEqual(model.integrationDiffState(for: "t1"), .idle)
+        run(["update-ref", "refs/heads/task/t1", "HEAD"])
+        await model.refreshDiff(for: "t1")
+        XCTAssertEqual(model.integrationDiffState(for: "t1"), .loaded(""))
+
+        let other = try secondProject()
+        model.bind(to: other)
+        XCTAssertEqual(model.integrationDiffState(for: "t1"), .idle)
+        await model.refreshDiff(for: "t1")
+        XCTAssertTrue(model.integrationDiff(for: "t1").contains("task.txt"))
+    }
+}

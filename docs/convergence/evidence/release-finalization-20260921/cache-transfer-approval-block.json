@@ -1,0 +1,10 @@
+{
+  "result": "REJECTED_BEFORE_EXECUTION",
+  "reason": "Automatic review requires precise authorization for move, symlinks and deletion of verified duplicate cache copies",
+  "sources": [
+    "build/workflow-contracts-8a91a20b/Packages/ResearchVaultKit/.build",
+    "build/workflow-contracts-8a91a20b/ThrottleShared/.build"
+  ],
+  "changed": false,
+  "permission_requested": true
+}

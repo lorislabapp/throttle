@@ -1,11 +1,29 @@
 # Throttle — current work ledger
 
+## Cockpit navigation — scoped resume, 2026-09-18
+
+Only for `feat/cockpit-navigation` in `~/.claude/worktrees/throttle-project-overview`.
+Outside-agent initial loading/polling and honest unknown-cost display are fixed.
+23 targeted XCTest tests pass, including 4 hosted SwiftUI/AX view tests; pinned
+SwiftLint 0.63.2 passes. Cloud discovery/cost remains unverified on real threads.
+Human build testing, the vault's unreadable-folder diagnosis and the interrupted
+assignment recovery policy remain open. No release or installation performed.
+Evidence, exact changed files and remaining §6 gates:
+[resume receipt](testing/2026-09-18-cockpit-navigation-resume.md).
+
 ## SOTA integration — active implementation
 
 Implement the approved local-first, personal-then-product plan on this integration
 checkout, preserving concurrent CI/CloudKit/release changes. Bounded progress and
 all remaining personal/product gates: [SOTA implementation ledger](testing/sota-integration-ledger.md).
 No release or cross-app adoption is implied by local test results.
+
+## Source audit — 2026-09-22
+
+The [T1.2 inventory](../audit-output/T1.2-gaps.md) applies to source snapshot
+`f49f7c6` (branch `feat/research-vault-lots-1-4`, declared 3.5.0), not to this
+branch's later source. It separates corrected documentation from unfinished
+integration, unverified runtime behavior and deliberate product exclusions.
 
 ## Workflow / context validation — 2026-09-08
 

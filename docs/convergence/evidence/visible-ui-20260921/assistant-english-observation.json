@@ -1,0 +1,20 @@
+{
+  "observed_at": "2026-09-21T07:26:05.547051",
+  "run": "visual-tests-20260921-072423",
+  "host_pid": 53570,
+  "locale": "en_US",
+  "appearance": "light",
+  "language_configuration": "TestLanguage/TestRegion plus process-local -AppleLanguages (en) -AppleLocale en_US arguments; no persisted defaults changed",
+  "observations": [
+    "English labels and stopped-response note visible in real window",
+    "Resized actual fixture via CUA from approximately 850x750 to 480x600",
+    "Bubbles and stopped note wrap without clipping; provider controls and Send remain visible",
+    "Editor retains focus after resize",
+    "Native AX assertion for stopped partial response reached the review marker; no product accessibility defect established from condensed CUA listing"
+  ],
+  "limits": [
+    "No VoiceOver speech test",
+    "Only synthetic fixture conversation; no real provider",
+    "NSView.cacheDisplay attachment remains an unreliable representation of the real window; CUA screenshot tool trace is the visual observation"
+  ]
+}

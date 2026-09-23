@@ -1,0 +1,48 @@
+{
+  "status": "pass",
+  "cases": 84,
+  "distinct_suites": 9,
+  "execution": "nine completed suites, one interrupted attempt retained",
+  "same_source_snapshot": true,
+  "source_build": "build-20260921-100452",
+  "host": "com.lorislab.throttle.test-host",
+  "host_storage": "internal",
+  "suites": {
+    "PromptRefinerServiceTests": {
+      "label": "isolated-suite-PromptRefinerServiceTests-20260921-100651",
+      "cases": 23
+    },
+    "CockpitSpendViewTests": {
+      "label": "isolated-suite-CockpitSpendViewTests-20260921-100655",
+      "cases": 4
+    },
+    "RemoteSessionsCredentialTests": {
+      "label": "isolated-suite-RemoteSessionsCredentialTests-20260921-100658",
+      "cases": 5
+    },
+    "CloudKitPublisherTests": {
+      "label": "isolated-suite-CloudKitPublisherTests-20260921-100700",
+      "cases": 9
+    },
+    "PeerTerminalBoundaryTests": {
+      "label": "isolated-suite-PeerTerminalBoundaryTests-20260921-100702",
+      "cases": 12
+    },
+    "RemoteTransferJournalTests": {
+      "label": "isolated-suite-RemoteTransferJournalTests-20260921-100705",
+      "cases": 10
+    },
+    "ProjectAssistantViewTests": {
+      "label": "isolated-suite-ProjectAssistantViewTests-20260921-100707",
+      "cases": 4
+    },
+    "PlanIntegrationViewTests": {
+      "label": "isolated-suite-PlanIntegrationViewTests-20260921-100712",
+      "cases": 4
+    },
+    "PlanIntegrationFlowTests": {
+      "label": "isolated-suite-PlanIntegrationFlowTests-20260921-100749",
+      "cases": 13
+    }
+  }
+}

@@ -124,8 +124,10 @@ extension ResearchVaultWorkbenchModel {
     }
 
     static func projectNames(under root: URL, segment: Int) -> Set<String> {
-        guard segment > 0 else { return Set(directories(in: root).map(\.lastPathComponent)) }
-        return Set(directories(in: root).flatMap { directories(in: $0).map(\.lastPathComponent) })
+        let names = segment > 0
+            ? directories(in: root).flatMap { directories(in: $0).map(\.lastPathComponent) }
+            : directories(in: root).map(\.lastPathComponent)
+        return Set(names.compactMap(ResearchVaultFolderSource.canonicalProjectKey))
     }
 
     static func directories(in url: URL) -> [URL] {
@@ -162,13 +164,21 @@ extension ResearchVaultWorkbenchModel {
             // One unreadable or oversized folder used to abort the loop, so a
             // single bad source silently kept every other folder unindexed.
             var failed = 0
-            for source in sources {
+            var paused = false
+            for (position, source) in sources.enumerated() {
                 do {
-                    imported += try await syncFolderSource(source, client: client)
+                    let result = try await syncFolderSource(source, client: client,
+                                                            remainingFolders: sources.count - position - 1)
+                    imported += result.inserted
+                    folderErrors[source.id] = nil
+                    if result.paused { paused = true; break }
                 } catch {
                     failed += 1
+                    folderErrors[source.id] = Self.folderErrorText(error)
+                    BackgroundWork.shared.vaultFolderFailed(source.name, reason: error.localizedDescription)
                 }
             }
+            BackgroundWork.shared.vaultSyncEnded(paused: paused)
             folderSources = ResearchVaultFolderSourceStore.load()
             if imported > 0 {
                 approvedReceipts = try await loadApprovedReceipts(client: client)
@@ -188,17 +198,24 @@ extension ResearchVaultWorkbenchModel {
         }
     }
 
+    /// `paused` is true when the Cockpit asked background work to pause: the
+    /// folder is left unmarked so the next sync picks it up where it stopped.
     func syncFolderSource(
         _ source: ResearchVaultFolderSource,
-        client: ResearchVaultClient
-    ) async throws -> Int {
+        client: ResearchVaultClient,
+        remainingFolders: Int
+    ) async throws -> (inserted: Int, paused: Bool) {
         let folder = try ResearchVaultFolderSourceStore.resolve(source)
-        guard folder.startAccessingSecurityScopedResource() else {
+        let scoped = folder.startAccessingSecurityScopedResource()
+        guard scoped || !ResearchVaultFolderSourceStore.isSandboxed else {
             throw ResearchVaultFolderSourceError.unavailable
         }
-        defer { folder.stopAccessingSecurityScopedResource() }
+        defer { if scoped { folder.stopAccessingSecurityScopedResource() } }
         let scan = try ResearchVaultFolderSourceStore.changedFiles(for: source, at: folder)
-        guard !scan.urls.isEmpty else { return 0 }
+        guard !scan.urls.isEmpty else { return (0, false) }
+        let control = BackgroundWork.shared.vaultFolderScanned(
+            files: scan.urls.count, remainingFolders: remainingFolders,
+            resume: { [weak self] in Task { await self?.syncFolderSources(reportEmpty: false) } })
 
         // A folder holding more than one import's worth of files used to be
         // refused outright, which meant a real research folder — 37 files was
@@ -206,14 +223,24 @@ extension ResearchVaultWorkbenchModel {
         // size. Files are grouped by the project they belong to and imported a
         // batch at a time instead.
         var byProject: [String: [URL]] = [:]
+        var relativeByPath: [String: String] = [:]
         for file in scan.urls {
             byProject[source.projectKey(forRelativePath: file.relative), default: []].append(file.url)
+            relativeByPath[file.url.standardizedFileURL.path] = file.relative
         }
 
         var inserted = 0
+        var filesDone = 0
         for (projectKey, files) in byProject.sorted(by: { $0.key < $1.key }) {
             try await client.admitProjects([projectKey])
             for chunk in files.vaultImportChunks(into: ManualResearchFileImporter.maximumDocuments) {
+                // Between batches: the Cockpit's Skip / Pause. A skipped folder
+                // stays unmarked, so the next sync retries it.
+                if control.consumeSkip() {
+                    BackgroundWork.shared.vaultFolderSkipped(source.name, files: scan.urls.count - filesDone)
+                    return (inserted, false)
+                }
+                if control.isPauseRequested { return (inserted, true) }
                 let batch = try ManualResearchFileImporter(
                     files: chunk,
                     projectKey: projectKey
@@ -226,13 +253,62 @@ extension ResearchVaultWorkbenchModel {
                     _ = try await client.review(ids: pendingIDs, action: .approve)
                 }
                 inserted += response.insertedReceipts
+                try await sendDocuments(batch, files: chunk, projectKey: projectKey,
+                                        relativeByPath: relativeByPath, client: client)
+                filesDone += chunk.count
+                BackgroundWork.shared.vaultImported(files: chunk.count, current: projectKey)
             }
         }
         try ResearchVaultFolderSourceStore.markSynced(
             id: source.id,
             fingerprints: scan.fingerprints
         )
-        return inserted
+        return (inserted, false)
+    }
+
+    /// The text of the files just receipted. Receipts alone left the vault with
+    /// documents to show and nothing to search, which read on screen as an
+    /// import that had done nothing.
+    func sendDocuments(_ batch: ManualResearchImportBatch, files: [URL], projectKey: String,
+                       relativeByPath: [String: String], client: ResearchVaultClient) async throws {
+        var relativeByName: [String: String] = [:]
+        for file in files {
+            let path = file.standardizedFileURL.path
+            relativeByName[file.lastPathComponent] = relativeByPath[path] ?? file.lastPathComponent
+        }
+        let payloads = batch.documents.compactMap { document -> ResearchVaultDocumentPayload? in
+            guard document.byteCount <= ResearchVaultIPCContract.maximumDocumentBytes else { return nil }
+            let relative = relativeByName[document.name] ?? document.name
+            return ResearchVaultDocumentPayload(
+                documentID: "folder-\(projectKey)-\(document.plaintextSHA256.prefix(32))",
+                title: document.name,
+                projectKey: projectKey,
+                category: URL(fileURLWithPath: relative).deletingLastPathComponent().lastPathComponent,
+                libraryPath: relative,
+                origins: [],
+                content: document.text,
+                plaintextSHA256: document.plaintextSHA256,
+                byteCount: document.byteCount,
+                modifiedAt: document.modifiedAt,
+                sensitivity: ResearchSensitivity.confidential.rawValue
+            )
+        }
+        for group in payloads.vaultDocumentBatches() {
+            _ = try await client.importDocuments(group)
+        }
+    }
+
+    static func folderErrorText(_ error: Error) -> String {
+        switch error {
+        case ResearchVaultFolderSourceError.staleBookmark:
+            String(localized: "Access lost: remove it and add the folder again.")
+        case ResearchVaultFolderSourceError.unavailable:
+            String(localized: "The folder is missing or not reachable.")
+        case ResearchVaultFolderSourceError.tooManyFiles:
+            String(localized: "Too many files: pick a smaller folder.")
+        default:
+            String(localized: "Import failed: \(error.localizedDescription)")
+        }
     }
 
     func installFolderMonitor() {

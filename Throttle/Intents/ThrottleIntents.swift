@@ -198,6 +198,15 @@ struct ThrottleFocusFilter: SetFocusFilterIntent {
 struct ThrottleAppShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
+            intent: GetWaitingIntent(),
+            phrases: [
+                "What waits on me in \(.applicationName)",
+                "What is waiting for me in \(.applicationName)"
+            ],
+            shortTitle: "What waits on me",
+            systemImageName: "bell.badge"
+        )
+        AppShortcut(
             intent: GetUsageIntent(),
             phrases: [
                 "Show my \(.applicationName) usage",

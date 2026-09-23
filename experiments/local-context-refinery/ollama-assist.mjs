@@ -80,6 +80,38 @@ export function buildOllamaRequest(report, model) {
   };
 }
 
+function parseContract(content) {
+  const fenced = content.trim().match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+  return JSON.parse(fenced ? fenced[1] : content);
+}
+
+function postChat(endpoint, payload, timeoutMs) {
+  const body = JSON.stringify(payload);
+  return new Promise((resolve, reject) => {
+    const request = http.request(new URL("/api/chat", endpoint), {
+      method: "POST",
+      headers: { "content-type": "application/json", "content-length": Buffer.byteLength(body) },
+      timeout: timeoutMs,
+    }, (incoming) => {
+      const chunks = [];
+      let bytes = 0;
+      incoming.on("data", (chunk) => {
+        bytes += chunk.length;
+        if (bytes > 1_000_000) {
+          incoming.destroy(new Error("Local-model response exceeded 1 MB."));
+          return;
+        }
+        chunks.push(chunk);
+      });
+      incoming.on("end", () => resolve({ status: incoming.statusCode, body: Buffer.concat(chunks).toString("utf8") }));
+      incoming.on("error", reject);
+    });
+    request.on("timeout", () => request.destroy(new Error("Local-model request timed out.")));
+    request.on("error", reject);
+    request.end(body);
+  });
+}
+
 export async function assistWithOllama(report, options = {}) {
   const config = { ...localModelConfiguration(), ...options };
   if (!config.model) {
@@ -90,38 +122,24 @@ export async function assistWithOllama(report, options = {}) {
     return { status: "rejected", reason: error.message, authority: "advisory-only" };
   }
 
-  const body = JSON.stringify(buildOllamaRequest(report, config.model));
-
+  const request = buildOllamaRequest(report, config.model);
   const timeoutMs = Math.min(60_000, Math.max(1_000, Number(options.timeoutMs) || 30_000));
   try {
-    const response = await new Promise((resolve, reject) => {
-      const request = http.request(new URL("/api/chat", endpoint), {
-        method: "POST",
-        headers: { "content-type": "application/json", "content-length": Buffer.byteLength(body) },
-        timeout: timeoutMs,
-      }, (incoming) => {
-        const chunks = [];
-        let bytes = 0;
-        incoming.on("data", (chunk) => {
-          bytes += chunk.length;
-          if (bytes > 1_000_000) {
-            incoming.destroy(new Error("Local-model response exceeded 1 MB."));
-            return;
-          }
-          chunks.push(chunk);
-        });
-        incoming.on("end", () => resolve({ status: incoming.statusCode, body: Buffer.concat(chunks).toString("utf8") }));
-        incoming.on("error", reject);
-      });
-      request.on("timeout", () => request.destroy(new Error("Local-model request timed out.")));
-      request.on("error", reject);
-      request.end(body);
-    });
+    let structuredOutput = "schema";
+    let response = await postChat(endpoint, request, timeoutMs);
+    // Some runtimes (Ollama's MLX engine as of 0.34) refuse `format` with HTTP 501.
+    // Retry once with the contract carried by the system prompt only; validateAssist
+    // still rejects anything that does not match it.
+    if (response.status === 501 && /structured output is unavailable/i.test(response.body)) {
+      const { format: _omitted, ...promptOnly } = request;
+      structuredOutput = "prompt-only";
+      response = await postChat(endpoint, promptOnly, timeoutMs);
+    }
     if (response.status < 200 || response.status >= 300) throw new Error(`Ollama returned HTTP ${response.status}.`);
     const envelope = JSON.parse(response.body);
     const content = envelope?.message?.content;
     if (typeof content !== "string") throw new Error("Ollama response has no message content.");
-    return validateAssist(JSON.parse(content), config.model, report);
+    return { ...validateAssist(parseContract(content), config.model, report), structured_output: structuredOutput };
   } catch (error) {
     return { status: "unavailable", reason: error.message, model: config.model, authority: "advisory-only" };
   }

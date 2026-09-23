@@ -1,0 +1,23 @@
+{
+  "ownerProtocol" : {
+    "runtimeName" : "ResearchVaultXPCClient.ResearchVaultOwnerXPCProtocol",
+    "selectors" : [
+      "admitProjects:withReply:",
+      "exportReceipts:withReply:",
+      "importDocuments:withReply:",
+      "importReceipts:withReply:",
+      "listQuarantine:withReply:",
+      "promoteReasoning:withReply:",
+      "queryReasoning:withReply:",
+      "reviewQuarantine:withReply:"
+    ]
+  },
+  "queryProtocol" : {
+    "runtimeName" : "ResearchVaultXPCClient.ResearchVaultQueryXPCProtocol",
+    "selectors" : [
+      "healthWithReply:",
+      "search:withReply:"
+    ]
+  },
+  "receiptFileSuffix" : ".research-receipt.json"
+}

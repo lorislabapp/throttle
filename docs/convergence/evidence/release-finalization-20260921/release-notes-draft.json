@@ -1,0 +1,16 @@
+{
+  "source": "../../RELEASE-COPY-DRAFT.md",
+  "generated_at": "2026-09-21T11:20:19.442160+02:00",
+  "source_sha256": "25ffd19c97731066be89bf91b9c4705d19c33a7591896ee0ae3c55c6558e96ac",
+  "html_sha256": "1291069a87d47f3b15acc8a8d22f9ab808a934752dcf511e9331d8319b62db63",
+  "sections": [
+    "Note fran\u00e7aise propos\u00e9e",
+    "Proposed English release note"
+  ],
+  "status": "DRAFT_NOT_STAGED",
+  "requires": [
+    "Final provider decision",
+    "Final candidate verification",
+    "Approval of public stage"
+  ]
+}

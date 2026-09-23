@@ -1,0 +1,37 @@
+--- a/throttle/index.html
++++ b/throttle/index.html
+@@ -4,7 +4,7 @@
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>Throttle — the cost &amp; health cockpit for Claude Code</title>
+-<meta name="description" content="Know when Claude Code will hit its limit — before it stops your work. Throttle puts your 5-hour and weekly usage in the macOS menu bar, predicts your cap, runs every project from one cockpit, and trims token waste. 100% local, no account." />
++<meta name="description" content="A local-first macOS cockpit for project sessions, usage and verification. AI requests use the model or server you choose; external providers may charge separately." />
+ <meta name="author" content="LorisLabs" />
+ <meta name="robots" content="index, follow" />
+ <script type="module" src="https://lorislab.fr/.webmcp/bridge.js" data-packs="c2pa,mcp-server-client"></script><link rel="canonical" href="https://lorislab.fr/throttle/" />
+@@ -13,14 +13,14 @@
+ <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon/favicon-32x32.png" />
+ <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon/favicon-16x16.png" />
+ <meta property="og:title" content="Throttle — the cost &amp; health cockpit for Claude Code" />
+-<meta property="og:description" content="Live Claude Code usage in your menu bar, a multi-session cockpit, and an AI that trims your token waste — a precise instrument that never becomes the engine. 100% local, macOS 14+." />
++<meta property="og:description" content="A local-first macOS cockpit for project sessions, usage and verification. AI requests use the model or server you choose; external providers may charge separately." />
+ <meta property="og:type" content="website" />
+ <meta property="og:url" content="https://lorislab.fr/throttle/" />
+ <meta property="og:site_name" content="LorisLabs" />
+ <meta property="og:image" content="https://lorislab.fr/images/lorislab-logo.png" />
+ <meta name="twitter:card" content="summary_large_image" />
+ <meta name="twitter:title" content="Throttle — the cost &amp; health cockpit for Claude Code" />
+-<meta name="twitter:description" content="Live Claude Code usage, a multi-session cockpit, and an AI that trims token waste. 100% local, macOS 14+." />
++<meta name="twitter:description" content="A local-first macOS cockpit for project sessions, usage and verification. AI requests use the model or server you choose; external providers may charge separately." />
+ <meta name="twitter:image" content="https://lorislab.fr/images/lorislab-logo.png" />
+ <link rel="stylesheet" href="landing.css" />
+ </head>
+@@ -239,7 +239,7 @@
+   <div class="wrap">
+     <svg class="lock" viewBox="0 0 24 24" fill="none"><rect x="5" y="10.5" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10.5V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.6"/></svg>
+     <h2>It audits and optimizes — it never becomes the engine.</h2>
+-    <p>Throttle reads <span class="mono">~/.claude</span> on your Mac and stays out of the way. 100% local — <strong>no telemetry, no analytics, no account</strong>: your prompts, code and usage never leave the machine. Signed &amp; notarized, auto-updates via Sparkle; uninstall cleanly any time and every change reverts.</p>
++    <p>Throttle keeps its usage history and project records on your Mac. Assistant and optimization requests use the local model or external server you choose. External processing can send prompts, selected code and tool results to that destination; provider charges may apply separately. License activation and update checks also use network services. Project commands run with your macOS account permissions and are intended for trusted projects. Review changes before applying them, and preserve project journals when updating. See our privacy information for data flows and controls.</p>
+   </div>
+ </section>
+ 

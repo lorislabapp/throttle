@@ -1,0 +1,21 @@
+{"status":"pass","scenario":"research-vault-bundle","signed":1}
+--prepared:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/PlugIns/ThrottleWidget.appex
+--validated:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/PlugIns/ThrottleWidget.appex
+--prepared:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib
+--validated:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Frameworks/libswiftCompatibilitySpan.dylib
+--prepared:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.
+--prepared:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app
+--prepared:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc
+--prepared:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate
+--validated:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate
+--validated:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc
+--prepared:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app
+--prepared:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc
+--validated:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app
+--validated:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc
+--validated:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.
+--prepared:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/Current/.
+--validated:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app/Contents/Frameworks/SQLCipher.framework/Versions/Current/.
+--validated:/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/Library/LoginItems/ResearchVaultAgent.app
+/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app: valid on disk
+/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app: satisfies its Designated Requirement

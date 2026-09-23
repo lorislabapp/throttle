@@ -1,0 +1,67 @@
+{
+  "status": "pass",
+  "cases": 84,
+  "distinct_suites": 9,
+  "execution": "nine independently completed suites; not one monolithic xcodebuild run",
+  "same_source_snapshot": true,
+  "host_identity": "com.lorislab.throttle.test-host",
+  "host_storage": "internal",
+  "production_services": "disabled, isolated host marker observed",
+  "code_coverage_percentage": "not collected",
+  "suites": [
+    {
+      "suite": "PromptRefinerServiceTests",
+      "label": "isolated-suite-PromptRefinerServiceTests-20260921-092653",
+      "cases": 23,
+      "duration_seconds": 4.1024909019470215
+    },
+    {
+      "suite": "CockpitSpendViewTests",
+      "label": "isolated-suite-CockpitSpendViewTests-20260921-092658",
+      "cases": 4,
+      "duration_seconds": 2.073486089706421
+    },
+    {
+      "suite": "RemoteSessionsCredentialTests",
+      "label": "isolated-suite-RemoteSessionsCredentialTests-20260921-092700",
+      "cases": 5,
+      "duration_seconds": 2.085946798324585
+    },
+    {
+      "suite": "CloudKitPublisherTests",
+      "label": "isolated-suite-CloudKitPublisherTests-20260921-092703",
+      "cases": 9,
+      "duration_seconds": 2.0915000438690186
+    },
+    {
+      "suite": "PeerTerminalBoundaryTests",
+      "label": "isolated-suite-PeerTerminalBoundaryTests-20260921-092705",
+      "cases": 12,
+      "duration_seconds": 2.0710439682006836
+    },
+    {
+      "suite": "RemoteTransferJournalTests",
+      "label": "isolated-suite-RemoteTransferJournalTests-20260921-092858",
+      "cases": 10,
+      "duration_seconds": 2.082703113555908
+    },
+    {
+      "suite": "ProjectAssistantViewTests",
+      "label": "isolated-suite-ProjectAssistantViewTests-20260921-092900",
+      "cases": 4,
+      "duration_seconds": 4.098272800445557
+    },
+    {
+      "suite": "PlanIntegrationViewTests",
+      "label": "isolated-suite-PlanIntegrationViewTests-20260921-092905",
+      "cases": 4,
+      "duration_seconds": 2.0769810676574707
+    },
+    {
+      "suite": "PlanIntegrationFlowTests",
+      "label": "isolated-suite-PlanIntegrationFlowTests-20260921-092907",
+      "cases": 13,
+      "duration_seconds": 30.442541122436523
+    }
+  ]
+}

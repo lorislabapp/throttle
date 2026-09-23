@@ -1,0 +1,18 @@
+{
+  "en": {
+    "run": "visual-tests-20260921-073017",
+    "visual": "Four English suggestions observed in real CUA window, light appearance",
+    "terminal": "PASS"
+  },
+  "fr": {
+    "run": "visual-tests-20260921-073134",
+    "accessibility": "Four French suggestions observed in AX tree",
+    "visual": "Screenshot output truncated; French dark raster NOT inspected",
+    "terminal": "PASS"
+  },
+  "limits": [
+    "No VoiceOver speech",
+    "Synthetic provider only",
+    "CUA screenshots retained in conversation; NSView raster attachments unreliable"
+  ]
+}

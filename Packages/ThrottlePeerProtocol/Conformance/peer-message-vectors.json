@@ -1,0 +1,307 @@
+{
+  "protocol": "Throttle LAN peer message",
+  "format_version": 1,
+  "header": {
+    "size_bytes": 17,
+    "byte_order": "big-endian",
+    "fields": [
+      [
+        "kind",
+        "uint8"
+      ],
+      [
+        "seq",
+        "uint32"
+      ],
+      [
+        "timestamp_millis",
+        "uint64"
+      ],
+      [
+        "length",
+        "uint32"
+      ]
+    ]
+  },
+  "max_payload_bytes": 4194304,
+  "kinds": {
+    "1": "hello",
+    "2": "snapshot",
+    "3": "heartbeat",
+    "4": "termAttach",
+    "5": "termOut",
+    "6": "termIn",
+    "7": "termResize",
+    "8": "termDetach"
+  },
+  "vector_types": {
+    "frame": "wire_hex decodes to expect, consuming exactly expect.consumed bytes, and encoding expect produces wire_hex",
+    "frame_generated": "header_hex followed by payload_repeat bytes; decodes to expect",
+    "incomplete": "the decoder reports that more bytes are needed; it is not an error",
+    "reject": "the decoder fails with expect.error carrying expect.value",
+    "stream": "decoding repeatedly yields expect in order, each consuming its bytes"
+  },
+  "vectors": [
+    {
+      "name": "snapshot-golden",
+      "type": "frame",
+      "wire_hex": "02012345670123456789abcdef000000030080ff",
+      "expect": {
+        "kind": "snapshot",
+        "seq": 19088743,
+        "timestamp_millis": 81985529216486895,
+        "payload_hex": "0080ff",
+        "consumed": 20
+      },
+      "note": "Deployed framing: big-endian header, three payload bytes including 0x00 and 0xff."
+    },
+    {
+      "name": "heartbeat-empty-payload",
+      "type": "frame",
+      "wire_hex": "0300000001000000000000000700000000",
+      "expect": {
+        "kind": "heartbeat",
+        "seq": 1,
+        "timestamp_millis": 7,
+        "payload_hex": "",
+        "consumed": 17
+      },
+      "note": "A zero-length payload is a valid frame."
+    },
+    {
+      "name": "kind-1-hello",
+      "type": "frame",
+      "wire_hex": "0100000000000000000000000000000000",
+      "expect": {
+        "kind": "hello",
+        "seq": 0,
+        "timestamp_millis": 0,
+        "payload_hex": "",
+        "consumed": 17
+      },
+      "note": "Wire value 1 is hello; values are part of the contract and never reassigned."
+    },
+    {
+      "name": "kind-2-snapshot",
+      "type": "frame",
+      "wire_hex": "0200000000000000000000000000000000",
+      "expect": {
+        "kind": "snapshot",
+        "seq": 0,
+        "timestamp_millis": 0,
+        "payload_hex": "",
+        "consumed": 17
+      },
+      "note": "Wire value 2 is snapshot; values are part of the contract and never reassigned."
+    },
+    {
+      "name": "kind-3-heartbeat",
+      "type": "frame",
+      "wire_hex": "0300000000000000000000000000000000",
+      "expect": {
+        "kind": "heartbeat",
+        "seq": 0,
+        "timestamp_millis": 0,
+        "payload_hex": "",
+        "consumed": 17
+      },
+      "note": "Wire value 3 is heartbeat; values are part of the contract and never reassigned."
+    },
+    {
+      "name": "kind-4-termAttach",
+      "type": "frame",
+      "wire_hex": "0400000000000000000000000000000000",
+      "expect": {
+        "kind": "termAttach",
+        "seq": 0,
+        "timestamp_millis": 0,
+        "payload_hex": "",
+        "consumed": 17
+      },
+      "note": "Wire value 4 is termAttach; values are part of the contract and never reassigned."
+    },
+    {
+      "name": "kind-5-termOut",
+      "type": "frame",
+      "wire_hex": "0500000000000000000000000000000000",
+      "expect": {
+        "kind": "termOut",
+        "seq": 0,
+        "timestamp_millis": 0,
+        "payload_hex": "",
+        "consumed": 17
+      },
+      "note": "Wire value 5 is termOut; values are part of the contract and never reassigned."
+    },
+    {
+      "name": "kind-6-termIn",
+      "type": "frame",
+      "wire_hex": "0600000000000000000000000000000000",
+      "expect": {
+        "kind": "termIn",
+        "seq": 0,
+        "timestamp_millis": 0,
+        "payload_hex": "",
+        "consumed": 17
+      },
+      "note": "Wire value 6 is termIn; values are part of the contract and never reassigned."
+    },
+    {
+      "name": "kind-7-termResize",
+      "type": "frame",
+      "wire_hex": "0700000000000000000000000000000000",
+      "expect": {
+        "kind": "termResize",
+        "seq": 0,
+        "timestamp_millis": 0,
+        "payload_hex": "",
+        "consumed": 17
+      },
+      "note": "Wire value 7 is termResize; values are part of the contract and never reassigned."
+    },
+    {
+      "name": "kind-8-termDetach",
+      "type": "frame",
+      "wire_hex": "0800000000000000000000000000000000",
+      "expect": {
+        "kind": "termDetach",
+        "seq": 0,
+        "timestamp_millis": 0,
+        "payload_hex": "",
+        "consumed": 17
+      },
+      "note": "Wire value 8 is termDetach; values are part of the contract and never reassigned."
+    },
+    {
+      "name": "unsigned-maximums",
+      "type": "frame",
+      "wire_hex": "03ffffffffffffffffffffffff00000000",
+      "expect": {
+        "kind": "heartbeat",
+        "seq": 4294967295,
+        "timestamp_millis": 18446744073709551615,
+        "payload_hex": "",
+        "consumed": 17
+      },
+      "note": "seq and timestamp are unsigned; their maximum values must round-trip without sign extension."
+    },
+    {
+      "name": "snapshot-truncated-0",
+      "type": "incomplete",
+      "wire_hex": "",
+      "note": "A prefix of a valid frame is not an error: the reader waits for more bytes."
+    },
+    {
+      "name": "snapshot-truncated-1",
+      "type": "incomplete",
+      "wire_hex": "02",
+      "note": "A prefix of a valid frame is not an error: the reader waits for more bytes."
+    },
+    {
+      "name": "snapshot-truncated-16",
+      "type": "incomplete",
+      "wire_hex": "02012345670123456789abcdef000000",
+      "note": "A prefix of a valid frame is not an error: the reader waits for more bytes."
+    },
+    {
+      "name": "snapshot-truncated-17",
+      "type": "incomplete",
+      "wire_hex": "02012345670123456789abcdef00000003",
+      "note": "A prefix of a valid frame is not an error: the reader waits for more bytes."
+    },
+    {
+      "name": "snapshot-truncated-19",
+      "type": "incomplete",
+      "wire_hex": "02012345670123456789abcdef000000030080",
+      "note": "A prefix of a valid frame is not an error: the reader waits for more bytes."
+    },
+    {
+      "name": "unknown-kind-0",
+      "type": "reject",
+      "wire_hex": "0000000000000000000000000000000000",
+      "expect": {
+        "error": "unknown_kind",
+        "value": 0
+      },
+      "note": "An unassigned kind is refused, not skipped."
+    },
+    {
+      "name": "unknown-kind-9",
+      "type": "reject",
+      "wire_hex": "0900000000000000000000000000000000",
+      "expect": {
+        "error": "unknown_kind",
+        "value": 9
+      },
+      "note": "An unassigned kind is refused, not skipped."
+    },
+    {
+      "name": "unknown-kind-255",
+      "type": "reject",
+      "wire_hex": "ff00000000000000000000000000000000",
+      "expect": {
+        "error": "unknown_kind",
+        "value": 255
+      },
+      "note": "An unassigned kind is refused, not skipped."
+    },
+    {
+      "name": "unknown-kind-incomplete-payload",
+      "type": "incomplete",
+      "wire_hex": "ff012345670123456789abcdef000000030080",
+      "note": "Length is checked before kind: an unknown kind whose payload has not fully arrived still waits for bytes."
+    },
+    {
+      "name": "oversized-length-4194305",
+      "type": "reject",
+      "wire_hex": "0200000000000000000000000000400001",
+      "expect": {
+        "error": "payload_too_large",
+        "value": 4194305
+      },
+      "note": "An implausible length is refused from the header alone, before any payload is buffered."
+    },
+    {
+      "name": "oversized-length-4294967295",
+      "type": "reject",
+      "wire_hex": "02000000000000000000000000ffffffff",
+      "expect": {
+        "error": "payload_too_large",
+        "value": 4294967295
+      },
+      "note": "An implausible length is refused from the header alone, before any payload is buffered."
+    },
+    {
+      "name": "maximum-payload-4mib",
+      "type": "frame_generated",
+      "header_hex": "0200000000000000000000000000400000",
+      "payload_repeat": {
+        "byte_hex": "a5",
+        "count": 4194304
+      },
+      "expect": {
+        "kind": "snapshot",
+        "seq": 0,
+        "timestamp_millis": 0,
+        "consumed": 4194321
+      },
+      "note": "The 4 MiB ceiling is inclusive. The payload is generated rather than stored."
+    },
+    {
+      "name": "two-concatenated-frames",
+      "type": "stream",
+      "wire_hex": "02012345670123456789abcdef000000030080ff0300000001000000000000000700000000",
+      "expect": [
+        {
+          "kind": "snapshot",
+          "consumed": 20
+        },
+        {
+          "kind": "heartbeat",
+          "consumed": 17
+        }
+      ],
+      "note": "A reader consumes exactly one frame at a time from a byte stream."
+    }
+  ]
+}

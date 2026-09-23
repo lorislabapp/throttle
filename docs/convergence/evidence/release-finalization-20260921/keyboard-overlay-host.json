@@ -1,0 +1,24 @@
+{
+  "status": "prepared_not_launched",
+  "root": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-fixture-20260921-120408",
+  "app": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-fixture-20260921-120408/Build/Products/Debug/ThrottleTestHost.app",
+  "xctestrun": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-fixture-20260921-120408/Build/Products/ThrottleTestHost.xctestrun",
+  "application_build": "build-20260921-114759",
+  "test_module_build": "build-20260921-115329",
+  "source_delta": [
+    "ThrottleTests/ServiceTests/PlanIntegrationViewTests.swift"
+  ],
+  "production_sources_identical": true,
+  "changed_bundle_files": [
+    "Contents/MacOS/Throttle",
+    "Contents/_CodeSignature/CodeResources",
+    "Contents/PlugIns/ThrottleTests.xctest/Contents/MacOS/ThrottleTests"
+  ],
+  "old_host_unchanged": true,
+  "all_test_module_bytes_match_build": true,
+  "mode": "APFS clone with new XCTest bundle only; not a distribution artifact",
+  "test_module_bytes": 19395937,
+  "remaining_free_bytes": 2319990784,
+  "test_host_identifier": "com.lorislab.throttle.test-host",
+  "installed_app_changed": false
+}

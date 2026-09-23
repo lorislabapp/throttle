@@ -1,0 +1,15 @@
+{
+  "captured_utc": "2026-09-20T22:50:22.711276+00:00",
+  "status": "not-admitted-concurrency",
+  "wait_seconds": 360,
+  "quiet_seconds_required": 10,
+  "archive_started": false,
+  "source_changes_during_wait": false,
+  "observed_xcodebuild_processes": [
+    "66573 35911 09:45 /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+    "76231 76227 00:43 /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild",
+    "76535 92730 00:14 /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild"
+  ],
+  "installed_app_restarted": false,
+  "third_party_processes_stopped": false
+}

@@ -26,74 +26,41 @@ extension MultiCockpitRoot {
         HStack(spacing: 6) {
             identity(compact: narrow)
             zsep
-            routingMenu(compact: narrow)
-            zsep
-            viewSwitcher(iconsOnly: narrow)
+            if model.destination == .sessions { viewSwitcher(iconsOnly: narrow) }
+            Button { model.isCommandPaletteOpen = true } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "magnifyingglass")
+                    if !narrow { Text("Search") }
+                    Text(verbatim: "⌘K").foregroundStyle(.tertiary)
+                }
+                .font(.system(size: 11.5)).foregroundStyle(.secondary)
+                .padding(.horizontal, 8).padding(.vertical, 5)
+                .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+            .help(Text("Search projects, sessions, decisions and plan tasks"))
             Spacer(minLength: 6)
-            knowledgeMenu(compact: narrow)
-            ToolbarToggle(icon: "sidebar.trailing", label: String(localized: "Panel"), isOn: showSidebar,
-                          iconOnly: narrow,
-                          help: String(localized: "Audit metrics and the prompt refiner")) {
-                showSidebar.toggle()
+            // Model, answers, quota and plan settings live at the bottom of the sidebar;
+            // Panel and Shell only mean something beside a session.
+            if model.destination == .sessions {
+                ToolbarToggle(icon: "sidebar.trailing", label: String(localized: "Panel"), isOn: showSidebar,
+                              iconOnly: narrow,
+                              help: String(localized: "Audit metrics and the prompt refiner")) {
+                    showSidebar.toggle()
+                }
+                ToolbarToggle(icon: "terminal", label: String(localized: "Shell"), isOn: model.showShell,
+                              iconOnly: narrow,
+                              help: String(localized:
+                                "Side shell (⌘⇧T) — a zsh in this project's folder, beside claude")) {
+                    model.toggleShell()
+                }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+                .disabled(model.active == nil)
+                zsep
             }
-            ToolbarToggle(icon: "terminal", label: String(localized: "Shell"), isOn: model.showShell,
-                          iconOnly: narrow,
-                          help: String(localized: "Side shell (⌘⇧T) — a zsh in this project's folder, beside claude")) {
-                model.toggleShell()
-            }
-            .keyboardShortcut("t", modifiers: [.command, .shift])
-            .disabled(model.active == nil)
-            zsep
             RevealChevron(isOpen: showUtilityRow) { showUtilityRow.toggle() }
-            statusCluster(narrow: narrow)
         }
         .padding(.horizontal, 10).frame(height: 40)
-    }
-
-    func routingMenu(compact: Bool) -> some View {
-        Button {
-            AIRoutingWindowController.shared.show()
-        } label: {
-            HStack(spacing: 5) {
-                Image(systemName: "arrow.triangle.branch")
-                if !compact { Text(model.routingMode.label) }
-            }
-            .font(.system(size: 10.5, weight: .medium))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 7).padding(.vertical, 5)
-            .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 6))
-        }
-        .buttonStyle(.plain)
-        .fixedSize()
-        .help("Open AI Routing — coding sessions, local/frontier inference and fallback rules")
-        .accessibilityLabel(String(localized: "Mission runtime"))
-        .accessibilityValue(model.routingMode.label)
-    }
-
-    func knowledgeMenu(compact: Bool) -> some View {
-        Menu {
-            Button("Research Vault", systemImage: "books.vertical") {
-                ResearchVaultWindowController.shared.show(query: "")
-            }
-            Button("Global Portfolio Setup", systemImage: "square.stack.3d.up") {
-                GlobalRAGOnboardingWindowController.shared.show(canInstallMCP: appState.isPro) { _ in }
-            }
-        } label: {
-            HStack(spacing: 5) {
-                Image(systemName: "books.vertical")
-                if !compact { Text("Research") }
-                Image(systemName: "chevron.down").font(.system(size: 7, weight: .bold))
-            }
-            .font(.system(size: 10.5, weight: .medium))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 7).padding(.vertical, 5)
-            .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 6))
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .help("Research Vault and Global Portfolio Setup")
-        .accessibilityLabel("Research and global portfolio")
     }
 
     /// The revealed utility shelf: contextual timeline (or an empty note) on the
@@ -133,34 +100,6 @@ extension MultiCockpitRoot {
             }
         }
         .padding(.horizontal, 5)
-    }
-
-    func statusCluster(narrow: Bool) -> some View {
-        HStack(spacing: 7) {
-            if !narrow { styleIndicator }
-            if appState.isPro { pill("PRO", soft: true) }
-            if appState.exactSnapshot != nil { pill("EXACT", solid: true) }
-        }
-        .padding(.trailing, 3)
-    }
-
-    /// Active output-style at a glance — click to open the manager (the same
-    /// styles drive this Cockpit's `claude` and the terminal).
-    /// Quiet, read-only status text (Dir C demotes the old capsule): the active
-    /// output style as tabular mono, clickable to open the manager.
-    var styleIndicator: some View {
-        Button { OutputStyleWindowController.shared.show() } label: {
-            Text(styleShort(activeStyle))
-                .font(.system(size: 9.5, weight: .medium, design: .monospaced))
-                .foregroundStyle(.tertiary)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain).help(String.localizedStringWithFormat(
-            String(localized: "Output style: %@ — click to change"), activeStyle))
-    }
-
-    func styleShort(_ s: String) -> String {
-        s == "Default" ? "Default" : s.replacingOccurrences(of: "Throttle ", with: "")
     }
 
     /// Jump the active terminal between conversation turns (prev/next prompt or
@@ -223,7 +162,7 @@ extension MultiCockpitRoot {
     /// label (icon-only when narrow), active item raised onto an elevated surface.
     func viewSwitcher(iconsOnly: Bool) -> some View {
         HStack(spacing: 1) {
-            ForEach(MultiCockpitModel.ViewMode.allCases) { mode in
+            ForEach([MultiCockpitModel.ViewMode.rail, .tabs, .mission]) { mode in
                 SwitcherItem(icon: viewIcon(mode), label: mode.label,
                              isOn: model.viewMode == mode, iconOnly: iconsOnly) {
                     model.viewMode = mode

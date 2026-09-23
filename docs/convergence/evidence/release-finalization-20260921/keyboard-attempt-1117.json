@@ -1,0 +1,15 @@
+{
+  "at": "2026-09-21T11:18:58.460735+02:00",
+  "initial": "off",
+  "temporary": "on",
+  "final_observed": "off",
+  "method": "CUA System Settings Keyboard switch AX values",
+  "test": "diff-en",
+  "test_result": "NOT_EXECUTED_ADMISSION_REFUSED",
+  "competing_pids": [
+    19028,
+    19093
+  ],
+  "voiceover_changed": false,
+  "installed_throttle_restarted": false
+}

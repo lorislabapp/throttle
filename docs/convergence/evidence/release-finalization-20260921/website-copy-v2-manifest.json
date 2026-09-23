@@ -1,0 +1,159 @@
+{
+  "status": "LOCAL_REVIEW_ONLY_NOT_STAGED",
+  "source": "../release-continuation-20260921/product.snapshot",
+  "source_url": "https://lorislab.fr/throttle/",
+  "source_sha256": "78948ca48e41c7def4eb0c18492863b76f86430b5b9f6a062ec8f97f866c139b",
+  "proposed_sha256": "ab65139bc36ad2e34ea2de5ec4833827d5f2ceb6ff138c3378b46b9a65fdf1ed",
+  "patch_sha256": "a1e68e8014872b5857655cbc3772e785d4a8b95376ed888bc45d999d135d7d21",
+  "changed_copy": [
+    {
+      "before": "Know when Claude Code will hit its limit — before it stops your work.",
+      "after": "Follow Claude Code usage and see when you may reach a limit.",
+      "occurrences": 2
+    },
+    {
+      "before": "Throttle puts your 5-hour and weekly usage in the macOS menu bar, predicts when you'll hit the cap, and keeps every reading local.",
+      "after": "Throttle shows 5-hour and weekly usage in the macOS menu bar, with projections based on available readings.",
+      "occurrences": 1
+    },
+    {
+      "before": "No account · No telemetry · macOS 14+ · Apple Silicon &amp; Intel",
+      "after": "Local cockpit · Optional connected services · macOS 14+ · Apple Silicon &amp; Intel",
+      "occurrences": 1
+    },
+    {
+      "before": "No more limit surprises",
+      "after": "See approaching limits",
+      "occurrences": 1
+    },
+    {
+      "before": "A predictive \"≈2h to your cap\" nudge before the wall — never a lockout mid-task.",
+      "after": "A projected time to your cap helps you plan; provider limits and availability can still interrupt a session.",
+      "occurrences": 1
+    },
+    {
+      "before": "Run every project from one cockpit; idle sessions hibernate before RAM runs out.",
+      "after": "Manage project sessions from one cockpit, with memory-pressure controls for supported sessions.",
+      "occurrences": 1
+    },
+    {
+      "before": "Bloated configs, verbose output, re-charged images — found, measured, trimmed.",
+      "after": "Inspect configs, verbose output and repeated images, then review the available optimizations.",
+      "occurrences": 1
+    },
+    {
+      "before": "Exact when you're signed in, a clearly-degraded estimate when you're not — never a confident number that might be wrong. A predictive nudge tells you <span class=\"mono\" style=\"color:var(--ink)\">≈2h to your cap</span> before the wall, not after.",
+      "after": "Uses available provider readings or a labeled estimate. A projection such as <span class=\"mono\" style=\"color:var(--ink)\">≈2h to your cap</span> depends on recent usage and can change.",
+      "occurrences": 1
+    },
+    {
+      "before": "Your 5-hour and weekly Claude limits in the menu bar — exact or estimated — with a predictive \"you'll hit your cap in ~2h at this burn\" nudge so a lockout never surprises you mid-task.",
+      "after": "Your 5-hour and weekly Claude usage in the menu bar, using available readings or estimates, with a projection based on recent activity.",
+      "occurrences": 1
+    },
+    {
+      "before": "each showing real cost, model and RAM, under one shared binding limit and a memory-pressure gate that stops you oversaturating the Mac.",
+      "after": "with available cost, model and RAM information, shared limits and memory-pressure admission controls.",
+      "occurrences": 1
+    },
+    {
+      "before": "Keeps Claude Code lean system-wide — a concise output-style and a usage statusline in every terminal — so every session spends fewer tokens by default. Fully reversible, any time.",
+      "after": "Offers concise output styles and a usage statusline for supported Claude Code sessions. Review the changes and available backups; savings depend on the task and model.",
+      "occurrences": 1
+    },
+    {
+      "before": "Proposes a leaner, safer <span class=\"mono\">CLAUDE.md</span> as a GitHub-style diff with a plain \"why this is better\" summary. You review every line before anything changes.",
+      "after": "Proposes changes to <span class=\"mono\">CLAUDE.md</span> as a diff with an explanation. Generation uses your selected provider; review the proposal before applying a local change.",
+      "occurrences": 1
+    },
+    {
+      "before": "Surgical context trimming, memory-pressure awareness and a config audit that flags what's quietly costing you — all measured, never guessed.",
+      "after": "Context trimming, memory-pressure information and config checks help identify possible waste. Estimates and proposed changes need review.",
+      "occurrences": 1
+    },
+    {
+      "before": "Less prose per answer, the code and reasoning untouched.",
+      "after": "Requests shorter replies; response quality and savings depend on the model and task.",
+      "occurrences": 1
+    },
+    {
+      "before": "— a fraction of the tokens of a vision image.",
+      "after": "— token savings depend on the image and model. OCR can omit visual information.",
+      "occurrences": 1
+    },
+    {
+      "before": "Finds the right session even when you don't recall the exact word — searching \"auth\" also surfaces \"login\" and \"token\", entirely on-device.",
+      "after": "On-device semantic search can find related terms; results depend on the indexed content.",
+      "occurrences": 1
+    },
+    {
+      "before": "Every action reversible and logged; review or undo any of it in one place.",
+      "after": "Review recorded changes and the restore options available for each action. External effects are not automatically undone.",
+      "occurrences": 1
+    },
+    {
+      "before": "errors always passed through raw. Fewer tokens per build, reversible.",
+      "after": "retains detected errors. Review compressed output when diagnosing a failure; savings depend on the command.",
+      "occurrences": 1
+    },
+    {
+      "before": "so the silent 10× re-reads that quietly inflate a session stop being invisible.",
+      "after": "to help investigate repeated context charges.",
+      "occurrences": 1
+    },
+    {
+      "before": "Never a confident wrong number.",
+      "after": "Provider readings or labeled estimates.",
+      "occurrences": 1
+    },
+    {
+      "before": "Stops you oversaturating the Mac.",
+      "after": "Checks memory pressure before admission.",
+      "occurrences": 1
+    },
+    {
+      "before": "Watches RSS, restarts in place, keeps context.",
+      "after": "Watches RSS; session recovery depends on the tool.",
+      "occurrences": 1
+    },
+    {
+      "before": "Freezes only at a quiet moment — reversible.",
+      "after": "Pauses supported sessions at detected quiet points.",
+      "occurrences": 1
+    },
+    {
+      "before": "It audits and optimizes — it never becomes the engine.",
+      "after": "Local supervision, explicit connections and control.",
+      "occurrences": 1
+    },
+    {
+      "before": "Throttle reads <span class=\"mono\">~/.claude</span> on your Mac and stays out of the way. 100% local — <strong>no telemetry, no analytics, no account</strong>: your prompts, code and usage never leave the machine. Signed &amp; notarized, auto-updates via Sparkle; uninstall cleanly any time and every change reverts.",
+      "after": "Throttle reads local session data and stores project history on your Mac. <strong>Processing follows the provider you select.</strong> Optional model providers, remote sessions and CloudKit can receive data; license activation and update checks contact their services. Project commands run with your macOS account permissions and are intended for trusted projects. Uninstalling the app does not automatically erase stored data or undo external effects. See the privacy policy for data flows and retention.",
+      "occurrences": 1
+    },
+    {
+      "before": "Never get cut off mid-task again.",
+      "after": "Keep usage and session state in view.",
+      "occurrences": 1
+    },
+    {
+      "before": "Download the free meter and see exactly where your tokens go — in under a minute.",
+      "after": "Download the meter to inspect available usage readings and projections.",
+      "occurrences": 1
+    }
+  ],
+  "meta_descriptions_replaced": 3,
+  "all_urls_unchanged": true,
+  "price_text_unchanged": true,
+  "scripts_styles_unchanged": true,
+  "release_version_size_unchanged": true,
+  "published": false,
+  "remaining_gates": [
+    "Fresh website source before applying",
+    "Operator-approved privacy facts",
+    "Anthropic integration decision",
+    "Exact signed/notarized artifact and monotone build",
+    "Review inherited claims outside this focused correction",
+    "Explicit public upload approval"
+  ]
+}

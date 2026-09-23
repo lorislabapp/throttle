@@ -5,13 +5,11 @@
     <!--
         Throttle privacy manifest.
 
-        We do not collect, transmit, or share user data with anyone.
-        All processing is local. Two outbound network paths exist and
-        are user-initiated:
-          - Exact mode polls claude.ai via the user's running Safari.
-            Throttle never sees the cookies; Safari does the request.
-          - Sparkle update channel fetches an appcast from lorislab.fr
-            (no user data sent — just an HTTP GET).
+        LorisLabs does not collect or track user data through this app. Optional
+        features can use Anthropic, the LorisLabs license/update services, the
+        user's private CloudKit database, a paired Mac/LAN endpoint, a configured
+        local model or self-hosted Edge service. These user-controlled transfers
+        are documented in PRIVACY.md.
 
         Required-reason API uses are limited to standard timestamp APIs
         for usage-event ingestion (FileTimestamp).

@@ -1,103 +1,173 @@
 #!/usr/bin/env node
-// Publish a staged Throttle release to lorislab.fr — ONLY the files under <stage>.
-//
-// Same Hostinger archive→deploy path as lorislab-website/deploy.mjs, but from an isolated
-// directory (throttle/appcast.xml, throttle/index.html, throttle/Throttle-X.dmg). The deploy
-// extracts OVER public_html (merge), so nothing else on the site moves — in particular the
-// website checkout's in-flight work never ships by accident, and no stale DMG re-uploads.
-//
-// Usage: HOSTINGER_API_TOKEN=… node scripts/publish-release.mjs <stage-dir>
-// Then:  scripts/verify-public-release.sh <stage-dir>
-import { readFileSync, statSync, unlinkSync, writeFileSync, existsSync } from 'fs';
-import { execSync } from 'child_process';
-
-const STAGE_DIR = process.argv[2];
-if (!STAGE_DIR || !existsSync(`${STAGE_DIR}/throttle/appcast.xml`)) {
-  console.error('usage: publish-release.mjs <stage-dir>   (from scripts/stage-release.py)');
-  process.exit(64);
-}
-const TOKEN = process.env.HOSTINGER_API_TOKEN;
-if (!TOKEN) { console.error('HOSTINGER_API_TOKEN missing'); process.exit(1); }
+// Publish only a previously verified, isolated Throttle stage to lorislab.fr.
+// Usage: inject HOSTINGER_API_TOKEN in the process environment (never CLI/logs).
+import { readFileSync, statSync, lstatSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { resolve, dirname, basename } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const BASE = 'https://developers.hostinger.com';
 const USERNAME = 'u376697750';
 const DOMAIN = 'lorislab.fr';
-const TIMESTAMP = new Date().toISOString().replace(/[-:T]/g, '').substring(0, 14);
-const FILENAME = `throttle-release-${TIMESTAMP}.zip`;
-const ARCHIVE = `${STAGE_DIR}/../${FILENAME}`;
-const STAMP = `${TIMESTAMP}-${Math.random().toString(36).slice(2, 10)}`;
-writeFileSync(`${STAGE_DIR}/deploy-stamp.txt`, `${STAMP}\n`);
-
-execSync(`cd "${STAGE_DIR}" && zip -r "${ARCHIVE}" . -x ".DS_Store" 2>/dev/null`);
-const FILESIZE = statSync(ARCHIVE).size;
-console.log(`Archive: ${FILENAME} (${(FILESIZE / 1024 / 1024).toFixed(1)} MB)`);
-console.log(execSync(`unzip -l "${ARCHIVE}"`).toString());
-
-const credsResp = await fetch(`${BASE}/api/hosting/v1/files/upload-urls`, {
-  method: 'POST',
-  headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
-  body: JSON.stringify({ file_paths: [`public_html/${FILENAME}`], username: USERNAME, domain: DOMAIN })
-});
-const creds = await credsResp.json();
-if (!creds.url) { console.error('Failed to get creds:', creds); process.exit(1); }
-const uploadUrl = creds.url.replace(/\/$/, '');
-const fileUrl = `${uploadUrl}/public_html/${FILENAME}?override=true`;
-const headers = { 'X-Auth': creds.auth_key, 'X-Auth-Rest': creds.rest_auth_key, 'upload-length': FILESIZE.toString(), 'upload-offset': '0' };
-const preResp = await fetch(fileUrl, { method: 'POST', headers, body: '' });
-if (preResp.status !== 201) { console.error('Pre-upload failed:', preResp.status, await preResp.text()); process.exit(1); }
-
-const fileData = readFileSync(ARCHIVE);
 const CHUNK = 8 * 1024 * 1024;
-const tusAuth = { 'X-Auth': creds.auth_key, 'X-Auth-Rest': creds.rest_auth_key, 'Tus-Resumable': '1.0.0' };
-let offset = 0;
-while (offset < FILESIZE) {
-  const end = Math.min(offset + CHUNK, FILESIZE);
-  let done = false;
-  for (let attempt = 1; attempt <= 4 && !done; attempt++) {
-    try {
-      const resp = await fetch(fileUrl, {
-        method: 'PATCH',
-        headers: { ...tusAuth, 'Content-Type': 'application/offset+octet-stream', 'upload-offset': String(offset) },
-        body: fileData.subarray(offset, end),
-        signal: AbortSignal.timeout(180000)
-      });
-      if (resp.status !== 204) throw new Error(`${resp.status} ${await resp.text()}`);
-      offset = parseInt(resp.headers.get('upload-offset') || String(end), 10);
-      done = true;
-    } catch (e) {
-      if (attempt === 4) { console.error(`\nChunk @${offset} failed: ${e.message || e}`); process.exit(1); }
-      await new Promise(r => setTimeout(r, 2000 * attempt));
-      try {
-        const head = await fetch(fileUrl, { method: 'HEAD', headers: tusAuth, signal: AbortSignal.timeout(30000) });
-        const srv = parseInt(head.headers.get('upload-offset') || '', 10);
-        if (!Number.isNaN(srv)) offset = srv;
-      } catch {}
-    }
+
+export class ReleaseFailure extends Error {}
+
+export function validateStage(directory) {
+  const stage = resolve(directory);
+  const regular = path => lstatSync(path).isFile() && !lstatSync(path).isSymbolicLink();
+  if (!lstatSync(stage).isDirectory() || lstatSync(stage).isSymbolicLink()) {
+    throw new ReleaseFailure('Stage must be a real directory.');
   }
-  process.stdout.write(`\r  ${(offset / 1048576).toFixed(0)}/${(FILESIZE / 1048576).toFixed(0)} MB`);
+  const rootFiles = readdirSync(stage);
+  if (rootFiles.some(name => !['throttle', 'deploy-stamp.txt'].includes(name))
+      || (rootFiles.includes('deploy-stamp.txt') && !regular(`${stage}/deploy-stamp.txt`))) {
+    throw new ReleaseFailure('Unexpected file in stage root.');
+  }
+  const content = `${stage}/throttle`;
+  if (!lstatSync(content).isDirectory() || lstatSync(content).isSymbolicLink()) {
+    throw new ReleaseFailure('Throttle stage must be a real directory.');
+  }
+  const names = readdirSync(content);
+  const dmgs = names.filter(name => /^Throttle-[0-9]+(?:\.[0-9]+){0,2}\.dmg$/.test(name));
+  if (names.length !== 3 || dmgs.length !== 1 || !names.includes('appcast.xml')
+      || !names.includes('index.html') || names.some(name => !regular(`${content}/${name}`))) {
+    throw new ReleaseFailure('Stage must contain exactly appcast.xml, index.html and one versioned DMG.');
+  }
+  return stage;
 }
-console.log('\nUploaded.');
 
-const deployResp = await fetch(`${BASE}/api/hosting/v1/accounts/${USERNAME}/websites/${DOMAIN}/deploy`, {
-  method: 'POST',
-  headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
-  body: JSON.stringify({ archive_path: `public_html/${FILENAME}` })
-});
-console.log(`Deploy trigger: ${deployResp.status} — ${(await deployResp.text()).slice(0, 200)}`);
-try { unlinkSync(ARCHIVE); } catch {}
-
-// The trigger's status code is not evidence (it has returned 500 on deploys that landed).
-// The stamp proves the bytes reached the origin.
-console.log('Verifying stamp...');
-const DEADLINE = Date.now() + 240_000;
-let live = null;
-while (Date.now() < DEADLINE) {
-  await new Promise(r => setTimeout(r, 5_000));
-  try {
-    const r = await fetch(`https://${DOMAIN}/deploy-stamp.txt?cb=${Date.now()}`, { cache: 'no-store' });
-    if (r.ok) { live = (await r.text()).trim(); if (live === STAMP) break; }
-  } catch {}
-  process.stdout.write('.');
+export function checkedOffset(value, minimum, maximum) {
+  if (typeof value !== 'string' || !/^(0|[1-9][0-9]*)$/.test(value)) {
+    throw new ReleaseFailure('Upload returned a missing or invalid offset.');
+  }
+  const offset = Number(value);
+  if (!Number.isSafeInteger(offset) || offset < minimum || offset > maximum) {
+    throw new ReleaseFailure('Upload returned an out-of-range offset.');
+  }
+  return offset;
 }
-if (live !== STAMP) { console.error(`\n❌ NOT verified: site serves ${live ?? '(none)'}, expected ${STAMP}`); process.exit(1); }
-console.log(`\n✅ Verified live (stamp ${STAMP}). Now run scripts/verify-public-release.sh ${STAGE_DIR}`);
+
+export async function uploadChunks(fileUrl, bytes, auth, {
+  fetcher = fetch, sleep = ms => new Promise(resolveSleep => setTimeout(resolveSleep, ms)),
+  progress = () => {}, chunkSize = CHUNK
+} = {}) {
+  if (!Number.isSafeInteger(chunkSize) || chunkSize <= 0) throw new ReleaseFailure('Invalid chunk size.');
+  let offset = 0;
+  while (offset < bytes.length) {
+    const end = Math.min(offset + chunkSize, bytes.length);
+    let done = false;
+    for (let attempt = 1; attempt <= 4 && !done; attempt++) {
+      try {
+        const response = await fetcher(fileUrl, {
+          method: 'PATCH',
+          headers: { ...auth, 'Content-Type': 'application/offset+octet-stream', 'upload-offset': String(offset) },
+          body: bytes.subarray(offset, end), signal: AbortSignal.timeout(180_000)
+        });
+        if (response.status !== 204) throw new ReleaseFailure('Upload chunk rejected.');
+        offset = checkedOffset(response.headers.get('upload-offset'), end, end);
+        done = true;
+      } catch (error) {
+        // Protocol violations must never be converted into fabricated progress.
+        if (error instanceof ReleaseFailure && error.message !== 'Upload chunk rejected.') throw error;
+        if (attempt === 4) throw new ReleaseFailure('Upload chunk failed after four attempts.');
+        await sleep(2_000 * attempt);
+        let head;
+        try {
+          head = await fetcher(fileUrl, {
+            method: 'HEAD', headers: auth, signal: AbortSignal.timeout(30_000)
+          });
+        } catch { throw new ReleaseFailure('Upload state could not be reconciled.'); }
+        if (!head.ok) throw new ReleaseFailure('Upload state could not be reconciled.');
+        offset = checkedOffset(head.headers.get('upload-offset'), offset, end);
+        // A lost PATCH response may already have committed this entire chunk.
+        done = offset === end;
+      }
+    }
+    progress(offset, bytes.length);
+  }
+}
+
+export function uploadCredentials(value) {
+  let url;
+  try { url = new URL(value?.url); } catch { throw new ReleaseFailure('Upload credentials unavailable.'); }
+  if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash
+      || typeof value.auth_key !== 'string' || !value.auth_key
+      || typeof value.rest_auth_key !== 'string' || !value.rest_auth_key) {
+    throw new ReleaseFailure('Upload credentials unavailable.');
+  }
+  return { url: url.href.replace(/\/$/, ''), auth: value.auth_key, restAuth: value.rest_auth_key };
+}
+
+export function packageStage(stage, archive, execute = execFileSync) {
+  execute('/usr/bin/zip', ['-r', archive, '.', '-x', '.DS_Store'], { cwd: stage, stdio: 'ignore' });
+}
+
+export async function publish(directory, token, {
+  fetcher = fetch, execute = execFileSync,
+  sleep = ms => new Promise(resolveSleep => setTimeout(resolveSleep, ms)),
+  now = Date.now, log = console.log
+} = {}) {
+  if (!directory || !token) throw new ReleaseFailure('Stage path and HOSTINGER_API_TOKEN are required.');
+  const stage = validateStage(directory);
+  const timestamp = new Date(now()).toISOString().replace(/[-:T]/g, '').substring(0, 14);
+  const filename = `throttle-release-${timestamp}.zip`;
+  const archive = `${dirname(stage)}/${filename}`;
+  // Never merge into a previous ZIP from another attempt in the same second.
+  try { lstatSync(archive); throw new ReleaseFailure('Release ZIP already exists; use a fresh attempt.'); }
+  catch (error) { if (error.code !== 'ENOENT') throw error; }
+  const stamp = `${timestamp}-${Math.random().toString(36).slice(2, 10)}`;
+  writeFileSync(`${stage}/deploy-stamp.txt`, `${stamp}\n`);
+  packageStage(stage, archive, execute);
+  const size = statSync(archive).size;
+  log(`Archive: ${basename(archive)} (${(size / 1048576).toFixed(1)} MB)`);
+
+  const credentialsResponse = await fetcher(`${BASE}/api/hosting/v1/files/upload-urls`, {
+    method: 'POST', signal: AbortSignal.timeout(30_000),
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file_paths: [`public_html/${filename}`], username: USERNAME, domain: DOMAIN })
+  });
+  if (!credentialsResponse.ok) throw new ReleaseFailure('Upload credential request rejected.');
+  let payload;
+  try { payload = await credentialsResponse.json(); }
+  catch { throw new ReleaseFailure('Upload credential response is invalid.'); }
+  const credentials = uploadCredentials(payload);
+  const fileUrl = `${credentials.url}/public_html/${filename}?override=true`;
+  const auth = { 'X-Auth': credentials.auth, 'X-Auth-Rest': credentials.restAuth, 'Tus-Resumable': '1.0.0' };
+  const pre = await fetcher(fileUrl, {
+    method: 'POST', signal: AbortSignal.timeout(30_000),
+    headers: { ...auth, 'upload-length': String(size), 'upload-offset': '0' }, body: ''
+  });
+  if (pre.status !== 201) throw new ReleaseFailure('Upload creation rejected.');
+  await uploadChunks(fileUrl, readFileSync(archive), auth, { fetcher, sleep });
+  log('Uploaded.');
+  // Do not retry deployment blindly: an unknown HTTP result may have applied it.
+  const deployed = await fetcher(`${BASE}/api/hosting/v1/accounts/${USERNAME}/websites/${DOMAIN}/deploy`, {
+    method: 'POST', signal: AbortSignal.timeout(30_000),
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ archive_path: `public_html/${filename}` })
+  });
+  log(`Deploy trigger HTTP ${deployed.status}; awaiting public stamp.`);
+  const deadline = now() + 240_000;
+  let verified = false;
+  while (now() < deadline) {
+    await sleep(5_000);
+    try {
+      const response = await fetcher(`https://${DOMAIN}/deploy-stamp.txt?cb=${now()}`, {
+        cache: 'no-store', signal: AbortSignal.timeout(15_000)
+      });
+      if (response.ok && (await response.text()).trim() === stamp) { verified = true; break; }
+    } catch { /* The bounded stamp loop tolerates transient public reads. */ }
+  }
+  if (!verified) throw new ReleaseFailure('Publication not verified: expected stamp was not observed.');
+  unlinkSync(archive);
+  log(`Verified live stamp ${stamp}. Run scripts/verify-public-release.sh on the stage.`);
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  publish(process.argv[2], process.env.HOSTINGER_API_TOKEN).catch(error => {
+    // HTTP bodies, credential objects and arbitrary provider errors may contain secrets.
+    console.error(error instanceof ReleaseFailure ? error.message : 'Release failed; provider details suppressed.');
+    process.exitCode = 1;
+  });
+}

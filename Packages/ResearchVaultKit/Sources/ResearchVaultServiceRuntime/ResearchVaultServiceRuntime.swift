@@ -150,6 +150,9 @@ public enum ResearchVaultServiceRuntime {
             importer: { receipts in
                 try await gateway.importReceiptsForReview(receipts)
             },
+            documentImporter: { documents in
+                try await gateway.importDocuments(documents)
+            },
             quarantineLister: {
                 try await gateway.quarantine()
             },

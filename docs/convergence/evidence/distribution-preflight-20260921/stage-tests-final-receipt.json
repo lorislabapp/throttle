@@ -1,0 +1,13 @@
+{
+  "status": "pass",
+  "exit_code": 0,
+  "cases": 20,
+  "duration_seconds": 4.038,
+  "network": false,
+  "real_private_key_access": false,
+  "sources": {
+    "scripts/stage-release.py": "5de1adc563c2f845669bad7092eec1c7bfd9ff86a2cf12a28e5c5e028d142b3e",
+    "scripts/tests/test_stage_release.py": "31d91f0cb3d272bae73ed01a68c49428a54c35f80c16eb6e01f16334d026b3c4",
+    "scripts/verify-release-build.py": "168a3e2d3178fdd7802a35b2318cfb9ff6d5d8e615a55a08f39eda9f6262a185"
+  }
+}

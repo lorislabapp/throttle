@@ -1,0 +1,39 @@
+[
+  {
+    "name": "license-health",
+    "url": "https://license.lorislab.fr/api/health",
+    "at": "2026-09-21T08:42:48.652103+00:00",
+    "status": 200,
+    "bytes": 2,
+    "sha256": "2689367b205c16ce32ed4200942b8b8b1e262dfc70d9bc9fbc77c49699a4f1df",
+    "final_url": "https://license.lorislab.fr/api/health",
+    "health_ok": true
+  },
+  {
+    "name": "privacy",
+    "url": "https://lorislab.fr/privacy.html",
+    "at": "2026-09-21T08:42:48.800928+00:00",
+    "status": 200,
+    "bytes": 113487,
+    "sha256": "ddbe38389059b45cbff82ec9db810434be99370b419dd3a8af519e31415962f5",
+    "final_url": "https://lorislab.fr/privacy.html"
+  },
+  {
+    "name": "product",
+    "url": "https://lorislab.fr/throttle/",
+    "at": "2026-09-21T08:42:49.409706+00:00",
+    "status": 200,
+    "bytes": 27095,
+    "sha256": "78948ca48e41c7def4eb0c18492863b76f86430b5b9f6a062ec8f97f866c139b",
+    "final_url": "https://lorislab.fr/throttle/"
+  },
+  {
+    "name": "appcast",
+    "url": "https://lorislab.fr/throttle/appcast.xml",
+    "at": "2026-09-21T08:42:49.912695+00:00",
+    "status": 200,
+    "bytes": 101359,
+    "sha256": "72bbb708b43e651bf24eaa7d3f67a1e44b229ac63dd5df59c3345b789ca4b7b1",
+    "final_url": "https://lorislab.fr/throttle/appcast.xml"
+  }
+]

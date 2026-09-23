@@ -41,7 +41,7 @@ extension MultiCockpitRoot {
                     } else if let started = s.spawnedAt {
                         Text("up \(uptime(started))").font(.system(size: 10.5)).foregroundStyle(.tertiary)
                     } else {
-                        Text("dormant").font(.system(size: 10.5)).foregroundStyle(.quaternary)
+                        Text("not launched").font(.system(size: 10.5)).foregroundStyle(.quaternary)
                     }
                 }
                 Spacer(minLength: 0)

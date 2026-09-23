@@ -1,0 +1,11 @@
+{
+  "at": "2026-09-21T06:49:33.964262",
+  "original_path": "/Users/kevinnadjarian/GitHub/Throttle/build/workflow-contracts-8a91a20b/build/dd-l10n",
+  "destination": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/preserved-workflow-contracts-dd-l10n",
+  "copied_with": "ditto",
+  "verified_entries": 46482,
+  "original_path_is_symlink": true,
+  "test_results_preserved": true,
+  "active_writers_before_and_after_copy": false,
+  "full_manifest": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/preserved-workflow-contracts-dd-l10n-relocation.json"
+}

@@ -20,6 +20,8 @@ struct MultiCockpitRoot: View {
     @State var hoveredSession: UUID?
     @State var expandedFeed: UUID?
     @State var reentryExpanded = false
+    /// ⌘K reaches the palette even while a terminal has the keyboard.
+    @State var paletteKeyMonitor: Any?
     @State var remoteSvc = RemoteSessionsService.shared   // edge-agent sessions in the rail
     @State var selectedRemoteID: String?  // remote session shown over the terminal area
     @State var railFilter = ""            // rail search — shown only when crowded
@@ -48,10 +50,38 @@ struct MultiCockpitRoot: View {
     var zsep: some View { Rectangle().fill(hair).frame(width: 1, height: 18) }
 
     var body: some View {
+        HStack(spacing: 0) {
+            CockpitNavigationSidebar(cockpit: model, projects: CockpitProjectsModel.shared)
+            Rectangle().fill(hair).frame(width: 1)
+            mainColumn
+        }
+        .sheet(isPresented: Binding(get: { model.isCommandPaletteOpen },
+                                    set: { model.isCommandPaletteOpen = $0 })) {
+            CockpitCommandPalette(cockpit: model, projects: CockpitProjectsModel.shared)
+        }
+        .onAppear {
+            OnboardingTips.configure()   // idempotent: a second call throws and is ignored
+            guard paletteKeyMonitor == nil else { return }
+            paletteKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                // A terminal view takes every key, so a SwiftUI shortcut never fires there.
+                let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+                guard flags == .command, event.charactersIgnoringModifiers == "k",
+                      event.window?.title.contains("Cockpit") == true else { return event }
+                model.isCommandPaletteOpen = true
+                return nil
+            }
+        }
+        .onDisappear {
+            if let paletteKeyMonitor { NSEvent.removeMonitor(paletteKeyMonitor) }
+            paletteKeyMonitor = nil
+        }
+    }
+
+    var mainColumn: some View {
         VStack(spacing: 0) {
             topBar
             Rectangle().fill(hair).frame(height: 1)
-            globalStrip
+            if model.destination == .sessions { globalStrip }
             if let tab = model.active {
                 CockpitTransitionBanner(tab: tab) { model.forgetUnconfirmedSession(tab.id) }
             }
@@ -64,7 +94,7 @@ struct MultiCockpitRoot: View {
             if let loop = model.loopSessions.first { loopBanner(loop) }
             if let leak = model.leakSessions.first { leakBanner(leak) }
             HStack(spacing: 0) {
-                content
+                destinationContent
                 if showSidebar {
                     Rectangle().fill(hair).frame(width: 1)
                     CockpitSidebar(tab: $sidebarTab)

@@ -1,0 +1,12 @@
+{
+  "title": "Test - Throttle",
+  "result": "Passed",
+  "totalTestCount": 1,
+  "passedTests": 1,
+  "failedTests": 0,
+  "skippedTests": 0,
+  "expectedFailures": 0,
+  "startTime": 1789982683.932,
+  "finishTime": 1789982865.394,
+  "label": "isolated-visual-tests-20260921-112442"
+}

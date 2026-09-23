@@ -1,0 +1,10 @@
+{
+  "command": [
+    "node",
+    "--check",
+    "scripts/publish-release.mjs"
+  ],
+  "exit_code": 0,
+  "observed_local": "2026-09-21T09:57:00.157362",
+  "network": "mocked, no real credentials"
+}

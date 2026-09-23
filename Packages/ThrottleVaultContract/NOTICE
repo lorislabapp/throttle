@@ -1,0 +1,12 @@
+ThrottleVaultContract
+Copyright (c) 2026 LorisLabs (Christine Martin) and contributors
+
+Licensed under the MIT License; see LICENSE in this directory. That licence is
+the one these files were already published under as part of Throttle — this
+file makes it explicit per package and does not change it.
+
+Third-party material: none bundled. This package declares no package
+dependencies and imports Apple system frameworks only.
+
+Rights status: pending the ownership and contribution review described in
+docs/ip/decision-brief.md. Not cleared for separate distribution yet.

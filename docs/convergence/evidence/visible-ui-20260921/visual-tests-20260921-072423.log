@@ -1,0 +1,48 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/visual-tests-20260921-072423.xctestrun -destination platform=macOS,arch=arm64 -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 300 -maximum-test-execution-time-allowance 360 -resultBundlePath /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/visual-tests-20260921-072423.xcresult -testLanguage en -testRegion US "-only-testing:ThrottleTests/ProjectAssistantViewTests/testStopDuringStreamKeepsNextTurnIndependent"
+
+Writing result bundle at path:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/visual-tests-20260921-072423.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008132-001178882E03001C, name:My Mac }
+[AppDelegate.init] start
+2026-09-21 07:24:33.634628+0200 Throttle[53570:1653168] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 07:24:33.635303+0200 Throttle[53570:1653168] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 07:24:33.636482+0200 Throttle[53570:1653105] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 07:24:33.636496+0200 Throttle[53570:1653105] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 07:24:33.638646+0200 Throttle[53570:1653168] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 07:24:33.638662+0200 Throttle[53570:1653168] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 07:24:33.639384+0200 Throttle[53570:1653097] [Connection] Will NOT re-try to establish the connection
+2026-09-21 07:24:33.638570+0200 Throttle[53570:1653096] [registration] Failed to get unit 138268 from store <_CSStore 0x7b5f4d0600> { p = 0x11bd34000, gen = 11966069, length = 28049408/28031996/27727028 }
+2026-09-21 07:24:33.639633+0200 Throttle[53570:1653105] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 07:24:33.639723+0200 Throttle[53570:1653105] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 07:24:33.701496+0200 Throttle[53570:1652659] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/3w/fbl9wc1d3q7091lq5pj5sy0c0000gn/T/com.lorislab.throttle.savedState
+[applicationDidFinishLaunching] start
+2026-09-21 07:24:33.756612+0200 Throttle[53570:1652659] [App] Isolated host detected: skipping production background services
+Test Suite 'Selected tests' started at 2026-09-21 07:24:33.780.
+Test Suite 'ThrottleTests.xctest' started at 2026-09-21 07:24:33.780.
+Test Suite 'ProjectAssistantViewTests' started at 2026-09-21 07:24:33.780.
+Test Case '-[ThrottleTests.ProjectAssistantViewTests testStopDuringStreamKeepsNextTurnIndependent]' started.
+THROTTLE_REVIEW_READY: Stopped response and completed next turn
+2026-09-21 07:24:59.661618+0200 Throttle[53570:1653096] [Common] Unable to obtain a task name port right for pid 424: (os/kern) failure (0x5)
+Test Case '-[ThrottleTests.ProjectAssistantViewTests testStopDuringStreamKeepsNextTurnIndependent]' passed (180.396 seconds).
+Test Suite 'ProjectAssistantViewTests' passed at 2026-09-21 07:27:34.177.
+	 Executed 1 test, with 0 failures (0 unexpected) in 180.396 (180.396) seconds
+Test Suite 'ThrottleTests.xctest' passed at 2026-09-21 07:27:34.177.
+	 Executed 1 test, with 0 failures (0 unexpected) in 180.396 (180.397) seconds
+Test Suite 'Selected tests' passed at 2026-09-21 07:27:34.177.
+	 Executed 1 test, with 0 failures (0 unexpected) in 180.396 (180.398) seconds
+2026-09-21 07:27:50.813 xcodebuild[53566:1652449] [MT] IDETestOperationsObserverDebug: 206.412 elapsed -- Testing started completed.
+2026-09-21 07:27:50.813 xcodebuild[53566:1652449] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-21 07:27:50.813 xcodebuild[53566:1652449] [MT] IDETestOperationsObserverDebug: 206.412 sec, +206.412 sec -- end
+
+Test session results, code coverage, and logs:
+	/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/visual-tests-20260921-072423.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

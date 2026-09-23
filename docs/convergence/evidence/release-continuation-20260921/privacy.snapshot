@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — LorisLabs</title>
+    <script type="module" src="https://lorislab.fr/.webmcp/bridge.js" data-packs="c2pa,mcp-server-client"></script><link rel="apple-touch-icon" sizes="180x180" href="images/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="images/favicon/favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+    <meta name="description" content="LorisLabs Privacy Policy. Learn how our privacy-first apps handle your data — all processing happens on-device with no tracking or analytics SDKs.">
+    <meta name="author" content="LorisLabs">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://lorislab.fr/privacy.html">
+<meta name="twitter:image" content="https://lorislab.fr/images/lorislab-logo.png" />
+
+    <!-- OpenGraph -->
+    <meta property="og:title" content="Privacy Policy — LorisLabs">
+    <meta property="og:description" content="LorisLabs Privacy Policy. All data stays on your device. No analytics SDKs, no tracking, no cloud storage.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://lorislab.fr/privacy.html">
+    <meta property="og:site_name" content="LorisLabs">
+    <meta property="og:image" content="https://lorislab.fr/images/lorislab-logo.png">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Privacy Policy — LorisLabs">
+    <meta name="twitter:description" content="LorisLabs Privacy Policy. All data stays on your device. No analytics SDKs, no tracking.">
+
+    <link rel="stylesheet" href="css/style.min.css?v=202609070714">
+    <link rel="stylesheet" href="css/amber-override.css">
+    <link rel="dns-prefetch" href="https://apps.apple.com">
+    <meta name="theme-color" content="#0a0b0e">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "Privacy Policy — LorisLabs",
+        "description": "LorisLabs privacy policy. Your data stays on your device.",
+        "url": "https://lorislab.fr/privacy.html",
+        "publisher": {
+            "@type": "Organization",
+            "name": "LorisLabs",
+            "url": "https://lorislab.fr"
+        }
+    }
+    </script>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav" role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+        <a href="index.html" class="nav-brand" aria-label="LorisLabs home"><picture><source srcset="images/lorislab-logo.webp" type="image/webp"><img src="images/lorislab-logo.png" alt="LorisLabs" height="32"></picture></a>
+        <div class="nav-links">
+            <a href="index.html" data-i18n="nav.apps">Apps</a>
+            <a href="philosophy.html" data-i18n="nav.philosophy">Philosophy</a>
+            <a href="support.html" data-i18n="nav.support">Support</a>
+            <div class="lang-toggle" role="group" aria-label="Language">
+                <button type="button" class="lang-btn active" data-lang="en" aria-label="English">EN</button>
+                <button type="button" class="lang-btn" data-lang="fr" aria-label="Fran&ccedil;ais">FR</button>
+            </div>
+        </div>
+        <button type="button" class="nav-hamburger" aria-label="Open menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</nav>
+
+<!-- Mobile Nav -->
+<div id="mobile-nav" class="nav-mobile" aria-label="Mobile navigation" hidden>
+    <a href="index.html" data-i18n="nav.apps">Apps</a>
+    <a href="philosophy.html" data-i18n="nav.philosophy">Philosophy</a>
+    <a href="support.html" data-i18n="nav.support">Support</a>
+    <div class="lang-toggle" role="group" aria-label="Language">
+        <button type="button" class="lang-btn active" data-lang="en" aria-label="English">EN</button>
+        <button type="button" class="lang-btn" data-lang="fr" aria-label="Fran&ccedil;ais">FR</button>
+    </div>
+</div>
+
+<!-- Page Hero -->
+<section class="page-hero reveal">
+    <h1>Privacy Policy</h1>
+    <p class="last-updated">Last updated: September 7, 2026</p>
+</section>
+
+<!-- Content -->
+<main class="content-body">
+
+    <!-- BEGIN BILAN PRIVACY 2026-09-07 -->
+    <section id="bilan" aria-labelledby="bilan-heading">
+        <h2 id="bilan-heading">Bilan — Privacy / Confidentialité</h2>
+        <section lang="en" aria-labelledby="bilan-en-heading">
+            <h3 id="bilan-en-heading">English</h3>
+            <p>Bilan reads only the Apple Health categories the user chooses to make accessible. HealthKit-derived measurements, local reports, the emergency card and sharing history remain in the app's local container. Bilan does not require an account, does not use advertising or tracking SDKs, does not send HealthKit-derived data to LorisLabs servers and does not store it in iCloud or CloudKit.</p>
+            <p>The user can manually create a PDF, CSV, JSON or text snapshot and then chooses a destination in Apple's system share sheet. Once the user shares a copy with another person or service, Bilan cannot recall that external copy. On iPhone and iPad, “Delete all local data” removes Bilan's local SwiftData records, imported document library and its encryption key, emergency card, sharing history, preferences, access ledger, temporary exports, pending/delivered notifications and legacy Bilan keychain items. It does not alter records stored by Apple Health, original files selected for import, or copies already transferred to another device.</p>
+            <p>The optional Mac companion receives an archive only after the user starts a local transfer and confirms the pairing code on both devices. The transfer is encrypted directly between the selected Apple devices on the local network; it does not pass through or remain on a LorisLabs server. A received archive remains in the Mac app's local container until the user deletes it.</p>
+            <p>The optional Foundation Models assistance runs on device when supported. Deterministic validation remains authoritative, and the model cannot share data automatically or provide a diagnosis.</p>
+        </section>
+        <section lang="fr" aria-labelledby="bilan-fr-heading">
+            <h3 id="bilan-fr-heading">Français</h3>
+            <p>Bilan lit uniquement les catégories d’Apple Santé que vous choisissez de rendre accessibles. Les mesures issues de Santé, les rapports locaux, la carte d’urgence et l’historique de partage restent dans le conteneur local de l’application. Bilan ne nécessite pas de compte, n’utilise pas de publicité ni de SDK de suivi, n’envoie pas ces données aux serveurs de LorisLabs et ne les stocke pas dans iCloud ou CloudKit.</p>
+            <p>Vous pouvez créer manuellement un export PDF, CSV, JSON ou texte, puis choisir sa destination dans la feuille de partage d’Apple. Bilan ne peut pas rappeler une copie que vous avez partagée avec une autre personne ou un autre service.</p>
+            <p>Sur iPhone et iPad, « Supprimer toutes les données » efface les enregistrements locaux de Bilan, sa bibliothèque de documents importés et sa clé de chiffrement, la carte d’urgence, l’historique de partage, les préférences, le registre d’accès Santé, les exports temporaires, les notifications et les anciens éléments du trousseau de Bilan. Cette action ne modifie ni les données d’Apple Santé, ni les fichiers originaux choisis pour l’importation, ni les copies déjà transférées vers un autre appareil. Si l’effacement est incomplet, l’application le signale.</p>
+            <p>Le compagnon Mac reçoit une archive uniquement lorsque vous lancez un transfert local et confirmez le code d’association sur les deux appareils. Le transfert est chiffré entre ces appareils sur le réseau local, sans passer par un serveur de LorisLabs. L’archive reçue reste dans le conteneur local de l’application Mac jusqu’à sa suppression sur ce Mac.</p>
+            <p>Le compagnon Apple Watch affiche les mesures accessibles et permet de saisir un événement de journal, mis en attente de transmission vers l’iPhone associé.</p>
+            <p>L’assistance facultative Foundation Models s’exécute sur l’appareil lorsqu’elle est prise en charge. Les validations déterministes restent prioritaires ; le modèle ne partage pas automatiquement vos données et ne fournit pas de diagnostic.</p>
+        </section>
+    </section>
+    <!-- END BILAN PRIVACY 2026-09-07 -->
+
+    <section class="reveal">
+        <h2>Introduction</h2>
+        <p>LorisLabs ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how our applications — <strong>Clasp</strong>, <strong>TypeMetrics</strong>, <strong>Moi</strong>, <strong>Lumen for Frigate</strong>, <strong>CoreShield AI</strong>, <strong>Sinkhole</strong>, <strong>Synthesis</strong>, <strong>Éclair</strong>, <strong>ProofCheck</strong>, <strong>Byty</strong>, and <strong>Velya</strong> (collectively, the "Apps") — handle your information. For Clasp, the specific processing and service exceptions are detailed below, including referral-status requests at launch. For the other Apps, our guiding principle is simple: <strong>your data belongs to you, and it stays on your device</strong>, except where specific community or verification features require otherwise and only with your explicit opt-in.</p>
+        <p>By using our Apps, you agree to the practices described in this policy.</p>
+    </section>
+
+    <section class="reveal">
+        <h2>Data Controller</h2>
+        <p>The data controller for all personal data processed through the Apps is:</p>
+        <p><strong>LorisLabs</strong><br>
+        LorisLabs Team<br>
+        Email: <a href="/cdn-cgi/l/email-protection#ee9d9b9e9e819c9aae82819c879d828f8cc0889c"><span class="__cf_email__" data-cfemail="abd8dedbdbc4d9dfebc7c4d9c2d8c7cac985cdd9">[email&#160;protected]</span></a><br>
+        Website: <a href="https://lorislab.fr">https://lorislab.fr</a></p>
+        <p>LorisLabs has not appointed a Data Protection Officer (DPO) as the scale of our data processing does not meet the thresholds set by GDPR Article 37. For any data protection inquiries, please contact us at <a href="/cdn-cgi/l/email-protection#81f2f4f1f1eef3f5c1edeef3e8f2ede0e3afe7f3"><span class="__cf_email__" data-cfemail="93e0e6e3e3fce1e7d3fffce1fae0fff2f1bdf5e1">[email&#160;protected]</span></a>.</p>
+    </section>
+
+    <section class="reveal">
+        <h2>Lawful Basis for Processing</h2>
+        <p>For the limited data processing activities in our Apps, we rely on the following lawful bases under GDPR Article 6(1):</p>
+        <ul>
+            <li><strong>Consent (Art. 6(1)(a)):</strong> Community features (profiles, incident reporting, traffic data sharing, carpooling), optional cloud AI integrations, and any data shared via CloudKit. You may withdraw consent at any time by disabling the relevant feature in Settings or deleting your community profile. Withdrawal of consent does not affect the lawfulness of processing performed before withdrawal.</li>
+            <li><strong>Contract performance (Art. 6(1)(b)):</strong> Processing required to provide functionality you request — including route calculation, navigation, energy modeling, parking search, vehicle data display, and Google Play purchase verification. Integrity signals used with purchase verification also help prevent fraud and conflicting entitlement grants.</li>
+            <li><strong>Legal obligation (Art. 6(1)(c)):</strong> Retention of carpooling ride records for 12–24 months to comply with potential law enforcement requests (réquisition judiciaire) under French procedural law.</li>
+            <li><strong>Legitimate interest (Art. 6(1)(f)):</strong> Freemium usage tracking (e.g., parking search count) to enforce feature gating. This data is stored locally and never transmitted.</li>
+        </ul>
+    </section>
+
+    <section class="privacy-section" aria-label="Website Analytics">
+        <h2 data-i18n="privacy.analyticsTitle">Website Analytics</h2>
+        <p data-i18n="privacy.analyticsIntro">We use <strong>Umami</strong>, a privacy-friendly, open-source analytics tool that we self-host on our own servers. If you accept analytics when visiting our website:</p>
+        <ul>
+            <li data-i18n="privacy.analyticsCollected"><strong>What we collect:</strong> Page views, referrer source (e.g., Google, direct), country-level location, device type (desktop/mobile), and operating system. We also track whether you click an App Store download button (as an aggregate count, not tied to you).</li>
+            <li data-i18n="privacy.analyticsStorage"><strong>Where it's stored:</strong> On our own self-hosted server. No data is sent to third parties.</li>
+            <li data-i18n="privacy.analyticsRetention"><strong>Retention:</strong> Analytics data is retained for 12 months, then automatically deleted.</li>
+            <li data-i18n="privacy.analyticsCookies"><strong>No cookies:</strong> Umami does not set any cookies. Your IP address is anonymized and never stored.</li>
+            <li data-i18n="privacy.analyticsConsent"><strong>Your choice:</strong> Analytics only load if you explicitly accept. You can change your preference at any time via the "Privacy Settings" link in the footer of every page.</li>
+        </ul>
+        <p data-i18n="privacy.analyticsMore">Learn more about Umami's privacy practices at <a href="https://umami.is" target="_blank" rel="noopener">umami.is</a>.</p>
+    </section>
+
+    <section class="reveal" id="newsletter">
+        <h2>Newsletter</h2>
+        <p>On our website, you can optionally sign up to receive an email when we ship a new app. This newsletter signup is separate from the Apps. Clasp can transmit email addresses contained in enabled sources when you authorize external AI, as described in its section below; this does not subscribe you to the newsletter.</p>
+        <ul>
+            <li><strong>Purpose:</strong> To notify you when a new LorisLabs app is released. Nothing else — no marketing series, no third-party offers, no list-selling.</li>
+            <li><strong>Legal basis:</strong> Your explicit consent (GDPR Art. 6(1)(a)), given by checking the consent box and confirming via a double opt-in email. You are not subscribed until you click the confirmation link.</li>
+            <li><strong>Data collected:</strong> Your email address, plus the timestamp and IP address of your consent (kept as proof of consent, as required by GDPR accountability under Art. 7(1)).</li>
+            <li><strong>Processor:</strong> We use <strong>Brevo</strong> (Sendinblue SAS, Paris, France) to send these emails and manage the list. Brevo acts as our data processor under a standard data processing agreement and does not use your email for its own purposes.</li>
+            <li><strong>Spam protection:</strong> The signup form uses <strong>Cloudflare Turnstile</strong> to block automated abuse. Turnstile runs a challenge in your browser and does not use tracking cookies or build an advertising profile; see <a href="https://www.cloudflare.com/trust-hub/privacy-and-data-protection/" target="_blank" rel="noopener">Cloudflare's privacy documentation</a>.</li>
+            <li><strong>Retention:</strong> We keep your email address for as long as you remain subscribed. If you never confirm the double opt-in email, the unconfirmed entry is automatically discarded after a short period.</li>
+            <li><strong>Your rights:</strong> Every email includes a one-click unsubscribe link. You can also withdraw consent at any time by emailing <a href="/cdn-cgi/l/email-protection#acdfd9dcdcc3ded8ecc0c3dec5dfc0cdce82cade"><span class="__cf_email__" data-cfemail="4c3f393c3c233e380c20233e253f202d2e622a3e">[email&#160;protected]</span></a>, and you have the right to access, rectify, or erase this data under GDPR Articles 15–17.</li>
+        </ul>
+    </section>
+
+    <section class="reveal">
+        <h2>Information We Collect</h2>
+        <p>Most LorisLabs app data stays on the user's device or services the user controls. Some optional or user-requested features use LorisLabs-operated verification, relay, or website services. The app-specific sections identify the data, purpose, provider, retention, and deletion controls for each such feature. LorisLabs Apps contain no advertising SDKs, and LorisLabs does not sell personal data.</p>
+        <p>Unless an app-specific section below expressly says otherwise, LorisLabs does <strong>not</strong> collect the following data from the Apps:</p>
+        <ul>
+            <li>Personal identifiers (name, email, phone number)</li>
+            <li>Usage analytics or behavioral data</li>
+            <li>Location data</li>
+            <li>Device fingerprints or advertising identifiers</li>
+            <li>Clipboard contents, typing data, conversations, or any user-generated content</li>
+        </ul>
+        <p>Apple and Google may provide anonymized or aggregated store analytics, such as crash reports and install counts, under their own controls. Any information processed by a LorisLabs-operated feature is described separately below.</p>
+    </section>
+
+    <section class="reveal">
+        <h2>How Our Apps Work</h2>
+        <p>Core app data is processed on your device or by services you configure and control. Specific optional or user-requested features use store, cloud, verification, or relay services only as described in the app-specific sections below.</p>
+
+        <h3>On-Device Data Storage</h3>
+        <p>Local app data uses encrypted platform storage appropriate to the operating system, including Apple Keychain and container storage or Android Keystore and app storage. Deleting an app removes its app-container data, subject to device backups, store records, and service-side retention described in the app-specific sections.</p>
+
+        <h3>On-Device AI Processing</h3>
+        <p>AI-powered features in our Apps (such as posture analysis in TypeMetrics and threat detection in CoreShield AI) run <strong>on-device using Apple's CoreML framework</strong>. No data is sent to external servers for AI processing unless you explicitly choose to use an optional cloud-based AI provider. Clasp's supported providers, explicit external-AI permission, and separate Apple Speech behavior are described in its section below.</p>
+
+        <h3>App-Specific Details</h3>
+        <ul>
+            <li><strong>Byty</strong> is a Mac storage optimizer and backup tool. File metadata (paths, sizes, dates) is stored locally for scan history. Smart Scan's AI cleanup runs <strong>on-device using Apple Intelligence by default</strong> — nothing leaves your Mac. A cloud provider is strictly optional: only if you explicitly enable it and supply your own Anthropic API key does Smart Scan send anonymized file paths (not file contents) to Anthropic's Claude API. In that case, file paths are sanitized to remove usernames before being sent, using your own API key stored in the macOS Keychain. LorisLabs does not receive, store, or retain any file paths or scan data. See Anthropic's Privacy Policy at <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">anthropic.com/legal/privacy</a> for details on how they process your API requests. Photo backup credentials (SMB passwords, encryption keys) are stored in macOS Keychain and never transmitted to LorisLabs.</li>
+            <li><strong>Velya</strong> is a smart alarm clock for iPhone and Apple Watch. Your alarms, routines, and settings are stored on your device and synced across your own devices through your private iCloud (CloudKit) — LorisLabs cannot see them. Sleep data is read from Apple Health (HealthKit) <strong>on-device</strong> to optimize your wake time and is never written back to Health, transmitted off your device, or sent to LorisLabs. Optional features you explicitly enable: Calendar access (read-only) to schedule a smart wake around your first event; Location to estimate travel time to that event; and Home Assistant / Node-RED / webhook integrations that talk directly to servers <strong>you</strong> configure on your own network, using credentials stored in the device Keychain — that traffic never passes through LorisLabs. Shared alarms use Apple's CloudKit sharing, only with the people you invite. LorisLabs does not collect, receive, or store your alarm, health, calendar, or location data.</li>
+            <li><strong>Clasp</strong> provides clipboard history, audio notes, and search across enabled sources. Storage is local with optional iCloud synchronization; AI and transcription may use local or remote providers. External AI requires separate permission, while referral-status requests use a LorisLabs service. See the "Clasp — Clipboard &amp; Semantic Search Privacy Details" section below for the data, destinations, and controls.</li>
+            <li><strong>TypeMetrics</strong> records typing metrics locally. The AI Vision Coach analyzes camera input on-device for posture feedback — no facial data, biometrics, or images are stored or transmitted. On visionOS, TypeMetrics uses ARKit hand tracking to provide real-time finger placement feedback during typing sessions. Hand position data is processed entirely on-device in real time; no hand tracking video, skeletal data, or hand images are stored, recorded, or transmitted to any server.</li>
+            <li><strong>Moi</strong> stores all conversations, memory, and indexed documents locally. System integrations (Calendar, Mail, Notes, Contacts) are accessed through Apple's official APIs with your explicit permission.</li>
+            <li><strong>Lumen for Frigate</strong> connects directly to your self-hosted NVR over your local network or VPN for camera feeds — those bytes never traverse LorisLabs infrastructure and we have no access to them. For multi-device push delivery (Apple Bridge mode) and browser-based Settings access (Web Settings), the app uses a single stateless edge service operated by LorisLabs (<code>relay.lorislab.fr</code>, a Cloudflare Worker) that signs CloudKit Server-to-Server requests on your behalf. Event metadata (camera name, label, score, zones), event thumbnails (JPEG), and event clips (MP4) flow through this edge hop on their way into your own iCloud account; the relay holds nothing at rest beyond per-user pairing tokens hashed with SHA-256. The relay never sees your live camera feeds, even when these features are enabled. On Android, user-requested Google Play purchase verification uses the LorisLabs entitlement-verification service as described in the "Lumen for Frigate on Android" section below. See the "Face Data (Lumen for Frigate)" section below for details on how face recognition data is handled.</li>
+            <li><strong>Lumen Cam</strong> uses your device's camera and microphone to stream video over your local network to your self-hosted Frigate NVR. All streaming occurs directly between your device and your server — no data passes through LorisLabs servers. Camera and audio data are never recorded or stored by the app. Frigate server credentials are stored in iCloud Keychain (shared with Lumen for Frigate).</li>
+            <li><strong>CoreShield AI</strong> inspects network traffic locally using a macOS Network Extension. All threat analysis runs on-device via CoreML. Packet contents are never stored or transmitted externally.</li>
+            <li><strong>Sinkhole</strong> intercepts DNS queries on-device using a local-only VPN tunnel (NEPacketTunnelProvider). The VPN tunnel connects to 127.0.0.1 — no traffic leaves your device. All DNS query logs are stored locally in an on-device SQLite database and are never transmitted to any server. See the "Sinkhole — DNS Firewall Privacy Details" section below.</li>
+            <li><strong>404 Network</strong> performs network diagnostics (ping, traceroute, port scanning, speed tests, device discovery) entirely on-device. Network scan results are stored locally in SwiftData. When Community Map sharing is enabled (opt-in), anonymized speed test results (ISP name, connection type, approximate location rounded to ~500m) are shared via CloudKit. Router integration credentials are stored in the iOS Keychain. See the "404 Network — Network Diagnostics Privacy Details" section below.</li>
+            <li><strong>Synthesis</strong> stores all notes, notebooks, flashcards, study data, and attachments locally on your device using Apple's SwiftData framework. AI features (summarization, flashcard generation, quiz creation) run entirely on-device using Apple's Foundation Models framework — no data is sent to external servers unless you explicitly configure an optional cloud AI provider with your own API key.</li>
+            <li><strong>Heol</strong> is a privacy-first email client. All email data (messages, metadata, contacts, AI analysis) is stored locally in an encrypted on-device database. Phishing detection runs entirely on-device via CoreML — no email content is ever sent to external servers for threat analysis. IMAP/SMTP credentials are stored in the iOS/macOS Keychain. See the "Heol — Email Client Privacy Details" section below for full details.</li>
+            <li><strong>LumenTV</strong> is the Apple TV companion to Lumen for Frigate. It connects directly to your self-hosted NVR over your local network or VPN. No camera feeds, detection data, or credentials pass through LorisLabs servers. Server credentials are stored in the tvOS Keychain and synced from Lumen via iCloud Keychain.</li>
+            <li><strong>Éclair</strong> is an electric vehicle navigation and trip planning app. It processes route calculations, energy models, and AI coaching entirely on-device. Location data is used for navigation and is stored locally. Vehicle data (SoC, battery health) from OBD-II adapters or brand APIs is processed and stored on-device. Parking searches use OpenStreetMap and ParkAPI — no personal data is sent with these queries. If you opt in to community features (traffic sharing, incident reporting, carpooling), anonymized or pseudonymized data is shared via CloudKit. See the "Éclair — EV Navigation Privacy Details" section below.</li>
+            <li><strong>ProofCheck</strong> is a device-verification app for used-electronics sellers and buyers. It collects and transmits specific data (Apple Sign-In email, coarse location, device identifiers, diagnostic trust signals) to Apple CloudKit databases so buyers can verify reports shared by sellers. See the "ProofCheck — Device Verification Privacy Details" section below for full details.</li>
+            <li><strong>AuroraPulse</strong> is currently in development. Privacy details will be published before the app launches. Like all LorisLabs apps, AuroraPulse will be built on our privacy-first architecture with on-device processing and no analytics SDKs.</li>
+            <li><strong>Velya</strong> is a smart alarm app built on AlarmKit. Alarms, automation rules, and all settings are stored on-device. Apple Health sleep data is read on-device to power smart wake and the sleep history screen — it is never transmitted off your device. Location (with your permission) is used on-device for location-based automations and bedtime detection. Optionally, advanced users can connect Velya to <em>their own</em> self-hosted "relay" server for remote alarm control; LorisLabs operates no server and receives no data. See the "Velya — Smart Alarm Privacy Details" section below for full details.</li>
+            <li><strong>Filova</strong> moves your playlists between music services (Apple Music, TIDAL, YouTube Music, Spotify) on your explicit request. LorisLabs operates no server and never receives your music data — matching runs on your device, and your playlists are sent only to the destination service you choose, through that service's official API, using access tokens stored in the device Keychain. See the "Filova — Music Transfer Privacy Details" section below for full details, including YouTube data handling.</li>
+        </ul>
+    </section>
+
+    <section class="reveal" id="filova">
+        <h2>Filova — Music Transfer Privacy Details</h2>
+        <p>Filova transfers playlists between music services. It has <strong>no server</strong>: matching runs entirely on your device, and your data is sent only to the music service you choose, via that service's official API, to perform the transfer you requested. LorisLabs does not receive, store, or retain your playlists, listening data, or account credentials.</p>
+
+        <h3>Services You Connect</h3>
+        <p>You sign in to each service only when you choose to (Apple Music via Apple's MusicKit; TIDAL, YouTube Music, and Spotify via OAuth). Access tokens are stored in the device Keychain and are <strong>never transmitted to LorisLabs</strong>. You can disconnect any service at any time in Filova's Settings, which deletes its cached authorization from your device.</p>
+
+        <h3>YouTube Data</h3>
+        <p>When you connect YouTube Music, Filova uses the <strong>YouTube API Services</strong>. By using this feature you agree to the <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener">YouTube Terms of Service</a>, and Google's handling of your data is described in the <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a>.</p>
+        <p>Filova requests the <code>https://www.googleapis.com/auth/youtube</code> authorization solely to act on <strong>your own</strong> YouTube account, at your request: to read the titles of your playlists so you can pick one to transfer, and to create a new playlist and add the matched videos to it. Filova never posts, comments, subscribes, deletes, rates, or modifies anything you did not explicitly initiate, and never accesses other users' data. YouTube data is used only to perform the transfer you asked for and is not stored by Filova or LorisLabs.</p>
+        <p>You can revoke Filova's access to your Google account at any time at <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">myaccount.google.com/permissions</a>. Filova's cached YouTube authorization is removed from your device when you disconnect the service or delete the app.</p>
+
+        <h3>The Vault</h3>
+        <p>Before each transfer, Filova saves a local snapshot of the resolved playlist on your device (so a transfer can always be undone). These snapshots are stored locally and are not transmitted to LorisLabs.</p>
+
+        <h3>No Analytics or Tracking</h3>
+        <p>Filova contains <strong>no analytics SDKs, no tracking pixels, no advertising frameworks, and no telemetry</strong>. The only information we may receive is anonymized, aggregated data from Apple's App Analytics, which you can opt out of in your device settings.</p>
+    </section>
+
+    <section class="reveal" id="synthesis">
+        <h2>Synthesis — Education App Privacy Details</h2>
+
+        <h3>Data Storage</h3>
+        <p>All user content in Synthesis — including notes, notebooks, pages, flashcards, drawings, templates, study statistics, and attachments — is stored locally on your device. When iCloud sync is enabled (opt-in), data is synced across your devices using Apple's CloudKit framework with Apple's end-to-end encryption. LorisLabs never has access to your synced data.</p>
+
+        <h3>On-Device AI</h3>
+        <p>Synthesis uses Apple's Foundation Models framework (available on Apple Silicon devices running iOS 26+) for AI-powered features including summarization, flashcard generation, quiz creation, and writing assistance. All AI processing occurs <strong>entirely on your device</strong>. No prompts, notes, or generated content are transmitted to LorisLabs or any third party.</p>
+        <p>If you choose to configure an optional third-party cloud AI provider (such as OpenAI or Anthropic), data you send to those services is governed by their respective privacy policies. This feature is <strong>off by default</strong>, requires your explicit configuration, and API keys are stored securely in the iOS/macOS Keychain.</p>
+
+        <h3>Device Permissions</h3>
+        <p>Synthesis may request the following permissions, each used solely for on-device functionality:</p>
+        <ul>
+            <li><strong>Camera</strong> — For scanning documents and capturing images to embed in notes. Images are stored locally and never transmitted.</li>
+            <li><strong>Microphone</strong> — For voice annotations attached to blocks and audio recording within pages. Audio data is stored locally and never transmitted.</li>
+            <li><strong>Speech Recognition</strong> — For on-device voice-to-text transcription. Processing occurs entirely on-device using Apple's Speech framework.</li>
+            <li><strong>Photo Library</strong> — For importing images into notes. Selected images are copied into the app's local storage.</li>
+        </ul>
+
+        <h3>No Analytics or Tracking</h3>
+        <p>Synthesis contains <strong>no analytics SDKs, no tracking pixels, no advertising frameworks, and no telemetry</strong>. We do not collect usage patterns, session data, feature usage statistics, or any behavioral data. The only information we may receive is anonymized, aggregated data from Apple's App Analytics program, which you can opt out of in your device settings.</p>
+
+        <h3>Children's Privacy &amp; Education Compliance</h3>
+        <p>Synthesis offers a "Young Student" persona designed for learners under 13, which includes parental controls and age-appropriate content. Because Synthesis processes all data on-device with no data collection by LorisLabs:</p>
+        <ul>
+            <li><strong>COPPA (Children's Online Privacy Protection Act)</strong> — Synthesis does not collect personal information from children or any users. Parental consent is recommended for users under 13.</li>
+            <li><strong>FERPA (Family Educational Rights and Privacy Act)</strong> — Synthesis does not access, collect, or store education records. All student data remains on the student's device under their control.</li>
+            <li><strong>GDPR (General Data Protection Regulation)</strong> — As no personal data is collected or processed by LorisLabs, GDPR data subject rights (access, rectification, erasure, portability) are inherently satisfied — your data is always under your control on your device.</li>
+        </ul>
+
+        <h3>iCloud Sync</h3>
+        <p>When you enable iCloud sync in Synthesis (disabled by default), your data is synced using Apple's CloudKit with the following protections:</p>
+        <ul>
+            <li>Data is encrypted in transit using TLS and at rest on Apple's servers.</li>
+            <li>LorisLabs cannot access your synced data — it is stored in your private CloudKit database tied to your Apple ID.</li>
+            <li>You can disable sync at any time in the app's settings. Disabling sync does not delete your local data.</li>
+            <li>File attachments are synced as CloudKit Assets with the same encryption protections.</li>
+        </ul>
+    </section>
+
+    <section class="reveal" id="clasp">
+        <h2>Clasp — Clipboard &amp; Semantic Search Privacy Details</h2>
+
+        <h3>Local Storage and Data Sources</h3>
+        <p>Clasp 4.0 stores clipboard history, snippets, audio notes, and search indexes on your device. Processing depends on the features and providers you enable. iCloud synchronization, external AI, speech recognition, and referral services can send data off your device as described below.</p>
+        <ul>
+            <li><strong>Clipboard and snippets</strong> — Clasp saves text, images, files, and links for clipboard history and reuse. Text used for indexing, summaries, or conversations can be sent to an external AI provider after you grant the separate external-AI permission.</li>
+            <li><strong>Audio notes</strong> — Clasp records audio with your microphone permission. Transcription may be local or remote, depending on the provider described below.</li>
+            <li><strong>Contacts</strong> — With Contacts permission and indexing enabled, Clasp reads contact information. The indexed text includes names, organizations, job titles, phone numbers, and email addresses. Contact notes are not accessed.</li>
+            <li><strong>Calendar and reminders</strong> — Enabled sources use EventKit to read information such as titles, dates, locations, and notes for search.</li>
+            <li><strong>Mail, Notes, and Messages on macOS</strong> — Enabled sources can index mail subjects, senders, recipients, and a short text excerpt exposed by Spotlight; note titles and text previews from the local Notes database; and message text from the local Messages database. Access depends on macOS permissions and data availability.</li>
+            <li><strong>User-selected files on macOS</strong> — Clasp indexes supported content in folders you select and authorize through the file picker.</li>
+            <li><strong>Keyboard extension on iOS</strong> — The optional keyboard reads shared Clasp snippets and inserts the text you select. Its shared storage is separate from enabling external AI in the main app.</li>
+        </ul>
+        <p>System permissions authorize access to a source; they do not replace Clasp's separate permission for sending content to external AI. If you enable a source and external AI, the text needed from that source may be sent for indexing or other selected AI functions.</p>
+
+        <h3>External AI, Search, and Automatic Processing</h3>
+        <p>Clasp supports local Apple processing, OpenAI, and a user-configured Ollama server for supported AI features. Available providers depend on the feature and device. <strong>External AI is disabled until you explicitly allow it in Settings.</strong> Saving an API key or having previously selected a provider does not grant this permission in Clasp 4.0.</p>
+        <ul>
+            <li><strong>Data sent</strong> — Depending on the feature, requests can contain clipboard and indexed-source text, search queries, prompts, conversation content, and transcripts. OpenAI transcription also sends the selected audio file.</li>
+            <li><strong>Automatic work</strong> — When enabled, semantic indexing and summaries may run in the background without a separate confirmation for each item. With OpenAI embeddings selected, the source text and semantic search queries are sent to OpenAI; the vectors returned are stored in the local search index.</li>
+            <li><strong>Destinations</strong> — OpenAI requests go to its API. Ollama requests go to the server address you configure; that server may be on your device, your network, or elsewhere. Its operator controls any server-side storage. Local Apple AI processing does not use these external-AI routes.</li>
+            <li><strong>Credentials</strong> — Your OpenAI API key is stored in the device Keychain and sent to OpenAI to authenticate API requests. These AI requests do not pass through a LorisLabs AI relay.</li>
+            <li><strong>Your control</strong> — You can withdraw external-AI permission in Settings. This blocks new external-AI requests, including new retry attempts; it does not recall requests already sent or delete provider copies. Changing the Ollama server address requires renewed permission. Disabling permission does not silently replace the embedding model in an existing index.</li>
+        </ul>
+        <p>External providers apply their own terms, retention controls, and deletion procedures. Consult <a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">OpenAI's privacy policy</a>, its <a href="https://developers.openai.com/api/docs/guides/your-data" target="_blank" rel="noopener">API data controls</a>, and the policy of your Ollama server operator. Do not assume that all endpoints or accounts have identical retention, or that vectors cannot reveal information about their source text.</p>
+
+        <h3>Audio and Speech Recognition</h3>
+        <p><strong>Local Whisper</strong> transcribes audio on your device. <strong>Apple Speech</strong> requests on-device recognition when it is available; otherwise, recognition may use Apple's network services, subject to the system's Speech Recognition permission. Apple Speech is separate from the OpenAI/Ollama consent switch. If you select <strong>OpenAI transcription</strong>, Clasp sends the audio file to OpenAI only with external-AI permission. Audio recordings and resulting transcripts are also stored locally for Audio Notes.</p>
+
+        <h3>iCloud Synchronization</h3>
+        <p>When enabled, Clasp uses Apple's CloudKit private database for supported synchronized content, including clipboard items and snippets. Eligible knowledge records can also synchronize. This sends the relevant content to Apple under your iCloud account; it is separate from external-AI permission and from the LorisLabs referral service. Turning off synchronization does not itself erase existing local or cloud copies. Cloud storage and account controls are governed by Apple's iCloud services.</p>
+
+        <h3>Referral and Purchase Verification Service</h3>
+        <p>Clasp connects to the LorisLabs-operated service at <code>referrals.lorislab.fr</code> to check referral rewards. Status requests can occur at app launch and use an app identifier and a stable random UUID kept in the Keychain. This service is separate from external AI and is not disabled by the external-AI switch.</p>
+        <p>When you request a referral code, the service stores the UUID, app identifier, referral code, creation time, and reward status. When you claim a purchase-related referral, Clasp sends the transaction identifier and product identifier. The service verifies the transaction with Apple and stores referral attribution and purchase-related records, including the original transaction identifier, product, purchase date, referral token, reward status, and related events. These requests do not contain your clipboard history or AI prompts.</p>
+        <p>The service uses Cloudflare Workers and KV storage. <strong>User and referral records currently have no automatic expiry or deletion schedule and can remain indefinitely until removed.</strong> Uninstalling Clasp, clearing local history, or revoking external AI does not delete these server records. To request access, correction, or deletion, contact <a href="/cdn-cgi/l/email-protection#b8cbcdc8c8d7caccf8d4d7cad1cbd4d9da96deca"><span class="__cf_email__" data-cfemail="691a1c1919061b1d2905061b001a05080b470f1b">[email&#160;protected]</span></a>. Requests are handled through support; the app does not provide automatic referral-record deletion or guarantee that all records disappear immediately after a request.</p>
+
+        <h3>Reports, Retention, and Your Choices</h3>
+        <p>Clasp can prepare a report locally and offer the system sharing interface. If you choose to share it, the selected recipient receives the report, which can include your description, system context, and diagnostics. Review its contents before sharing.</p>
+        <p>Use the app's controls to delete local items, clear history, and manage indexed sources. Removing the app is not a deletion request to Apple, an AI provider, a report recipient, or the referral service; backups, cloud copies, Keychain entries, and service records can remain subject to their respective controls. For privacy questions or requests concerning data held by LorisLabs, contact <a href="/cdn-cgi/l/email-protection#81f2f4f1f1eef3f5c1edeef3e8f2ede0e3afe7f3"><span class="__cf_email__" data-cfemail="f4878184849b8680b4989b869d87989596da9286">[email&#160;protected]</span></a>. For data held by your AI provider or server operator, use their request and account controls as well.</p>
+        <p>Clasp's in-app statistics are distinct from the service requests described above. The referral identifier is used for referral and reward attribution. Apple may separately provide store analytics under its own settings and policies. These distinctions do not mean that Clasp collects no data: the remote flows and retained referral records are described in this section.</p>
+    </section>
+
+    <section class="reveal" id="sinkhole">
+        <h2>Sinkhole — DNS Firewall Privacy Details</h2>
+
+        <h3>How Sinkhole Works</h3>
+        <p>Sinkhole creates a <strong>local-only VPN tunnel</strong> on your iPhone using Apple's NEPacketTunnelProvider framework. The VPN tunnel connects to <code>127.0.0.1</code> (localhost) — it does not route your traffic through any external server. DNS queries are intercepted, checked against a locally-stored blocklist, and either blocked (returning an NXDOMAIN response) or forwarded to your configured upstream DNS provider (e.g., Cloudflare, Quad9, or Google).</p>
+
+        <h3>Data Stored On-Device</h3>
+        <p>Sinkhole stores the following data exclusively on your device in a local SQLite database:</p>
+        <ul>
+            <li><strong>DNS Query Log</strong> — Domain names, timestamps, blocked/allowed status, and response latency. This data is equivalent to a browsing history and is stored locally only. Logs are automatically purged based on your configured retention period (1 day, 7 days, 30 days, or indefinitely).</li>
+            <li><strong>Blocklist Entries</strong> — Domains from blocklist sources you have added (e.g., StevenBlack, AdGuard DNS). Downloaded and stored locally.</li>
+            <li><strong>Custom Rules</strong> — Block, allow, and redirect rules you create. Stored locally and optionally synced via iCloud KVStore (see below).</li>
+            <li><strong>Client IP Addresses</strong> — In LAN Server mode, the local IP address of devices that query your iPhone's DNS server is logged for diagnostic purposes. These are LAN-internal addresses (e.g., 192.168.x.x), not public IPs.</li>
+        </ul>
+
+        <h3>No Cloud Dependency</h3>
+        <p>Sinkhole operates <strong>entirely on your device</strong>. There is no LorisLabs server, no user account, no analytics, no telemetry, and no cloud processing of any kind. DNS queries are resolved by forwarding to your chosen upstream DNS provider (Cloudflare, Quad9, Google, or a custom DoH server) — LorisLabs never sees or processes your DNS traffic.</p>
+
+        <h3>Network Extension &amp; VPN</h3>
+        <p>Sinkhole requires the iOS VPN permission to function. This is a technical requirement of Apple's platform — there is no other way to intercept DNS queries system-wide on iOS. The VPN is <strong>local-only</strong>:</p>
+        <ul>
+            <li>Tunnel remote address: <code>127.0.0.1</code></li>
+            <li>No traffic is proxied, encrypted, or tunneled to an external server.</li>
+            <li>The VPN icon appears in the iOS status bar while Sinkhole is active.</li>
+            <li>Sinkhole does not provide anonymity, geo-unblocking, or any traditional VPN functionality.</li>
+        </ul>
+
+        <h3>iCloud Sync (Optional)</h3>
+        <p>When enabled, Sinkhole syncs custom rules, blocklist source URLs, and settings (upstream DNS URL, operating mode, home DNS IP) across your devices using Apple's iCloud Key-Value Store. This sync includes:</p>
+        <ul>
+            <li>Custom rule patterns and types</li>
+            <li>Blocklist source names and URLs</li>
+            <li>Wi-Fi SSID names (for per-network rules)</li>
+        </ul>
+        <p><strong>DNS query logs are never synced to iCloud.</strong> iCloud sync is disabled by default and can be toggled in Settings.</p>
+
+        <h3>LAN Server Mode</h3>
+        <p>In LAN Server mode, Sinkhole runs a local DNS server on your iPhone (UDP port 5053 and TCP port 8443). Other devices on your network can use your iPhone as their DNS resolver. DNS queries from these devices are logged locally on your iPhone with the querying device's LAN IP address. No data leaves your local network.</p>
+
+        <h3>No Analytics or Tracking</h3>
+        <p>Sinkhole contains <strong>no analytics SDKs, no tracking pixels, no advertising frameworks, and no telemetry</strong>. The only information we may receive is anonymized, aggregated data from Apple's App Analytics program, which you can opt out of in your device settings.</p>
+
+        <h3>Children's Privacy</h3>
+        <p>Sinkhole does not collect personal information from any users, including children. The app is suitable for users of all ages. No account creation is required.</p>
+    </section>
+
+    <section class="reveal" id="coreshield">
+        <h2>CoreShield AI — Network Security Privacy Details</h2>
+
+        <h3>How CoreShield AI Works</h3>
+        <p>CoreShield AI is a macOS network security application that uses Apple's Network Extension framework to inspect network traffic locally on your Mac. All threat analysis runs on-device using Apple's CoreML framework. CoreShield AI does not route your traffic through any external server operated by LorisLabs.</p>
+
+        <h3>Data Collected and Stored On-Device</h3>
+        <ul>
+            <li><strong>Location Data</strong> — CoreShield AI requests location permission to identify the WiFi network you are connected to and to detect potential evil twin access points (rogue networks impersonating legitimate ones). Location data is stored locally on your device and is <strong>never shared</strong> with LorisLabs or any third party.</li>
+            <li><strong>Bluetooth Scanning</strong> — CoreShield AI uses CoreBluetooth to scan for nearby Bluetooth devices to provide network environment awareness and detect potential threats. Bluetooth scan results are used in real-time for display purposes and are <strong>not persistently stored</strong>. No Bluetooth data is transmitted to any server.</li>
+            <li><strong>DNS Query Logging</strong> — DNS queries made by your Mac are monitored locally for threat detection and DNS filtering. Query logs (domain names, timestamps, blocked/allowed status) are stored on your device in a local database. DNS logs are <strong>never shared externally</strong>. You control the retention period and can clear logs at any time.</li>
+            <li><strong>Network Traffic Metadata</strong> — Connection destinations, protocols, ports, and bytes transferred are monitored for security analysis. This metadata is stored locally on your device and is <strong>never shared</strong> with LorisLabs or any third party. Actual packet contents are never stored or transmitted externally.</li>
+            <li><strong>Device Identifiers</strong> — Bluetooth device identifiers (UUIDs, device names) are used solely for identifying nearby devices in the network environment view. These identifiers are <strong>not used for tracking</strong> and are not transmitted to any server.</li>
+        </ul>
+
+        <h3>Device Permissions</h3>
+        <p>CoreShield AI requests the following system permissions, each used solely for on-device security functionality:</p>
+        <ul>
+            <li><strong>Network Extension</strong> — Required to inspect and filter network traffic on your Mac. Requires approval in System Settings &gt; Privacy &amp; Security.</li>
+            <li><strong>Location</strong> — Required to identify WiFi network names (SSID) and detect evil twin access points. macOS requires location permission for WiFi network identification.</li>
+            <li><strong>Bluetooth</strong> — Required for scanning nearby Bluetooth devices for network environment awareness.</li>
+        </ul>
+
+        <h3>On-Device AI</h3>
+        <p>Threat detection and traffic classification in CoreShield AI use Apple's CoreML framework. All AI models run <strong>entirely on your Mac</strong>. No network traffic data, DNS queries, or security events are sent to external servers for AI processing unless you explicitly configure an optional cloud AI provider with your own API key.</p>
+
+        <h3>No Analytics or Tracking</h3>
+        <p>CoreShield AI contains <strong>no analytics SDKs, no tracking pixels, no advertising frameworks, and no telemetry</strong>. The only information we may receive is anonymized, aggregated data from Apple's App Analytics program, which you can opt out of in your device settings.</p>
+    </section>
+
+    <section class="reveal" id="network404">
+        <h2>404 Network — Network Diagnostics Privacy Details</h2>
+
+        <h3>How 404 Network Works</h3>
+        <p>404 Network is a comprehensive network diagnostics toolkit. It performs ping, traceroute, port scanning, DNS lookups, speed tests, device discovery, and security audits — all directly from your iOS device. Network operations are executed on-device using system APIs (ICMP sockets, NWConnection, URLSession, mDNS/Bonjour).</p>
+
+        <h3>Data Stored On-Device</h3>
+        <ul>
+            <li><strong>Tool Results</strong> — Ping, DNS, traceroute, speed test, port scan, and audit results are stored locally in SwiftData. These are never transmitted to any server.</li>
+            <li><strong>Discovered Devices</strong> — IP addresses, MAC addresses, hostnames, open ports, and device types found during network scans are stored locally.</li>
+            <li><strong>Network Profiles</strong> — Gateway IP, SSID, and scan history per network are stored locally.</li>
+            <li><strong>Router Credentials</strong> — If you configure router integration (MikroTik, OPNsense, UniFi), credentials are stored in the <strong>iOS Keychain</strong> — never in UserDefaults, files, or cloud storage.</li>
+            <li><strong>AI API Keys</strong> — If you configure optional cloud AI providers (Claude, OpenAI), API keys are stored in the <strong>iOS Keychain</strong>.</li>
+        </ul>
+
+        <h3>Community Speed Map (Opt-In)</h3>
+        <p>404 Network includes an optional Community Speed Map feature. When <strong>explicitly enabled</strong> in Settings → Community → "Share Speed Results", the following anonymized data is shared via Apple CloudKit:</p>
+        <ul>
+            <li><strong>ISP name</strong> (detected from your public IP via Cloudflare)</li>
+            <li><strong>Connection type</strong> (WiFi, Cellular, Ethernet)</li>
+            <li><strong>Speed metrics</strong> (download/upload Mbps, latency, jitter, packet loss)</li>
+            <li><strong>Approximate location</strong> — your GPS coordinates are <strong>rounded to a ~500m grid</strong> before storage. Your exact location is never stored or transmitted.</li>
+        </ul>
+        <p>Community sharing is <strong>disabled by default</strong>. No personal identifiers (name, email, device ID) are included. Data is stored in a CloudKit public database accessible to other 404 Network users for comparing ISP performance.</p>
+
+        <h3>Location Data</h3>
+        <p>404 Network requests location permission for two purposes:</p>
+        <ul>
+            <li><strong>WiFi SSID detection</strong> — iOS requires location permission to access the current WiFi network name via NEHotspotNetwork.</li>
+            <li><strong>Community Speed Map</strong> — When community sharing is enabled, your approximate location (~500m) is used to position speed results on the map.</li>
+        </ul>
+        <p>Location data is never stored in full precision. Community map coordinates are always rounded to a ~500m grid before transmission.</p>
+
+        <h3>Bluetooth</h3>
+        <p>The BLE Scanner feature uses CoreBluetooth to discover nearby Bluetooth Low Energy devices. Device names, UUIDs, RSSI, and GATT profiles are stored locally. No Bluetooth data is transmitted to any server.</p>
+
+        <h3>Network Extensions</h3>
+        <p>404 Network includes optional VPN/content filter extensions for traffic inspection and packet capture. These extensions operate locally — no traffic is routed through external servers. The VPN tunnel connects to localhost for on-device packet analysis.</p>
+
+        <h3>Speed Test</h3>
+        <p>Speed tests download and upload data from <strong>Cloudflare's speed test infrastructure</strong> (speed.cloudflare.com). This is a direct connection between your device and Cloudflare — LorisLabs does not operate or have access to any speed test server. Cloudflare's privacy policy applies to their infrastructure.</p>
+
+        <h3>No Analytics or Tracking</h3>
+        <p>404 Network contains <strong>no analytics SDKs, no tracking pixels, no advertising frameworks, and no telemetry</strong>. The only information we may receive is anonymized, aggregated data from Apple's App Analytics program, which you can opt out of in your device settings.</p>
+    </section>
+
+    <section class="reveal">
+        <h2>Third-Party Services</h2>
+        <p>Most core app paths are on-device or connect directly to services the user controls. Optional, user-requested, or store-backed features may involve the following third parties:</p>
+
+        <h3>Apple App Store and Google Play</h3>
+        <p>Our Apps may be distributed through the Apple App Store or Google Play. Apple and Google process store, download, and payment information under their respective privacy policies. LorisLabs does not receive payment-card details. Android purchase and integrity evidence is handled only as described in the Lumen Android section below.</p>
+
+        <h3>Optional AI API Providers</h3>
+        <p>For Clasp 4.0, use the feature-specific external-AI and speech-recognition details in the Clasp section above. Other Apps (including Moi) allow you to optionally configure third-party AI providers such as <strong>OpenAI</strong> or <strong>Anthropic (Claude)</strong> by providing your own API keys. If you choose to enable these integrations:</p>
+        <ul>
+            <li>Data you send to these services (prompts, text content) is transmitted to their servers and governed by their respective privacy policies.</li>
+            <li>This feature is <strong>off by default</strong> and requires your explicit configuration.</li>
+            <li>API keys you provide are stored securely in the iOS/macOS Keychain and are never transmitted to LorisLabs.</li>
+            <li>You can disable these integrations at any time and revert to fully on-device processing.</li>
+        </ul>
+
+        <h3>Apple App Analytics</h3>
+        <p>We may receive anonymized, aggregated analytics from Apple about app usage (crash reports, install counts). This data cannot identify individual users. You can opt out by navigating to Settings &gt; Privacy &gt; Analytics on your device.</p>
+    </section>
+
+    <section class="reveal">
+        <h2>Data Security</h2>
+        <p>We use platform security controls and minimize the scope of each service-backed feature:</p>
+        <ul>
+            <li><strong>App sandboxing</strong> restricts each app's data access to its own container.</li>
+            <li><strong>Encrypted storage</strong> — data is stored in encrypted containers managed by the operating system.</li>
+            <li><strong>Credential storage</strong> uses Apple Keychain or Android Keystore-backed app storage, as appropriate to the platform.</li>
+            <li><strong>Transport security</strong> — LorisLabs-operated verification and relay services require HTTPS. Connections to user-configured self-hosted services follow the address and local-network policy selected by the user and may use local HTTP where an app explicitly permits it.</li>
+            <li><strong>Minimized service scope</strong> — where LorisLabs operates a verification or relay service, its purpose, processed data, and retention are bounded in the relevant app-specific section.</li>
+        </ul>
+    </section>
+
+    <section class="reveal" id="lumen-android">
+        <h2>Lumen for Frigate on Android — Privacy Details</h2>
+        <div lang="en">
+            <p>Lumen connects directly to the Frigate NVR server address configured by the user. LorisLabs does not receive or store the user's Frigate credentials, camera feeds, recordings or event images through this direct connection.</p>
+            <p><strong>Google Play purchases and integrity.</strong> When a user buys or restores Lumen Pro, the Android app sends a random request identifier, package name, product identifier, Google Play purchase token and a request-bound Play Integrity token to the LorisLabs entitlement-verification service over HTTPS. The service asks Google Play to verify licensing, application integrity, device integrity and purchase status. Google acts as the store and verification provider, and Cloudflare transports the public HTTPS request. LorisLabs does not receive payment-card details.</p>
+            <p>Raw purchase and integrity tokens are processed for verification but are not logged or retained by LorisLabs. To prevent replay and conflicting grants, the service stores a keyed purchase-token digest with the product identifier, entitlement expiry and last successful verification time. It automatically deletes that record after 90 days without a successful Google-backed verification, with an hourly purge. A later restore is checked again with Google Play.</p>
+            <p><strong>Firebase Cloud Messaging.</strong> The Android app includes Google Firebase Cloud Messaging for optional camera-event notifications. Firebase may process a Firebase installation identifier, FCM registration token, package and app-version information, and device or network routing information needed to operate and secure delivery. The current app can receive data-only FCM messages, applies the user's notification filters on the device and builds the visible notification locally.</p>
+            <p><strong>LorisLabs Android notification relay.</strong> An authenticated relay subscription, when configured, contains the FCM token, Frigate server identifier, notification label filters and minimum score, locale, app version and last-update time. For delivery, the relay processes event and review identifiers, camera name, label or sub-label, zones, score, timestamps, severity, and whether a clip or snapshot is available. It sends that metadata through Firebase; it does not receive the user's Frigate credentials, live feed, recording, clip, snapshot or event image. The private relay transport uses Tailscale. This Android release does not automatically register its FCM token with the LorisLabs relay, so it does not create such a relay subscription by itself.</p>
+            <p>Relay subscriptions are deleted after 90 days without a successful refresh, checked at startup and hourly. Tokens rejected by Firebase as unregistered or not found are removed immediately. An authenticated deletion request removes the exact server-and-token binding and does not reveal whether it existed.</p>
+            <p>There is no LorisLabs account in this Android version. For a privacy question or a request concerning purchase-verifier or relay data, email <a href="/cdn-cgi/l/email-protection#ff8c8a8f8f908d8bbf93908d968c939e9dd1998dc08c8a9d959a9c8bc2b38a929a91dacdcfbe919b8d90969bdacdcf8f8d96899e9c86"><span class="__cf_email__" data-cfemail="11626461617e6365517d7e6378627d70733f7763">[email&#160;protected]</span></a>. Do not send Frigate credentials, camera content, FCM tokens, or raw Google Play purchase or integrity tokens by email or place them in a URL. LorisLabs will provide a secure verification procedure if information is needed to find the relevant record. Verifier deletion requires fresh Google-backed app, integrity and purchase evidence; an authenticated request deletes matching keyed digests atomically. This release does not yet expose that deletion action in the app. A later user-requested purchase restore may create a new digest after Google verification.</p>
+        </div>
+
+        <h2 lang="fr">Lumen for Frigate sur Android — Informations de confidentialité</h2>
+        <div lang="fr">
+            <p>Lumen se connecte directement à l'adresse du serveur Frigate NVR configurée par l'utilisateur. LorisLabs ne reçoit ni ne conserve les identifiants Frigate, les flux de caméras, les enregistrements ou les images d'événements transmis par cette connexion directe.</p>
+            <p><strong>Achats Google Play et intégrité.</strong> Lorsqu'un utilisateur achète ou restaure Lumen Pro, l'application Android transmet au service LorisLabs de vérification des droits, via HTTPS, un identifiant de requête aléatoire, le nom du package, l'identifiant du produit, le jeton d'achat Google Play et un jeton Play Integrity lié à la requête. Le service demande à Google Play de vérifier la licence, l'intégrité de l'application et de l'appareil, ainsi que l'état de l'achat. Google agit comme boutique et prestataire de vérification ; Cloudflare transporte la requête HTTPS publique. LorisLabs ne reçoit aucune donnée de carte bancaire.</p>
+            <p>Les jetons d'achat et d'intégrité bruts sont traités pour la vérification, mais ne sont ni journalisés ni conservés par LorisLabs. Afin d'empêcher les rejeux et les attributions de droits incompatibles, le service conserve une empreinte avec clé du jeton d'achat, l'identifiant du produit, l'expiration du droit et la date de la dernière vérification réussie. Cet enregistrement est automatiquement supprimé après 90 jours sans nouvelle vérification réussie auprès de Google Play ; une purge est exécutée chaque heure. Une restauration ultérieure est de nouveau vérifiée auprès de Google Play.</p>
+            <p><strong>Firebase Cloud Messaging.</strong> L'application Android intègre Google Firebase Cloud Messaging pour les notifications facultatives d'événements de caméra. Firebase peut traiter un identifiant d'installation Firebase, le jeton d'inscription FCM, les informations de package et de version de l'application, ainsi que les informations techniques d'appareil ou de routage réseau nécessaires au fonctionnement et à la sécurité de la livraison. L'application actuelle peut recevoir des messages FCM contenant uniquement des données, applique les filtres de notification de l'utilisateur sur l'appareil et construit localement la notification visible.</p>
+            <p><strong>Relais de notifications Android LorisLabs.</strong> Lorsqu'elle est configurée, une inscription authentifiée au relais contient le jeton FCM, l'identifiant du serveur Frigate, les filtres de libellés et le score minimal de notification, la langue, la version de l'application et la date de dernière mise à jour. Pour la livraison, le relais traite les identifiants d'événement et de revue, le nom de la caméra, le libellé ou sous-libellé, les zones, le score, les horodatages, la gravité et la disponibilité éventuelle d'un clip ou d'un instantané. Il envoie ces métadonnées via Firebase ; il ne reçoit ni identifiant Frigate, ni flux en direct, ni enregistrement, clip, instantané ou image d'événement. Le transport privé du relais utilise Tailscale. Cette version Android n'inscrit pas automatiquement son jeton FCM auprès du relais LorisLabs et ne crée donc pas elle-même une telle inscription.</p>
+            <p>Les inscriptions au relais sont supprimées après 90 jours sans actualisation réussie, avec un contrôle au démarrage puis toutes les heures. Les jetons signalés par Firebase comme désinscrits ou introuvables sont supprimés immédiatement. Une demande de suppression authentifiée retire l'association exacte entre serveur et jeton sans révéler si elle existait.</p>
+            <p>Cette version Android ne crée aucun compte LorisLabs. Pour une question relative à la vie privée ou une demande concernant les données du vérificateur d'achats ou du relais, écrivez à <a href="/cdn-cgi/l/email-protection#e0939590908f9294a08c8f9289938c8182ce8692df9395828a858394dda38f8e868984858e9489818c8994c5a3d3c5a1d9c5d2d0ac958d858ec5d2d0a18e84928f8984"><span class="__cf_email__" data-cfemail="5b282e2b2b34292f1b3734293228373a39753d29">[email&#160;protected]</span></a>. N'envoyez par email et ne placez dans une URL aucun identifiant Frigate, contenu de caméra, jeton FCM, jeton d'achat Google Play brut ou jeton d'intégrité. LorisLabs fournira une procédure de vérification sécurisée si des informations sont nécessaires pour retrouver l'enregistrement concerné. La suppression des données du vérificateur exige des preuves récentes, validées par Google, concernant l'application, l'intégrité et l'achat ; une requête authentifiée supprime atomiquement les empreintes correspondantes. Cette version ne propose pas encore cette action de suppression dans l'application. Une restauration d'achat demandée ultérieurement par l'utilisateur peut créer une nouvelle empreinte après vérification par Google.</p>
+        </div>
+    </section>
+
+    <section class="reveal" id="face-data">
+        <h2>Face Data (Lumen for Frigate)</h2>
+        <p>Lumen for Frigate includes face recognition features that allow you to register and identify known people in your camera feeds. This section explains how face data is collected, used, and stored.</p>
+
+        <h3>What Face Data Is Collected</h3>
+        <p>When you use the face recognition feature, you may upload photographs of people from your device's photo library to your self-hosted Frigate NVR server. These photographs are used by your Frigate server to identify known people in camera feeds. The Lumen app acts solely as a client — it transmits the photos you select directly to your own server and displays face thumbnails retrieved from it.</p>
+
+        <h3>How Face Data Is Used</h3>
+        <p>Face data is used exclusively for the purpose of identifying known people in your camera feeds on your self-hosted Frigate NVR. The app displays face thumbnails and recognition results fetched from your server. LorisLabs does not process, analyze, or perform any computation on face data — all face recognition processing occurs on your own Frigate NVR hardware.</p>
+
+        <h3>Third-Party Sharing</h3>
+        <p>Face data is <strong>never</strong> transmitted to LorisLabs, Apple, or any third party. All face images and recognition data remain exclusively on your self-hosted Frigate NVR server, which you own and control. The app communicates only with your server over your local network or VPN — no relay servers or intermediaries are involved.</p>
+
+        <h3>Storage Location</h3>
+        <p>All face data is stored on your self-hosted Frigate NVR server. The Lumen app does not persistently store face images on your Apple device beyond standard temporary URL caching managed by the operating system.</p>
+
+        <h3>Data Retention</h3>
+        <p>Face data persists on your Frigate NVR server until you choose to delete it. You can delete individual face images or entire face registrations at any time through the Lumen app or through Frigate's web interface. LorisLabs has no ability to access, modify, or delete your face data as it resides entirely on hardware you control.</p>
+
+        <h3>Your Control</h3>
+        <p>You have full control over your face data at all times. You can add, view, and delete face registrations directly within the app. The face recognition feature is optional and requires your explicit action to register any face photographs.</p>
+    </section>
+
+    <section class="reveal" id="rampart">
+        <h2>Rampart for OPNsense — Firewall Monitoring Privacy Details</h2>
+        <p>Rampart connects your device directly to your own OPNsense firewall. All monitoring and management data flows only between your device and your firewall — LorisLabs operates no servers in this path and never receives your network data.</p>
+
+        <h3>Credentials &amp; Keys</h3>
+        <ul>
+            <li><strong>OPNsense API credentials</strong> (key and secret) are stored in the iOS/macOS Keychain and used only to reach the firewall you configured. They are never transmitted to LorisLabs.</li>
+            <li><strong>SSH key (Terminal)</strong> — When you use the in-app Terminal, Rampart generates an ed25519 SSH key on your device. The private half stays in the Keychain and <strong>never leaves the device</strong>; you install only the public half on your firewall. The firewall's SSH host key is pinned on first connection (trust-on-first-use), and any later change is flagged for your review before you reconnect.</li>
+        </ul>
+
+        <h3>Optional Cloud AI Features</h3>
+        <p>Rampart's AI Assistant and Terminal co-pilot are <strong>off unless you supply your own Anthropic API key</strong>. When enabled:</p>
+        <ul>
+            <li>The context you ask about — firewall status data for the Assistant, or the terminal command and output you explicitly ask the co-pilot to explain or act on — is sent to Anthropic's Claude API using <strong>your own key</strong>, and is governed by <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Anthropic's Privacy Policy</a>.</li>
+            <li>Your API key is stored in the iOS/macOS Keychain and is <strong>never transmitted to LorisLabs</strong>. LorisLabs does not receive, store, or retain any of your firewall data or terminal content.</li>
+            <li>The AI only <strong>proposes</strong> commands — it never runs anything on its own. You review and run every command yourself.</li>
+            <li>You can remove the API key at any time to disable all cloud AI and keep Rampart fully direct-to-firewall.</li>
+        </ul>
+    </section>
+
+    <section class="reveal" id="eclair">
+        <h2>Éclair — EV Navigation Privacy Details</h2>
+
+        <h3>Location Data</h3>
+        <p>Éclair requires location permission for navigation and route planning. Your location data is processed <strong>entirely on your device</strong> and is never transmitted to LorisLabs. Location history is stored locally in SwiftData for trip analytics and driving statistics. You can delete individual trips or clear all location history at any time within the app.</p>
+
+        <h3>Vehicle Data</h3>
+        <p>Éclair connects to your electric vehicle through multiple methods:</p>
+        <ul>
+            <li><strong>OBD-II Bluetooth</strong> — Vehicle telemetry (state of charge, battery temperature, energy consumption) is read via a Bluetooth OBD-II adapter and processed on-device. No vehicle data is transmitted to LorisLabs.</li>
+            <li><strong>Brand APIs (Renault, Volvo)</strong> — If you connect via a manufacturer API, authentication tokens are stored in the iOS Keychain. Vehicle data retrieved from these APIs is stored locally.</li>
+            <li><strong>SmartCar API</strong> — If you connect via SmartCar, OAuth tokens are stored in the iOS Keychain. SmartCar's privacy policy applies to data processed by their service.</li>
+            <li><strong>Manual Entry</strong> — No external connections. All data is stored locally.</li>
+        </ul>
+
+        <h3>Charging Station Data</h3>
+        <p>Éclair searches for charging stations using the Open Charge Map API. Search queries contain your approximate location to find nearby chargers. No personal identifiers are included in these requests. Charger results are cached locally.</p>
+
+        <h3>Parking Features</h3>
+        <p>Éclair searches for nearby parking using third-party APIs:</p>
+        <ul>
+            <li><strong>OpenStreetMap Overpass API</strong> — Parking location queries are sent as geographic bounding box coordinates. No personal identifiers, device IDs, or user data are included. Results are cached locally for 7 days.</li>
+            <li><strong>ParkAPI (parkendd.de)</strong> — Real-time parking availability queries are sent by city name and coordinates. No personal identifiers are included. City lists are cached for 24 hours.</li>
+            <li><strong>Payment App Integration</strong> — Éclair can deep-link to third-party parking payment apps (PayByPhone, EasyPark) if installed on your device. <strong>No payment data is processed, stored, or transmitted by Éclair.</strong> You interact directly with the payment app. If the payment app is not installed, Éclair redirects to its App Store listing.</li>
+        </ul>
+        <p>Parking search count is tracked locally for freemium gating purposes and is never transmitted.</p>
+
+        <h3>Traffic Data Collection</h3>
+        <p>Éclair includes a community traffic intelligence system. When traffic data sharing is enabled in Settings:</p>
+        <ul>
+            <li><strong>What is collected:</strong> Average speed per road segment, stop events, route deviation indicators, and energy consumption anomalies.</li>
+            <li><strong>Anonymization safeguards:</strong> Raw GPS traces are <strong>never uploaded</strong>. All data is aggregated on-device into road segment averages. Coordinates are converted to H3 spatial cell hashes (not exact locations). Timestamps are coarsened to 5-minute intervals.</li>
+            <li><strong>K-anonymity gate:</strong> Traffic data for a road segment is only uploaded to CloudKit when at least 3 users have contributed data for that segment. This prevents individual trip traces from being reconstructable.</li>
+            <li><strong>No user IDs:</strong> Traffic segment records in CloudKit contain no user identifiers. Individual contributions are not traceable to any user.</li>
+            <li><strong>Storage:</strong> Traffic data is stored in the CloudKit public database (<code>iCloud.com.lorislab.eclair</code>). LorisLabs does not operate separate servers for traffic data.</li>
+        </ul>
+        <p>Traffic data sharing can be disabled at any time in Settings.</p>
+
+        <h3>Community Features &amp; Incident Reporting</h3>
+        <p>Éclair includes opt-in community features that require Apple Sign-In:</p>
+        <ul>
+            <li><strong>Community Profile</strong> — When you sign in, a profile is created containing: your first name and last initial (e.g., "Kevin N."), vehicle model, member-since date, and a computed trust score. Your full name, email address, and Apple ID are <strong>not exposed</strong> to other users. Profiles are stored in the CloudKit public database.</li>
+            <li><strong>Incident Reporting</strong> — You can report road incidents (accidents, police controls, road closures, hazards, construction, weather). Reports include: incident type, location, direction of travel, and your reporter ID. Other users can upvote or downvote incidents. Incidents auto-expire after 1–7 days depending on type.</li>
+            <li><strong>Trust Score</strong> — A reputation score (0–100) is computed from an audit trail of events (confirmed incident reports, ride ratings, user reports). The score is computed from the event log — never stored as a mutable value. Trust score events are stored in CloudKit.</li>
+        </ul>
+        <p>Community features are <strong>disabled by default</strong> and require explicit opt-in and Apple Sign-In.</p>
+
+        <h3>Carpooling (Preview)</h3>
+        <p>Éclair includes an optional carpooling feature, labeled as <strong>"Preview"</strong>, that facilitates cost-sharing rides between users. This feature is structured as non-commercial ride-sharing (covoiturage) in compliance with French Transport Code Article L3132-1.</p>
+        <ul>
+            <li><strong>Data collected:</strong> Ride requests (origin, destination, departure time, passenger count), booking confirmations, in-ride messages between participants, post-ride ratings, and ride history.</li>
+            <li><strong>Cost-splitting:</strong> The cost-splitting algorithm calculates shares based on actual trip costs (energy, tolls, vehicle wear). The algorithm is designed so that <strong>drivers cannot profit</strong> — cost-sharing is capped at actual trip cost.</li>
+            <li><strong>Messaging:</strong> In-ride messages are stored in CloudKit and are visible only to ride participants. Messages are not end-to-end encrypted.</li>
+            <li><strong>Ratings &amp; Moderation:</strong> Post-ride ratings affect trust scores. Users with low trust scores (below 40) or who are suspended cannot access carpooling. Users can be reported, which triggers trust score penalties. Repeated offenses result in 7-day bans or permanent suspension.</li>
+            <li><strong>Data retention:</strong> Carpooling ride records (including route, participants, and cost breakdown) are retained for 12–24 months. This retention period is required for potential law enforcement requests (réquisition judiciaire) under applicable French and EU law (GDPR Article 6(1)(c)).</li>
+            <li><strong>Anonymized vs. identifiable data:</strong> Anonymous traffic data (segment averages with no individual traces) is kept separate from identifiable ride data (which includes participant IDs and routes).</li>
+        </ul>
+        <p>Carpooling is <strong>off by default</strong>, requires explicit opt-in in Settings, and requires an active community profile with Apple Sign-In.</p>
+
+        <h3>AI Features</h3>
+        <p>Éclair's three-tier AI system processes data as follows:</p>
+        <ul>
+            <li><strong>Apple Intelligence</strong> — Runs entirely on-device. No data leaves your device.</li>
+            <li><strong>Local LLM (Ollama)</strong> — Runs on your local network. No data leaves your network.</li>
+            <li><strong>Cloud AI (Claude, OpenAI)</strong> — If you configure a cloud provider with your own API key, trip data you choose to analyze is sent to their servers. This is <strong>off by default</strong>. API keys are stored in the iOS Keychain. See <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener">Anthropic's Privacy Policy</a> and <a href="https://openai.com/privacy" target="_blank" rel="noopener">OpenAI's Privacy Policy</a> for details on how they handle your data.</li>
+        </ul>
+
+        <h3>Cross-Border Data Transfers</h3>
+        <p>When you enable community features, data is stored in Apple CloudKit, which may process and store data on servers located outside the EU/EEA. Apple provides appropriate safeguards for international data transfers under GDPR Articles 44–49. See <a href="https://www.apple.com/legal/privacy/" target="_blank" rel="noopener">Apple's Privacy Policy</a> for details.</p>
+        <p>If you connect your vehicle via SmartCar, data is transmitted to SmartCar Inc. (US-based). See <a href="https://smartcar.com/privacy" target="_blank" rel="noopener">SmartCar's Privacy Policy</a>. If you use optional cloud AI providers (Anthropic, OpenAI), data is transmitted to US-based servers and is subject to their respective privacy policies.</p>
+        <p>For on-device-only usage (the default), no personal data is transferred outside your device.</p>
+
+        <h3>CarPlay</h3>
+        <p>When used with CarPlay, Éclair displays navigation and charge information on your vehicle's display. No additional data collection occurs through CarPlay beyond what is described above.</p>
+
+        <h3>Device Permissions</h3>
+        <p>Éclair requests the following permissions, each used solely for on-device functionality:</p>
+        <ul>
+            <li><strong>Location (Always)</strong> — Required for navigation, route tracking, background trip recording, and traffic data collection. Location data is stored locally; only anonymized segment data is shared if traffic sharing is enabled.</li>
+            <li><strong>Bluetooth</strong> — Required for OBD-II adapter connectivity. No Bluetooth data is transmitted externally.</li>
+            <li><strong>Speech Recognition</strong> — Required for voice commands during navigation. Processing occurs on-device.</li>
+            <li><strong>Notifications</strong> — Required for charge alerts, navigation updates, incident alerts, and carpooling notifications.</li>
+        </ul>
+
+        <h3>Location Permission Justification</h3>
+        <p>Éclair requests <strong>"Always"</strong> location permission (rather than "When In Use") for the following specific reasons:</p>
+        <ul>
+            <li><strong>Background trip recording:</strong> To accurately track your route, energy consumption, and driving statistics while the app is in the background or the screen is off during navigation.</li>
+            <li><strong>Live Activities:</strong> To update your Lock Screen with real-time navigation progress and charge status.</li>
+            <li><strong>Traffic data collection:</strong> If enabled, to contribute anonymized segment speed data while navigating in the background.</li>
+        </ul>
+        <p>You can change location permission to "When In Use" or revoke it entirely at any time in iOS Settings &gt; Privacy &amp; Security &gt; Location Services &gt; Éclair. Background trip recording and traffic collection will not function without "Always" permission, but all other features remain available.</p>
+
+        <h3>Data Retention</h3>
+        <p>Éclair retains data for the following periods:</p>
+        <ul>
+            <li><strong>Trip history &amp; driving statistics:</strong> Stored locally indefinitely until you delete them within the app.</li>
+            <li><strong>Community profiles:</strong> Stored in CloudKit indefinitely until you delete your profile.</li>
+            <li><strong>Incident reports:</strong> Auto-expire after 1–7 days depending on type.</li>
+            <li><strong>Trust score events:</strong> Stored in CloudKit for the lifetime of your community profile. Deleted when you delete your profile.</li>
+            <li><strong>Traffic segment data:</strong> Anonymous segment averages in CloudKit are retained indefinitely as they contain no user identifiers.</li>
+            <li><strong>Carpooling ride records:</strong> 12–24 months (legal retention requirement), then permanently deleted.</li>
+            <li><strong>Carpooling messages:</strong> Retained for the same period as their associated ride record (12–24 months).</li>
+            <li><strong>Vehicle data (OBD-II readings):</strong> Stored locally indefinitely until you delete them or disconnect the vehicle.</li>
+            <li><strong>Parking search cache:</strong> OpenStreetMap results cached 7 days; ParkAPI city lists cached 24 hours.</li>
+        </ul>
+
+        <h3>Data Deletion &amp; GDPR Rights</h3>
+        <p>You can delete your community profile, ride history, incident reports, and all local data at any time within the app. Deleting your community profile removes your profile record, associated trust score events, and incident reports from CloudKit. Anonymous traffic segment contributions cannot be individually deleted as they contain no user identifiers.</p>
+        <p><strong>Account deletion:</strong> In compliance with Apple App Store Review Guideline 5.1.1(v), Éclair provides in-app account deletion for community profiles. Deleting your account removes all associated data from CloudKit, except carpooling ride records within the legal retention period (12–24 months), which are retained in anonymized form with participant IDs removed.</p>
+        <p>Under GDPR, you have the following rights regarding your personal data:</p>
+        <ul>
+            <li><strong>Right of access (Art. 15)</strong> — Request a copy of your personal data.</li>
+            <li><strong>Right to rectification (Art. 16)</strong> — Correct inaccurate data.</li>
+            <li><strong>Right to erasure (Art. 17)</strong> — Request deletion of your data, subject to legal retention obligations.</li>
+            <li><strong>Right to restrict processing (Art. 18)</strong> — Request that we limit how we process your data.</li>
+            <li><strong>Right to data portability (Art. 20)</strong> — Receive your data in a structured, machine-readable format.</li>
+            <li><strong>Right to object (Art. 21)</strong> — Object to processing based on legitimate interest.</li>
+            <li><strong>Right regarding automated decisions (Art. 22)</strong> — Éclair's trust score is computed algorithmically from your activity history. You have the right to request human review of trust score decisions that affect your access to features (e.g., carpooling eligibility).</li>
+            <li><strong>Right to withdraw consent</strong> — You may withdraw consent for any optional feature at any time by disabling it in Settings.</li>
+        </ul>
+        <p>To exercise any of these rights, contact <a href="/cdn-cgi/l/email-protection#fd8e888d8d928f89bd91928f948e919c9fd39b8f"><span class="__cf_email__" data-cfemail="a3d0d6d3d3ccd1d7e3cfccd1cad0cfc2c18dc5d1">[email&#160;protected]</span></a>. We will respond within one month as required by GDPR Article 12(3). You also have the right to lodge a complaint with the <strong>Commission Nationale de l'Informatique et des Libertés (CNIL)</strong> at <a href="https://www.cnil.fr" target="_blank" rel="noopener">www.cnil.fr</a> if you believe your data protection rights have been violated.</p>
+
+        <h3>No Analytics or Tracking</h3>
+        <p>Éclair contains <strong>no analytics SDKs, no tracking pixels, no advertising frameworks, and no telemetry</strong>. The only information we may receive is anonymized, aggregated data from Apple's App Analytics program, which you can opt out of in your device settings.</p>
+    </section>
+
+    <section class="reveal" id="heol">
+        <h2>Heol — Email Client Privacy Details</h2>
+
+        <h3>Email Data</h3>
+        <p>Heol connects directly to your email provider via IMAP and SMTP protocols. All email messages, headers, subjects, sender addresses, and metadata are stored locally on your device in an encrypted SQLite database (SQLCipher). LorisLabs never has access to your emails — the app communicates only with your email provider's servers.</p>
+
+        <h3>Credentials</h3>
+        <p>Your IMAP/SMTP credentials (passwords, OAuth tokens) are stored exclusively in the iOS/macOS Keychain. API keys for optional AI providers are also stored in the Keychain. Credentials are never transmitted to LorisLabs servers.</p>
+
+        <h3>On-Device AI Processing</h3>
+        <p>Heol uses multiple on-device AI features that run entirely on your device:</p>
+        <ul>
+            <li><strong>Phishing Detection</strong> — Uses custom CoreML models to classify email threats. No email content is sent to any server for threat analysis. This is a core privacy guarantee of Heol.</li>
+            <li><strong>Email Triage</strong> — AI priority scoring, category classification, urgency detection, and action item extraction all run on-device via CoreML and Apple Intelligence.</li>
+            <li><strong>Email Summaries</strong> — Generated on-device using Apple's Foundation Models framework when available.</li>
+        </ul>
+
+        <h3>Optional Cloud AI Providers</h3>
+        <p>Heol allows you to optionally configure third-party AI providers (such as Anthropic Claude or OpenAI) using your own API key. If you enable a cloud provider:</p>
+        <ul>
+            <li>Email content (subjects, body text, sender addresses) may be sent to the configured provider for AI processing (summarization, chat, composition assistance).</li>
+            <li>A clear privacy warning is shown when you first enable a cloud provider.</li>
+            <li>You can switch back to on-device-only processing at any time.</li>
+            <li>LorisLabs does not operate these cloud services and has no access to the data you send to them.</li>
+        </ul>
+
+        <h3>Contacts, Calendar, Location, Reminders</h3>
+        <p>Heol requests access to your Contacts (to show sender details), Calendar (to create events from emails), Location (for location-based snooze), and Reminders (to create follow-up tasks). Each permission is requested only when you use the corresponding feature, and all data is processed on-device. LorisLabs never receives this data.</p>
+
+        <h3>Microphone &amp; Speech Recognition</h3>
+        <p>If you use voice input in Heol's AI chat, audio is processed on-device using Apple's speech recognition. Audio is not recorded, stored, or transmitted to any server.</p>
+
+        <h3>Data Storage &amp; Encryption</h3>
+        <ul>
+            <li>All email data is stored in an <strong>encrypted SQLite database</strong> (SQLCipher) on your device.</li>
+            <li>The database encryption key is stored in the Keychain and synced via iCloud Keychain for multi-device access.</li>
+            <li>iOS Data Protection (completeUntilFirstUserAuthentication) is applied to the database directory.</li>
+            <li>PDF sanitization output is written to the system temporary directory and cleaned up automatically.</li>
+            <li>Quarantined phishing emails are stored in a dedicated directory excluded from iCloud backup.</li>
+        </ul>
+
+        <h3>Tracker Blocking</h3>
+        <p>Heol blocks known email tracking pixels and strips EXIF metadata from images displayed in emails. Blocked tracker domains are matched against a locally-stored blocklist — no network requests are made for tracker detection.</p>
+
+        <h3>End-to-End Encryption (PGP)</h3>
+        <p>Heol supports optional PGP encryption for email content. PGP keys are stored locally on your device and are not synced to iCloud. Encryption and decryption happen entirely on-device.</p>
+
+        <h3>Data Deletion</h3>
+        <p>You can delete individual emails, clear cached data, or remove entire email accounts at any time within the app. Uninstalling the app removes all associated data from your device, including the encrypted database and Keychain entries.</p>
+
+        <h3>Analytics &amp; Telemetry</h3>
+        <p>Heol contains <strong>no analytics SDKs, no tracking pixels, no advertising frameworks, and no telemetry</strong>. The only information we may receive is anonymized, aggregated data from Apple's App Analytics program, which you can opt out of in your device settings.</p>
+    </section>
+
+    <section class="reveal" id="proofcheck">
+        <h2>ProofCheck — Device Verification Privacy Details</h2>
+
+        <h3>What ProofCheck Is</h3>
+        <p>ProofCheck is a device-inspection and verification app for iPhone, iPad, Mac, and Apple Vision Pro. It runs a battery of diagnostic tests on the local device (sensors, battery, storage, warranty status, etc.), combines them into a "trust score", and produces a report that a seller can share with a buyer via a short code or link. Unlike most LorisLabs apps, ProofCheck <strong>does collect and transmit personal data by design</strong>, because the product purpose is for a buyer to verify a seller's device across the internet. This section explains exactly what is collected, why, where it is stored, and how you can delete it.</p>
+
+        <h3>Data We Collect</h3>
+        <ul>
+            <li><strong>Email Address (Sign in with Apple)</strong> — If you choose to sign in as a seller (to have your reports cryptographically associated with a persistent identity), Apple returns your email address. ProofCheck stores this email to label your generated reports. <strong>Purpose:</strong> App functionality. <strong>Linked to user:</strong> yes. <strong>Used for tracking:</strong> no.</li>
+            <li><strong>Coarse Location</strong> — ProofCheck uses <code>CLLocationManager</code> with <em>reduced accuracy</em> (approximate location, not precise GPS) and IP-based geolocation to confirm that the device's claimed region matches its physical location. This is a trust signal in the score. <strong>Purpose:</strong> App functionality. <strong>Linked to user:</strong> yes (it is persisted into your trust report). <strong>Used for tracking:</strong> no.</li>
+            <li><strong>Device Identifiers</strong> — On macOS, ProofCheck reads the Mac's serial number (via <code>IOPlatformSerialNumber</code>). On iOS / iPadOS / visionOS, ProofCheck derives a stable per-installation identifier from <code>identifierForVendor</code>. These identifiers are stored in your report for anti-fraud and buyer-side comparison. <strong>Purpose:</strong> App functionality. <strong>Linked to user:</strong> yes. <strong>Used for tracking:</strong> no.</li>
+            <li><strong>Performance &amp; Diagnostic Data</strong> — ProofCheck records thermal state, battery health, sensor health, storage figures, warranty/coverage status, jailbreak/SIP indicators, system boot time, and similar trust signals. These are combined into your trust score and persisted into the report. <strong>Purpose:</strong> App functionality. <strong>Linked to user:</strong> yes. <strong>Used for tracking:</strong> no.</li>
+        </ul>
+
+        <h3>Where Your Data Is Stored</h3>
+        <ul>
+            <li><strong>Private CloudKit database</strong> (<code>iCloud.com.lorislab.proofcheck</code>) — Your personal report history is stored in your <em>private</em> CloudKit database, tied to your Apple ID. Only you can read it. LorisLabs cannot access it. Apple provides encryption in transit (TLS) and at rest.</li>
+            <li><strong>Public CloudKit database</strong> (<code>iCloud.com.lorislab.proofcheck</code>) — When you explicitly generate a shareable code for a buyer, a <em>redacted</em> copy of the report is written to the public database so the buyer can retrieve it with the code. Publicly-shared reports are subject to redaction rules (see below) and automatically expire.</li>
+            <li><strong>IP Geolocation Service</strong> — To determine the network region for the trust score, ProofCheck queries a LorisLabs-operated Cloudflare Worker which returns coarse geographic information (country/region/city/ISP) from the caller's IP. The Worker does not log requests. Your IP address is observable by Cloudflare as a technical necessity of the HTTPS request; Cloudflare's privacy policy applies to their edge network.</li>
+            <li><strong>On-device</strong> — Your signed-in email, dev-mode preferences, and cached device catalog are stored on-device in <code>UserDefaults</code> and the Keychain (for sensitive items).</li>
+        </ul>
+
+        <h3>What Is Shared Publicly When You Share a Report</h3>
+        <p>When a seller generates a share code, a report copy is written to the CloudKit <em>public</em> database so a buyer can fetch it. We minimize what is placed in the public record. Publicly-shared records expire automatically and are periodically purged.</p>
+
+        <h3>Third-Party Verification Pages</h3>
+        <p>ProofCheck also supports a web-viewer flow where a buyer without the app scans a QR code and opens <code>https://lorislab.fr/verify#&lt;fragment&gt;</code>. The entire report payload travels in the URL fragment (which never leaves the buyer's browser and is not sent to our server logs). The page performs integrity verification in-browser using JavaScript. No personally-identifying fields are transmitted to LorisLabs beyond standard web-server access logs (IP, User-Agent) which are retained for 30 days for security purposes.</p>
+
+        <h3>Account Deletion and Data Erasure</h3>
+        <p>In compliance with Apple App Store Review Guideline 5.1.1(v) and GDPR Article 17 (right to erasure), ProofCheck provides in-app account deletion. From <strong>Settings → Account</strong> you can:</p>
+        <ul>
+            <li><strong>Sign Out</strong> — removes the Apple ID email from the device. Your reports in your private CloudKit database are kept (tied to your Apple ID).</li>
+            <li><strong>Delete All My Data</strong> — deletes all your reports from your private CloudKit database, purges cached app preferences on-device, deletes the dev-mode Keychain item if any, and clears the App Attest key identifier. Publicly-shared reports that have not yet expired are also deleted. This action is irreversible.</li>
+        </ul>
+        <p>If Delete All My Data encounters any record it cannot delete (e.g., due to iCloud being unavailable), you will be informed and can retry when connectivity is restored.</p>
+
+        <h3>Retention</h3>
+        <ul>
+            <li><strong>Private reports:</strong> retained until you delete them or delete your account.</li>
+            <li><strong>Public shared reports:</strong> automatically expire after the period shown in-app; expired records are deleted.</li>
+            <li><strong>On-device preferences:</strong> retained until you sign out, delete the app, or use Delete All My Data.</li>
+        </ul>
+
+        <h3>Device Permissions</h3>
+        <ul>
+            <li><strong>Location (When In Use / reduced accuracy):</strong> required for the physical-region trust signal. You can deny location and the app will continue to work (the region signal simply contributes less to the score).</li>
+            <li><strong>Camera &amp; Photos:</strong> optional, used for the camera / display-dead-pixel diagnostic tests. Image data is processed in memory and never transmitted.</li>
+            <li><strong>Microphone:</strong> optional, used for the speaker / microphone diagnostic tests. Audio is processed in memory and never transmitted.</li>
+            <li><strong>Network:</strong> required for CloudKit, IP geolocation, warranty lookup, and time-sync trust checks.</li>
+        </ul>
+
+        <h3>No Analytics or Tracking</h3>
+        <p>ProofCheck contains <strong>no third-party analytics SDKs, no tracking pixels, no advertising frameworks, and no behavioral telemetry</strong>. The only information we may receive is anonymized, aggregated data from Apple's App Analytics program, which you can opt out of in your device settings.</p>
+
+        <h3>Children's Privacy</h3>
+        <p>ProofCheck is not directed at children under 13 and we do not knowingly collect personal information from children. In the EU, Sign in with Apple requires users to be at least the digital age of consent in their member state (16 in France under CNIL guidelines).</p>
+    </section>
+
+    <section class="reveal" id="velya">
+        <h2>Velya — Smart Alarm Privacy Details</h2>
+
+        <h3>What Velya Is</h3>
+        <p>Velya is a smart alarm app for iPhone (with Apple Watch, Mac, and widget companions) built on Apple's AlarmKit framework. Its purpose is to wake you reliably — breaking through silent mode, Do Not Disturb, and Focus — and to run optional automations around your alarms. Velya is a <strong>privacy-first, on-device app</strong>: it requires no account, no sign-in, and LorisLabs operates no server that receives your data. App Privacy: <strong>Data Not Collected</strong>.</p>
+
+        <h3>Data Stored On Your Device</h3>
+        <ul>
+            <li><strong>Alarms, automation rules &amp; settings</strong> — stored on-device (SwiftData / UserDefaults). If you enable iCloud, they sync through <em>your own</em> private iCloud account via CloudKit; LorisLabs cannot read them.</li>
+            <li><strong>Apple Health (sleep)</strong> — with your permission, Velya reads sleep-analysis samples from HealthKit to wake you within a smart window at your lightest sleep phase, and to display your sleep history and trends. This data is read and processed <strong>entirely on-device and is never transmitted</strong> off your device or to LorisLabs. Velya does not write any data to Health.</li>
+            <li><strong>Location</strong> — with your permission, Velya uses location (including in the background, "Always") for location-based automations you create (enabling/disabling alarms when you arrive at or leave a place) and to help detect your bedtime. Location is processed on-device; it is never collected or transmitted. You can deny location and Velya still works fully with manual alarms.</li>
+            <li><strong>Weather</strong> — weather-based automation rules use Apple WeatherKit. Weather queries are made for your local conditions to evaluate rules; no personal data is attached.</li>
+        </ul>
+
+        <h3>Optional Remote Control (Self-Hosted)</h3>
+        <p>Velya includes an <strong>optional</strong> feature for advanced users to trigger or reschedule alarms remotely — for example from a home-automation system. This requires you to run <strong>your own self-hosted relay server</strong>. You provide a server address and an access token (which you generate on your own server) in Settings; the token is stored in the iOS Keychain on your device. All communication is between your device and your own server. <strong>LorisLabs does not operate any relay or backend, and receives no data through this feature.</strong> The app is fully functional without it.</p>
+
+        <h3>Notifications</h3>
+        <p>With your permission, Velya sends local notifications before alarms and when your automations run. On iOS versions before 26 (where AlarmKit is unavailable), notifications are also used as the wake mechanism.</p>
+
+        <h3>Device Permissions</h3>
+        <ul>
+            <li><strong>Alarms (AlarmKit):</strong> the core permission — lets Velya's alarms ring through silent mode, Do Not Disturb, and Focus.</li>
+            <li><strong>Notifications:</strong> optional, for pre-alarm and automation alerts.</li>
+            <li><strong>Apple Health (read-only):</strong> optional, for smart wake and sleep history. On-device only.</li>
+            <li><strong>Location (Always / When In Use):</strong> optional, for location automations and bedtime detection. On-device only.</li>
+        </ul>
+
+        <h3>No Analytics or Tracking</h3>
+        <p>Velya contains <strong>no third-party analytics SDKs, no tracking pixels, no advertising frameworks, and no behavioral telemetry</strong>. The only information we may receive is anonymized, aggregated data from Apple's App Analytics program, which you can opt out of in your device settings.</p>
+    </section>
+
+    <section class="reveal" id="arcyra">
+        <h2>Arcyra — Preview Privacy Details</h2>
+        <p>Arcyra is a macOS utility, distributed by Developer ID direct download (not through the App Store) and currently offered as an unvalidated engineering preview — see <a href="arcyra.html">arcyra.html</a> for its full preview status and limits.</p>
+
+        <h3>Data Collected</h3>
+        <p>The only data category Arcyra collects is <strong>Customer Support</strong> data (linked to your identity) — information you provide if you contact us for help, such as your email address and the content of your message. This is collected solely to respond to your request and is not used for any other purpose.</p>
+
+        <h3>No Tracking</h3>
+        <p>Arcyra does <strong>not track you</strong> and contains no tracking domains, analytics SDKs, advertising frameworks, or behavioral telemetry of any kind. Mission activity, receipts, and settings are stored locally on your Mac.</p>
+
+        <h3>Home Assistant &amp; MQTT (Off by Default)</h3>
+        <p>Arcyra includes optional integrations for publishing mission status to a self-hosted MQTT broker or Home Assistant instance. These integrations are <strong>disabled by default</strong> and only become active if you explicitly enable them and configure your own broker/instance address in Settings. When enabled, communication is directly between your Mac and the server you specified — LorisLabs does not operate any relay and receives no data through this feature.</p>
+
+        <h3>No Telemetry</h3>
+        <p>Arcyra sends <strong>no telemetry</strong> — no crash reports, usage statistics, or diagnostics are transmitted to LorisLabs or any third party.</p>
+    </section>
+
+    <section class="reveal">
+        <h2>Children's Privacy</h2>
+        <p>Most of our Apps do not collect personal information and are suitable for users of all ages. However, certain features in specific apps do involve data collection:</p>
+        <ul>
+            <li><strong>Éclair community features and carpooling:</strong> These features require Apple Sign-In and collect personal data (display name, ride history, messages). Community features require users to be at least <strong>16 years old</strong> (the digital age of consent in France under CNIL guidelines). Carpooling requires users to be at least <strong>18 years old</strong>. Minors under 16 may not create a community profile. Minors aged 16–17 may use community features (incident reporting, traffic sharing) but may not use carpooling.</li>
+            <li><strong>Synthesis Young Student persona:</strong> Includes parental controls and age-appropriate content. See the Synthesis privacy section for COPPA and FERPA details.</li>
+            <li><strong>All other apps:</strong> Do not collect personal information from any users, including children. No account creation is required.</li>
+        </ul>
+        <p>If you are a parent or guardian and believe your child has created a community profile or used carpooling without authorization, please contact us at <a href="/cdn-cgi/l/email-protection#ef9c9a9f9f809d9baf83809d869c838e8dc1899d"><span class="__cf_email__" data-cfemail="c2b1b7b2b2adb0b682aeadb0abb1aea3a0eca4b0">[email&#160;protected]</span></a> and we will promptly delete the account and associated data.</p>
+    </section>
+
+    <section class="reveal">
+        <h2>Changes to This Policy</h2>
+        <p>We may update this Privacy Policy from time to time to reflect changes in our Apps or applicable regulations. We will notify users of significant changes through app updates or on our website. The "Last updated" date at the top of this page indicates when the policy was last revised. Continued use of our Apps after changes constitutes acceptance of the revised policy.</p>
+    </section>
+
+    <section class="reveal">
+        <h2>Contact Us</h2>
+        <p>If you have any questions or concerns about this Privacy Policy or our data practices, please contact us:</p>
+        <p><strong>Email:</strong> <a href="/cdn-cgi/l/email-protection#13606663637c6167537f7c617a607f72713d7561"><span class="__cf_email__" data-cfemail="c6b5b3b6b6a9b4b286aaa9b4afb5aaa7a4e8a0b4">[email&#160;protected]</span></a></p>
+        <p><strong>Website:</strong> <a href="support.html">Support Page</a></p>
+    </section>
+
+</main>
+
+<!-- Footer -->
+<footer class="footer" role="contentinfo">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <a href="index.html" class="nav-brand" aria-label="LorisLabs home"><picture><source srcset="images/lorislab-logo.webp" type="image/webp"><img src="images/lorislab-logo.png" alt="LorisLabs" height="32"></picture></a>
+            <p data-i18n="footer.desc">Building privacy-first productivity tools for Apple platforms.</p>
+        </div>
+        <div class="footer-col">
+            <h4 data-i18n="footer.apps">Apps</h4>
+            <a href="apps/404.html">404 Network</a>
+            <a href="apps/aurorapulse.html">AuroraPulse</a>
+            <a href="apps/clasp.html">Clasp</a>
+            <a href="apps/clasp-helper.html">Clasp Helper</a>
+            <a href="apps/entrofold.html">EntroFold Archive</a>
+            <a href="apps/filova.html">Filova</a>
+            <a href="apps/halte.html">Halte</a>
+            <a href="kernel/">Kernel</a>
+            <a href="apps/lumen.html">Lumen</a>
+            <a href="apps/lumentv.html">LumenTV</a>
+            <a href="apps/mela.html">Mela</a>
+            <a href="apps/millrace.html">Millrace</a>
+            <a href="apps/rampart.html">Rampart</a>
+            <a href="apps/throttle.html">Throttle</a>
+            <a href="apps/typemetrics.html">TypeMetrics</a>
+        </div>
+        <div class="footer-col">
+            <h4 data-i18n="footer.company">Company</h4>
+            <a href="philosophy.html" data-i18n="nav.philosophy">Philosophy</a>
+            <a href="support.html" data-i18n="nav.support">Support</a>
+        </div>
+        <div class="footer-col">
+            <h4 data-i18n="footer.legal">Legal</h4>
+            <a href="privacy.html" data-i18n="footer.privacy">Privacy</a>
+            <a href="terms.html" data-i18n="footer.terms">Terms</a>
+            <a href="#" data-privacy-settings data-i18n="footer.privacySettings">Privacy Settings</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <span data-i18n="footer.copy">&copy; 2024&ndash;2026 LorisLabs. All rights reserved.</span>
+        <div class="footer-bottom-links">
+            <a href="privacy.html" data-i18n="footer.privacy">Privacy</a>
+            <a href="terms.html" data-i18n="footer.terms">Terms</a>
+            <a href="#" data-privacy-settings data-i18n="footer.privacySettings">Privacy Settings</a>
+        </div>
+    </div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="js/main.min.js?v=202609070714" type="40782cb4b957a1640d6fa451-text/javascript"></script>
+<script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="40782cb4b957a1640d6fa451-|49" defer></script></body>
+</html>

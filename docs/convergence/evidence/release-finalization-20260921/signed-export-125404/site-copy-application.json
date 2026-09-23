@@ -1,0 +1,22 @@
+{
+  "at": "2026-09-21T13:06:44.618446+02:00",
+  "status": "LOCAL_DRAFT_NOT_APPROVED_FOR_PUBLICATION",
+  "source": "live page fetched by stage-release.py",
+  "before_sha256": "614251ef2e4237ed313c92888e500cb84409cb4ea9a9b5608d1d30fc7b077d85",
+  "after_sha256": "be55ff7e555673c29099e64436d73ee5b1c49190c270a218f36f55b994255632",
+  "copy_replacements": 27,
+  "meta_descriptions": [
+    "description",
+    "og:description",
+    "twitter:description"
+  ],
+  "links_scripts_styles_unchanged": true,
+  "release_version": "3.8.0",
+  "release_size_MB": "35.0",
+  "remaining": [
+    "operator/privacy facts",
+    "Anthropic decision",
+    "public upload approval"
+  ],
+  "published": false
+}

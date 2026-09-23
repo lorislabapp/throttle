@@ -1,0 +1,14 @@
+{
+  "at": "2026-09-21T11:42:49.114960+02:00",
+  "command": [
+    "/private/tmp/throttle-swiftlint-0.63.2/swiftlint",
+    "lint",
+    "--strict",
+    "--no-cache"
+  ],
+  "exit_code": 2,
+  "scope": "global after HostedViewReview fixture change",
+  "baseline_changed": false,
+  "violations": 1,
+  "files": 855
+}

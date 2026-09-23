@@ -1,0 +1,12 @@
+{
+  "at": "2026-09-21T08:51:28.025918+00:00",
+  "baseline": "docs/convergence/evidence/final-release-20260921/build-20260921-100452-sources-after.json",
+  "source_count": 1047,
+  "changed_sources": [],
+  "git_diff_check_exit": 0,
+  "application_sources_modified_this_turn": false,
+  "new_swift_project_files": false,
+  "xcodegen_required_this_turn": false,
+  "full_inventory_compared": true,
+  "current_source_count": 1047
+}

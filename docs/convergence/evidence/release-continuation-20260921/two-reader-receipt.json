@@ -1,0 +1,197 @@
+{
+  "observed_at": "2026-09-21T08:50:45.638752+00:00",
+  "status": "pass",
+  "scenario_count": 4,
+  "results": [
+    {
+      "scenario": "legacy-upgrade",
+      "status": "pass",
+      "observations": {
+        "legacy_seed": {
+          "append_refused": false,
+          "chain_valid": true,
+          "event_count": 3,
+          "journal_sha256": "ecdcb21a219279839a97d55d7fe05714b9ad7477ef57376206f5ac9f0ee49b43",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": true,
+          "status": "done"
+        },
+        "current_upgrade": {
+          "append_refused": false,
+          "chain_valid": true,
+          "event_count": 3,
+          "journal_sha256": "ecdcb21a219279839a97d55d7fe05714b9ad7477ef57376206f5ac9f0ee49b43",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": true,
+          "pending_verification": false,
+          "status": "done"
+        }
+      }
+    },
+    {
+      "scenario": "optional-fields",
+      "status": "pass",
+      "observations": {
+        "legacy_seed": {
+          "append_refused": false,
+          "chain_valid": true,
+          "event_count": 3,
+          "journal_sha256": "5a5b7932ff90cbb363f408b334c9e276f18727fe9abf5390eff2fc61bf04f5c4",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": true,
+          "status": "done"
+        },
+        "current_upgrade": {
+          "append_refused": false,
+          "chain_valid": true,
+          "event_count": 3,
+          "journal_sha256": "5a5b7932ff90cbb363f408b334c9e276f18727fe9abf5390eff2fc61bf04f5c4",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": true,
+          "pending_verification": false,
+          "status": "done"
+        },
+        "current_optional": {
+          "append_refused": false,
+          "chain_valid": true,
+          "event_count": 4,
+          "journal_sha256": "82fdf3abf394e2ef9aaa19421b026c1e3853e2d751807e396e64886885ccd954",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": true,
+          "pending_verification": false,
+          "status": "done"
+        },
+        "legacy_read": {
+          "append_refused": false,
+          "chain_valid": true,
+          "event_count": 4,
+          "journal_sha256": "82fdf3abf394e2ef9aaa19421b026c1e3853e2d751807e396e64886885ccd954",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": true,
+          "status": "done"
+        }
+      }
+    },
+    {
+      "scenario": "unknown-terminal",
+      "status": "pass",
+      "observations": {
+        "legacy_seed": {
+          "append_refused": false,
+          "chain_valid": true,
+          "event_count": 3,
+          "journal_sha256": "70678faff327f72d3cb2c410a29b806c69f87869b2dac73cb4e1ea8dfc138f1a",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": true,
+          "status": "done"
+        },
+        "current_upgrade": {
+          "append_refused": false,
+          "chain_valid": true,
+          "event_count": 3,
+          "journal_sha256": "70678faff327f72d3cb2c410a29b806c69f87869b2dac73cb4e1ea8dfc138f1a",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": true,
+          "pending_verification": false,
+          "status": "done"
+        },
+        "current_intent": {
+          "append_refused": false,
+          "chain_valid": true,
+          "event_count": 4,
+          "journal_sha256": "7d013cc461a0e202bf543335e7a737a25cf69c750fbbeadc8f2f24fafe958925",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": false,
+          "pending_verification": true,
+          "status": "done"
+        },
+        "legacy_refusal": {
+          "append_refused": true,
+          "chain_valid": false,
+          "event_count": 3,
+          "journal_sha256": "7d013cc461a0e202bf543335e7a737a25cf69c750fbbeadc8f2f24fafe958925",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": true,
+          "status": "done"
+        },
+        "current_recovery": {
+          "append_refused": false,
+          "chain_valid": true,
+          "event_count": 4,
+          "journal_sha256": "7d013cc461a0e202bf543335e7a737a25cf69c750fbbeadc8f2f24fafe958925",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": false,
+          "pending_verification": true,
+          "status": "done"
+        }
+      }
+    },
+    {
+      "scenario": "unknown-middle",
+      "status": "pass",
+      "observations": {
+        "legacy_seed": {
+          "append_refused": false,
+          "chain_valid": true,
+          "event_count": 3,
+          "journal_sha256": "40e1804aa87459f8a70614f2793d0ced5fc16b378a1ae79b2a712f3cc334f09d",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": true,
+          "status": "done"
+        },
+        "current_upgrade": {
+          "append_refused": false,
+          "chain_valid": true,
+          "event_count": 3,
+          "journal_sha256": "40e1804aa87459f8a70614f2793d0ced5fc16b378a1ae79b2a712f3cc334f09d",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": true,
+          "pending_verification": false,
+          "status": "done"
+        },
+        "current_intent": {
+          "append_refused": false,
+          "chain_valid": true,
+          "event_count": 5,
+          "journal_sha256": "0462738baccfeb85100b491a495ebee2ca072f644b6f03de912ea317c5a6202b",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": false,
+          "pending_verification": true,
+          "status": "done"
+        },
+        "legacy_refusal": {
+          "append_refused": true,
+          "chain_valid": false,
+          "event_count": 4,
+          "journal_sha256": "0462738baccfeb85100b491a495ebee2ca072f644b6f03de912ea317c5a6202b",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": true,
+          "status": "done"
+        },
+        "current_recovery": {
+          "append_refused": false,
+          "chain_valid": true,
+          "event_count": 5,
+          "journal_sha256": "0462738baccfeb85100b491a495ebee2ca072f644b6f03de912ea317c5a6202b",
+          "journal_unchanged_by_read": true,
+          "last_check_passed": false,
+          "pending_verification": true,
+          "status": "done"
+        }
+      }
+    }
+  ],
+  "fixtures": "/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/two-reader-20260921/fixtures-eld5rgoc",
+  "binary_hashes": {
+    "Current": "53346126a400dbb517062ac55525c2edded2405b5a8ce0f3afc3d961d4151fab",
+    "Legacy": "dec076d9950dd0aba0286b24456844963fcae00132b249295684b08e7aaf5e51"
+  },
+  "source_manifest_sha256": "b2f7816055de6f23fc1882fb8b180e3dae07d3ee38743923a213cd7e5ee90172",
+  "limits": [
+    "No production data accessed",
+    "Actual source readers; no identity claim about public build 223 DMG",
+    "No historical Git integration executed",
+    "Old projection may show done despite invalid chain; downgrade remains prohibited",
+    "No SQLite schema change since source revision 223; no full production upgrade tested"
+  ]
+}

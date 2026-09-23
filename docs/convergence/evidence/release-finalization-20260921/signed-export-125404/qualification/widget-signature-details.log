@@ -1,0 +1,23 @@
+Executable=/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/release-3.8.0-226-20260921-125404/export/Throttle.app/Contents/PlugIns/ThrottleWidget.appex/Contents/MacOS/ThrottleWidget
+Identifier=com.lorislab.throttle.widget
+Format=bundle with Mach-O universal (x86_64 arm64)
+CodeDirectory v=20500 size=584 flags=0x10000(runtime) hashes=7+7 location=embedded
+Hash type=sha256 size=32
+CandidateCDHash sha256=131a151d25889ff471e770da92c03a852e42a416
+CandidateCDHashFull sha256=131a151d25889ff471e770da92c03a852e42a41690c75e9d5775c4d99defa87a
+Hash choices=sha256
+CMSDigest=131a151d25889ff471e770da92c03a852e42a41690c75e9d5775c4d99defa87a
+CMSDigestType=2
+CDHash=131a151d25889ff471e770da92c03a852e42a416
+Signature size=8982
+Authority=Developer ID Application: Christine Martin (TDV6D5L785)
+Authority=Developer ID Certification Authority
+Authority=Apple Root CA
+Timestamp=21 Sep 2026 at 12:54:51
+Info.plist entries=21
+TeamIdentifier=TDV6D5L785
+Runtime Version=27.0.0
+Sealed Resources version=2 rules=13 files=1
+Internal requirements count=1 size=220
+Total signatures=1
+Chosen signature=1

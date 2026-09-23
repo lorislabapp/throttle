@@ -1,0 +1,8 @@
+{
+  "run": "visual-tests-20260921-073510",
+  "pid": 59760,
+  "identity": "/Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData/Build/Products/Debug/Throttle.app/Contents/MacOS/Throttle",
+  "observed": "2026-09-21T07:37:52.517691",
+  "reason": "No XCTest start or review marker; sampled stack blocked in dyld open before application code",
+  "action": "SIGTERM exact isolated host only; result inconclusive, not product test failure"
+}

@@ -1,0 +1,45 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild build-for-testing -project Throttle.xcodeproj -scheme Throttle -configuration Debug -destination generic/platform=macOS -derivedDataPath /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/DerivedData -clonedSourcePackagesDirPath /Volumes/DeveloperStorage/BuildScratch/throttle-convergence-20260920/SourcePackages -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile -skipPackageUpdates -jobs 2 CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES ARCHS=arm64 -skipPackagePluginValidation -skipMacroValidation
+
+Build settings from command line:
+    ARCHS = arm64
+    CODE_SIGNING_ALLOWED = NO
+    ONLY_ACTIVE_ARCH = YES
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  swift-collections: https://github.com/apple/swift-collections.git @ 1.6.0
+  swift-atomics: https://github.com/apple/swift-atomics.git @ 1.3.1
+  ThrottleVaultContract: /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Packages/ThrottleVaultContract @ local
+  ThrottleShared: /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/ThrottleShared
+  EventSource: https://github.com/mattt/EventSource.git @ 1.4.2
+  ResearchVaultKit: /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Packages/ResearchVaultKit
+  GRDB: https://github.com/groue/GRDB.swift @ 6.29.3
+  swift-syntax: https://github.com/swiftlang/swift-syntax.git @ 600.0.1
+  ThrottleVaultClient: /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Packages/ThrottleVaultClient @ local
+  ThrottleMirrorContract: /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Packages/ThrottleMirrorContract @ local
+  swift-argument-parser: https://github.com/apple/swift-argument-parser @ 1.8.2
+  ThrottleMCPContracts: /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Packages/ThrottleMCPContracts
+  swift-huggingface: https://github.com/huggingface/swift-huggingface @ 0.9.0
+  swift-crypto: https://github.com/apple/swift-crypto.git @ 4.5.1
+  swift-transformers: https://github.com/huggingface/swift-transformers @ 1.3.0
+  yyjson: https://github.com/ibireme/yyjson.git @ 0.12.0
+  SwiftTerm: https://github.com/migueldeicaza/SwiftTerm @ 1.14.0
+  mlx-swift: https://github.com/ml-explore/mlx-swift @ 0.31.6
+  ThrottlePeerProtocol: /Users/kevinnadjarian/GitHub/Throttle/build/convergence-recovery-20260920/Packages/ThrottlePeerProtocol @ local
+  Jinja: https://github.com/huggingface/swift-jinja.git @ 2.4.2
+  swift-system: https://github.com/apple/swift-system.git @ 1.8.1
+  SQLCipher: https://github.com/sqlcipher/SQLCipher.swift.git @ 4.18.0
+  swift-asn1: https://github.com/apple/swift-asn1.git @ 1.7.1
+  Sparkle: https://github.com/sparkle-project/Sparkle @ 2.9.6
+  swift-nio: https://github.com/apple/swift-nio.git @ 2.101.3
+  mlx-swift-lm: https://github.com/ml-explore/mlx-swift-lm @ 3.31.3
+  swift-numerics: https://github.com/apple/swift-numerics @ 1.1.1
+
+Build Preparation
+Build task concurrency set to 2 via user default IDEBuildOperationMaxNumberOfConcurrentCompileTasks
+
+ComputePackagePrebuildTargetDependencyGraph
+** BUILD INTERRUPTED **

@@ -1,0 +1,98 @@
+{
+  "checked_at_utc": "2026-09-20T17:04:21.498035+00:00",
+  "scope": "Document integrity and static references only; no product test, repository script, build, inference, app restart or external mutation.",
+  "originals": [
+    {
+      "id": "R1",
+      "sha256_matches": true,
+      "read_state": "COMPLETE"
+    },
+    {
+      "id": "R2",
+      "sha256_matches": true,
+      "read_state": "COMPLETE"
+    },
+    {
+      "id": "R3",
+      "sha256_matches": true,
+      "read_state": "COMPLETE"
+    },
+    {
+      "id": "R4",
+      "sha256_matches": true,
+      "read_state": "COMPLETE"
+    },
+    {
+      "id": "R5",
+      "sha256_matches": true,
+      "read_state": "COMPLETE"
+    },
+    {
+      "id": "R6",
+      "sha256_matches": true,
+      "read_state": "COMPLETE"
+    },
+    {
+      "id": "R7",
+      "sha256_matches": true,
+      "read_state": "COMPLETE"
+    },
+    {
+      "id": "R8",
+      "sha256_matches": true,
+      "read_state": "COMPLETE"
+    }
+  ],
+  "repositories": [
+    {
+      "root": "/Users/kevinnadjarian/GitHub/Throttle",
+      "head": "32988f4fc99071a95b3684efa9684b57c7d6e810",
+      "head_matches": true,
+      "tracked_snapshot_files_checked": 654,
+      "changed_snapshot_files": [],
+      "status": "?? .throttle/\n?? docs/research/THROTTLE_RESEARCH_ARCHITECTURE_REVIEW.md\n?? docs/research/throttle-review-2026-09-20/\n",
+      "status_matches_previous": false,
+      "status_note": "B has only review documents additionally untracked; C status must remain identical. Untracked content outside these deliverables was not hashed."
+    },
+    {
+      "root": "/Users/kevinnadjarian/.claude/worktrees/throttle-project-overview",
+      "head": "1ac0a32f02f2cce9707779e41118ea39e7eb97d7",
+      "head_matches": true,
+      "tracked_snapshot_files_checked": 1299,
+      "changed_snapshot_files": [],
+      "status": " M Throttle/Resources/Localizable.xcstrings\n M Throttle/Services/ClaudeAgentInventory.swift\n M Throttle/Services/TaskSpend.swift\n M Throttle/UI/Cockpit/Navigation/CockpitTodayView.swift\n M Throttle/UI/Cockpit/Navigation/OutsideAgentsCard.swift\n M Throttle/UI/Cockpit/Navigation/ProjectFlowView.swift\n M ThrottleTests/ServiceTests/TaskSpendTests.swift\n M docs/TODO.md\n M project.yml\n?? Throttle/UI/Cockpit/Navigation/TaskSpendReadout.swift\n?? ThrottleTests/ServiceTests/CockpitSpendViewTests.swift\n?? build-preview-v5.log\n?? build-preview-v5/\n?? build-release-226.log\n?? build-release.log\n?? build-release/\n?? build-test.log\n?? docs/testing/2026-09-18-cockpit-navigation-resume.md\n",
+      "status_matches_previous": true,
+      "status_note": "B has only review documents additionally untracked; C status must remain identical. Untracked content outside these deliverables was not hashed."
+    }
+  ],
+  "initial_source_baseline": {
+    "files_checked": 654,
+    "changed": []
+  },
+  "documentation": {
+    "markdown_files_checked": 6,
+    "local_links_checked": 83,
+    "problems": [],
+    "files_sha256": {
+      "docs/research/THROTTLE_RESEARCH_ARCHITECTURE_REVIEW.md": "e62bbd1cf61ae6dc6d19021ffbde9b20824bbb76560f75d1d3a4628d8e597cf3",
+      "docs/research/throttle-review-2026-09-20/CODE_REFERENCES.md": "7b4b64e43fc6c00d5c03c6a3ae1bddd2193f90d7c708da9ba858126e68603394",
+      "docs/research/throttle-review-2026-09-20/DECISIONS.md": "61a064982f2ea65a9efeccf2879dad5036f992f73261ff9eb01504c96995c34b",
+      "docs/research/throttle-review-2026-09-20/PROGRESS.md": "a8bd2f6753f557102c2a7259862714ed094ff94c973e1aa32458d7837eb62f95",
+      "docs/research/throttle-review-2026-09-20/ROADMAP_AND_EXPERIMENTS.md": "d4a071e4d86693e15f3cdd101accb3bf5fc33e798415305a0a8ec947ad8b7aa9",
+      "docs/research/throttle-review-2026-09-20/SOURCES_AND_CLAIMS.md": "5f9e445f40ee77f6f75591bff88efd46becb39f02aa4a9b1e828f8af8cfd0a56"
+    }
+  },
+  "json_parsed": [
+    "input-manifest.json",
+    "source-baseline.json",
+    "cockpit-snapshot.json",
+    "current-snapshot.json"
+  ],
+  "git_diff_check": {
+    "exit_code": 0,
+    "output": "",
+    "scope": "Tracked diff only; untracked review documents checked separately above."
+  },
+  "status": "PASS_DOCUMENTARY_CHECKS_ONLY",
+  "product_tests_executed": 0
+}

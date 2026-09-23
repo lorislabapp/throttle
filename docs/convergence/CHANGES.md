@@ -1,0 +1,105 @@
+# Fichiers de convergence
+
+96 fichiers de code, tests, harness et confidentialité diffèrent du snapshot cockpit hérité. Ce décompte exclut les modifications préexistantes.
+
+| Fichier observé | Statut vs snapshot hérité |
+|---|---|
+| [Throttle/Models/PeerControlAdmission.swift](../../Throttle/Models/PeerControlAdmission.swift) | Ajouté |
+| [Throttle/Models/PlanModels.swift](../../Throttle/Models/PlanModels.swift) | Modifié |
+| [Throttle/Models/TaskVerificationLease.swift](../../Throttle/Models/TaskVerificationLease.swift) | Ajouté |
+| [Throttle/Models/TaskVerificationProcess.swift](../../Throttle/Models/TaskVerificationProcess.swift) | Ajouté |
+| [Throttle/Network/PeerTerminalBridge.swift](../../Throttle/Network/PeerTerminalBridge.swift) | Modifié |
+| [Throttle/Network/PeerTransport.swift](../../Throttle/Network/PeerTransport.swift) | Modifié |
+| [Throttle/Resources/Localizable.xcstrings](../../Throttle/Resources/Localizable.xcstrings) | Modifié |
+| [Throttle/Services/AIProvider.swift](../../Throttle/Services/AIProvider.swift) | Modifié |
+| [Throttle/Services/AIProviderRegistry.swift](../../Throttle/Services/AIProviderRegistry.swift) | Modifié |
+| [Throttle/Services/AppleIntelligenceProvider.swift](../../Throttle/Services/AppleIntelligenceProvider.swift) | Modifié |
+| [Throttle/Services/AppleIntelligenceTools.swift](../../Throttle/Services/AppleIntelligenceTools.swift) | Modifié |
+| [Throttle/Services/AssistantProjectTools.swift](../../Throttle/Services/AssistantProjectTools.swift) | Ajouté |
+| [Throttle/Services/AssistantTools.swift](../../Throttle/Services/AssistantTools.swift) | Modifié |
+| [Throttle/Services/BashSandbox.swift](../../Throttle/Services/BashSandbox.swift) | Modifié |
+| [Throttle/Services/ClaudeAPIKeyProtocol.swift](../../Throttle/Services/ClaudeAPIKeyProtocol.swift) | Modifié |
+| [Throttle/Services/ClaudeAPIKeyProvider.swift](../../Throttle/Services/ClaudeAPIKeyProvider.swift) | Modifié |
+| [Throttle/Services/ClaudeWebSessionProvider.swift](../../Throttle/Services/ClaudeWebSessionProvider.swift) | Modifié |
+| [Throttle/Services/EmbeddedModelProvider.swift](../../Throttle/Services/EmbeddedModelProvider.swift) | Modifié |
+| [Throttle/Services/NativeProcessIdentity.swift](../../Throttle/Services/NativeProcessIdentity.swift) | Modifié |
+| [Throttle/Services/NotebookLMGatewayClient.swift](../../Throttle/Services/NotebookLMGatewayClient.swift) | Modifié |
+| [Throttle/Services/NotebookLMGatewayProcess.swift](../../Throttle/Services/NotebookLMGatewayProcess.swift) | Ajouté |
+| [Throttle/Services/PlanMCPAuthority.swift](../../Throttle/Services/PlanMCPAuthority.swift) | Modifié |
+| [Throttle/Services/PlanMCPAuthorityRevocation.swift](../../Throttle/Services/PlanMCPAuthorityRevocation.swift) | Modifié |
+| [Throttle/Services/PlanMCPIntakeTools.swift](../../Throttle/Services/PlanMCPIntakeTools.swift) | Modifié |
+| [Throttle/Services/PlanMCPRecipeTools.swift](../../Throttle/Services/PlanMCPRecipeTools.swift) | Modifié |
+| [Throttle/Services/PlanMCPReviewTools.swift](../../Throttle/Services/PlanMCPReviewTools.swift) | Modifié |
+| [Throttle/Services/PlanMCPTaskRouter.swift](../../Throttle/Services/PlanMCPTaskRouter.swift) | Modifié |
+| [Throttle/Services/PlanMCPTools.swift](../../Throttle/Services/PlanMCPTools.swift) | Modifié |
+| [Throttle/Services/PlanProjection.swift](../../Throttle/Services/PlanProjection.swift) | Modifié |
+| [Throttle/Services/ProjectKnowledgeExplorer.swift](../../Throttle/Services/ProjectKnowledgeExplorer.swift) | Modifié |
+| [Throttle/Services/ProjectKnowledgeExplorerIO.swift](../../Throttle/Services/ProjectKnowledgeExplorerIO.swift) | Ajouté |
+| [Throttle/Services/ProjectKnowledgeExplorerSearch.swift](../../Throttle/Services/ProjectKnowledgeExplorerSearch.swift) | Modifié |
+| [Throttle/Services/PromptRefinerService.swift](../../Throttle/Services/PromptRefinerService.swift) | Modifié |
+| [Throttle/Services/RemoteSessionsService.swift](../../Throttle/Services/RemoteSessionsService.swift) | Modifié |
+| [Throttle/Services/RemoteTransferGit.swift](../../Throttle/Services/RemoteTransferGit.swift) | Modifié |
+| [Throttle/Services/ResearchDossierStore.swift](../../Throttle/Services/ResearchDossierStore.swift) | Modifié |
+| [Throttle/Services/TaskIntegrationService.swift](../../Throttle/Services/TaskIntegrationService.swift) | Modifié |
+| [Throttle/Services/TaskIntegrationServiceVerify.swift](../../Throttle/Services/TaskIntegrationServiceVerify.swift) | Modifié |
+| [Throttle/Services/TaskIntegrationVerifyChild.swift](../../Throttle/Services/TaskIntegrationVerifyChild.swift) | Modifié |
+| [Throttle/Services/TaskIntegrationVerifyProcess.swift](../../Throttle/Services/TaskIntegrationVerifyProcess.swift) | Ajouté |
+| [Throttle/Services/TaskLauncher.swift](../../Throttle/Services/TaskLauncher.swift) | Modifié |
+| [Throttle/Services/TaskVerificationLaunchGate.swift](../../Throttle/Services/TaskVerificationLaunchGate.swift) | Ajouté |
+| [Throttle/Services/TaskVerificationLifecycle.swift](../../Throttle/Services/TaskVerificationLifecycle.swift) | Ajouté |
+| [Throttle/State/PlanIntegrationModel.swift](../../Throttle/State/PlanIntegrationModel.swift) | Modifié |
+| [Throttle/UI/Cockpit/AIRoutingWindowController.swift](../../Throttle/UI/Cockpit/AIRoutingWindowController.swift) | Modifié |
+| [Throttle/UI/Cockpit/Navigation/FlowWording.swift](../../Throttle/UI/Cockpit/Navigation/FlowWording.swift) | Modifié |
+| [Throttle/UI/Cockpit/PlanIntegrationView.swift](../../Throttle/UI/Cockpit/PlanIntegrationView.swift) | Modifié |
+| [Throttle/UI/MenuBar/InlineAssistantPane+LocalWorker.swift](../../Throttle/UI/MenuBar/InlineAssistantPane+LocalWorker.swift) | Modifié |
+| [Throttle/UI/MenuBar/InlineAssistantPane.swift](../../Throttle/UI/MenuBar/InlineAssistantPane.swift) | Modifié |
+| [Throttle/UI/MenuBar/InlineGeneralPane+Connections.swift](../../Throttle/UI/MenuBar/InlineGeneralPane+Connections.swift) | Modifié |
+| [Throttle/UI/MenuBar/InlineGeneralPane.swift](../../Throttle/UI/MenuBar/InlineGeneralPane.swift) | Modifié |
+| [Throttle/UI/MenuBar/SessionOffloadSheet.swift](../../Throttle/UI/MenuBar/SessionOffloadSheet.swift) | Modifié |
+| [Throttle/UI/ProjectWindow/ProjectAssistantTab.swift](../../Throttle/UI/ProjectWindow/ProjectAssistantTab.swift) | Modifié |
+| [ThrottleShared/Sources/ThrottleShared/KeychainStore.swift](../../ThrottleShared/Sources/ThrottleShared/KeychainStore.swift) | Modifié |
+| [ThrottleShared/Tests/ThrottleSharedTests/KeychainStoreTests.swift](../../ThrottleShared/Tests/ThrottleSharedTests/KeychainStoreTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/AIProviderRoutingPolicyTests.swift](../../ThrottleTests/ServiceTests/AIProviderRoutingPolicyTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/AssistantProjectToolsTests.swift](../../ThrottleTests/ServiceTests/AssistantProjectToolsTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/BashSandboxTests.swift](../../ThrottleTests/ServiceTests/BashSandboxTests.swift) | Modifié |
+| [ThrottleTests/ServiceTests/ClaudeAPIKeyProtocolTests.swift](../../ThrottleTests/ServiceTests/ClaudeAPIKeyProtocolTests.swift) | Modifié |
+| [ThrottleTests/ServiceTests/HostedViewReview.swift](../../ThrottleTests/ServiceTests/HostedViewReview.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/NotebookLMGatewayProcessTests.swift](../../ThrottleTests/ServiceTests/NotebookLMGatewayProcessTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/PeerControlAdmissionTests.swift](../../ThrottleTests/ServiceTests/PeerControlAdmissionTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/PeerTerminalBoundaryTests.swift](../../ThrottleTests/ServiceTests/PeerTerminalBoundaryTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/PlanIntegrationFlowTests.swift](../../ThrottleTests/ServiceTests/PlanIntegrationFlowTests.swift) | Modifié |
+| [ThrottleTests/ServiceTests/PlanIntegrationViewTests.swift](../../ThrottleTests/ServiceTests/PlanIntegrationViewTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/PlanMCPAuthorityTests.swift](../../ThrottleTests/ServiceTests/PlanMCPAuthorityTests.swift) | Modifié |
+| [ThrottleTests/ServiceTests/PlanMCPIntakeAuthorityTests.swift](../../ThrottleTests/ServiceTests/PlanMCPIntakeAuthorityTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/PlanMCPMissionFenceTests.swift](../../ThrottleTests/ServiceTests/PlanMCPMissionFenceTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/PlanMCPTaskRouterTests.swift](../../ThrottleTests/ServiceTests/PlanMCPTaskRouterTests.swift) | Modifié |
+| [ThrottleTests/ServiceTests/ProjectAssistantViewTests.swift](../../ThrottleTests/ServiceTests/ProjectAssistantViewTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/ProjectKnowledgeBoundaryTests.swift](../../ThrottleTests/ServiceTests/ProjectKnowledgeBoundaryTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/ProjectKnowledgeRaceTests.swift](../../ThrottleTests/ServiceTests/ProjectKnowledgeRaceTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/PromptRefinerServiceTests.swift](../../ThrottleTests/ServiceTests/PromptRefinerServiceTests.swift) | Modifié |
+| [ThrottleTests/ServiceTests/RemoteSessionsCredentialTests.swift](../../ThrottleTests/ServiceTests/RemoteSessionsCredentialTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/TaskIntegrationServiceTests.swift](../../ThrottleTests/ServiceTests/TaskIntegrationServiceTests.swift) | Modifié |
+| [ThrottleTests/ServiceTests/TaskVerificationCrashTests.swift](../../ThrottleTests/ServiceTests/TaskVerificationCrashTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/TaskVerificationLifecycleTests.swift](../../ThrottleTests/ServiceTests/TaskVerificationLifecycleTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/TaskVerificationProcessTests.swift](../../ThrottleTests/ServiceTests/TaskVerificationProcessTests.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/WorkflowReviewMCPTests.swift](../../ThrottleTests/ServiceTests/WorkflowReviewMCPTests.swift) | Modifié |
+| [scripts/build-dmg.sh](../../scripts/build-dmg.sh) | Modifié |
+| [scripts/fixtures/verification-crash-worker.swift](../../scripts/fixtures/verification-crash-worker.swift) | Ajouté |
+| [scripts/tests/test_verify_release_build.py](../../scripts/tests/test_verify_release_build.py) | Ajouté |
+| [scripts/verify-core-evidence.py](../../scripts/verify-core-evidence.py) | Modifié |
+| [scripts/verify-release-build.py](../../scripts/verify-release-build.py) | Ajouté |
+| [PRIVACY.md](../../PRIVACY.md) | Modifié |
+| [Throttle/Models/TaskIntegrationModels.swift](../../Throttle/Models/TaskIntegrationModels.swift) | Ajouté |
+| [Throttle/Services/ClaudeWebSessionProvider+Scripts.swift](../../Throttle/Services/ClaudeWebSessionProvider+Scripts.swift) | Ajouté |
+| [Throttle/Services/ClaudeWebSessionProvider+LegacyScripts.swift](../../Throttle/Services/ClaudeWebSessionProvider+LegacyScripts.swift) | Ajouté |
+| [Throttle/Services/ClaudeWebSessionProvider+Streaming.swift](../../Throttle/Services/ClaudeWebSessionProvider+Streaming.swift) | Ajouté |
+| [Throttle/UI/ProjectWindow/ProjectAssistantTab+Actions.swift](../../Throttle/UI/ProjectWindow/ProjectAssistantTab+Actions.swift) | Ajouté |
+| [Throttle/UI/ProjectWindow/ProjectAssistantTab+Context.swift](../../Throttle/UI/ProjectWindow/ProjectAssistantTab+Context.swift) | Ajouté |
+| [Throttle/UI/ProjectWindow/ProjectAssistantTab+Transcript.swift](../../Throttle/UI/ProjectWindow/ProjectAssistantTab+Transcript.swift) | Ajouté |
+| [Throttle/UI/Cockpit/CockpitPlanView.swift](../../Throttle/UI/Cockpit/CockpitPlanView.swift) | Ajouté |
+| [ThrottleTests/ServiceTests/TaskIntegrationServiceTests+Integration.swift](../../ThrottleTests/ServiceTests/TaskIntegrationServiceTests+Integration.swift) | Ajouté |
+| [scripts/stage-release.py](../../scripts/stage-release.py) | Modifié |
+| [scripts/tests/test_stage_release.py](../../scripts/tests/test_stage_release.py) | Modifié |
+
+Empreintes : [changes.json](changes.json). Résultats et limites : [PROGRESS.md](PROGRESS.md).
+

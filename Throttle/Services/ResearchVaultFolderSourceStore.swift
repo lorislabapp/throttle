@@ -42,7 +42,17 @@ struct ResearchVaultFolderSource: Codable, Equatable, Identifiable {
         guard let projectSegment else { return projectKey }
         let parts = relative.split(separator: "/")
         guard parts.count > projectSegment + 1 else { return projectKey }
-        return String(parts[projectSegment])
+        return Self.canonicalProjectKey(String(parts[projectSegment])) ?? projectKey
+    }
+
+    /// One spelling per project whatever the folder calls it: "Éclair", "eclair"
+    /// and "e-clair" are the same space.
+    static func canonicalProjectKey(_ name: String) -> String? {
+        let key = name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
+            .lowercased()
+            .unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) && $0.isASCII }
+            .map(String.init).joined()
+        return key.isEmpty ? nil : key
     }
 }
 
@@ -119,14 +129,49 @@ enum ResearchVaultFolderSourceStore {
 
     static func resolve(_ source: ResearchVaultFolderSource) throws -> URL {
         var stale = false
-        let url = try URL(
+        if let url = try? URL(
             resolvingBookmarkData: source.bookmark,
             options: [.withSecurityScope, .withoutUI],
             relativeTo: nil,
             bookmarkDataIsStale: &stale
-        )
-        guard !stale else { throw ResearchVaultFolderSourceError.staleBookmark }
+        ), !stale {
+            return url
+        }
+        // A security-scoped bookmark only resolves in the build that minted it:
+        // after an update signed differently, every folder "could not be read"
+        // although nothing about the folder changed. Outside the sandbox the
+        // scope grants nothing the process lacks, so the path the bookmark
+        // records is enough — inside it, access stays refused.
+        guard !isSandboxed, let url = recordedFolder(source) else {
+            throw ResearchVaultFolderSourceError.staleBookmark
+        }
         return url
+    }
+
+    static var isSandboxed: Bool {
+        ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] != nil
+    }
+
+    /// The directory a bookmark points at, read without resolving its scope, or
+    /// nil when it is gone or no longer a directory.
+    static func recordedFolder(_ source: ResearchVaultFolderSource) -> URL? {
+        guard let path = URL.resourceValues(forKeys: [.pathKey], fromBookmarkData: source.bookmark)?.path else {
+            return nil
+        }
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), isDirectory.boolValue else {
+            return nil
+        }
+        return URL(fileURLWithPath: path, isDirectory: true)
+    }
+
+    /// What the sidebar shows: the parent and the folder, read from the bookmark
+    /// so folders added before the name carried the parent are told apart too.
+    static func label(for source: ResearchVaultFolderSource) -> String {
+        guard let path = URL.resourceValues(forKeys: [.pathKey], fromBookmarkData: source.bookmark)?.path else {
+            return source.name
+        }
+        return displayName(for: URL(fileURLWithPath: path, isDirectory: true))
     }
 
     static func changedFiles(
@@ -175,6 +220,19 @@ enum ResearchVaultFolderSourceStore {
         return file.dropFirst(base.count).joined(separator: "/")
     }
 
+    /// Forgets what was already imported so the next refresh walks every file
+    /// again. Used once, when a version starts sending something it never sent
+    /// before — receipts are idempotent, so a second pass costs a scan, not
+    /// duplicates.
+    static func clearFingerprints(defaults: UserDefaults = .standard) {
+        let sources = load(defaults: defaults).map { source -> ResearchVaultFolderSource in
+            var copy = source
+            copy.fingerprints = [:]
+            return copy
+        }
+        try? save(sources, defaults: defaults)
+    }
+
     static func markSynced(
         id: UUID,
         fingerprints: [String: String],
@@ -214,7 +272,12 @@ final class ResearchVaultFolderMonitor: @unchecked Sendable {
         let resolved = sources.compactMap { try? ResearchVaultFolderSourceStore.resolve($0) }
         guard !resolved.isEmpty else { return nil }
         let accessed = resolved.filter { $0.startAccessingSecurityScopedResource() }
-        guard !accessed.isEmpty else { return nil }
+        // Outside the sandbox a folder is watchable without an active scope.
+        let watched = ResearchVaultFolderSourceStore.isSandboxed ? accessed : resolved
+        guard !watched.isEmpty else {
+            accessed.forEach { $0.stopAccessingSecurityScopedResource() }
+            return nil
+        }
         accessedURLs = accessed
         callbackBox = CallbackBox(handler: handler)
         var context = FSEventStreamContext(
@@ -232,7 +295,7 @@ final class ResearchVaultFolderMonitor: @unchecked Sendable {
             kCFAllocatorDefault,
             callback,
             &context,
-            accessed.map(\.path) as CFArray,
+            watched.map(\.path) as CFArray,
             FSEventStreamEventId(kFSEventStreamEventIdSinceNow),
             0.5,
             FSEventStreamCreateFlags(

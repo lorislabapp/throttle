@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "exportedFileName" : "0CA25856-502A-437B-82CA-2FC91223220B.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Stopped response and completed next turn — hosted view_0_A5177823-2634-4785-9FA8-78CC120EF280.png",
+        "timestamp" : 1789967993.35
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008132-001178882E03001C",
+        "deviceName" : "My Mac",
+        "exportedFileName" : "C295C407-9F69-4BBF-8CC3-379BDFFDA20A.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Stopped response and completed next turn_0_719432A9-4181-499B-AD8C-64E095802FF4.txt",
+        "timestamp" : 1789967993.332
+      }
+    ],
+    "testIdentifier" : "ProjectAssistantViewTests/testStopDuringStreamKeepsNextTurnIndependent()",
+    "testIdentifierURL" : "test://com.apple.xcode/Throttle/ThrottleTests/ProjectAssistantViewTests/testStopDuringStreamKeepsNextTurnIndependent"
+  }
+]

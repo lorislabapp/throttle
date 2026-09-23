@@ -1,0 +1,21 @@
+{
+  "source_url": "https://lorislab.fr/throttle/",
+  "source_sha256": "78948ca48e41c7def4eb0c18492863b76f86430b5b9f6a062ec8f97f866c139b",
+  "proposed_sha256": "771a04620bdacd5fe67e79f9b9d11f5c2608b5bb5e1ab386ffd43ed24fa588c9",
+  "patch_sha256": "5ff7fce30cc9c333f3750b155c0a767b0672e7d837bc7d53c11660337aac31b9",
+  "changed_regions": [
+    "<meta name=\"description\"",
+    "<meta property=\"og:description\"",
+    "<meta name=\"twitter:description\"",
+    "trust paragraph"
+  ],
+  "status": "LOCAL_REVIEW_ONLY",
+  "version_download_prices_unchanged": true,
+  "requires": [
+    "Re-read live source before applying",
+    "Review remaining absolute marketing claims separately",
+    "Complete and publish Throttle privacy section after operator facts verified",
+    "Final signed/notarized artifact and exact public-upload approval"
+  ],
+  "published": false
+}

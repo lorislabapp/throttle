@@ -104,15 +104,18 @@ extension MultiCockpitRoot {
                     .foregroundStyle(.tertiary)
             }
             if session.isHibernated, let resume = resumeImpactText(session) {
-                Text("resume \(resume)")
+                // One short line: a wrapped four-line cost in a narrow rail reads as noise.
+                Text(verbatim: resume)
                     .font(.system(size: 9.5, design: .monospaced))
                     .foregroundStyle(.orange)
+                    .lineLimit(1)
+                    .help(resumeImpactHelp(session) ?? "")
             }
             Spacer(minLength: 0)
             if let started = session.spawnedAt {
-                Text("up \(uptime(started))").font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                Text("up \(uptime(started))").font(.system(size: 10.5)).foregroundStyle(.tertiary).lineLimit(1)
             } else {
-                Text("dormant").font(.system(size: 10.5)).foregroundStyle(.quaternary)
+                Text("not launched").font(.system(size: 10.5)).foregroundStyle(.quaternary).lineLimit(1)
             }
         }
     }

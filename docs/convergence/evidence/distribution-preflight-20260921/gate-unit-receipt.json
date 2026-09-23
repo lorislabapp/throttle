@@ -1,0 +1,23 @@
+{
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "scripts/tests",
+    "-p",
+    "test_verify_release_build.py",
+    "-v"
+  ],
+  "result": "PASS",
+  "tests": 11,
+  "failures": 0,
+  "observed_duration_seconds": 0.003,
+  "bash_syntax": "PASS",
+  "diff_check": "PASS",
+  "source_hashes": {
+    "scripts/verify-release-build.py": "168a3e2d3178fdd7802a35b2318cfb9ff6d5d8e615a55a08f39eda9f6262a185",
+    "scripts/tests/test_verify_release_build.py": "c3de63be7683f588565bd086a6f2e2578a19410d346ed23cd042114e2e5cd748"
+  }
+}

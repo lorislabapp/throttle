@@ -1,0 +1,11 @@
+{
+  "at": "2026-09-21T08:48:57.943357+00:00",
+  "security_exit_code": 0,
+  "matching_public_identities": [
+    "3) 8333AB7CD909731530AC62DD28CCA47C8D288225 \"Developer ID Application: Christine Martin (TDV6D5L785)\""
+  ],
+  "private_key_used": false,
+  "sdk": "27.0",
+  "macos": "27.0",
+  "machine_arch": "arm64"
+}

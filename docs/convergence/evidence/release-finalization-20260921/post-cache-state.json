@@ -1,0 +1,39 @@
+{
+  "at": "2026-09-21T12:00:34.321152+02:00",
+  "cache_relocations_completed": 2,
+  "verified_entries": 14444,
+  "caches_preserved_externally": true,
+  "builds_passed": [
+    "114759",
+    "115329"
+  ],
+  "native_test_summary": {
+    "result": "Passed",
+    "totalTestCount": 1,
+    "passedTests": 1,
+    "failedTests": 0,
+    "skippedTests": 0,
+    "startTime": 1789984200.667,
+    "finishTime": 1789984324.103
+  },
+  "keyboard_retry_qualified": false,
+  "keyboard_navigation_restored": "off",
+  "latest_fixture_runtime": "NOT_EXECUTED; prepared-host attempts refused disk admission before copy",
+  "production_source_delta": [],
+  "test_source_delta": [
+    "ThrottleTests/ServiceTests/HostedViewReview.swift",
+    "ThrottleTests/ServiceTests/PlanIntegrationViewTests.swift"
+  ],
+  "latest_build_source_count": 1047,
+  "latest_build_source_drift": [],
+  "disk_free_bytes": 993972224,
+  "owned_runners_active": false,
+  "signed_archive_this_turn": false,
+  "notarization_uploaded": false,
+  "published": false,
+  "installed_throttle_restarted": false,
+  "final_lint_exit": 0,
+  "final_lint_files": 854,
+  "keyboard_final_observed": "off",
+  "current_disk_free_bytes": 2359296000
+}

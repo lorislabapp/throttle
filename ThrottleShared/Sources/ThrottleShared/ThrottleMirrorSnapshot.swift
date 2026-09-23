@@ -1,119 +1,46 @@
 import Foundation
+import ThrottleMirrorContract
 
-/// One rolling-usage window, mirrored Mac → iPhone. A pure twin of the Mac
-/// app's `ExactSnapshot.Window` (integer utilization 0–100 + absolute reset
-/// wall-clock). Kept separate from the Mac type so this module never imports
-/// the app; the Mac side adapts across with `init(from:)` at publish time.
-public struct WindowMirror: Codable, Sendable, Equatable {
-    public let utilization: Int          // 0…100
-    public let resetsAt: Date?           // absolute UTC moment the window expires
+public typealias WindowMirror = ThrottleMirrorContract.WindowMirror
+public typealias SessionStateMirror = ThrottleMirrorContract.SessionStateMirror
+public typealias TabMirror = ThrottleMirrorContract.TabMirror
+public typealias MirrorReadSnapshot = ThrottleMirrorContract.MirrorReadSnapshot
 
-    public init(utilization: Int, resetsAt: Date?) {
-        self.utilization = utilization
-        self.resetsAt = resetsAt
-    }
-}
-
-/// Canonical session-state labels, shared so the Mac projection and the iOS
-/// renderer can never disagree on the string. Mirrors `CockpitTab.SessionState`.
-public enum SessionStateMirror: String, Codable, Sendable, CaseIterable {
-    case dormant, hibernated, rateLimited, paused, working, waiting, idle
-}
-
-/// A read-only projection of one Cockpit session/tab, safe to ship to iOS.
-/// `CockpitTab` itself is `@MainActor` + SwiftTerm-coupled and cannot leave the
-/// Mac; this is the flat, Codable slice the phone renders.
-public struct TabMirror: Codable, Sendable, Equatable, Identifiable {
-    public let id: String
-    public let projectName: String
-    public let state: String             // SessionState raw label (dormant/working/waiting/…)
-    public let model: String?
-    public let eur: Double?
-    public let tokens: Int?
-    public let isLive: Bool
-    public let needsInput: Bool
-    public let rateLimitedUntil: Date?
-
-    /// Typed view of `state` (nil if an unknown/newer label arrives).
-    public var stateKind: SessionStateMirror? { SessionStateMirror(rawValue: state) }
-
-    public init(id: String, projectName: String, state: String, model: String?,
-                eur: Double?, tokens: Int?, isLive: Bool, needsInput: Bool,
-                rateLimitedUntil: Date?) {
-        self.id = id
-        self.projectName = projectName
-        self.state = state
-        self.model = model
-        self.eur = eur
-        self.tokens = tokens
-        self.isLive = isLive
-        self.needsInput = needsInput
-        self.rateLimitedUntil = rateLimitedUntil
-    }
-}
-
-/// The full payload the Mac publishes to the user's CloudKit private DB and the
-/// iPhone mirrors. Small (a few KB even with 16 tabs) — stored as one JSON blob
-/// in an encrypted CKRecord field so adding fields never forces a CloudKit
-/// schema redeploy (only a `schemaVersion` bump the phone tolerates).
+/// Product envelope: public read data plus private-product provisioning.
+/// Codable deliberately preserves the existing flat JSON for installed peers.
 public struct ThrottleMirrorSnapshot: Codable, Sendable, Equatable {
-    public static let currentSchemaVersion = 2
+    public static let currentSchemaVersion = MirrorReadSnapshot.currentSchemaVersion
+    public let readSnapshot: MirrorReadSnapshot
+    public let provisioning: MirrorProvisioning
 
-    public let schemaVersion: Int
-    public let publishedAt: Date
-    public let deviceName: String
+    public var schemaVersion: Int { readSnapshot.schemaVersion }
+    public var publishedAt: Date { readSnapshot.publishedAt }
+    public var deviceName: String { readSnapshot.deviceName }
+    public var fiveHour: WindowMirror { readSnapshot.fiveHour }
+    public var sevenDay: WindowMirror { readSnapshot.sevenDay }
+    public var sevenDaySonnet: WindowMirror { readSnapshot.sevenDaySonnet }
+    public var weeklyTokens: Int { readSnapshot.weeklyTokens }
+    public var weeklyCostEUR: Double { readSnapshot.weeklyCostEUR }
+    public var savedTokensThisWeek: Int { readSnapshot.savedTokensThisWeek }
+    public var sessionCount: Int { readSnapshot.sessionCount }
+    public var tabs: [TabMirror] { readSnapshot.tabs }
+    public var peerPairingSecret: String? { provisioning.peerPairingSecret }
+    public var peerFallbackHost: String? { provisioning.peerFallbackHost }
+    public var edgeHost: String? { provisioning.edgeHost }
+    public var edgePort: Int? { provisioning.edgePort }
+    public var edgeToken: String? { provisioning.edgeToken }
 
-    public let fiveHour: WindowMirror
-    public let sevenDay: WindowMirror
-    public let sevenDaySonnet: WindowMirror
+    public var bindingWindow: WindowMirror { readSnapshot.bindingWindow }
 
-    public let weeklyTokens: Int
-    public let weeklyCostEUR: Double
-    public let savedTokensThisWeek: Int
-    public let sessionCount: Int
-    public let tabs: [TabMirror]
+    /// Disk-safe legacy projection: removes both credential fields, retaining
+    /// endpoint metadata for compatibility. Use readSnapshot to exclude all provisioning.
+    public var withoutSecrets: Self {
+        Self(readSnapshot: readSnapshot, provisioning: provisioning.withoutSecrets)
+    }
 
-    /// Base64 of the 32-byte LAN peer pairing secret. Rides inside this encrypted
-    /// blob so the phone can bootstrap the P2P fast path from the first CloudKit
-    /// sync — no separate CloudKit record, no schema redeploy. Optional/nil when the
-    /// peer mirror is off or the publisher is an older build.
-    public private(set) var peerPairingSecret: String?
-
-    /// Off-LAN fallback: a tailnet host (IP or MagicDNS name) the Mac is reachable
-    /// at on `PeerPairing.fallbackPort`, so the phone can still reach the peer link
-    /// off Wi-Fi (e.g. on cellular via Tailscale). User-entered on the Mac side
-    /// (Settings); nil when unset — the phone then has no off-LAN path and falls
-    /// back to the CloudKit-only (read-only-cadence) mirror.
-    public let peerFallbackHost: String?
-
-    /// Edge-agent auto-config: the Mac's configured agent endpoint + bearer token,
-    /// riding the same encrypted blob as `peerPairingSecret` so the iPhone's Edge
-    /// tab configures itself on first CloudKit sync — nobody should have to
-    /// retype a 32-char token on a phone keyboard. nil when the Mac has no agent.
-    public let edgeHost: String?
-    public let edgePort: Int?
-    public private(set) var edgeToken: String?
-
-    /// The same snapshot with every credential removed.
-    ///
-    /// These four fields must ride CloudKit's `encryptedValues` in the private
-    /// database — and nowhere else. `peerPairingSecret` is what completes the
-    /// TLS-PSK handshake that grants `termAttach` + `termIn`, i.e. **keystroke
-    /// injection into any live cockpit terminal on the Mac**. There is no second
-    /// factor and no per-attach confirmation, so possession of this string is
-    /// remote code execution as the user.
-    ///
-    /// The Mac deliberately migrated it out of a plist and into the Keychain
-    /// (`PeerTransport`: "it lived in a plist any process running as this user
-    /// could read"). The phone then wrote it straight back into an App Group
-    /// plist — which is `CompleteUntilFirstUserAuthentication` and **included in
-    /// device backups** — and kept up to 1500 more copies in the history array.
-    /// Use this projection for anything that touches disk.
-    public var withoutSecrets: ThrottleMirrorSnapshot {
-        var copy = self
-        copy.peerPairingSecret = nil
-        copy.edgeToken = nil
-        return copy
+    public init(readSnapshot: MirrorReadSnapshot, provisioning: MirrorProvisioning = .init()) {
+        self.readSnapshot = readSnapshot
+        self.provisioning = provisioning
     }
 
     public init(publishedAt: Date, deviceName: String,
@@ -124,83 +51,38 @@ public struct ThrottleMirrorSnapshot: Codable, Sendable, Equatable {
                 peerFallbackHost: String? = nil,
                 edgeHost: String? = nil, edgePort: Int? = nil, edgeToken: String? = nil,
                 schemaVersion: Int = ThrottleMirrorSnapshot.currentSchemaVersion) {
-        self.schemaVersion = schemaVersion
-        self.publishedAt = publishedAt
-        self.deviceName = deviceName
-        self.fiveHour = fiveHour
-        self.sevenDay = sevenDay
-        self.sevenDaySonnet = sevenDaySonnet
-        self.weeklyTokens = weeklyTokens
-        self.weeklyCostEUR = weeklyCostEUR
-        self.savedTokensThisWeek = savedTokensThisWeek
-        self.sessionCount = sessionCount
-        self.tabs = tabs
-        self.peerPairingSecret = peerPairingSecret
-        self.peerFallbackHost = peerFallbackHost
-        self.edgeHost = edgeHost
-        self.edgePort = edgePort
-        self.edgeToken = edgeToken
-    }
-
-    // MARK: Binding window (the "worst" of 5h/7d) — mirrors the Mac's rule.
-
-    /// The window closest to its cap; that's the number the meter binds to.
-    public var bindingWindow: WindowMirror {
-        [fiveHour, sevenDay, sevenDaySonnet].max { $0.utilization < $1.utilization } ?? fiveHour
-    }
-
-    // MARK: JSON blob (the CloudKit payload + local history record)
-
-    public func encoded() throws -> Data {
-        let enc = JSONEncoder()
-        enc.dateEncodingStrategy = .iso8601
-        return try enc.encode(self)
-    }
-
-    public static func decoded(from data: Data) throws -> ThrottleMirrorSnapshot {
-        let dec = JSONDecoder()
-        dec.dateDecodingStrategy = .iso8601
-        return try dec.decode(ThrottleMirrorSnapshot.self, from: data)
-    }
-}
-
-public extension ThrottleMirrorSnapshot {
-    /// The payload as it may leave this Mac. Every free-form string a person
-    /// can influence — a device name, a project folder, a host, a model label —
-    /// is passed through `OutboundPolicy`, so a credential that ended up in one
-    /// of them is masked by kind at the boundary rather than trusted never to
-    /// have got there. Numbers, dates and states are left alone: they cannot
-    /// carry a secret and rewriting them would only make the mirror wrong.
-    func scrubbedForPublication() -> ThrottleMirrorSnapshot {
-        ThrottleMirrorSnapshot(
-            publishedAt: publishedAt,
-            deviceName: OutboundPolicy.scrub(deviceName),
+        self.readSnapshot = MirrorReadSnapshot(
+            publishedAt: publishedAt, deviceName: deviceName,
             fiveHour: fiveHour, sevenDay: sevenDay, sevenDaySonnet: sevenDaySonnet,
             weeklyTokens: weeklyTokens, weeklyCostEUR: weeklyCostEUR,
-            savedTokensThisWeek: savedTokensThisWeek,
-            sessionCount: sessionCount,
-            tabs: tabs.map { $0.scrubbedForPublication() },
-            peerPairingSecret: peerPairingSecret,
-            peerFallbackHost: peerFallbackHost.map(OutboundPolicy.scrub),
-            edgeHost: edgeHost.map(OutboundPolicy.scrub),
-            edgePort: edgePort, edgeToken: edgeToken,
-            schemaVersion: schemaVersion
+            savedTokensThisWeek: savedTokensThisWeek, sessionCount: sessionCount,
+            tabs: tabs, schemaVersion: schemaVersion
+        )
+        self.provisioning = MirrorProvisioning(
+            peerPairingSecret: peerPairingSecret, peerFallbackHost: peerFallbackHost,
+            edgeHost: edgeHost, edgePort: edgePort, edgeToken: edgeToken
         )
     }
-}
 
-public extension TabMirror {
-    func scrubbedForPublication() -> Self {
-        Self(
-            id: id,
-            projectName: OutboundPolicy.scrub(projectName),
-            state: state,
-            model: model.map(OutboundPolicy.scrub),
-            eur: eur,
-            tokens: tokens,
-            isLive: isLive,
-            needsInput: needsInput,
-            rateLimitedUntil: rateLimitedUntil
-        )
+    public init(from decoder: any Decoder) throws {
+        readSnapshot = try MirrorReadSnapshot(from: decoder)
+        provisioning = try MirrorProvisioning(from: decoder)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        try readSnapshot.encode(to: encoder)
+        try provisioning.encode(to: encoder)
+    }
+
+    public func encoded() throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return try encoder.encode(self)
+    }
+
+    public static func decoded(from data: Data) throws -> Self {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(Self.self, from: data)
     }
 }

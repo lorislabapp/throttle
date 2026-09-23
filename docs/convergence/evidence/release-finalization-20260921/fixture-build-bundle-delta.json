@@ -1,0 +1,12 @@
+{
+  "old_build": "100452",
+  "new_build": "build-20260921-114759",
+  "files": 113,
+  "changed": [
+    "Contents/MacOS/Throttle.debug.dylib",
+    "Contents/PlugIns/ThrottleTests.xctest/Contents/MacOS/ThrottleTests",
+    "Contents/Resources/Metadata.appintents/extract.actionsdata",
+    "Contents/Resources/Metadata.appintents/version.json"
+  ],
+  "production_bytes_unchanged": false
+}

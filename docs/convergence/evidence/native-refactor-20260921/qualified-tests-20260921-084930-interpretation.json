@@ -1,0 +1,6 @@
+{
+  "status": "inconclusive",
+  "reason": "interrupted by concurrent xcodebuild after 2.122 seconds",
+  "app_launch": "requested; actual bootstrap not established",
+  "test_success_claimed": false
+}

@@ -166,13 +166,34 @@ final class PlanModel {
 
     /// Prepares a task for launch. Returns the plan for the cockpit to open —
     /// this model never opens a session itself.
-    func prepareLaunch(taskID: String, runtime: AgentRuntime) throws -> TaskLauncher.LaunchPlan {
+    func prepareLaunch(taskID: String, runtime: AgentRuntime,
+                       role: AgentRole? = nil) throws -> TaskLauncher.LaunchPlan {
         guard let root else { throw TaskLauncher.LaunchError.unknownTask(taskID) }
         let author = "\(runtime.rawValue):\(UUID().uuidString.prefix(8))"
+        let chosenRole = role ?? plan?.task(taskID).map(AgentRole.suggested(for:)) ?? .builder
         let launch = try TaskLauncher.prepare(taskID: taskID, runtime: runtime,
-                                              repo: root, author: author)
+                                              repo: root, author: author, role: chosenRole)
         reload()
         return launch
+    }
+
+    /// The opposite runtime, launched with a grant to read the plan and record
+    /// one verdict on this task — the step a `.review` card otherwise leaves to
+    /// the user to improvise.
+    func prepareReview(taskID: String, runtime: AgentRuntime) throws -> TaskLauncher.LaunchPlan {
+        guard let root else { throw TaskReviewLauncher.ReviewError.unknownTask(taskID) }
+        let author = "\(runtime.rawValue):\(UUID().uuidString.prefix(8))"
+        return try TaskReviewLauncher.prepare(taskID: taskID, runtime: runtime, repo: root, author: author)
+    }
+
+    /// The command "Verify candidate" would run for this task, if the plan declares one.
+    func declaredVerifyCommand(for taskID: String) -> String? {
+        plan?.task(taskID)?.verify ?? plan?.verify
+    }
+
+    /// The plan file itself, for the one case the card cannot fix alone.
+    var planFileURL: URL? {
+        root.map { PlanStore(projectRoot: $0).planURL }
     }
 
     /// What Throttle sees in this project before any plan exists — used to say

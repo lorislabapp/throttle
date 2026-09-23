@@ -1,0 +1,49 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-114859/Build/Products/isolated-visual-tests-20260921-114959.xctestrun -destination platform=macOS,arch=arm64 -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 300 -maximum-test-execution-time-allowance 360 -resultBundlePath /Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-114859/isolated-visual-tests-20260921-114959.xcresult -testLanguage en -testRegion US "-only-testing:ThrottleTests/PlanIntegrationViewTests/testDiffFailureRetryAndEmptyStateInEnglish"
+
+Writing result bundle at path:
+	/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-114859/isolated-visual-tests-20260921-114959.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00008132-001178882E03001C, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00008132-001178882E03001C, name:My Mac }
+2026-09-21 11:50:02.735624+0200 Throttle[46359:2583257] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:50:02.735933+0200 Throttle[46359:2583281] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:50:02.735972+0200 Throttle[46359:2583281] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:50:02.735977+0200 Throttle[46359:2583257] [Application] Error registering app with intents framework: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:50:02.736196+0200 Throttle[46359:2583256] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:50:02.736204+0200 Throttle[46359:2583256] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:50:02.736431+0200 Throttle[46359:2583256] [Connection] Will NOT re-try to establish the connection
+2026-09-21 11:50:02.737172+0200 Throttle[46359:2583255] [Connection] Unable to get synchronousRemoteObjectProxy, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+2026-09-21 11:50:02.737182+0200 Throttle[46359:2583255] [Connection] Unable to re-register with Process Instance Registry, error: Error Domain=NSCocoaErrorDomain Code=4097 "connection to service named com.apple.linkd.autoShortcut" UserInfo={NSDebugDescription=connection to service named com.apple.linkd.autoShortcut}
+[AppDelegate.init] start
+2026-09-21 11:50:02.803002+0200 Throttle[46359:2583007] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to /var/folders/3w/fbl9wc1d3q7091lq5pj5sy0c0000gn/T/com.lorislab.throttle.test-host.savedState
+[applicationDidFinishLaunching] start
+2026-09-21 11:50:02.854552+0200 Throttle[46359:2583007] [App] Isolated host detected: skipping production background services
+Test Suite 'Selected tests' started at 2026-09-21 11:50:02.922.
+Test Suite 'ThrottleTests.xctest' started at 2026-09-21 11:50:02.922.
+Test Suite 'PlanIntegrationViewTests' started at 2026-09-21 11:50:02.922.
+Test Case '-[ThrottleTests.PlanIntegrationViewTests testDiffFailureRetryAndEmptyStateInEnglish]' started.
+THROTTLE_REVIEW_READY: diff-failed-en
+THROTTLE_REVIEW_FOCUS: active=false key=false keyboard=true responder=NSWindow
+2026-09-21 11:50:19.553182+0200 Throttle[46359:2583358] [Common] Unable to obtain a task name port right for pid 424: (os/kern) failure (0x5)
+THROTTLE_REVIEW_FOCUS: active=true key=true keyboard=true responder=NSWindow
+Test Case '-[ThrottleTests.PlanIntegrationViewTests testDiffFailureRetryAndEmptyStateInEnglish]' passed (120.786 seconds).
+Test Suite 'PlanIntegrationViewTests' passed at 2026-09-21 11:52:03.710.
+	 Executed 1 test, with 0 failures (0 unexpected) in 120.786 (120.787) seconds
+Test Suite 'ThrottleTests.xctest' passed at 2026-09-21 11:52:03.710.
+	 Executed 1 test, with 0 failures (0 unexpected) in 120.786 (120.788) seconds
+Test Suite 'Selected tests' passed at 2026-09-21 11:52:03.710.
+	 Executed 1 test, with 0 failures (0 unexpected) in 120.786 (120.788) seconds
+2026-09-21 11:52:04.100 xcodebuild[46352:2582786] [MT] IDETestOperationsObserverDebug: 123.284 elapsed -- Testing started completed.
+2026-09-21 11:52:04.100 xcodebuild[46352:2582786] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-21 11:52:04.100 xcodebuild[46352:2582786] [MT] IDETestOperationsObserverDebug: 123.284 sec, +123.284 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/kevinnadjarian/GitHub/Throttle/build/convergence-validation-20260920/isolated-host-20260921-114859/isolated-visual-tests-20260921-114959.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

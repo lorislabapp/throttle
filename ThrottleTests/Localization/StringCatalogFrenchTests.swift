@@ -16,11 +16,14 @@ final class StringCatalogFrenchTests: XCTestCase {
         return try JSONDecoder().decode(Catalog.self, from: Data(contentsOf: url))
     }
 
+    /// Positional forms (`%1$@`) are how a translation reorders arguments, so they
+    /// count as the same placeholder as the key's `%@`: the index is dropped.
     private func placeholders(_ text: String) -> [String] {
-        let pattern = try? NSRegularExpression(pattern: "%(?:%|lld|@)")
+        let pattern = try? NSRegularExpression(pattern: "%(?:[0-9]+\\$)?(?:%|lld|@)")
         let range = NSRange(text.startIndex..., in: text)
         return (pattern?.matches(in: text, range: range) ?? [])
             .compactMap { Range($0.range, in: text).map { String(text[$0]) } }
+            .map { $0.replacingOccurrences(of: "[0-9]+\\$", with: "", options: .regularExpression) }
             .sorted()
     }
 

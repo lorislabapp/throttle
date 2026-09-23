@@ -23,8 +23,9 @@ def reports():
               "result": "Skipped" if case in runner.ALLOWED_SKIPS else "Passed"}
              for case in sorted(runner.REQUIRED_CASES)]
     count = len(cases)
-    summary = {"result": "Passed", "totalTestCount": count, "passedTests": count - 5,
-               "skippedTests": 5, "failedTests": 0, "expectedFailures": 0, "testFailures": []}
+    skips = len(runner.ALLOWED_SKIPS)
+    summary = {"result": "Passed", "totalTestCount": count, "passedTests": count - skips,
+               "skippedTests": skips, "failedTests": 0, "expectedFailures": 0, "testFailures": []}
     tree = {"testNodes": [{"nodeType": "Test Plan", "name": "Throttle", "result": "Passed", "children": [
         {"nodeType": "Unit test bundle", "name": "ThrottleTests", "result": "Passed", "children": cases}]}]}
     return summary, tree
@@ -35,7 +36,76 @@ def leaves(tree):
 
 
 class MacOSEvidenceTests(unittest.TestCase):
-    def test_native_enumeration_and_five_explicit_skips_pass(self):
+    def test_mcp_contract_change_invalidates_macos_snapshot(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = pathlib.Path(folder)
+            name = "Packages/ThrottleMCPContracts/Sources/ThrottleMCPContracts/ThrottleMCPSchemas.swift"
+            test = "ThrottleTests/Example.swift"
+            for relative in (name, test):
+                path = root / relative
+                path.parent.mkdir(parents=True)
+                path.write_text("original")
+            with mock.patch.object(runner.subprocess, "check_output", return_value="\0".join([name, test]).encode()):
+                before = runner.source_snapshot(root)
+                self.assertIn(name, before)
+                (root / name).write_text("changed schema")
+                self.assertNotEqual(before, runner.source_snapshot(root))
+                (root / name).unlink()
+                with self.assertRaises(runner.EvidenceError):
+                    runner.source_snapshot(root)
+
+    def test_vault_contract_change_invalidates_macos_snapshot_only(self):
+        self.check_macos_only_snapshot("Packages/ThrottleVaultContract/Sources/ThrottleVaultContract/ResearchVaultIPCModel.swift")
+
+    def test_vault_client_change_invalidates_macos_snapshot_only(self):
+        self.check_macos_only_snapshot("Packages/ThrottleVaultClient/Sources/ThrottleVaultClient/ResearchVaultClient.swift")
+
+    def check_macos_only_snapshot(self, name):
+        with tempfile.TemporaryDirectory() as folder:
+            root = pathlib.Path(folder)
+            inputs = [name, "ThrottleTests/Example.swift", "ThrottleiOSTests/Example.swift"]
+            for relative in inputs:
+                path = root / relative
+                path.parent.mkdir(parents=True)
+                path.write_text("original")
+            with mock.patch.object(runner.subprocess, "check_output", return_value="\0".join(inputs).encode()):
+                before = runner.source_snapshot(root)
+                self.assertIn(name, before)
+                self.assertNotIn(name, runner.source_snapshot(root, scheme="ThrottleiOS"))
+                (root / name).write_text("changed contract")
+                self.assertNotEqual(before, runner.source_snapshot(root))
+                (root / name).unlink()
+                with self.assertRaises(runner.EvidenceError):
+                    runner.source_snapshot(root)
+
+    def test_protocol_change_invalidates_both_product_snapshots(self):
+        self.check_shared_contract_snapshot("Packages/ThrottlePeerProtocol/Sources/ThrottlePeerProtocol/PeerMessage.swift")
+
+    def test_mirror_contract_change_invalidates_both_product_snapshots(self):
+        self.check_shared_contract_snapshot("Packages/ThrottleMirrorContract/Sources/ThrottleMirrorContract/MirrorReadSnapshot.swift")
+
+    def check_shared_contract_snapshot(self, name):
+        with tempfile.TemporaryDirectory() as folder:
+            root = pathlib.Path(folder)
+            path = root / name
+            path.parent.mkdir(parents=True)
+            inputs = [name, "ThrottleTests/Example.swift", "ThrottleiOSTests/Example.swift"]
+            for test in inputs[1:]:
+                (root / test).parent.mkdir(parents=True)
+                (root / test).write_text("test source")
+            with mock.patch.object(runner.subprocess, "check_output", return_value="\0".join(inputs).encode()):
+                for scheme in ("Throttle", "ThrottleiOS"):
+                    with self.subTest(scheme=scheme):
+                        path.write_text("original")
+                        before = runner.source_snapshot(root, scheme=scheme)
+                        self.assertIn(name, before)
+                        path.write_text("changed framing")
+                        self.assertNotEqual(before, runner.source_snapshot(root, scheme=scheme))
+                        path.unlink()
+                        with self.assertRaises(runner.EvidenceError):
+                            runner.source_snapshot(root, scheme=scheme)
+
+    def test_native_enumeration_and_explicit_skips_pass(self):
         expected = runner.inventory_from_enumeration(enumeration())
         errors, cases = runner.validate_reports(*reports(), expected)
         self.assertEqual(errors, [])
@@ -320,7 +390,7 @@ class IOSEvidenceTests(unittest.TestCase):
         errors, _ = runner.validate_reports(summary, tree, runner.IOS_REQUIRED_CASES | {case}, scheme="ThrottleiOS")
         self.assertIn("unexpected_skip:" + case, errors)
         self.assertEqual(runner.profile_for_scheme("ThrottleiOS")["skips"], {})
-        self.assertEqual(len(runner.profile_for_scheme("Throttle")["skips"]), 5)
+        self.assertEqual(len(runner.profile_for_scheme("Throttle")["skips"]), len(runner.ALLOWED_SKIPS))
 
     def test_ios_snapshot_covers_companion_widget_shared_and_generated_scheme(self):
         with tempfile.TemporaryDirectory() as folder:

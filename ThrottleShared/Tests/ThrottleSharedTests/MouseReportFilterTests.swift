@@ -70,6 +70,9 @@ final class MouseReportFilterTests: XCTestCase {
         XCTAssertFalse(all.contains("THROTTLE_AGENT_TOKEN="),
                        "systemd must load the bearer from a credential file, not process env")
         XCTAssertTrue(all.contains("/etc/throttle-agent.token"))
+        XCTAssertFalse(all.contains("install.sh | bash"))
+        XCTAssertTrue(all.contains("claude-code-releases/\(EdgeAgentService.claudeCodeVersion)"))
+        XCTAssertTrue(all.contains("DISABLE_AUTOUPDATER=1"))
     }
 
     func testEdgeRemoteURLIsHTTPSExceptLoopback() {

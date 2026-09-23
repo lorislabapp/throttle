@@ -39,7 +39,8 @@ struct InlineAssistantPane: View {
                     set: { newValue in aiSelection = newValue; AIProviderRegistry.shared.preferredKind = newValue }
                 )) {
                     Text("Apple").tag(AIProviderKind.appleIntelligence)
-                    Text("Local").tag(AIProviderKind.embeddedModel)
+                    Text("Mac").tag(AIProviderKind.embeddedModel)
+                    Text("Server").tag(AIProviderKind.selfHostedModel)
                     Text("Claude").tag(AIProviderKind.claudeWebSession)
                     Text("API").tag(AIProviderKind.claudeAPIKey)
                 }

@@ -1,0 +1,7 @@
+{
+  "key": "AppleKeyboardUIMode",
+  "read_only": true,
+  "exit_code": 0,
+  "value": "0",
+  "meaning": "Diagnostic only; no system setting was changed. Missing key is not an observed enabled state."
+}

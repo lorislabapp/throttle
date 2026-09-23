@@ -11,6 +11,9 @@ public typealias ResearchVaultProjectAdmitter = @Sendable (
 public typealias ResearchVaultReceiptImporter = @Sendable (
     [ResearchReceipt]
 ) async throws -> ResearchVaultReceiptImportResponse
+public typealias ResearchVaultDocumentImporter = @Sendable (
+    [ResearchVaultDocumentPayload]
+) async throws -> ResearchVaultDocumentImportResponse
 public typealias ResearchVaultQuarantineLister = @Sendable () async throws
     -> ResearchVaultQuarantineListResponse
 public typealias ResearchVaultQuarantineReviewer = @Sendable (
@@ -30,6 +33,7 @@ public final class ResearchVaultOwnerService: NSObject, ResearchVaultOwnerXPCPro
     @unchecked Sendable {
     private let projectAdmitter: ResearchVaultProjectAdmitter
     private let importer: ResearchVaultReceiptImporter
+    private let documentImporter: ResearchVaultDocumentImporter
     private let quarantineLister: ResearchVaultQuarantineLister
     private let reviewer: ResearchVaultQuarantineReviewer
     private let exporter: ResearchVaultReceiptExporter
@@ -43,6 +47,9 @@ public final class ResearchVaultOwnerService: NSObject, ResearchVaultOwnerXPCPro
             throw ResearchVaultProjectAdmissionError.ownerRequired
         },
         importer: @escaping ResearchVaultReceiptImporter,
+        documentImporter: @escaping ResearchVaultDocumentImporter = { _ in
+            throw ResearchVaultDocumentImportError.unavailable
+        },
         quarantineLister: @escaping ResearchVaultQuarantineLister,
         reviewer: @escaping ResearchVaultQuarantineReviewer,
         exporter: @escaping ResearchVaultReceiptExporter,
@@ -55,6 +62,7 @@ public final class ResearchVaultOwnerService: NSObject, ResearchVaultOwnerXPCPro
     ) {
         self.projectAdmitter = projectAdmitter
         self.importer = importer
+        self.documentImporter = documentImporter
         self.quarantineLister = quarantineLister
         self.reviewer = reviewer
         self.exporter = exporter
@@ -105,6 +113,31 @@ public final class ResearchVaultOwnerService: NSObject, ResearchVaultOwnerXPCPro
                 reply(try encoder.encode(try await importer(input.receipts)))
             } catch let error as ResearchVaultIPCValidationError {
                 _ = error
+                reply(errorPayload(.invalidRequest))
+            } catch is DecodingError {
+                reply(errorPayload(.invalidRequest))
+            } catch {
+                reply(errorPayload(.unavailable))
+            }
+        }
+    }
+
+    public func importDocuments(
+        _ request: Data,
+        withReply reply: @escaping @Sendable (Data) -> Void
+    ) {
+        guard request.count <= ResearchVaultIPCContract.maximumOwnerRequestBytes else {
+            reply(errorPayload(.invalidRequest))
+            return
+        }
+        Task {
+            do {
+                let input = try decoder.decode(
+                    ResearchVaultDocumentImportRequest.self,
+                    from: request
+                ).validated()
+                reply(try encoder.encode(try await documentImporter(input.documents)))
+            } catch is ResearchVaultIPCValidationError {
                 reply(errorPayload(.invalidRequest))
             } catch is DecodingError {
                 reply(errorPayload(.invalidRequest))

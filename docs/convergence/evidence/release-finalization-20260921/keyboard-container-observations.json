@@ -1,0 +1,17 @@
+{
+  "at": "2026-09-21T12:39:15.391965+02:00",
+  "build": "build-20260921-123340",
+  "run": "isolated-visual-tests-20260921-123619",
+  "method": "CUA AX and native keyboard",
+  "observations": [
+    "Tab focused Retry diff AX3",
+    "Space refreshed error and Retry nodes AX13/14",
+    "Tab focused new Retry AX14"
+  ],
+  "scope": "synthetic project without worktree; no successful Git repair claim",
+  "keyboard_initial": "OFF",
+  "keyboard_during": "ON",
+  "keyboard_restored": "OFF confirmed AX65",
+  "close_action": "close AX4; state fetch timed out; XCTest subsequently completed Passed and host exited",
+  "installed_app_restarted": false
+}
