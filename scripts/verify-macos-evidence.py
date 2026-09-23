@@ -31,6 +31,10 @@ ALLOWED_SKIPS = {
     "GlobalRAGServiceTests/testLiveLocalProposalWhenExplicitlyEnabled()": "configured local model",
     "LocalWorkerLiveRouteTests/testConfiguredOllamaServesProjectAssistantWithoutBusinessContext()": "private Ollama acceptance server",
     "NotebookLMImportJobTests/testRecordedLiveExportsReconcileWhenExplicitFixtureIsProvided()": "explicit recorded export fixture",
+    # The crash worker is built only by the isolated core harness
+    # (verify-core-evidence.py), which runs both cases for real.
+    "TaskVerificationCrashTests/testControllerDiesAfterAttachmentWithoutRunningProjectCode()": "core-harness crash worker",
+    "TaskVerificationCrashTests/testControllerDiesBeforeAttachmentWithoutRunningProjectCode()": "core-harness crash worker",
 }
 REQUIRED_CASES = {
     "AppTestHostIsolationTests/testActivationKeepsPreviewStateAndCannotConnectInstalledServices()",

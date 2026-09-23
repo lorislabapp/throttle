@@ -23,8 +23,9 @@ def reports():
               "result": "Skipped" if case in runner.ALLOWED_SKIPS else "Passed"}
              for case in sorted(runner.REQUIRED_CASES)]
     count = len(cases)
-    summary = {"result": "Passed", "totalTestCount": count, "passedTests": count - 5,
-               "skippedTests": 5, "failedTests": 0, "expectedFailures": 0, "testFailures": []}
+    skips = len(runner.ALLOWED_SKIPS)
+    summary = {"result": "Passed", "totalTestCount": count, "passedTests": count - skips,
+               "skippedTests": skips, "failedTests": 0, "expectedFailures": 0, "testFailures": []}
     tree = {"testNodes": [{"nodeType": "Test Plan", "name": "Throttle", "result": "Passed", "children": [
         {"nodeType": "Unit test bundle", "name": "ThrottleTests", "result": "Passed", "children": cases}]}]}
     return summary, tree
@@ -104,7 +105,7 @@ class MacOSEvidenceTests(unittest.TestCase):
                         with self.assertRaises(runner.EvidenceError):
                             runner.source_snapshot(root, scheme=scheme)
 
-    def test_native_enumeration_and_five_explicit_skips_pass(self):
+    def test_native_enumeration_and_explicit_skips_pass(self):
         expected = runner.inventory_from_enumeration(enumeration())
         errors, cases = runner.validate_reports(*reports(), expected)
         self.assertEqual(errors, [])
@@ -389,7 +390,7 @@ class IOSEvidenceTests(unittest.TestCase):
         errors, _ = runner.validate_reports(summary, tree, runner.IOS_REQUIRED_CASES | {case}, scheme="ThrottleiOS")
         self.assertIn("unexpected_skip:" + case, errors)
         self.assertEqual(runner.profile_for_scheme("ThrottleiOS")["skips"], {})
-        self.assertEqual(len(runner.profile_for_scheme("Throttle")["skips"]), 5)
+        self.assertEqual(len(runner.profile_for_scheme("Throttle")["skips"]), len(runner.ALLOWED_SKIPS))
 
     def test_ios_snapshot_covers_companion_widget_shared_and_generated_scheme(self):
         with tempfile.TemporaryDirectory() as folder:
