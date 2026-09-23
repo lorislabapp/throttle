@@ -27,7 +27,11 @@ enum RepoIndexer {
     static let excludedDirs: Set<String> = [
         ".git", "node_modules", ".build", "build", "DerivedData", "Pods", "dist",
         "out", "target", ".next", "vendor", ".venv", "venv", "__pycache__",
-        ".swiftpm", ".gradle", "coverage", ".cache", "site-packages", "Carthage"
+        ".swiftpm", ".gradle", "coverage", ".cache", "site-packages", "Carthage",
+        // Agent worktrees are full checkouts of the same repo: indexing them embeds
+        // every file once per worktree (9 copies, 5.4 GB on 2026-09-23) and floods
+        // results with duplicates.
+        "worktrees"
     ]
 
     /// Prefixes that prune whatever follows them. Exact-name matching alone let a
