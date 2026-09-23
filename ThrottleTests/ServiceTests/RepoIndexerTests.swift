@@ -122,4 +122,9 @@ final class RepoIndexerTests: XCTestCase {
         XCTAssertEqual(stats.removed, 0)
         XCTAssertEqual(manifest.count, 2)
     }
+
+    /// `.claude/worktrees/<name>` holds whole checkouts of the repo being indexed.
+    func testIndexerPrunesAgentWorktrees() {
+        XCTAssertTrue(RepoIndexer.isExcluded(directoryNamed: "worktrees"))
+    }
 }

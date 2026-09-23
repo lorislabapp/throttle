@@ -300,11 +300,6 @@ final class DisplayedNumbersTests: XCTestCase {
         XCTAssertTrue(RepoIndexer.isExcluded(directoryNamed: "node_modules"))
     }
 
-    /// `.claude/worktrees/<name>` holds whole checkouts of the repo being indexed.
-    func testIndexerPrunesAgentWorktrees() {
-        XCTAssertTrue(RepoIndexer.isExcluded(directoryNamed: "worktrees"))
-    }
-
     /// Source directories whose names merely start with the same letters must
     /// survive — a prefix rule that eats real code is worse than the leak.
     func testIndexerKeepsSourceDirectoriesThatLookAlike() {
