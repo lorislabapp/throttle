@@ -61,11 +61,14 @@ extension WorkflowReleaseLedgerStore {
         guard data.count <= 8 * 1_024 * 1_024 else { throw WorkflowReleaseLedgerError.corruptLedger }
         if data.isEmpty { return ([], []) }
         guard data.last == 0x0A else { throw WorkflowReleaseLedgerError.corruptLedger }
-        let lines = data.split(separator: 0x0A, omittingEmptySubsequences: false).dropLast().map(Data.init)
+        // Typed so Xcode 26.6's SDK, which also offers a Data-specific split, picks
+        // the Collection overload (CI failed on the ambiguity 2026-09-23).
+        let parts: [Data] = data.split(separator: UInt8(0x0A), omittingEmptySubsequences: false)
+        let lines = Array(parts.dropLast())
         guard !lines.contains(where: { $0.isEmpty || $0.count > 1 * 1_024 * 1_024 }) else {
             throw WorkflowReleaseLedgerError.corruptLedger
         }
-        let events = try lines.enumerated().map { index, line in
+        let events: [WorkflowReleaseLedgerEvent] = try lines.enumerated().map { index, line in
             guard let event = try? Self.decoder.decode(WorkflowReleaseLedgerEvent.self, from: line),
                   event.isValid,
                   event.sequence == index + 1,
