@@ -4,6 +4,7 @@
     "selectors" : [
       "admitProjects:withReply:",
       "exportReceipts:withReply:",
+      "importDocuments:withReply:",
       "importReceipts:withReply:",
       "listQuarantine:withReply:",
       "promoteReasoning:withReply:",

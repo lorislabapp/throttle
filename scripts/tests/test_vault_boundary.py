@@ -24,6 +24,14 @@ class VaultBoundaryTests(unittest.TestCase):
         self.model = self.package / "Sources/ResearchVaultIPCModel/Request.swift"
         self.model.parent.mkdir(parents=True)
         self.model.write_text("import Foundation\nimport ResearchVaultModel\n")
+        # verify-ipc-boundary.sh also gates the standalone contract and client
+        # packages that sit beside the vault package.
+        self.contract_source = self.root / "ThrottleVaultContract/Sources/ThrottleVaultContract/Contract.swift"
+        self.contract_source.parent.mkdir(parents=True)
+        self.contract_source.write_text("import Foundation\n")
+        self.vault_client_source = self.root / "ThrottleVaultClient/Sources/ThrottleVaultClient/Client.swift"
+        self.vault_client_source.parent.mkdir(parents=True)
+        self.vault_client_source.write_text("import Foundation\nimport ThrottleVaultContract\n")
         self.client = self.root / "client fixture"
         self.client_source = self.client / "Sources/Client/Query.swift"
         self.client_source.parent.mkdir(parents=True)
@@ -60,6 +68,25 @@ class VaultBoundaryTests(unittest.TestCase):
         self.assertEqual(json.loads(result.stdout), {
             "status": "pass", "scenario": "ipc-boundary-no-privileged-client-dependency"})
         self.assertEqual(result.stderr, "")
+
+    def test_missing_contract_or_client_package_is_refused(self):
+        for source, diagnostic in ((self.contract_source, "Vault contract source directory is missing"),
+                                   (self.vault_client_source, "Vault client source directory is missing")):
+            with self.subTest(diagnostic=diagnostic):
+                shutil.rmtree(source.parent)
+                result = self.run_gate()
+                self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                self.assertIn(diagnostic, result.stderr)
+                source.parent.mkdir(parents=True)
+                source.write_text("import Foundation\n")
+
+    def test_product_import_in_contract_or_client_package_is_rejected(self):
+        for source, diagnostic in ((self.contract_source, "Vault contract imports a product module"),
+                                   (self.vault_client_source, "Vault client imports a product module")):
+            with self.subTest(diagnostic=diagnostic):
+                source.write_text("import ThrottleShared\n")
+                self.assert_refused(diagnostic)
+                source.write_text("import Foundation\n")
 
     def test_privileged_import_in_model_is_rejected(self):
         self.model.write_text("@testable import\tResearchVaultSQLCipher\n")
