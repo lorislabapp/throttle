@@ -183,14 +183,10 @@ extension AppDelegate {
         // Mac the kernel hasn't posted a pressure event yet, so `isQuiet` reads a
         // stale `.normal` — the false negative that let the heavy embedding pass
         // start precisely when the machine was worst (MEM-M01).
-        if SemanticAutoIndexer.isEnabled, !MemoryPressureMonitor.shared.isQuiet,
-           !SystemMemoryService.sample().underPressure {
-            Task.detached(priority: .utility) {
-                let roots = ProjectsService.listProjects().compactMap { $0.projectPath }
-                _ = SemanticAutoIndexer.run(roots: roots, enabled: true, memoryQuiet: false,
-                                            embedder: NLEmbeddingProvider())
-            }
-        }
+        // BackgroundWork owns the pass now so it is visible (Cockpit BACKGROUND
+        // cell + menu-bar hairline), pausable, and retried when a skip under
+        // pressure clears instead of silently waiting for the next launch.
+        BackgroundWork.shared.startSemanticIndexAtLaunch()
 
         Task { @MainActor in
             await coordinator.start()

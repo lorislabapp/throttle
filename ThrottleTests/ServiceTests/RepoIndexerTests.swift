@@ -106,4 +106,20 @@ final class RepoIndexerTests: XCTestCase {
         XCTAssertEqual(SemanticCorpusStore.loadManifest(repo: "/tmp/fakeRepo"), ["x.swift": "h"])
         XCTAssertEqual(reloaded.search("alpha", k: 1).first?.metadata["doc"], "x.swift")
     }
+
+    /// An interrupted walk must not evict: files it never reached would look
+    /// deleted and lose their embeddings.
+    func test_interrupted_skipsEviction() throws {
+        try write("a.swift", "func alpha() {}")
+        try write("b.swift", "func beta() {}")
+        var idx = SemanticIndex(embedder: StubEmbedder())
+        var manifest: [String: String] = [:]
+        _ = RepoIndexer.indexDirectory(repo, into: &idx, manifest: &manifest)
+        XCTAssertEqual(manifest.count, 2)
+
+        let stats = RepoIndexer.indexDirectory(repo, into: &idx, manifest: &manifest, shouldStop: { true })
+        XCTAssertTrue(stats.interrupted)
+        XCTAssertEqual(stats.removed, 0)
+        XCTAssertEqual(manifest.count, 2)
+    }
 }

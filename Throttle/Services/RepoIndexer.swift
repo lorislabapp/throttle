@@ -13,6 +13,7 @@ enum RepoIndexer {
         var unchanged = 0    // skipped via manifest hash
         var removed = 0      // docs gone from disk, evicted
         var chunks = 0       // chunks embedded this pass
+        var interrupted = false  // `shouldStop` fired mid-walk; eviction was skipped
     }
 
     /// Text file extensions worth indexing (code + docs + config).
@@ -55,7 +56,8 @@ enum RepoIndexer {
     @discardableResult
     static func indexDirectory(_ root: URL, into index: inout SemanticIndex,
                                manifest: inout [String: String],
-                               maxChars: Int = 1000, maxFileBytes: Int = 256 * 1024) -> IndexStats {
+                               maxChars: Int = 1000, maxFileBytes: Int = 256 * 1024,
+                               shouldStop: () -> Bool = { false }) -> IndexStats {
         var stats = IndexStats()
         let fm = FileManager.default
         let rootName = root.lastPathComponent
@@ -66,6 +68,9 @@ enum RepoIndexer {
         guard let en = fm.enumerator(at: root, includingPropertiesForKeys: keys, options: []) else { return stats }
 
         while let url = en.nextObject() as? URL {
+            // Checked per entry so Skip / Pause take effect within one file,
+            // not at the end of a repo that can take minutes to embed.
+            if shouldStop() { stats.interrupted = true; break }
             let rv = try? url.resourceValues(forKeys: Set(keys))
             if rv?.isDirectory == true {
                 if isExcluded(directoryNamed: url.lastPathComponent) { en.skipDescendants() }
@@ -91,13 +96,21 @@ enum RepoIndexer {
             stats.indexed += 1; stats.chunks += n
         }
 
-        // Evict docs that disappeared from disk since last pass.
+        // Evict docs that disappeared from disk since last pass. Never after an
+        // interrupted walk: every file not reached yet would look deleted.
+        if !stats.interrupted { stats.removed = evict(notIn: seen, from: &index, manifest: &manifest) }
+        return stats
+    }
+
+    private static func evict(notIn seen: Set<String>, from index: inout SemanticIndex,
+                              manifest: inout [String: String]) -> Int {
+        var removed = 0
         for rel in manifest.keys where !seen.contains(rel) {
             index.removeDoc(rel)
             manifest.removeValue(forKey: rel)
-            stats.removed += 1
+            removed += 1
         }
-        return stats
+        return removed
     }
 
     private static func relativePath(of url: URL, under rootPath: String) -> String {

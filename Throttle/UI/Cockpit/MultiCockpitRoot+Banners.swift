@@ -3,13 +3,19 @@ import SwiftUI
 import ThrottleShared
 
 extension MultiCockpitRoot {
-    // MARK: - Global strip (binding + machine)
+    // MARK: - Global strip (binding + machine + background work)
 
     var globalStrip: some View {
         HStack(spacing: 0) {
             bindingCell
             Rectangle().fill(hair).frame(width: 1, height: 48)
             machineCell
+            // Background work (launch re-index, vault ingest): present only while
+            // something runs, just finished, or is waiting on memory.
+            if BackgroundWork.shared.isVisible {
+                Rectangle().fill(hair).frame(width: 1, height: 48)
+                BackgroundWorkCell()
+            }
             Spacer(minLength: 0)
         }
         .frame(height: 76)
