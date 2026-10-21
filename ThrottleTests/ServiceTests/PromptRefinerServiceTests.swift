@@ -25,6 +25,11 @@ private struct PromptRefinerStubProvider: AIProvider {
     }
 }
 
+private actor ResolveCounter {
+    private(set) var value = 0
+    func increment() { value += 1 }
+}
+
 /// The refiner proposes; the user applies. These tests pin the invariants that
 /// make that promise true: a payload can never carry its own Enter, control
 /// bytes never reach a live PTY, and the cost shown is the cost measured.
@@ -160,25 +165,6 @@ final class PromptRefinerServiceTests: XCTestCase {
     }
     // MARK: - Provider walk
 
-    func test_localOnlyExcludesEveryNetworkProvider() {
-        let excluded = PromptRefinerService.excludedProviderKinds(
-            tried: [.appleIntelligence],
-            forceLocal: true
-        )
-        XCTAssertTrue(excluded.contains(.appleIntelligence))
-        XCTAssertTrue(excluded.contains(.claudeWebSession))
-        XCTAssertTrue(excluded.contains(.claudeAPIKey))
-        XCTAssertFalse(excluded.contains(.embeddedModel))
-    }
-
-    func test_networkAllowedExcludesOnlyProvidersAlreadyTried() {
-        let tried: Set<AIProviderKind> = [.appleIntelligence]
-        XCTAssertEqual(
-            PromptRefinerService.excludedProviderKinds(tried: tried, forceLocal: false),
-            tried
-        )
-    }
-
     private func wellFormedReply(_ prompt: String) -> String {
         [
             "===THROTTLE-PROMPT===",
@@ -189,21 +175,37 @@ final class PromptRefinerServiceTests: XCTestCase {
         ].joined(separator: "\n")
     }
 
-    func test_refine_fallsThroughToTheNextProviderWhenTheFirstFails() async throws {
+    func test_refine_neverFallsThroughToAnotherProviderWhenTheChosenOneFails() async {
         let flaky = PromptRefinerStubProvider(displayName: "Flaky", kind: .claudeWebSession, reply: nil)
-        let good = PromptRefinerStubProvider(
-            displayName: "Apple Intelligence",
-            kind: .appleIntelligence,
-            reply: wellFormedReply("Fix the scroll in DroppableTerminalView.")
-        )
-        let refinement = try await PromptRefinerService.refine(
-            draft: "fix scroll", mode: .session, runtime: .claudeCode,
-            projectName: "Throttle", projectPath: nil,
-            resolve: { tried in tried.isEmpty ? flaky : good })
+        let calls = ResolveCounter()
+        do {
+            _ = try await PromptRefinerService.refine(
+                draft: "fix scroll", mode: .session, runtime: .claudeCode,
+                projectName: "Throttle", projectPath: nil,
+                resolve: {
+                    await calls.increment()
+                    return flaky
+                })
+            XCTFail("expected the chosen provider's failure, not a fallback")
+        } catch {
+            XCTAssertTrue(error is PromptRefinerStubProvider.ProviderFailure)
+        }
+        let count = await calls.value
+        XCTAssertEqual(count, 1, "the provider is resolved once and never re-picked")
+    }
 
-        XCTAssertEqual(refinement.proposed, "Fix the scroll in DroppableTerminalView.")
-        XCTAssertEqual(refinement.provider, "Apple Intelligence")
-        XCTAssertEqual(refinement.why, ["tightened the scope"])
+    func test_refine_surfacesWhyTheChosenProviderIsNotReady() async {
+        let message = AIProviderSelection.chosenUnavailable(.claudeAPIKey).message ?? ""
+        do {
+            _ = try await PromptRefinerService.refine(
+                draft: "fix scroll", mode: .session, runtime: .claudeCode,
+                projectName: "Throttle", projectPath: nil,
+                resolve: { throw PromptRefinerService.RefinerError.providerNotReady(message) })
+            XCTFail("expected .providerNotReady")
+        } catch {
+            XCTAssertEqual(error as? PromptRefinerService.RefinerError, .providerNotReady(message))
+            XCTAssertEqual(error.localizedDescription, message)
+        }
     }
 
     func test_refine_withNoProviderThrowsNoProvider() async {
@@ -211,7 +213,7 @@ final class PromptRefinerServiceTests: XCTestCase {
             _ = try await PromptRefinerService.refine(
                 draft: "fix scroll", mode: .session, runtime: .claudeCode,
                 projectName: "Throttle", projectPath: nil,
-                resolve: { _ in nil })
+                resolve: { throw PromptRefinerService.RefinerError.noProvider })
             XCTFail("expected .noProvider")
         } catch {
             XCTAssertEqual(error as? PromptRefinerService.RefinerError, .noProvider)
@@ -224,7 +226,7 @@ final class PromptRefinerServiceTests: XCTestCase {
             _ = try await PromptRefinerService.refine(
                 draft: "fix scroll", mode: .session, runtime: .claudeCode,
                 projectName: "Throttle", projectPath: nil,
-                resolve: { _ in silent })
+                resolve: { silent })
             XCTFail("expected .empty")
         } catch {
             XCTAssertEqual(error as? PromptRefinerService.RefinerError, .empty)
@@ -236,9 +238,9 @@ final class PromptRefinerServiceTests: XCTestCase {
             _ = try await PromptRefinerService.refine(
                 draft: "fix \u{1b}[2J scroll", mode: .session, runtime: .claudeCode,
                 projectName: "Throttle", projectPath: nil,
-                resolve: { _ in
+                resolve: {
                     XCTFail("must not reach a provider")
-                    return nil
+                    throw PromptRefinerService.RefinerError.noProvider
                 })
             XCTFail("expected .controlSequence")
         } catch {
@@ -256,7 +258,7 @@ final class PromptRefinerServiceTests: XCTestCase {
             _ = try await PromptRefinerService.refine(
                 draft: "fix scroll", mode: .session, runtime: .claudeCode,
                 projectName: "Throttle", projectPath: nil,
-                resolve: { _ in unsafeProvider })
+                resolve: { unsafeProvider })
             XCTFail("expected .controlSequence")
         } catch {
             XCTAssertEqual(error as? PromptRefinerService.RefinerError, .controlSequence)
