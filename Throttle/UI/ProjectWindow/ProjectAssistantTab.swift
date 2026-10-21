@@ -52,7 +52,9 @@ struct ProjectAssistantTab: View {
     enum ProviderStatus: Equatable {
         case resolving
         case ready(name: String)
-        case unavailable
+        /// Carries why: nothing chosen, or the chosen provider is down.
+        /// Throttle never substitutes another provider.
+        case unavailable(reason: String)
     }
 
     var body: some View {
@@ -112,6 +114,9 @@ struct ProjectAssistantTab: View {
                         .font(.title2.bold())
                     Text("Four options. Pick one — you can change it later via the toggle in the chat header.")
                         .font(.callout).foregroundStyle(.secondary)
+                    if case .unavailable(let reason) = providerStatus {
+                        Text(reason).font(.callout).foregroundStyle(.orange)
+                    }
                 }
                 .padding(.bottom, 8)
 
@@ -313,10 +318,11 @@ struct ProjectAssistantTab: View {
                 Text(name).font(.caption.weight(.semibold))
                 Text("·").foregroundStyle(.tertiary)
                 Text(project.displayName).font(.caption).foregroundStyle(.secondary)
-            case .unavailable:
-                Text("No AI provider configured")
+            case .unavailable(let reason):
+                Text("No AI provider ready")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.orange)
+                    .help(reason)
                 Spacer()
                 Button("Configure") { openProviderSettings() }
                     .buttonStyle(.bordered).controlSize(.small)
@@ -695,11 +701,11 @@ struct ProjectAssistantTab: View {
 
     private func refreshProvider() async {
         providerStatus = .resolving
-        let provider = await AIProviderRegistry.shared.resolveActive()
-        if let provider {
-            providerStatus = .ready(name: provider.displayName)
+        let selection = await AIProviderRegistry.shared.selection()
+        if case .ready(let kind) = selection {
+            providerStatus = .ready(name: AIProviderRegistry.shared.provider(for: kind).displayName)
         } else {
-            providerStatus = .unavailable
+            providerStatus = .unavailable(reason: selection.message ?? "")
         }
     }
 
@@ -716,10 +722,12 @@ struct ProjectAssistantTab: View {
         if isStreaming { return }
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        guard let provider = await AIProviderRegistry.shared.resolveActive() else {
-            providerStatus = .unavailable
+        let selection = await AIProviderRegistry.shared.selection()
+        guard case .ready(let kind) = selection else {
+            providerStatus = .unavailable(reason: selection.message ?? "")
             return
         }
+        let provider = AIProviderRegistry.shared.provider(for: kind)
 
         let userMsg = ChatMessage(role: .user, content: text)
         transcript.append(userMsg)
@@ -732,7 +740,7 @@ struct ProjectAssistantTab: View {
         // prompt and stay under their soft prompt-size limit.
         let sid = UUID()
         await ClaudeWebSessionScope.$sessionId.withValue(sid) {
-            await runAssistantTurn(provider: provider, depth: 0, triedKinds: [])
+            await runAssistantTurn(provider: provider, depth: 0)
         }
         await ClaudeWebSessionStore.shared.clear(sid)
         await APIKeyToolStateStore.shared.clear(sid)
@@ -744,14 +752,10 @@ struct ProjectAssistantTab: View {
     /// `\`\`\`tool` calls, we execute them and re-invoke ourselves with
     /// a synthetic user message containing the tool result.
     ///
-    /// `triedKinds` tracks providers we already attempted in this user
-    /// turn. When a provider fails with a recoverable error (claude.ai
-    /// dropped the response, Safari tab zombie, etc.) we ask the
-    /// registry for the next available provider not in the set and
-    /// transparently retry — Apple Intelligence is on-device and
-    /// always available on macOS 26+, so the user almost never has to
-    /// see "claude.ai dropped the response, please switch manually."
-    private func runAssistantTurn(provider: any AIProvider, depth: Int, triedKinds: Set<AIProviderKind>) async {
+    /// A provider failure is reported in the bubble, never retried on another
+    /// provider: switching on the user's behalf could send project context to
+    /// a cloud service they did not choose.
+    private func runAssistantTurn(provider: any AIProvider, depth: Int) async {
         // Hard-cap recursion. The system prompt asks the model to stay
         // under 5 tool calls per request; this stops a runaway loop if
         // the model mis-parses our results.
@@ -776,33 +780,15 @@ struct ProjectAssistantTab: View {
                 appendDelta(delta, to: assistantMsg.id)
             }
         } catch {
-            // If the failure is recoverable (claude.ai drop, tab zombie,
-            // Safari not signed in, etc.) and another provider is
-            // available, transparently fall back to it. The user gets
-            // a working answer instead of a polite "go switch yourself."
-            if let providerErr = error as? AIProviderError,
-               providerErr.isRecoverable {
-                var nextTried = triedKinds
-                nextTried.insert(provider.kind)
-                if let fallback = await AIProviderRegistry.shared.firstAvailable(excluding: nextTried) {
-                    let why = (error as? AIProviderError)?.errorDescription ?? error.localizedDescription
-                    let note = fallback.displayName.contains("Apple Intelligence")
-                        ? "\n\n_\(provider.displayName) couldn't finish: \(why)\n\nFalling back to \(fallback.displayName) — a small on-device model, so the answer is lighter. Add a Claude API key in settings for the full analysis._\n\n"
-                        : "\n\n_\(provider.displayName) couldn't finish: \(why) — falling back to \(fallback.displayName)._\n\n"
-                    appendDelta(note, to: assistantMsg.id)
-                    // Drop the now-half-empty assistant message; the
-                    // fallback will append a fresh one. Keep the
-                    // fallback note visible by leaving the current
-                    // bubble in place but stripping its trailing tool
-                    // markers so the recursive call doesn't re-trigger
-                    // on a stale tool block.
-                    isStreaming = false
-                    streamingMessageID = nil
-                    await runAssistantTurn(provider: fallback, depth: depth, triedKinds: nextTried)
-                    return
-                }
+            if let providerErr = error as? AIProviderError, providerErr.isRecoverable {
+                let why = providerErr.errorDescription ?? error.localizedDescription
+                let note = "Throttle won't switch providers on its own. Retry, or pick another in the chat header."
+                appendDelta("\n\n_\(provider.displayName) couldn't finish: \(why)\n\n\(note)_", to: assistantMsg.id)
+                isStreaming = false
+                streamingMessageID = nil
+                return
             }
-            // Hard error or no fallback — surface as a soft note
+            // Hard error — surface as a soft note
             // rather than a [Error: ...] which reads as a Throttle bug.
             // The error text from describe(...) is already user-ready.
             appendDelta("\n\n_\(error.localizedDescription)_", to: assistantMsg.id)
@@ -828,7 +814,7 @@ struct ProjectAssistantTab: View {
                 content: resultBlocks.joined(separator: "\n\n---\n\n")
             )
             transcript.append(toolMsg)
-            await runAssistantTurn(provider: provider, depth: depth + 1, triedKinds: triedKinds)
+            await runAssistantTurn(provider: provider, depth: depth + 1)
         } else {
             isStreaming = false
             streamingMessageID = nil

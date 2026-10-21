@@ -16,10 +16,12 @@ enum AIOptimizerService {
 
     enum OptimizerError: LocalizedError {
         case noProvider
+        case providerNotReady(String)
         case empty
         var errorDescription: String? {
             switch self {
             case .noProvider: return "No AI provider available — sign in to claude.ai or add an API key in the Assistant tab."
+            case .providerNotReady(let message): return message
             case .empty:      return "The model returned nothing usable."
             }
         }
@@ -75,31 +77,21 @@ enum AIOptimizerService {
         )
         let messages = [ChatMessage(role: .user, content: prompt)]
 
-        // Walk the provider chain (active → next available) so a flaky Claude-web
-        // session falls through to the API key / Apple Intelligence instead of
-        // failing the whole optimisation.
-        var tried = Set<AIProviderKind>()
-        var lastError: Error = OptimizerError.noProvider
-        for _ in 0..<3 {
-            let provider = tried.isEmpty
-                ? await AIProviderRegistry.shared.resolveActive()
-                : await AIProviderRegistry.shared.firstAvailable(excluding: tried)
-            guard let provider else { break }
-            tried.insert(provider.kind)
-            do {
-                var full = ""
-                let stream = try await provider.streamChat(messages: messages, context: ctx)
-                for try await chunk in stream { full += chunk }
-                guard !full.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw OptimizerError.empty }
-                var p = parse(full, fallback: content)
-                p.provider = provider.displayName
-                return p
-            } catch {
-                lastError = error
-                continue   // try the next provider
-            }
+        // Only the provider the user chose. A failure is reported, never
+        // retried on another provider: switching silently could send this
+        // file to a cloud service the user did not pick.
+        let selection = await AIProviderRegistry.shared.selection()
+        guard case .ready(let kind) = selection else {
+            throw OptimizerError.providerNotReady(selection.message ?? "")
         }
-        throw lastError
+        let provider = await AIProviderRegistry.shared.provider(for: kind)
+        var full = ""
+        let stream = try await provider.streamChat(messages: messages, context: ctx)
+        for try await chunk in stream { full += chunk }
+        guard !full.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw OptimizerError.empty }
+        var proposal = parse(full, fallback: content)
+        proposal.provider = provider.displayName
+        return proposal
     }
 
     private static func parse(_ text: String, fallback: String) -> Proposal {

@@ -66,6 +66,7 @@ enum PromptRefinerService {
 
     enum RefinerError: LocalizedError, Equatable {
         case noProvider
+        case providerNotReady(String)
         case empty
         case controlSequence
         case tooLarge
@@ -74,6 +75,8 @@ enum PromptRefinerService {
             switch self {
             case .noProvider:
                 return "No AI provider available — sign in to claude.ai or add an API key in the Assistant tab."
+            case .providerNotReady(let message):
+                return message
             case .empty:
                 return "The model returned nothing usable."
             case .controlSequence:
@@ -238,29 +241,21 @@ enum PromptRefinerService {
 
     // MARK: - Provider walk
 
-    /// Walk the active provider, then the next available ones, so a flaky
-    /// claude.ai session falls through instead of failing the refinement.
-    /// Injection seam: given the kinds already attempted, return the next
-    /// provider to try. The default walks the registry; tests substitute stubs,
-    /// which is the only way to prove the fallback actually falls back.
-    typealias ProviderResolver = @Sendable (Set<AIProviderKind>) async -> (any AIProvider)?
+    /// Injection seam: returns the provider to use, or throws why there is
+    /// none. The default asks the registry for the user's explicit choice;
+    /// tests substitute stubs. There is deliberately no "next provider": a
+    /// failure is reported, never retried elsewhere, so a draft can't reach a
+    /// cloud service the user did not choose.
+    typealias ProviderResolver = @Sendable () async throws -> any AIProvider
 
-    static func excludedProviderKinds(
-        tried: Set<AIProviderKind>,
-        forceLocal: Bool
-    ) -> Set<AIProviderKind> {
-        guard forceLocal else { return tried }
-        return tried.union([.claudeWebSession, .claudeAPIKey])
-    }
-
-    static let registryResolver: ProviderResolver = { tried in
-        // Local-only is a privacy boundary, not a routing hint. A missing
-        // local model must fail closed instead of spending network tokens.
-        let forceLocal = RefinerSettings.forceLocal
-        let excluded = excludedProviderKinds(tried: tried, forceLocal: forceLocal)
-        return (tried.isEmpty && !forceLocal)
-            ? await AIProviderRegistry.shared.resolveActive()
-            : await AIProviderRegistry.shared.firstAvailable(excluding: excluded)
+    static let registryResolver: ProviderResolver = {
+        // Local-only is a privacy boundary, not a routing hint: a cloud choice
+        // or a missing local model fails closed instead of spending network tokens.
+        let selection = await AIProviderRegistry.shared.selection(localOnly: RefinerSettings.forceLocal)
+        guard case .ready(let kind) = selection else {
+            throw RefinerError.providerNotReady(selection.message ?? "")
+        }
+        return await AIProviderRegistry.shared.provider(for: kind)
     }
 
     static func refine(
@@ -290,27 +285,16 @@ enum PromptRefinerService {
         )
         let messages = [ChatMessage(role: .user, content: user)]
 
-        var tried = Set<AIProviderKind>()
-        var lastError: Error = RefinerError.noProvider
-        for _ in 0..<3 {
-            guard let provider = await resolve(tried) else { break }
-            tried.insert(provider.kind)
-            do {
-                var full = ""
-                let stream = try await provider.streamChat(messages: messages, context: ctx)
-                for try await chunk in stream { full += chunk }
-                guard !full.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                    throw RefinerError.empty
-                }
-                var refinement = parse(full, fallback: draft)
-                try validate(refinement.proposed)
-                refinement.provider = provider.displayName
-                return refinement
-            } catch {
-                lastError = error
-                continue
-            }
+        let provider = try await resolve()
+        var full = ""
+        let stream = try await provider.streamChat(messages: messages, context: ctx)
+        for try await chunk in stream { full += chunk }
+        guard !full.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw RefinerError.empty
         }
-        throw lastError
+        var refinement = parse(full, fallback: draft)
+        try validate(refinement.proposed)
+        refinement.provider = provider.displayName
+        return refinement
     }
 }

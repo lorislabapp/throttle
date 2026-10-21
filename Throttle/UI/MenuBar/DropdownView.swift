@@ -2984,18 +2984,21 @@ private struct InlineAssistantPane: View {
         VStack(alignment: .leading, spacing: 0) {
             SettingsGroupHeader(label: "AI Assistant", desc: "Powers the Project window's chat")
             SettingsRow(title: "Provider", sub: "Who answers \u{201C}why am I burning tokens?\u{201D}") {
-                Picker("", selection: Binding(
-                    get: { aiSelection ?? defaultProviderKind() },
+                // No segment is shown until the user picks one: the Assistant
+                // only ever uses an explicit choice, so a pre-selected default
+                // here would claim a choice that was never made.
+                Picker("", selection: Binding<AIProviderKind?>(
+                    get: { aiSelection },
                     set: { newValue in aiSelection = newValue; AIProviderRegistry.shared.preferredKind = newValue }
                 )) {
-                    Text("Apple").tag(AIProviderKind.appleIntelligence)
-                    Text("Local").tag(AIProviderKind.embeddedModel)
-                    Text("Claude").tag(AIProviderKind.claudeWebSession)
-                    Text("API").tag(AIProviderKind.claudeAPIKey)
+                    Text("Apple").tag(AIProviderKind?.some(.appleIntelligence))
+                    Text("Local").tag(AIProviderKind?.some(.embeddedModel))
+                    Text("Claude").tag(AIProviderKind?.some(.claudeWebSession))
+                    Text("API").tag(AIProviderKind?.some(.claudeAPIKey))
                 }
                 .pickerStyle(.segmented).labelsHidden().fixedSize()
             }
-            if (aiSelection ?? defaultProviderKind()) == .claudeAPIKey {
+            if aiSelection == .claudeAPIKey {
                 SettingsHair()
                 apiKeyRow
             }
@@ -3251,13 +3254,6 @@ private struct InlineAssistantPane: View {
             localWorkerStatus = status
             localWorkerProbing = false
         }
-    }
-
-    private func defaultProviderKind() -> AIProviderKind {
-        if aiAvailability[.appleIntelligence] == true { return .appleIntelligence }
-        if aiAvailability[.embeddedModel] == true { return .embeddedModel }
-        if aiAvailability[.claudeAPIKey] == true { return .claudeAPIKey }
-        return .appleIntelligence
     }
 
     private func reloadAvailability() async {

@@ -14,50 +14,61 @@ extension AppDelegate {
         }
     }
 
+    /// Routing and the confirm-or-run decision live in `DeepLinkRoute` (pure,
+    /// tested). Any app or web page can open a `throttle://` URL, so routes that
+    /// change state run only after the user approves them in an alert.
     func handleDeepLink(_ url: URL) {
-        guard url.scheme?.lowercased() == "throttle" else {
-            logger.notice("Ignoring URL with unknown scheme: \(url.scheme ?? "nil", privacy: .public)")
-            return
+        let route = DeepLinkRoute.parse(url)
+        if let prompt = route.confirmationPrompt {
+            guard confirmDeepLink(prompt) else {
+                logger.notice("throttle:// action declined by the user")
+                return
+            }
         }
-        let host = url.host?.lowercased()
-        switch host {
-        case "activate":
-            activate(from: url)
-        case "cockpit":
+        perform(route)
+    }
+
+    private func perform(_ route: DeepLinkRoute) {
+        switch route {
+        case .activate(let key):
+            activate(key: key)
+        case .cockpit:
             Task { @MainActor in CockpitWindowController.shared.show(appState: self.appState) }
         // The vault window could only be reached by clicking through the menu bar,
         // so nothing outside the app — a shortcut, a script, an agent asked to set
         // the vault up — could even open it. `/library` goes one step further and
         // raises the folder picker, which is still the only thing that can grant
         // access to a tree.
-        case "research-vault":
+        case .researchVault(let connectLibrary):
             Task { @MainActor in
                 ResearchVaultWindowController.shared.show(query: "")
-                if url.path.lowercased() == "/library" {
+                if connectLibrary {
                     NotificationCenter.default.post(
                         name: .throttleResearchVaultConnectLibrary, object: nil
                     )
                 }
             }
-        case "pause":   ThrottleCommandChannel.enqueue(.pauseAll)
-        case "resume":  ThrottleCommandChannel.enqueue(.resumeAll)
-        case "quiet":   ThrottleCommandChannel.enqueue(.quietOn)
-        case "unquiet": ThrottleCommandChannel.enqueue(.quietOff)
-        default:
-            logger.notice("Ignoring throttle:// URL with unknown host: \(host ?? "nil", privacy: .public)")
+        case .command(let action):
+            ThrottleCommandChannel.enqueue(action)
+        case .ignored(let reason):
+            logger.notice("Ignoring throttle:// URL: \(reason, privacy: .public)")
         }
     }
 
-    private func activate(from url: URL) {
-        // ?key=THROTTLE-… in either query or path component.
-        let comps = URLComponents(url: url, resolvingAgainstBaseURL: false)
-        let key = comps?.queryItems?.first(where: { $0.name == "key" })?.value?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .uppercased()
-        guard let key, key.hasPrefix("THROTTLE-") else {
-            logger.notice("activate URL missing or malformed key")
-            return
-        }
+    /// Same modal style as `notifyActivation`. Cancel is the default button so
+    /// a stray Return never approves an action a link asked for.
+    private func confirmDeepLink(_ prompt: String) -> Bool {
+        let alert = NSAlert()
+        alert.messageText = "Allow this link?"
+        alert.informativeText = prompt
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: "Allow")
+        NSApp.activate(ignoringOtherApps: true)
+        return alert.runModal() == .alertSecondButtonReturn
+    }
+
+    private func activate(key: String) {
         Task { @MainActor in
             let result = await LicenseService.shared.activate(key: key)
             switch result {
